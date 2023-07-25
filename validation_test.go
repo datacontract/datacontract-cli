@@ -109,6 +109,30 @@ func TestValidateConsumerTeamId_Empty(t *testing.T) {
 	assertFailed(t, e, FieldNameConsumerTeamId, ValidationErrorReasonEmptyString)
 }
 
+func TestValidateTermsNoticePeriod_HappyCase(t *testing.T) {
+	complete := "P1Y2M3W4DT12H45M57S"
+	month := "P13M"
+	seconds := "PT30S"
+
+	assertPassed(t, ValidateTermsNoticePeriod(&complete))
+	assertPassed(t, ValidateTermsNoticePeriod(&month))
+	assertPassed(t, ValidateTermsNoticePeriod(&seconds))
+}
+
+func TestValidateTermsNoticePeriod_Nil(t *testing.T) {
+	assertPassed(t, ValidateTermsNoticePeriod(nil))
+}
+
+func TestValidateTermsNoticePeriod_IllegalValue(t *testing.T) {
+	words := "three months"
+	otherFormat := "30000s"
+
+	assertFailed(t, ValidateTermsNoticePeriod(&words),
+		FieldNameTermsNoticePeriod, ValidationErrorReasonIllegalFormat)
+	assertFailed(t, ValidateTermsNoticePeriod(&otherFormat),
+		FieldNameTermsNoticePeriod, ValidationErrorReasonIllegalFormat)
+}
+
 func assertFailed(t *testing.T, e *ValidationError, field FieldName, reason ValidationErrorReason) {
 	if e == nil {
 		t.Error("Must fail.")

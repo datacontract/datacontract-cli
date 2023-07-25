@@ -19,6 +19,8 @@ const (
 	FieldNameProviderOutputPortId  FieldName = "provider.outputPortId"
 
 	FieldNameConsumerTeamId FieldName = "consumer.teamId"
+
+	FieldNameTermsNoticePeriod = "terms.noticePeriod"
 )
 
 type ValidationErrorReason string
@@ -65,17 +67,15 @@ func ValidateInfoEndDate(endDate *string) *ValidationError {
 }
 
 func validateOptionalDate(fieldName FieldName, startDate *string) *ValidationError {
-	if startDate != nil {
-		hasDateFormat, _ := hasDateFormat(startDate)
-		if !hasDateFormat {
-			return &ValidationError{fieldName, ValidationErrorReasonIllegalFormat}
-		}
+	if startDate != nil && !hasDateFormat(startDate) {
+		return &ValidationError{fieldName, ValidationErrorReasonIllegalFormat}
 	}
 	return nil
 }
 
-func hasDateFormat(startDate *string) (bool, error) {
-	return regexp.MatchString("(\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))", *startDate)
+func hasDateFormat(startDate *string) bool {
+	re := regexp.MustCompile("(\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))")
+	return re.MatchString(*startDate)
 }
 
 // Provider
@@ -96,6 +96,20 @@ func ValidateProviderOutputPortId(outputPortId string) *ValidationError {
 
 func ValidateConsumerTeamId(teamId string) *ValidationError {
 	return validateStringNotEmpty(teamId, FieldNameConsumerTeamId)
+}
+
+// Terms
+
+func ValidateTermsNoticePeriod(duration *string) *ValidationError {
+	if duration != nil && !hasISO8601Format(*duration) {
+		return &ValidationError{FieldNameTermsNoticePeriod, ValidationErrorReasonIllegalFormat}
+	}
+	return nil
+}
+
+func hasISO8601Format(input string) bool {
+	re := regexp.MustCompile(`^P(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+S)?)?$`)
+	return re.MatchString(input)
 }
 
 // common
