@@ -93,12 +93,6 @@ func TestValidateProviderOutputPortId_Empty(t *testing.T) {
 	assertFailed(t, e, FieldNameProviderOutputPortId, ValidationErrorReasonEmptyString)
 }
 
-func assertPassed(t *testing.T, e *ValidationError) {
-	if e != nil {
-		t.Error("Must pass.")
-	}
-}
-
 func TestValidateConsumerTeamId_HappyCase(t *testing.T) {
 	e := ValidateConsumerTeamId("some id")
 	assertPassed(t, e)
@@ -133,14 +127,40 @@ func TestValidateTermsNoticePeriod_IllegalValue(t *testing.T) {
 		FieldNameTermsNoticePeriod, ValidationErrorReasonIllegalFormat)
 }
 
+func TestValidateSchemaType_HappyCase(t *testing.T) {
+	e := ValidateSchemaType("dbt")
+	assertPassed(t, e)
+}
+
+func TestValidateSchemaType_Empty(t *testing.T) {
+	e := ValidateSchemaType("")
+	assertFailed(t, e, FieldNameSchemaType, ValidationErrorReasonEmptyString)
+}
+
+func TestValidateSchemaSpecification_HappyCase(t *testing.T) {
+	e := ValidateSchemaSpecification(`"id":"string"`)
+	assertPassed(t, e)
+}
+
+func TestValidateSchemaSpecification_Empty(t *testing.T) {
+	e := ValidateSchemaSpecification("")
+	assertFailed(t, e, FieldNameSchemaSpecification, ValidationErrorReasonEmptyString)
+}
+
+func assertPassed(t *testing.T, e *ValidationError) {
+	if e != nil {
+		t.Error("Must pass.")
+	}
+}
+
 func assertFailed(t *testing.T, e *ValidationError, field FieldName, reason ValidationErrorReason) {
 	if e == nil {
 		t.Error("Must fail.")
 	}
 	if e == nil || e.Field != field {
-		t.Errorf("Field name must be '%v'", field)
+		t.Errorf("Field name must be '%v'.", field)
 	}
 	if e == nil || e.Reason != reason {
-		t.Errorf("Validation error reason must be '%v'", reason)
+		t.Errorf("Validation error reason must be '%v'.", reason)
 	}
 }

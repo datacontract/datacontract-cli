@@ -20,7 +20,10 @@ const (
 
 	FieldNameConsumerTeamId FieldName = "consumer.teamId"
 
-	FieldNameTermsNoticePeriod = "terms.noticePeriod"
+	FieldNameTermsNoticePeriod FieldName = "terms.noticePeriod"
+
+	FieldNameSchemaType          FieldName = "schema.type"
+	FieldNameSchemaSpecification FieldName = "schema.specification"
 )
 
 type ValidationErrorReason string
@@ -107,9 +110,19 @@ func ValidateTermsNoticePeriod(duration *string) *ValidationError {
 	return nil
 }
 
-func hasISO8601Format(input string) bool {
+func hasISO8601Format(duration string) bool {
 	re := regexp.MustCompile(`^P(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+S)?)?$`)
-	return re.MatchString(input)
+	return re.MatchString(duration)
+}
+
+// Schema
+
+func ValidateSchemaType(schemaType string) *ValidationError {
+	return validateStringNotEmpty(schemaType, FieldNameSchemaType)
+}
+
+func ValidateSchemaSpecification(specification string) *ValidationError {
+	return validateStringNotEmpty(specification, FieldNameSchemaSpecification)
 }
 
 // common
