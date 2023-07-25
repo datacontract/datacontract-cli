@@ -9,7 +9,7 @@ func TestValidateDataContractSpecification_HappyCase(t *testing.T) {
 	assertPassed(t, e)
 }
 
-func TestValidateDataContractSpecification_Unknown(t *testing.T) {
+func TestValidateDataContractSpecification_Illegal(t *testing.T) {
 	e := ValidateDataContractSpecification("0.0.2")
 	assertFailed(t, e, FieldNameDataContractSpecification, ValidationErrorReasonIllegalValue)
 }
@@ -17,6 +17,50 @@ func TestValidateDataContractSpecification_Unknown(t *testing.T) {
 func TestValidateDataContractSpecification_Empty(t *testing.T) {
 	e := ValidateDataContractSpecification("")
 	assertFailed(t, e, FieldNameDataContractSpecification, ValidationErrorReasonEmptyString)
+}
+
+func TestValidateInfoId_HappyCase(t *testing.T) {
+	e := ValidateInfoId("some-id")
+	assertPassed(t, e)
+}
+
+func TestValidateInfoId_Empty(t *testing.T) {
+	e := ValidateInfoId("")
+	assertFailed(t, e, FieldNameInfoId, ValidationErrorReasonEmptyString)
+}
+
+func TestValidateInfoStartDate_HappyCase(t *testing.T) {
+	date := "2021-12-08"
+	e := ValidateInfoStartDate(&date)
+	assertPassed(t, e)
+}
+
+func TestValidateInfoStartDate_Nil(t *testing.T) {
+	e := ValidateInfoStartDate(nil)
+	assertPassed(t, e)
+}
+
+func TestValidateInfoStartDate_IllegalFormat(t *testing.T) {
+	date := "2021-December-08"
+	e := ValidateInfoStartDate(&date)
+	assertFailed(t, e, FieldNameInfoStartDate, ValidationErrorReasonIllegalFormat)
+}
+
+func TestValidateInfoEndDate_HappyCase(t *testing.T) {
+	date := "2021-12-08"
+	e := ValidateInfoEndDate(&date)
+	assertPassed(t, e)
+}
+
+func TestValidateInfoEndDate_Nil(t *testing.T) {
+	e := ValidateInfoEndDate(nil)
+	assertPassed(t, e)
+}
+
+func TestValidateInfoEndDate_IllegalFormat(t *testing.T) {
+	date := "2021-December-08"
+	e := ValidateInfoEndDate(&date)
+	assertFailed(t, e, FieldNameInfoEndDate, ValidationErrorReasonIllegalFormat)
 }
 
 func assertPassed(t *testing.T, e *ValidationError) {
