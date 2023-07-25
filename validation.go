@@ -17,6 +17,8 @@ const (
 	FieldNameProviderTeamId        FieldName = "provider.teamId"
 	FieldNameProviderDataProductId FieldName = "provider.dataProductId"
 	FieldNameProviderOutputPortId  FieldName = "provider.outputPortId"
+
+	FieldNameConsumerTeamId FieldName = "consumer.teamId"
 )
 
 type ValidationErrorReason string
@@ -90,10 +92,16 @@ func ValidateProviderOutputPortId(outputPortId string) *ValidationError {
 	return validateStringNotEmpty(outputPortId, FieldNameProviderOutputPortId)
 }
 
+// Consumer
+
+func ValidateConsumerTeamId(teamId string) *ValidationError {
+	return validateStringNotEmpty(teamId, FieldNameConsumerTeamId)
+}
+
 // common
 
-func validateStringNotEmpty(id string, fieldName FieldName) *ValidationError {
-	if id == "" {
+func validateStringNotEmpty(value string, fieldName FieldName) *ValidationError {
+	if value == "" {
 		return &ValidationError{fieldName, ValidationErrorReasonEmptyString}
 	}
 	return nil

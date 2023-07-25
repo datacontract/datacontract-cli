@@ -99,6 +99,16 @@ func assertPassed(t *testing.T, e *ValidationError) {
 	}
 }
 
+func TestValidateConsumerTeamId_HappyCase(t *testing.T) {
+	e := ValidateConsumerTeamId("some id")
+	assertPassed(t, e)
+}
+
+func TestValidateConsumerTeamId_Empty(t *testing.T) {
+	e := ValidateConsumerTeamId("")
+	assertFailed(t, e, FieldNameConsumerTeamId, ValidationErrorReasonEmptyString)
+}
+
 func assertFailed(t *testing.T, e *ValidationError, field FieldName, reason ValidationErrorReason) {
 	if e == nil {
 		t.Error("Must fail.")
