@@ -9,9 +9,14 @@ type FieldName string
 
 const (
 	FieldNameDataContractSpecification FieldName = "dataContractSpecification"
-	FieldNameInfoId                    FieldName = "info.id"
-	FieldNameInfoStartDate             FieldName = "info.startDate"
-	FieldNameInfoEndDate               FieldName = "info.endDate"
+
+	FieldNameInfoId        FieldName = "info.id"
+	FieldNameInfoStartDate FieldName = "info.startDate"
+	FieldNameInfoEndDate   FieldName = "info.endDate"
+
+	FieldNameProviderTeamId        FieldName = "provider.teamId"
+	FieldNameProviderDataProductId FieldName = "provider.dataProductId"
+	FieldNameProviderOutputPortId  FieldName = "provider.outputPortId"
 )
 
 type ValidationErrorReason string
@@ -32,8 +37,10 @@ func (e *ValidationError) Error() string {
 }
 
 func ValidateDataContractSpecification(dataContractSpecification string) *ValidationError {
-	if dataContractSpecification == "" {
-		return &ValidationError{FieldNameDataContractSpecification, ValidationErrorReasonEmptyString}
+	emptyStringError :=
+		validateStringNotEmpty(dataContractSpecification, FieldNameDataContractSpecification)
+	if emptyStringError != nil {
+		return emptyStringError
 	}
 	if dataContractSpecification != "0.0.1" {
 		return &ValidationError{FieldNameDataContractSpecification, ValidationErrorReasonIllegalValue}
@@ -41,22 +48,21 @@ func ValidateDataContractSpecification(dataContractSpecification string) *Valida
 	return nil
 }
 
+// Info
+
 func ValidateInfoId(id string) *ValidationError {
-	if id == "" {
-		return &ValidationError{FieldNameInfoId, ValidationErrorReasonEmptyString}
-	}
-	return nil
+	return validateStringNotEmpty(id, FieldNameInfoId)
 }
 
 func ValidateInfoStartDate(startDate *string) *ValidationError {
-	return validateDateFormat(FieldNameInfoStartDate, startDate)
+	return validateOptionalDate(FieldNameInfoStartDate, startDate)
 }
 
 func ValidateInfoEndDate(endDate *string) *ValidationError {
-	return validateDateFormat(FieldNameInfoEndDate, endDate)
+	return validateOptionalDate(FieldNameInfoEndDate, endDate)
 }
 
-func validateDateFormat(fieldName FieldName, startDate *string) *ValidationError {
+func validateOptionalDate(fieldName FieldName, startDate *string) *ValidationError {
 	if startDate != nil {
 		hasDateFormat, _ := hasDateFormat(startDate)
 		if !hasDateFormat {
@@ -68,4 +74,27 @@ func validateDateFormat(fieldName FieldName, startDate *string) *ValidationError
 
 func hasDateFormat(startDate *string) (bool, error) {
 	return regexp.MatchString("(\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))", *startDate)
+}
+
+// Provider
+
+func ValidateProviderTeamId(teamId string) *ValidationError {
+	return validateStringNotEmpty(teamId, FieldNameProviderTeamId)
+}
+
+func ValidateProviderDataProductId(dataProductId string) *ValidationError {
+	return validateStringNotEmpty(dataProductId, FieldNameProviderDataProductId)
+}
+
+func ValidateProviderOutputPortId(outputPortId string) *ValidationError {
+	return validateStringNotEmpty(outputPortId, FieldNameProviderOutputPortId)
+}
+
+// common
+
+func validateStringNotEmpty(id string, fieldName FieldName) *ValidationError {
+	if id == "" {
+		return &ValidationError{fieldName, ValidationErrorReasonEmptyString}
+	}
+	return nil
 }

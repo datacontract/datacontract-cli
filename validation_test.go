@@ -63,6 +63,36 @@ func TestValidateInfoEndDate_IllegalFormat(t *testing.T) {
 	assertFailed(t, e, FieldNameInfoEndDate, ValidationErrorReasonIllegalFormat)
 }
 
+func TestValidateProviderTeamId_HappyCase(t *testing.T) {
+	e := ValidateProviderTeamId("some id")
+	assertPassed(t, e)
+}
+
+func TestValidateProviderTeamId_Empty(t *testing.T) {
+	e := ValidateProviderTeamId("")
+	assertFailed(t, e, FieldNameProviderTeamId, ValidationErrorReasonEmptyString)
+}
+
+func TestValidateProviderDataProductId_HappyCase(t *testing.T) {
+	e := ValidateProviderDataProductId("some id")
+	assertPassed(t, e)
+}
+
+func TestValidateProviderDataProductId_Empty(t *testing.T) {
+	e := ValidateProviderDataProductId("")
+	assertFailed(t, e, FieldNameProviderDataProductId, ValidationErrorReasonEmptyString)
+}
+
+func TestValidateProviderOutputPortId_HappyCase(t *testing.T) {
+	e := ValidateProviderOutputPortId("some id")
+	assertPassed(t, e)
+}
+
+func TestValidateProviderOutputPortId_Empty(t *testing.T) {
+	e := ValidateProviderOutputPortId("")
+	assertFailed(t, e, FieldNameProviderOutputPortId, ValidationErrorReasonEmptyString)
+}
+
 func assertPassed(t *testing.T, e *ValidationError) {
 	if e != nil {
 		t.Error("Must pass.")
