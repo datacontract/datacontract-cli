@@ -20,27 +20,19 @@
   - Detect issues not part of the JSON Schema
 - `datacontract schema` ❌
   - Prints schema
-  - Flag: type -> convert 
 
 ### Automation
 
 - `datacontract test` ❌
-  - Compare with output schema definition (requires output port to be specified and locatable), only via DMM?
+  - Compare with output schema definition (requires output port to be specified and locatable)
 
-- `datacontract open` ❌ (in Viewer/Data Mesh Manager)
+### Repository Commands
 
-### Advanced Commands
+Defaults to Data Mesh Manager
 
-- `datacontract compare <dataproduct-url/dmm-id>` ❌ (maybe as part of validate or test)
-
-### Data Mesh Manager Commands
-
-- `datacontract push` ❌ (to Data Mesh Manager)
-  - send to PUT endpoint
-- `datacontract pull` ❌ (from Data Mesh Manager)
-  - get from DMM, overwrite
-- `datacontract subscribe` ❌
-  - get events from event feed for this contract
+- `datacontract open` ❌
+- `datacontract push` ❌
+- `datacontract pull` ❌
 
 ## Integrations
 
