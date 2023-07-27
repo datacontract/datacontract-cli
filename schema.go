@@ -7,13 +7,21 @@ import (
 type Schema []SchemaField
 
 type SchemaField struct {
-	Type         string // todo enum
+	Type         SchemaFieldType
 	FieldName    string
 	Identifier   string
 	Description  *string
 	Required     bool
 	ObjectSchema *Schema
 }
+
+type SchemaFieldType string
+
+const (
+	SchemaFieldTypeObject SchemaFieldType = "object"
+	SchemaFieldTypeArray  SchemaFieldType = "array"
+	SchemaFieldTypeString SchemaFieldType = "string"
+)
 
 func GenerateSchema(jsonSchema []byte) (*Schema, error) {
 	var schemaMap map[string]any
@@ -39,14 +47,14 @@ func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema 
 		identifier := identifierPrefix + "." + key
 
 		schemaField := SchemaField{
-			Type:        fieldType,
+			Type:        SchemaFieldType(fieldType),
 			FieldName:   key,
 			Identifier:  identifier[1:],
 			Description: description(field),
 			Required:    contains(requiredFields, key),
 		}
 
-		if fieldType == "object" {
+		if SchemaFieldType(fieldType) == SchemaFieldTypeObject {
 			schemaField.ObjectSchema = generateSchema(field, identifier)
 		}
 

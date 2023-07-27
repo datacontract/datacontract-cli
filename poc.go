@@ -33,13 +33,13 @@ func (schema Schema) yamlMap(promptResults map[string]string) map[string]any {
 	yamlMap := make(map[string]any)
 
 	for _, schemaField := range schema {
-		if schemaField.Type == "object" {
+		if schemaField.Type == SchemaFieldTypeObject {
 			yamlMap[schemaField.FieldName] = schemaField.ObjectSchema.yamlMap(promptResults)
 		} else if value, ok := promptResults[schemaField.Identifier]; ok {
 			yamlMap[schemaField.FieldName] = value
-		} else if schemaField.Type == "array" {
+		} else if schemaField.Type == SchemaFieldTypeArray {
 			yamlMap[schemaField.FieldName] = []any{}
-		} else if schemaField.Type == "string" {
+		} else if schemaField.Type == SchemaFieldTypeString {
 			yamlMap[schemaField.FieldName] = ""
 		} else {
 			yamlMap[schemaField.FieldName] = nil
@@ -72,7 +72,7 @@ func (schema Schema) collectRequiredFields() []RequiredField {
 
 	for _, schemaField := range schema {
 		if schemaField.Required {
-			if schemaField.Type != "object" {
+			if schemaField.Type != SchemaFieldTypeObject {
 				result = append(result, RequiredField{schemaField.Identifier, schemaField.Description})
 			} else {
 				result = append(result, (*schemaField.ObjectSchema).collectRequiredFields()...)
