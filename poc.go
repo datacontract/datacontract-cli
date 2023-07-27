@@ -27,6 +27,7 @@ func main() {
 	yamlBytes, _ := yaml.Marshal(schema.yamlMap(promptResults))
 	fmt.Println("---")
 	fmt.Println(string(yamlBytes))
+	// todo write file
 }
 
 func (schema Schema) yamlMap(promptResults map[string]string) map[string]any {
@@ -58,13 +59,19 @@ func (field RequiredField) prompt() string {
 	// todo: special fields
 	//if fieldIdentifier == "info.id"
 	//if fieldIdentifier == "dataContractSpecification"
-	// todo: actual user input, validation...
-	//if field.Description != nil {
-	//	fmt.Printf("Please enter %v: %v\n", field.Identifier, *field.Description)
-	//} else {
-	//	fmt.Printf("Please enter %v\n", field.Identifier)
-	//}
-	return "todo"
+	if field.Description != nil {
+		fmt.Printf("Please enter %v: %v\n", field.Identifier, *field.Description)
+	} else {
+		fmt.Printf("Please enter %v\n", field.Identifier)
+	}
+
+	var command string
+	fmt.Scanf("%s", &command)
+
+	// todo: input validation
+	// todo: proposals
+
+	return command
 }
 
 func (schema Schema) collectRequiredFields() []RequiredField {
