@@ -20,6 +20,7 @@
         }
       },
       "required": [
+        "id",
         "purpose"
       ]
     },
@@ -75,7 +76,6 @@
   },
   "required": [
     "dataContractSpecification",
-    "id",
     "info",
     "provider",
     "consumer"

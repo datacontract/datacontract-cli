@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -56,23 +59,40 @@ type RequiredField struct {
 }
 
 func (field RequiredField) prompt() string {
-	// todo: special fields
-	//if fieldIdentifier == "info.id"
-	//if fieldIdentifier == "dataContractSpecification"
+	var suggestion string
+
+	switch field.Identifier {
+	case "dataContractSpecification":
+		return "0.0.1" // fix version for now
+	case "info.id":
+		suggestion = uuid.NewString()
+	}
+
 	if field.Description != nil {
 		fmt.Printf("Please enter %v: %v\n", field.Identifier, *field.Description)
 	} else {
 		fmt.Printf("Please enter %v\n", field.Identifier)
 	}
 
-	var command string
-	fmt.Scanf("%s", &command)
+	if suggestion != "" {
+		fmt.Printf("type value or press enter to use %v\n", suggestion)
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSuffix(input, "\n")
+
+	if suggestion != "" && input == "" {
+		return suggestion
+	}
 
 	// todo: input validation
-	// todo: proposals
 
-	return command
+	return input
 }
+
+
 
 func (schema Schema) collectRequiredFields() []RequiredField {
 	var result []RequiredField
