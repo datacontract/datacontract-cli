@@ -8,6 +8,7 @@ type Schema []SchemaField
 
 type SchemaField struct {
 	Type         string // todo enum
+	FieldName    string
 	Identifier   string
 	Description  *string
 	Required     bool
@@ -26,11 +27,10 @@ func GenerateSchema(jsonSchema []byte) (*Schema, error) {
 	return generateSchema(schemaMap, ""), nil
 }
 
-
 // todo error handling
 func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema {
 	schema := Schema{}
-	requiredFields := jsonSchema["required"].([]any)
+	requiredFields, _ := jsonSchema["required"].([]any)
 	properties := jsonSchema["properties"].(map[string]any)
 
 	for key, value := range properties {
@@ -40,6 +40,7 @@ func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema 
 
 		schemaField := SchemaField{
 			Type:        fieldType,
+			FieldName:   key,
 			Identifier:  identifier[1:],
 			Description: description(field),
 			Required:    contains(requiredFields, key),

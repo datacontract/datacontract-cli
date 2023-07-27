@@ -1,0 +1,83 @@
+{
+  "$id": "https://datacontract-specification.com/schemas/datacontract/0.0.1",
+  "title": "Data Contract",
+  "type": "object",
+  "properties": {
+    "dataContractSpecification": {
+      "type": "string",
+      "description": "Version of the data contract specification."
+    },
+    "info": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The technical identifier of the data contract."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "The purpose describes the reason and the context on why the consumer wants to consume the data."
+        }
+      },
+      "required": [
+        "purpose"
+      ]
+    },
+    "provider": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string"
+        },
+        "dataProductId": {
+          "type": "string"
+        },
+        "outputPortId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataProductId",
+        "outputPortId"
+      ]
+    },
+    "consumer": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string"
+        },
+        "dataProductId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataProductId"
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "specification": {
+          "type": "string"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "dataContractSpecification",
+    "id",
+    "info",
+    "provider",
+    "consumer"
+  ]
+}
