@@ -10,13 +10,6 @@ import (
 	"time"
 )
 
-type requiredField struct {
-	Identifier  string
-	Description *string
-	Type SchemaFieldType
-	Default string
-}
-
 type suggestion struct {
 	Value       string
 	Description string
@@ -56,40 +49,14 @@ func schema(version string) (Schema, error) {
 }
 
 func promptRequiredFields(schema Schema, values map[string]string) {
-	for _, field := range requiredFields(schema) {
-		if values[field.Identifier] == "" {
-			values[field.Identifier], _ = field.prompt()
+	for _, field := range schema.Flattened() {
+		if field.Required && values[field.Identifier] == "" {
+			values[field.Identifier], _ = prompt(fieldMessage(field), fieldSuggestion(field))
 		}
 	}
 }
 
-func requiredFields(schema Schema) []requiredField {
-	var result []requiredField
-
-	for _, schemaField := range schema {
-		if schemaField.Required {
-			if schemaField.Type != SchemaFieldTypeObject {
-				result = append(result, requiredField{
-					schemaField.Identifier,
-					schemaField.Description,
-					schemaField.Type,
-					schemaField.Default,
-				})
-			} else {
-				result = append(result, requiredFields(*schemaField.ObjectSchema)...)
-			}
-		}
-	}
-
-	return result
-}
-
-func (field requiredField) prompt() (string, error) {
-	return prompt(field.message(), field.suggestion())
-	// todo: input validation
-}
-
-func (field requiredField) message() string {
+func fieldMessage(field SchemaField) string {
 	if field.Description != nil {
 		return fmt.Sprintf("Please type value for %v: %v\n", field.Identifier, *field.Description)
 	} else {
@@ -97,18 +64,18 @@ func (field requiredField) message() string {
 	}
 }
 
-func (field requiredField) suggestion() *suggestion {
-	s := field.suggestionByIdentifier()
+func fieldSuggestion(field SchemaField) *suggestion {
+	s := fieldSuggestionByIdentifier(field)
 	if s != nil {
 		return s
 	}
 
-	s = field.suggestionByDefault()
+	s = fieldSuggestionByDefault(field)
 	if s != nil {
 		return s
 	}
 
-	s = field.suggestionByFieldType()
+	s = fieldSuggestionByFieldType(field)
 	if s != nil {
 		return s
 	}
@@ -116,7 +83,7 @@ func (field requiredField) suggestion() *suggestion {
 	return nil
 }
 
-func (field requiredField) suggestionByIdentifier() *suggestion {
+func fieldSuggestionByIdentifier(field SchemaField) *suggestion {
 	switch field.Identifier {
 	case "info.id":
 		return &suggestion{uuid.NewString(), "generated"}
@@ -124,7 +91,7 @@ func (field requiredField) suggestionByIdentifier() *suggestion {
 	return nil
 }
 
-func (field requiredField) suggestionByFieldType() *suggestion {
+func fieldSuggestionByFieldType(field SchemaField) *suggestion {
 	switch field.Type {
 	case SchemaFieldTypeDate:
 		return &suggestion{time.Now().Format(time.DateOnly), "today"}
@@ -132,7 +99,7 @@ func (field requiredField) suggestionByFieldType() *suggestion {
 	return nil
 }
 
-func (field requiredField) suggestionByDefault() *suggestion {
+func fieldSuggestionByDefault(field SchemaField) *suggestion {
 	if field.Default != "" {
 		return &suggestion{field.Default, "default"}
 	}

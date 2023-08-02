@@ -65,6 +65,20 @@ func (schema *Schema) Swap(i, j int) {
 	(*schema)[i], (*schema)[j] = (*schema)[j], (*schema)[i]
 }
 
+func (schema *Schema) Flattened() []SchemaField {
+	var result []SchemaField
+
+	for _, field := range *schema {
+		if field.Type != SchemaFieldTypeObject {
+			result = append(result, field)
+		} else {
+			result = append(result, field.ObjectSchema.Flattened()...)
+		}
+	}
+
+	return result
+}
+
 func GenerateSchema(jsonSchema []byte) (*Schema, error) {
 	var schemaMap map[string]any
 
