@@ -16,11 +16,11 @@
         },
         "purpose": {
           "type": "string",
-          "description": "The purpose describes the reason and the context on why the consumer wants to consume the data.",
-          "default": "draft"
+          "description": "The purpose describes the reason and the context on why the consumer wants to consume the data."
         },
         "status": {
-          "type": "string"
+          "type": "string",
+          "default": "draft"
         },
         "startDate": {
           "type": "string",

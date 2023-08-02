@@ -7,11 +7,14 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
+	"time"
 )
 
 type requiredField struct {
 	Identifier  string
 	Description *string
+	Type SchemaFieldType
+	Default string
 }
 
 type suggestion struct {
@@ -30,6 +33,7 @@ func Init(version, path string) error {
 	values["dataContractSpecification"] = version
 
 	promptRequiredFields(schema, values)
+
 	valuesInSchema := inSchema(values, schema)
 
 	return createDataContractSpecificationFile(valuesInSchema, path)
@@ -65,7 +69,12 @@ func requiredFields(schema Schema) []requiredField {
 	for _, schemaField := range schema {
 		if schemaField.Required {
 			if schemaField.Type != SchemaFieldTypeObject {
-				result = append(result, requiredField{schemaField.Identifier, schemaField.Description})
+				result = append(result, requiredField{
+					schemaField.Identifier,
+					schemaField.Description,
+					schemaField.Type,
+					schemaField.Default,
+				})
 			} else {
 				result = append(result, requiredFields(*schemaField.ObjectSchema)...)
 			}
@@ -82,38 +91,71 @@ func (field requiredField) prompt() (string, error) {
 
 func (field requiredField) message() string {
 	if field.Description != nil {
-		return fmt.Sprintf("Please enter %v: %v\n", field.Identifier, *field.Description)
+		return fmt.Sprintf("Please type value for %v: %v\n", field.Identifier, *field.Description)
 	} else {
 		return fmt.Sprintf("Please enter %v\n", field.Identifier)
 	}
 }
 
-func (field requiredField) suggestion() suggestion {
-	switch field.Identifier {
-	case "info.id":
-		return suggestion{uuid.NewString(), "generated"}
+func (field requiredField) suggestion() *suggestion {
+	s := field.suggestionByIdentifier()
+	if s != nil {
+		return s
 	}
 
-	return suggestion{}
+	s = field.suggestionByDefault()
+	if s != nil {
+		return s
+	}
+
+	s = field.suggestionByFieldType()
+	if s != nil {
+		return s
+	}
+
+	return nil
 }
 
-func prompt(message string, suggestion suggestion) (string, error) {
+func (field requiredField) suggestionByIdentifier() *suggestion {
+	switch field.Identifier {
+	case "info.id":
+		return &suggestion{uuid.NewString(), "generated"}
+	}
+	return nil
+}
+
+func (field requiredField) suggestionByFieldType() *suggestion {
+	switch field.Type {
+	case SchemaFieldTypeDate:
+		return &suggestion{time.Now().Format(time.DateOnly), "today"}
+	}
+	return nil
+}
+
+func (field requiredField) suggestionByDefault() *suggestion {
+	if field.Default != "" {
+		return &suggestion{field.Default, "default"}
+	}
+	return nil
+}
+
+func prompt(message string, suggestion *suggestion) (string, error) {
 	printMessages(message, suggestion)
 	input, err := readUserInput()
 
 	if err != nil {
 		return "", err
-	} else if suggestion.Value != "" && input == "" {
+	} else if suggestion != nil && input == "" {
 		return suggestion.Value, nil
 	} else {
 		return input, nil
 	}
 }
 
-func printMessages(message string, suggestion suggestion) {
+func printMessages(message string, suggestion *suggestion) {
 	fmt.Print(message)
-	if suggestion.Value != "" {
-		fmt.Printf("💡 press enter to use %v (%v)\n", suggestion.Value, suggestion.Description)
+	if suggestion != nil {
+		fmt.Printf("💡 press enter to use \"%v\" (%v)\n", suggestion.Value, suggestion.Description)
 	}
 }
 

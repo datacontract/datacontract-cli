@@ -14,6 +14,7 @@ type SchemaField struct {
 	Description  *string
 	Required     bool
 	ObjectSchema *Schema
+	Default      string
 }
 
 type SchemaFieldType string
@@ -99,6 +100,10 @@ func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema 
 			Identifier:  identifier[1:],
 			Description: description(field),
 			Required:    contains(requiredFields, key),
+		}
+
+		if defaultValue, ok := field["default"].(string); ok {
+			schemaField.Default = defaultValue
 		}
 
 		if schemaField.Type == SchemaFieldTypeObject {
