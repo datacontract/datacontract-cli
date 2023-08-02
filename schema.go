@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"sort"
 )
 
 type Schema []SchemaField
@@ -22,6 +23,43 @@ const (
 	SchemaFieldTypeArray  SchemaFieldType = "array"
 	SchemaFieldTypeString SchemaFieldType = "string"
 )
+
+func (schema *Schema) Sort() {
+	sort.Sort(schema)
+
+	for _, schemaField := range *schema {
+		if schemaField.Type == SchemaFieldTypeObject {
+			schemaField.ObjectSchema.Sort()
+		}
+	}
+
+	schema.swapWellKnownFields()
+}
+
+func (schema *Schema) swapWellKnownFields() {
+	for i, schemaField := range *schema {
+		switch schemaField.Identifier {
+		case "dataContractSpecification":
+			schema.Swap(0, i)
+		case "info":
+			schema.Swap(1, i)
+		case "info.id":
+			schema.Swap(0, i)
+		}
+	}
+}
+
+func (schema *Schema) Len() int {
+	return len(*schema)
+}
+
+func (schema *Schema) Less(i, j int) bool {
+	return (*schema)[i].FieldName < (*schema)[j].FieldName
+}
+
+func (schema *Schema) Swap(i, j int) {
+	(*schema)[i], (*schema)[j] = (*schema)[j], (*schema)[i]
+}
 
 func GenerateSchema(jsonSchema []byte) (*Schema, error) {
 	var schemaMap map[string]any
@@ -60,7 +98,6 @@ func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema 
 
 		schema = append(schema, schemaField)
 	}
-	// todo: order!
 
 	return &schema
 }
