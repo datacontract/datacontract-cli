@@ -42,6 +42,10 @@ func schema(version string) (Schema, error) {
 	file, err := os.ReadFile(schemaFileName)
 	schema, err := GenerateSchema(file)
 
+	if err != nil {
+		return nil, err
+	}
+
 	schema.Sort()
 
 	return *schema, err
@@ -127,15 +131,19 @@ func inSchema(values map[string]string, schema Schema) map[string]any {
 	yamlMap := make(map[string]any)
 
 	for _, schemaField := range schema {
-		if schemaField.Type == SchemaFieldTypeObject {
-			yamlMap[schemaField.FieldName] = inSchema(values, *schemaField.ObjectSchema)
-		} else if value, ok := values[schemaField.Identifier]; ok {
+		if value, ok := values[schemaField.Identifier]; ok {
 			yamlMap[schemaField.FieldName] = value
-		} else if schemaField.Type == SchemaFieldTypeArray {
+			continue
+		}
+
+		switch schemaField.Type {
+		case SchemaFieldTypeObject:
+			yamlMap[schemaField.FieldName] = inSchema(values, *schemaField.ObjectSchema)
+		case SchemaFieldTypeArray:
 			yamlMap[schemaField.FieldName] = []any{}
-		} else if schemaField.Type == SchemaFieldTypeString {
+		case SchemaFieldTypeString, SchemaFieldTypeDate, SchemaFieldTypeDuration:
 			yamlMap[schemaField.FieldName] = ""
-		} else {
+		default:
 			yamlMap[schemaField.FieldName] = nil
 		}
 	}

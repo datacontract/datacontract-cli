@@ -114,12 +114,14 @@
       }
     },
     "links": {
+      "type": "object",
       "additionalProperties": {
         "type": "string",
         "format": "uri"
       }
     },
     "custom": {
+      "type": "object",
       "additionalProperties": {
         "type": "string"
       }

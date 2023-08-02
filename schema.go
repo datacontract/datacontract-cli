@@ -19,9 +19,12 @@ type SchemaField struct {
 type SchemaFieldType string
 
 const (
-	SchemaFieldTypeObject SchemaFieldType = "object"
-	SchemaFieldTypeArray  SchemaFieldType = "array"
-	SchemaFieldTypeString SchemaFieldType = "string"
+	SchemaFieldTypeObject   SchemaFieldType = "object"
+	SchemaFieldTypeArray    SchemaFieldType = "array"
+	SchemaFieldTypeString   SchemaFieldType = "string"
+	SchemaFieldTypeDate     SchemaFieldType = "date"
+	SchemaFieldTypeDuration SchemaFieldType = "duration"
+	SchemaFiledTypeUnknown  SchemaFieldType = "unknown"
 )
 
 func (schema *Schema) Sort() {
@@ -73,26 +76,32 @@ func GenerateSchema(jsonSchema []byte) (*Schema, error) {
 	return generateSchema(schemaMap, ""), nil
 }
 
-// todo error handling
 func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema {
 	schema := Schema{}
-	requiredFields, _ := jsonSchema["required"].([]any)
-	properties := jsonSchema["properties"].(map[string]any)
+	requiredFields, requiredFieldExists := jsonSchema["required"].([]any)
+	properties, propertiesFieldExists := jsonSchema["properties"].(map[string]any)
+
+	if !propertiesFieldExists {
+		return &schema
+	}
+
+	if !requiredFieldExists {
+		requiredFields = make([]any, 0)
+	}
 
 	for key, value := range properties {
 		field := value.(map[string]any)
-		fieldType := field["type"].(string)
 		identifier := identifierPrefix + "." + key
 
 		schemaField := SchemaField{
-			Type:        SchemaFieldType(fieldType),
+			Type:        schemaFieldType(field),
 			FieldName:   key,
 			Identifier:  identifier[1:],
 			Description: description(field),
 			Required:    contains(requiredFields, key),
 		}
 
-		if SchemaFieldType(fieldType) == SchemaFieldTypeObject {
+		if schemaField.Type == SchemaFieldTypeObject {
 			schemaField.ObjectSchema = generateSchema(field, identifier)
 		}
 
@@ -100,6 +109,19 @@ func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema 
 	}
 
 	return &schema
+}
+
+func schemaFieldType(field map[string]any) SchemaFieldType {
+	fieldType, hasType := field["type"].(string)
+	format, hasFormat := field["format"].(string)
+
+	if !hasType {
+		return SchemaFiledTypeUnknown
+	} else if fieldType == "string" && hasFormat {
+		return SchemaFieldType(format)
+	} else {
+		return SchemaFieldType(fieldType)
+	}
 }
 
 func description(field map[string]any) *string {

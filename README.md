@@ -8,11 +8,11 @@
 ### Standard Commands
 
 - `datacontract init` ❌
-  - Prompts for mandatory/important fields (provider-team, provider-dataproduct, provider-outputport, consumer-team, consumer-dataproduct, purpose)
+  - Prompts for mandatory/important fields (provider-team, provider-dataproduct, provider-outputport, consumer-team, consumer-dataproduct, purpose) ✅
   - Link to dataproduct-outputport-spec
   - Additional: flags
   - Defaults: startDate is today, override possible, status is draft, other fields set to empty, schema: none
-  - Result: `./datacontract.yml`
+  - Result: `./datacontract.yml` ✅
   - Alternative: provide url to data contract, download contract from there
 - `datacontract validate` ❌
   - Validate against JSON Schema (download based on used version)
@@ -57,8 +57,3 @@ Defaults to Data Mesh Manager
   - Edits the contract manually, subset + validation (compare against output port) meta-data-plane
   - Extend quality checks, test actual data against them (my own pipeline) real-world-plane
   - Push to DMM
-
-
-
-
-
