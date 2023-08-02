@@ -16,12 +16,30 @@
         },
         "purpose": {
           "type": "string",
-          "description": "The purpose describes the reason and the context on why the consumer wants to consume the data."
+          "description": "The purpose describes the reason and the context on why the consumer wants to consume the data.",
+          "default": "draft"
+        },
+        "status": {
+          "type": "string"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "nextReassessmentDate": {
+          "type": "string",
+          "format": "date"
         }
       },
       "required": [
         "id",
-        "purpose"
+        "purpose",
+        "status",
+        "startDate"
       ]
     },
     "provider": {
@@ -56,11 +74,33 @@
         "dataProductId"
       ]
     },
+    "terms": {
+      "type": "object",
+      "properties": {
+        "usage": {
+          "type": "string"
+        },
+        "limitations": {
+          "type": "string"
+        },
+        "billing": {
+          "type": "string"
+        },
+        "noticePeriod": {
+          "type": "string",
+          "format": "duration"
+        },
+        "individualAgreements": {
+          "type": "string"
+        }
+      }
+    },
     "schema": {
       "type": "object",
       "properties": {
         "type": {
-          "type": "string"
+          "type": "string",
+          "default": "none"
         },
         "specification": {
           "type": "string"
@@ -70,6 +110,17 @@
     "tags": {
       "type": "array",
       "items": {
+        "type": "string"
+      }
+    },
+    "links": {
+      "additionalProperties": {
+        "type": "string",
+        "format": "uri"
+      }
+    },
+    "custom": {
+      "additionalProperties": {
         "type": "string"
       }
     }

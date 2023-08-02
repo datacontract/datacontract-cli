@@ -43,6 +43,16 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("Validation error for field '%v': %v.", e.Field, e.Reason)
 }
 
+// todo:
+
+func ValidateValue(value string, field SchemaField)  {
+	panic("implement me")
+}
+
+// todo: links / additionalProperties
+// todo: date
+// todo: duration
+
 func ValidateDataContractSpecification(dataContractSpecification string) *ValidationError {
 	emptyStringError :=
 		validateStringNotEmpty(dataContractSpecification, FieldNameDataContractSpecification)
