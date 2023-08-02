@@ -17,19 +17,22 @@ type suggestion struct {
 
 func Init(version, path string) error {
 	schema, err := schema(version)
-
 	if err != nil {
 		return err
 	}
 
 	values := make(map[string]string)
-	values["dataContractSpecification"] = version
 
-	promptRequiredFields(schema, values)
+	fillFieldsBefore(version, values)
 
-	valuesInSchema := inSchema(values, schema)
+	err = promptRequiredFields(schema, values)
+	if err != nil {
+		return err
+	}
 
-	return createDataContractSpecificationFile(valuesInSchema, path)
+	fillFieldsAfter(schema, values)
+
+	return createDataContractSpecificationFile(inSchema(values, schema), path)
 }
 
 func schema(version string) (Schema, error) {
@@ -48,12 +51,32 @@ func schema(version string) (Schema, error) {
 	return *schema, err
 }
 
-func promptRequiredFields(schema Schema, values map[string]string) {
+func fillFieldsBefore(version string, values map[string]string) {
+	values["dataContractSpecification"] = version
+}
+
+func fillFieldsAfter(schema Schema, values map[string]string) {
 	for _, field := range schema.Flattened() {
-		if field.Required && values[field.Identifier] == "" {
-			values[field.Identifier], _ = prompt(fieldMessage(field), fieldSuggestion(field))
+		if field.Default != "" && values[field.Identifier] == "" {
+			values[field.Identifier] = field.Default
 		}
 	}
+}
+
+func promptRequiredFields(schema Schema, values map[string]string) error {
+	var err error
+
+	for _, field := range schema.Flattened() {
+		if field.Required && values[field.Identifier] == "" {
+			values[field.Identifier], err = prompt(fieldMessage(field), fieldSuggestion(field))
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func fieldMessage(field SchemaField) string {

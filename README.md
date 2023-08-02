@@ -11,7 +11,7 @@
   - Prompts for mandatory/important fields (provider-team, provider-dataproduct, provider-outputport, consumer-team, consumer-dataproduct, purpose) ✅
   - Link to dataproduct-outputport-spec
   - Additional: flags
-  - Defaults: startDate is today, override possible, status is draft, other fields set to empty, schema: none
+  - Defaults: startDate is today, override possible, status is draft, other fields set to empty, schema: none ✅
   - Result: `./datacontract.yml` ✅
   - Alternative: provide url to data contract, download contract from there
 - `datacontract validate` ❌
