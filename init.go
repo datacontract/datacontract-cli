@@ -168,6 +168,8 @@ func inSchema(values map[string]string, schema Schema) map[string]any {
 }
 
 func createDataContractSpecificationFile(values map[string]any, path string) error {
+	var err error
+
 	if path == "" {
 		path = "datacontract.yml"
 	}
@@ -182,7 +184,10 @@ func createDataContractSpecificationFile(values map[string]any, path string) err
 	yamlBytes, _ := yaml.Marshal(values)
 	result := string(yamlBytes)
 
-	fmt.Fprint(file, result)
+	_, err = fmt.Fprint(file, result)
+	if err != nil {
+		return err
+	}
 
 	fmt.Println("---")
 	fmt.Println(result)
