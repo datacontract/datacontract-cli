@@ -188,7 +188,7 @@ func createDataContractSpecificationFile(values map[string]any, path string) err
 		path = "datacontract.yml"
 	}
 
-	file, err := createFile(path)
+	file, err := os.Create(path)
 	defer file.Close()
 
 	if err != nil {
@@ -204,14 +204,4 @@ func createDataContractSpecificationFile(values map[string]any, path string) err
 	fmt.Println(result)
 
 	return nil
-}
-
-func createFile(path string) (*os.File, error) {
-	file, error := os.Create(path)
-
-	if error != nil {
-		return nil, error
-	}
-
-	return file, nil
 }

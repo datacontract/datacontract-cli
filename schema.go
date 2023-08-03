@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"math"
 	"sort"
 )
 
@@ -28,27 +29,19 @@ const (
 	SchemaFiledTypeUnknown  SchemaFieldType = "unknown"
 )
 
+var sortingPriority = map[string]uint8{
+	"dataContractSpecification": math.MaxUint8,
+	"info":                      math.MaxUint8 - 1,
+	"info.id":                   math.MaxUint8,
+	"info.purpose":              math.MaxUint8 - 1,
+}
+
 func (schema *Schema) Sort() {
 	sort.Sort(schema)
 
 	for _, schemaField := range *schema {
 		if schemaField.Type == SchemaFieldTypeObject {
 			schemaField.ObjectSchema.Sort()
-		}
-	}
-
-	schema.swapWellKnownFields()
-}
-
-func (schema *Schema) swapWellKnownFields() {
-	for i, schemaField := range *schema {
-		switch schemaField.Identifier {
-		case "dataContractSpecification":
-			schema.Swap(0, i)
-		case "info":
-			schema.Swap(1, i)
-		case "info.id":
-			schema.Swap(0, i)
 		}
 	}
 }
@@ -58,7 +51,14 @@ func (schema *Schema) Len() int {
 }
 
 func (schema *Schema) Less(i, j int) bool {
-	return (*schema)[i].FieldName < (*schema)[j].FieldName
+	fieldLeft := (*schema)[i]
+	fieldRight := (*schema)[j]
+
+	if sortingPriority[fieldLeft.Identifier]+sortingPriority[fieldRight.Identifier] != 0 {
+		return sortingPriority[fieldLeft.Identifier] > sortingPriority[fieldRight.Identifier]
+	} else {
+		return fieldLeft.FieldName < fieldRight.FieldName
+	}
 }
 
 func (schema *Schema) Swap(i, j int) {
