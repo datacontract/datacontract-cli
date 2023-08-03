@@ -16,7 +16,7 @@ type suggestion struct {
 }
 
 func Init(version, path string) error {
-	schema, err := schema(version)
+	schema, err := ReadSchema(version)
 	if err != nil {
 		return err
 	}
@@ -35,30 +35,14 @@ func Init(version, path string) error {
 	return createDataContractSpecificationFile(inSchema(values, schema), path)
 }
 
-func schema(version string) (Schema, error) {
-	var err error
-
-	schemaFileName := fmt.Sprintf("schema-%v.json", version)
-	file, err := os.ReadFile(schemaFileName)
-	schema, err := GenerateSchema(file)
-
-	if err != nil {
-		return nil, err
-	}
-
-	schema.Sort()
-
-	return *schema, err
-}
-
 func fillFieldsBefore(version string, values map[string]string) {
 	values["dataContractSpecification"] = version
 }
 
 func fillFieldsAfter(schema Schema, values map[string]string) {
 	for _, field := range schema.Flattened() {
-		if field.Default != "" && values[field.Identifier] == "" {
-			values[field.Identifier] = field.Default
+		if field.Default != nil && values[field.Identifier] == "" {
+			values[field.Identifier] = *field.Default
 		}
 	}
 }
@@ -123,8 +107,8 @@ func fieldSuggestionByFieldType(field SchemaField) *suggestion {
 }
 
 func fieldSuggestionByDefault(field SchemaField) *suggestion {
-	if field.Default != "" {
-		return &suggestion{field.Default, "default"}
+	if field.Default != nil {
+		return &suggestion{*field.Default, "default"}
 	}
 	return nil
 }

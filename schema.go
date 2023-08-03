@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
+	"os"
 	"sort"
 )
 
@@ -15,7 +17,7 @@ type SchemaField struct {
 	Description  *string
 	Required     bool
 	ObjectSchema *Schema
-	Default      string
+	Default      *string
 }
 
 type SchemaFieldType string
@@ -54,8 +56,11 @@ func (schema *Schema) Less(i, j int) bool {
 	fieldLeft := (*schema)[i]
 	fieldRight := (*schema)[j]
 
-	if sortingPriority[fieldLeft.Identifier]+sortingPriority[fieldRight.Identifier] != 0 {
-		return sortingPriority[fieldLeft.Identifier] > sortingPriority[fieldRight.Identifier]
+	priorityLeft := sortingPriority[fieldLeft.Identifier]
+	priorityRight := sortingPriority[fieldRight.Identifier]
+
+	if priorityLeft+priorityRight != 0 {
+		return priorityLeft > priorityRight
 	} else {
 		return fieldLeft.FieldName < fieldRight.FieldName
 	}
@@ -79,7 +84,23 @@ func (schema *Schema) Flattened() []SchemaField {
 	return result
 }
 
-func GenerateSchema(jsonSchema []byte) (*Schema, error) {
+func ReadSchema(version string) (Schema, error) {
+	var err error
+
+	schemaFileName := fmt.Sprintf("schema-%v.json", version)
+	file, err := os.ReadFile(schemaFileName)
+	schema, err := generateSchema(file)
+
+	if err != nil {
+		return nil, err
+	}
+
+	schema.Sort()
+
+	return *schema, err
+}
+
+func generateSchema(jsonSchema []byte) (*Schema, error) {
 	var schemaMap map[string]any
 
 	err := json.Unmarshal(jsonSchema, &schemaMap)
@@ -88,51 +109,78 @@ func GenerateSchema(jsonSchema []byte) (*Schema, error) {
 		return nil, err
 	}
 
-	return generateSchema(schemaMap, ""), nil
+	return generateSchemaRecursive(schemaMap, ""), nil
 }
 
-func generateSchema(jsonSchema map[string]any, identifierPrefix string) *Schema {
+func generateSchemaRecursive(jsonSchema map[string]any, identifierPrefix string) *Schema {
 	schema := Schema{}
-	requiredFields, requiredFieldExists := jsonSchema["required"].([]any)
-	properties, propertiesFieldExists := jsonSchema["properties"].(map[string]any)
+	requiredFields := requiredFields(jsonSchema)
 
-	if !propertiesFieldExists {
-		return &schema
-	}
+	if properties, exists := jsonSchema["properties"].(map[string]any); exists {
 
-	if !requiredFieldExists {
-		requiredFields = make([]any, 0)
-	}
+		for key, value := range properties {
+			jsonSchemaProperty := value.(map[string]any)
+			identifier := identifierPrefix + "." + key
+			isRequired := contains(requiredFields, key)
+			schemaField := generateSchemaField(jsonSchemaProperty, key, identifier, isRequired)
 
-	for key, value := range properties {
-		field := value.(map[string]any)
-		identifier := identifierPrefix + "." + key
+			if schemaField.Type == SchemaFieldTypeObject {
+				schemaField.ObjectSchema = generateSchemaRecursive(jsonSchemaProperty, identifier)
+			}
 
-		schemaField := SchemaField{
-			Type:        schemaFieldType(field),
-			FieldName:   key,
-			Identifier:  identifier[1:],
-			Description: description(field),
-			Required:    contains(requiredFields, key),
+			schema = append(schema, schemaField)
 		}
 
-		if defaultValue, ok := field["default"].(string); ok {
-			schemaField.Default = defaultValue
-		}
-
-		if schemaField.Type == SchemaFieldTypeObject {
-			schemaField.ObjectSchema = generateSchema(field, identifier)
-		}
-
-		schema = append(schema, schemaField)
 	}
 
 	return &schema
 }
 
-func schemaFieldType(field map[string]any) SchemaFieldType {
-	fieldType, hasType := field["type"].(string)
-	format, hasFormat := field["format"].(string)
+func requiredFields(jsonSchema map[string]any) []any {
+	requiredFields, requiredFieldExists := jsonSchema["required"].([]any)
+	if !requiredFieldExists {
+		requiredFields = make([]any, 0)
+	}
+	return requiredFields
+}
+
+func contains(slice []any, key string) bool {
+	for _, item := range slice {
+		if item == key {
+			return true
+		}
+	}
+
+	return false
+}
+
+func generateSchemaField(
+	jsonSchemaProperty map[string]any,
+	key string,
+	identifier string,
+	isRequired bool,
+) SchemaField {
+	return SchemaField{
+		Type:        schemaFieldType(jsonSchemaProperty),
+		FieldName:   key,
+		Identifier:  identifier[1:],
+		Description: description(jsonSchemaProperty),
+		Required:    isRequired,
+		Default:     defaultValue(jsonSchemaProperty),
+	}
+}
+
+func defaultValue(jsonSchemaProperty map[string]any) *string {
+	if value, ok := jsonSchemaProperty["default"].(string); ok {
+		return &value
+	} else {
+		return nil
+	}
+}
+
+func schemaFieldType(jsonSchemaProperty map[string]any) SchemaFieldType {
+	fieldType, hasType := jsonSchemaProperty["type"].(string)
+	format, hasFormat := jsonSchemaProperty["format"].(string)
 
 	if !hasType {
 		return SchemaFiledTypeUnknown
@@ -143,19 +191,10 @@ func schemaFieldType(field map[string]any) SchemaFieldType {
 	}
 }
 
-func description(field map[string]any) *string {
-	if description, ok := field["description"].(string); ok {
+func description(jsonSchemaProperty map[string]any) *string {
+	if description, ok := jsonSchemaProperty["description"].(string); ok {
 		return &description
 	} else {
 		return nil
 	}
-}
-
-func contains(slice []any, value any) bool {
-	for _, item := range slice {
-		if item == value {
-			return true
-		}
-	}
-	return false
 }
