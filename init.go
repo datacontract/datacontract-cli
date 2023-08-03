@@ -15,7 +15,7 @@ type suggestion struct {
 	Description string
 }
 
-func Init(version, path string) error {
+func Init(version, path string) (err error) {
 	schema, err := ReadSchema(version)
 	if err != nil {
 		return err
@@ -23,23 +23,23 @@ func Init(version, path string) error {
 
 	values := make(map[string]string)
 
-	fillFieldsBefore(version, values)
+	fillFieldsBeforePrompts(version, values)
 
 	err = promptRequiredFields(schema, values)
 	if err != nil {
 		return err
 	}
 
-	fillFieldsAfter(schema, values)
+	fillFieldsAfterPrompts(schema, values)
 
 	return createDataContractSpecificationFile(inSchema(values, schema), path)
 }
 
-func fillFieldsBefore(version string, values map[string]string) {
+func fillFieldsBeforePrompts(version string, values map[string]string) {
 	values["dataContractSpecification"] = version
 }
 
-func fillFieldsAfter(schema Schema, values map[string]string) {
+func fillFieldsAfterPrompts(schema Schema, values map[string]string) {
 	for _, field := range schema.Flattened() {
 		if field.Default != nil && values[field.Identifier] == "" {
 			values[field.Identifier] = *field.Default
@@ -47,9 +47,7 @@ func fillFieldsAfter(schema Schema, values map[string]string) {
 	}
 }
 
-func promptRequiredFields(schema Schema, values map[string]string) error {
-	var err error
-
+func promptRequiredFields(schema Schema, values map[string]string) (err error) {
 	for _, field := range schema.Flattened() {
 		if field.Required && values[field.Identifier] == "" {
 			values[field.Identifier], err = prompt(fieldMessage(field), fieldSuggestion(field))
@@ -113,16 +111,14 @@ func fieldSuggestionByDefault(field SchemaField) *suggestion {
 	return nil
 }
 
-func prompt(message string, suggestion *suggestion) (string, error) {
+func prompt(message string, suggestion *suggestion) (input string, err error) {
 	printMessages(message, suggestion)
-	input, err := readUserInput()
+	input, err = readUserInput()
 
-	if err != nil {
-		return "", err
-	} else if suggestion != nil && input == "" {
-		return suggestion.Value, nil
+	if suggestion != nil && input == "" {
+		return suggestion.Value, err
 	} else {
-		return input, nil
+		return input, err
 	}
 }
 
@@ -133,14 +129,11 @@ func printMessages(message string, suggestion *suggestion) {
 	}
 }
 
-func readUserInput() (string, error) {
+func readUserInput() (input string, err error) {
 	reader := bufio.NewReader(os.Stdin)
+	input, err = reader.ReadString('\n')
 
-	input, error := reader.ReadString('\n')
-	if error != nil {
-		return "", error
-	}
-	return strings.TrimSuffix(input, "\n"), nil
+	return strings.TrimSuffix(input, "\n"), err
 }
 
 func inSchema(values map[string]string, schema Schema) map[string]any {
@@ -167,30 +160,25 @@ func inSchema(values map[string]string, schema Schema) map[string]any {
 	return yamlMap
 }
 
-func createDataContractSpecificationFile(values map[string]any, path string) error {
-	var err error
-
+func createDataContractSpecificationFile(values map[string]any, path string) (err error) {
 	if path == "" {
 		path = "datacontract.yml"
 	}
 
 	file, err := os.Create(path)
-	defer file.Close()
+	defer func() {
+		if e := file.Close(); e != nil {
+			err = e
+		}
+	}()
 
-	if err != nil {
-		return err
-	}
-
-	yamlBytes, _ := yaml.Marshal(values)
+	yamlBytes, err := yaml.Marshal(values)
 	result := string(yamlBytes)
 
 	_, err = fmt.Fprint(file, result)
-	if err != nil {
-		return err
-	}
 
 	fmt.Println("---")
 	fmt.Println(result)
 
-	return nil
+	return err
 }
