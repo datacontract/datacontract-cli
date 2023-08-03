@@ -42,7 +42,7 @@ func (schema *Schema) Sort() {
 	sort.Sort(schema)
 
 	for _, schemaField := range *schema {
-		if schemaField.Type == SchemaFieldTypeObject {
+		if schemaField.ObjectSchema != nil {
 			schemaField.ObjectSchema.Sort()
 		}
 	}
@@ -76,7 +76,7 @@ func (schema *Schema) Flattened() []SchemaField {
 	for _, field := range *schema {
 		if field.Type != SchemaFieldTypeObject {
 			result = append(result, field)
-		} else {
+		} else if field.ObjectSchema != nil {
 			result = append(result, field.ObjectSchema.Flattened()...)
 		}
 	}
@@ -84,32 +84,24 @@ func (schema *Schema) Flattened() []SchemaField {
 	return result
 }
 
-func ReadSchema(version string) (Schema, error) {
-	var err error
-
+func ReadSchema(version string) (schema *Schema, err error) {
 	schemaFileName := fmt.Sprintf("schema-%v.json", version)
-	file, err := os.ReadFile(schemaFileName)
-	schema, err := generateSchema(file)
+	jsonSchema, err := os.ReadFile(schemaFileName)
+	schema, err = generateSchema(jsonSchema)
 
-	if err != nil {
-		return nil, err
+	if schema != nil {
+		schema.Sort()
 	}
 
-	schema.Sort()
-
-	return *schema, err
+	return schema, err
 }
 
-func generateSchema(jsonSchema []byte) (*Schema, error) {
-	var schemaMap map[string]any
+func generateSchema(jsonSchema []byte) (schema *Schema, err error) {
+	schemaMap := make(map[string]any)
+	err = json.Unmarshal(jsonSchema, &schemaMap)
+	schema = generateSchemaRecursive(schemaMap, "")
 
-	err := json.Unmarshal(jsonSchema, &schemaMap)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return generateSchemaRecursive(schemaMap, ""), nil
+	return schema, err
 }
 
 func generateSchemaRecursive(jsonSchema map[string]any, identifierPrefix string) *Schema {
@@ -137,16 +129,16 @@ func generateSchemaRecursive(jsonSchema map[string]any, identifierPrefix string)
 }
 
 func requiredFields(jsonSchema map[string]any) []any {
-	requiredFields, requiredFieldExists := jsonSchema["required"].([]any)
+	fields, requiredFieldExists := jsonSchema["required"].([]any)
 	if !requiredFieldExists {
-		requiredFields = make([]any, 0)
+		fields = make([]any, 0)
 	}
-	return requiredFields
+	return fields
 }
 
-func contains(slice []any, key string) bool {
+func contains(slice []any, value string) bool {
 	for _, item := range slice {
-		if item == key {
+		if item == value {
 			return true
 		}
 	}

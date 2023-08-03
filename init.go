@@ -25,14 +25,14 @@ func Init(version, path string) (err error) {
 
 	fillFieldsBeforePrompts(version, values)
 
-	err = promptRequiredFields(schema, values)
+	err = promptRequiredFields(*schema, values)
 	if err != nil {
 		return err
 	}
 
-	fillFieldsAfterPrompts(schema, values)
+	fillFieldsAfterPrompts(*schema, values)
 
-	return createDataContractSpecificationFile(inSchema(values, schema), path)
+	return createDataContractSpecificationFile(inSchema(values, *schema), path)
 }
 
 func fillFieldsBeforePrompts(version string, values map[string]string) {
