@@ -113,7 +113,7 @@ func generateSchemaRecursive(jsonSchema map[string]any, identifierPrefix string)
 		for key, value := range properties {
 			jsonSchemaProperty := value.(map[string]any)
 			identifier := identifierPrefix + "." + key
-			isRequired := contains(requiredFields, key)
+			isRequired := containsAny(requiredFields, key)
 			schemaField := generateSchemaField(jsonSchemaProperty, key, identifier, isRequired)
 
 			if schemaField.Type == SchemaFieldTypeObject {
@@ -136,7 +136,7 @@ func requiredFields(jsonSchema map[string]any) []any {
 	return fields
 }
 
-func contains(slice []any, value string) bool {
+func containsAny(slice []any, value any) bool {
 	for _, item := range slice {
 		if item == value {
 			return true
