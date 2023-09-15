@@ -21,8 +21,21 @@ func Init() error {
 		return err
 	}
 
-	os.WriteFile(targetFileName, body, os.ModePerm)
+	err = writeFile(body)
+	if err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func writeFile(body []byte) error {
+	err := os.WriteFile(targetFileName, body, os.ModePerm)
+
+	if err != nil {
+		return fmt.Errorf("failed to write %v: %w", targetFileName, err)
+	}
+	
 	return nil
 }
 
