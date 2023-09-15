@@ -7,6 +7,7 @@
 
 ### Standard Commands
 - ✅ datacontract init # creates a datacontract.yaml with minimal required fields, and all options commented out, loaded from datacontract.com/datacontract.init.yaml
+  - ❌ ask before overwrite file
   - ❌ name file
   - ❌ ask for basic values:
   ```
