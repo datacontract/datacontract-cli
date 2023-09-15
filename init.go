@@ -7,11 +7,8 @@ import (
 	"os"
 )
 
-const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
-const targetFileName = "datacontract.yml"
-
-func Init() error {
-	response, err := fetchInitTemplate()
+func Init(fileName string, initTemplateUrl string) error {
+	response, err := fetchInitTemplate(initTemplateUrl)
 	if err != nil {
 		return err
 	}
@@ -21,7 +18,7 @@ func Init() error {
 		return err
 	}
 
-	err = writeFile(body)
+	err = writeFile(fileName, body)
 	if err != nil {
 		return err
 	}
@@ -29,13 +26,13 @@ func Init() error {
 	return nil
 }
 
-func writeFile(body []byte) error {
-	err := os.WriteFile(targetFileName, body, os.ModePerm)
+func writeFile(name string, body []byte) error {
+	err := os.WriteFile(name, body, os.ModePerm)
 
 	if err != nil {
-		return fmt.Errorf("failed to write %v: %w", targetFileName, err)
+		return fmt.Errorf("failed to write %v: %w", dataContractFileName, err)
 	}
-	
+
 	return nil
 }
 
@@ -50,8 +47,8 @@ func readInitTemplate(response *http.Response, err error) ([]byte, error) {
 	return body, nil
 }
 
-func fetchInitTemplate() (*http.Response, error) {
-	response, err := http.Get(initTemplateUrl)
+func fetchInitTemplate(url string) (*http.Response, error) {
+	response, err := http.Get(url)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch init template: %w", err)
