@@ -9,7 +9,7 @@
 
 - `datacontract init` ❌
   - Prompts for mandatory/important fields (provider-team, provider-dataproduct, provider-outputport, consumer-team, consumer-dataproduct, purpose) ✅
-  - Link to dataproduct-outputport-spec
+  - Link to dataproduct-outputport-spec ✅
   - Additional: flags
   - Defaults: startDate is today, override possible, status is draft, other fields set to empty, schema: none ✅
   - Result: `./datacontract.yml` ✅

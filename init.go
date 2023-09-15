@@ -318,8 +318,8 @@ func refactor_me(outputPortSchema map[string]any) (map[string]any, error) {
 
 	allFieldNames := strings.Join(columns[fieldName], ",")
 
-	input, err := prompt("Enter comma-seperated list of needed fields from output port. Enter '-' if no filed is needed.",
-		&suggestion{allFieldNames, "all"})
+	message := fmt.Sprintf(`Insert comma-seperated list of needed fields from "%v". Use '-' if no field is needed.`, fieldName)
+	input, err := prompt(message, &suggestion{allFieldNames, "all"})
 
 	result := make(map[string]any)
 
