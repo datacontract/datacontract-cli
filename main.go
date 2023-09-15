@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const dataContractFileName = "datacontract.yml"
+const dataContractFileName = "datacontract.yaml"
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
 
@@ -17,14 +17,14 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:  "init",
-				Usage: "create the data contract template file",
+				Usage: "create a new data contract",
 				Action: func(*cli.Context) error {
 					return Init(dataContractFileName, initTemplateUrl)
 				},
 			},
 			{
 				Name:  "open",
-				Usage: "upload and open the datacontract in Data Contract Studio",
+				Usage: "open the data contract in Data Contract Studio",
 				Action: func(*cli.Context) error {
 					return Open(dataContractFileName, dataContractStudioUrl)
 				},
