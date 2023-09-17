@@ -12,8 +12,12 @@ const dataContractStudioUrl = "https://studio.datacontract.com/s"
 
 func main() {
 	app := &cli.App{
-		Name:  "datacontract",
-		Usage: "Manage your data contracts 📜",
+		Name:    "datacontract",
+		Usage:   "Manage your data contracts 📜",
+		Version: "1.0.0",
+		Authors: []*cli.Author{
+			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
+		},
 		Commands: []*cli.Command{
 			{
 				Name:  "init",
