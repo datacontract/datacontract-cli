@@ -1,0 +1,276 @@
+dataContractSpecification: 0.9.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+#  description:
+#  owner:
+#  dataProduct:
+#  outputPort:
+#  contact:
+#    name:
+#    url:
+#    email:
+
+
+### servers
+
+#servers:
+#  my-stage:
+#    type: bigquery
+#    project:
+#    dataset:
+
+#servers:
+#  my-stage:
+#    type: s3
+#    location: s3://
+
+#servers:
+#  my-stage:
+#    type: redshift
+#    account:
+#    database:
+#    schema:
+
+#servers:
+#  my-stage:
+#    type: snowflake
+#    account:
+#    database:
+#    schema:
+
+#servers:
+#  my-stage:
+#    type: databricks
+#    share:
+
+#servers:
+#  my-stage:
+#    type: kafka
+#    host:
+#    topic:
+
+
+### terms
+
+#terms:
+#  usage:
+#  limitations:
+#  billing:
+#  noticePeriod:
+
+
+### schema
+
+#schema:
+#  type: dbt
+#  specification:
+#    version:
+#    models:
+#      - name:
+#        description:
+#        columns:
+#          - name:
+#            type:
+#            description:
+#            tests:
+
+#schema:
+#  type: dbt
+#  specification: |-
+#    version:
+#    models:
+#      - name:
+#        description:
+#        columns:
+#          - name:
+#            type:
+#            description:
+#            tests:
+
+#schema:
+#  type: dbt
+#  specification: "$ref: model.yaml"
+
+#schema:
+#  type: bigquery
+#  specification: |-
+#  {
+#    "tableReference": {
+#      "projectId": "my-project",
+#      "datasetId": "my_dataset",
+#      "tableId": "my_table"
+#    },
+#    "description": "This is a description",
+#    "type": "TABLE",
+#    "schema": {
+#      "fields": [
+#        {
+#          "name": "name",
+#          "type": "STRING",
+#          "mode": "NULLABLE",
+#          "description": "This is a description"
+#        }
+#      ]
+#    }
+#  }
+
+#schema:
+#  type: json-schema
+#  specification:
+#    my-table:
+#      description:
+#      type: object
+#      properties:
+#        id:
+#          type: string
+#          description:
+
+#schema:
+#  type: json-schema
+#  specification: |-
+#    {
+#      "$schema": "http://json-schema.org/draft-07/schema#",
+#      "type": "object",
+#      "properties": {
+#        "my_table": {
+#          "type": "object",
+#          "description": "",
+#          "properties": {
+#            "id": {
+#              "type": "string",
+#              "description": ""
+#            },
+#          "required": ["id"]
+#        }
+#      },
+#      "required": ["my-table"]
+#    }
+
+#schema:
+#  type: sql-ddl
+#  specification: |-
+#    CREATE TABLE my_table (
+#      id TEXT PRIMARY KEY
+#    );
+
+#schema:
+#  type: avro
+#  specification:
+#    User:
+#      type: record
+#      name: MyTable
+#      fields:
+#        - name: id
+#          type: string
+
+#schema:
+#  type: avro
+#  specification: |-
+#    {
+#      "type": "record",
+#      "name": "MyTable",
+#      "fields": [
+#        {
+#          "name": "name",
+#          "type": "string"
+#        }
+#      ]
+#    }
+
+#schema:
+#  type: protobuf
+#  specification: |-
+#    message MyTable {
+#      string id = 1;
+#    }
+
+#schema:
+#  type: custom
+#  specification:
+
+
+### examples
+
+#examples:
+#  - type: csv
+#    model: my_table
+#    data: |-
+#      id,timestamp,amount
+#      "1001","2023-09-09T08:30:00Z",2500
+#      "1002","2023-09-08T15:45:00Z",1800
+#
+#examples:
+#  - type: csv
+#    model: my_table
+#    data: "$ref: data.csv"
+
+#examples:
+#  - type: json
+#    model: my_table
+#    data: |-
+#      [
+#        {
+#          "id": "1001",
+#          "timestamp": "2023-09-09T08:30:00Z",
+#          "amount": 2500
+#        },
+#        {
+#          "id": "1002",
+#          "timestamp": "2023-09-08T15:45:00Z",
+#          "amount": 1800
+#        }
+#      ]
+
+#examples:
+#  - type: yaml
+#    model: my_table
+#    data:
+#      - id: 1001
+#        timestamp: 2023-09-09T08:30:00Z
+#        amount: 2500
+#      - id: 1002
+#        timestamp: 2023-09-08T15:45:00Z
+#        amount: 1800
+
+#examples:
+#  - type: custom
+#    model: my_table
+#    data: |-
+
+
+### quality
+
+#quality:
+#  type: SodaCL
+#  specification:
+#    checks for my_table:
+#      - duplicate_count(order_id) = 0
+
+#quality:
+#  type: SodaCL
+#  specification:
+#    checks for my_table: |-
+#      - duplicate_count(id) = 0
+
+#quality:
+#  type: SodaCL
+#  specification:
+#    checks for my_table: "$ref: checks.yaml"
+
+#quality:
+#  type: montecarlo
+#  specification: |-
+#    montecarlo:
+#      field_health:
+#        - table: my_project:my_dataset.my_table
+#          fields:
+#            - id
+#            - timestamp
+#            - amount
+#          timestamp_field: timestamp
+
+#quality:
+#  type: custom
+#  specification: |-

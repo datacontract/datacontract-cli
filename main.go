@@ -27,6 +27,13 @@ func main() {
 				},
 			},
 			{
+				Name:  "validate",
+				Usage: "validates the data contracts schema",
+				Action: func(*cli.Context) error {
+					return Validate(dataContractFileName)
+				},
+			},
+			{
 				Name:  "open",
 				Usage: "open the data contract in Data Contract Studio",
 				Action: func(*cli.Context) error {
