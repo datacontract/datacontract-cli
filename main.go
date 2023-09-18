@@ -71,6 +71,9 @@ func main() {
 					},
 				},
 				Action: func(ctx *cli.Context) error {
+					boolOptionNotImplemented(ctx, "validate-schema-object")
+					boolOptionNotImplemented(ctx, "validate-quality-object")
+					
 					return Validate(ctx.String("file"), ctx.String("schema"))
 				},
 			},
