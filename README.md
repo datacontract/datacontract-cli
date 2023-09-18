@@ -11,10 +11,11 @@ USAGE:
    datacontract init [command options] [arguments...]
 
 OPTIONS:
-   --file value   file name for the data contract (default: "datacontract.yaml")
-   --from value   url of a template or data contract (default: "https://datacontract.com/datacontract.init.yaml")
-   --interactive  EXPERIMENTAL - prompt for required values (default: false)
-   --help, -h     show help
+   --file value      file name for the data contract (default: "datacontract.yaml")
+   --from value      url of a template or data contract (default: "https://datacontract.com/datacontract.init.yaml")
+   --overwrite-file  replace the existing datacontract.yaml (default: false)
+   --interactive     EXPERIMENTAL - prompt for required values (default: false)
+   --help, -h        show help
 ```
 
 ### validate

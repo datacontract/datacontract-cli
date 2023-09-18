@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func Init(fileName string, initTemplateUrl string) error {
+func Init(fileName string, initTemplateUrl string, overwriteFile bool) error {
 	response, err := fetchInitTemplate(initTemplateUrl)
 	if err != nil {
 		return err
@@ -18,7 +18,7 @@ func Init(fileName string, initTemplateUrl string) error {
 		return err
 	}
 
-	err = writeFile(fileName, body)
+	err = writeFile(fileName, body, overwriteFile)
 	if err != nil {
 		return err
 	}
@@ -26,8 +26,8 @@ func Init(fileName string, initTemplateUrl string) error {
 	return nil
 }
 
-func writeFile(name string, body []byte) error {
-	if _, err := os.Stat(name); err == nil {
+func writeFile(name string, body []byte, overwriteFile bool) error {
+	if _, err := os.Stat(name); !overwriteFile && err == nil {
 		return fmt.Errorf("file already exists")
 	}
 

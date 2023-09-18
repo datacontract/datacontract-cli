@@ -37,6 +37,11 @@ func main() {
 						Usage: "url of a template or data contract",
 					},
 					&cli.BoolFlag{
+						Name: "overwrite-file",
+						Value: false,
+						Usage: "replace the existing " + dataContractFileName,
+					},
+					&cli.BoolFlag{
 						Name: "interactive",
 						Value: false,
 						Usage: "EXPERIMENTAL - prompt for required values",
@@ -45,7 +50,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					boolOptionNotImplemented(ctx, "interactive")
 
-					return Init(ctx.String("file"), ctx.String("from"))
+					return Init(ctx.String("file"), ctx.String("from"), ctx.Bool("overwrite-file"))
 				},
 			},
 			{
