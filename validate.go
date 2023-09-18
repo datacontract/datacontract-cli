@@ -11,6 +11,8 @@ import (
 	"os"
 )
 
+type dataContract = map[string]interface{}
+
 func Validate(dataContractFileName string, schemaUrl string) error {
 	schemaResponse, err := fetchSchema(schemaUrl)
 	schemaData, err := readSchema(schemaResponse)
@@ -21,17 +23,30 @@ func Validate(dataContractFileName string, schemaUrl string) error {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	res := schema.Validate(context.Background(), dataContractObject)
+	return validate(schema, dataContractObject)
+}
 
-	if res.IsValid() {
-		fmt.Println("Data contract is valid!")
+func validate(schema *jsonschema.Schema, contract dataContract) error {
+	validationState := schema.Validate(context.Background(), contract)
+	printValidationState(validationState)
+
+	if !validationState.IsValid() {
+		return fmt.Errorf("%v error(s) found in data contract", len(*validationState.Errs))
+	} else {
+		return nil
+	}
+}
+
+func printValidationState(validationState *jsonschema.ValidationState) {
+	if validationState.IsValid() {
+		fmt.Println("🟢 data contract is valid!")
+	} else {
+		fmt.Println("🔴 data contract is invalid, found the following errors:")
 	}
 
-	for _, keyError := range *res.Errs {
-		fmt.Println(fmt.Sprintf("%v: %v", keyError.PropertyPath, keyError.Message))
+	for i, keyError := range *validationState.Errs {
+		fmt.Println(fmt.Sprintf("%v) %v", i+1, keyError.Message))
 	}
-
-	return nil
 }
 
 func readDataContract(dataContractFileName string) (map[string]interface{}, error) {
