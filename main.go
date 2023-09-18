@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -30,36 +31,43 @@ func main() {
 				Name:  "init",
 				Usage: "create a new data contract",
 				Flags: []cli.Flag {
+					fileNameFlag,
 					&cli.StringFlag{
 						Name: "from",
 						Value: initTemplateUrl,
-						Usage: "url of the init template",
+						Usage: "url of a template or data contract",
 					},
-					fileNameFlag,
+					&cli.BoolFlag{
+						Name: "interactive",
+						Value: false,
+						Usage: "EXPERIMENTAL - prompt for required values",
+					},
 				},
 				Action: func(ctx *cli.Context) error {
-					return Init(ctx.String("file"), ctx.String("url"))
+					boolOptionNotImplemented(ctx, "interactive")
+
+					return Init(ctx.String("file"), ctx.String("from"))
 				},
 			},
 			{
 				Name:  "validate",
 				Usage: "validates the data contracts schema",
-				Flags: []cli.Flag {
+				Flags: []cli.Flag{
+					fileNameFlag,
 					&cli.StringFlag{
 						Name:  "schema",
 						Value: schemaUrl,
 						Usage: "url of Data Contract Specification json schema",
 					},
-					fileNameFlag,
 				},
 				Action: func(ctx *cli.Context) error {
-					return Validate(ctx.String("file"), ctx.String("file"))
+					return Validate(ctx.String("file"), ctx.String("schema"))
 				},
 			},
 			{
 				Name:  "open",
 				Usage: "save and open the data contract in Data Contract Studio",
-				Flags: []cli.Flag {fileNameFlag},
+				Flags: []cli.Flag{fileNameFlag},
 				Action: func(ctx *cli.Context) error {
 					return Open(ctx.String("file"), dataContractStudioUrl)
 				},
@@ -69,5 +77,11 @@ func main() {
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func boolOptionNotImplemented(ctx *cli.Context, name string) {
+	if ctx.Bool(name) {
+		fmt.Printf("Option `%v` not implemented yet!\n", name)
 	}
 }
