@@ -31,7 +31,7 @@ func main() {
 				Usage: "create a new data contract",
 				Flags: []cli.Flag {
 					&cli.StringFlag{
-						Name: "template",
+						Name: "from",
 						Value: initTemplateUrl,
 						Usage: "url of the init template",
 					},
@@ -46,7 +46,7 @@ func main() {
 				Usage: "validates the data contracts schema",
 				Flags: []cli.Flag {
 					&cli.StringFlag{
-						Name: "schema",
+						Name:  "schema",
 						Value: schemaUrl,
 						Usage: "url of Data Contract Specification json schema",
 					},
@@ -58,7 +58,7 @@ func main() {
 			},
 			{
 				Name:  "open",
-				Usage: "open the data contract in Data Contract Studio",
+				Usage: "save and open the data contract in Data Contract Studio",
 				Flags: []cli.Flag {fileNameFlag},
 				Action: func(ctx *cli.Context) error {
 					return Open(ctx.String("file"), dataContractStudioUrl)
