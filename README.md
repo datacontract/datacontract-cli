@@ -2,24 +2,64 @@
 
 ## Commands
 
-✅ = implemented
-❌ = not implemented
+### init 
+```
+NAME:
+   datacontract init - create a new data contract
 
-### Standard Commands
-- ✅ datacontract init # creates a datacontract.yaml with minimal required fields, and all options commented out, loaded from datacontract.com/datacontract.init.yaml
-  - ✅ never overwrite 
-  - ✅ name file
-  - ❌ ask for basic values:
-  ```
-  dataContractSpecification: 0.9.0
-  id: my-data-contract-id
-  info:
-    title: My Data Contract
-    version: 0.0.1
-  ```
-- ✅ datacontract open # uploads datacontract.yaml to studio via HTTP POST and shows the view section in the browser
+USAGE:
+   datacontract init [command options] [arguments...]
 
-- ✅ datacontract validate # checks the validity of the datacontract.yaml using JSON Schema, loaded from datacontract.com
-  - ❌ validate schema objects
+OPTIONS:
+   --file value   file name for the data contract (default: "datacontract.yaml")
+   --from value   url of a template or data contract (default: "https://datacontract.com/datacontract.init.yaml")
+   --interactive  EXPERIMENTAL - prompt for required values (default: false)
+   --help, -h     show help
+```
 
-- help
+### validate
+```
+NAME:
+   datacontract validate - validates the data contracts schema
+
+USAGE:
+   datacontract validate [command options] [arguments...]
+
+OPTIONS:
+   --file value               file name for the data contract (default: "datacontract.yaml")
+   --schema value             url of Data Contract Specification json schema (default: "https://datacontract.com/datacontract.schema.json")
+   --validate-schema-object   EXPERIMENTAL - type specific validation of the schema object (default: false)
+   --validate-quality-object  EXPERIMENTAL - type specific validation of the quality object (default: false)
+   --help, -h                 show help
+```
+
+### open
+```
+NAME:
+   datacontract open - save and open the data contract in Data Contract Studio
+
+USAGE:
+   datacontract open [command options] [arguments...]
+
+OPTIONS:
+   --file value  file name for the data contract (default: "datacontract.yaml")
+   --help, -h    show help
+```
+
+
+### check-compatibility
+```
+NAME:
+   datacontract check-compatibility - EXPERIMENTAL - determine whether changes are backwards compatible
+
+USAGE:
+   datacontract check-compatibility [command options] [arguments...]
+
+OPTIONS:
+   --file value  file name for the data contract (default: "datacontract.yaml")
+   --with value  url of the other version of the data contract
+   --help, -h    show help
+```
+
+### help
+show help
