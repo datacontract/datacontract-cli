@@ -23,6 +23,8 @@ func Init(fileName string, initTemplateUrl string, overwriteFile bool) error {
 		return err
 	}
 
+	fmt.Printf("📄 data contract written to %v\n", fileName)
+
 	return nil
 }
 
