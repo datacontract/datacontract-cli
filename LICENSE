@@ -19,3 +19,30 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+Open Source Licenses for Dependencies
+
+This project utilizes the following open-source libraries, each of which has its own respective license:
+
+1. github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
+   License: MIT License
+   License URL: https://github.com/pkg/browser/blob/main/LICENSE
+
+2. github.com/qri-io/jsonschema v0.2.1
+   License: MIT License
+   License URL: https://github.com/qri-io/jsonschema/blob/main/LICENSE
+
+3. github.com/urfave/cli/v2 v2.25.7
+   License: MIT License
+   License URL: https://github.com/urfave/cli/blob/v2.25.7/LICENSE
+
+4. gopkg.in/yaml.v3 v3.0.1
+   License: Apache License 2.0
+   License URL: https://gopkg.in/yaml.v3/blob/v3.0.1/LICENSE
+
+Please review and comply with the terms and conditions of each respective license when using this software.
+
+The complete text of each license can be found in the provided License URLs. Ensure that you adhere to the terms and obligations outlined in these licenses when using the dependencies in your project.
+
+It is your responsibility to understand and comply with the licensing terms of these dependencies as specified by the respective licenses.
