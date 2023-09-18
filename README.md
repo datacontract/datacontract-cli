@@ -47,7 +47,7 @@ OPTIONS:
 ```
 
 
-### EXPERIMENTAL check-compatibility
+### check-compatibility (EXPERIMENTAL)
 ```
 NAME:
    datacontract check-compatibility - EXPERIMENTAL - determine whether changes are backwards compatible
