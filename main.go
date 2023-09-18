@@ -22,7 +22,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "1.0.0",
+		Version: "0.1g.0",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -73,7 +73,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					boolOptionNotImplemented(ctx, "validate-schema-object")
 					boolOptionNotImplemented(ctx, "validate-quality-object")
-					
+
 					return Validate(ctx.String("file"), ctx.String("schema"))
 				},
 			},
