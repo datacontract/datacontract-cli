@@ -12,9 +12,15 @@ const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
 
 func main() {
+	fileNameFlag := &cli.StringFlag{
+		Name:  "file",
+		Value: dataContractFileName,
+		Usage: "file name for the data contract",
+	}
+
 	app := &cli.App{
 		Name:    "datacontract",
-		Usage:   "Manage your data contracts 📜",
+		Usage:   "Manage your data contracts 📄",
 		Version: "1.0.0",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
@@ -29,23 +35,33 @@ func main() {
 						Value: initTemplateUrl,
 						Usage: "url of the init template",
 					},
+					fileNameFlag,
 				},
 				Action: func(ctx *cli.Context) error {
-					return Init(dataContractFileName, ctx.String("url"))
+					return Init(ctx.String("file"), ctx.String("url"))
 				},
 			},
 			{
 				Name:  "validate",
 				Usage: "validates the data contracts schema",
-				Action: func(*cli.Context) error {
-					return Validate(dataContractFileName, schemaUrl)
+				Flags: []cli.Flag {
+					&cli.StringFlag{
+						Name: "url",
+						Value: schemaUrl,
+						Usage: "url of Data Contract Specification json schema",
+					},
+					fileNameFlag,
+				},
+				Action: func(ctx *cli.Context) error {
+					return Validate(ctx.String("file"), ctx.String("file"))
 				},
 			},
 			{
 				Name:  "open",
 				Usage: "open the data contract in Data Contract Studio",
-				Action: func(*cli.Context) error {
-					return Open(dataContractFileName, dataContractStudioUrl)
+				Flags: []cli.Flag {fileNameFlag},
+				Action: func(ctx *cli.Context) error {
+					return Open(ctx.String("file"), dataContractStudioUrl)
 				},
 			},
 		},
