@@ -23,8 +23,15 @@ func main() {
 			{
 				Name:  "init",
 				Usage: "create a new data contract",
-				Action: func(*cli.Context) error {
-					return Init(dataContractFileName, initTemplateUrl)
+				Flags: []cli.Flag {
+					&cli.StringFlag{
+						Name: "url",
+						Value: initTemplateUrl,
+						Usage: "url of the init template",
+					},
+				},
+				Action: func(ctx *cli.Context) error {
+					return Init(dataContractFileName, ctx.String("url"))
 				},
 			},
 			{
