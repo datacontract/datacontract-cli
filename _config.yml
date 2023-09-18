@@ -1,0 +1,5 @@
+plugins:
+  - jekyll-sitemap
+markdown: kramdown
+name: "datacontract.sh - automate your data contracts"
+title: null
