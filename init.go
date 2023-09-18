@@ -27,6 +27,10 @@ func Init(fileName string, initTemplateUrl string) error {
 }
 
 func writeFile(name string, body []byte) error {
+	if _, err := os.Stat(name); err == nil {
+		return fmt.Errorf("file already exists")
+	}
+
 	err := os.WriteFile(name, body, os.ModePerm)
 
 	if err != nil {
