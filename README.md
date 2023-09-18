@@ -62,4 +62,7 @@ OPTIONS:
 ```
 
 ### help
-show help
+```
+USAGE:
+   datacontract help
+```
