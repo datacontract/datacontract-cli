@@ -60,7 +60,7 @@ func sendDataContract(dataContractStudioUrl string, id string, file []byte) (*st
 }
 
 func openDataContractInBrowser(contractUrl string) error {
-	fmt.Println("opening data contract at " + contractUrl)
+	fmt.Println("🌐 opening data contract at " + contractUrl)
 	err := browser.OpenURL(contractUrl)
 	return err
 }
