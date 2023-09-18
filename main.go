@@ -59,6 +59,16 @@ func main() {
 						Value: schemaUrl,
 						Usage: "url of Data Contract Specification json schema",
 					},
+					&cli.BoolFlag{
+						Name: "validate-schema-object",
+						Value: false,
+						Usage: "EXPERIMENTAL - type specific validation of the schema object",
+					},
+					&cli.BoolFlag{
+						Name: "validate-quality-object",
+						Value: false,
+						Usage: "EXPERIMENTAL - type specific validation of the quality object",
+					},
 				},
 				Action: func(ctx *cli.Context) error {
 					return Validate(ctx.String("file"), ctx.String("schema"))
