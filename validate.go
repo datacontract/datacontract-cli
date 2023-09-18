@@ -11,8 +11,8 @@ import (
 	"os"
 )
 
-func Validate(dataContractFileName string) error {
-	schemaResponse, err := fetchSchema()
+func Validate(dataContractFileName string, schemaUrl string) error {
+	schemaResponse, err := fetchSchema(schemaUrl)
 	schemaData, err := readSchema(schemaResponse)
 	schema, err := createSchema(schemaData)
 	dataContractObject, err := readDataContract(dataContractFileName)
@@ -68,8 +68,8 @@ func readSchema(response *http.Response) ([]byte, error) {
 	}
 }
 
-func fetchSchema() (*http.Response, error) {
-	if response, err := http.Get("https://datacontract.com/datacontract.schema.json"); err != nil {
+func fetchSchema(schemaUrl string) (*http.Response, error) {
+	if response, err := http.Get(schemaUrl); err != nil {
 		return nil, fmt.Errorf("failed to fetch json schema: %v", response.Status)
 	} else {
 		return response, nil

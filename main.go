@@ -8,6 +8,7 @@ import (
 
 const dataContractFileName = "datacontract.yaml"
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
+const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 				Name:  "validate",
 				Usage: "validates the data contracts schema",
 				Action: func(*cli.Context) error {
-					return Validate(dataContractFileName)
+					return Validate(dataContractFileName, schemaUrl)
 				},
 			},
 			{
