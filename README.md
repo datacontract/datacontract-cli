@@ -1,5 +1,12 @@
 # datacontract.sh
 
+*datacontract.sh* is a lightweight CLI application designed to help you manage and test your [data contracts](https://datacontract.com/).
+It is tightly integrated with [Data Contract Studio](https://studio.datacontract.com/) to easily share and visualize your data contracts. 
+
+## Installation
+
+TBD.
+
 ## Commands
 
 ### init 
