@@ -31,7 +31,7 @@ func main() {
 				Usage: "create a new data contract",
 				Flags: []cli.Flag {
 					&cli.StringFlag{
-						Name: "url",
+						Name: "template",
 						Value: initTemplateUrl,
 						Usage: "url of the init template",
 					},
@@ -46,7 +46,7 @@ func main() {
 				Usage: "validates the data contracts schema",
 				Flags: []cli.Flag {
 					&cli.StringFlag{
-						Name: "url",
+						Name: "schema",
 						Value: schemaUrl,
 						Usage: "url of Data Contract Specification json schema",
 					},
