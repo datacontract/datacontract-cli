@@ -84,6 +84,21 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					return Open(ctx.String("file"), dataContractStudioUrl)
 				},
+			},			{
+				Name:  "check-compatibility",
+				Usage: "EXPERIMENTAL - determine whether changes are backwards compatible",
+				Flags: []cli.Flag{
+					fileNameFlag,
+					&cli.StringFlag{
+						Name: "with",
+						Required: true,
+						Usage: "url of the other version of the data contract",
+					},
+				},
+				Action: func(ctx *cli.Context) error {
+					fmt.Println("Command `check-compatibility` not implemented yet!")
+					return nil
+				},
 			},
 		},
 	}
