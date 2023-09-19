@@ -6,13 +6,14 @@ The CLI is open source and written in Go. It is integrated with [Data Contract S
 
 ## Installation
 
-### via `go install`
-
 ```shell
-# assuming your go install directory is ~/go/bin
-export PATH=$PATH:~/go/bin # add go install directory to PATH
-go install github.com/datacontract/cli@latest # install latest version 
-mv ~/go/bin/cli ~/go/bin/datacontract # rename binary 
+# build
+git clone https://github.com/datacontract/cli
+cd cli
+go build -o datacontract
+
+# use it
+./datacontract --help
 ```
 
 ## Usage
