@@ -1,5 +1,6 @@
 name: Release Artifacts
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
