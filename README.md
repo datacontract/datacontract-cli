@@ -11,6 +11,21 @@ TBD.
 
 ## Usage
 
+`datacontract` usually works with the `datacontract.yaml` file in your current working directory. You can specify a different file with the `--file` option.
+
+```bash
+# create a new data contract
+$ datacontract init
+
+# validate the data contract
+$ datacontract validate
+
+# open the data contract in Data Contract Studio
+$ datacontract open
+```
+
+## Documentation
+
 ```
 NAME:
    datacontract - Manage your data contracts 📄
@@ -36,9 +51,9 @@ GLOBAL OPTIONS:
    --version, -v  print the version
 ```
 
-## Commands
+### Commands
 
-### init 
+#### init 
 ```
 NAME:
    datacontract init - create a new data contract
@@ -54,7 +69,7 @@ OPTIONS:
    --help, -h        show help
 ```
 
-### validate
+#### validate
 ```
 NAME:
    datacontract validate - validates the data contracts schema
@@ -70,7 +85,7 @@ OPTIONS:
    --help, -h                 show help
 ```
 
-### open
+#### open
 ```
 NAME:
    datacontract open - save and open the data contract in Data Contract Studio
@@ -84,7 +99,7 @@ OPTIONS:
 ```
 
 
-### check-compatibility (EXPERIMENTAL)
+#### check-compatibility (EXPERIMENTAL)
 ```
 NAME:
    datacontract check-compatibility - EXPERIMENTAL - determine whether changes are backwards compatible
@@ -98,8 +113,20 @@ OPTIONS:
    --help, -h    show help
 ```
 
-### help
+#### help
 ```
 USAGE:
    datacontract help
 ```
+
+## Contribution
+
+We are happy to receive your contributions. Propose your change in an issue or directly create a pull request with your improvements.
+
+## License
+
+[MIT License](LICENSE)
+
+## Credits
+
+Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/).
