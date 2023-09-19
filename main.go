@@ -21,7 +21,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "0.1.0",
+		Version: "v0.1.0",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -29,20 +29,20 @@ func main() {
 			{
 				Name:  "init",
 				Usage: "create a new data contract",
-				Flags: []cli.Flag {
+				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
-						Name: "from",
+						Name:  "from",
 						Value: initTemplateUrl,
 						Usage: "url of a template or data contract",
 					},
 					&cli.BoolFlag{
-						Name: "overwrite-file",
+						Name:  "overwrite-file",
 						Value: false,
 						Usage: "replace the existing " + dataContractFileName,
 					},
 					&cli.BoolFlag{
-						Name: "interactive",
+						Name:  "interactive",
 						Value: false,
 						Usage: "EXPERIMENTAL - prompt for required values",
 					},
@@ -64,12 +64,12 @@ func main() {
 						Usage: "url of Data Contract Specification json schema",
 					},
 					&cli.BoolFlag{
-						Name: "validate-schema-object",
+						Name:  "validate-schema-object",
 						Value: false,
 						Usage: "EXPERIMENTAL - type specific validation of the schema object",
 					},
 					&cli.BoolFlag{
-						Name: "validate-quality-object",
+						Name:  "validate-quality-object",
 						Value: false,
 						Usage: "EXPERIMENTAL - type specific validation of the quality object",
 					},
@@ -88,15 +88,15 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					return Open(ctx.String("file"), dataContractStudioUrl)
 				},
-			},			{
+			}, {
 				Name:  "check-compatibility",
 				Usage: "EXPERIMENTAL - determine whether changes are backwards compatible",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
-						Name: "with",
+						Name:     "with",
 						Required: true,
-						Usage: "url of the other version of the data contract",
+						Usage:    "url of the other version of the data contract",
 					},
 				},
 				Action: func(ctx *cli.Context) error {
