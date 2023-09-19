@@ -41,7 +41,7 @@ USAGE:
    datacontract [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.1.0
+   v0.1.1
 
 AUTHOR:
    Stefan Negele <stefan.negele@innoq.com>
