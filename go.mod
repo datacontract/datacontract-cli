@@ -1,4 +1,4 @@
-module github.com/datacontract/datacontract
+module github.com/datacontract/cli
 
 go 1.20
 
