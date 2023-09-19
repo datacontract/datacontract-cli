@@ -6,7 +6,7 @@ The CLI is open source and written in Go. It is integrated with [Data Contract S
 
 ## Installation
 
-```shell
+```bash
 # build
 git clone https://github.com/datacontract/cli
 cd cli
