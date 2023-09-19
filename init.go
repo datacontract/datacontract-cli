@@ -30,7 +30,7 @@ func Init(fileName string, initTemplateUrl string, overwriteFile bool) error {
 
 func writeFile(name string, body []byte, overwriteFile bool) error {
 	if _, err := os.Stat(name); !overwriteFile && err == nil {
-		return fmt.Errorf("file already exists")
+		return fmt.Errorf("file already exists, use --overwrite-file to overwrite")
 	}
 
 	err := os.WriteFile(name, body, os.ModePerm)
