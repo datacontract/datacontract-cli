@@ -1,9 +1,8 @@
 # Data Contract CLI
 
-CLI to work with your `datacontract.yaml` files. Currently under development, we are working to bring more features.
+The `datacontract` CLI lets you work with your `datacontract.yaml` files locally, and in your CI pipeline. It uses the [data contract specification](https://datacontract.com/) to validate your data contracts and to check for backwards compatibility.
 
-It is a lightweight CLI application designed to help you manage and test your [data contracts](https://datacontract.com/).
-It is tightly integrated with [Data Contract Studio](https://studio.datacontract.com/) to easily share and visualize your data contracts. 
+The CLI is open source and written in Go. It is integrated with [Data Contract Studio](https://studio.datacontract.com/) to easily share and visualize your data contracts.
 
 ## Installation
 
