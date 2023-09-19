@@ -1,4 +1,4 @@
-module github.com/datamesh-architecture/datacontract.sh
+module github.com/datacontract/datacontract
 
 go 1.20
 

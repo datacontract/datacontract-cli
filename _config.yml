@@ -1,5 +1,5 @@
 plugins:
   - jekyll-sitemap
 markdown: kramdown
-name: "datacontract.sh - automate your data contracts"
+name: "Data Contract CLI"
 title: null
