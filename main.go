@@ -55,7 +55,7 @@ func main() {
 			},
 			{
 				Name:  "validate",
-				Usage: "validates the data contracts schema",
+				Usage: "validates the data contract against its schema",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
