@@ -1,3 +1,4 @@
+name: Release Artifacts
 on:
   release:
     types: [published]
