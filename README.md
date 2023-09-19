@@ -6,6 +6,12 @@ The CLI is open source and written in Go. It is integrated with [Data Contract S
 
 ## Installation
 
+### Homebrew
+```bash
+brew install datacontract/brew/datacontract-cli
+```
+
+### Build from sources
 ```bash
 # build
 git clone https://github.com/datacontract/cli
