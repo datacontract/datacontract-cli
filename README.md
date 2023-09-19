@@ -11,6 +11,36 @@ The CLI is open source and written in Go. It is integrated with [Data Contract S
 brew install datacontract/brew/datacontract
 ```
 
+### Download binary artifact
+
+#### Using the command line
+
+```bash
+# download + unpack
+curl -L https://github.com/datacontract/cli/releases/download/{VERSION}/datacontract-{VERSION}-{OS}-{ARCH}.tar.gz -o datacontract.tar.gz
+tar -xf datacontract.tar.gz
+
+# use it
+./datacontract --help
+```
+
+**Make sure to fill the placeholders, depending on your system:**
+
+| Placeholder | Description                                    |
+|-------------|------------------------------------------------|
+| VERSION     | datacontract CLI version (e.g. `v0.1.1`)       |
+| OS          | your operating system (linux, windows, darwin) |
+| ARCH        | your processor architecture (amd64, arm64)     |
+
+#### Manually
+
+- go to https://github.com/datacontract/cli/releases and download the artifact of the latest release depending on your operating system and processor architecture
+- decompress the file (tarball or zipfolder)
+- open the folder in your terminal and use the application:
+  ```bash
+  ./datacontract --help
+  ```
+
 ### Build from sources
 ```bash
 # build
