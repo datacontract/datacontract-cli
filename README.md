@@ -49,7 +49,7 @@ tar -xf datacontract.tar.gz
 
 #### Manually
 
-- go to https://github.com/datacontract/cli/releases and download the artifact of the latest release depending on your operating system and processor architecture
+- go to https://github.com/datacontract/cli/releases and download the artifact of the latest release depending on your operating system and cpu architecture
 - decompress the file (tarball or zipfolder)
 - open the folder in your terminal and use the application:
   ```bash
