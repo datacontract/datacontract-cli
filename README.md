@@ -4,6 +4,21 @@ The `datacontract` CLI lets you work with your `datacontract.yaml` files locally
 
 The CLI is open source and written in Go. It is integrated with [Data Contract Studio](https://studio.datacontract.com/) to easily share and visualize your data contracts.
 
+## Usage
+
+`datacontract` usually works with the `datacontract.yaml` file in your current working directory. You can specify a different file with the `--file` option.
+
+```bash
+# create a new data contract
+$ datacontract init
+
+# validate the data contract
+$ datacontract validate
+
+# open the data contract in Data Contract Studio
+$ datacontract open
+```
+
 ## Installation
 
 ### Homebrew
@@ -50,21 +65,6 @@ go build -o datacontract
 
 # use it
 ./datacontract --help
-```
-
-## Usage
-
-`datacontract` usually works with the `datacontract.yaml` file in your current working directory. You can specify a different file with the `--file` option.
-
-```bash
-# create a new data contract
-$ datacontract init
-
-# validate the data contract
-$ datacontract validate
-
-# open the data contract in Data Contract Studio
-$ datacontract open
 ```
 
 ## Documentation
