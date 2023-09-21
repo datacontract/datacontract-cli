@@ -1,6 +1,6 @@
 # Data Contract CLI
 
-<p align="center">
+<p>
   <a href="https://github.com/datacontract/cli/actions/workflows/ci.yaml?query=branch%3Amain">
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/cli/ci.yaml?branch=main"></a>
   <!--
