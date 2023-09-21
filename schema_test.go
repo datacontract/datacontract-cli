@@ -2,18 +2,51 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
-var modelName = "email_provider_usage"
-var modelType = "table"
-var modelDescription = "Description of the model"
+func TestCompareDatasets(t *testing.T) {
+	type args struct {
+		old Dataset
+		new Dataset
+	}
+	tests := []struct {
+		name string
+		args args
+		want []DatasetDifference
+	}{
+		{
+			name: "remove model",
+			args: args{Dataset{Models: []Model{{Name: "my_table"}}}, Dataset{Models: []Model{}}},
+			want: []DatasetDifference{{
+				Level:       DatasetDifferenceLevelModel,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   nil,
+				Description: "model 'my_table' was removed",
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CompareDatasets(tt.args.old, tt.args.new); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CompareDatasets() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
-var fieldName = "email_provider"
-var fieldType = "text"
-var fieldDescription = "Description of the column"
+func TestParseDataset(t *testing.T) {
+	modelName := "email_provider_usage"
+	modelType := "table"
+	modelDescription := "Description of the model"
 
-var dbtSpecificationYaml = fmt.Sprintf(`version: 2
+	fieldName := "email_provider"
+	fieldType := "text"
+	fieldDescription := "Description of the column"
+
+	dbtSpecificationYaml := fmt.Sprintf(`version: 2
 models:
   - name: %v
     description: "%v"
@@ -23,9 +56,8 @@ models:
       - name: %v
         data_type: %v
         description: "%v"`,
-	modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription)
+		modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription)
 
-func Test_parseDataset(t *testing.T) {
 	type args struct {
 		schemaType    string
 		specification []byte
@@ -38,11 +70,13 @@ func Test_parseDataset(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "unkown", args: args{"unkown", []byte{}},
+			name:    "unkown",
+			args:    args{"unkown", []byte{}},
 			wantErr: true,
 		},
 		{
-			name: "dbt", args: args{"dbt", []byte(dbtSpecificationYaml)},
+			name: "dbt",
+			args: args{"dbt", []byte(dbtSpecificationYaml)},
 			want: &Dataset{Models: []Model{
 				{
 					Name:        modelName,
@@ -62,14 +96,14 @@ func Test_parseDataset(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseDataset(tt.args.schemaType, tt.args.specification)
+			got, err := ParseDataset(tt.args.schemaType, tt.args.specification)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parseDataset() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseDataset() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != nil && !got.equals(*tt.want) {
-				t.Errorf("parseDataset() got = %v, want %v", got, tt.want)
+				t.Errorf("ParseDataset() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

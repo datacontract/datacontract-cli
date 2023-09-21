@@ -23,7 +23,74 @@ type Field struct {
 	Fields      []Field
 }
 
-func parseDataset(schemaType string, specification []byte) (*Dataset, error) {
+type DatasetDifference struct {
+	Level       DatasetDifferenceLevel
+	Severity    DatasetDifferenceSeverity
+	ModelName   string
+	FieldName   *string
+	Description string
+}
+
+type DatasetDifferenceLevel int
+
+const (
+	DatasetDifferenceLevelModel DatasetDifferenceLevel = iota
+	DatasetDifferenceLevelField
+)
+
+func (d DatasetDifferenceLevel) String() string {
+	switch d {
+	case DatasetDifferenceLevelModel:
+		return "model"
+	case DatasetDifferenceLevelField:
+		return "field"
+	}
+	return ""
+}
+
+type DatasetDifferenceSeverity int
+
+const (
+	DatasetDifferenceSeverityInfo DatasetDifferenceSeverity = iota
+	DatasetDifferenceSeverityBreaking
+)
+
+func (d DatasetDifferenceSeverity) String() string {
+	switch d {
+	case DatasetDifferenceSeverityInfo:
+		return "info"
+	case DatasetDifferenceSeverityBreaking:
+		return "breaking"
+	}
+	return ""
+}
+
+func CompareDatasets(old Dataset, new Dataset) []DatasetDifference {
+	var result []DatasetDifference
+
+	for _, oldModel := range old.Models {
+		found := false
+		for _, newModel := range new.Models {
+			if oldModel.Name == newModel.Name {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			result = append(result, DatasetDifference{
+				Level:       DatasetDifferenceLevelModel,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   oldModel.Name,
+				FieldName:   nil,
+				Description: fmt.Sprintf("model '%v' was removed", oldModel.Name),
+			})
+		}
+	}
+	return result
+}
+
+func ParseDataset(schemaType string, specification []byte) (*Dataset, error) {
 	switch schemaType {
 	case "dbt":
 		return parseDbtDataset(specification), nil
