@@ -82,7 +82,7 @@ func CompareDatasets(old Dataset, new Dataset) (result []DatasetDifference) {
 
 func modelWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 	for _, oldModel := range old.Models {
-		if oldModel.findEquivalent(new) == nil {
+		if oldModel.findEquivalent(new.Models) == nil {
 			result = append(result, DatasetDifference{
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityBreaking,
@@ -98,9 +98,9 @@ func modelWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 func fieldWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 	// todo: subfields
 	for _, oldModel := range old.Models {
-		if newModel := oldModel.findEquivalent(new); newModel != nil {
+		if newModel := oldModel.findEquivalent(new.Models); newModel != nil {
 			for _, oldField := range oldModel.Fields {
-				if oldField.findEquivalent(*newModel) == nil {
+				if oldField.findEquivalent(newModel.Fields) == nil {
 					result = append(result, DatasetDifference{
 						Level:       DatasetDifferenceLevelField,
 						Severity:    DatasetDifferenceSeverityBreaking,
@@ -116,8 +116,8 @@ func fieldWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 	return result
 }
 
-func (model Model) findEquivalent(otherDataset Dataset) (result *Model) {
-	for _, newModel := range otherDataset.Models {
+func (model Model) findEquivalent(otherModels []Model) (result *Model) {
+	for _, newModel := range otherModels {
 		if model.Name == newModel.Name {
 			result = &newModel
 			break
@@ -126,8 +126,8 @@ func (model Model) findEquivalent(otherDataset Dataset) (result *Model) {
 	return result
 }
 
-func (field Field) findEquivalent(otherModel Model) (result *Field) {
-	for _, newField := range otherModel.Fields {
+func (field Field) findEquivalent(otherFields []Field) (result *Field) {
+	for _, newField := range otherFields {
 		if field.Name == newField.Name {
 			result = &newField
 			break
