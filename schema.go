@@ -96,23 +96,42 @@ func modelWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 }
 
 func fieldWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
-	// todo: subfields
 	for _, oldModel := range old.Models {
 		if newModel := oldModel.findEquivalent(new.Models); newModel != nil {
-			for _, oldField := range oldModel.Fields {
-				if oldField.findEquivalent(newModel.Fields) == nil {
-					result = append(result, DatasetDifference{
-						Level:       DatasetDifferenceLevelField,
-						Severity:    DatasetDifferenceSeverityBreaking,
-						ModelName:   oldModel.Name,
-						FieldName:   oldField.Name,
-						Description: fmt.Sprintf("field '%v.%v' was removed", oldModel.Name, oldField.Name),
-					})
-				}
-			}
+			result = append(result,
+				fieldWasRemovedRecursive(oldModel.Name, nil, oldModel.Fields, newModel.Fields)...)
 		}
 	}
 
+	return result
+}
+
+func fieldWasRemovedRecursive(
+	modelName string,
+	prefix *string,
+	oldFields, newFields []Field,
+) (result []DatasetDifference) {
+	for _, oldField := range oldFields {
+		var fieldName string
+		if prefix == nil {
+			fieldName = oldField.Name
+		} else {
+			fieldName = fmt.Sprintf("%v.%v", *prefix, oldField.Name)
+		}
+
+		if newField := oldField.findEquivalent(newFields); newField == nil {
+			result = append(result, DatasetDifference{
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   modelName,
+				FieldName:   fieldName,
+				Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
+			})
+		} else {
+			result = append(result,
+				fieldWasRemovedRecursive(modelName, &fieldName, oldField.Fields, newField.Fields)...)
+		}
+	}
 	return result
 }
 

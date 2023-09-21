@@ -40,6 +40,22 @@ func TestCompareDatasets(t *testing.T) {
 				Description: "field 'my_table.my_column' was removed",
 			}},
 		},
+		{
+			name: "fieldWasRemoved-subfield",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_model", Fields: []Field{
+					{Name: "my_field", Fields: []Field{{Name: "my_subfield"}}}}}}},
+				Dataset{Models: []Model{{Name: "my_model", Fields: []Field{
+					{Name: "my_field"}}}}},
+			},
+			want: []DatasetDifference{{
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_model",
+				FieldName:   "my_field.my_subfield",
+				Description: "field 'my_model.my_field.my_subfield' was removed",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
