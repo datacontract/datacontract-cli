@@ -33,11 +33,11 @@ func TestCompareDatasets(t *testing.T) {
 				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{}}}},
 			},
 			want: []DatasetDifference{{
-				Level:       DatasetDifferenceLevelModel,
+				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_table",
-				FieldName:   "my_field",
-				Description: "field 'my_table.my_field' was removed",
+				FieldName:   "my_column",
+				Description: "field 'my_table.my_column' was removed",
 			}},
 		},
 	}

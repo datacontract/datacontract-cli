@@ -106,7 +106,7 @@ func fieldWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 						Severity:    DatasetDifferenceSeverityBreaking,
 						ModelName:   oldModel.Name,
 						FieldName:   oldField.Name,
-						Description: fmt.Sprintf("field '%v.%v' was removed", oldModel, oldField.Name),
+						Description: fmt.Sprintf("field '%v.%v' was removed", oldModel.Name, oldField.Name),
 					})
 				}
 			}
