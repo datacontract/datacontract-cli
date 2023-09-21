@@ -27,7 +27,7 @@ type DatasetDifference struct {
 	Level       DatasetDifferenceLevel
 	Severity    DatasetDifferenceSeverity
 	ModelName   string
-	FieldName   *string
+	FieldName   string
 	Description string
 }
 
@@ -67,11 +67,10 @@ func (d DatasetDifferenceSeverity) String() string {
 
 type datasetComparison = func(old Dataset, new Dataset) []DatasetDifference
 
-func CompareDatasets(old Dataset, new Dataset) []DatasetDifference {
-	var result []DatasetDifference
-
+func CompareDatasets(old Dataset, new Dataset) (result []DatasetDifference) {
 	comparisons := []datasetComparison{
-		checkIfModelWasRemoved,
+		modelWasRemoved,
+		fieldWasRemoved,
 	}
 
 	for _, comparison := range comparisons {
@@ -81,26 +80,57 @@ func CompareDatasets(old Dataset, new Dataset) []DatasetDifference {
 	return result
 }
 
-func checkIfModelWasRemoved(old Dataset, new Dataset) []DatasetDifference {
-	var result []DatasetDifference
-
+func modelWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 	for _, oldModel := range old.Models {
-		found := false
-		for _, newModel := range new.Models {
-			if oldModel.Name == newModel.Name {
-				found = true
-				break
-			}
-		}
-
-		if !found {
+		if oldModel.findEquivalent(new) == nil {
 			result = append(result, DatasetDifference{
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   oldModel.Name,
-				FieldName:   nil,
 				Description: fmt.Sprintf("model '%v' was removed", oldModel.Name),
 			})
+		}
+	}
+
+	return result
+}
+
+func fieldWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
+	// todo: subfields
+	for _, oldModel := range old.Models {
+		if newModel := oldModel.findEquivalent(new); newModel != nil {
+			for _, oldField := range oldModel.Fields {
+				if oldField.findEquivalent(*newModel) == nil {
+					result = append(result, DatasetDifference{
+						Level:       DatasetDifferenceLevelField,
+						Severity:    DatasetDifferenceSeverityBreaking,
+						ModelName:   oldModel.Name,
+						FieldName:   oldField.Name,
+						Description: fmt.Sprintf("field '%v.%v' was removed", oldModel, oldField.Name),
+					})
+				}
+			}
+		}
+	}
+
+	return result
+}
+
+func (model Model) findEquivalent(otherDataset Dataset) (result *Model) {
+	for _, newModel := range otherDataset.Models {
+		if model.Name == newModel.Name {
+			result = &newModel
+			break
+		}
+	}
+	return result
+}
+
+func (field Field) findEquivalent(otherModel Model) (result *Field) {
+	for _, newField := range otherModel.Fields {
+		if field.Name == newField.Name {
+			result = &newField
+			break
 		}
 	}
 	return result
@@ -147,8 +177,7 @@ func parseDbtDataset(specification []byte) *Dataset {
 	return &Dataset{models}
 }
 
-func modelsFromDbtSpecification(res dbtSpecification) []Model {
-	var models []Model
+func modelsFromDbtSpecification(res dbtSpecification) (models []Model) {
 	for _, model := range res.Models {
 		models = append(models, Model{
 			Name:        model.Name,
@@ -160,8 +189,7 @@ func modelsFromDbtSpecification(res dbtSpecification) []Model {
 	return models
 }
 
-func fieldsFromDbtModel(model dbtModel) []Field {
-	var fields []Field
+func fieldsFromDbtModel(model dbtModel) (fields []Field) {
 	for _, column := range model.Columns {
 		fields = append(fields, Field{
 			Name:        column.Name,
