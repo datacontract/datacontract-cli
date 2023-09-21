@@ -65,7 +65,23 @@ func (d DatasetDifferenceSeverity) String() string {
 	return ""
 }
 
+type datasetComparison = func(old Dataset, new Dataset) []DatasetDifference
+
 func CompareDatasets(old Dataset, new Dataset) []DatasetDifference {
+	var result []DatasetDifference
+
+	comparisons := []datasetComparison{
+		checkIfModelWasRemoved,
+	}
+
+	for _, comparison := range comparisons {
+		result = append(result, comparison(old, new)...)
+	}
+
+	return result
+}
+
+func checkIfModelWasRemoved(old Dataset, new Dataset) []DatasetDifference {
 	var result []DatasetDifference
 
 	for _, oldModel := range old.Models {
