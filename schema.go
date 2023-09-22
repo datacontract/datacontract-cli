@@ -65,9 +65,9 @@ func (d DatasetDifferenceSeverity) String() string {
 	return ""
 }
 
-type datasetComparison = func(old Dataset, new Dataset) []DatasetDifference
+type datasetComparison = func(old, new Dataset) []DatasetDifference
 
-func CompareDatasets(old Dataset, new Dataset) (result []DatasetDifference) {
+func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 	comparisons := []datasetComparison{
 		modelWasRemoved,
 		fieldWasRemoved,
@@ -80,7 +80,7 @@ func CompareDatasets(old Dataset, new Dataset) (result []DatasetDifference) {
 	return result
 }
 
-func modelWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
+func modelWasRemoved(old, new Dataset) (result []DatasetDifference) {
 	for _, oldModel := range old.Models {
 		if oldModel.findEquivalent(new.Models) == nil {
 			result = append(result, DatasetDifference{
@@ -95,44 +95,102 @@ func modelWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
 	return result
 }
 
-func fieldWasRemoved(old Dataset, new Dataset) (result []DatasetDifference) {
+func fieldWasRemoved(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExistsNot = func(
+		modelName string,
+		fieldName string,
+		field Field,
+	) DatasetDifference {
+		return DatasetDifference{
+			Level:       DatasetDifferenceLevelField,
+			Severity:    DatasetDifferenceSeverityBreaking,
+			ModelName:   modelName,
+			FieldName:   fieldName,
+			Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
+		}
+	}
+
+	return append(result, compareFields(old, new, nil, &difference)...)
+}
+
+type fieldEquivalentExists func(
+	modelName string,
+	prefixedFieldName string,
+	oldField Field,
+	newField Field,
+) DatasetDifference
+
+type fieldEquivalentExistsNot func(
+	modelName string,
+	prefixedFieldName string,
+	field Field,
+) DatasetDifference
+
+func compareFields(
+	old Dataset,
+	new Dataset,
+	whenEquivalentExists *fieldEquivalentExists,
+	whenEquivalentExistsNot *fieldEquivalentExistsNot,
+) (result []DatasetDifference) {
 	for _, oldModel := range old.Models {
 		if newModel := oldModel.findEquivalent(new.Models); newModel != nil {
-			result = append(result,
-				fieldWasRemovedRecursive(oldModel.Name, nil, oldModel.Fields, newModel.Fields)...)
+			result = append(
+				result,
+				compareFieldsRecursive(
+					oldModel.Fields,
+					newModel.Fields,
+					oldModel.Name,
+					nil,
+					whenEquivalentExists,
+					whenEquivalentExistsNot,
+				)...,
+			)
 		}
 	}
 
 	return result
 }
 
-func fieldWasRemovedRecursive(
-	modelName string,
-	prefix *string,
+// traverse through fields and their subfields
+// apply corresponding methods if equivalent field exists or not
+func compareFieldsRecursive(
 	oldFields, newFields []Field,
+	modelName string,
+	fieldPrefix *string,
+	whenEquivalentExists *fieldEquivalentExists,
+	whenEquivalentExistsNot *fieldEquivalentExistsNot,
 ) (result []DatasetDifference) {
 	for _, oldField := range oldFields {
-		var fieldName string
-		if prefix == nil {
-			fieldName = oldField.Name
-		} else {
-			fieldName = fmt.Sprintf("%v.%v", *prefix, oldField.Name)
-		}
+		fieldName := oldField.prefixedName(fieldPrefix)
 
-		if newField := oldField.findEquivalent(newFields); newField == nil {
-			result = append(result, DatasetDifference{
-				Level:       DatasetDifferenceLevelField,
-				Severity:    DatasetDifferenceSeverityBreaking,
-				ModelName:   modelName,
-				FieldName:   fieldName,
-				Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
-			})
+		if newField := oldField.findEquivalent(newFields); newField == nil && whenEquivalentExistsNot != nil {
+			result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, oldField))
 		} else {
+			if whenEquivalentExists != nil {
+				result = append(result, (*whenEquivalentExists)(modelName, fieldName, oldField, *newField))
+			}
 			result = append(result,
-				fieldWasRemovedRecursive(modelName, &fieldName, oldField.Fields, newField.Fields)...)
+				compareFieldsRecursive(
+					oldField.Fields,
+					newField.Fields,
+					modelName,
+					&fieldName,
+					whenEquivalentExists,
+					whenEquivalentExistsNot,
+				)...)
 		}
 	}
 	return result
+}
+
+func (field Field) prefixedName(prefix *string) string {
+	var fieldName string
+	if prefix == nil {
+		fieldName = field.Name
+	} else {
+		fieldName = fmt.Sprintf("%v.%v", *prefix, field.Name)
+	}
+	return fieldName
 }
 
 func (model Model) findEquivalent(otherModels []Model) (result *Model) {
