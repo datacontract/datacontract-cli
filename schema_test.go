@@ -7,6 +7,9 @@ import (
 )
 
 func TestCompareDatasets(t *testing.T) {
+	dummyString1 := "dummy1"
+	dummyString2 := "dummy2"
+
 	type args struct {
 		old Dataset
 		new Dataset
@@ -17,7 +20,7 @@ func TestCompareDatasets(t *testing.T) {
 		want []DatasetDifference
 	}{
 		{
-			name: "modelWasRemoved",
+			name: "modelRemoved",
 			args: args{Dataset{Models: []Model{{Name: "my_table"}}}, Dataset{Models: []Model{}}},
 			want: []DatasetDifference{{
 				Level:       DatasetDifferenceLevelModel,
@@ -27,7 +30,7 @@ func TestCompareDatasets(t *testing.T) {
 			}},
 		},
 		{
-			name: "fieldWasRemoved",
+			name: "fieldRemoved",
 			args: args{
 				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{{Name: "my_column"}}}}},
 				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{}}}},
@@ -41,7 +44,7 @@ func TestCompareDatasets(t *testing.T) {
 			}},
 		},
 		{
-			name: "fieldWasRemoved-subfield",
+			name: "fieldRemoved-subfield",
 			args: args{
 				Dataset{Models: []Model{{Name: "my_model", Fields: []Field{
 					{Name: "my_field", Fields: []Field{{Name: "my_subfield"}}}}}}},
@@ -54,6 +57,38 @@ func TestCompareDatasets(t *testing.T) {
 				ModelName:   "my_model",
 				FieldName:   "my_field.my_subfield",
 				Description: "field 'my_model.my_field.my_subfield' was removed",
+			}},
+		},
+		{
+			name: "fieldTypeChanged",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Type: &dummyString1}}}}},
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Type: &dummyString2}}}}},
+			},
+			want: []DatasetDifference{{
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   "my_column",
+				Description: fmt.Sprintf("type of field 'my_table.my_column' was changed from %v to %v", dummyString1, dummyString2),
+			}},
+		},
+		{
+			name: "fieldTypeChanged-subfield",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_model", Fields: []Field{
+					{Name: "my_field", Fields: []Field{{Name: "my_subfield", Type: &dummyString1}}}}}}},
+				Dataset{Models: []Model{{Name: "my_model", Fields: []Field{
+					{Name: "my_field", Fields: []Field{{Name: "my_subfield", Type: &dummyString2}}}}}}},
+			},
+			want: []DatasetDifference{{
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_model",
+				FieldName:   "my_field.my_subfield",
+				Description: fmt.Sprintf("type of field 'my_model.my_field.my_subfield' was changed from %v to %v", dummyString1, dummyString2),
 			}},
 		},
 	}

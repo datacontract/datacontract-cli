@@ -69,8 +69,9 @@ type datasetComparison = func(old, new Dataset) []DatasetDifference
 
 func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 	comparisons := []datasetComparison{
-		modelWasRemoved,
-		fieldWasRemoved,
+		modelRemoved,
+		fieldRemoved,
+		fieldTypeChanged,
 	}
 
 	for _, comparison := range comparisons {
@@ -80,7 +81,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 	return result
 }
 
-func modelWasRemoved(old, new Dataset) (result []DatasetDifference) {
+func modelRemoved(old, new Dataset) (result []DatasetDifference) {
 	for _, oldModel := range old.Models {
 		if oldModel.findEquivalent(new.Models) == nil {
 			result = append(result, DatasetDifference{
@@ -95,22 +96,63 @@ func modelWasRemoved(old, new Dataset) (result []DatasetDifference) {
 	return result
 }
 
-func fieldWasRemoved(old, new Dataset) (result []DatasetDifference) {
+func fieldRemoved(old, new Dataset) (result []DatasetDifference) {
 	var difference fieldEquivalentExistsNot = func(
-		modelName string,
-		fieldName string,
+		modelName, fieldName string,
 		field Field,
-	) DatasetDifference {
-		return DatasetDifference{
+	) (result []DatasetDifference) {
+		return append(result, DatasetDifference{
 			Level:       DatasetDifferenceLevelField,
 			Severity:    DatasetDifferenceSeverityBreaking,
 			ModelName:   modelName,
 			FieldName:   fieldName,
 			Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
-		}
+		})
 	}
 
 	return append(result, compareFields(old, new, nil, &difference)...)
+}
+
+func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField Field,
+	) (result []DatasetDifference) {
+		if !equalStringPointers(oldField.Type, newField.Type) {
+			return append(result, DatasetDifference{
+				Level:     DatasetDifferenceLevelField,
+				Severity:  DatasetDifferenceSeverityBreaking,
+				ModelName: modelName,
+				FieldName: fieldName,
+				Description: fmt.Sprintf(
+					"type of field '%v.%v' was changed from %v to %v",
+					modelName,
+					fieldName,
+					*oldField.Type,
+					*newField.Type,
+				),
+			})
+		} else {
+			return result
+		}
+
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func equalStringPointers(s1, s2 *string) bool {
+	// both are the same (e.g. nil)
+	if s1 == s2 {
+		return true
+	}
+
+	// one pointer is nil, the other not
+	if (s1 == nil && s2 != nil) || (s1 != nil && s2 == nil) {
+		return false
+	}
+
+	return *s1 == *s2
 }
 
 type fieldEquivalentExists func(
@@ -118,13 +160,13 @@ type fieldEquivalentExists func(
 	prefixedFieldName string,
 	oldField Field,
 	newField Field,
-) DatasetDifference
+) []DatasetDifference
 
 type fieldEquivalentExistsNot func(
 	modelName string,
 	prefixedFieldName string,
 	field Field,
-) DatasetDifference
+) []DatasetDifference
 
 func compareFields(
 	old Dataset,
@@ -163,11 +205,13 @@ func compareFieldsRecursive(
 	for _, oldField := range oldFields {
 		fieldName := oldField.prefixedName(fieldPrefix)
 
-		if newField := oldField.findEquivalent(newFields); newField == nil && whenEquivalentExistsNot != nil {
-			result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, oldField))
+		if newField := oldField.findEquivalent(newFields); newField == nil {
+			if whenEquivalentExistsNot != nil {
+				result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, oldField)...)
+			}
 		} else {
 			if whenEquivalentExists != nil {
-				result = append(result, (*whenEquivalentExists)(modelName, fieldName, oldField, *newField))
+				result = append(result, (*whenEquivalentExists)(modelName, fieldName, oldField, *newField)...)
 			}
 			result = append(result,
 				compareFieldsRecursive(
