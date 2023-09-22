@@ -47,6 +47,7 @@ const (
 	DatasetDifferenceTypeFieldRemoved
 	DatasetDifferenceTypeFieldTypeChanged
 	DatasetDifferenceTypeFieldRequirementRemoved
+	DatasetDifferenceTypeFieldUniquenessRemoved
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -59,6 +60,8 @@ func (d DatasetDifferenceType) String() string {
 		return "field-type-changed"
 	case DatasetDifferenceTypeFieldRequirementRemoved:
 		return "field-requirement-removed"
+	case DatasetDifferenceTypeFieldUniquenessRemoved:
+		return "field-uniqueness-removed"
 	}
 
 	return ""
@@ -106,6 +109,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		fieldRemoved,
 		fieldTypeChanged,
 		fieldRequirementRemoved,
+		fieldUniquenessRemoved,
 	}
 
 	for _, comparison := range comparisons {
@@ -190,6 +194,28 @@ func fieldRequirementRemoved(old, new Dataset) (result []DatasetDifference) {
 				ModelName:   modelName,
 				FieldName:   fieldName,
 				Description: fmt.Sprintf("field requirement of '%v.%v' was removed", modelName, fieldName),
+			}
+		} else {
+			return nil
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldUniquenessRemoved(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField Field,
+	) *DatasetDifference {
+		if oldField.Unique && !newField.Unique {
+			return &DatasetDifference{
+				Type:        DatasetDifferenceTypeFieldUniquenessRemoved,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   modelName,
+				FieldName:   fieldName,
+				Description: fmt.Sprintf("field uniqueness of '%v.%v' was removed", modelName, fieldName),
 			}
 		} else {
 			return nil

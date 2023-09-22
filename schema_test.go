@@ -113,6 +113,23 @@ func TestCompareDatasets(t *testing.T) {
 				Description: "field requirement of 'my_table.my_column' was removed",
 			}},
 		},
+		{
+			name: "fieldUniquenessRemoved",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Unique: true}}}}},
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Unique: false}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldUniquenessRemoved,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   "my_column",
+				Description: "field uniqueness of 'my_table.my_column' was removed",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
