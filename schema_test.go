@@ -23,6 +23,7 @@ func TestCompareDatasets(t *testing.T) {
 			name: "modelRemoved",
 			args: args{Dataset{Models: []Model{{Name: "my_table"}}}, Dataset{Models: []Model{}}},
 			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeModelRemoved,
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_table",
@@ -36,6 +37,7 @@ func TestCompareDatasets(t *testing.T) {
 				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{}}}},
 			},
 			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_table",
@@ -52,6 +54,7 @@ func TestCompareDatasets(t *testing.T) {
 					{Name: "my_field"}}}}},
 			},
 			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_model",
@@ -68,6 +71,7 @@ func TestCompareDatasets(t *testing.T) {
 					{Name: "my_column", Type: &dummyString2}}}}},
 			},
 			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldTypeChanged,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_table",
@@ -84,6 +88,7 @@ func TestCompareDatasets(t *testing.T) {
 					{Name: "my_field", Fields: []Field{{Name: "my_subfield", Type: &dummyString2}}}}}}},
 			},
 			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldTypeChanged,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_model",

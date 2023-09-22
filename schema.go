@@ -24,11 +24,32 @@ type Field struct {
 }
 
 type DatasetDifference struct {
+	Type        DatasetDifferenceType
 	Level       DatasetDifferenceLevel
 	Severity    DatasetDifferenceSeverity
 	ModelName   string
 	FieldName   string
 	Description string
+}
+
+type DatasetDifferenceType int
+
+const (
+	DatasetDifferenceTypeModelRemoved DatasetDifferenceType = iota
+	DatasetDifferenceTypeFieldRemoved
+	DatasetDifferenceTypeFieldTypeChanged
+)
+
+func (d DatasetDifferenceType) String() string {
+	switch d {
+	case DatasetDifferenceTypeModelRemoved:
+		return "model-removed"
+	case DatasetDifferenceTypeFieldRemoved:
+		return "field-removed"
+	case DatasetDifferenceTypeFieldTypeChanged:
+		return "field-type-changed"
+	}
+	return ""
 }
 
 type DatasetDifferenceLevel int
@@ -85,6 +106,7 @@ func modelRemoved(old, new Dataset) (result []DatasetDifference) {
 	for _, oldModel := range old.Models {
 		if oldModel.findEquivalent(new.Models) == nil {
 			result = append(result, DatasetDifference{
+				Type:        DatasetDifferenceTypeModelRemoved,
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   oldModel.Name,
@@ -102,6 +124,7 @@ func fieldRemoved(old, new Dataset) (result []DatasetDifference) {
 		field Field,
 	) *DatasetDifference {
 		return &DatasetDifference{
+			Type:        DatasetDifferenceTypeFieldRemoved,
 			Level:       DatasetDifferenceLevelField,
 			Severity:    DatasetDifferenceSeverityBreaking,
 			ModelName:   modelName,
@@ -120,6 +143,7 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 	) *DatasetDifference {
 		if !equalStringPointers(oldField.Type, newField.Type) {
 			return &DatasetDifference{
+				Type:      DatasetDifferenceTypeFieldTypeChanged,
 				Level:     DatasetDifferenceLevelField,
 				Severity:  DatasetDifferenceSeverityBreaking,
 				ModelName: modelName,
