@@ -115,18 +115,6 @@ func TestParseDataset(t *testing.T) {
 	fieldType := "text"
 	fieldDescription := "Description of the column"
 
-	dbtSpecificationYaml := fmt.Sprintf(`version: 2
-models:
-  - name: %v
-    description: "%v"
-    config:
-      materialized: %v
-    columns:
-      - name: %v
-        data_type: %v
-        description: "%v"`,
-		modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription)
-
 	type args struct {
 		schemaType    string
 		specification []byte
@@ -145,7 +133,16 @@ models:
 		},
 		{
 			name: "dbt",
-			args: args{"dbt", []byte(dbtSpecificationYaml)},
+			args: args{"dbt", []byte(fmt.Sprintf(`version: 2
+models:
+  - name: %v
+    description: "%v"
+    config:
+      materialized: %v
+    columns:
+      - name: %v
+        data_type: %v
+        description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription))},
 			want: &Dataset{Models: []Model{
 				{
 					Name:        modelName,
@@ -156,6 +153,40 @@ models:
 							Name:        fieldName,
 							Type:        &fieldType,
 							Description: &fieldDescription,
+						},
+					},
+				},
+			}},
+		},
+		{
+			name: "dbt-model-level-constraints",
+			args: args{"dbt", []byte(fmt.Sprintf(`version: 2
+models:
+  - name: %v
+    description: "%v"
+    config:
+      materialized: %v
+    constraints:
+      - type: not_null
+        columns: [%v]
+      - type: unique
+        columns: [%v]
+    columns:
+      - name: %v
+        data_type: %v
+        description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldName, fieldName, fieldType, fieldDescription))},
+			want: &Dataset{Models: []Model{
+				{
+					Name:        modelName,
+					Type:        &modelType,
+					Description: &modelDescription,
+					Fields: []Field{
+						{
+							Name:        fieldName,
+							Type:        &fieldType,
+							Description: &fieldDescription,
+							Required:    true,
+							Unique:      true,
 						},
 					},
 				},
@@ -193,20 +224,23 @@ func (dataset Dataset) equals(other Dataset) bool {
 }
 
 func (model Model) equals(other Model) bool {
-	return equal(model.Fields, other.Fields) &&
+	return fieldsAreEqual(model.Fields, other.Fields) &&
 		model.Name == other.Name &&
 		*model.Type == *other.Type &&
 		*model.Description == *other.Description
 }
 
 func (field Field) equals(other Field) bool {
-	return equal(field.Fields, other.Fields) &&
+	return fieldsAreEqual(field.Fields, other.Fields) &&
 		field.Name == other.Name &&
 		*field.Type == *other.Type &&
-		*field.Description == *other.Description
+		*field.Description == *other.Description &&
+		field.Required == other.Required &&
+		field.Unique == other.Unique &&
+		fieldConstraintsAreEqual(field.AdditionalConstraints, other.AdditionalConstraints)
 }
 
-func equal(fields []Field, otherFields []Field) bool {
+func fieldsAreEqual(fields []Field, otherFields []Field) bool {
 	if len(fields) != len(otherFields) {
 		return false
 	}
@@ -217,4 +251,29 @@ func equal(fields []Field, otherFields []Field) bool {
 	}
 
 	return true
+}
+
+func fieldConstraintsAreEqual(constraints, other []FieldConstraint) bool {
+	for _, constraint := range constraints {
+		if !constraint.isIn(other) {
+			return false
+		}
+	}
+
+	for _, constraint := range other {
+		if !constraint.isIn(constraints) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
+	for _, fieldConstraint := range list {
+		if fieldConstraint.Name == fieldConstraint.Name && fieldConstraint.Value == constraint.Value {
+			return true
+		}
+	}
+	return false
 }

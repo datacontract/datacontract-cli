@@ -17,10 +17,18 @@ type Model struct {
 }
 
 type Field struct {
-	Name        string
-	Type        *string
-	Description *string
-	Fields      []Field
+	Name                  string
+	Type                  *string
+	Description           *string
+	Required              bool
+	Unique                bool
+	AdditionalConstraints []FieldConstraint
+	Fields                []Field
+}
+
+type FieldConstraint struct {
+	Name  string
+	Value *string
 }
 
 type DatasetDifference struct {
@@ -305,7 +313,14 @@ type dbtModel struct {
 	Name        string
 	Description string
 	Config      dbtModelConfig
+	Constraints []dbtConstraint
 	Columns     []dbtColumn
+}
+
+type dbtConstraint struct {
+	Type       string
+	Expression string
+	Columns    []string
 }
 
 type dbtModelConfig struct {
@@ -345,7 +360,22 @@ func fieldsFromDbtModel(model dbtModel) (fields []Field) {
 			Name:        column.Name,
 			Type:        &column.DataType,
 			Description: &column.Description,
+			Required:    column.hasModelLevelConstraint(model.Constraints, "not_null"),
+			Unique:      column.hasModelLevelConstraint(model.Constraints, "unique"),
 		})
 	}
 	return fields
+}
+
+func (column dbtColumn) hasModelLevelConstraint(constraints []dbtConstraint, constraintType string) bool {
+	for _, constraint := range constraints {
+		if constraint.Type == constraintType {
+			for _, columnName := range constraint.Columns {
+				if column.Name == columnName {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
