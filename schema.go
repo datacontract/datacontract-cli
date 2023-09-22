@@ -36,7 +36,7 @@ type DatasetDifference struct {
 	Type        DatasetDifferenceType
 	Level       DatasetDifferenceLevel
 	Severity    DatasetDifferenceSeverity
-	ModelName   string
+	ModelName   *string
 	FieldName   string
 	Description string
 }
@@ -152,7 +152,7 @@ func modelRemoved(old, new Dataset) (result []DatasetDifference) {
 				Type:        DatasetDifferenceTypeModelRemoved,
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityBreaking,
-				ModelName:   oldModel.Name,
+				ModelName:   &oldModel.Name,
 				Description: fmt.Sprintf("model '%v' was removed", oldModel.Name),
 			})
 		}
@@ -170,7 +170,7 @@ func fieldRemoved(old, new Dataset) (result []DatasetDifference) {
 			Type:        DatasetDifferenceTypeFieldRemoved,
 			Level:       DatasetDifferenceLevelField,
 			Severity:    DatasetDifferenceSeverityBreaking,
-			ModelName:   modelName,
+			ModelName:   &modelName,
 			FieldName:   fieldName,
 			Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
 		})
@@ -189,7 +189,7 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 				Type:      DatasetDifferenceTypeFieldTypeChanged,
 				Level:     DatasetDifferenceLevelField,
 				Severity:  DatasetDifferenceSeverityBreaking,
-				ModelName: modelName,
+				ModelName: &modelName,
 				FieldName: fieldName,
 				Description: fmt.Sprintf(
 					"type of field '%v.%v' was changed from '%v' to '%v'",
@@ -217,7 +217,7 @@ func fieldRequirementRemoved(old, new Dataset) (result []DatasetDifference) {
 				Type:        DatasetDifferenceTypeFieldRequirementRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
-				ModelName:   modelName,
+				ModelName:   &modelName,
 				FieldName:   fieldName,
 				Description: fmt.Sprintf("field requirement of '%v.%v' was removed", modelName, fieldName),
 			})
@@ -239,7 +239,7 @@ func fieldUniquenessRemoved(old, new Dataset) (result []DatasetDifference) {
 				Type:        DatasetDifferenceTypeFieldUniquenessRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
-				ModelName:   modelName,
+				ModelName:   &modelName,
 				FieldName:   fieldName,
 				Description: fmt.Sprintf("field uniqueness of '%v.%v' was removed", modelName, fieldName),
 			})
@@ -262,7 +262,7 @@ func fieldConstraintAdded(old, new Dataset) (result []DatasetDifference) {
 					Type:      DatasetDifferenceTypeFieldAdditionalConstraintAdded,
 					Level:     DatasetDifferenceLevelField,
 					Severity:  DatasetDifferenceSeverityBreaking,
-					ModelName: modelName,
+					ModelName: &modelName,
 					FieldName: fieldName,
 					Description: fmt.Sprintf("field constraint (%v: %v) of '%v.%v' was added",
 						constraint.Type, constraint.Expression, modelName, fieldName),
@@ -287,7 +287,7 @@ func fieldConstraintRemoved(old, new Dataset) (result []DatasetDifference) {
 					Type:      DatasetDifferenceTypeFieldAdditionalConstraintRemoved,
 					Level:     DatasetDifferenceLevelField,
 					Severity:  DatasetDifferenceSeverityBreaking,
-					ModelName: modelName,
+					ModelName: &modelName,
 					FieldName: fieldName,
 					Description: fmt.Sprintf("field constraint (%v: %v) of '%v.%v' was removed",
 						constraint.Type, constraint.Expression, modelName, fieldName),
@@ -320,7 +320,7 @@ func modelAdded(old, new Dataset) (result []DatasetDifference) {
 				Type:        DatasetDifferenceModelAdded,
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityInfo,
-				ModelName:   newModel.Name,
+				ModelName:   &newModel.Name,
 				Description: fmt.Sprintf("model '%v' was added", newModel.Name),
 			})
 		}
