@@ -331,6 +331,7 @@ type dbtColumn struct {
 	Name        string
 	Description string
 	DataType    string `yaml:"data_type"`
+	Constraints []dbtConstraint
 }
 
 func parseDbtDataset(specification []byte) *Dataset {
@@ -351,41 +352,60 @@ func modelsFromDbtSpecification(res dbtSpecification) (models []Model) {
 			Fields:      fieldsFromDbtModel(model),
 		})
 	}
+
 	return models
 }
 
 func fieldsFromDbtModel(model dbtModel) (fields []Field) {
 	for _, column := range model.Columns {
-		var additionalConstraints []FieldConstraint
-
-		for _, constraint := range model.Constraints {
-			if constraint.Type != "not_null" && constraint.Type != "unique" {
-				additionalConstraints = append(additionalConstraints,
-					FieldConstraint{Type: constraint.Type, Expression: constraint.Expression})
-			}
-		}
+		allDbtConstraints := combineDbtConstraints(model, column)
 
 		fields = append(fields, Field{
 			Name:                  column.Name,
 			Type:                  &column.DataType,
 			Description:           &column.Description,
-			Required:              column.hasModelLevelConstraint(model.Constraints, "not_null"),
-			Unique:                column.hasModelLevelConstraint(model.Constraints, "unique"),
-			AdditionalConstraints: additionalConstraints,
+			Required:              containsDbtConstraint(allDbtConstraints, "not_null"),
+			Unique:                containsDbtConstraint(allDbtConstraints, "unique"),
+			AdditionalConstraints: additionalDbtConstraints(allDbtConstraints),
 		})
 	}
+
 	return fields
 }
 
-func (column dbtColumn) hasModelLevelConstraint(constraints []dbtConstraint, constraintType string) bool {
-	for _, constraint := range constraints {
-		if constraint.Type == constraintType {
-			for _, columnName := range constraint.Columns {
-				if column.Name == columnName {
-					return true
-				}
+func combineDbtConstraints(model dbtModel, column dbtColumn) (result []dbtConstraint) {
+	for _, constraint := range model.Constraints {
+		for _, columnName := range constraint.Columns {
+			if columnName == column.Name {
+				result = append(result, constraint)
 			}
 		}
 	}
+
+	for _, constraint := range column.Constraints {
+		result = append(result, constraint)
+	}
+
+	return result
+}
+
+func containsDbtConstraint(constraints []dbtConstraint, constraintType string) bool {
+	for _, constraint := range constraints {
+		if constraint.Type == constraintType {
+			return true
+		}
+	}
+
 	return false
+}
+
+func additionalDbtConstraints(allDbtConstraints []dbtConstraint) (result []FieldConstraint) {
+	for _, constraint := range allDbtConstraints {
+		if constraint.Type != "not_null" && constraint.Type != "unique" {
+			result = append(result,
+				FieldConstraint{Type: constraint.Type, Expression: constraint.Expression})
+		}
+	}
+
+	return result
 }

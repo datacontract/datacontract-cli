@@ -196,6 +196,42 @@ models:
 				},
 			}},
 		},
+		{
+			name: "dbt-column-level-constraints",
+			args: args{"dbt", []byte(fmt.Sprintf(`version: 2
+models:
+  - name: %v
+    description: "%v"
+    config:
+      materialized: %v
+    columns:
+      - name: %v
+        data_type: %v
+        description: "%v"
+        constraints:
+          - type: not_null
+          - type: unique
+          - type: check
+            expression: "id > 0"
+`, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription))},
+			want: &Dataset{Models: []Model{
+				{
+					Name:        modelName,
+					Type:        &modelType,
+					Description: &modelDescription,
+					Fields: []Field{
+						{
+							Name:                  fieldName,
+							Type:                  &fieldType,
+							Description:           &fieldDescription,
+							Required:              true,
+							Unique:                true,
+							AdditionalConstraints: []FieldConstraint{{Type: "check", Expression: "id > 0"}},
+						},
+					},
+				},
+			}},
+		},
 	}
 
 	for _, tt := range tests {
