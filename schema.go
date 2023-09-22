@@ -6,7 +6,8 @@ import (
 )
 
 type Dataset struct {
-	Models []Model
+	SchemaType string
+	Models     []Model
 }
 
 type Model struct {
@@ -50,10 +51,12 @@ const (
 	DatasetDifferenceTypeFieldUniquenessRemoved
 	DatasetDifferenceTypeFieldAdditionalConstraintAdded
 	DatasetDifferenceTypeFieldAdditionalConstraintRemoved
+	DatasetDifferenceDatasetSchemaTypeChanged
 )
 
 func (d DatasetDifferenceType) String() string {
 	switch d {
+	// breaking
 	case DatasetDifferenceTypeModelRemoved:
 		return "model-removed"
 	case DatasetDifferenceTypeFieldRemoved:
@@ -68,6 +71,9 @@ func (d DatasetDifferenceType) String() string {
 		return "field-constraint-removed"
 	case DatasetDifferenceTypeFieldAdditionalConstraintAdded:
 		return "field-constraint-added"
+	// info
+	case DatasetDifferenceDatasetSchemaTypeChanged:
+		return "dataset-schema-type-changed"
 	}
 
 	return ""
@@ -76,17 +82,21 @@ func (d DatasetDifferenceType) String() string {
 type DatasetDifferenceLevel int
 
 const (
-	DatasetDifferenceLevelModel DatasetDifferenceLevel = iota
+	DatasetDifferenceLevelDataset DatasetDifferenceLevel = iota
+	DatasetDifferenceLevelModel
 	DatasetDifferenceLevelField
 )
 
 func (d DatasetDifferenceLevel) String() string {
 	switch d {
+	case DatasetDifferenceLevelDataset:
+		return "dataset"
 	case DatasetDifferenceLevelModel:
 		return "model"
 	case DatasetDifferenceLevelField:
 		return "field"
 	}
+
 	return ""
 }
 
@@ -104,6 +114,7 @@ func (d DatasetDifferenceSeverity) String() string {
 	case DatasetDifferenceSeverityBreaking:
 		return "breaking"
 	}
+
 	return ""
 }
 
@@ -111,6 +122,7 @@ type datasetComparison = func(old, new Dataset) []DatasetDifference
 
 func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 	comparisons := []datasetComparison{
+		// breaking
 		modelRemoved,
 		fieldRemoved,
 		fieldTypeChanged,
@@ -118,6 +130,8 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		fieldUniquenessRemoved,
 		fieldConstraintAdded,
 		fieldConstraintRemoved,
+		// info
+		datasetSchemaTypeChanged,
 	}
 
 	for _, comparison := range comparisons {
@@ -281,6 +295,18 @@ func fieldConstraintRemoved(old, new Dataset) (result []DatasetDifference) {
 	}
 
 	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func datasetSchemaTypeChanged(old, new Dataset) (result []DatasetDifference) {
+	if old.SchemaType != new.SchemaType {
+		result = append(result, DatasetDifference{
+			Type:        DatasetDifferenceDatasetSchemaTypeChanged,
+			Level:       DatasetDifferenceLevelDataset,
+			Severity:    DatasetDifferenceSeverityInfo,
+			Description: fmt.Sprintf("schema type changed from '%v' to '%v'", old.SchemaType, new.SchemaType),
+		})
+	}
+	return result
 }
 
 func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
@@ -455,7 +481,7 @@ func parseDbtDataset(specification []byte) *Dataset {
 	yaml.Unmarshal(specification, &res)
 	models := modelsFromDbtSpecification(res)
 
-	return &Dataset{models}
+	return &Dataset{SchemaType: "dbt", Models: models}
 }
 
 func modelsFromDbtSpecification(res dbtSpecification) (models []Model) {

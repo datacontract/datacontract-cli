@@ -166,6 +166,19 @@ func TestCompareDatasets(t *testing.T) {
 				Description: "field constraint (custom: special) of 'my_table.my_column' was removed",
 			}},
 		},
+		{
+			name: "datasetSchemaTypeChanged",
+			args: args{
+				Dataset{SchemaType: "dbt"},
+				Dataset{SchemaType: "json-schema"},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceDatasetSchemaTypeChanged,
+				Level:       DatasetDifferenceLevelDataset,
+				Severity:    DatasetDifferenceSeverityInfo,
+				Description: "schema type changed from 'dbt' to 'json-schema'",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
