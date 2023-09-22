@@ -192,11 +192,11 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 				ModelName: modelName,
 				FieldName: fieldName,
 				Description: fmt.Sprintf(
-					"type of field '%v.%v' was changed from %v to %v",
+					"type of field '%v.%v' was changed from '%v' to '%v'",
 					modelName,
 					fieldName,
-					*oldField.Type,
-					*newField.Type,
+					stringPointerString(oldField.Type),
+					stringPointerString(newField.Type),
 				),
 			})
 		} else {
@@ -569,4 +569,12 @@ func additionalDbtConstraints(allDbtConstraints []dbtConstraint) (result []Field
 	}
 
 	return result
+}
+
+func stringPointerString(str *string) string {
+	if str == nil {
+		return ""
+	}
+
+	return *str
 }

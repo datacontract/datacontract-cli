@@ -76,7 +76,41 @@ func TestCompareDatasets(t *testing.T) {
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_table",
 				FieldName:   "my_column",
-				Description: fmt.Sprintf("type of field 'my_table.my_column' was changed from %v to %v", dummyString1, dummyString2),
+				Description: fmt.Sprintf("type of field 'my_table.my_column' was changed from '%v' to '%v'", dummyString1, dummyString2),
+			}},
+		},
+		{
+			name: "fieldTypeChanged-old-nil ",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column"}}}}},
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Type: &dummyString2}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldTypeChanged,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   "my_column",
+				Description: fmt.Sprintf("type of field 'my_table.my_column' was changed from '' to '%v'", dummyString2),
+			}},
+		},
+		{
+			name: "fieldTypeChanged-new-nil ",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Type: &dummyString1}}}}},
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column"}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldTypeChanged,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   "my_column",
+				Description: fmt.Sprintf("type of field 'my_table.my_column' was changed from '%v' to ''", dummyString1),
 			}},
 		},
 		{
@@ -93,7 +127,7 @@ func TestCompareDatasets(t *testing.T) {
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   "my_model",
 				FieldName:   "my_field.my_subfield",
-				Description: fmt.Sprintf("type of field 'my_model.my_field.my_subfield' was changed from %v to %v", dummyString1, dummyString2),
+				Description: fmt.Sprintf("type of field 'my_model.my_field.my_subfield' was changed from '%v' to '%v'", dummyString1, dummyString2),
 			}},
 		},
 		{
