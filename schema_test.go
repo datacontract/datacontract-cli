@@ -130,6 +130,42 @@ func TestCompareDatasets(t *testing.T) {
 				Description: "field uniqueness of 'my_table.my_column' was removed",
 			}},
 		},
+		{
+			name: "fieldConstraintAdded",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column"}}}}},
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", AdditionalConstraints: []FieldConstraint{
+						{Type: "check", Expression: "id < 0"}}}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldAdditionalConstraintAdded,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   "my_column",
+				Description: "field constraint (check: id < 0) of 'my_table.my_column' was added",
+			}},
+		},
+		{
+			name: "fieldConstraintRemoved",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", AdditionalConstraints: []FieldConstraint{
+						{Type: "custom", Expression: "special"}}}}}}},
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column"}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldAdditionalConstraintRemoved,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   "my_column",
+				Description: "field constraint (custom: special) of 'my_table.my_column' was removed",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -341,14 +377,4 @@ func fieldConstraintsAreEqual(constraints, other []FieldConstraint) bool {
 	}
 
 	return true
-}
-
-func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
-	for _, fieldConstraint := range list {
-		if fieldConstraint.Type == fieldConstraint.Type && fieldConstraint.Expression == constraint.Expression {
-			return true
-		}
-	}
-
-	return false
 }

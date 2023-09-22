@@ -48,6 +48,8 @@ const (
 	DatasetDifferenceTypeFieldTypeChanged
 	DatasetDifferenceTypeFieldRequirementRemoved
 	DatasetDifferenceTypeFieldUniquenessRemoved
+	DatasetDifferenceTypeFieldAdditionalConstraintAdded
+	DatasetDifferenceTypeFieldAdditionalConstraintRemoved
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -62,6 +64,10 @@ func (d DatasetDifferenceType) String() string {
 		return "field-requirement-removed"
 	case DatasetDifferenceTypeFieldUniquenessRemoved:
 		return "field-uniqueness-removed"
+	case DatasetDifferenceTypeFieldAdditionalConstraintRemoved:
+		return "field-constraint-removed"
+	case DatasetDifferenceTypeFieldAdditionalConstraintAdded:
+		return "field-constraint-added"
 	}
 
 	return ""
@@ -110,6 +116,8 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		fieldTypeChanged,
 		fieldRequirementRemoved,
 		fieldUniquenessRemoved,
+		fieldConstraintAdded,
+		fieldConstraintRemoved,
 	}
 
 	for _, comparison := range comparisons {
@@ -139,15 +147,15 @@ func fieldRemoved(old, new Dataset) (result []DatasetDifference) {
 	var difference fieldEquivalentExistsNot = func(
 		modelName, fieldName string,
 		field Field,
-	) *DatasetDifference {
-		return &DatasetDifference{
+	) (result []DatasetDifference) {
+		return append(result, DatasetDifference{
 			Type:        DatasetDifferenceTypeFieldRemoved,
 			Level:       DatasetDifferenceLevelField,
 			Severity:    DatasetDifferenceSeverityBreaking,
 			ModelName:   modelName,
 			FieldName:   fieldName,
 			Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
-		}
+		})
 	}
 
 	return append(result, compareFields(old, new, nil, &difference)...)
@@ -157,9 +165,9 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField Field,
-	) *DatasetDifference {
+	) (result []DatasetDifference) {
 		if !equalStringPointers(oldField.Type, newField.Type) {
-			return &DatasetDifference{
+			return append(result, DatasetDifference{
 				Type:      DatasetDifferenceTypeFieldTypeChanged,
 				Level:     DatasetDifferenceLevelField,
 				Severity:  DatasetDifferenceSeverityBreaking,
@@ -172,9 +180,9 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 					*oldField.Type,
 					*newField.Type,
 				),
-			}
+			})
 		} else {
-			return nil
+			return result
 		}
 	}
 
@@ -185,18 +193,18 @@ func fieldRequirementRemoved(old, new Dataset) (result []DatasetDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField Field,
-	) *DatasetDifference {
+	) (result []DatasetDifference) {
 		if oldField.Required && !newField.Required {
-			return &DatasetDifference{
+			return append(result, DatasetDifference{
 				Type:        DatasetDifferenceTypeFieldRequirementRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   modelName,
 				FieldName:   fieldName,
 				Description: fmt.Sprintf("field requirement of '%v.%v' was removed", modelName, fieldName),
-			}
+			})
 		} else {
-			return nil
+			return result
 		}
 	}
 
@@ -207,22 +215,82 @@ func fieldUniquenessRemoved(old, new Dataset) (result []DatasetDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField Field,
-	) *DatasetDifference {
+	) (result []DatasetDifference) {
 		if oldField.Unique && !newField.Unique {
-			return &DatasetDifference{
+			return append(result, DatasetDifference{
 				Type:        DatasetDifferenceTypeFieldUniquenessRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   modelName,
 				FieldName:   fieldName,
 				Description: fmt.Sprintf("field uniqueness of '%v.%v' was removed", modelName, fieldName),
-			}
+			})
 		} else {
-			return nil
+			return result
 		}
 	}
 
 	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldConstraintAdded(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField Field,
+	) (result []DatasetDifference) {
+		for _, constraint := range newField.AdditionalConstraints {
+			if !constraint.isIn(oldField.AdditionalConstraints) {
+				result = append(result, DatasetDifference{
+					Type:      DatasetDifferenceTypeFieldAdditionalConstraintAdded,
+					Level:     DatasetDifferenceLevelField,
+					Severity:  DatasetDifferenceSeverityBreaking,
+					ModelName: modelName,
+					FieldName: fieldName,
+					Description: fmt.Sprintf("field constraint (%v: %v) of '%v.%v' was added",
+						constraint.Type, constraint.Expression, modelName, fieldName),
+				})
+			}
+		}
+
+		return result
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldConstraintRemoved(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField Field,
+	) (result []DatasetDifference) {
+		for _, constraint := range oldField.AdditionalConstraints {
+			if !constraint.isIn(newField.AdditionalConstraints) {
+				result = append(result, DatasetDifference{
+					Type:      DatasetDifferenceTypeFieldAdditionalConstraintRemoved,
+					Level:     DatasetDifferenceLevelField,
+					Severity:  DatasetDifferenceSeverityBreaking,
+					ModelName: modelName,
+					FieldName: fieldName,
+					Description: fmt.Sprintf("field constraint (%v: %v) of '%v.%v' was removed",
+						constraint.Type, constraint.Expression, modelName, fieldName),
+				})
+			}
+		}
+
+		return result
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
+	for _, oldConstraint := range list {
+		if constraint.Type == oldConstraint.Type && constraint.Expression == oldConstraint.Expression {
+			return true
+		}
+	}
+
+	return false
 }
 
 func equalStringPointers(s1, s2 *string) bool {
@@ -244,13 +312,13 @@ type fieldEquivalentExists func(
 	prefixedFieldName string,
 	oldField Field,
 	newField Field,
-) *DatasetDifference
+) []DatasetDifference
 
 type fieldEquivalentExistsNot func(
 	modelName string,
 	prefixedFieldName string,
 	field Field,
-) *DatasetDifference
+) []DatasetDifference
 
 func compareFields(
 	old Dataset,
@@ -291,17 +359,11 @@ func compareFieldsRecursive(
 
 		if newField := oldField.findEquivalent(newFields); newField == nil {
 			if whenEquivalentExistsNot != nil {
-				difference := (*whenEquivalentExistsNot)(modelName, fieldName, oldField)
-				if difference != nil {
-					result = append(result, *difference)
-				}
+				result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, oldField)...)
 			}
 		} else {
 			if whenEquivalentExists != nil {
-				difference := (*whenEquivalentExists)(modelName, fieldName, oldField, *newField)
-				if difference != nil {
-					result = append(result, *difference)
-				}
+				result = append(result, (*whenEquivalentExists)(modelName, fieldName, oldField, *newField)...)
 			}
 			result = append(result,
 				compareFieldsRecursive(
