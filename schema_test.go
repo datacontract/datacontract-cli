@@ -96,6 +96,23 @@ func TestCompareDatasets(t *testing.T) {
 				Description: fmt.Sprintf("type of field 'my_model.my_field.my_subfield' was changed from %v to %v", dummyString1, dummyString2),
 			}},
 		},
+		{
+			name: "fieldRequirementRemoved",
+			args: args{
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Required: true}}}}},
+				Dataset{Models: []Model{{Name: "my_table", Fields: []Field{
+					{Name: "my_column", Required: false}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldRequirementRemoved,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityBreaking,
+				ModelName:   "my_table",
+				FieldName:   "my_column",
+				Description: "field requirement of 'my_table.my_column' was removed",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -315,5 +332,6 @@ func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
 			return true
 		}
 	}
+
 	return false
 }
