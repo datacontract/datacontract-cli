@@ -171,10 +171,13 @@ models:
         columns: [%v]
       - type: unique
         columns: [%v]
+      - type: check
+        expression: "id > 0"
+        columns: [%v]
     columns:
       - name: %v
         data_type: %v
-        description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldName, fieldName, fieldType, fieldDescription))},
+        description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldName, fieldName, fieldName, fieldType, fieldDescription))},
 			want: &Dataset{Models: []Model{
 				{
 					Name:        modelName,
@@ -182,11 +185,12 @@ models:
 					Description: &modelDescription,
 					Fields: []Field{
 						{
-							Name:        fieldName,
-							Type:        &fieldType,
-							Description: &fieldDescription,
-							Required:    true,
-							Unique:      true,
+							Name:                  fieldName,
+							Type:                  &fieldType,
+							Description:           &fieldDescription,
+							Required:              true,
+							Unique:                true,
+							AdditionalConstraints: []FieldConstraint{{Type: "check", Expression: "id > 0"}},
 						},
 					},
 				},
@@ -271,7 +275,7 @@ func fieldConstraintsAreEqual(constraints, other []FieldConstraint) bool {
 
 func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
 	for _, fieldConstraint := range list {
-		if fieldConstraint.Name == fieldConstraint.Name && fieldConstraint.Value == constraint.Value {
+		if fieldConstraint.Type == fieldConstraint.Type && fieldConstraint.Expression == constraint.Expression {
 			return true
 		}
 	}

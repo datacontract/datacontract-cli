@@ -27,8 +27,8 @@ type Field struct {
 }
 
 type FieldConstraint struct {
-	Name  string
-	Value *string
+	Type       string
+	Expression string
 }
 
 type DatasetDifference struct {
@@ -356,12 +356,22 @@ func modelsFromDbtSpecification(res dbtSpecification) (models []Model) {
 
 func fieldsFromDbtModel(model dbtModel) (fields []Field) {
 	for _, column := range model.Columns {
+		var additionalConstraints []FieldConstraint
+
+		for _, constraint := range model.Constraints {
+			if constraint.Type != "not_null" && constraint.Type != "unique" {
+				additionalConstraints = append(additionalConstraints,
+					FieldConstraint{Type: constraint.Type, Expression: constraint.Expression})
+			}
+		}
+
 		fields = append(fields, Field{
-			Name:        column.Name,
-			Type:        &column.DataType,
-			Description: &column.Description,
-			Required:    column.hasModelLevelConstraint(model.Constraints, "not_null"),
-			Unique:      column.hasModelLevelConstraint(model.Constraints, "unique"),
+			Name:                  column.Name,
+			Type:                  &column.DataType,
+			Description:           &column.Description,
+			Required:              column.hasModelLevelConstraint(model.Constraints, "not_null"),
+			Unique:                column.hasModelLevelConstraint(model.Constraints, "unique"),
+			AdditionalConstraints: additionalConstraints,
 		})
 	}
 	return fields
