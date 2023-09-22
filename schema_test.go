@@ -11,6 +11,9 @@ func TestCompareDatasets(t *testing.T) {
 	dummyString2 := "dummy2"
 
 	modelName := "my_table"
+	fieldName := "my_field"
+	subFieldName := "my_subfield"
+	fieldNameAndSubfieldName := fmt.Sprintf("%v.%v", fieldName, subFieldName)
 
 	type args struct {
 		old Dataset
@@ -35,7 +38,7 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldRemoved",
 			args: args{
-				Dataset{Models: []Model{{Name: modelName, Fields: []Field{{Name: "my_column"}}}}},
+				Dataset{Models: []Model{{Name: modelName, Fields: []Field{{Name: fieldName}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{}}}},
 			},
 			want: []DatasetDifference{{
@@ -43,136 +46,136 @@ func TestCompareDatasets(t *testing.T) {
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("field '%v.my_column' was removed", modelName),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
 			}},
 		},
 		{
 			name: "fieldRemoved-subfield",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_field", Fields: []Field{{Name: "my_subfield"}}}}}}},
+					{Name: fieldName, Fields: []Field{{Name: subFieldName}}}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_field"}}}}},
+					{Name: fieldName}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_field.my_subfield",
-				Description: fmt.Sprintf("field '%v.my_field.my_subfield' was removed", modelName),
+				FieldName:   &fieldNameAndSubfieldName,
+				Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldNameAndSubfieldName),
 			}},
 		},
 		{
 			name: "fieldTypeChanged",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Type: &dummyString1}}}}},
+					{Name: fieldName, Type: &dummyString1}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Type: &dummyString2}}}}},
+					{Name: fieldName, Type: &dummyString2}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldTypeChanged,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("type of field '%v.my_column' was changed from '%v' to '%v'", modelName, dummyString1, dummyString2),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("type of field '%v.%v' was changed from '%v' to '%v'", modelName, fieldName, dummyString1, dummyString2),
 			}},
 		},
 		{
 			name: "fieldTypeChanged-old-nil ",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column"}}}}},
+					{Name: fieldName}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Type: &dummyString2}}}}},
+					{Name: fieldName, Type: &dummyString2}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldTypeChanged,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("type of field '%v.my_column' was changed from '' to '%v'", modelName, dummyString2),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("type of field '%v.%v' was changed from '' to '%v'", modelName, fieldName, dummyString2),
 			}},
 		},
 		{
 			name: "fieldTypeChanged-new-nil ",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Type: &dummyString1}}}}},
+					{Name: fieldName, Type: &dummyString1}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column"}}}}},
+					{Name: fieldName}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldTypeChanged,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("type of field '%v.my_column' was changed from '%v' to ''", modelName, dummyString1),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("type of field '%v.%v' was changed from '%v' to ''", modelName, fieldName, dummyString1),
 			}},
 		},
 		{
 			name: "fieldTypeChanged-subfield",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_field", Fields: []Field{{Name: "my_subfield", Type: &dummyString1}}}}}}},
+					{Name: fieldName, Fields: []Field{{Name: subFieldName, Type: &dummyString1}}}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_field", Fields: []Field{{Name: "my_subfield", Type: &dummyString2}}}}}}},
+					{Name: fieldName, Fields: []Field{{Name: subFieldName, Type: &dummyString2}}}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldTypeChanged,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_field.my_subfield",
-				Description: fmt.Sprintf("type of field '%v.my_field.my_subfield' was changed from '%v' to '%v'", modelName, dummyString1, dummyString2),
+				FieldName:   &fieldNameAndSubfieldName,
+				Description: fmt.Sprintf("type of field '%v.%v' was changed from '%v' to '%v'", modelName, fieldNameAndSubfieldName, dummyString1, dummyString2),
 			}},
 		},
 		{
 			name: "fieldRequirementRemoved",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Required: true}}}}},
+					{Name: fieldName, Required: true}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Required: false}}}}},
+					{Name: fieldName, Required: false}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldRequirementRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("field requirement of '%v.my_column' was removed", modelName),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field requirement of '%v.%v' was removed", modelName, fieldName),
 			}},
 		},
 		{
 			name: "fieldUniquenessRemoved",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Unique: true}}}}},
+					{Name: fieldName, Unique: true}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", Unique: false}}}}},
+					{Name: fieldName, Unique: false}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldUniquenessRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("field uniqueness of '%v.my_column' was removed", modelName),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field uniqueness of '%v.%v' was removed", modelName, fieldName),
 			}},
 		},
 		{
 			name: "fieldConstraintAdded",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column"}}}}},
+					{Name: fieldName}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", AdditionalConstraints: []FieldConstraint{
+					{Name: fieldName, AdditionalConstraints: []FieldConstraint{
 						{Type: "check", Expression: "id < 0"}}}}}}},
 			},
 			want: []DatasetDifference{{
@@ -180,26 +183,26 @@ func TestCompareDatasets(t *testing.T) {
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("field constraint (check: id < 0) of '%v.my_column' was added", modelName),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field constraint (check: id < 0) of '%v.%v' was added", modelName, fieldName),
 			}},
 		},
 		{
 			name: "fieldConstraintRemoved",
 			args: args{
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column", AdditionalConstraints: []FieldConstraint{
+					{Name: fieldName, AdditionalConstraints: []FieldConstraint{
 						{Type: "custom", Expression: "special"}}}}}}},
 				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
-					{Name: "my_column"}}}}},
+					{Name: fieldName}}}}},
 			},
 			want: []DatasetDifference{{
 				Type:        DatasetDifferenceTypeFieldAdditionalConstraintRemoved,
 				Level:       DatasetDifferenceLevelField,
 				Severity:    DatasetDifferenceSeverityBreaking,
 				ModelName:   &modelName,
-				FieldName:   "my_column",
-				Description: fmt.Sprintf("field constraint (custom: special) of '%v.my_column' was removed", modelName),
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field constraint (custom: special) of '%v.%v' was removed", modelName, fieldName),
 			}},
 		},
 		{
