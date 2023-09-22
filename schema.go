@@ -100,14 +100,14 @@ func fieldRemoved(old, new Dataset) (result []DatasetDifference) {
 	var difference fieldEquivalentExistsNot = func(
 		modelName, fieldName string,
 		field Field,
-	) (result []DatasetDifference) {
-		return append(result, DatasetDifference{
+	) *DatasetDifference {
+		return &DatasetDifference{
 			Level:       DatasetDifferenceLevelField,
 			Severity:    DatasetDifferenceSeverityBreaking,
 			ModelName:   modelName,
 			FieldName:   fieldName,
 			Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
-		})
+		}
 	}
 
 	return append(result, compareFields(old, new, nil, &difference)...)
@@ -117,9 +117,9 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField Field,
-	) (result []DatasetDifference) {
+	) *DatasetDifference {
 		if !equalStringPointers(oldField.Type, newField.Type) {
-			return append(result, DatasetDifference{
+			return &DatasetDifference{
 				Level:     DatasetDifferenceLevelField,
 				Severity:  DatasetDifferenceSeverityBreaking,
 				ModelName: modelName,
@@ -131,11 +131,10 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 					*oldField.Type,
 					*newField.Type,
 				),
-			})
+			}
 		} else {
-			return result
+			return nil
 		}
-
 	}
 
 	return append(result, compareFields(old, new, &difference, nil)...)
@@ -160,13 +159,13 @@ type fieldEquivalentExists func(
 	prefixedFieldName string,
 	oldField Field,
 	newField Field,
-) []DatasetDifference
+) *DatasetDifference
 
 type fieldEquivalentExistsNot func(
 	modelName string,
 	prefixedFieldName string,
 	field Field,
-) []DatasetDifference
+) *DatasetDifference
 
 func compareFields(
 	old Dataset,
@@ -207,11 +206,17 @@ func compareFieldsRecursive(
 
 		if newField := oldField.findEquivalent(newFields); newField == nil {
 			if whenEquivalentExistsNot != nil {
-				result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, oldField)...)
+				difference := (*whenEquivalentExistsNot)(modelName, fieldName, oldField)
+				if difference != nil {
+					result = append(result, *difference)
+				}
 			}
 		} else {
 			if whenEquivalentExists != nil {
-				result = append(result, (*whenEquivalentExists)(modelName, fieldName, oldField, *newField)...)
+				difference := (*whenEquivalentExists)(modelName, fieldName, oldField, *newField)
+				if difference != nil {
+					result = append(result, *difference)
+				}
 			}
 			result = append(result,
 				compareFieldsRecursive(
