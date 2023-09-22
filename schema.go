@@ -52,6 +52,7 @@ const (
 	DatasetDifferenceTypeFieldAdditionalConstraintAdded
 	DatasetDifferenceTypeFieldAdditionalConstraintRemoved
 	DatasetDifferenceDatasetSchemaTypeChanged
+	DatasetDifferenceModelAdded
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -74,6 +75,8 @@ func (d DatasetDifferenceType) String() string {
 	// info
 	case DatasetDifferenceDatasetSchemaTypeChanged:
 		return "dataset-schema-type-changed"
+	case DatasetDifferenceModelAdded:
+		return "model-added"
 	}
 
 	return ""
@@ -132,6 +135,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		fieldConstraintRemoved,
 		// info
 		datasetSchemaTypeChanged,
+		modelAdded,
 	}
 
 	for _, comparison := range comparisons {
@@ -306,6 +310,22 @@ func datasetSchemaTypeChanged(old, new Dataset) (result []DatasetDifference) {
 			Description: fmt.Sprintf("schema type changed from '%v' to '%v'", old.SchemaType, new.SchemaType),
 		})
 	}
+	return result
+}
+
+func modelAdded(old, new Dataset) (result []DatasetDifference) {
+	for _, newModel := range new.Models {
+		if newModel.findEquivalent(old.Models) == nil {
+			result = append(result, DatasetDifference{
+				Type:        DatasetDifferenceModelAdded,
+				Level:       DatasetDifferenceLevelModel,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   newModel.Name,
+				Description: fmt.Sprintf("model '%v' was added", newModel.Name),
+			})
+		}
+	}
+
 	return result
 }
 

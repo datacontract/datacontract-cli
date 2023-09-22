@@ -179,6 +179,20 @@ func TestCompareDatasets(t *testing.T) {
 				Description: "schema type changed from 'dbt' to 'json-schema'",
 			}},
 		},
+		{
+			name: "modelAdded",
+			args: args{
+				Dataset{},
+				Dataset{Models: []Model{{Name: "my_model"}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceModelAdded,
+				Level:       DatasetDifferenceLevelModel,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   "my_model",
+				Description: "model 'my_model' was added",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
