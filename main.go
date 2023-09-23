@@ -54,8 +54,8 @@ func main() {
 				},
 			},
 			{
-				Name:  "validate",
-				Usage: "validates the data contract against its schema",
+				Name:  "lint",
+				Usage: "linter for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
@@ -64,21 +64,28 @@ func main() {
 						Usage: "url of Data Contract Specification json schema",
 					},
 					&cli.BoolFlag{
-						Name:  "validate-schema-object",
+						Name:  "lint-schema",
 						Value: false,
-						Usage: "EXPERIMENTAL - type specific validation of the schema object",
+						Usage: "EXPERIMENTAL - type specific linting of the schema object",
 					},
 					&cli.BoolFlag{
-						Name:  "validate-quality-object",
+						Name:  "lint-quality",
 						Value: false,
 						Usage: "EXPERIMENTAL - type specific validation of the quality object",
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					boolOptionNotImplemented(ctx, "validate-schema-object")
-					boolOptionNotImplemented(ctx, "validate-quality-object")
+					boolOptionNotImplemented(ctx, "lint-schema")
+					boolOptionNotImplemented(ctx, "lint-quality")
 
 					return Validate(ctx.String("file"), ctx.String("schema"))
+				},
+			}, {
+				Name:  "test",
+				Usage: "EXPERIMENTAL - run tests for the data contract",
+				Action: func(ctx *cli.Context) error {
+					fmt.Println("Command `test` not implemented yet!")
+					return nil
 				},
 			},
 			{
