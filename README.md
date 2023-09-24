@@ -5,15 +5,12 @@
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/cli/ci.yaml?branch=main"></a>
   <a href="https://img.shields.io/github/stars/datacontract/cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/cli" /></a>
-  <!--
-  <a href="https://github.com/datacontract/cli/graphs/contributors">
+  <!-- <a href="https://github.com/datacontract/cli/graphs/contributors">
     <img alt="Contributors" src="https://img.shields.io/github/contributors/datacontract/cli" /></a>
   <a href="https://github.com/datacontract/cli/releases">
     <img alt="Downloads" src="https://img.shields.io/github/downloads/datacontract/cli/total" /></a>
   <a href="https://github.com/datacontract/cli/releases">
-    <img  alt="Downloads of latest" src="https://img.shields.io/github/downloads/datacontract/cli/latest/total" /></a>
-  
-  -->
+    <img  alt="Downloads of latest" src="https://img.shields.io/github/downloads/datacontract/cli/latest/total" /></a> -->
 </p>
 
 The `datacontract` CLI lets you work with your `datacontract.yaml` files locally, and in your CI pipeline. It uses the [data contract specification](https://datacontract.com/) to validate your data contracts and to check for backwards compatibility.
