@@ -78,7 +78,7 @@ func main() {
 					boolOptionNotImplemented(ctx, "lint-schema")
 					boolOptionNotImplemented(ctx, "lint-quality")
 
-					return Validate(ctx.String("file"), ctx.String("schema"))
+					return Lint(ctx.String("file"), ctx.String("schema"))
 				},
 			}, {
 				Name:  "test",

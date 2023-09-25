@@ -13,20 +13,20 @@ import (
 
 type dataContract = map[string]interface{}
 
-func Validate(dataContractFileName string, schemaUrl string) error {
+func Lint(dataContractFileName string, schemaUrl string) error {
 	schemaResponse, err := fetchSchema(schemaUrl)
 	schemaData, err := readSchema(schemaResponse)
 	schema, err := createSchema(schemaData)
 	dataContractObject, err := readDataContract(dataContractFileName)
 
 	if err != nil {
-		return fmt.Errorf("validation failed: %w", err)
+		return fmt.Errorf("linting failed: %w", err)
 	}
 
-	return validate(schema, dataContractObject)
+	return lint(schema, dataContractObject)
 }
 
-func validate(schema *jsonschema.Schema, contract dataContract) error {
+func lint(schema *jsonschema.Schema, contract dataContract) error {
 	validationState := schema.Validate(context.Background(), contract)
 	printValidationState(validationState)
 
