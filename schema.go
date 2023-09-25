@@ -56,6 +56,7 @@ const (
 	DatasetDifferenceTypeModelTypeChanged
 	DatasetDifferenceTypeFieldAdded
 	DatasetDifferenceTypeFieldRequirementAdded
+	DatasetDifferenceTypeFieldUniquenessAdded
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -86,6 +87,8 @@ func (d DatasetDifferenceType) String() string {
 		return "field-added"
 	case DatasetDifferenceTypeFieldRequirementAdded:
 		return "field-requirement-added"
+	case DatasetDifferenceTypeFieldUniquenessAdded:
+		return "field-uniqueness-added"
 	}
 
 	return ""
@@ -148,6 +151,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		modelTypeChanged,
 		fieldAdded,
 		fieldRequirementAdded,
+		fieldUniquenessAdded,
 	}
 
 	for _, comparison := range comparisons {
@@ -388,6 +392,28 @@ func fieldRequirementAdded(old, new Dataset) (result []DatasetDifference) {
 				ModelName:   &modelName,
 				FieldName:   &fieldName,
 				Description: fmt.Sprintf("field requirement of '%v.%v' was added", modelName, fieldName),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldUniquenessAdded(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField Field,
+	) (result []DatasetDifference) {
+		if !oldField.Unique && newField.Unique {
+			return append(result, DatasetDifference{
+				Type:        DatasetDifferenceTypeFieldUniquenessAdded,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field uniqueness of '%v.%v' was added", modelName, fieldName),
 			})
 		} else {
 			return result

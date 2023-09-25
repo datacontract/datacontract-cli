@@ -278,6 +278,23 @@ func TestCompareDatasets(t *testing.T) {
 				Description: fmt.Sprintf("field requirement of '%v.%v' was added", modelName, fieldName),
 			}},
 		},
+		{
+			name: "fieldUniquenessAdded",
+			args: args{
+				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
+					{Name: fieldName, Unique: false}}}}},
+				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
+					{Name: fieldName, Unique: true}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldUniquenessAdded,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field uniqueness of '%v.%v' was added", modelName, fieldName),
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
