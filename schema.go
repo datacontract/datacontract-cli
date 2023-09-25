@@ -55,6 +55,7 @@ const (
 	DatasetDifferenceTypeModelAdded
 	DatasetDifferenceTypeModelTypeChanged
 	DatasetDifferenceTypeFieldAdded
+	DatasetDifferenceTypeFieldRequirementAdded
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -83,6 +84,8 @@ func (d DatasetDifferenceType) String() string {
 		return "model-type-changed"
 	case DatasetDifferenceTypeFieldAdded:
 		return "field-added"
+	case DatasetDifferenceTypeFieldRequirementAdded:
+		return "field-requirement-added"
 	}
 
 	return ""
@@ -144,6 +147,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		modelAdded,
 		modelTypeChanged,
 		fieldAdded,
+		fieldRequirementAdded,
 	}
 
 	for _, comparison := range comparisons {
@@ -369,6 +373,28 @@ func fieldAdded(old, new Dataset) (result []DatasetDifference) {
 	}
 
 	return append(result, compareFields(new, old, nil, &difference)...)
+}
+
+func fieldRequirementAdded(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField Field,
+	) (result []DatasetDifference) {
+		if !oldField.Required && newField.Required {
+			return append(result, DatasetDifference{
+				Type:        DatasetDifferenceTypeFieldRequirementAdded,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field requirement of '%v.%v' was added", modelName, fieldName),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
 func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
