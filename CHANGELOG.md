@@ -1,4 +1,4 @@
-# 0.1.2
+# 0.2.0
 
 - Suggest a fix during `init` when the file already exists
 - Improve usage documentation
