@@ -54,6 +54,7 @@ const (
 	DatasetDifferenceTypeDatasetSchemaTypeChanged
 	DatasetDifferenceTypeModelAdded
 	DatasetDifferenceTypeModelTypeChanged
+	DatasetDifferenceTypeFieldAdded
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -80,6 +81,8 @@ func (d DatasetDifferenceType) String() string {
 		return "model-added"
 	case DatasetDifferenceTypeModelTypeChanged:
 		return "model-type-changed"
+	case DatasetDifferenceTypeFieldAdded:
+		return "field-added"
 	}
 
 	return ""
@@ -140,6 +143,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		datasetSchemaTypeChanged,
 		modelAdded,
 		modelTypeChanged,
+		fieldAdded,
 	}
 
 	for _, comparison := range comparisons {
@@ -349,6 +353,24 @@ func modelTypeChanged(old, new Dataset) (result []DatasetDifference) {
 	return result
 }
 
+func fieldAdded(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExistsNot = func(
+		modelName, fieldName string,
+		field Field,
+	) (result []DatasetDifference) {
+		return append(result, DatasetDifference{
+			Type:        DatasetDifferenceTypeFieldAdded,
+			Level:       DatasetDifferenceLevelField,
+			Severity:    DatasetDifferenceSeverityInfo,
+			ModelName:   &modelName,
+			FieldName:   &fieldName,
+			Description: fmt.Sprintf("field '%v.%v' was added", modelName, fieldName),
+		})
+	}
+
+	return append(result, compareFields(new, old, nil, &difference)...)
+}
+
 func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
 	for _, oldConstraint := range list {
 		if constraint.Type == oldConstraint.Type && constraint.Expression == oldConstraint.Expression {
@@ -360,10 +382,8 @@ func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
 }
 
 type fieldEquivalentExists func(
-	modelName string,
-	prefixedFieldName string,
-	oldField Field,
-	newField Field,
+	modelName, prefixedFieldName string,
+	left, right Field,
 ) []DatasetDifference
 
 type fieldEquivalentExistsNot func(
@@ -372,20 +392,21 @@ type fieldEquivalentExistsNot func(
 	field Field,
 ) []DatasetDifference
 
+// traverse through fields and their subfields
+// apply corresponding methods if equivalent field in left dataset exists in right dataset or not
 func compareFields(
-	old Dataset,
-	new Dataset,
+	left, right Dataset,
 	whenEquivalentExists *fieldEquivalentExists,
 	whenEquivalentExistsNot *fieldEquivalentExistsNot,
 ) (result []DatasetDifference) {
-	for _, oldModel := range old.Models {
-		if newModel := oldModel.findEquivalent(new.Models); newModel != nil {
+	for _, leftModel := range left.Models {
+		if rightModel := leftModel.findEquivalent(right.Models); rightModel != nil {
 			result = append(
 				result,
 				compareFieldsRecursive(
-					oldModel.Fields,
-					newModel.Fields,
-					oldModel.Name,
+					leftModel.Fields,
+					rightModel.Fields,
+					leftModel.Name,
 					nil,
 					whenEquivalentExists,
 					whenEquivalentExistsNot,
@@ -397,30 +418,28 @@ func compareFields(
 	return result
 }
 
-// traverse through fields and their subfields
-// apply corresponding methods if equivalent field exists or not
 func compareFieldsRecursive(
-	oldFields, newFields []Field,
+	leftFields, rightFields []Field,
 	modelName string,
 	fieldPrefix *string,
 	whenEquivalentExists *fieldEquivalentExists,
 	whenEquivalentExistsNot *fieldEquivalentExistsNot,
 ) (result []DatasetDifference) {
-	for _, oldField := range oldFields {
-		fieldName := oldField.prefixedName(fieldPrefix)
+	for _, leftField := range leftFields {
+		fieldName := leftField.prefixedName(fieldPrefix)
 
-		if newField := oldField.findEquivalent(newFields); newField == nil {
+		if rightField := leftField.findEquivalent(rightFields); rightField == nil {
 			if whenEquivalentExistsNot != nil {
-				result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, oldField)...)
+				result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, leftField)...)
 			}
 		} else {
 			if whenEquivalentExists != nil {
-				result = append(result, (*whenEquivalentExists)(modelName, fieldName, oldField, *newField)...)
+				result = append(result, (*whenEquivalentExists)(modelName, fieldName, leftField, *rightField)...)
 			}
 			result = append(result,
 				compareFieldsRecursive(
-					oldField.Fields,
-					newField.Fields,
+					leftField.Fields,
+					rightField.Fields,
 					modelName,
 					&fieldName,
 					whenEquivalentExists,

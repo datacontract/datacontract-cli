@@ -246,6 +246,21 @@ func TestCompareDatasets(t *testing.T) {
 				Description: fmt.Sprintf("type of model '%v' was changed from '%v' to '%v'", modelName, dummyString1, dummyString2),
 			}},
 		},
+		{
+			name: "fieldAdded",
+			args: args{
+				Dataset{Models: []Model{{Name: modelName, Fields: []Field{}}}},
+				Dataset{Models: []Model{{Name: modelName, Fields: []Field{{Name: fieldName}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldAdded,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field '%v.%v' was added", modelName, fieldName),
+			}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
