@@ -10,6 +10,9 @@ func TestCompareDatasets(t *testing.T) {
 	dummyString1 := "dummy1"
 	dummyString2 := "dummy2"
 
+	description1 := "contains good data"
+	description2 := "contains very good data"
+
 	modelName := "my_table"
 	fieldName := "my_field"
 	subFieldName := "my_subfield"
@@ -293,6 +296,23 @@ func TestCompareDatasets(t *testing.T) {
 				ModelName:   &modelName,
 				FieldName:   &fieldName,
 				Description: fmt.Sprintf("field uniqueness of '%v.%v' was added", modelName, fieldName),
+			}},
+		},
+		{
+			name: "fieldDescriptionChanged",
+			args: args{
+				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
+					{Name: fieldName, Description: &description1}}}}},
+				Dataset{Models: []Model{{Name: modelName, Fields: []Field{
+					{Name: fieldName, Description: &description2}}}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeFieldDescriptionChanged,
+				Level:       DatasetDifferenceLevelField,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("description of field '%v.%v' has changed from '%v' to '%v'", modelName, fieldName, description1, description2),
 			}},
 		},
 	}

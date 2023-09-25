@@ -57,6 +57,7 @@ const (
 	DatasetDifferenceTypeFieldAdded
 	DatasetDifferenceTypeFieldRequirementAdded
 	DatasetDifferenceTypeFieldUniquenessAdded
+	DatasetDifferenceTypeFieldDescriptionChanged
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -89,6 +90,8 @@ func (d DatasetDifferenceType) String() string {
 		return "field-requirement-added"
 	case DatasetDifferenceTypeFieldUniquenessAdded:
 		return "field-uniqueness-added"
+	case DatasetDifferenceTypeFieldDescriptionChanged:
+		return "field-description-changed"
 	}
 
 	return ""
@@ -152,6 +155,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		fieldAdded,
 		fieldRequirementAdded,
 		fieldUniquenessAdded,
+		fieldDescriptionChanged,
 	}
 
 	for _, comparison := range comparisons {
@@ -414,6 +418,34 @@ func fieldUniquenessAdded(old, new Dataset) (result []DatasetDifference) {
 				ModelName:   &modelName,
 				FieldName:   &fieldName,
 				Description: fmt.Sprintf("field uniqueness of '%v.%v' was added", modelName, fieldName),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldDescriptionChanged(old, new Dataset) (result []DatasetDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField Field,
+	) (result []DatasetDifference) {
+		if !EqualStringPointers(oldField.Description, newField.Description) {
+			return append(result, DatasetDifference{
+				Type:      DatasetDifferenceTypeFieldDescriptionChanged,
+				Level:     DatasetDifferenceLevelField,
+				Severity:  DatasetDifferenceSeverityInfo,
+				ModelName: &modelName,
+				FieldName: &fieldName,
+				Description: fmt.Sprintf(
+					"description of field '%v.%v' has changed from '%v' to '%v'",
+					modelName,
+					fieldName,
+					StringPointerString(oldField.Description),
+					StringPointerString(newField.Description),
+				),
 			})
 		} else {
 			return result
