@@ -212,7 +212,7 @@ func TestCompareDatasets(t *testing.T) {
 				Dataset{SchemaType: "json-schema"},
 			},
 			want: []DatasetDifference{{
-				Type:        DatasetDifferenceDatasetSchemaTypeChanged,
+				Type:        DatasetDifferenceTypeDatasetSchemaTypeChanged,
 				Level:       DatasetDifferenceLevelDataset,
 				Severity:    DatasetDifferenceSeverityInfo,
 				Description: "schema type changed from 'dbt' to 'json-schema'",
@@ -225,11 +225,25 @@ func TestCompareDatasets(t *testing.T) {
 				Dataset{Models: []Model{{Name: modelName}}},
 			},
 			want: []DatasetDifference{{
-				Type:        DatasetDifferenceModelAdded,
+				Type:        DatasetDifferenceTypeModelAdded,
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityInfo,
 				ModelName:   &modelName,
 				Description: fmt.Sprintf("model '%v' was added", modelName),
+			}},
+		},
+		{
+			name: "modelTypeChanged",
+			args: args{
+				Dataset{Models: []Model{{Name: modelName, Type: &dummyString1}}},
+				Dataset{Models: []Model{{Name: modelName, Type: &dummyString2}}},
+			},
+			want: []DatasetDifference{{
+				Type:        DatasetDifferenceTypeModelTypeChanged,
+				Level:       DatasetDifferenceLevelModel,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				Description: fmt.Sprintf("type of model '%v' was changed from '%v' to '%v'", modelName, dummyString1, dummyString2),
 			}},
 		},
 	}

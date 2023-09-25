@@ -51,8 +51,9 @@ const (
 	DatasetDifferenceTypeFieldUniquenessRemoved
 	DatasetDifferenceTypeFieldAdditionalConstraintAdded
 	DatasetDifferenceTypeFieldAdditionalConstraintRemoved
-	DatasetDifferenceDatasetSchemaTypeChanged
-	DatasetDifferenceModelAdded
+	DatasetDifferenceTypeDatasetSchemaTypeChanged
+	DatasetDifferenceTypeModelAdded
+	DatasetDifferenceTypeModelTypeChanged
 )
 
 func (d DatasetDifferenceType) String() string {
@@ -73,10 +74,12 @@ func (d DatasetDifferenceType) String() string {
 	case DatasetDifferenceTypeFieldAdditionalConstraintAdded:
 		return "field-constraint-added"
 	// info
-	case DatasetDifferenceDatasetSchemaTypeChanged:
+	case DatasetDifferenceTypeDatasetSchemaTypeChanged:
 		return "dataset-schema-type-changed"
-	case DatasetDifferenceModelAdded:
+	case DatasetDifferenceTypeModelAdded:
 		return "model-added"
+	case DatasetDifferenceTypeModelTypeChanged:
+		return "model-type-changed"
 	}
 
 	return ""
@@ -136,6 +139,7 @@ func CompareDatasets(old, new Dataset) (result []DatasetDifference) {
 		// info
 		datasetSchemaTypeChanged,
 		modelAdded,
+		modelTypeChanged,
 	}
 
 	for _, comparison := range comparisons {
@@ -184,7 +188,7 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 		modelName, fieldName string,
 		oldField, newField Field,
 	) (result []DatasetDifference) {
-		if !equalStringPointers(oldField.Type, newField.Type) {
+		if !EqualStringPointers(oldField.Type, newField.Type) {
 			return append(result, DatasetDifference{
 				Type:      DatasetDifferenceTypeFieldTypeChanged,
 				Level:     DatasetDifferenceLevelField,
@@ -195,8 +199,8 @@ func fieldTypeChanged(old, new Dataset) (result []DatasetDifference) {
 					"type of field '%v.%v' was changed from '%v' to '%v'",
 					modelName,
 					fieldName,
-					stringPointerString(oldField.Type),
-					stringPointerString(newField.Type),
+					StringPointerString(oldField.Type),
+					StringPointerString(newField.Type),
 				),
 			})
 		} else {
@@ -304,7 +308,7 @@ func fieldConstraintRemoved(old, new Dataset) (result []DatasetDifference) {
 func datasetSchemaTypeChanged(old, new Dataset) (result []DatasetDifference) {
 	if old.SchemaType != new.SchemaType {
 		result = append(result, DatasetDifference{
-			Type:        DatasetDifferenceDatasetSchemaTypeChanged,
+			Type:        DatasetDifferenceTypeDatasetSchemaTypeChanged,
 			Level:       DatasetDifferenceLevelDataset,
 			Severity:    DatasetDifferenceSeverityInfo,
 			Description: fmt.Sprintf("schema type changed from '%v' to '%v'", old.SchemaType, new.SchemaType),
@@ -317,11 +321,27 @@ func modelAdded(old, new Dataset) (result []DatasetDifference) {
 	for _, newModel := range new.Models {
 		if newModel.findEquivalent(old.Models) == nil {
 			result = append(result, DatasetDifference{
-				Type:        DatasetDifferenceModelAdded,
+				Type:        DatasetDifferenceTypeModelAdded,
 				Level:       DatasetDifferenceLevelModel,
 				Severity:    DatasetDifferenceSeverityInfo,
 				ModelName:   &newModel.Name,
 				Description: fmt.Sprintf("model '%v' was added", newModel.Name),
+			})
+		}
+	}
+
+	return result
+}
+
+func modelTypeChanged(old, new Dataset) (result []DatasetDifference) {
+	for _, oldModel := range old.Models {
+		if newModel := oldModel.findEquivalent(new.Models); newModel != nil && !EqualStringPointers(oldModel.Type, newModel.Type) {
+			result = append(result, DatasetDifference{
+				Type:        DatasetDifferenceTypeModelTypeChanged,
+				Level:       DatasetDifferenceLevelModel,
+				Severity:    DatasetDifferenceSeverityInfo,
+				ModelName:   &oldModel.Name,
+				Description: fmt.Sprintf("type of model '%v' was changed from '%v' to '%v'", oldModel.Name, StringPointerString(oldModel.Type), StringPointerString(newModel.Type)),
 			})
 		}
 	}
@@ -337,20 +357,6 @@ func (constraint FieldConstraint) isIn(list []FieldConstraint) bool {
 	}
 
 	return false
-}
-
-func equalStringPointers(s1, s2 *string) bool {
-	// both are the same (e.g. nil)
-	if s1 == s2 {
-		return true
-	}
-
-	// one pointer is nil, the other not
-	if (s1 == nil && s2 != nil) || (s1 != nil && s2 == nil) {
-		return false
-	}
-
-	return *s1 == *s2
 }
 
 type fieldEquivalentExists func(
@@ -569,12 +575,4 @@ func additionalDbtConstraints(allDbtConstraints []dbtConstraint) (result []Field
 	}
 
 	return result
-}
-
-func stringPointerString(str *string) string {
-	if str == nil {
-		return ""
-	}
-
-	return *str
 }
