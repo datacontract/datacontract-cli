@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 )
 
 func Diff(dataContractFileName string, stableContractUrl string, pathToType []string, pathToSpecification []string) error {
@@ -13,8 +11,7 @@ func Diff(dataContractFileName string, stableContractUrl string, pathToType []st
 		return fmt.Errorf("failed parsing local data contract: %w", err)
 	}
 
-	res, _ := fetchStableContract(stableContractUrl)
-	stableDataContractBytes, _ := readStableContract(res)
+	stableDataContractBytes, err := FetchDataContract(stableContractUrl)
 	stableDataContract, err := ParseDataContract(stableDataContractBytes)
 	if err != nil {
 		return fmt.Errorf("failed parsing local data contract: %w", err)
@@ -58,22 +55,4 @@ func severityIcon(difference DatasetDifference) string {
 	}
 
 	return ""
-}
-
-func fetchStableContract(url string) (*http.Response, error) {
-	if response, err := http.Get(url); err != nil {
-		return nil, fmt.Errorf("failed to fetch data contract to compare with: %v", response.Status)
-	} else {
-		return response, nil
-	}
-}
-
-func readStableContract(response *http.Response) ([]byte, error) {
-	defer response.Body.Close()
-
-	if otherContractData, err := io.ReadAll(response.Body); err != nil {
-		return nil, fmt.Errorf("failed to read data contract to compare with: %w", err)
-	} else {
-		return otherContractData, nil
-	}
 }
