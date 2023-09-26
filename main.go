@@ -97,17 +97,17 @@ func main() {
 				},
 			}, {
 				Name:  "diff",
-				Usage: "EXPERIMENTAL - diff two data contracts",
+				Usage: "EXPERIMENTAL - show differences of your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
 						Name:     "with",
 						Required: true,
-						Usage:    "url of the other version of the data contract",
+						Usage:    "url of the stable version of the data contract",
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					fmt.Println("Command `diff` not implemented yet!")
+					Diff(ctx.String("file"), ctx.String("with"))
 					return nil
 				},
 			}, {
