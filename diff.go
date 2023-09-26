@@ -7,10 +7,7 @@ import (
 	"net/http"
 )
 
-func Diff(dataContractFileName string, stableContractUrl string) error {
-	pathToType := []string{"schema", "type"}
-	pathToSpecification := []string{"schema", "specification"}
-
+func Diff(dataContractFileName string, stableContractUrl string, pathToType []string, pathToSpecification []string) error {
 	localDataContractBytes, _ := ReadLocalDataContract(dataContractFileName)
 	res, _ := fetchStableContract(stableContractUrl)
 	stableDataContractBytes, _ := readStableContract(res)

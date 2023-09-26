@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"os"
+	"strings"
 )
 
 const dataContractFileName = "datacontract.yaml"
@@ -105,20 +106,32 @@ func main() {
 						Required: true,
 						Usage:    "url of the stable version of the data contract",
 					},
+					&cli.StringFlag{
+						Name:  "schema-type-path",
+						Value: "schema.type",
+						Usage: "definition of a custom path to the schema type in your data contract",
+					},
+					&cli.StringFlag{
+						Name:  "schema-specification-path",
+						Value: "schema.specification",
+						Usage: "definition of a custom path to the schema specification in your data contract",
+					},
 				},
 				Action: func(ctx *cli.Context) error {
-					Diff(ctx.String("file"), ctx.String("with"))
-					return nil
+					pathToType := strings.Split(ctx.String("schema-type-path"), ".")
+					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
+
+					return Diff(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
 				},
 			}, {
 				Name:  "breaking",
-				Usage: "EXPERIMENTAL - detect breaking changes between two data contracts",
+				Usage: "EXPERIMENTAL - detect breaking changes between your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
 						Name:     "with",
 						Required: true,
-						Usage:    "url of the other version of the data contract",
+						Usage:    "url of the stable version of the data contract",
 					},
 				},
 				Action: func(ctx *cli.Context) error {
