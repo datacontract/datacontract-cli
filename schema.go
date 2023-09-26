@@ -564,6 +564,47 @@ func (field Field) findEquivalent(otherFields []Field) (result *Field) {
 	return result
 }
 
+func ExtractSchemaSpecification(
+	contract DataContract,
+	pathToType []string,
+	pathToSpecification []string,
+) (schemaType string, specification interface{}, err error) {
+	schemaType, err = getSchemaType(contract, pathToType)
+	if err != nil {
+		return "", "", fmt.Errorf("can't get schema type: %w", err)
+	}
+
+	specification, err = getSpecification(contract, pathToSpecification)
+	if err != nil {
+		return "", nil, fmt.Errorf("can't get specification: %w", err)
+	}
+
+	return schemaType, specification, nil
+}
+
+func getSchemaType(contract DataContract, path []string) (schemaType string, err error) {
+	schemaTypeUntyped, err := GetValue(contract, path)
+	if err != nil {
+		return "", fmt.Errorf("can't get value of schema type: %w for path %v", err, path)
+	}
+
+	schemaType, ok := schemaTypeUntyped.(string)
+	if !ok {
+		return "", fmt.Errorf("schema not of type string")
+	}
+
+	return schemaType, nil
+}
+
+func getSpecification(contract DataContract, path []string) (specification interface{}, err error) {
+	specification, err = GetValue(contract, path)
+	if err != nil {
+		return "", fmt.Errorf("can't get value of schema type: %w for path %v", err, path)
+	}
+
+	return specification, nil
+}
+
 func ParseDataset(schemaType string, specification []byte) (*Dataset, error) {
 	switch schemaType {
 	case "dbt":

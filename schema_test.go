@@ -325,6 +325,94 @@ func TestCompareDatasets(t *testing.T) {
 	}
 }
 
+func TestExtractSchemaSpecification(t *testing.T) {
+	specificationString := `version: 2
+models:
+  - name: my_table
+    description: "contains data"
+    config:
+      materialized: table
+    columns:
+      - name: my_column
+        data_type: text
+        description: "contains values"`
+
+	specificationMap := map[string]interface{}{
+		"version": 2,
+		"models": []map[string]interface{}{
+			{
+				"name":        "my_table",
+				"description": "contains data",
+				"config": map[string]interface{}{
+					"materialized": "table",
+				},
+				"columns": []map[string]interface{}{
+					{
+						"name":        "my_column",
+						"data_type":   "text",
+						"description": "contains values",
+					},
+				},
+			},
+		},
+	}
+
+	type args struct {
+		contract DataContract
+	}
+	tests := []struct {
+		name              string
+		args              args
+		wantSchemaType    string
+		wantSpecification interface{}
+		wantErr           bool
+	}{
+		{
+			name: "map",
+			args: args{contract: DataContract{"schema": map[string]interface{}{
+				"type":          "dbt",
+				"specification": specificationMap,
+			}}},
+			wantSchemaType:    "dbt",
+			wantSpecification: specificationMap,
+			wantErr:           false,
+		},
+		{
+			name: "string",
+			args: args{contract: DataContract{"schema": map[string]interface{}{
+				"type":          "dbt",
+				"specification": specificationString,
+			}}},
+			wantSchemaType:    "dbt",
+			wantSpecification: specificationString,
+			wantErr:           false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotSchemaType, gotSpecification, err := ExtractSchemaSpecification(tt.args.contract)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ExtractSchemaSpecification() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotSchemaType != tt.wantSchemaType {
+				t.Errorf("ExtractSchemaSpecification() got schemaType = %v, want %v", gotSchemaType, tt.wantSchemaType)
+			}
+
+			var equal bool
+			if _, ok := gotSpecification.(map[string]interface{}); ok {
+				equal = reflect.DeepEqual(gotSpecification, tt.wantSpecification)
+			} else {
+				equal = gotSpecification == tt.wantSpecification
+			}
+
+			if !equal {
+				t.Errorf("ExtractSchemaSpecification() got specification = %v, want %v", gotSpecification, tt.wantSpecification)
+			}
+		})
+	}
+}
+
 func TestParseDataset(t *testing.T) {
 	modelName := "email_provider_usage"
 	modelType := "table"

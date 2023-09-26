@@ -23,3 +23,22 @@ func ParseDataContract(data []byte) (dataContractObject DataContract, err error)
 
 	return dataContractObject, nil
 }
+
+func GetValue(contract DataContract, path []string) (value interface{}, err error) {
+	fieldName := path[0]
+
+	if contract[fieldName] == nil {
+		return nil, fmt.Errorf("no field named '%v'", fieldName)
+	}
+
+	if len(path) == 1 {
+		return contract[fieldName], nil
+	}
+
+	next, ok := contract[fieldName].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("can't follow path using field '%v', it's not a map", fieldName)
+	}
+
+	return GetValue(next, path[1:])
+}
