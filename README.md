@@ -56,7 +56,7 @@ tar -xf datacontract.tar.gz
 
 | Placeholder | Description                                    |
 |-------------|------------------------------------------------|
-| VERSION     | datacontract CLI version (e.g. `v0.1.1`)       |
+| VERSION     | datacontract CLI version (e.g. `v0.2.0`)       |
 | OS          | your operating system (linux, windows, darwin) |
 | ARCH        | your processor architecture (amd64, arm64)     |
 
