@@ -5,29 +5,57 @@ import (
 )
 
 func Diff(dataContractFileName string, stableContractUrl string, pathToType []string, pathToSpecification []string) error {
-	localDataContractBytes, _ := ReadLocalDataContract(dataContractFileName)
-	localDataContract, err := ParseDataContract(localDataContractBytes)
+	differences, err := GetDifferences(dataContractFileName, stableContractUrl, pathToType, pathToSpecification)
 	if err != nil {
-		return fmt.Errorf("failed parsing local data contract: %w", err)
+		return err
 	}
 
-	stableDataContractBytes, err := FetchDataContract(stableContractUrl)
-	stableDataContract, err := ParseDataContract(stableDataContractBytes)
-	if err != nil {
-		return fmt.Errorf("failed parsing local data contract: %w", err)
-	}
-
-	stableDataset, _ := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)
-	localDataset, _ := GetSchemaSpecification(stableDataContract, pathToType, pathToSpecification)
-
-	differences := CompareDatasets(*stableDataset, *localDataset)
-
-	printDifferences(differences)
+	PrintDifferences(differences)
 
 	return nil
 }
 
-func printDifferences(differences []DatasetDifference) {
+func GetDifferences(
+	dataContractFileName string,
+	stableContractUrl string,
+	pathToType []string,
+	pathToSpecification []string,
+) ([]DatasetDifference, error) {
+	localDataContractBytes, err := ReadLocalDataContract(dataContractFileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading local data contract: %w", err)
+	}
+
+	localDataContract, err := ParseDataContract(localDataContractBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed parsing local data contract: %w", err)
+	}
+
+	stableDataContractBytes, err := FetchDataContract(stableContractUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed fetching stable data contract: %w", err)
+	}
+
+	stableDataContract, err := ParseDataContract(stableDataContractBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed parsing local data contract: %w", err)
+	}
+
+	stableDataset, err := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting schema specification for stable dataset: %w", err)
+	}
+
+	localDataset, err := GetSchemaSpecification(stableDataContract, pathToType, pathToSpecification)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting schema specification for local dataset: %w", err)
+	}
+
+	differences := CompareDatasets(*stableDataset, *localDataset)
+	return differences, nil
+}
+
+func PrintDifferences(differences []DatasetDifference) {
 	fmt.Printf("Found %v differences between the data contracts!\n", len(differences))
 
 	for i, difference := range differences {

@@ -133,10 +133,22 @@ func main() {
 						Required: true,
 						Usage:    "url of the stable version of the data contract",
 					},
+					&cli.StringFlag{
+						Name:  "schema-type-path",
+						Value: "schema.type",
+						Usage: "definition of a custom path to the schema type in your data contract",
+					},
+					&cli.StringFlag{
+						Name:  "schema-specification-path",
+						Value: "schema.specification",
+						Usage: "definition of a custom path to the schema specification in your data contract",
+					},
 				},
 				Action: func(ctx *cli.Context) error {
-					fmt.Println("Command `breaking` not implemented yet!")
-					return nil
+					pathToType := strings.Split(ctx.String("schema-type-path"), ".")
+					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
+
+					return Breaking(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
 				},
 			},
 		},
