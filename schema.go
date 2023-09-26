@@ -565,13 +565,13 @@ func (field Field) findEquivalent(otherFields []Field) (result *Field) {
 }
 
 func GetSchemaSpecification(dataContract DataContract, pathToType []string, pathToSpecification []string) (dataset *Dataset, err error) {
-	schemaType, localSchemaSpecification, err := ExtractSchemaSpecification(dataContract, pathToType, pathToSpecification)
+	schemaType, localSchemaSpecification, err := extractSchemaSpecification(dataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
 	}
 
 	schemaSpecificationBytes := schemaSpecificationAsString(localSchemaSpecification)
-	dataset, err = ParseDataset(schemaType, schemaSpecificationBytes)
+	dataset, err = parseDataset(schemaType, schemaSpecificationBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed parsing dataset: %w", err)
 	}
@@ -589,7 +589,7 @@ func schemaSpecificationAsString(schemaSpecification interface{}) []byte {
 	return schemaSpecificationBytes
 }
 
-func ExtractSchemaSpecification(
+func extractSchemaSpecification(
 	contract DataContract,
 	pathToType []string,
 	pathToSpecification []string,
@@ -630,7 +630,7 @@ func getSpecification(contract DataContract, path []string) (specification inter
 	return specification, nil
 }
 
-func ParseDataset(schemaType string, specification []byte) (*Dataset, error) {
+func parseDataset(schemaType string, specification []byte) (*Dataset, error) {
 	switch schemaType {
 	case "dbt":
 		return parseDbtDataset(specification), nil

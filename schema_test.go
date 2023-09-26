@@ -390,13 +390,13 @@ models:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSchemaType, gotSpecification, err := ExtractSchemaSpecification(tt.args.contract, []string{"schema", "type"}, []string{"schema", "specification"})
+			gotSchemaType, gotSpecification, err := extractSchemaSpecification(tt.args.contract, []string{"schema", "type"}, []string{"schema", "specification"})
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ExtractSchemaSpecification() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("extractSchemaSpecification() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotSchemaType != tt.wantSchemaType {
-				t.Errorf("ExtractSchemaSpecification() got schemaType = %v, want %v", gotSchemaType, tt.wantSchemaType)
+				t.Errorf("extractSchemaSpecification() got schemaType = %v, want %v", gotSchemaType, tt.wantSchemaType)
 			}
 
 			var equal bool
@@ -407,7 +407,7 @@ models:
 			}
 
 			if !equal {
-				t.Errorf("ExtractSchemaSpecification() got specification = %v, want %v", gotSpecification, tt.wantSpecification)
+				t.Errorf("extractSchemaSpecification() got specification = %v, want %v", gotSpecification, tt.wantSpecification)
 			}
 		})
 	}
@@ -543,14 +543,14 @@ models:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseDataset(tt.args.schemaType, tt.args.specification)
+			got, err := parseDataset(tt.args.schemaType, tt.args.specification)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseDataset() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("parseDataset() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != nil && !got.equals(*tt.want) {
-				t.Errorf("ParseDataset() got = %v, want %v", got, tt.want)
+				t.Errorf("parseDataset() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
