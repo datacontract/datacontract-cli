@@ -98,7 +98,7 @@ func main() {
 				},
 			}, {
 				Name:  "diff",
-				Usage: "EXPERIMENTAL - show differences of your local and a remote data contract",
+				Usage: "EXPERIMENTAL (dbt specification only) - show differences of your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
@@ -125,7 +125,7 @@ func main() {
 				},
 			}, {
 				Name:  "breaking",
-				Usage: "EXPERIMENTAL - detect breaking changes between your local and a remote data contract",
+				Usage: "EXPERIMENTAL (dbt specification only) - detect breaking changes between your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{

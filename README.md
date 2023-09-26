@@ -90,17 +90,19 @@ USAGE:
    datacontract [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.1.1
+   v0.2.0
 
 AUTHOR:
    Stefan Negele <stefan.negele@innoq.com>
 
 COMMANDS:
-   init                 create a new data contract
-   validate             validates the data contracts schema
-   open                 save and open the data contract in Data Contract Studio
-   check-compatibility  EXPERIMENTAL - determine whether changes are backwards compatible
-   help, h              Shows a list of commands or help for one command
+   init      create a new data contract
+   lint      linter for the data contract
+   test      EXPERIMENTAL - run tests for the data contract
+   open      save and open the data contract in Data Contract Studio
+   diff      EXPERIMENTAL - show differences of your local and a remote data contract
+   breaking  EXPERIMENTAL - detect breaking changes between your local and a remote data contract
+   help, h   Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h     show help
@@ -125,20 +127,32 @@ OPTIONS:
    --help, -h        show help
 ```
 
-#### validate
+#### lint
 ```
 NAME:
-   datacontract validate - validates the data contracts schema
+   datacontract lint - linter for the data contract
 
 USAGE:
-   datacontract validate [command options] [arguments...]
+   datacontract lint [command options] [arguments...]
 
 OPTIONS:
-   --file value               file name for the data contract (default: "datacontract.yaml")
-   --schema value             url of Data Contract Specification json schema (default: "https://datacontract.com/datacontract.schema.json")
-   --validate-schema-object   EXPERIMENTAL - type specific validation of the schema object (default: false)
-   --validate-quality-object  EXPERIMENTAL - type specific validation of the quality object (default: false)
-   --help, -h                 show help
+   --file value    file name for the data contract (default: "datacontract.yaml")
+   --schema value  url of Data Contract Specification json schema (default: "https://datacontract.com/datacontract.schema.json")
+   --lint-schema   EXPERIMENTAL - type specific linting of the schema object (default: false)
+   --lint-quality  EXPERIMENTAL - type specific validation of the quality object (default: false)
+   --help, -h      show help
+```
+
+#### test (EXPERIMENTAL)
+```
+NAME:
+   datacontract test - EXPERIMENTAL - run tests for the data contract
+
+USAGE:
+   datacontract test [command options] [arguments...]
+
+OPTIONS:
+   --help, -h  show help
 ```
 
 #### open
@@ -155,18 +169,36 @@ OPTIONS:
 ```
 
 
-#### check-compatibility (EXPERIMENTAL)
+#### diff - EXPERIMENTAL (dbt specification only)
 ```
 NAME:
-   datacontract check-compatibility - EXPERIMENTAL - determine whether changes are backwards compatible
+   datacontract diff - EXPERIMENTAL (dbt specification only) - show differences of your local and a remote data contract
 
 USAGE:
-   datacontract check-compatibility [command options] [arguments...]
+   datacontract diff [command options] [arguments...]
 
 OPTIONS:
-   --file value  file name for the data contract (default: "datacontract.yaml")
-   --with value  url of the other version of the data contract
-   --help, -h    show help
+   --file value                       file name for the data contract (default: "datacontract.yaml")
+   --with value                       url of the stable version of the data contract
+   --schema-type-path value           definition of a custom path to the schema type in your data contract (default: "schema.type")
+   --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
+   --help, -h                         show help
+```
+
+#### breaking - EXPERIMENTAL (dbt specification only)
+```
+NAME:
+   datacontract breaking - EXPERIMENTAL (dbt specification only) - detect breaking changes between your local and a remote data contract
+
+USAGE:
+   datacontract breaking [command options] [arguments...]
+
+OPTIONS:
+   --file value                       file name for the data contract (default: "datacontract.yaml")
+   --with value                       url of the stable version of the data contract
+   --schema-type-path value           definition of a custom path to the schema type in your data contract (default: "schema.type")
+   --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
+   --help, -h                         show help
 ```
 
 #### help
