@@ -390,7 +390,7 @@ models:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSchemaType, gotSpecification, err := ExtractSchemaSpecification(tt.args.contract)
+			gotSchemaType, gotSpecification, err := ExtractSchemaSpecification(tt.args.contract, []string{"schema", "type"}, []string{"schema", "specification"})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExtractSchemaSpecification() error = %v, wantErr %v", err, tt.wantErr)
 				return
