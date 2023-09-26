@@ -564,6 +564,31 @@ func (field Field) findEquivalent(otherFields []Field) (result *Field) {
 	return result
 }
 
+func GetSchemaSpecification(dataContract DataContract, pathToType []string, pathToSpecification []string) (dataset *Dataset, err error) {
+	schemaType, localSchemaSpecification, err := ExtractSchemaSpecification(dataContract, pathToType, pathToSpecification)
+	if err != nil {
+		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
+	}
+
+	schemaSpecificationBytes := schemaSpecificationAsString(localSchemaSpecification)
+	dataset, err = ParseDataset(schemaType, schemaSpecificationBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed parsing dataset: %w", err)
+	}
+
+	return dataset, err
+}
+
+func schemaSpecificationAsString(schemaSpecification interface{}) []byte {
+	var schemaSpecificationBytes []byte
+	if str, isString := schemaSpecification.(string); isString {
+		schemaSpecificationBytes = []byte(str)
+	} else if mp, isMap := schemaSpecification.(map[string]interface{}); isMap {
+		schemaSpecificationBytes, _ = yaml.Marshal(mp)
+	}
+	return schemaSpecificationBytes
+}
+
 func ExtractSchemaSpecification(
 	contract DataContract,
 	pathToType []string,

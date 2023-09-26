@@ -2,18 +2,26 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io"
 	"net/http"
 )
 
 func Diff(dataContractFileName string, stableContractUrl string, pathToType []string, pathToSpecification []string) error {
 	localDataContractBytes, _ := ReadLocalDataContract(dataContractFileName)
+	localDataContract, err := ParseDataContract(localDataContractBytes)
+	if err != nil {
+		return fmt.Errorf("failed parsing local data contract: %w", err)
+	}
+
 	res, _ := fetchStableContract(stableContractUrl)
 	stableDataContractBytes, _ := readStableContract(res)
+	stableDataContract, err := ParseDataContract(stableDataContractBytes)
+	if err != nil {
+		return fmt.Errorf("failed parsing local data contract: %w", err)
+	}
 
-	stableDataset, _ := getDataset(stableDataContractBytes, pathToType, pathToSpecification)
-	localDataset, _ := getDataset(localDataContractBytes, pathToType, pathToSpecification)
+	stableDataset, _ := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)
+	localDataset, _ := GetSchemaSpecification(stableDataContract, pathToType, pathToSpecification)
 
 	differences := CompareDatasets(*stableDataset, *localDataset)
 
@@ -50,36 +58,6 @@ func severityIcon(difference DatasetDifference) string {
 	}
 
 	return ""
-}
-
-func getDataset(dataContractBytes []byte, pathToType []string, pathToSpecification []string) (dataset *Dataset, err error) {
-	dataContract, err := ParseDataContract(dataContractBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed parsing data contract: %w", err)
-	}
-
-	schemaType, localSchemaSpecification, err := ExtractSchemaSpecification(dataContract, pathToType, pathToSpecification)
-	if err != nil {
-		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
-	}
-
-	schemaSpecificationBytes := schemaSpecificationAsString(localSchemaSpecification)
-	dataset, err = ParseDataset(schemaType, schemaSpecificationBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed parsing dataset: %w", err)
-	}
-
-	return dataset, err
-}
-
-func schemaSpecificationAsString(schemaSpecification interface{}) []byte {
-	var schemaSpecificationBytes []byte
-	if str, isString := schemaSpecification.(string); isString {
-		schemaSpecificationBytes = []byte(str)
-	} else if mp, isMap := schemaSpecification.(map[string]interface{}); isMap {
-		schemaSpecificationBytes, _ = yaml.Marshal(mp)
-	}
-	return schemaSpecificationBytes
 }
 
 func fetchStableContract(url string) (*http.Response, error) {
