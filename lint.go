@@ -5,28 +5,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/qri-io/jsonschema"
-	"gopkg.in/yaml.v3"
 	"io"
 	"net/http"
-	"os"
 )
-
-type dataContract = map[string]interface{}
 
 func Lint(dataContractFileName string, schemaUrl string) error {
 	schemaResponse, err := fetchSchema(schemaUrl)
 	schemaData, err := readSchema(schemaResponse)
-	schema, err := createSchema(schemaData)
-	dataContractObject, err := readDataContract(dataContractFileName)
+	schema, err := parseSchema(schemaData)
+
+	dataContractFile, err := ReadLocalDataContract(dataContractFileName)
+	dataContract, err := ParseDataContract(dataContractFile)
 
 	if err != nil {
 		return fmt.Errorf("linting failed: %w", err)
 	}
 
-	return lint(schema, dataContractObject)
+	return lint(schema, dataContract)
 }
 
-func lint(schema *jsonschema.Schema, contract dataContract) error {
+func lint(schema *jsonschema.Schema, contract DataContract) error {
 	validationState := schema.Validate(context.Background(), contract)
 	printValidationState(validationState)
 
@@ -49,23 +47,7 @@ func printValidationState(validationState *jsonschema.ValidationState) {
 	}
 }
 
-func readDataContract(dataContractFileName string) (map[string]interface{}, error) {
-	var dataContractObject map[string]interface{}
-
-	dataContractFile, err := os.ReadFile(dataContractFileName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read data contract file: %w", err)
-	}
-
-	err = yaml.Unmarshal(dataContractFile, &dataContractObject)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal data contract file: %w", err)
-	}
-
-	return dataContractObject, nil
-}
-
-func createSchema(schemaData []byte) (*jsonschema.Schema, error) {
+func parseSchema(schemaData []byte) (*jsonschema.Schema, error) {
 	schema := &jsonschema.Schema{}
 	if err := json.Unmarshal(schemaData, schema); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema: %w", err)
