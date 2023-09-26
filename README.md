@@ -25,8 +25,8 @@ The CLI is open source and written in Go. It is integrated with [Data Contract S
 # create a new data contract
 $ datacontract init
 
-# validate the data contract
-$ datacontract validate
+# lint the data contract
+$ datacontract lint
 
 # open the data contract in Data Contract Studio
 $ datacontract open
