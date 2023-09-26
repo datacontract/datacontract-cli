@@ -30,6 +30,12 @@ $ datacontract lint
 
 # open the data contract in Data Contract Studio
 $ datacontract open
+
+# find differences to another version of the data contract
+$ datacontract diff --with https://raw.githubusercontent.com/datacontract/cli-examples/main/datacontract.yaml
+
+# find breaking changes
+$ datacontract breaking --with https://raw.githubusercontent.com/datacontract/cli-examples/main/datacontract.yaml
 ```
 
 ## Installation
