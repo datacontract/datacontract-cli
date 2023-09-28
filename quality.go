@@ -17,7 +17,13 @@ func QualityCheck(dataContractFileName string) error {
 }
 
 func qualityCheck(contract DataContract) error {
-	printQualityCheckState()
+	pathToQuality := [...]string{"quality"}
+	specification, err := getQualitySpecification(contract, pathToQuality)
+	if err != nil {
+		return fmt.Errorf("quality checks failed: %w", err)
+	}
+
+	fmt.Println("Spec: %w", specification)
 	return nil
 }
 
