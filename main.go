@@ -22,7 +22,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "v0.2.0",
+		Version: "v0.2.1",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -85,8 +85,7 @@ func main() {
 				Name:  "test",
 				Usage: "EXPERIMENTAL - run tests for the data contract",
 				Action: func(ctx *cli.Context) error {
-					fmt.Println("Command `test` not implemented yet!")
-					return nil
+					return QualityCheck(ctx.String("file"))
 				},
 			},
 			{
