@@ -99,6 +99,15 @@ func main() {
 				},
 			},
 			{
+				Name:  "quality",
+				Usage: "print quality checks of the data contract",
+				Flags: []cli.Flag{fileNameFlag},
+				Action: func(ctx *cli.Context) error {
+					fmt.Println("Command `quality` not implemented yet!")
+					return nil
+				},
+			},
+			{
 				Name:  "open",
 				Usage: "save and open the data contract in Data Contract Studio",
 				Flags: []cli.Flag{fileNameFlag},
