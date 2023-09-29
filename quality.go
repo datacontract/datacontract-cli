@@ -17,13 +17,17 @@ func QualityCheck(dataContractFileName string) error {
 }
 
 func qualityCheck(contract DataContract) error {
-	pathToQuality := [...]string{"quality"}
-	specification, err := getQualitySpecification(contract, pathToQuality)
+	// fmt.Println("contract: %v", contract)
+	pathToType := []string{"quality", "type"}
+	pathToSpecification := []string{"quality", "specification"}
+	dataset, err := GetQualitySpecification(contract, pathToType, pathToSpecification)
+	
 	if err != nil {
 		return fmt.Errorf("quality checks failed: %w", err)
 	}
 
-	fmt.Println("Spec: %w", specification)
+	fmt.Println("Data set: %w", dataset)
+
 	return nil
 }
 
@@ -38,12 +42,11 @@ func GetQualitySpecification(dataContract DataContract, pathToType []string, pat
 	}
 
 	qualitySpecificationBytes := qualitySpecificationAsString(localQualitySpecification)
-	dataset, err = parseDataset(qualityType, qualitySpecificationBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed parsing dataset: %w", err)
+	if qualityType == "SodaCL" {
+		dataset = parseSodaDataset(qualitySpecificationBytes)
 	}
 
-	return dataset, err
+	return dataset, nil
 }
 
 func qualitySpecificationAsString(qualitySpecification interface{}) []byte {
@@ -91,9 +94,41 @@ func getQualityType(contract DataContract, path []string) (qualityType string, e
 func getQualitySpecification(contract DataContract, path []string) (specification interface{}, err error) {
 	specification, err = GetValue(contract, path)
 	if err != nil {
-		return "", fmt.Errorf("can't get value of quality type: %w for path %v", err, path)
+		return "", fmt.Errorf("can't get value of quality specification: %w for path %v", err, path)
 	}
 
 	return specification, nil
+}
+
+
+// soda
+
+type sodaSpecification struct {
+	Models []sodaModel
+}
+
+type sodaModel struct {
+	Name        string
+	Description string
+}
+
+func parseSodaDataset(specification []byte) *Dataset {
+	var res sodaSpecification
+
+	yaml.Unmarshal(specification, &res)
+	models := modelsFromSodaSpecification(res)
+
+	return &Dataset{SchemaType: "soda", Models: models}
+}
+
+func modelsFromSodaSpecification(res sodaSpecification) (models []Model) {
+	for _, model := range res.Models {
+		models = append(models, Model{
+			Name:        model.Name,
+			Description: &model.Description,
+		})
+	}
+
+	return models
 }
 

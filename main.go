@@ -84,6 +84,9 @@ func main() {
 			}, {
 				Name:  "test",
 				Usage: "EXPERIMENTAL - run tests for the data contract",
+				Flags: []cli.Flag{
+					fileNameFlag,
+				},
 				Action: func(ctx *cli.Context) error {
 					return QualityCheck(ctx.String("file"))
 				},
