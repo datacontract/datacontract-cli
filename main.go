@@ -90,6 +90,15 @@ func main() {
 				},
 			},
 			{
+				Name:  "schema",
+				Usage: "print schema of the data contract",
+				Flags: []cli.Flag{fileNameFlag},
+				Action: func(ctx *cli.Context) error {
+					fmt.Println("Command `schema` not implemented yet!")
+					return nil
+				},
+			},
+			{
 				Name:  "open",
 				Usage: "save and open the data contract in Data Contract Studio",
 				Flags: []cli.Flag{fileNameFlag},
