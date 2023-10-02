@@ -168,6 +168,13 @@ func main() {
 
 					return Breaking(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
 				},
+			}, {
+				Name:  "inline",
+				Usage: "inline all references specified with '$ref' notation",
+				Flags: []cli.Flag{fileNameFlag},
+				Action: func(ctx *cli.Context) error {
+					return Inline(ctx.String("file"))
+				},
 			},
 		},
 	}

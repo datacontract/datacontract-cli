@@ -77,42 +77,11 @@ func resolveValue(object map[string]interface{}, fieldName string) (value interf
 	if stringValue, isString := value.(string); isString && strings.HasPrefix(stringValue, referencePrefix) {
 		reference := strings.Trim(strings.TrimPrefix(stringValue, referencePrefix), " ")
 
-		value, err = resolveReference(reference)
+		value, err = ResolveReference(reference)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return value, nil
-}
-
-func resolveReference(reference string) (_ string, err error) {
-	var bytes []byte
-
-	if IsURI(reference) {
-		bytes, err = resolveReferenceFromRemote(reference)
-	} else {
-		bytes, err = resolveReferenceLocally(reference)
-	}
-
-	if err != nil {
-		return "", fmt.Errorf("can't resolve reference '%v': %w", reference, err)
-	}
-
-	return string(bytes), nil
-}
-
-func resolveReferenceLocally(reference string) ([]byte, error) {
-	return os.ReadFile(reference)
-}
-
-func resolveReferenceFromRemote(reference string) ([]byte, error) {
-	response, err := http.Get(reference)
-	defer response.Body.Close()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return io.ReadAll(response.Body)
 }

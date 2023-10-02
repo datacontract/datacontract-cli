@@ -1,0 +1,8 @@
+dataContractSpecification: 0.9.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+schema:
+  type: dbt
+  specification: "$ref: test_resources/inline/schema_model.yaml"

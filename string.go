@@ -28,3 +28,13 @@ func IsURI(reference string) bool {
 	_, err := url.ParseRequestURI(reference)
 	return err == nil
 }
+
+func TakeStringOrMarshall(object interface{}) []byte {
+	var bytes []byte
+	if str, isString := object.(string); isString {
+		bytes = []byte(str)
+	} else if mp, isMap := object.(map[string]interface{}); isMap {
+		bytes, _ = ToYaml(mp)
+	}
+	return bytes
+}

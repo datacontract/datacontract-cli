@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 )
 
 func PrintQuality(dataContractLocation string, pathToQuality []string) error {
@@ -16,19 +15,9 @@ func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 		return fmt.Errorf("can't get specification: %w", err)
 	}
 
-	fmt.Println(string(qualitySpecificationAsString(qualitySpecification)))
+	fmt.Println(string(TakeStringOrMarshall(qualitySpecification)))
 
 	return nil
-}
-
-func qualitySpecificationAsString(qualitySpecification interface{}) []byte {
-	var qualitySpecificationBytes []byte
-	if str, isString := qualitySpecification.(string); isString {
-		qualitySpecificationBytes = []byte(str)
-	} else if mp, isMap := qualitySpecification.(map[string]interface{}); isMap {
-		qualitySpecificationBytes, _ = yaml.Marshal(mp)
-	}
-	return qualitySpecificationBytes
 }
 
 func getQualitySpecification(contract DataContract, path []string) (specification interface{}, err error) {

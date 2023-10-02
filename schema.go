@@ -575,7 +575,7 @@ func PrintSchema(dataContractLocation string, pathToSpecification []string) erro
 		return fmt.Errorf("can't get specification: %w", err)
 	}
 
-	fmt.Println(string(schemaSpecificationAsString(specification)))
+	fmt.Println(string(TakeStringOrMarshall(specification)))
 
 	return nil
 }
@@ -586,20 +586,10 @@ func GetSchemaSpecification(dataContract DataContract, pathToType []string, path
 		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
 	}
 
-	schemaSpecificationBytes := schemaSpecificationAsString(schemaSpecification)
+	schemaSpecificationBytes := TakeStringOrMarshall(schemaSpecification)
 	parsedDataset := parseDataset(schemaType, schemaSpecificationBytes)
 
 	return &parsedDataset, err
-}
-
-func schemaSpecificationAsString(schemaSpecification interface{}) []byte {
-	var schemaSpecificationBytes []byte
-	if str, isString := schemaSpecification.(string); isString {
-		schemaSpecificationBytes = []byte(str)
-	} else if mp, isMap := schemaSpecification.(map[string]interface{}); isMap {
-		schemaSpecificationBytes, _ = yaml.Marshal(mp)
-	}
-	return schemaSpecificationBytes
 }
 
 func extractSchemaSpecification(

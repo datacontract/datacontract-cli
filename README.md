@@ -241,6 +241,19 @@ OPTIONS:
    --help, -h                          show help
 ```
 
+#### inline
+```
+NAME:
+   datacontract inline - inline all references specified with '$ref' notation
+
+USAGE:
+   datacontract inline [command options] [arguments...]
+
+OPTIONS:
+   --file value  location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --help, -h    show help
+```
+
 #### help
 ```
 USAGE:
