@@ -3,6 +3,7 @@
 - Resolve local and remote resources such as schema specifications when using "$ref: ..." notation
 - Implement `schema` command: prints your schema
 - Implement `quality` command: prints your quality definitions 
+- Allow remote and local location for all data contract inputs (`--file`, `with`)
 
 # 0.2.0
 
