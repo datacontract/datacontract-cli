@@ -40,7 +40,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "v0.2.0",
+		Version: "v0.3.0",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
