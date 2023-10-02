@@ -113,17 +113,22 @@ func main() {
 				Flags: []cli.Flag{fileNameFlag, schemaSpecificationPathFlag},
 				Action: func(ctx *cli.Context) error {
 					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
-
 					return PrintSchema(ctx.String("file"), pathToSpecification)
 				},
 			},
 			{
 				Name:  "quality",
 				Usage: "print quality checks of the data contract",
-				Flags: []cli.Flag{fileNameFlag},
+				Flags: []cli.Flag{
+					fileNameFlag,
+					&cli.StringFlag{
+						Name:  "quality-specification-path",
+						Value: "quality.specification",
+						Usage: "definition of a custom path to the quality specification in your data contract",
+					}},
 				Action: func(ctx *cli.Context) error {
-					fmt.Println("Command `quality` not implemented yet!")
-					return nil
+					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
+					return PrintQuality(ctx.String("file"), pathToSpecification)
 				},
 			},
 			{

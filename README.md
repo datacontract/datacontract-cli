@@ -39,6 +39,9 @@ $ datacontract breaking --with https://raw.githubusercontent.com/datacontract/cl
 
 # print schema
 $ datacontract schema
+
+# print quality definitions
+$ datacontract quality
 ```
 
 ## Installation
@@ -222,6 +225,20 @@ OPTIONS:
    --file value                       file name for the data contract (default: "datacontract.yaml")
    --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
    --help, -h                         show help
+```
+
+#### quality
+```
+NAME:
+   datacontract quality - print quality checks of the data contract
+
+USAGE:
+   datacontract quality [command options] [arguments...]
+
+OPTIONS:
+   --file value                        file name for the data contract (default: "datacontract.yaml")
+   --quality-specification-path value  definition of a custom path to the quality specification in your data contract (default: "quality.specification")
+   --help, -h                          show help
 ```
 
 #### help
