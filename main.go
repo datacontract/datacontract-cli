@@ -16,7 +16,7 @@ func main() {
 	fileNameFlag := &cli.StringFlag{
 		Name:  "file",
 		Value: dataContractFileName,
-		Usage: "file name for the data contract",
+		Usage: "location of the data contract, path or url (except init)",
 	}
 
 	schemaTypePathFlag := &cli.StringFlag{
@@ -34,7 +34,7 @@ func main() {
 	withFlag := &cli.StringFlag{
 		Name:     "with",
 		Required: true,
-		Usage:    "url of the stable version of the data contract",
+		Usage:    "location (url or path) of the stable version of the data contract",
 	}
 
 	app := &cli.App{

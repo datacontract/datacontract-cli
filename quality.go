@@ -5,12 +5,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func PrintQuality(dataContractFileName string, pathToQuality []string) error {
-	dataContractBytes, err := ReadLocalDataContract(dataContractFileName)
-	if err != nil {
-		return fmt.Errorf("failed reading data contract: %w", err)
-	}
-	dataContract, err := ParseDataContract(dataContractBytes)
+func PrintQuality(dataContractLocation string, pathToQuality []string) error {
+	dataContract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return fmt.Errorf("failed parsing local data contract: %w", err)
 	}

@@ -564,14 +564,10 @@ func (field Field) findEquivalent(otherFields []Field) (result *Field) {
 	return result
 }
 
-func PrintSchema(dataContractFileName string, pathToSpecification []string) error {
-	dataContractBytes, err := ReadLocalDataContract(dataContractFileName)
+func PrintSchema(dataContractLocation string, pathToSpecification []string) error {
+	dataContract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return fmt.Errorf("failed reading data contract: %w", err)
-	}
-	dataContract, err := ParseDataContract(dataContractBytes)
-	if err != nil {
-		return fmt.Errorf("failed parsing local data contract: %w", err)
 	}
 
 	specification, err := getSpecification(dataContract, pathToSpecification)

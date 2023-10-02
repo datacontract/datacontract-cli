@@ -5,7 +5,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 )
@@ -14,15 +13,38 @@ const referencePrefix = "$ref:"
 
 type DataContract = map[string]interface{}
 
-func ReadLocalDataContract(dataContractFileName string) (dataContractFile []byte, err error) {
-	if dataContractFile, err = os.ReadFile(dataContractFileName); err != nil {
-		return nil, fmt.Errorf("failed to read data contract file: %w", err)
+func GetDataContract(location string) (DataContract, error) {
+	if IsURI(location) {
+		return getRemoteDataContract(location)
+	} else {
+		return getLocalDataContract(location)
 	}
-
-	return dataContractFile, nil
 }
 
-func ParseDataContract(data []byte) (dataContractObject DataContract, err error) {
+func getLocalDataContract(dataContractFileName string) (DataContract, error) {
+	if dataContractFile, err := os.ReadFile(dataContractFileName); err != nil {
+		return nil, fmt.Errorf("failed to read data contract file: %w", err)
+	} else {
+		return parseDataContract(dataContractFile)
+	}
+}
+
+func getRemoteDataContract(url string) (DataContract, error) {
+	response, err := http.Get(url)
+	defer response.Body.Close()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch data contract to compare with: %v", response.Status)
+	}
+
+	if contractData, err := io.ReadAll(response.Body); err != nil {
+		return nil, fmt.Errorf("failed to read data contract to compare with: %w", err)
+	} else {
+		return parseDataContract(contractData)
+	}
+}
+
+func parseDataContract(data []byte) (dataContractObject DataContract, err error) {
 	if err = yaml.Unmarshal(data, &dataContractObject); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data contract file: %w", err)
 	}
@@ -67,7 +89,7 @@ func resolveValue(object map[string]interface{}, fieldName string) (value interf
 func resolveReference(reference string) (_ string, err error) {
 	var bytes []byte
 
-	if isURI(reference) {
+	if IsURI(reference) {
 		bytes, err = resolveReferenceFromRemote(reference)
 	} else {
 		bytes, err = resolveReferenceLocally(reference)
@@ -93,24 +115,4 @@ func resolveReferenceFromRemote(reference string) ([]byte, error) {
 	}
 
 	return io.ReadAll(response.Body)
-}
-
-func isURI(reference string) bool {
-	_, err := url.ParseRequestURI(reference)
-	return err == nil
-}
-
-func FetchDataContract(url string) (result []byte, err error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data contract to compare with: %v", response.Status)
-	}
-
-	defer response.Body.Close()
-
-	if contractData, err := io.ReadAll(response.Body); err != nil {
-		return nil, fmt.Errorf("failed to read data contract to compare with: %w", err)
-	} else {
-		return contractData, nil
-	}
 }

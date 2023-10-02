@@ -1,5 +1,7 @@
 package main
 
+import "net/url"
+
 func EqualStringPointers(s1, s2 *string) bool {
 	// both are the same (e.g. nil)
 	if s1 == s2 {
@@ -20,4 +22,9 @@ func StringPointerString(str *string) string {
 	}
 
 	return *str
+}
+
+func IsURI(reference string) bool {
+	_, err := url.ParseRequestURI(reference)
+	return err == nil
 }

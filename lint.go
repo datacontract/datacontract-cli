@@ -9,13 +9,12 @@ import (
 	"net/http"
 )
 
-func Lint(dataContractFileName string, schemaUrl string) error {
+func Lint(dataContractLocation string, schemaUrl string) error {
 	schemaResponse, err := fetchSchema(schemaUrl)
 	schemaData, err := readSchema(schemaResponse)
 	schema, err := parseSchema(schemaData)
 
-	dataContractFile, err := ReadLocalDataContract(dataContractFileName)
-	dataContract, err := ParseDataContract(dataContractFile)
+	dataContract, err := GetDataContract(dataContractLocation)
 
 	if err != nil {
 		return fmt.Errorf("linting failed: %w", err)

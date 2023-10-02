@@ -83,3 +83,46 @@ func TestGetValue(t *testing.T) {
 		})
 	}
 }
+
+func TestGetDataContract(t *testing.T) {
+	dataContract := DataContract{
+		"dataContractSpecification": "0.9.0",
+		"id":                        "my-data-contract-id",
+		"info": map[string]interface{}{
+			"title":   "My Data Contract",
+			"version": "0.0.1",
+		},
+	}
+	type args struct {
+		location string
+	}
+	tests := []struct {
+		name                   string
+		args                   args
+		wantDataContractObject DataContract
+		wantErr                bool
+	}{
+		{
+			name:                   "local",
+			args:                   args{location: "test_resources/datacontract.yaml"},
+			wantDataContractObject: dataContract,
+		},
+		{
+			name:                   "remote",
+			args:                   args{location: fmt.Sprintf("%v/datacontract.yaml", TestResourcesServer.URL)},
+			wantDataContractObject: dataContract,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDataContractObject, err := GetDataContract(tt.args.location)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetDataContract() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotDataContractObject, tt.wantDataContractObject) {
+				t.Errorf("GetDataContract() gotDataContractObject = %v, want %v", gotDataContractObject, tt.wantDataContractObject)
+			}
+		})
+	}
+}
