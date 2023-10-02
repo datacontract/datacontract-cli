@@ -42,6 +42,9 @@ $ datacontract schema
 
 # print quality definitions
 $ datacontract quality
+
+# inline referenced schema or quality specifications
+$ datacontract inline
 ```
 
 ## Installation
