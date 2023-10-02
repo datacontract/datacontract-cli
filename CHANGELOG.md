@@ -1,6 +1,8 @@
 # 0.3.0
 - Handle non-existent schema specification when using diff/breaking
 - Resolve local and remote resources such as schema specifications when using "$ref: ..." notation
+- Implement schema command: prints your schema
+- Implement quality command: prints your quality definitions 
 
 # 0.2.0
 
