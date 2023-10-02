@@ -564,13 +564,33 @@ func (field Field) findEquivalent(otherFields []Field) (result *Field) {
 	return result
 }
 
+func PrintSchema(dataContractFileName string, pathToSpecification []string) error {
+	dataContractBytes, err := ReadLocalDataContract(dataContractFileName)
+	if err != nil {
+		return fmt.Errorf("failed reading data contract: %w", err)
+	}
+	dataContract, err := ParseDataContract(dataContractBytes)
+	if err != nil {
+		return fmt.Errorf("failed parsing local data contract: %w", err)
+	}
+
+	specification, err := getSpecification(dataContract, pathToSpecification)
+	if err != nil {
+		return fmt.Errorf("can't get specification: %w", err)
+	}
+
+	fmt.Println(string(schemaSpecificationAsString(specification)))
+
+	return nil
+}
+
 func GetSchemaSpecification(dataContract DataContract, pathToType []string, pathToSpecification []string) (*Dataset, error) {
-	schemaType, localSchemaSpecification, err := extractSchemaSpecification(dataContract, pathToType, pathToSpecification)
+	schemaType, schemaSpecification, err := extractSchemaSpecification(dataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
 	}
 
-	schemaSpecificationBytes := schemaSpecificationAsString(localSchemaSpecification)
+	schemaSpecificationBytes := schemaSpecificationAsString(schemaSpecification)
 	parsedDataset := parseDataset(schemaType, schemaSpecificationBytes)
 
 	return &parsedDataset, err
@@ -593,12 +613,12 @@ func extractSchemaSpecification(
 ) (schemaType string, specification interface{}, err error) {
 	schemaType, err = getSchemaType(contract, pathToType)
 	if err != nil {
-		return "", "", fmt.Errorf("can't get schema type: %w", err)
+		fmt.Println(fmt.Errorf("can't get schema type: %w", err))
 	}
 
 	specification, err = getSpecification(contract, pathToSpecification)
 	if err != nil {
-		return "", nil, fmt.Errorf("can't get specification: %w", err)
+		fmt.Println(fmt.Errorf("can't get specification: %w", err))
 	}
 
 	return schemaType, specification, nil
@@ -607,8 +627,7 @@ func extractSchemaSpecification(
 func getSchemaType(contract DataContract, path []string) (schemaType string, err error) {
 	schemaTypeUntyped, err := GetValue(contract, path)
 	if err != nil {
-		fmt.Println(fmt.Errorf("can't get value of schema type for path %v: %w", path, err))
-		return "", nil
+		return "", fmt.Errorf("can't get value of schema type for path %v: %w", path, err)
 	}
 
 	schemaType, ok := schemaTypeUntyped.(string)
@@ -622,8 +641,7 @@ func getSchemaType(contract DataContract, path []string) (schemaType string, err
 func getSpecification(contract DataContract, path []string) (specification interface{}, err error) {
 	specification, err = GetValue(contract, path)
 	if err != nil {
-		fmt.Println(fmt.Errorf("can't get value of schema specification for path %v: %w", path, err))
-		return "", nil
+		return nil, fmt.Errorf("can't get value of schema specification for path %v: %w", path, err)
 	}
 
 	return specification, nil

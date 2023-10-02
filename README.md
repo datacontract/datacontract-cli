@@ -36,6 +36,9 @@ $ datacontract diff --with https://raw.githubusercontent.com/datacontract/cli-ex
 
 # find breaking changes
 $ datacontract breaking --with https://raw.githubusercontent.com/datacontract/cli-examples/main/datacontract.yaml
+
+# print schema
+$ datacontract schema
 ```
 
 ## Installation
@@ -203,6 +206,20 @@ OPTIONS:
    --file value                       file name for the data contract (default: "datacontract.yaml")
    --with value                       url of the stable version of the data contract
    --schema-type-path value           definition of a custom path to the schema type in your data contract (default: "schema.type")
+   --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
+   --help, -h                         show help
+```
+
+#### schema
+```
+NAME:
+   datacontract schema - print schema of the data contract
+
+USAGE:
+   datacontract schema [command options] [arguments...]
+
+OPTIONS:
+   --file value                       file name for the data contract (default: "datacontract.yaml")
    --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
    --help, -h                         show help
 ```
