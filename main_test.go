@@ -1,9 +1,15 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
-func TestMainMethod(t *testing.T) {
+var TestResourcesServer = httptest.NewServer(http.FileServer(http.Dir("./test_resources")))
 
+func TestMain(m *testing.M) {
+	defer TestResourcesServer.Close()
+
+	m.Run()
 }

@@ -1,11 +1,15 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"reflect"
 	"testing"
 )
 
 func TestGetValue(t *testing.T) {
+	model, _ := os.ReadFile("./test_resources/model.yaml")
+
 	type args struct {
 		contract DataContract
 		path     []string
@@ -44,6 +48,26 @@ func TestGetValue(t *testing.T) {
 				contract: DataContract{"schema": "type"},
 				path:     []string{"schema", "type"}},
 			wantErr: true,
+		},
+		{
+			name: "local reference",
+			args: args{
+				contract: DataContract{"schema": map[string]interface{}{
+					"specification": "$ref: test_resources/model.yaml",
+				}},
+				path: []string{"schema", "specification"}},
+			wantValue: string(model),
+			wantErr:   false,
+		},
+		{
+			name: "remote reference",
+			args: args{
+				contract: DataContract{"schema": map[string]interface{}{
+					"specification": fmt.Sprintf("$ref: %v/model.yaml", TestResourcesServer.URL),
+				}},
+				path: []string{"schema", "specification"}},
+			wantValue: string(model),
+			wantErr:   false,
 		},
 	}
 	for _, tt := range tests {
