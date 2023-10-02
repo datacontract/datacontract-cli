@@ -564,19 +564,16 @@ func (field Field) findEquivalent(otherFields []Field) (result *Field) {
 	return result
 }
 
-func GetSchemaSpecification(dataContract DataContract, pathToType []string, pathToSpecification []string) (dataset *Dataset, err error) {
+func GetSchemaSpecification(dataContract DataContract, pathToType []string, pathToSpecification []string) (*Dataset, error) {
 	schemaType, localSchemaSpecification, err := extractSchemaSpecification(dataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
 	}
 
 	schemaSpecificationBytes := schemaSpecificationAsString(localSchemaSpecification)
-	dataset, err = parseDataset(schemaType, schemaSpecificationBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed parsing dataset: %w", err)
-	}
+	parsedDataset := parseDataset(schemaType, schemaSpecificationBytes)
 
-	return dataset, err
+	return &parsedDataset, err
 }
 
 func schemaSpecificationAsString(schemaSpecification interface{}) []byte {
@@ -610,12 +607,13 @@ func extractSchemaSpecification(
 func getSchemaType(contract DataContract, path []string) (schemaType string, err error) {
 	schemaTypeUntyped, err := GetValue(contract, path)
 	if err != nil {
-		return "", fmt.Errorf("can't get value of schema type: %w for path %v", err, path)
+		fmt.Println(fmt.Errorf("can't get value of schema type for path %v: %w", path, err))
+		return "", nil
 	}
 
 	schemaType, ok := schemaTypeUntyped.(string)
 	if !ok {
-		return "", fmt.Errorf("schema not of type string")
+		return "", fmt.Errorf("schema type not a string")
 	}
 
 	return schemaType, nil
@@ -624,18 +622,19 @@ func getSchemaType(contract DataContract, path []string) (schemaType string, err
 func getSpecification(contract DataContract, path []string) (specification interface{}, err error) {
 	specification, err = GetValue(contract, path)
 	if err != nil {
-		return "", fmt.Errorf("can't get value of schema type: %w for path %v", err, path)
+		fmt.Println(fmt.Errorf("can't get value of schema specification for path %v: %w", path, err))
+		return "", nil
 	}
 
 	return specification, nil
 }
 
-func parseDataset(schemaType string, specification []byte) (*Dataset, error) {
+func parseDataset(schemaType string, specification []byte) Dataset {
 	switch schemaType {
 	case "dbt":
-		return parseDbtDataset(specification), nil
+		return parseDbtDataset(specification)
 	default:
-		return nil, fmt.Errorf("unknown schema type %v", schemaType)
+		return Dataset{}
 	}
 }
 
@@ -670,13 +669,13 @@ type dbtColumn struct {
 	Constraints []dbtConstraint
 }
 
-func parseDbtDataset(specification []byte) *Dataset {
+func parseDbtDataset(specification []byte) Dataset {
 	var res dbtSpecification
 
 	yaml.Unmarshal(specification, &res)
 	models := modelsFromDbtSpecification(res)
 
-	return &Dataset{SchemaType: "dbt", Models: models}
+	return Dataset{SchemaType: "dbt", Models: models}
 }
 
 func modelsFromDbtSpecification(res dbtSpecification) (models []Model) {
