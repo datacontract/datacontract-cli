@@ -428,15 +428,13 @@ func TestParseDataset(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		want    *Dataset
-		wantErr bool
+		name string
+		args args
+		want Dataset
 	}{
 		{
-			name:    "unkown",
-			args:    args{"unkown", []byte{}},
-			wantErr: true,
+			name: "unkown",
+			args: args{"unkown", []byte{}},
 		},
 		{
 			name: "dbt",
@@ -450,7 +448,7 @@ models:
       - name: %v
         data_type: %v
         description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription))},
-			want: &Dataset{Models: []Model{
+			want: Dataset{Models: []Model{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -485,7 +483,7 @@ models:
       - name: %v
         data_type: %v
         description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldName, fieldName, fieldName, fieldType, fieldDescription))},
-			want: &Dataset{Models: []Model{
+			want: Dataset{Models: []Model{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -521,7 +519,7 @@ models:
           - type: check
             expression: "id > 0"
 `, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription))},
-			want: &Dataset{Models: []Model{
+			want: Dataset{Models: []Model{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -543,13 +541,9 @@ models:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseDataset(tt.args.schemaType, tt.args.specification)
+			got := parseDataset(tt.args.schemaType, tt.args.specification)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseDataset() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != nil && !got.equals(*tt.want) {
+			if !got.equals(tt.want) {
 				t.Errorf("parseDataset() got = %v, want %v", got, tt.want)
 			}
 		})

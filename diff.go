@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func Diff(dataContractFileName string, stableContractUrl string, pathToType []string, pathToSpecification []string) error {
-	differences, err := GetDifferences(dataContractFileName, stableContractUrl, pathToType, pathToSpecification)
+func Diff(dataContractFileName string, stableContractLocation string, pathToType []string, pathToSpecification []string) error {
+	differences, err := GetDifferences(dataContractFileName, stableContractLocation, pathToType, pathToSpecification)
 	if err != nil {
 		return err
 	}
@@ -16,29 +16,19 @@ func Diff(dataContractFileName string, stableContractUrl string, pathToType []st
 }
 
 func GetDifferences(
-	dataContractFileName string,
-	stableContractUrl string,
+	dataContractLocation string,
+	stableDataContractLocation string,
 	pathToType []string,
 	pathToSpecification []string,
 ) ([]DatasetDifference, error) {
-	localDataContractBytes, err := ReadLocalDataContract(dataContractFileName)
+	localDataContract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading local data contract: %w", err)
 	}
 
-	localDataContract, err := ParseDataContract(localDataContractBytes)
+	stableDataContract, err := GetDataContract(stableDataContractLocation)
 	if err != nil {
-		return nil, fmt.Errorf("failed parsing local data contract: %w", err)
-	}
-
-	stableDataContractBytes, err := FetchDataContract(stableContractUrl)
-	if err != nil {
-		return nil, fmt.Errorf("failed fetching stable data contract: %w", err)
-	}
-
-	stableDataContract, err := ParseDataContract(stableDataContractBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed parsing local data contract: %w", err)
+		return nil, fmt.Errorf("failed getting stable data contract: %w", err)
 	}
 
 	stableDataset, err := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)

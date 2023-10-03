@@ -2,8 +2,13 @@ package main
 
 import "fmt"
 
-func Breaking(dataContractFileName string, stableContractUrl string, pathToType []string, pathToSpecification []string) error {
-	all, err := GetDifferences(dataContractFileName, stableContractUrl, pathToType, pathToSpecification)
+func Breaking(
+	dataContractLocation string,
+	stableDataContractLocation string,
+	pathToType []string,
+	pathToSpecification []string,
+) error {
+	all, err := GetDifferences(dataContractLocation, stableDataContractLocation, pathToType, pathToSpecification)
 	if err != nil {
 		return err
 	}

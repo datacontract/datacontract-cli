@@ -6,19 +6,45 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
+
+const referencePrefix = "$ref:"
 
 type DataContract = map[string]interface{}
 
-func ReadLocalDataContract(dataContractFileName string) (dataContractFile []byte, err error) {
-	if dataContractFile, err = os.ReadFile(dataContractFileName); err != nil {
-		return nil, fmt.Errorf("failed to read data contract file: %w", err)
+func GetDataContract(location string) (DataContract, error) {
+	if IsURI(location) {
+		return getRemoteDataContract(location)
+	} else {
+		return getLocalDataContract(location)
 	}
-
-	return dataContractFile, nil
 }
 
-func ParseDataContract(data []byte) (dataContractObject DataContract, err error) {
+func getLocalDataContract(dataContractFileName string) (DataContract, error) {
+	if dataContractFile, err := os.ReadFile(dataContractFileName); err != nil {
+		return nil, fmt.Errorf("failed to read data contract file: %w", err)
+	} else {
+		return parseDataContract(dataContractFile)
+	}
+}
+
+func getRemoteDataContract(url string) (DataContract, error) {
+	response, err := http.Get(url)
+	defer response.Body.Close()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch data contract to compare with: %v", response.Status)
+	}
+
+	if contractData, err := io.ReadAll(response.Body); err != nil {
+		return nil, fmt.Errorf("failed to read data contract to compare with: %w", err)
+	} else {
+		return parseDataContract(contractData)
+	}
+}
+
+func parseDataContract(data []byte) (dataContractObject DataContract, err error) {
 	if err = yaml.Unmarshal(data, &dataContractObject); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data contract file: %w", err)
 	}
@@ -34,7 +60,7 @@ func GetValue(contract DataContract, path []string) (value interface{}, err erro
 	}
 
 	if len(path) == 1 {
-		return contract[fieldName], nil
+		return resolveValue(contract, fieldName)
 	}
 
 	next, ok := contract[fieldName].(map[string]interface{})
@@ -45,17 +71,17 @@ func GetValue(contract DataContract, path []string) (value interface{}, err erro
 	return GetValue(next, path[1:])
 }
 
-func FetchDataContract(url string) (result []byte, err error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data contract to compare with: %v", response.Status)
+func resolveValue(object map[string]interface{}, fieldName string) (value interface{}, err error) {
+	value = object[fieldName]
+
+	if stringValue, isString := value.(string); isString && strings.HasPrefix(stringValue, referencePrefix) {
+		reference := strings.Trim(strings.TrimPrefix(stringValue, referencePrefix), " ")
+
+		value, err = ResolveReference(reference)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	defer response.Body.Close()
-
-	if otherContractData, err := io.ReadAll(response.Body); err != nil {
-		return nil, fmt.Errorf("failed to read data contract to compare with: %w", err)
-	} else {
-		return otherContractData, nil
-	}
+	return value, nil
 }

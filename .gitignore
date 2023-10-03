@@ -1,6 +1,7 @@
 .idea
 .DS_Store
-datacontract.yaml
+/datacontract.yaml
 datacontract.sh
 datacontract
 cli
+tmp

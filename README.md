@@ -32,10 +32,19 @@ $ datacontract lint
 $ datacontract open
 
 # find differences to another version of the data contract
-$ datacontract diff --with https://raw.githubusercontent.com/datacontract/cli-examples/main/datacontract.yaml
+$ datacontract diff --with stable/datacontract.yaml
 
 # find breaking changes
-$ datacontract breaking --with https://raw.githubusercontent.com/datacontract/cli-examples/main/datacontract.yaml
+$ datacontract breaking --with stable/datacontract.yaml
+
+# print schema
+$ datacontract schema
+
+# print quality definitions
+$ datacontract quality
+
+# inline referenced schema or quality specifications
+$ datacontract inline
 ```
 
 ## Installation
@@ -62,7 +71,7 @@ tar -xf datacontract.tar.gz
 
 | Placeholder | Description                                    |
 |-------------|------------------------------------------------|
-| VERSION     | datacontract CLI version (e.g. `v0.2.1`)       |
+| VERSION     | datacontract CLI version (e.g. `v0.3.0`)       |
 | OS          | your operating system (linux, windows, darwin) |
 | ARCH        | your processor architecture (amd64, arm64)     |
 
@@ -96,7 +105,7 @@ USAGE:
    datacontract [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.2.1
+   v0.3.0
 
 AUTHOR:
    Stefan Negele <stefan.negele@innoq.com>
@@ -105,9 +114,12 @@ COMMANDS:
    init      create a new data contract
    lint      linter for the data contract
    test      EXPERIMENTAL - run tests for the data contract
+   schema    print schema of the data contract
+   quality   print quality checks of the data contract
    open      save and open the data contract in Data Contract Studio
-   diff      EXPERIMENTAL - show differences of your local and a remote data contract
-   breaking  EXPERIMENTAL - detect breaking changes between your local and a remote data contract
+   diff      EXPERIMENTAL (dbt specification only) - show differences of your local and a remote data contract
+   breaking  EXPERIMENTAL (dbt specification only) - detect breaking changes between your local and a remote data contract
+   inline    inline all references specified with '$ref' notation
    help, h   Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -126,7 +138,7 @@ USAGE:
    datacontract init [command options] [arguments...]
 
 OPTIONS:
-   --file value      file name for the data contract (default: "datacontract.yaml")
+   --file value      location of the data contract, path or url (except init) (default: "datacontract.yaml")
    --from value      url of a template or data contract (default: "https://datacontract.com/datacontract.init.yaml")
    --overwrite-file  replace the existing datacontract.yaml (default: false)
    --interactive     EXPERIMENTAL - prompt for required values (default: false)
@@ -142,7 +154,7 @@ USAGE:
    datacontract lint [command options] [arguments...]
 
 OPTIONS:
-   --file value    file name for the data contract (default: "datacontract.yaml")
+   --file value    location of the data contract, path or url (except init) (default: "datacontract.yaml")
    --schema value  url of Data Contract Specification json schema (default: "https://datacontract.com/datacontract.schema.json")
    --lint-schema   EXPERIMENTAL - type specific linting of the schema object (default: false)
    --lint-quality  EXPERIMENTAL - type specific validation of the quality object (default: false)
@@ -170,7 +182,7 @@ USAGE:
    datacontract open [command options] [arguments...]
 
 OPTIONS:
-   --file value  file name for the data contract (default: "datacontract.yaml")
+   --file value  location of the data contract, path or url (except init) (default: "datacontract.yaml")
    --help, -h    show help
 ```
 
@@ -184,8 +196,8 @@ USAGE:
    datacontract diff [command options] [arguments...]
 
 OPTIONS:
-   --file value                       file name for the data contract (default: "datacontract.yaml")
-   --with value                       url of the stable version of the data contract
+   --file value                       location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --with value                       location (url or path) of the stable version of the data contract
    --schema-type-path value           definition of a custom path to the schema type in your data contract (default: "schema.type")
    --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
    --help, -h                         show help
@@ -200,11 +212,52 @@ USAGE:
    datacontract breaking [command options] [arguments...]
 
 OPTIONS:
-   --file value                       file name for the data contract (default: "datacontract.yaml")
-   --with value                       url of the stable version of the data contract
+   --file value                       location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --with value                       location (url or path) of the stable version of the data contract
    --schema-type-path value           definition of a custom path to the schema type in your data contract (default: "schema.type")
    --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
    --help, -h                         show help
+```
+
+#### schema
+```
+NAME:
+   datacontract schema - print schema of the data contract
+
+USAGE:
+   datacontract schema [command options] [arguments...]
+
+OPTIONS:
+   --file value                       location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --schema-specification-path value  definition of a custom path to the schema specification in your data contract (default: "schema.specification")
+   --help, -h                         show help
+```
+
+#### quality
+```
+NAME:
+   datacontract quality - print quality checks of the data contract
+
+USAGE:
+   datacontract quality [command options] [arguments...]
+
+OPTIONS:
+   --file value                        location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --quality-specification-path value  definition of a custom path to the quality specification in your data contract (default: "quality.specification")
+   --help, -h                          show help
+```
+
+#### inline
+```
+NAME:
+   datacontract inline - inline all references specified with '$ref' notation
+
+USAGE:
+   datacontract inline [command options] [arguments...]
+
+OPTIONS:
+   --file value  location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --help, -h    show help
 ```
 
 #### help
