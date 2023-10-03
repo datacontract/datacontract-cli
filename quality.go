@@ -6,8 +6,7 @@ import (
 )
 
 func QualityCheck(dataContractFileName string) error {
-	dataContractFile, err := ReadLocalDataContract(dataContractFileName)
-	dataContract, err := ParseDataContract(dataContractFile)
+	dataContract, err := GetDataContract(dataContractFileName)
 
 	if err != nil {
 		return fmt.Errorf("quality checks failed: %w", err)
@@ -27,6 +26,8 @@ func qualityCheck(contract DataContract) error {
 	}
 
 	fmt.Println("Data set: %w", dataset)
+	
+	return nil
 }
 
 func PrintQuality(dataContractLocation string, pathToQuality []string) error {
