@@ -5,3 +5,5 @@ datacontract.sh
 datacontract
 cli
 tmp
+/contracts/
+/quality/
