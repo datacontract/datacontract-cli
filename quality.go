@@ -27,7 +27,7 @@ func qualityCheck(contract DataContract) error {
 	}
 
 	fmt.Println("Data set: %w", dataset)
-)
+}
 
 func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 	dataContract, err := GetDataContract(dataContractLocation)
