@@ -16,7 +16,7 @@ func QualityCheck(dataContractFileName string) error {
 }
 
 func qualityCheck(contract DataContract) error {
-	// fmt.Println("contract: %v", contract)
+	// fmt.Printf("contract: %v\n", contract)
 	pathToType := []string{"quality", "type"}
 	pathToSpecification := []string{"quality", "specification"}
 	dataset, err := GetQualitySpecification(contract, pathToType, pathToSpecification)
@@ -25,7 +25,7 @@ func qualityCheck(contract DataContract) error {
 		return fmt.Errorf("quality checks failed: %w", err)
 	}
 
-	fmt.Println("Data set: %s", dataset)
+	fmt.Printf("Data set: %v\n", dataset)
 	
 	return nil
 }
@@ -55,13 +55,13 @@ func GetQualitySpecification(dataContract DataContract, pathToType []string, pat
 	if err != nil {
 		return nil, fmt.Errorf("failed extracting quality specification: %w", err)
 	}
-	//fmt.Println("local quality spec: %v", localQualitySpecification)
+	//fmt.Printf("local quality spec: %v\n", localQualitySpecification)
 	
 	qualitySpecificationBytes := qualitySpecificationAsString(localQualitySpecification)
 	if qualityType == "SodaCL" {
 		dataset = parseSodaDataset(qualitySpecificationBytes)
 	} else {
-		fmt.Println("The '%s' quality type is not recognized yet", qualityType)
+		fmt.Printf("The '%v' quality type is not recognized yet\n", qualityType)
 	}
 
 	return dataset, nil
