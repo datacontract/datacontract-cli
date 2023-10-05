@@ -32,12 +32,12 @@ func GetDifferences(
 		return nil, fmt.Errorf("failed getting stable data contract: %w", err)
 	}
 
-	stableDataset, err := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)
+	stableDataset, err := GetSchemaSpecification(stableDataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting schema specification for stable dataset: %w", err)
 	}
 
-	localDataset, err := GetSchemaSpecification(stableDataContract, pathToType, pathToSpecification)
+	localDataset, err := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting schema specification for local dataset: %w", err)
 	}
