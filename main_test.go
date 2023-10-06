@@ -42,7 +42,14 @@ func RunLogOutputTest[T any](t *testing.T, test LogOutputTest[T], functionName s
 			t.Errorf("%v() error = %v, wantErr %v", functionName, err, test.wantErr)
 		}
 		if buf.String() != test.wantOutput {
-			t.Errorf("Breaking() gotOutput %v, wantOutput %v", buf.String(), test.wantOutput)
+			t.Errorf(`Breaking() gotOutput
+---
+%v
+---
+wantOutput
+---
+%v
+---`, buf.String(), test.wantOutput)
 		}
 	})
 
