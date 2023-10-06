@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetValue(t *testing.T) {
-	model, _ := os.ReadFile("./test_resources/model.yaml")
+	model, _ := os.ReadFile("./test_resources/dataContract/getValue/model.yaml")
 
 	type args struct {
 		contract DataContract
@@ -53,7 +53,7 @@ func TestGetValue(t *testing.T) {
 			name: "local reference",
 			args: args{
 				contract: DataContract{"schema": map[string]interface{}{
-					"specification": "$ref: test_resources/model.yaml",
+					"specification": "$ref: test_resources/dataContract/getValue/model.yaml",
 				}},
 				path: []string{"schema", "specification"}},
 			wantValue: string(model),
@@ -63,7 +63,7 @@ func TestGetValue(t *testing.T) {
 			name: "remote reference",
 			args: args{
 				contract: DataContract{"schema": map[string]interface{}{
-					"specification": fmt.Sprintf("$ref: %v/model.yaml", TestResourcesServer.URL),
+					"specification": fmt.Sprintf("$ref: %v/dataContract/getValue/model.yaml", TestResourcesServer.URL),
 				}},
 				path: []string{"schema", "specification"}},
 			wantValue: string(model),
@@ -104,12 +104,12 @@ func TestGetDataContract(t *testing.T) {
 	}{
 		{
 			name:                   "local",
-			args:                   args{location: "test_resources/datacontract.yaml"},
+			args:                   args{location: "test_resources/dataContract/getDataContract/datacontract.yaml"},
 			wantDataContractObject: dataContract,
 		},
 		{
 			name:                   "remote",
-			args:                   args{location: fmt.Sprintf("%v/datacontract.yaml", TestResourcesServer.URL)},
+			args:                   args{location: fmt.Sprintf("%v/dataContract/getDataContract/datacontract.yaml", TestResourcesServer.URL)},
 			wantDataContractObject: dataContract,
 		},
 	}

@@ -2,6 +2,6 @@
 .DS_Store
 /datacontract.yaml
 datacontract.sh
-datacontract
-cli
+/datacontract
+/cli
 tmp
