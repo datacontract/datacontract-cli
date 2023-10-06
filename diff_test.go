@@ -13,8 +13,8 @@ func TestDiff(t *testing.T) {
 		{
 			name: "breaking",
 			args: args{
-				dataContractLocation:       "test_resources/breaking/dbt_breaking_datacontract.yaml",
-				stableDataContractLocation: "test_resources/breaking/dbt_datacontract.yaml",
+				dataContractLocation:       "test_resources/diff/dbt_breaking_datacontract.yaml",
+				stableDataContractLocation: "test_resources/diff/dbt_datacontract.yaml",
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -41,8 +41,8 @@ Field:        my_column_2
 		{
 			name: "not-breaking",
 			args: args{
-				dataContractLocation:       "test_resources/breaking/dbt_not_breaking_datacontract.yaml",
-				stableDataContractLocation: "test_resources/breaking/dbt_datacontract.yaml",
+				dataContractLocation:       "test_resources/diff/dbt_not_breaking_datacontract.yaml",
+				stableDataContractLocation: "test_resources/diff/dbt_datacontract.yaml",
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
