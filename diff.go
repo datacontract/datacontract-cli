@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-func Diff(dataContractFileName string, stableContractLocation string, pathToType []string, pathToSpecification []string) error {
-	differences, err := GetDifferences(dataContractFileName, stableContractLocation, pathToType, pathToSpecification)
+func Diff(dataContractLocation string, stableDataContractLocation string, pathToType []string, pathToSpecification []string) error {
+	differences, err := GetDifferences(dataContractLocation, stableDataContractLocation, pathToType, pathToSpecification)
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,8 @@
 package main
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestBreaking(t *testing.T) {
+func TestDiff(t *testing.T) {
 	type args struct {
 		dataContractLocation       string
 		stableDataContractLocation string
@@ -20,8 +18,8 @@ func TestBreaking(t *testing.T) {
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
-			wantErr: true,
-			wantOutput: `Found 1 differences between the data contracts!
+			wantErr: false,
+			wantOutput: `Found 2 differences between the data contracts!
 
 🔴 Difference 1:
 Description:  field 'my_table.my_column' was removed
@@ -30,6 +28,14 @@ Severity:     breaking
 Level:        field
 Model:        my_table
 Field:        my_column
+
+🟡 Difference 2:
+Description:  field 'my_table.my_column_2' was added
+Type:         field-added
+Severity:     info
+Level:        field
+Model:        my_table
+Field:        my_column_2
 `,
 		},
 		{
@@ -41,13 +47,21 @@ Field:        my_column
 				pathToSpecification:        []string{"schema", "specification"},
 			},
 			wantErr: false,
-			wantOutput: `Found 0 differences between the data contracts!
+			wantOutput: `Found 1 differences between the data contracts!
+
+🟡 Difference 1:
+Description:  field 'my_table.my_column_2' was added
+Type:         field-added
+Severity:     info
+Level:        field
+Model:        my_table
+Field:        my_column_2
 `,
 		},
 	}
 	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "Breaking", func() error {
-			return Breaking(tt.args.dataContractLocation, tt.args.stableDataContractLocation, tt.args.pathToType, tt.args.pathToSpecification)
+		RunLogOutputTest(t, tt, "Diff", func() error {
+			return Diff(tt.args.dataContractLocation, tt.args.stableDataContractLocation, tt.args.pathToType, tt.args.pathToSpecification)
 		})
 	}
 }
