@@ -1,3 +1,6 @@
+# 0.3.1
+- Fix comparing order of contracts in `diff`/`breaking`
+
 # 0.3.0
 - Handle non-existent schema specification when using `diff`/`breaking`
 - Resolve local and remote resources such as schema specifications when using "$ref: ..." notation

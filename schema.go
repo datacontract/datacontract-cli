@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"gopkg.in/yaml.v3"
+	"log"
 )
 
 type Dataset struct {
@@ -575,7 +576,7 @@ func PrintSchema(dataContractLocation string, pathToSpecification []string) erro
 		return fmt.Errorf("can't get specification: %w", err)
 	}
 
-	fmt.Println(string(TakeStringOrMarshall(specification)))
+	log.Println(string(TakeStringOrMarshall(specification)))
 
 	return nil
 }
@@ -599,12 +600,12 @@ func extractSchemaSpecification(
 ) (schemaType string, specification interface{}, err error) {
 	schemaType, err = getSchemaType(contract, pathToType)
 	if err != nil {
-		fmt.Println(fmt.Errorf("can't get schema type: %w", err))
+		log.Println(fmt.Errorf("can't get schema type: %w", err))
 	}
 
 	specification, err = getSpecification(contract, pathToSpecification)
 	if err != nil {
-		fmt.Println(fmt.Errorf("can't get specification: %w", err))
+		log.Println(fmt.Errorf("can't get specification: %w", err))
 	}
 
 	return schemaType, specification, nil

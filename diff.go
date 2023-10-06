@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 )
 
-func Diff(dataContractFileName string, stableContractLocation string, pathToType []string, pathToSpecification []string) error {
-	differences, err := GetDifferences(dataContractFileName, stableContractLocation, pathToType, pathToSpecification)
+func Diff(dataContractLocation string, stableDataContractLocation string, pathToType []string, pathToSpecification []string) error {
+	differences, err := GetDifferences(dataContractLocation, stableDataContractLocation, pathToType, pathToSpecification)
 	if err != nil {
 		return err
 	}
@@ -31,12 +32,12 @@ func GetDifferences(
 		return nil, fmt.Errorf("failed getting stable data contract: %w", err)
 	}
 
-	stableDataset, err := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)
+	stableDataset, err := GetSchemaSpecification(stableDataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting schema specification for stable dataset: %w", err)
 	}
 
-	localDataset, err := GetSchemaSpecification(stableDataContract, pathToType, pathToSpecification)
+	localDataset, err := GetSchemaSpecification(localDataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting schema specification for local dataset: %w", err)
 	}
@@ -46,20 +47,20 @@ func GetDifferences(
 }
 
 func PrintDifferences(differences []DatasetDifference) {
-	fmt.Printf("Found %v differences between the data contracts!\n", len(differences))
+	log.Printf("Found %v differences between the data contracts!\n", len(differences))
 
 	for i, difference := range differences {
-		fmt.Println()
-		fmt.Printf("%v Difference %v:\n", severityIcon(difference), i+1)
-		fmt.Printf("Description:  %v\n", difference.Description)
-		fmt.Printf("Type:         %v\n", difference.Type)
-		fmt.Printf("Severity:     %v\n", difference.Severity)
-		fmt.Printf("Level:        %v\n", difference.Level)
+		log.Println()
+		log.Printf("%v Difference %v:\n", severityIcon(difference), i+1)
+		log.Printf("Description:  %v\n", difference.Description)
+		log.Printf("Type:         %v\n", difference.Type)
+		log.Printf("Severity:     %v\n", difference.Severity)
+		log.Printf("Level:        %v\n", difference.Level)
 		if difference.ModelName != nil {
-			fmt.Printf("Model:        %v\n", *difference.ModelName)
+			log.Printf("Model:        %v\n", *difference.ModelName)
 		}
 		if difference.FieldName != nil {
-			fmt.Printf("Field:        %v\n", *difference.FieldName)
+			log.Printf("Field:        %v\n", *difference.FieldName)
 		}
 	}
 }

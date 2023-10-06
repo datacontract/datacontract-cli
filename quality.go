@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"gopkg.in/yaml.v3"
+	"log"
 )
 
 func QualityCheck(dataContractFileName string) error {
@@ -41,7 +42,7 @@ func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 		return fmt.Errorf("can't get specification: %w", err)
 	}
 
-	fmt.Println(string(TakeStringOrMarshall(qualitySpecification)))
+	log.Println(string(TakeStringOrMarshall(qualitySpecification)))
 
 	return nil
 }

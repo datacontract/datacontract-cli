@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/qri-io/jsonschema"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -36,13 +37,13 @@ func lint(schema *jsonschema.Schema, contract DataContract) error {
 
 func printValidationState(validationState *jsonschema.ValidationState) {
 	if validationState.IsValid() {
-		fmt.Println("🟢 data contract is valid!")
+		log.Println("🟢 data contract is valid!")
 	} else {
-		fmt.Println("🔴 data contract is invalid, found the following errors:")
+		log.Println("🔴 data contract is invalid, found the following errors:")
 	}
 
 	for i, keyError := range *validationState.Errs {
-		fmt.Println(fmt.Sprintf("%v) %v", i+1, keyError.Message))
+		log.Println(fmt.Sprintf("%v) %v", i+1, keyError.Message))
 	}
 }
 

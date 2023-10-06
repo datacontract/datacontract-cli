@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/urfave/cli/v2"
+	"log"
 	"os"
 	"strings"
 )
@@ -13,6 +13,8 @@ const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
 
 func main() {
+	log.SetFlags(0)
+
 	fileNameFlag := &cli.StringFlag{
 		Name:  "file",
 		Value: dataContractFileName,
@@ -40,7 +42,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "v0.3.0",
+		Version: "v0.3.1",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -182,13 +184,13 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Printf("Exiting application with error: %v \n", err)
+		log.Printf("Exiting application with error: %v \n", err)
 		os.Exit(1)
 	}
 }
 
 func boolOptionNotImplemented(ctx *cli.Context, name string) {
 	if ctx.Bool(name) {
-		fmt.Printf("Option `%v` not implemented yet!\n", name)
+		log.Printf("Option `%v` not implemented yet!\n", name)
 	}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 )
@@ -23,7 +24,7 @@ func Init(fileName string, initTemplateUrl string, overwriteFile bool) error {
 		return err
 	}
 
-	fmt.Printf("📄 data contract written to %v\n", fileName)
+	log.Printf("📄 data contract written to %v\n", fileName)
 
 	return nil
 }

@@ -71,7 +71,7 @@ tar -xf datacontract.tar.gz
 
 | Placeholder | Description                                    |
 |-------------|------------------------------------------------|
-| VERSION     | datacontract CLI version (e.g. `v0.3.0`)       |
+| VERSION     | datacontract CLI version (e.g. `v0.3.1`)       |
 | OS          | your operating system (linux, windows, darwin) |
 | ARCH        | your processor architecture (amd64, arm64)     |
 
@@ -105,7 +105,7 @@ USAGE:
    datacontract [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.3.0
+   v0.3.1
 
 AUTHOR:
    Stefan Negele <stefan.negele@innoq.com>
