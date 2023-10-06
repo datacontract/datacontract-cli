@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"math/rand"
 	"os"
 	"testing"
 )
@@ -32,9 +30,8 @@ func TestInline(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile := fmt.Sprintf("tmp/datacontract_%v.yaml", rand.Int())
+			tmpFile := CreateTmpFileName()
 			input, _ := os.ReadFile(tt.args.dataContractLocation)
-			os.Mkdir("tmp", os.ModePerm)
 			os.WriteFile(tmpFile, input, os.ModePerm)
 
 			if err := Inline(tmpFile); (err != nil) != tt.wantErr {
@@ -47,8 +44,6 @@ func TestInline(t *testing.T) {
 			if string(generated) != string(expected) {
 				t.Errorf("Inline() gotFile = %v, wantFile %v", string(generated), string(expected))
 			}
-
-			os.Remove(tmpFile)
 		})
 	}
 }

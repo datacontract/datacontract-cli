@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,11 +12,24 @@ import (
 )
 
 var TestResourcesServer = httptest.NewServer(http.FileServer(http.Dir("./test_resources")))
+var TmpFolder = "tmp"
 
 func TestMain(m *testing.M) {
+	// start static file server
 	defer TestResourcesServer.Close()
 
+	// create folder for temporary files
+	os.Mkdir(TmpFolder, os.ModePerm)
+
+	// run test
 	m.Run()
+
+	// delete temporary files
+	os.RemoveAll(TmpFolder)
+}
+
+func CreateTmpFileName() string {
+	return fmt.Sprintf("tmp/%v.yaml", rand.Int())
 }
 
 func RunLogOutputTest[T any](t *testing.T, test LogOutputTest[T], functionName string, function func() error) {
