@@ -1,0 +1,366 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "dataContractSpecification": {
+      "type": "string",
+      "enum": [
+        "0.9.0"
+      ],
+      "description": "Specifies the Data Contract Specification being used."
+    },
+    "id": {
+      "type": "string",
+      "description": "Specifies the identifier of the data contract."
+    },
+    "info": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the data contract."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the data contract document (which is distinct from the Data Contract Specification version or the Data Product implementation version)."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the data contract."
+        },
+        "owner": {
+          "type": "string",
+          "description": "The owner or team responsible for managing the data contract and providing the data."
+        },
+        "dataProduct": {
+          "type": "string",
+          "description": "The data product that contains the output port providing the data."
+        },
+        "outputPort": {
+          "type": "string",
+          "description": "The output port that implements the data contract."
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The identifying name of the contact person/organization."
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "The URL pointing to the contact information. This MUST be in the form of a URL."
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "The email address of the contact person/organization. This MUST be in the form of an email address."
+            }
+          },
+          "description": "Contact information for the data contract."
+        }
+      },
+      "required": [
+        "title",
+        "version"
+      ],
+      "description": "Metadata and life cycle information about the data contract."
+    },
+    "servers": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "bigquery",
+                  "BigQuery"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "project": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "dataset": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "required": [
+              "type",
+              "project",
+              "dataset"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "s3"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "location": {
+                "type": "string",
+                "format": "uri",
+                "description": "An optional string describing the server. Must be in the form of a URL."
+              }
+            },
+            "required": [
+              "type",
+              "location"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "redshift"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "account": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "database": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "schema": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "required": [
+              "type",
+              "account",
+              "database",
+              "schema"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "snowflake"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "account": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "database": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "schema": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "required": [
+              "type",
+              "account",
+              "database",
+              "schema"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "databricks"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "share": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "required": [
+              "type",
+              "share"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "kafka"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "host": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "topic": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "required": [
+              "type",
+              "host",
+              "topic"
+            ]
+          }
+        ]
+      },
+      "description": "Information about the servers."
+    },
+    "terms": {
+      "type": "object",
+      "properties": {
+        "usage": {
+          "type": "string",
+          "description": "The usage describes the way the data is expected to be used. Can contain business and technical information."
+        },
+        "limitations": {
+          "type": "string",
+          "description": "The limitations describe the restrictions on how the data can be used, can be technical or restrictions on what the data may not be used for."
+        },
+        "billing": {
+          "type": "string",
+          "description": "The billing describes the pricing model for using the data, such as whether it's free, having a monthly fee, or metered pay-per-use."
+        },
+        "noticePeriod": {
+          "type": "string",
+          "description": "The period of time that must be given by either party to terminate or modify a data usage agreement. Uses ISO-8601 period format, e.g., 'P3M' for a period of three months."
+        }
+      },
+      "required": [
+        "usage",
+        "limitations",
+        "billing",
+        "noticePeriod"
+      ],
+      "description": "The terms and conditions of the data contract."
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "dbt",
+            "bigquery",
+            "json-schema",
+            "sql-ddl",
+            "avro",
+            "protobuf",
+            "custom"
+          ],
+          "description": "The type of the schema. Typical values are: dbt, bigquery, json-schema, sql-ddl, avro, protobuf, custom."
+        },
+        "specification": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "The specification of the schema as a string."
+            },
+            {
+              "type": "object",
+              "description": "The specification of the schema as an object."
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "specification"
+      ],
+      "description": "The schema of the data contract describes the syntax and semantics of provided data sets. It supports different schema types."
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "json",
+              "yaml",
+              "custom"
+            ],
+            "description": "The type of the example data. Well-known types are: csv, json, yaml, custom."
+          },
+          "description": {
+            "type": "string",
+            "description": "An optional string describing the example."
+          },
+          "model": {
+            "type": "string",
+            "description": "The reference to the model in the schema, e.g., a table name."
+          },
+          "data": {
+            "type": "string",
+            "description": "Example data for this model."
+          }
+        },
+        "required": [
+          "type",
+          "model",
+          "data"
+        ]
+      },
+      "description": "The Examples Object is an array of Example Objects."
+    },
+    "quality": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "SodaCL",
+            "montecarlo",
+            "custom"
+          ],
+          "description": "The type of the quality check. Typical values are: SodaCL, montecarlo, custom."
+        },
+        "specification": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "The specification of the quality attributes as a string."
+            },
+            {
+              "type": "object",
+              "description": "The specification of the quality attributes as an object."
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "specification"
+      ],
+      "description": "The quality object contains quality attributes and checks."
+    }
+  },
+  "required": [
+    "dataContractSpecification",
+    "id",
+    "info"
+  ]
+}
