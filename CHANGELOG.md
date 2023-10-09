@@ -1,3 +1,6 @@
+# 0.3.2
+- Fix field parsing for dbt models, affects stability of `diff`/`breaking`
+
 # 0.3.1
 - Fix comparing order of contracts in `diff`/`breaking`
 
