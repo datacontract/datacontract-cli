@@ -110,8 +110,56 @@ func main() {
 
 					return Lint(ctx.String("file"), ctx.String("schema"))
 				},
-			}, {
-				Name:  "test",
+			},
+			{
+				Name:  "schema",
+				Usage: "print schema of the data contract",
+				Flags: []cli.Flag{fileNameFlag, schemaSpecificationPathFlag},
+				Action: func(ctx *cli.Context) error {
+					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
+					return PrintSchema(ctx.String("file"), pathToSpecification)
+				},
+			},
+			{
+				Name:  "quality-print",
+				Usage: "print quality checks of the data contract",
+				Flags: []cli.Flag{
+					fileNameFlag,
+					qualityFileNameFlag,
+					&cli.StringFlag{
+						Name:  "quality-specification-path",
+						Value: "quality.specification",
+						Usage: "definition of a custom path to the quality specification in your data contract",
+					}},
+				Action: func(ctx *cli.Context) error {
+					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
+					return PrintQuality(ctx.String("file"), ctx.String("quality-file"), pathToSpecification)
+				},
+			},
+			{
+				Name:  "quality-init",
+				Usage: "EXPERIMENTAL - prepare the environment for quality checks for the data contract",
+				Flags: []cli.Flag{
+					fileNameFlag,
+					qualityFileNameFlag,
+					&cli.StringFlag{
+						Name:  "quality-type-path",
+						Value: "quality.type",
+						Usage: "definition of a custom path to the quality type in your data contract",
+					},
+					&cli.StringFlag{
+						Name:  "quality-specification-path",
+						Value: "quality.specification",
+						Usage: "definition of a custom path to the quality specification in your data contract",
+					}},
+				Action: func(ctx *cli.Context) error {
+					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
+					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
+					return QualityInit(ctx.String("file"), ctx.String("quality-file"), pathToType, pathToSpecification)
+				},
+			},
+			{
+				Name:  "quality-check",
 				Usage: "EXPERIMENTAL - run quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
@@ -130,31 +178,6 @@ func main() {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
 					return QualityCheck(ctx.String("file"), ctx.String("quality-file"), pathToType, pathToSpecification)
-				},
-			},
-			{
-				Name:  "schema",
-				Usage: "print schema of the data contract",
-				Flags: []cli.Flag{fileNameFlag, schemaSpecificationPathFlag},
-				Action: func(ctx *cli.Context) error {
-					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
-					return PrintSchema(ctx.String("file"), pathToSpecification)
-				},
-			},
-			{
-				Name:  "quality",
-				Usage: "print quality checks of the data contract",
-				Flags: []cli.Flag{
-					fileNameFlag,
-					qualityFileNameFlag,
-					&cli.StringFlag{
-						Name:  "quality-specification-path",
-						Value: "quality.specification",
-						Usage: "definition of a custom path to the quality specification in your data contract",
-					}},
-				Action: func(ctx *cli.Context) error {
-					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return PrintQuality(ctx.String("file"), ctx.String("quality-file"), pathToSpecification)
 				},
 			},
 			{

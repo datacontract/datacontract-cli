@@ -32,6 +32,15 @@ func printQualityCheckState() {
 	fmt.Println("🟢 quality checks on data contract passed!")
 }
 
+func QualityInit(
+	dataContractFileName string,
+	qualityCheckFileName string,
+	pathToType []string,
+	pathToSpecification []string) error {
+
+	return nil
+}
+
 func QualityCheck(
 	dataContractFileName string,
 	qualityCheckFileName string,
