@@ -8,7 +8,8 @@ import (
 )
 
 const dataContractFileName = "datacontract.yaml"
-const qualityCheckFileName = "datacontract-quality.yaml"
+const qualitySpecFileName = "datacontract-quality.yaml"
+const qualityCheckDirName = "quality"
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
 const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
@@ -22,10 +23,16 @@ func main() {
 		Usage: "location of the data contract, path or url (except init)",
 	}
 
-	qualityFileNameFlag := &cli.StringFlag{
+	qualitySpecFileNameFlag := &cli.StringFlag{
 		Name:  "quality-file",
-		Value: qualityCheckFileName,
+		Value: qualitySpecFileName,
 		Usage: "location of the specification file for quality checks, path or url (except init)",
+	}
+
+	qualityCheckDirNameFlag := &cli.StringFlag{
+		Name:  "quality-dir",
+		Value: qualityCheckDirName,
+		Usage: "location path of the directory for quality checks, storing locally the various required and generated files (e.g., configuratiom, DuckDB local database file)",
 	}
 
 	schemaTypePathFlag := &cli.StringFlag{
@@ -59,7 +66,7 @@ func main() {
 				Usage: "create a new data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualityFileNameFlag,
+					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "from",
 						Value: initTemplateUrl,
@@ -87,7 +94,7 @@ func main() {
 				Usage: "linter for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualityFileNameFlag,
+					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "schema",
 						Value: schemaUrl,
@@ -125,7 +132,7 @@ func main() {
 				Usage: "print quality checks of the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualityFileNameFlag,
+					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "quality-specification-path",
 						Value: "quality.specification",
@@ -141,7 +148,8 @@ func main() {
 				Usage: "EXPERIMENTAL - prepare the environment for quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualityFileNameFlag,
+					qualitySpecFileNameFlag,
+					qualityCheckDirNameFlag,
 					&cli.StringFlag{
 						Name:  "quality-type-path",
 						Value: "quality.type",
@@ -155,7 +163,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return QualityInit(ctx.String("file"), ctx.String("quality-file"), pathToType, pathToSpecification)
+					return QualityInit(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), pathToType, pathToSpecification)
 				},
 			},
 			{
@@ -163,7 +171,8 @@ func main() {
 				Usage: "EXPERIMENTAL - run quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualityFileNameFlag,
+					qualitySpecFileNameFlag,
+					qualityCheckDirNameFlag,
 					&cli.StringFlag{
 						Name:  "quality-type-path",
 						Value: "quality.type",
@@ -177,7 +186,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return QualityCheck(ctx.String("file"), ctx.String("quality-file"), pathToType, pathToSpecification)
+					return QualityCheck(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), pathToType, pathToSpecification)
 				},
 			},
 			{
