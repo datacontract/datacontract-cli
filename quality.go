@@ -6,60 +6,6 @@ import (
 	"log"
 )
 
-func QualityCheck(
-	dataContractFileName string,
-	qualityCheckFileName string) error {
-	dataContract, err := GetDataContract(dataContractFileName)
-
-	if err != nil {
-		return fmt.Errorf("quality checks failed: %w", err)
-	}
-
-	return qualityCheck(dataContract)
-}
-
-func qualityCheck(contract DataContract) error {
-	pathToType := []string{"quality", "type"}
-	pathToSpecification := []string{"quality", "specification"}
-
-	qualityType, err := getQualityType(contract, pathToType)
-	if err != nil {
-		return fmt.Errorf("quality type cannot be retrieved: %w", err)
-	}
-
-	qualitySpecification, err := getQualitySpecification(contract,
-		pathToSpecification)	
-	if err != nil {
-		return fmt.Errorf("quality check specification cannot be retrieved: %w",
-			err)
-	}
-
-	log.Printf("Quality type: %v - Quality specification: %v\n",
-		qualityType, qualitySpecification)
-	
-    app := "soda"
-
-    arg0 := "scan"
-    arg1 := "-d"
-    arg2 := "duckdb_local"
-    arg3 := "-c"
-    arg4 := "quality/soda-conf.yml"
-    arg5 := "contracts/data-contract-flight-route-quality.yaml"
-
-    cmd := exec.Command(app, arg0, arg1, arg2, arg3, arg4, arg5)
-    stdout, err := cmd.Output()
-
-    if err != nil {
-        fmt.Println(err.Error())
-        return nil
-    }
-
-    // Print the output
-    fmt.Println(string(stdout))
-	
-	return nil
-}
-
 func PrintQuality(
 	dataContractLocation string,
 	qualityCheckFileName string,
@@ -84,6 +30,68 @@ func PrintQuality(
 
 func printQualityCheckState() {
 	fmt.Println("🟢 quality checks on data contract passed!")
+}
+
+func QualityCheck(
+	dataContractFileName string,
+	qualityCheckFileName string,
+	pathToType []string,
+	pathToSpecification []string) error {
+
+	// 
+	contract, err := GetDataContract(dataContractFileName)
+	if err != nil {
+		return fmt.Errorf("quality checks failed: %w", err)
+	}
+
+	qualityType, err := getQualityType(contract, pathToType)
+	if err != nil {
+		return fmt.Errorf("quality type cannot be retrieved: %w", err)
+	}
+
+	if (qualityType != "SodaCL") {
+		log.Printf("The '%v' quality type is not supported yet")
+		return nil
+	}
+
+	qualitySpecification, err := getQualitySpecification(contract,
+		pathToSpecification)	
+	if err != nil {
+		return fmt.Errorf("quality check specification cannot be retrieved: %w",
+			err)
+	}
+
+	log.Printf("Quality specification:\n%v\n", qualitySpecification)
+
+	res, err := sodaQualityCheck(qualityCheckFileName)
+
+	// Log the output
+    log.Println(string(res))
+
+	return nil
+}
+
+func sodaQualityCheck(qualityCheckFileName string) (res string, err error) {
+    app := "soda"
+
+    arg0 := "scan"
+    arg1 := "-d"
+    arg2 := "duckdb_local"
+    arg3 := "-c"
+    arg4 := "quality/soda-conf.yml"
+    arg5 := qualityCheckFileName
+
+    cmd := exec.Command(app, arg0, arg1, arg2, arg3, arg4, arg5)
+
+    stdout, err := cmd.Output()
+    if err != nil {
+        fmt.Println(err.Error())
+        return res, nil
+    }
+
+	res = string(stdout)
+	
+	return res, nil
 }
 
 func getQualityType(

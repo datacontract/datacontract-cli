@@ -116,9 +116,20 @@ func main() {
 				Flags: []cli.Flag{
 					fileNameFlag,
 					qualityFileNameFlag,
-				},
+					&cli.StringFlag{
+						Name:  "quality-type-path",
+						Value: "quality.type",
+						Usage: "definition of a custom path to the quality type in your data contract",
+					},
+					&cli.StringFlag{
+						Name:  "quality-specification-path",
+						Value: "quality.specification",
+						Usage: "definition of a custom path to the quality specification in your data contract",
+					}},
 				Action: func(ctx *cli.Context) error {
-					return QualityCheck(ctx.String("file"), ctx.String("quality-file"))
+					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
+					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
+					return QualityCheck(ctx.String("file"), ctx.String("quality-file"), pathToType, pathToSpecification)
 				},
 			},
 			{
