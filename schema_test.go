@@ -418,9 +418,17 @@ func TestParseDataset(t *testing.T) {
 	modelType := "table"
 	modelDescription := "Description of the model"
 
+	otherModelName := "other_model_name"
+	otherModelType := "other_model_type"
+	otherModelDescription := "other_model_description"
+
 	fieldName := "email_provider"
 	fieldType := "text"
 	fieldDescription := "Description of the column"
+
+	otherFieldName := "other"
+	otherFieldType := "timestamp"
+	otherFieldDescription := "other field"
 
 	type args struct {
 		schemaType    string
@@ -537,6 +545,70 @@ models:
 				},
 			}},
 		},
+		{
+			name: "dbt-two-models",
+			args: args{"dbt", []byte(fmt.Sprintf(`version: 2
+models:
+  - name: %v
+    description: "%v"
+    config:
+      materialized: %v  
+  - name: %v
+    description: "%v"
+    config:
+      materialized: %v
+`, modelName, modelDescription, modelType, otherModelName, otherModelDescription, otherModelType))},
+			want: Dataset{Models: []Model{
+				{
+					Name:        modelName,
+					Type:        &modelType,
+					Description: &modelDescription,
+					Fields:      []Field{},
+				},
+				{
+					Name:        otherModelName,
+					Type:        &otherModelType,
+					Description: &otherModelDescription,
+					Fields:      []Field{},
+				},
+			}},
+		},
+		{
+			name: "dbt-two-columns",
+			args: args{"dbt", []byte(fmt.Sprintf(`version: 2
+models:
+  - name: %v
+    description: "%v"
+    config:
+      materialized: %v
+    columns:
+      - name: %v
+        data_type: %v
+        description: %v
+      - name: %v
+        data_type: %v
+        description: %v
+`, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription, otherFieldName, otherFieldType, otherFieldDescription))},
+			want: Dataset{Models: []Model{
+				{
+					Name:        modelName,
+					Type:        &modelType,
+					Description: &modelDescription,
+					Fields: []Field{
+						{
+							Name:        fieldName,
+							Type:        &fieldType,
+							Description: &fieldDescription,
+						},
+						{
+							Name:        otherFieldName,
+							Type:        &otherFieldType,
+							Description: &otherFieldDescription,
+						},
+					},
+				},
+			}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -608,4 +680,38 @@ func fieldConstraintsAreEqual(constraints, other []FieldConstraint) bool {
 	}
 
 	return true
+}
+
+func TestPrintSchema(t *testing.T) {
+	type args struct {
+		dataContractLocation string
+		pathToSpecification  []string
+	}
+	tests := []LogOutputTest[args]{
+		{
+			name: "print",
+			args: args{
+				dataContractLocation: "test_resources/schema/datacontract.yaml",
+				pathToSpecification:  []string{"schema", "specification"},
+			},
+			wantErr: false,
+			wantOutput: `version: 2
+models:
+  - name: my_table
+    description: "contains data"
+    config:
+      materialized: table
+    columns:
+      - name: my_column
+        data_type: text
+        description: "contains values"
+
+`,
+		},
+	}
+	for _, tt := range tests {
+		RunLogOutputTest(t, tt, "PrintSchema", func() error {
+			return PrintSchema(tt.args.dataContractLocation, tt.args.pathToSpecification)
+		})
+	}
 }

@@ -685,10 +685,13 @@ func parseDbtDataset(specification []byte) Dataset {
 
 func modelsFromDbtSpecification(res dbtSpecification) (models []Model) {
 	for _, model := range res.Models {
+		modelType := model.Config.Materialized
+		modelDescription := model.Description
+
 		models = append(models, Model{
 			Name:        model.Name,
-			Type:        &model.Config.Materialized,
-			Description: &model.Description,
+			Type:        &modelType,
+			Description: &modelDescription,
 			Fields:      fieldsFromDbtModel(model),
 		})
 	}
@@ -700,10 +703,13 @@ func fieldsFromDbtModel(model dbtModel) (fields []Field) {
 	for _, column := range model.Columns {
 		allDbtConstraints := combineDbtConstraints(model, column)
 
+		columnType := column.DataType
+		columnDescription := column.Description
+
 		fields = append(fields, Field{
 			Name:                  column.Name,
-			Type:                  &column.DataType,
-			Description:           &column.Description,
+			Type:                  &columnType,
+			Description:           &columnDescription,
 			Required:              containsDbtConstraint(allDbtConstraints, "not_null"),
 			Unique:                containsDbtConstraint(allDbtConstraints, "unique"),
 			AdditionalConstraints: additionalDbtConstraints(allDbtConstraints),
