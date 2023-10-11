@@ -8,6 +8,7 @@ import (
 )
 
 const dataContractFileName = "datacontract.yaml"
+const qualityCheckFileName = "datacontract-quality.yaml"
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
 const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
@@ -19,6 +20,12 @@ func main() {
 		Name:  "file",
 		Value: dataContractFileName,
 		Usage: "location of the data contract, path or url (except init)",
+	}
+
+	qualityFileNameFlag := &cli.StringFlag{
+		Name:  "quality-file",
+		Value: qualityCheckFileName,
+		Usage: "location of the specification file for quality checks, path or url (except init)",
 	}
 
 	schemaTypePathFlag := &cli.StringFlag{
@@ -52,6 +59,7 @@ func main() {
 				Usage: "create a new data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
+					qualityFileNameFlag,
 					&cli.StringFlag{
 						Name:  "from",
 						Value: initTemplateUrl,
@@ -79,6 +87,7 @@ func main() {
 				Usage: "linter for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
+					qualityFileNameFlag,
 					&cli.StringFlag{
 						Name:  "schema",
 						Value: schemaUrl,
@@ -103,12 +112,13 @@ func main() {
 				},
 			}, {
 				Name:  "test",
-				Usage: "EXPERIMENTAL - run tests for the data contract",
+				Usage: "EXPERIMENTAL - run quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
+					qualityFileNameFlag,
 				},
 				Action: func(ctx *cli.Context) error {
-					return QualityCheck(ctx.String("file"))
+					return QualityCheck(ctx.String("file"), ctx.String("quality-file"))
 				},
 			},
 			{
@@ -125,6 +135,7 @@ func main() {
 				Usage: "print quality checks of the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
+					qualityFileNameFlag,
 					&cli.StringFlag{
 						Name:  "quality-specification-path",
 						Value: "quality.specification",
@@ -132,7 +143,7 @@ func main() {
 					}},
 				Action: func(ctx *cli.Context) error {
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return PrintQuality(ctx.String("file"), pathToSpecification)
+					return PrintQuality(ctx.String("file"), ctx.String("quality-file"), pathToSpecification)
 				},
 			},
 			{
