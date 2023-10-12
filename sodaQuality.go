@@ -6,8 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"log"
-	"database/sql"
-	_ "github.com/marcboeker/go-duckdb"
 )
 
 var sodaConfData = `
@@ -16,28 +14,6 @@ data_source duckdb_local:
   path: quality/db.duckdb
   read_only: true
 `
-
-const duckdbFilename = "db.duckdb"
-
-func duckdbDDL(qualityCheckDirName string) error {
-	dbFilepath := filepath.Join(qualityCheckDirName, duckdbFilename)
-	dbParams := "?access_mode=read_only"
-	dbConnString := dbFilepath + dbParams
-
-	// Connect to the DuckDB database
-	db, err := sql.Open("duckdb", dbConnString)
-	if err != nil {
-		log.Fatal("Failed to connect to %s database: ", dbFilepath, err)
-	}
-
-	row := db.QueryRow("SELECT COUNT(*) from transport_routes")
-	var count int64
-	err = row.Scan(&count)
-	log.Printf("Number of records in the transport_routes table in the %s database: %d\n", dbFilepath, count)
-	
-	defer db.Close()
-	return nil
-}
 
 func sodaQualityInit(
 	qualitySpecFileName string,
@@ -59,11 +35,6 @@ func sodaQualityInit(
     if err != nil {
         return fmt.Errorf("The %v directory cannot be browsed: %v",
 			qualityCheckDirName, err)
-    }
-
-	err = duckdbDDL(qualityCheckDirName)
-    if err != nil {
-        return fmt.Errorf("Issue with the DuckDB database - %v", err)
     }
 
 	return nil
