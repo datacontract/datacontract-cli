@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"io/ioutil"
-	"gopkg.in/yaml.v3"
 	"log"
 )
 
@@ -39,14 +38,10 @@ func sodaQualityInit(
 			qualityCheckDirName, err)
     }
 
-	data, err := yaml.Marshal(&sodaConfData)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// log.Printf("YAML: %v\n", string(data))
+	sodaConfDataAsBytes := []byte(sodaConfData)
+	//log.Printf("YAML: %v\n", string(sodaConfData))
 	
-	err = ioutil.WriteFile(sodaConfFilepath, data, 0)
+	err = ioutil.WriteFile(sodaConfFilepath, sodaConfDataAsBytes, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
