@@ -46,7 +46,7 @@ func sodaQualityInit(
 
 	// Write the Soda configuration
 	sodaConfDataAsBytes := []byte(sodaConfData)
-	err = ioutil.WriteFile(sodaConfFilepath, sodaConfDataAsBytes, 0)
+	err = ioutil.WriteFile(sodaConfFilepath, sodaConfDataAsBytes, 0664)
 	if err != nil {
 		log.Fatal(err)
 	}
