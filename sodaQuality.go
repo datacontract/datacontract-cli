@@ -9,10 +9,14 @@ import (
 	"log"
 )
 
-var sodaConfData = `
-data_source duckdb_local:
+const sodaDB = "duckdb_local"
+const sodaDBFilename = "db.duckdb"
+const sodaConfFilename = "soda-conf.yml"
+
+var sodaConfDataTmplt = `
+data_source %s:
   type: duckdb
-  path: quality/db.duckdb
+  path: %s
   read_only: true
 `
 
@@ -20,7 +24,9 @@ func sodaQualityInit(
 	qualitySpecFileName string,
 	qualityCheckDirName string) error {
 
-	sodaConfFilepath := filepath.Join(qualityCheckDirName, "soda-conf.yml")
+	sodaConfFilepath := filepath.Join(qualityCheckDirName, sodaConfFilename)
+	sodaDBFilepath := filepath.Join(qualityCheckDirName, sodaDBFilename)
+	sodaConfData := fmt.Sprintf(sodaConfDataTmplt, sodaDB, sodaDBFilepath)
 
 	// Create the folder aimed at storing the Soda configuration and
 	// DuckDB database file
@@ -38,9 +44,8 @@ func sodaQualityInit(
 			qualityCheckDirName, err)
     }
 
+	// Write the Soda configuration
 	sodaConfDataAsBytes := []byte(sodaConfData)
-	//log.Printf("YAML: %v\n", string(sodaConfData))
-	
 	err = ioutil.WriteFile(sodaConfFilepath, sodaConfDataAsBytes, 0)
 	if err != nil {
 		log.Fatal(err)
@@ -53,13 +58,13 @@ func sodaQualityCheck(
 	qualitySpecFileName string,
 	qualityCheckDirName string) (res string, err error) {
 
-	sodaConfFilepath := filepath.Join(qualityCheckDirName, "soda-conf.yml")
+	sodaConfFilepath := filepath.Join(qualityCheckDirName, sodaConfFilename)
 
     app := "soda"
 
     arg0 := "scan"
     arg1 := "-d"
-    arg2 := "duckdb_local"
+    arg2 := sodaDB
     arg3 := "-c"
     arg4 := string(sodaConfFilepath)
     arg5 := qualitySpecFileName
