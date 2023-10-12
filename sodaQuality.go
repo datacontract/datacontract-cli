@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"io/ioutil"
+	"gopkg.in/yaml.v3"
 	"log"
 )
 
@@ -19,7 +21,7 @@ func sodaQualityInit(
 	qualitySpecFileName string,
 	qualityCheckDirName string) error {
 
-	//sodaConfFilepath := filepath.Join(qualityCheckDirName, "soda-conf.yml")
+	sodaConfFilepath := filepath.Join(qualityCheckDirName, "soda-conf.yml")
 
 	// Create the folder aimed at storing the Soda configuration and
 	// DuckDB database file
@@ -36,6 +38,18 @@ func sodaQualityInit(
         return fmt.Errorf("The %v directory cannot be browsed: %v",
 			qualityCheckDirName, err)
     }
+
+	data, err := yaml.Marshal(&sodaConfData)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// log.Printf("YAML: %v\n", string(data))
+	
+	err = ioutil.WriteFile(sodaConfFilepath, data, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return nil
 }

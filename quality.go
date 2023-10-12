@@ -95,6 +95,9 @@ func QualityCheck(
 	log.Printf("Quality specification:\n%v\n", qualitySpecification)
 
 	res, err := sodaQualityCheck(qualitySpecFileName, qualityCheckDirName)
+	if err != nil {
+		return fmt.Errorf("Quality checks failed: %w", err)
+	}
 
 	// Log the output
     log.Println(string(res))
