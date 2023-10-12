@@ -8,6 +8,13 @@ import (
 	"log"
 )
 
+var sodaConfData = `
+data_source duckdb_local:
+  type: duckdb
+  path: quality/db.duckdb
+  read_only: true
+`
+
 func PrintQuality(
 	dataContractLocation string,
 	qualitySpecFileName string,
@@ -110,7 +117,7 @@ func sodaQualityInit(
 	qualitySpecFileName string,
 	qualityCheckDirName string) error {
 
-	sodaConfFilepath := filepath.Join(qualityCheckDirName, "soda-conf.yml")
+	//sodaConfFilepath := filepath.Join(qualityCheckDirName, "soda-conf.yml")
 
 	// Create the folder aimed at storing the Soda configuration and
 	// DuckDB database file
@@ -122,28 +129,18 @@ func sodaQualityInit(
     }
 
 	// Display the content of the directory
-	err = filepath.Walk(qualityCheckDirName,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			log.Printf("isDir: %v; name: %s; size: %v\n",
-				info.IsDir(), path, info.Size())
-			return nil
-		})
+	err = BrowseDir(qualityCheckDirName)
     if err != nil {
-        return fmt.Errorf("The %v directory cannot browsed: %v",
+        return fmt.Errorf("The %v directory cannot be browsed: %v",
 			qualityCheckDirName, err)
     }
 
     app := "ls"
 
-    arg0 := "-laFh"
-    arg1 := string(sodaConfFilepath)
-    arg2 := qualitySpecFileName
+    arg0 := "-lFh"
+    arg1 := qualityCheckDirName
 
-    cmd := exec.Command(app, arg0, arg1, arg2)
+    cmd := exec.Command(app, arg0, arg1)
 
     stdout, err := cmd.Output()
     if err != nil {
