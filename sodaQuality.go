@@ -37,13 +37,6 @@ func sodaQualityInit(
 			qualityCheckDirName, err)
     }
 
-	// Display the content of the directory
-	err = BrowseDir(qualityCheckDirName)
-    if err != nil {
-        return fmt.Errorf("The %v directory cannot be browsed: %v",
-			qualityCheckDirName, err)
-    }
-
 	// Write the Soda configuration
 	sodaConfDataAsBytes := []byte(sodaConfData)
 	err = ioutil.WriteFile(sodaConfFilepath, sodaConfDataAsBytes, 0664)
