@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func writeFile(name string, body []byte, overwriteFile bool) error {
 	err := os.WriteFile(name, body, os.ModePerm)
 
 	if err != nil {
-		return fmt.Errorf("failed to write %v: %w", dataContractFileName, err)
+		return fmt.Errorf("failed to write %v: %w", name, err)
 	}
 
 	return nil
