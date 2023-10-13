@@ -89,6 +89,7 @@ tar -xf datacontract.tar.gz
 # build
 git clone https://github.com/datacontract/cli
 cd cli
+git checkout tags/{VERSION}
 go build ./cmd/datacontract.go
 
 # use it
