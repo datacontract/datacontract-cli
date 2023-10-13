@@ -1,6 +1,7 @@
 package main
 
 import (
+	datacontract "github.com/datacontract/cli"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -86,7 +87,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					boolOptionNotImplemented(ctx, "interactive")
 
-					return Init(ctx.String("file"), ctx.String("from"), ctx.Bool("overwrite-file"))
+					return datacontract.Init(ctx.String("file"), ctx.String("from"), ctx.Bool("overwrite-file"))
 				},
 			},
 			{
@@ -115,7 +116,7 @@ func main() {
 					boolOptionNotImplemented(ctx, "lint-schema")
 					boolOptionNotImplemented(ctx, "lint-quality")
 
-					return Lint(ctx.String("file"), ctx.String("schema"))
+					return datacontract.Lint(ctx.String("file"), ctx.String("schema"))
 				},
 			},
 			{
@@ -124,7 +125,7 @@ func main() {
 				Flags: []cli.Flag{fileNameFlag, schemaSpecificationPathFlag},
 				Action: func(ctx *cli.Context) error {
 					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
-					return PrintSchema(ctx.String("file"), pathToSpecification)
+					return datacontract.PrintSchema(ctx.String("file"), pathToSpecification)
 				},
 			},
 			{
@@ -140,7 +141,7 @@ func main() {
 					}},
 				Action: func(ctx *cli.Context) error {
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return PrintQuality(ctx.String("file"), ctx.String("quality-file"), pathToSpecification)
+					return datacontract.PrintQuality(ctx.String("file"), ctx.String("quality-file"), pathToSpecification)
 				},
 			},
 			{
@@ -163,7 +164,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return QualityInit(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), pathToType, pathToSpecification)
+					return datacontract.QualityInit(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), pathToType, pathToSpecification)
 				},
 			},
 			{
@@ -186,7 +187,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return QualityCheck(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), pathToType, pathToSpecification)
+					return datacontract.QualityCheck(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), pathToType, pathToSpecification)
 				},
 			},
 			{
@@ -194,7 +195,7 @@ func main() {
 				Usage: "save and open the data contract in Data Contract Studio",
 				Flags: []cli.Flag{fileNameFlag},
 				Action: func(ctx *cli.Context) error {
-					return Open(ctx.String("file"), dataContractStudioUrl)
+					return datacontract.Open(ctx.String("file"), dataContractStudioUrl)
 				},
 			}, {
 				Name:  "diff",
@@ -209,7 +210,7 @@ func main() {
 					pathToType := strings.Split(ctx.String("schema-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
 
-					return Diff(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
+					return datacontract.Diff(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
 				},
 			}, {
 				Name:  "breaking",
@@ -224,14 +225,14 @@ func main() {
 					pathToType := strings.Split(ctx.String("schema-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
 
-					return Breaking(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
+					return datacontract.Breaking(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
 				},
 			}, {
 				Name:  "inline",
 				Usage: "inline all references specified with '$ref' notation",
 				Flags: []cli.Flag{fileNameFlag},
 				Action: func(ctx *cli.Context) error {
-					return Inline(ctx.String("file"))
+					return datacontract.Inline(ctx.String("file"))
 				},
 			},
 		},
