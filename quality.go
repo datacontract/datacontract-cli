@@ -31,37 +31,6 @@ func printQualityCheckState() {
 	fmt.Println("🟢 quality checks on data contract passed!")
 }
 
-func QualityInit(
-	dataContractFileName string,
-	qualitySpecFileName string,
-	qualityCheckDirName string,
-	pathToType []string,
-	pathToSpecification []string) error {
-
-	// 
-	contract, err := GetDataContract(dataContractFileName)
-	if err != nil {
-		return fmt.Errorf("Cannot retrieve the data contract: %w", err)
-	}
-
-	qualityType, err := getQualityType(contract, pathToType)
-	if err != nil {
-		return fmt.Errorf("Cannot retrieve the quality type: %w", err)
-	}
-
-	if (qualityType != "SodaCL") {
-		log.Printf("The '%v' quality type is not supported yet")
-		return nil
-	}
-
-	err = sodaQualityInit(qualitySpecFileName, qualityCheckDirName)
-	if err != nil {
-		return fmt.Errorf("Initialization for quality checks failed: %w", err)
-	}
-
-	return nil
-}
-
 func QualityCheck(
 	dataContractFileName string,
 	qualitySpecFileName string,

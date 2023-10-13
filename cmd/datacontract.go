@@ -145,29 +145,6 @@ func main() {
 				},
 			},
 			{
-				Name:  "test-init",
-				Usage: "EXPERIMENTAL - prepare the environment for quality checks for the data contract",
-				Flags: []cli.Flag{
-					fileNameFlag,
-					qualitySpecFileNameFlag,
-					qualityCheckDirNameFlag,
-					&cli.StringFlag{
-						Name:  "quality-type-path",
-						Value: "quality.type",
-						Usage: "definition of a custom path to the quality type in your data contract",
-					},
-					&cli.StringFlag{
-						Name:  "quality-specification-path",
-						Value: "quality.specification",
-						Usage: "definition of a custom path to the quality specification in your data contract",
-					}},
-				Action: func(ctx *cli.Context) error {
-					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
-					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return datacontract.QualityInit(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), pathToType, pathToSpecification)
-				},
-			},
-			{
 				Name:  "test",
 				Usage: "EXPERIMENTAL - run quality checks for the data contract",
 				Flags: []cli.Flag{

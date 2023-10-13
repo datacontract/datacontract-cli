@@ -51,6 +51,9 @@ func sodaQualityCheck(
 	qualitySpecFileName string,
 	qualityCheckDirName string) (res string, err error) {
 
+	// Initialize the environment, if needed
+	sodaQualityInit(qualitySpecFileName, qualityCheckDirName)
+
 	sodaConfFilepath := filepath.Join(qualityCheckDirName, sodaConfFilename)
 
     app := "soda"
