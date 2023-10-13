@@ -129,7 +129,7 @@ func main() {
 				},
 			},
 			{
-				Name:  "quality-print",
+				Name:  "quality",
 				Usage: "print quality checks of the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
@@ -145,7 +145,7 @@ func main() {
 				},
 			},
 			{
-				Name:  "quality-init",
+				Name:  "test-init",
 				Usage: "EXPERIMENTAL - prepare the environment for quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
@@ -168,7 +168,7 @@ func main() {
 				},
 			},
 			{
-				Name:  "quality-check",
+				Name:  "test",
 				Usage: "EXPERIMENTAL - run quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
