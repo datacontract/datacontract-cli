@@ -35,6 +35,7 @@ func QualityCheck(
 	dataContractFileName string,
 	qualitySpecFileName string,
 	qualityCheckDirName string,
+	qualityCheckOptions string,
 	pathToType []string,
 	pathToSpecification []string) error {
 
@@ -63,7 +64,7 @@ func QualityCheck(
 
 	log.Printf("Quality specification:\n%v\n", qualitySpecification)
 
-	res, err := sodaQualityCheck(qualitySpecFileName, qualityCheckDirName)
+	res, err := sodaQualityCheck(qualitySpecFileName, qualityCheckDirName, qualityCheckOptions)
 	if err != nil {
 		return fmt.Errorf("Quality checks failed: %w", err)
 	}

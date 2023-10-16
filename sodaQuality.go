@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"strings"
+	"github.com/cosiner/flag"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,17 +22,55 @@ data_source %s:
   read_only: true
 `
 
+type SodaOptions struct {
+	Configuration string `names:"-c" usage:"configuration file, in YAML, for SodaCL"`
+	Database      string `names:"-d" usage:"underlying database for SodaCL"`
+}
+
+func (t *SodaOptions) Metadata() map[string]flag.Flag {
+	const (
+		usage   = "soda is a tool for quality checks."
+		version = "soda --version"
+		desc = "command-line options for SodaCL"
+	)
+	return map[string]flag.Flag{
+		"": {
+			Usage:   usage,
+			Version: version,
+			Desc:    desc,
+		},
+	}
+}
+
+func sodaParseOptions(
+	qualityCheckOptions string) (soda SodaOptions, err error) {
+
+	optionTmp := []string{"soda", qualityCheckOptions}
+	options := strings.Join(optionTmp, " ")
+	optionList := strings.Split(options, " ")
+	flag.NewFlagSet(flag.Flag{}).ParseStruct(&soda, optionList...)
+
+	//fmt.Println(soda.Configuration)
+	//fmt.Println(soda.Database)
+
+	return soda, nil
+}
+
 func sodaQualityInit(
 	qualitySpecFileName string,
-	qualityCheckDirName string) error {
+	qualityCheckDirName string,
+	qualityCheckOptions string) error {
 
 	sodaConfFilepath := filepath.Join(qualityCheckDirName, sodaConfFilename)
 	sodaDBFilepath := filepath.Join(qualityCheckDirName, sodaDBFilename)
 	sodaConfData := fmt.Sprintf(sodaConfDataTmplt, sodaDB, sodaDBFilepath)
 
+	sodaOptions, _ := sodaParseOptions(qualityCheckOptions)
+	log.Printf("SodaCL command-line options: %s\n", sodaOptions)
+
 	// Create the folder aimed at storing the Soda configuration and
 	// DuckDB database file
-	log.Printf("Creating %v directory if needed...", qualityCheckDirName)
+	log.Printf("Creating %v directory if needed...\n", qualityCheckDirName)
 	err := os.MkdirAll(qualityCheckDirName, os.ModePerm)
     if err != nil {
         return fmt.Errorf("The %v directory cannot be created: %v",
@@ -49,10 +89,11 @@ func sodaQualityInit(
 
 func sodaQualityCheck(
 	qualitySpecFileName string,
-	qualityCheckDirName string) (res string, err error) {
+	qualityCheckDirName string,
+	qualityCheckOptions string) (res string, err error) {
 
 	// Initialize the environment, if needed
-	sodaQualityInit(qualitySpecFileName, qualityCheckDirName)
+	sodaQualityInit(qualitySpecFileName, qualityCheckDirName, qualityCheckOptions)
 
 	sodaConfFilepath := filepath.Join(qualityCheckDirName, sodaConfFilename)
 
