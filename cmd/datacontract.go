@@ -10,8 +10,7 @@ import (
 
 const dataContractFileName = "datacontract.yaml"
 const qualitySpecFileName = "datacontract-quality.yaml"
-const qualityCheckDirName = "quality"
-const qualityCheckOptions = "-d duckdb_local -c soda-conf.yml"
+const qualityCheckOptions = ""
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
 const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
@@ -29,12 +28,6 @@ func main() {
 		Name:  "quality-file",
 		Value: qualitySpecFileName,
 		Usage: "location of the specification file for quality checks, path or url (except init)",
-	}
-
-	qualityCheckDirNameFlag := &cli.StringFlag{
-		Name:  "quality-dir",
-		Value: qualityCheckDirName,
-		Usage: "location path of the directory for quality checks, storing locally the various required and generated files (e.g., configuratiom, DuckDB local database file)",
 	}
 
 	schemaTypePathFlag := &cli.StringFlag{
@@ -151,7 +144,6 @@ func main() {
 				Flags: []cli.Flag{
 					fileNameFlag,
 					qualitySpecFileNameFlag,
-					qualityCheckDirNameFlag,
 					&cli.StringFlag{
 						Name:  "test-options",
 						Value: qualityCheckOptions,
@@ -170,7 +162,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return datacontract.QualityCheck(ctx.String("file"), ctx.String("quality-file"), ctx.String("quality-dir"), ctx.String("test-options"), pathToType, pathToSpecification)
+					return datacontract.QualityCheck(ctx.String("file"), ctx.String("quality-file"), ctx.String("test-options"), pathToType, pathToSpecification)
 				},
 			},
 			{
