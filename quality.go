@@ -50,7 +50,7 @@ func QualityCheck(
 	}
 
 	if (qualityType != "SodaCL") {
-		log.Printf("The '%v' quality type is not supported yet")
+		log.Printf("The '%s' quality type is not supported yet", qualityType)
 		return nil
 	}
 
