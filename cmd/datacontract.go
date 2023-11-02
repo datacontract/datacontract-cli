@@ -9,6 +9,8 @@ import (
 )
 
 const dataContractFileName = "datacontract.yaml"
+const qualitySpecFileName = "datacontract-quality.yaml"
+const qualityCheckOptions = ""
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
 const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
@@ -20,6 +22,12 @@ func main() {
 		Name:  "file",
 		Value: dataContractFileName,
 		Usage: "location of the data contract, path or url (except init)",
+	}
+
+	qualitySpecFileNameFlag := &cli.StringFlag{
+		Name:  "quality-file",
+		Value: qualitySpecFileName,
+		Usage: "location of the specification file for quality checks, path or url (except init)",
 	}
 
 	schemaTypePathFlag := &cli.StringFlag{
@@ -53,6 +61,7 @@ func main() {
 				Usage: "create a new data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
+					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "from",
 						Value: initTemplateUrl,
@@ -80,6 +89,7 @@ func main() {
 				Usage: "linter for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
+					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "schema",
 						Value: schemaUrl,
@@ -102,13 +112,6 @@ func main() {
 
 					return datacontract.Lint(ctx.String("file"), ctx.String("schema"))
 				},
-			}, {
-				Name:  "test",
-				Usage: "EXPERIMENTAL - run tests for the data contract",
-				Action: func(ctx *cli.Context) error {
-					log.Println("Command `test` not implemented yet!")
-					return nil
-				},
 			},
 			{
 				Name:  "schema",
@@ -124,6 +127,7 @@ func main() {
 				Usage: "print quality checks of the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
+					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "quality-specification-path",
 						Value: "quality.specification",
@@ -131,7 +135,34 @@ func main() {
 					}},
 				Action: func(ctx *cli.Context) error {
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return datacontract.PrintQuality(ctx.String("file"), pathToSpecification)
+					return datacontract.PrintQuality(ctx.String("file"), ctx.String("quality-file"), pathToSpecification)
+				},
+			},
+			{
+				Name:  "test",
+				Usage: "EXPERIMENTAL - run quality checks for the data contract",
+				Flags: []cli.Flag{
+					fileNameFlag,
+					qualitySpecFileNameFlag,
+					&cli.StringFlag{
+						Name:  "test-options",
+						Value: qualityCheckOptions,
+						Usage: "options for quality checks",
+					},
+					&cli.StringFlag{
+						Name:  "quality-type-path",
+						Value: "quality.type",
+						Usage: "definition of a custom path to the quality type in your data contract",
+					},
+					&cli.StringFlag{
+						Name:  "quality-specification-path",
+						Value: "quality.specification",
+						Usage: "definition of a custom path to the quality specification in your data contract",
+					}},
+				Action: func(ctx *cli.Context) error {
+					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
+					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
+					return datacontract.QualityCheck(ctx.String("file"), ctx.String("quality-file"), ctx.String("test-options"), pathToType, pathToSpecification)
 				},
 			},
 			{
