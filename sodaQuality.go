@@ -132,8 +132,7 @@ func sodaQualityCheck(
 	arg2 := sodaDB
 	//arg3 := "-c"
 	//arg4 := sodaConfFilepath // expect default at ~/.soda/configuration.yml
-	//arg5 := qualitySpecFileName
-	arg5 := "quality/soda-checks.yml" // todo: create temp file from datacontract.yaml content
+	arg5 := qualitySpecFileName
 
 	cmd := exec.Command(app, arg0, arg1, arg2, arg5)
 

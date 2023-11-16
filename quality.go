@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"log"
+	"os"
 )
 
 func PrintQuality(
@@ -38,7 +39,7 @@ func QualityCheck(
 	pathToType []string,
 	pathToSpecification []string) error {
 
-	// 
+	//
 	contract, err := GetDataContract(dataContractFileName)
 	if err != nil {
 		return fmt.Errorf("quality checks failed: %w", err)
@@ -49,27 +50,36 @@ func QualityCheck(
 		return fmt.Errorf("quality type cannot be retrieved: %w", err)
 	}
 
-	if (qualityType != "SodaCL") {
+	if qualityType != "SodaCL" {
 		log.Printf("The '%s' quality type is not supported yet", qualityType)
 		return nil
 	}
 
 	qualitySpecification, err := getQualitySpecification(contract,
-		pathToSpecification)	
+		pathToSpecification)
 	if err != nil {
 		return fmt.Errorf("quality check specification cannot be retrieved: %w",
 			err)
 	}
 
-	log.Printf("Quality specification:\n%v\n", qualitySpecification)
-
-	res, err := sodaQualityCheck(qualitySpecFileName, qualityCheckOptions)
+	tempFile, err := os.CreateTemp("", "quality-checks-")
 	if err != nil {
-		return fmt.Errorf("Quality checks failed: %w", err)
+		return fmt.Errorf("can not create temporary file for quality checks: %w",
+			err)
 	}
 
-	// Log the output
-    log.Println(string(res))
+	tempFile.Write(qualitySpecification)
+
+	res, err := sodaQualityCheck(tempFile.Name(), qualityCheckOptions)
+	if err != nil {
+		return fmt.Errorf("quality checks failed: %v", res)
+	}
+
+	// todo
+	log.Println("Soda CLI output:")
+	log.Println(res)
+
+	printQualityCheckState()
 
 	return nil
 }
@@ -92,16 +102,16 @@ func getQualityType(
 	return qualityType, nil
 }
 
+// todo
 func getQualitySpecification(
 	contract DataContract,
-	path []string) (specification interface{}, err error) {
-	specification, err = GetValue(contract, path)
+	path []string) (specification []byte, err error) {
+	spec, err := GetValue(contract, path)
 	if err != nil {
-		return "",
+		return []byte{},
 			fmt.Errorf("can't get value of %w quality specification for path %v",
 				err, path)
 	}
 
-	return specification, nil
+	return TakeStringOrMarshall(spec), nil
 }
-
