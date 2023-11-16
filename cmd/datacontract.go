@@ -10,7 +10,6 @@ import (
 
 const dataContractFileName = "datacontract.yaml"
 const qualitySpecFileName = "datacontract-quality.yaml"
-const qualityCheckOptions = ""
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
 const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
@@ -146,7 +145,7 @@ func main() {
 					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "test-options",
-						Value: qualityCheckOptions,
+						Value: "",
 						Usage: "options for quality checks",
 					},
 					&cli.StringFlag{

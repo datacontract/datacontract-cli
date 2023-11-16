@@ -2,13 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 	"github.com/cosiner/flag"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"io/ioutil"
-	"log"
+	"strings"
 )
 
 const sodaDBFilename = "db.duckdb"
@@ -24,14 +24,14 @@ data_source %s:
 type SodaOptions struct {
 	Directory     string `names:"-D,-dir,--dir" usage:"location path of the directory for quality checks, storing locally the various required and generated files such as SodaCL configuration and/or DuckDB local database file" default:"quality"`
 	Configuration string `names:"-c,-conf,--conf" usage:"configuration file, in YAML, for SodaCL" default:"quality/soda-conf.yml"`
-	Database      string `names:"-d,-db,--db" usage:"underlying database for SodaCL" default:"duckdb_local"`
+	Database      string `names:"-d,-db,--db" usage:"underlying database for SodaCL" default:"default"`
 }
 
 func (t *SodaOptions) Metadata() map[string]flag.Flag {
 	const (
 		usage   = "soda is a tool for quality checks."
 		version = "soda --version"
-		desc = "command-line options for SodaCL"
+		desc    = "command-line options for SodaCL"
 	)
 	return map[string]flag.Flag{
 		"": {
@@ -52,7 +52,7 @@ func sodaParseOptions(
 	if len(qualityCheckOptions) == 0 {
 		qualityCheckOptions = sodaOptionStr
 	}
-	
+
 	optionTmp := []string{"soda", qualityCheckOptions}
 	options := strings.Join(optionTmp, " ")
 	optionList := strings.Split(options, " ")
@@ -66,9 +66,9 @@ func sodaParseOptions(
 func sodaQualityInit(soda SodaOptions) (err error) {
 
 	// Retrieve the parameters from the command-line option structure
-	qualityCheckDirName := soda.Directory // Default: "quality"
+	qualityCheckDirName := soda.Directory     // Default: "quality"
 	sodaConfFilepathStr := soda.Configuration // Default: "soda-conf.yml"
-	sodaDB := soda.Database // Default: "duckdb_local"
+	sodaDB := soda.Database                   // Default: "default"
 
 	sodaConfFilepath := filepath.Join(sodaConfFilepathStr)
 	sodaDBFilepath := filepath.Join(qualityCheckDirName, sodaDBFilename)
@@ -78,13 +78,13 @@ func sodaQualityInit(soda SodaOptions) (err error) {
 	// DuckDB database file
 	log.Printf("Creating '%s/' directory if needed...\n", qualityCheckDirName)
 	err = os.MkdirAll(qualityCheckDirName, os.ModePerm)
-    if err != nil {
-        return fmt.Errorf("The %v directory cannot be created: %v",
+	if err != nil {
+		return fmt.Errorf("The %v directory cannot be created: %v",
 			qualityCheckDirName, err)
-    }
+	}
 
 	// Check if the error is "file not exists"
-	_ , errConfFile := os.Stat(sodaConfFilepath)
+	_, errConfFile := os.Stat(sodaConfFilepath)
 	if os.IsNotExist(errConfFile) {
 		log.Printf("'%s' conf file does not exist and will be created\n",
 			sodaConfFilepath)
@@ -97,10 +97,10 @@ func sodaQualityInit(soda SodaOptions) (err error) {
 				sodaConfFilepath, err)
 		}
 
-		log.Printf("'%s' conf file has been created\n",	sodaConfFilepath)
+		log.Printf("'%s' conf file has been created\n", sodaConfFilepath)
 
 	} else {
-		log.Printf("'%s' conf file seems to exist already; all is fine so far\n",	sodaConfFilepath)
+		log.Printf("'%s' conf file seems to exist already; all is fine so far\n", sodaConfFilepath)
 	}
 
 	return nil
@@ -114,35 +114,35 @@ func sodaQualityCheck(
 	soda, _ := sodaParseOptions(qualityCheckOptions)
 	log.Printf("Command line options for the quality checks - Configuration file: %s ; Database: %s ; Temporary directory: %s/\n", soda.Configuration, soda.Database, soda.Directory)
 
-
 	// Initialize the environment, if needed
-	err = sodaQualityInit(soda)
+	//err = sodaQualityInit(soda)
 
 	// Retrieve the parameters from the command-line option structure
 	sodaConfFilepathStr := soda.Configuration // Default: "soda-conf.yml"
-	sodaDB := soda.Database // Default: "duckdb_local"
+	sodaDB := soda.Database                   // Default: "default"
 
 	sodaConfFilepath := filepath.Join(sodaConfFilepathStr)
+	fmt.Println(sodaConfFilepath)
 
 	//
-    app := "soda"
+	app := "soda"
 
-    arg0 := "scan"
-    arg1 := "-d"
-    arg2 := sodaDB
-    arg3 := "-c"
-    arg4 := string(sodaConfFilepath)
-    arg5 := qualitySpecFileName
+	arg0 := "scan"
+	arg1 := "-d"
+	arg2 := sodaDB
+	//arg3 := "-c"
+	//arg4 := sodaConfFilepath // expect default at ~/.soda/configuration.yml
+	//arg5 := qualitySpecFileName
+	arg5 := "quality/soda-checks.yml" // todo: create temp file from datacontract.yaml content
 
-    cmd := exec.Command(app, arg0, arg1, arg2, arg3, arg4, arg5)
+	cmd := exec.Command(app, arg0, arg1, arg2, arg5)
 
-    stdout, err := cmd.Output()
-    if err != nil {
-        return res, fmt.Errorf("The CLI failed: %v", err)
-    }
+	stdout, err := cmd.Output()
+	if err != nil {
+		return res, fmt.Errorf("the CLI failed: %v", string(stdout))
+	}
 
 	res = string(stdout)
-	
+
 	return res, nil
 }
-
