@@ -14,15 +14,12 @@ func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 		return fmt.Errorf("failed parsing local data contract: %w", err)
 	}
 
-	qualitySpecification, err := getQualitySpecification(dataContract,
-		pathToQuality)
+	qualitySpecification, err := getQualitySpecification(dataContract, pathToQuality)
 	if err != nil {
 		return fmt.Errorf("can't get specification: %w", err)
 	}
 
-	qualitySpecificationAsBytes := TakeStringOrMarshall(qualitySpecification)
-	qualitySpecificationAsString := string(qualitySpecificationAsBytes)
-	log.Println(qualitySpecificationAsString)
+	log.Println(string(qualitySpecification))
 
 	return nil
 }
@@ -51,8 +48,7 @@ func QualityCheck(
 		return nil
 	}
 
-	qualitySpecification, err := getQualitySpecification(contract,
-		pathToSpecification)
+	qualitySpecification, err := getQualitySpecification(contract, pathToSpecification)
 	if err != nil {
 		return fmt.Errorf("quality check specification cannot be retrieved: %w",
 			err)
@@ -60,8 +56,7 @@ func QualityCheck(
 
 	tempFile, err := os.CreateTemp("", "quality-checks-")
 	if err != nil {
-		return fmt.Errorf("can not create temporary file for quality checks: %w",
-			err)
+		return fmt.Errorf("can not create temporary file for quality checks: %w", err)
 	}
 
 	tempFile.Write(qualitySpecification)
