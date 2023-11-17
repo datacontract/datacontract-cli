@@ -24,14 +24,17 @@ func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 	return nil
 }
 
-func printQualityCheckState() {
-	fmt.Println("🟢 quality checks on data contract passed!")
+type QualityCheckOptions struct {
+	sodaDataSource            *string
+	sodaConfigurationFileName *string
 }
 
 func QualityCheck(
 	dataContractFileName string,
 	pathToType []string,
-	pathToSpecification []string) error {
+	pathToSpecification []string,
+	options QualityCheckOptions,
+) error {
 
 	contract, err := GetDataContract(dataContractFileName)
 	if err != nil {
@@ -61,7 +64,7 @@ func QualityCheck(
 
 	tempFile.Write(qualitySpecification)
 
-	res, err := sodaQualityCheck(tempFile.Name(), nil, nil)
+	res, err := sodaQualityCheck(tempFile.Name(), options)
 	if err != nil {
 		return fmt.Errorf("quality checks failed: %v", res)
 	}
@@ -73,6 +76,10 @@ func QualityCheck(
 	printQualityCheckState()
 
 	return nil
+}
+
+func printQualityCheckState() {
+	fmt.Println("🟢 quality checks on data contract passed!")
 }
 
 func getQualityType(
@@ -106,19 +113,19 @@ func getQualitySpecification(
 	return TakeStringOrMarshall(spec), nil
 }
 
-func sodaQualityCheck(qualitySpecFileName string, dataSource, configurationFileName *string) (res string, err error) {
+func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) (res string, err error) {
 	var args = []string{"scan"}
 
 	args = append(args, "-d")
-	if dataSource != nil {
-		args = append(args, *dataSource)
+	if options.sodaDataSource != nil {
+		args = append(args, *options.sodaDataSource)
 	} else {
 		args = append(args, "default")
 	}
 
-	if configurationFileName != nil {
+	if options.sodaConfigurationFileName != nil {
 		args = append(args, "-c")
-		args = append(args, *configurationFileName)
+		args = append(args, *options.sodaConfigurationFileName)
 	}
 
 	args = append(args, qualitySpecFileName)

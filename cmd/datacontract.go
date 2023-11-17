@@ -145,7 +145,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification)
+					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification, datacontract.QualityCheckOptions{})
 				},
 			},
 			{
