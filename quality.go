@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 )
 
-func PrintQuality(
-	dataContractLocation string,
-	qualitySpecFileName string,
-	pathToQuality []string) error {
+func PrintQuality(dataContractLocation string, pathToQuality []string) error {
+
 	dataContract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return fmt.Errorf("failed parsing local data contract: %w", err)
@@ -34,12 +33,9 @@ func printQualityCheckState() {
 
 func QualityCheck(
 	dataContractFileName string,
-	qualitySpecFileName string,
-	qualityCheckOptions string,
 	pathToType []string,
 	pathToSpecification []string) error {
 
-	//
 	contract, err := GetDataContract(dataContractFileName)
 	if err != nil {
 		return fmt.Errorf("quality checks failed: %w", err)
@@ -70,7 +66,7 @@ func QualityCheck(
 
 	tempFile.Write(qualitySpecification)
 
-	res, err := sodaQualityCheck(tempFile.Name(), qualityCheckOptions)
+	res, err := sodaQualityCheck(tempFile.Name(), nil, nil)
 	if err != nil {
 		return fmt.Errorf("quality checks failed: %v", res)
 	}
@@ -102,7 +98,6 @@ func getQualityType(
 	return qualityType, nil
 }
 
-// todo
 func getQualitySpecification(
 	contract DataContract,
 	path []string) (specification []byte, err error) {
@@ -114,4 +109,33 @@ func getQualitySpecification(
 	}
 
 	return TakeStringOrMarshall(spec), nil
+}
+
+func sodaQualityCheck(qualitySpecFileName string, dataSource, configurationFileName *string) (res string, err error) {
+	var args = []string{"scan"}
+
+	args = append(args, "-d")
+	if dataSource != nil {
+		args = append(args, *dataSource)
+	} else {
+		args = append(args, "default")
+	}
+
+	if configurationFileName != nil {
+		args = append(args, "-c")
+		args = append(args, *configurationFileName)
+	}
+
+	args = append(args, qualitySpecFileName)
+
+	cmd := exec.Command("soda", args...)
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		return res, fmt.Errorf("the CLI failed: %v", string(stdout))
+	}
+
+	res = string(stdout)
+
+	return res, nil
 }

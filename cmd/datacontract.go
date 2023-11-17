@@ -9,7 +9,6 @@ import (
 )
 
 const dataContractFileName = "datacontract.yaml"
-const qualitySpecFileName = "datacontract-quality.yaml"
 const initTemplateUrl = "https://datacontract.com/datacontract.init.yaml"
 const schemaUrl = "https://datacontract.com/datacontract.schema.json"
 const dataContractStudioUrl = "https://studio.datacontract.com/s"
@@ -21,12 +20,6 @@ func main() {
 		Name:  "file",
 		Value: dataContractFileName,
 		Usage: "location of the data contract, path or url (except init)",
-	}
-
-	qualitySpecFileNameFlag := &cli.StringFlag{
-		Name:  "quality-file",
-		Value: qualitySpecFileName,
-		Usage: "location of the specification file for quality checks, path or url (except init)",
 	}
 
 	schemaTypePathFlag := &cli.StringFlag{
@@ -60,7 +53,6 @@ func main() {
 				Usage: "create a new data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "from",
 						Value: initTemplateUrl,
@@ -88,7 +80,6 @@ func main() {
 				Usage: "linter for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "schema",
 						Value: schemaUrl,
@@ -126,7 +117,6 @@ func main() {
 				Usage: "print quality checks of the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualitySpecFileNameFlag,
 					&cli.StringFlag{
 						Name:  "quality-specification-path",
 						Value: "quality.specification",
@@ -134,7 +124,7 @@ func main() {
 					}},
 				Action: func(ctx *cli.Context) error {
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return datacontract.PrintQuality(ctx.String("file"), ctx.String("quality-file"), pathToSpecification)
+					return datacontract.PrintQuality(ctx.String("file"), pathToSpecification)
 				},
 			},
 			{
@@ -142,12 +132,6 @@ func main() {
 				Usage: "EXPERIMENTAL - run quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					qualitySpecFileNameFlag,
-					&cli.StringFlag{
-						Name:  "test-options",
-						Value: "",
-						Usage: "options for quality checks",
-					},
 					&cli.StringFlag{
 						Name:  "quality-type-path",
 						Value: "quality.type",
@@ -161,7 +145,7 @@ func main() {
 				Action: func(ctx *cli.Context) error {
 					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
 					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
-					return datacontract.QualityCheck(ctx.String("file"), ctx.String("quality-file"), ctx.String("test-options"), pathToType, pathToSpecification)
+					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification)
 				},
 			},
 			{
