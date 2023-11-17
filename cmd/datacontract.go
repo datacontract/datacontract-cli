@@ -141,11 +141,30 @@ func main() {
 						Name:  "quality-specification-path",
 						Value: "quality.specification",
 						Usage: "definition of a custom path to the quality specification in your data contract",
-					}},
+					},
+					&cli.StringFlag{
+						Name:  "soda-datasource",
+						Value: "default",
+						Usage: "todo",
+					},
+					&cli.StringFlag{
+						Name:  "soda-config",
+						Usage: "todo",
+					},
+				},
 				Action: func(ctx *cli.Context) error {
 					pathToType := parsePath(ctx, "quality-type-path")
 					pathToSpecification := parsePath(ctx, "quality-specification-path")
-					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification, datacontract.QualityCheckOptions{})
+
+					sodaDataSource := ctx.String("soda-datasource")
+					options := datacontract.QualityCheckOptions{SodaDataSource: &sodaDataSource}
+
+					if ctx.String("soda-config") != "" {
+						options.SodaConfigurationFileName = new(string)
+						*options.SodaConfigurationFileName = ctx.String("soda-config")
+					}
+
+					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification, options)
 				},
 			},
 			{

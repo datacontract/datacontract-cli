@@ -25,8 +25,8 @@ func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 }
 
 type QualityCheckOptions struct {
-	sodaDataSource            *string
-	sodaConfigurationFileName *string
+	SodaDataSource            *string
+	SodaConfigurationFileName *string
 }
 
 func QualityCheck(
@@ -117,15 +117,15 @@ func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) (
 	var args = []string{"scan"}
 
 	args = append(args, "-d")
-	if options.sodaDataSource != nil {
-		args = append(args, *options.sodaDataSource)
+	if options.SodaDataSource != nil {
+		args = append(args, *options.SodaDataSource)
 	} else {
 		args = append(args, "default")
 	}
 
-	if options.sodaConfigurationFileName != nil {
+	if options.SodaConfigurationFileName != nil {
 		args = append(args, "-c")
-		args = append(args, *options.sodaConfigurationFileName)
+		args = append(args, *options.SodaConfigurationFileName)
 	}
 
 	args = append(args, qualitySpecFileName)
