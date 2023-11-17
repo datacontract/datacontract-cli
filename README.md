@@ -71,7 +71,7 @@ tar -xf datacontract.tar.gz
 
 | Placeholder | Description                                    |
 |-------------|------------------------------------------------|
-| VERSION     | datacontract CLI version (e.g. `v0.3.2`)       |
+| VERSION     | datacontract CLI version (e.g. `v0.4.0`)       |
 | OS          | your operating system (linux, windows, darwin) |
 | ARCH        | your processor architecture (amd64, arm64)     |
 
@@ -106,7 +106,7 @@ USAGE:
    datacontract [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.3.2
+   v0.4.0
 
 AUTHOR:
    Stefan Negele <stefan.negele@innoq.com>
@@ -114,12 +114,12 @@ AUTHOR:
 COMMANDS:
    init      create a new data contract
    lint      linter for the data contract
-   test      EXPERIMENTAL (soda core integration only) - run quality checks for the data contract
    schema    print schema of the data contract
    quality   print quality checks of the data contract
+   test      (soda core integration only) - run quality checks for the data contract
    open      save and open the data contract in Data Contract Studio
-   diff      EXPERIMENTAL (dbt specification only) - show differences of your local and a remote data contract
-   breaking  EXPERIMENTAL (dbt specification only) - detect breaking changes between your local and a remote data contract
+   diff      (dbt specification only) - show differences of your local and a remote data contract
+   breaking  (dbt specification only) - detect breaking changes between your local and a remote data contract
    inline    inline all references specified with '$ref' notation
    help, h   Shows a list of commands or help for one command
 

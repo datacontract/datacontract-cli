@@ -1,3 +1,7 @@
+# 0.4.0
+- Basic implementation of `test` command for Soda Core
+- change package structure to allow usage as library
+
 # 0.3.2
 - Fix field parsing for dbt models, affects stability of `diff`/`breaking`
 
