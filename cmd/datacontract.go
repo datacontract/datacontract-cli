@@ -108,7 +108,7 @@ func main() {
 				Usage: "print schema of the data contract",
 				Flags: []cli.Flag{fileNameFlag, schemaSpecificationPathFlag},
 				Action: func(ctx *cli.Context) error {
-					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
+					pathToSpecification := parsePath(ctx, "schema-specification-path")
 					return datacontract.PrintSchema(ctx.String("file"), pathToSpecification)
 				},
 			},
@@ -123,7 +123,7 @@ func main() {
 						Usage: "definition of a custom path to the quality specification in your data contract",
 					}},
 				Action: func(ctx *cli.Context) error {
-					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
+					pathToSpecification := parsePath(ctx, "quality-specification-path")
 					return datacontract.PrintQuality(ctx.String("file"), pathToSpecification)
 				},
 			},
@@ -143,8 +143,8 @@ func main() {
 						Usage: "definition of a custom path to the quality specification in your data contract",
 					}},
 				Action: func(ctx *cli.Context) error {
-					pathToType := strings.Split(ctx.String("quality-type-path"), ".")
-					pathToSpecification := strings.Split(ctx.String("quality-specification-path"), ".")
+					pathToType := parsePath(ctx, "quality-type-path")
+					pathToSpecification := parsePath(ctx, "quality-specification-path")
 					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification, datacontract.QualityCheckOptions{})
 				},
 			},
@@ -165,8 +165,8 @@ func main() {
 					schemaSpecificationPathFlag,
 				},
 				Action: func(ctx *cli.Context) error {
-					pathToType := strings.Split(ctx.String("schema-type-path"), ".")
-					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
+					pathToType := parsePath(ctx, "schema-type-path")
+					pathToSpecification := parsePath(ctx, "schema-specification-path")
 
 					return datacontract.Diff(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
 				},
@@ -180,8 +180,8 @@ func main() {
 					schemaSpecificationPathFlag,
 				},
 				Action: func(ctx *cli.Context) error {
-					pathToType := strings.Split(ctx.String("schema-type-path"), ".")
-					pathToSpecification := strings.Split(ctx.String("schema-specification-path"), ".")
+					pathToType := parsePath(ctx, "schema-type-path")
+					pathToSpecification := parsePath(ctx, "schema-specification-path")
 
 					return datacontract.Breaking(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
 				},
@@ -200,6 +200,10 @@ func main() {
 		log.Printf("Exiting application with error: %v \n", err)
 		os.Exit(1)
 	}
+}
+
+func parsePath(ctx *cli.Context, path string) []string {
+	return strings.Split(ctx.String(path), ".")
 }
 
 func boolOptionNotImplemented(ctx *cli.Context, name string) {
