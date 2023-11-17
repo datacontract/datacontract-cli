@@ -64,22 +64,23 @@ func QualityCheck(
 
 	tempFile.Write(qualitySpecification)
 
-	res, err := sodaQualityCheck(tempFile.Name(), options)
+	err = sodaQualityCheck(tempFile.Name(), options)
+
+	printQualityChecksResult(err)
+
 	if err != nil {
-		return fmt.Errorf("quality checks failed: %v", res)
+		return fmt.Errorf("quality checks failed: %w", err)
 	}
-
-	// todo
-	log.Println("Soda CLI output:")
-	log.Println(res)
-
-	printQualityCheckState()
 
 	return nil
 }
 
-func printQualityCheckState() {
-	fmt.Println("🟢 quality checks on data contract passed!")
+func printQualityChecksResult(err error) {
+	if err == nil {
+		log.Println("🟢 quality checks on data contract passed!")
+	} else {
+		log.Println("🔴 quality checks on data contract failed!")
+	}
 }
 
 func getQualityType(
@@ -113,7 +114,9 @@ func getQualitySpecification(
 	return TakeStringOrMarshall(spec), nil
 }
 
-func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) (res string, err error) {
+// soda cli checks
+
+func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) error {
 	var args = []string{"scan"}
 
 	args = append(args, "-d")
@@ -131,13 +134,13 @@ func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) (
 	args = append(args, qualitySpecFileName)
 
 	cmd := exec.Command("soda", args...)
+	output, err := cmdCombinedOutput(cmd)
 
-	stdout, err := cmd.Output()
+	log.Println(string(output))
+
 	if err != nil {
-		return res, fmt.Errorf("the CLI failed: %v", string(stdout))
+		return fmt.Errorf("the soda CLI failed: %w", err)
 	}
 
-	res = string(stdout)
-
-	return res, nil
+	return nil
 }

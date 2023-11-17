@@ -1,0 +1,8 @@
+dataContractSpecification: 0.9.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+quality:
+  specification: "$ref: test_resources/quality/soda-checks.yaml"
+  type: SodaCL
