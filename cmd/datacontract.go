@@ -129,7 +129,7 @@ func main() {
 			},
 			{
 				Name:  "test",
-				Usage: "EXPERIMENTAL - run quality checks for the data contract",
+				Usage: "(soda core integration only) - run quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
@@ -145,11 +145,11 @@ func main() {
 					&cli.StringFlag{
 						Name:  "soda-datasource",
 						Value: "default",
-						Usage: "todo",
+						Usage: "data source configured in Soda to run your quality checks against",
 					},
 					&cli.StringFlag{
 						Name:  "soda-config",
-						Usage: "todo",
+						Usage: "location of your soda configuration, falls back to user configuration",
 					},
 				},
 				Action: func(ctx *cli.Context) error {
@@ -176,7 +176,7 @@ func main() {
 				},
 			}, {
 				Name:  "diff",
-				Usage: "EXPERIMENTAL (dbt specification only) - show differences of your local and a remote data contract",
+				Usage: "(dbt specification only) - show differences of your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					withFlag,
@@ -191,7 +191,7 @@ func main() {
 				},
 			}, {
 				Name:  "breaking",
-				Usage: "EXPERIMENTAL (dbt specification only) - detect breaking changes between your local and a remote data contract",
+				Usage: "(dbt specification only) - detect breaking changes between your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					withFlag,

@@ -114,7 +114,7 @@ AUTHOR:
 COMMANDS:
    init      create a new data contract
    lint      linter for the data contract
-   test      EXPERIMENTAL - run tests for the data contract
+   test      EXPERIMENTAL (soda core integration only) - run quality checks for the data contract
    schema    print schema of the data contract
    quality   print quality checks of the data contract
    open      save and open the data contract in Data Contract Studio
@@ -162,16 +162,23 @@ OPTIONS:
    --help, -h      show help
 ```
 
-#### test (EXPERIMENTAL)
+#### test - (Soda Core integration only)
+The Soda Core integration requires a Soda Core CLI installation, see https://docs.soda.io/soda-library/install.html
+
 ```
 NAME:
-   datacontract test - EXPERIMENTAL - run tests for the data contract
+   datacontract test - (soda core integration only) - run quality checks for the data contract
 
 USAGE:
    datacontract test [command options] [arguments...]
 
 OPTIONS:
-   --help, -h  show help
+   --file value                        location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --quality-type-path value           definition of a custom path to the quality type in your data contract (default: "quality.type")
+   --quality-specification-path value  definition of a custom path to the quality specification in your data contract (default: "quality.specification")
+   --soda-datasource value             data source configured in Soda to run your quality checks against (default: "default")
+   --soda-config value                 location of your soda configuration, falls back to user configuration
+   --help, -h                          show help
 ```
 
 #### open
@@ -188,7 +195,7 @@ OPTIONS:
 ```
 
 
-#### diff - EXPERIMENTAL (dbt specification only)
+#### diff - (dbt specification only)
 ```
 NAME:
    datacontract diff - EXPERIMENTAL (dbt specification only) - show differences of your local and a remote data contract
@@ -204,7 +211,7 @@ OPTIONS:
    --help, -h                         show help
 ```
 
-#### breaking - EXPERIMENTAL (dbt specification only)
+#### breaking - (dbt specification only)
 ```
 NAME:
    datacontract breaking - EXPERIMENTAL (dbt specification only) - detect breaking changes between your local and a remote data contract

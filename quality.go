@@ -114,7 +114,7 @@ func getQualitySpecification(
 	return TakeStringOrMarshall(spec), nil
 }
 
-// soda cli checks
+// soda core checks
 
 func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) error {
 	var args = []string{"scan"}
