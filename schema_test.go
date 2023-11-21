@@ -119,7 +119,7 @@ func TestParseDataset(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want InternalDataset
+		want InternalModelSpecification
 	}{
 		{
 			name: "unkown",
@@ -137,7 +137,7 @@ models:
       - name: %v
         data_type: %v
         description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription))},
-			want: InternalDataset{Models: []InternalModel{
+			want: InternalModelSpecification{Models: []InternalModel{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -172,7 +172,7 @@ models:
       - name: %v
         data_type: %v
         description: "%v"`, modelName, modelDescription, modelType, fieldName, fieldName, fieldName, fieldName, fieldType, fieldDescription))},
-			want: InternalDataset{Models: []InternalModel{
+			want: InternalModelSpecification{Models: []InternalModel{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -208,7 +208,7 @@ models:
           - type: check
             expression: "id > 0"
 `, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription))},
-			want: InternalDataset{Models: []InternalModel{
+			want: InternalModelSpecification{Models: []InternalModel{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -239,7 +239,7 @@ models:
     config:
       materialized: %v
 `, modelName, modelDescription, modelType, otherModelName, otherModelDescription, otherModelType))},
-			want: InternalDataset{Models: []InternalModel{
+			want: InternalModelSpecification{Models: []InternalModel{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -270,7 +270,7 @@ models:
         data_type: %v
         description: %v
 `, modelName, modelDescription, modelType, fieldName, fieldType, fieldDescription, otherFieldName, otherFieldType, otherFieldDescription))},
-			want: InternalDataset{Models: []InternalModel{
+			want: InternalModelSpecification{Models: []InternalModel{
 				{
 					Name:        modelName,
 					Type:        &modelType,
@@ -303,7 +303,41 @@ models:
 	}
 }
 
-func (dataset InternalDataset) equals(other InternalDataset) bool {
+func TestPrintSchema(t *testing.T) {
+	type args struct {
+		dataContractLocation string
+		pathToSpecification  []string
+	}
+	tests := []LogOutputTest[args]{
+		{
+			name: "print",
+			args: args{
+				dataContractLocation: "test_resources/schema/datacontract.yaml",
+				pathToSpecification:  []string{"schema", "specification"},
+			},
+			wantErr: false,
+			wantOutput: `version: 2
+models:
+  - name: my_table
+    description: "contains data"
+    config:
+      materialized: table
+    columns:
+      - name: my_column
+        data_type: text
+        description: "contains values"
+
+`,
+		},
+	}
+	for _, tt := range tests {
+		RunLogOutputTest(t, tt, "PrintSchema", func() error {
+			return PrintSchema(tt.args.dataContractLocation, tt.args.pathToSpecification)
+		})
+	}
+}
+
+func (dataset InternalModelSpecification) equals(other InternalModelSpecification) bool {
 	if len(dataset.Models) != len(other.Models) {
 		return false
 	}
@@ -361,38 +395,4 @@ func fieldConstraintsAreEqual(constraints, other []InternalFieldConstraint) bool
 	}
 
 	return true
-}
-
-func TestPrintSchema(t *testing.T) {
-	type args struct {
-		dataContractLocation string
-		pathToSpecification  []string
-	}
-	tests := []LogOutputTest[args]{
-		{
-			name: "print",
-			args: args{
-				dataContractLocation: "test_resources/schema/datacontract.yaml",
-				pathToSpecification:  []string{"schema", "specification"},
-			},
-			wantErr: false,
-			wantOutput: `version: 2
-models:
-  - name: my_table
-    description: "contains data"
-    config:
-      materialized: table
-    columns:
-      - name: my_column
-        data_type: text
-        description: "contains values"
-
-`,
-		},
-	}
-	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "PrintSchema", func() error {
-			return PrintSchema(tt.args.dataContractLocation, tt.args.pathToSpecification)
-		})
-	}
 }

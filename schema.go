@@ -22,7 +22,7 @@ func PrintSchema(dataContractLocation string, pathToSpecification []string) erro
 	return nil
 }
 
-func GetSchemaSpecification(dataContract DataContract, pathToType []string, pathToSpecification []string) (*InternalDataset, error) {
+func GetModelSpecificationFromSchema(dataContract DataContract, pathToType []string, pathToSpecification []string) (*InternalModelSpecification, error) {
 	schemaType, schemaSpecification, err := extractSchemaSpecification(dataContract, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
@@ -75,12 +75,12 @@ func getSpecification(contract DataContract, path []string) (specification inter
 	return specification, nil
 }
 
-func parseDataset(schemaType string, specification []byte) InternalDataset {
+func parseDataset(schemaType string, specification []byte) InternalModelSpecification {
 	switch schemaType {
 	case "dbt":
 		return parseDbtDataset(specification)
 	default:
-		return InternalDataset{}
+		return InternalModelSpecification{}
 	}
 }
 
@@ -115,13 +115,13 @@ type dbtColumn struct {
 	Constraints []dbtConstraint
 }
 
-func parseDbtDataset(specification []byte) InternalDataset {
+func parseDbtDataset(specification []byte) InternalModelSpecification {
 	var res dbtSpecification
 
 	yaml.Unmarshal(specification, &res)
 	models := modelsFromDbtSpecification(res)
 
-	return InternalDataset{SchemaType: "dbt", Models: models}
+	return InternalModelSpecification{Type: "dbt", Models: models}
 }
 
 func modelsFromDbtSpecification(res dbtSpecification) (models []InternalModel) {

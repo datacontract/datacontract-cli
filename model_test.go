@@ -19,8 +19,8 @@ func TestCompareDatasets(t *testing.T) {
 	fieldNameAndSubfieldName := fmt.Sprintf("%v.%v", fieldName, subFieldName)
 
 	type args struct {
-		old InternalDataset
-		new InternalDataset
+		old InternalModelSpecification
+		new InternalModelSpecification
 	}
 	tests := []struct {
 		name string
@@ -29,7 +29,7 @@ func TestCompareDatasets(t *testing.T) {
 	}{
 		{
 			name: "modelRemoved",
-			args: args{InternalDataset{Models: []InternalModel{{Name: modelName}}}, InternalDataset{Models: []InternalModel{}}},
+			args: args{InternalModelSpecification{Models: []InternalModel{{Name: modelName}}}, InternalModelSpecification{Models: []InternalModel{}}},
 			want: []ModelDifference{{
 				Type:        ModelDifferenceTypeModelRemoved,
 				Level:       ModelDifferenceLevelModel,
@@ -41,8 +41,8 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldRemoved",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{{Name: fieldName}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{}}}},
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{{Name: fieldName}}}}},
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{}}}},
 			},
 			want: []ModelDifference{{
 				Type:        ModelDifferenceTypeFieldRemoved,
@@ -56,9 +56,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldRemoved-subfield",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Fields: []InternalField{{Name: subFieldName}}}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName}}}}},
 			},
 			want: []ModelDifference{{
@@ -73,9 +73,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldTypeChanged",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Type: &dummyString1}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Type: &dummyString2}}}}},
 			},
 			want: []ModelDifference{{
@@ -90,9 +90,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldTypeChanged-old-nil ",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Type: &dummyString2}}}}},
 			},
 			want: []ModelDifference{{
@@ -107,9 +107,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldTypeChanged-new-nil ",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Type: &dummyString1}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName}}}}},
 			},
 			want: []ModelDifference{{
@@ -124,9 +124,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldTypeChanged-subfield",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Fields: []InternalField{{Name: subFieldName, Type: &dummyString1}}}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Fields: []InternalField{{Name: subFieldName, Type: &dummyString2}}}}}}},
 			},
 			want: []ModelDifference{{
@@ -141,9 +141,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldRequirementRemoved",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Required: true}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Required: false}}}}},
 			},
 			want: []ModelDifference{{
@@ -158,9 +158,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldUniquenessRemoved",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Unique: true}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Unique: false}}}}},
 			},
 			want: []ModelDifference{{
@@ -175,9 +175,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldConstraintAdded",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, AdditionalConstraints: []InternalFieldConstraint{
 						{Type: "check", Expression: "id < 0"}}}}}}},
 			},
@@ -193,10 +193,10 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldConstraintRemoved",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, AdditionalConstraints: []InternalFieldConstraint{
 						{Type: "custom", Expression: "special"}}}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName}}}}},
 			},
 			want: []ModelDifference{{
@@ -211,8 +211,8 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "datasetSchemaTypeChanged",
 			args: args{
-				InternalDataset{SchemaType: "dbt"},
-				InternalDataset{SchemaType: "json-schema"},
+				InternalModelSpecification{Type: "dbt"},
+				InternalModelSpecification{Type: "json-schema"},
 			},
 			want: []ModelDifference{{
 				Type:        ModelDifferenceTypeDatasetSchemaTypeChanged,
@@ -224,8 +224,8 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "modelAdded",
 			args: args{
-				InternalDataset{},
-				InternalDataset{Models: []InternalModel{{Name: modelName}}},
+				InternalModelSpecification{},
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName}}},
 			},
 			want: []ModelDifference{{
 				Type:        ModelDifferenceTypeModelAdded,
@@ -238,8 +238,8 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "modelTypeChanged",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Type: &dummyString1}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Type: &dummyString2}}},
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Type: &dummyString1}}},
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Type: &dummyString2}}},
 			},
 			want: []ModelDifference{{
 				Type:        ModelDifferenceTypeModelTypeChanged,
@@ -252,8 +252,8 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldAdded",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{{Name: fieldName}}}}},
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{}}}},
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{{Name: fieldName}}}}},
 			},
 			want: []ModelDifference{{
 				Type:        ModelDifferenceTypeFieldAdded,
@@ -267,9 +267,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldRequirementAdded",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Required: false}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Required: true}}}}},
 			},
 			want: []ModelDifference{{
@@ -284,9 +284,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldUniquenessAdded",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Unique: false}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Unique: true}}}}},
 			},
 			want: []ModelDifference{{
@@ -301,9 +301,9 @@ func TestCompareDatasets(t *testing.T) {
 		{
 			name: "fieldDescriptionChanged",
 			args: args{
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Description: &description1}}}}},
-				InternalDataset{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
+				InternalModelSpecification{Models: []InternalModel{{Name: modelName, Fields: []InternalField{
 					{Name: fieldName, Description: &description2}}}}},
 			},
 			want: []ModelDifference{{
@@ -318,8 +318,82 @@ func TestCompareDatasets(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CompareDatasets(tt.args.old, tt.args.new); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CompareDatasets() = %v, want %v", got, tt.want)
+			if got := CompareModelSpecifications(tt.args.old, tt.args.new); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CompareModelSpecifications() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetSpecModelSpecification(t *testing.T) {
+	modelName := "myModel"
+	modelDescription := "my model description"
+	modelType := "table"
+	fieldName := "my_id"
+	fieldType := "int"
+	fieldDescription := "my field description"
+
+	type args struct {
+		contract     DataContract
+		pathToModels []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *InternalModelSpecification
+		wantErr bool
+	}{
+		{
+			name: "simple model",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						modelName: map[string]any{
+							"description": modelDescription,
+							"type":        modelType,
+							"fields": map[string]any{
+								fieldName: map[string]any{
+									"type":        fieldType,
+									"description": fieldDescription,
+								},
+							},
+						},
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want: &InternalModelSpecification{
+				Type: "data-contract-specification",
+				Models: []InternalModel{
+					{
+						Name:        modelName,
+						Type:        &modelType,
+						Description: &modelDescription,
+						Fields: []InternalField{
+							{
+								Name:        fieldName,
+								Type:        &fieldType,
+								Description: &fieldDescription,
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		//{
+		//	name: "with definition resolution",
+		//},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetModelsFromSpecification(tt.args.contract, tt.args.pathToModels)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetModelsFromSpecification() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetModelsFromSpecification() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

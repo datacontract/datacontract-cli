@@ -1,28 +1,15 @@
 package datacontract
 
-import "fmt"
-
-// spec model
-
-type SpecModel struct {
-	Type        string // default: table
-	Description string
-}
-
-type SpecField struct {
-	Type           string // todo enum: https://github.com/datacontract/datacontract-specification/tree/main#data-types
-	Description    string
-	Pii            bool
-	Classification string // sensitive, restricted, internal, public
-	Tags           []string
-	_Ref           string
-}
+import (
+	"fmt"
+	"log"
+)
 
 // internal model
 
-type InternalDataset struct {
-	SchemaType string
-	Models     []InternalModel
+type InternalModelSpecification struct {
+	Type   string
+	Models []InternalModel
 }
 
 type InternalModel struct {
@@ -153,9 +140,9 @@ func (d ModelDifferenceSeverity) String() string {
 	return ""
 }
 
-type datasetComparison = func(old, new InternalDataset) []ModelDifference
+type datasetComparison = func(old, new InternalModelSpecification) []ModelDifference
 
-func CompareDatasets(old, new InternalDataset) (result []ModelDifference) {
+func CompareModelSpecifications(old, new InternalModelSpecification) (result []ModelDifference) {
 	comparisons := []datasetComparison{
 		// breaking
 		modelRemoved,
@@ -182,7 +169,7 @@ func CompareDatasets(old, new InternalDataset) (result []ModelDifference) {
 	return result
 }
 
-func modelRemoved(old, new InternalDataset) (result []ModelDifference) {
+func modelRemoved(old, new InternalModelSpecification) (result []ModelDifference) {
 	for _, oldModel := range old.Models {
 		if oldModel.findEquivalent(new.Models) == nil {
 			result = append(result, ModelDifference{
@@ -198,7 +185,7 @@ func modelRemoved(old, new InternalDataset) (result []ModelDifference) {
 	return result
 }
 
-func fieldRemoved(old, new InternalDataset) (result []ModelDifference) {
+func fieldRemoved(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExistsNot = func(
 		modelName, fieldName string,
 		field InternalField,
@@ -216,7 +203,7 @@ func fieldRemoved(old, new InternalDataset) (result []ModelDifference) {
 	return append(result, compareFields(old, new, nil, &difference)...)
 }
 
-func fieldTypeChanged(old, new InternalDataset) (result []ModelDifference) {
+func fieldTypeChanged(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -244,7 +231,7 @@ func fieldTypeChanged(old, new InternalDataset) (result []ModelDifference) {
 	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
-func fieldRequirementRemoved(old, new InternalDataset) (result []ModelDifference) {
+func fieldRequirementRemoved(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -266,7 +253,7 @@ func fieldRequirementRemoved(old, new InternalDataset) (result []ModelDifference
 	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
-func fieldUniquenessRemoved(old, new InternalDataset) (result []ModelDifference) {
+func fieldUniquenessRemoved(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -288,7 +275,7 @@ func fieldUniquenessRemoved(old, new InternalDataset) (result []ModelDifference)
 	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
-func fieldConstraintAdded(old, new InternalDataset) (result []ModelDifference) {
+func fieldConstraintAdded(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -313,7 +300,7 @@ func fieldConstraintAdded(old, new InternalDataset) (result []ModelDifference) {
 	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
-func fieldConstraintRemoved(old, new InternalDataset) (result []ModelDifference) {
+func fieldConstraintRemoved(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -338,19 +325,19 @@ func fieldConstraintRemoved(old, new InternalDataset) (result []ModelDifference)
 	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
-func datasetSchemaTypeChanged(old, new InternalDataset) (result []ModelDifference) {
-	if old.SchemaType != new.SchemaType {
+func datasetSchemaTypeChanged(old, new InternalModelSpecification) (result []ModelDifference) {
+	if old.Type != new.Type {
 		result = append(result, ModelDifference{
 			Type:        ModelDifferenceTypeDatasetSchemaTypeChanged,
 			Level:       ModelDifferenceLevelDataset,
 			Severity:    ModelDifferenceSeverityInfo,
-			Description: fmt.Sprintf("schema type changed from '%v' to '%v'", old.SchemaType, new.SchemaType),
+			Description: fmt.Sprintf("schema type changed from '%v' to '%v'", old.Type, new.Type),
 		})
 	}
 	return result
 }
 
-func modelAdded(old, new InternalDataset) (result []ModelDifference) {
+func modelAdded(old, new InternalModelSpecification) (result []ModelDifference) {
 	for _, newModel := range new.Models {
 		if newModel.findEquivalent(old.Models) == nil {
 			result = append(result, ModelDifference{
@@ -366,7 +353,7 @@ func modelAdded(old, new InternalDataset) (result []ModelDifference) {
 	return result
 }
 
-func modelTypeChanged(old, new InternalDataset) (result []ModelDifference) {
+func modelTypeChanged(old, new InternalModelSpecification) (result []ModelDifference) {
 	for _, oldModel := range old.Models {
 		if newModel := oldModel.findEquivalent(new.Models); newModel != nil && !EqualStringPointers(oldModel.Type, newModel.Type) {
 			result = append(result, ModelDifference{
@@ -382,7 +369,7 @@ func modelTypeChanged(old, new InternalDataset) (result []ModelDifference) {
 	return result
 }
 
-func fieldAdded(old, new InternalDataset) (result []ModelDifference) {
+func fieldAdded(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExistsNot = func(
 		modelName, fieldName string,
 		field InternalField,
@@ -400,7 +387,7 @@ func fieldAdded(old, new InternalDataset) (result []ModelDifference) {
 	return append(result, compareFields(new, old, nil, &difference)...)
 }
 
-func fieldRequirementAdded(old, new InternalDataset) (result []ModelDifference) {
+func fieldRequirementAdded(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -422,7 +409,7 @@ func fieldRequirementAdded(old, new InternalDataset) (result []ModelDifference) 
 	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
-func fieldUniquenessAdded(old, new InternalDataset) (result []ModelDifference) {
+func fieldUniquenessAdded(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -444,7 +431,7 @@ func fieldUniquenessAdded(old, new InternalDataset) (result []ModelDifference) {
 	return append(result, compareFields(old, new, &difference, nil)...)
 }
 
-func fieldDescriptionChanged(old, new InternalDataset) (result []ModelDifference) {
+func fieldDescriptionChanged(old, new InternalModelSpecification) (result []ModelDifference) {
 	var difference fieldEquivalentExists = func(
 		modelName, fieldName string,
 		oldField, newField InternalField,
@@ -496,7 +483,7 @@ type fieldEquivalentExistsNot func(
 // traverse through fields and their subfields
 // apply corresponding methods if equivalent field in left dataset exists in right dataset or not
 func compareFields(
-	left, right InternalDataset,
+	left, right InternalModelSpecification,
 	whenEquivalentExists *fieldEquivalentExists,
 	whenEquivalentExistsNot *fieldEquivalentExistsNot,
 ) (result []ModelDifference) {
@@ -579,4 +566,122 @@ func (field InternalField) findEquivalent(otherFields []InternalField) (result *
 		}
 	}
 	return result
+}
+
+func GetModelsFromSpecification(contract DataContract, pathToModels []string) (*InternalModelSpecification, error) {
+	specModels, err := GetValue(contract, pathToModels)
+
+	if err != nil {
+		// only warn on error to be compatible to embedded schema notation, this should fail, when schema support is dropped
+		log.Printf("Can not resolve specModels for path %v: %v", pathToModels, err)
+		return nil, nil
+	}
+
+	modelsMap, err := fieldAsMap(specModels, pathToModels)
+	if err != nil {
+		return nil, err
+	}
+
+	return internalModelSpecification(modelsMap)
+}
+
+func internalModelSpecification(modelsMap map[string]any) (*InternalModelSpecification, error) {
+	var internalModels []InternalModel
+
+	for modelName, specModel := range modelsMap {
+		specModelMap, err := fieldAsMap(specModel, []string{modelName})
+		if err != nil {
+			return nil, err
+		}
+
+		model, err := internalModel(specModelMap, modelName)
+		if err != nil {
+			return nil, err
+		}
+
+		internalModels = append(internalModels, *model)
+	}
+
+	return &InternalModelSpecification{Type: "data-contract-specification", Models: internalModels}, nil
+}
+
+func internalModel(specModelMap map[string]any, modelName string) (*InternalModel, error) {
+	modelType, err := fieldAsString(specModelMap, "type")
+	modelDescription, err := fieldAsString(specModelMap, "description")
+	internalFields, err := internalFields(specModelMap)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &InternalModel{
+		Name:        modelName,
+		Type:        modelType,
+		Description: modelDescription,
+		Fields:      internalFields,
+	}, nil
+}
+
+func internalFields(specModelMap map[string]any) ([]InternalField, error) {
+	var internalFields []InternalField
+
+	fields := specModelMap["fields"]
+	if fields != nil {
+		fieldsMap, err := fieldAsMap(fields, []string{"fields"})
+		if err != nil {
+			return nil, err
+		}
+
+		for fieldName, specField := range fieldsMap {
+			fieldMap, err := fieldAsMap(specField, []string{fieldName})
+			if err != nil {
+				return nil, err
+			}
+
+			internalField, err := internalField(fieldMap, fieldName)
+			if err != nil {
+				return nil, err
+			}
+
+			internalFields = append(internalFields, *internalField)
+		}
+	}
+
+	return internalFields, nil
+}
+
+func internalField(fieldMap map[string]any, fieldName string) (*InternalField, error) {
+	fieldType, err := fieldAsString(fieldMap, "type")
+	fieldDescription, err := fieldAsString(fieldMap, "description")
+	if err != nil {
+		return nil, err
+	}
+
+	return &InternalField{
+		Name:        fieldName,
+		Type:        fieldType,
+		Description: fieldDescription,
+	}, nil
+}
+
+func fieldAsMap(field any, fieldPath []string) (map[string]any, error) {
+	if result, ok := field.(map[string]any); !ok {
+		return nil, fmt.Errorf("field %v is not a map", fieldPath)
+	} else {
+		return result, nil
+	}
+}
+
+func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
+	field := anyMap[fieldName]
+
+	if field == nil {
+		return nil, nil
+	}
+
+	if result, ok := field.(string); !ok {
+		return nil, fmt.Errorf("field %v is not a map", fieldName)
+	} else {
+		return &result, nil
+	}
 }
