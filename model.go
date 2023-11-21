@@ -1,0 +1,582 @@
+package datacontract
+
+import "fmt"
+
+// spec model
+
+type SpecModel struct {
+	Type        string // default: table
+	Description string
+}
+
+type SpecField struct {
+	Type           string // todo enum: https://github.com/datacontract/datacontract-specification/tree/main#data-types
+	Description    string
+	Pii            bool
+	Classification string // sensitive, restricted, internal, public
+	Tags           []string
+	_Ref           string
+}
+
+// internal model
+
+type InternalDataset struct {
+	SchemaType string
+	Models     []InternalModel
+}
+
+type InternalModel struct {
+	Name        string
+	Type        *string
+	Description *string
+	Fields      []InternalField
+}
+
+type InternalField struct {
+	Name                  string
+	Type                  *string
+	Description           *string
+	Required              bool
+	Unique                bool
+	AdditionalConstraints []InternalFieldConstraint
+	Fields                []InternalField
+}
+
+type InternalFieldConstraint struct {
+	Type       string
+	Expression string
+}
+
+// model difference
+
+type ModelDifference struct {
+	Type        ModelDifferenceType
+	Level       ModelDifferenceLevel
+	Severity    ModelDifferenceSeverity
+	ModelName   *string
+	FieldName   *string
+	Description string
+}
+
+type ModelDifferenceType int
+
+const (
+	ModelDifferenceTypeModelRemoved ModelDifferenceType = iota
+	ModelDifferenceTypeFieldRemoved
+	ModelDifferenceTypeFieldTypeChanged
+	ModelDifferenceTypeFieldRequirementRemoved
+	ModelDifferenceTypeFieldUniquenessRemoved
+	ModelDifferenceTypeFieldAdditionalConstraintAdded
+	ModelDifferenceTypeFieldAdditionalConstraintRemoved
+	ModelDifferenceTypeDatasetSchemaTypeChanged
+	ModelDifferenceTypeModelAdded
+	ModelDifferenceTypeModelTypeChanged
+	ModelDifferenceTypeFieldAdded
+	ModelDifferenceTypeFieldRequirementAdded
+	ModelDifferenceTypeFieldUniquenessAdded
+	ModelDifferenceTypeFieldDescriptionChanged
+)
+
+func (d ModelDifferenceType) String() string {
+	switch d {
+	// breaking
+	case ModelDifferenceTypeModelRemoved:
+		return "model-removed"
+	case ModelDifferenceTypeFieldRemoved:
+		return "field-removed"
+	case ModelDifferenceTypeFieldTypeChanged:
+		return "field-type-changed"
+	case ModelDifferenceTypeFieldRequirementRemoved:
+		return "field-requirement-removed"
+	case ModelDifferenceTypeFieldUniquenessRemoved:
+		return "field-uniqueness-removed"
+	case ModelDifferenceTypeFieldAdditionalConstraintRemoved:
+		return "field-constraint-removed"
+	case ModelDifferenceTypeFieldAdditionalConstraintAdded:
+		return "field-constraint-added"
+	// info
+	case ModelDifferenceTypeDatasetSchemaTypeChanged:
+		return "dataset-schema-type-changed"
+	case ModelDifferenceTypeModelAdded:
+		return "model-added"
+	case ModelDifferenceTypeModelTypeChanged:
+		return "model-type-changed"
+	case ModelDifferenceTypeFieldAdded:
+		return "field-added"
+	case ModelDifferenceTypeFieldRequirementAdded:
+		return "field-requirement-added"
+	case ModelDifferenceTypeFieldUniquenessAdded:
+		return "field-uniqueness-added"
+	case ModelDifferenceTypeFieldDescriptionChanged:
+		return "field-description-changed"
+	}
+
+	return ""
+}
+
+type ModelDifferenceLevel int
+
+const (
+	ModelDifferenceLevelDataset ModelDifferenceLevel = iota
+	ModelDifferenceLevelModel
+	ModelDifferenceLevelField
+)
+
+func (d ModelDifferenceLevel) String() string {
+	switch d {
+	case ModelDifferenceLevelDataset:
+		return "dataset"
+	case ModelDifferenceLevelModel:
+		return "model"
+	case ModelDifferenceLevelField:
+		return "field"
+	}
+
+	return ""
+}
+
+type ModelDifferenceSeverity int
+
+const (
+	ModelDifferenceSeverityInfo ModelDifferenceSeverity = iota
+	ModelDifferenceSeverityBreaking
+)
+
+func (d ModelDifferenceSeverity) String() string {
+	switch d {
+	case ModelDifferenceSeverityInfo:
+		return "info"
+	case ModelDifferenceSeverityBreaking:
+		return "breaking"
+	}
+
+	return ""
+}
+
+type datasetComparison = func(old, new InternalDataset) []ModelDifference
+
+func CompareDatasets(old, new InternalDataset) (result []ModelDifference) {
+	comparisons := []datasetComparison{
+		// breaking
+		modelRemoved,
+		fieldRemoved,
+		fieldTypeChanged,
+		fieldRequirementRemoved,
+		fieldUniquenessRemoved,
+		fieldConstraintAdded,
+		fieldConstraintRemoved,
+		// info
+		datasetSchemaTypeChanged,
+		modelAdded,
+		modelTypeChanged,
+		fieldAdded,
+		fieldRequirementAdded,
+		fieldUniquenessAdded,
+		fieldDescriptionChanged,
+	}
+
+	for _, comparison := range comparisons {
+		result = append(result, comparison(old, new)...)
+	}
+
+	return result
+}
+
+func modelRemoved(old, new InternalDataset) (result []ModelDifference) {
+	for _, oldModel := range old.Models {
+		if oldModel.findEquivalent(new.Models) == nil {
+			result = append(result, ModelDifference{
+				Type:        ModelDifferenceTypeModelRemoved,
+				Level:       ModelDifferenceLevelModel,
+				Severity:    ModelDifferenceSeverityBreaking,
+				ModelName:   &oldModel.Name,
+				Description: fmt.Sprintf("model '%v' was removed", oldModel.Name),
+			})
+		}
+	}
+
+	return result
+}
+
+func fieldRemoved(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExistsNot = func(
+		modelName, fieldName string,
+		field InternalField,
+	) (result []ModelDifference) {
+		return append(result, ModelDifference{
+			Type:        ModelDifferenceTypeFieldRemoved,
+			Level:       ModelDifferenceLevelField,
+			Severity:    ModelDifferenceSeverityBreaking,
+			ModelName:   &modelName,
+			FieldName:   &fieldName,
+			Description: fmt.Sprintf("field '%v.%v' was removed", modelName, fieldName),
+		})
+	}
+
+	return append(result, compareFields(old, new, nil, &difference)...)
+}
+
+func fieldTypeChanged(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		if !EqualStringPointers(oldField.Type, newField.Type) {
+			return append(result, ModelDifference{
+				Type:      ModelDifferenceTypeFieldTypeChanged,
+				Level:     ModelDifferenceLevelField,
+				Severity:  ModelDifferenceSeverityBreaking,
+				ModelName: &modelName,
+				FieldName: &fieldName,
+				Description: fmt.Sprintf(
+					"type of field '%v.%v' was changed from '%v' to '%v'",
+					modelName,
+					fieldName,
+					StringPointerString(oldField.Type),
+					StringPointerString(newField.Type),
+				),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldRequirementRemoved(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		if oldField.Required && !newField.Required {
+			return append(result, ModelDifference{
+				Type:        ModelDifferenceTypeFieldRequirementRemoved,
+				Level:       ModelDifferenceLevelField,
+				Severity:    ModelDifferenceSeverityBreaking,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field requirement of '%v.%v' was removed", modelName, fieldName),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldUniquenessRemoved(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		if oldField.Unique && !newField.Unique {
+			return append(result, ModelDifference{
+				Type:        ModelDifferenceTypeFieldUniquenessRemoved,
+				Level:       ModelDifferenceLevelField,
+				Severity:    ModelDifferenceSeverityBreaking,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field uniqueness of '%v.%v' was removed", modelName, fieldName),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldConstraintAdded(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		for _, constraint := range newField.AdditionalConstraints {
+			if !constraint.isIn(oldField.AdditionalConstraints) {
+				result = append(result, ModelDifference{
+					Type:      ModelDifferenceTypeFieldAdditionalConstraintAdded,
+					Level:     ModelDifferenceLevelField,
+					Severity:  ModelDifferenceSeverityBreaking,
+					ModelName: &modelName,
+					FieldName: &fieldName,
+					Description: fmt.Sprintf("field constraint (%v: %v) of '%v.%v' was added",
+						constraint.Type, constraint.Expression, modelName, fieldName),
+				})
+			}
+		}
+
+		return result
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldConstraintRemoved(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		for _, constraint := range oldField.AdditionalConstraints {
+			if !constraint.isIn(newField.AdditionalConstraints) {
+				result = append(result, ModelDifference{
+					Type:      ModelDifferenceTypeFieldAdditionalConstraintRemoved,
+					Level:     ModelDifferenceLevelField,
+					Severity:  ModelDifferenceSeverityBreaking,
+					ModelName: &modelName,
+					FieldName: &fieldName,
+					Description: fmt.Sprintf("field constraint (%v: %v) of '%v.%v' was removed",
+						constraint.Type, constraint.Expression, modelName, fieldName),
+				})
+			}
+		}
+
+		return result
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func datasetSchemaTypeChanged(old, new InternalDataset) (result []ModelDifference) {
+	if old.SchemaType != new.SchemaType {
+		result = append(result, ModelDifference{
+			Type:        ModelDifferenceTypeDatasetSchemaTypeChanged,
+			Level:       ModelDifferenceLevelDataset,
+			Severity:    ModelDifferenceSeverityInfo,
+			Description: fmt.Sprintf("schema type changed from '%v' to '%v'", old.SchemaType, new.SchemaType),
+		})
+	}
+	return result
+}
+
+func modelAdded(old, new InternalDataset) (result []ModelDifference) {
+	for _, newModel := range new.Models {
+		if newModel.findEquivalent(old.Models) == nil {
+			result = append(result, ModelDifference{
+				Type:        ModelDifferenceTypeModelAdded,
+				Level:       ModelDifferenceLevelModel,
+				Severity:    ModelDifferenceSeverityInfo,
+				ModelName:   &newModel.Name,
+				Description: fmt.Sprintf("model '%v' was added", newModel.Name),
+			})
+		}
+	}
+
+	return result
+}
+
+func modelTypeChanged(old, new InternalDataset) (result []ModelDifference) {
+	for _, oldModel := range old.Models {
+		if newModel := oldModel.findEquivalent(new.Models); newModel != nil && !EqualStringPointers(oldModel.Type, newModel.Type) {
+			result = append(result, ModelDifference{
+				Type:        ModelDifferenceTypeModelTypeChanged,
+				Level:       ModelDifferenceLevelModel,
+				Severity:    ModelDifferenceSeverityInfo,
+				ModelName:   &oldModel.Name,
+				Description: fmt.Sprintf("type of model '%v' was changed from '%v' to '%v'", oldModel.Name, StringPointerString(oldModel.Type), StringPointerString(newModel.Type)),
+			})
+		}
+	}
+
+	return result
+}
+
+func fieldAdded(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExistsNot = func(
+		modelName, fieldName string,
+		field InternalField,
+	) (result []ModelDifference) {
+		return append(result, ModelDifference{
+			Type:        ModelDifferenceTypeFieldAdded,
+			Level:       ModelDifferenceLevelField,
+			Severity:    ModelDifferenceSeverityInfo,
+			ModelName:   &modelName,
+			FieldName:   &fieldName,
+			Description: fmt.Sprintf("field '%v.%v' was added", modelName, fieldName),
+		})
+	}
+
+	return append(result, compareFields(new, old, nil, &difference)...)
+}
+
+func fieldRequirementAdded(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		if !oldField.Required && newField.Required {
+			return append(result, ModelDifference{
+				Type:        ModelDifferenceTypeFieldRequirementAdded,
+				Level:       ModelDifferenceLevelField,
+				Severity:    ModelDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field requirement of '%v.%v' was added", modelName, fieldName),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldUniquenessAdded(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		if !oldField.Unique && newField.Unique {
+			return append(result, ModelDifference{
+				Type:        ModelDifferenceTypeFieldUniquenessAdded,
+				Level:       ModelDifferenceLevelField,
+				Severity:    ModelDifferenceSeverityInfo,
+				ModelName:   &modelName,
+				FieldName:   &fieldName,
+				Description: fmt.Sprintf("field uniqueness of '%v.%v' was added", modelName, fieldName),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func fieldDescriptionChanged(old, new InternalDataset) (result []ModelDifference) {
+	var difference fieldEquivalentExists = func(
+		modelName, fieldName string,
+		oldField, newField InternalField,
+	) (result []ModelDifference) {
+		if !EqualStringPointers(oldField.Description, newField.Description) {
+			return append(result, ModelDifference{
+				Type:      ModelDifferenceTypeFieldDescriptionChanged,
+				Level:     ModelDifferenceLevelField,
+				Severity:  ModelDifferenceSeverityInfo,
+				ModelName: &modelName,
+				FieldName: &fieldName,
+				Description: fmt.Sprintf(
+					"description of field '%v.%v' has changed from '%v' to '%v'",
+					modelName,
+					fieldName,
+					StringPointerString(oldField.Description),
+					StringPointerString(newField.Description),
+				),
+			})
+		} else {
+			return result
+		}
+	}
+
+	return append(result, compareFields(old, new, &difference, nil)...)
+}
+
+func (constraint InternalFieldConstraint) isIn(list []InternalFieldConstraint) bool {
+	for _, oldConstraint := range list {
+		if constraint.Type == oldConstraint.Type && constraint.Expression == oldConstraint.Expression {
+			return true
+		}
+	}
+
+	return false
+}
+
+type fieldEquivalentExists func(
+	modelName, prefixedFieldName string,
+	left, right InternalField,
+) []ModelDifference
+
+type fieldEquivalentExistsNot func(
+	modelName string,
+	prefixedFieldName string,
+	field InternalField,
+) []ModelDifference
+
+// traverse through fields and their subfields
+// apply corresponding methods if equivalent field in left dataset exists in right dataset or not
+func compareFields(
+	left, right InternalDataset,
+	whenEquivalentExists *fieldEquivalentExists,
+	whenEquivalentExistsNot *fieldEquivalentExistsNot,
+) (result []ModelDifference) {
+	for _, leftModel := range left.Models {
+		if rightModel := leftModel.findEquivalent(right.Models); rightModel != nil {
+			result = append(
+				result,
+				compareFieldsRecursive(
+					leftModel.Fields,
+					rightModel.Fields,
+					leftModel.Name,
+					nil,
+					whenEquivalentExists,
+					whenEquivalentExistsNot,
+				)...,
+			)
+		}
+	}
+
+	return result
+}
+
+func compareFieldsRecursive(
+	leftFields, rightFields []InternalField,
+	modelName string,
+	fieldPrefix *string,
+	whenEquivalentExists *fieldEquivalentExists,
+	whenEquivalentExistsNot *fieldEquivalentExistsNot,
+) (result []ModelDifference) {
+	for _, leftField := range leftFields {
+		fieldName := leftField.prefixedName(fieldPrefix)
+
+		if rightField := leftField.findEquivalent(rightFields); rightField == nil {
+			if whenEquivalentExistsNot != nil {
+				result = append(result, (*whenEquivalentExistsNot)(modelName, fieldName, leftField)...)
+			}
+		} else {
+			if whenEquivalentExists != nil {
+				result = append(result, (*whenEquivalentExists)(modelName, fieldName, leftField, *rightField)...)
+			}
+			result = append(result,
+				compareFieldsRecursive(
+					leftField.Fields,
+					rightField.Fields,
+					modelName,
+					&fieldName,
+					whenEquivalentExists,
+					whenEquivalentExistsNot,
+				)...)
+		}
+	}
+	return result
+}
+
+func (field InternalField) prefixedName(prefix *string) string {
+	var fieldName string
+	if prefix == nil {
+		fieldName = field.Name
+	} else {
+		fieldName = fmt.Sprintf("%v.%v", *prefix, field.Name)
+	}
+	return fieldName
+}
+
+func (model InternalModel) findEquivalent(otherModels []InternalModel) (result *InternalModel) {
+	for _, newModel := range otherModels {
+		if model.Name == newModel.Name {
+			result = &newModel
+			break
+		}
+	}
+	return result
+}
+
+func (field InternalField) findEquivalent(otherFields []InternalField) (result *InternalField) {
+	for _, newField := range otherFields {
+		if field.Name == newField.Name {
+			result = &newField
+			break
+		}
+	}
+	return result
+}

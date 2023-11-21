@@ -24,10 +24,10 @@ func Breaking(
 	return nil
 }
 
-func breakingDifferences(allDifferences []DatasetDifference) []DatasetDifference {
-	var breakingDifferences []DatasetDifference
+func breakingDifferences(allDifferences []ModelDifference) []ModelDifference {
+	var breakingDifferences []ModelDifference
 	for _, difference := range allDifferences {
-		if difference.Severity == DatasetDifferenceSeverityBreaking {
+		if difference.Severity == ModelDifferenceSeverityBreaking {
 			breakingDifferences = append(breakingDifferences, difference)
 		}
 	}

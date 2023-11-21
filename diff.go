@@ -21,7 +21,7 @@ func GetDifferences(
 	stableDataContractLocation string,
 	pathToType []string,
 	pathToSpecification []string,
-) ([]DatasetDifference, error) {
+) ([]ModelDifference, error) {
 	localDataContract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading local data contract: %w", err)
@@ -46,7 +46,7 @@ func GetDifferences(
 	return differences, nil
 }
 
-func PrintDifferences(differences []DatasetDifference) {
+func PrintDifferences(differences []ModelDifference) {
 	log.Printf("Found %v differences between the data contracts!\n", len(differences))
 
 	for i, difference := range differences {
@@ -57,19 +57,19 @@ func PrintDifferences(differences []DatasetDifference) {
 		log.Printf("Severity:     %v\n", difference.Severity)
 		log.Printf("Level:        %v\n", difference.Level)
 		if difference.ModelName != nil {
-			log.Printf("Model:        %v\n", *difference.ModelName)
+			log.Printf("InternalModel:        %v\n", *difference.ModelName)
 		}
 		if difference.FieldName != nil {
-			log.Printf("Field:        %v\n", *difference.FieldName)
+			log.Printf("InternalField:        %v\n", *difference.FieldName)
 		}
 	}
 }
 
-func severityIcon(difference DatasetDifference) string {
+func severityIcon(difference ModelDifference) string {
 	switch difference.Severity {
-	case DatasetDifferenceSeverityInfo:
+	case ModelDifferenceSeverityInfo:
 		return "🟡"
-	case DatasetDifferenceSeverityBreaking:
+	case ModelDifferenceSeverityBreaking:
 		return "🔴"
 	}
 

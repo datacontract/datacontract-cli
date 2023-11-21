@@ -26,16 +26,16 @@ Description:  field 'my_table.my_column' was removed
 Type:         field-removed
 Severity:     breaking
 Level:        field
-Model:        my_table
-Field:        my_column
+InternalModel:        my_table
+InternalField:        my_column
 
 🟡 Difference 2:
 Description:  field 'my_table.my_column_2' was added
 Type:         field-added
 Severity:     info
 Level:        field
-Model:        my_table
-Field:        my_column_2
+InternalModel:        my_table
+InternalField:        my_column_2
 `,
 		},
 		{
@@ -54,8 +54,8 @@ Description:  field 'my_table.my_column_2' was added
 Type:         field-added
 Severity:     info
 Level:        field
-Model:        my_table
-Field:        my_column_2
+InternalModel:        my_table
+InternalField:        my_column_2
 `,
 		},
 		{
@@ -74,8 +74,8 @@ Description:  type of field 'awesome_feature_usage_history.my_column' was change
 Type:         field-type-changed
 Severity:     breaking
 Level:        field
-Model:        awesome_feature_usage_history
-Field:        my_column
+InternalModel:        awesome_feature_usage_history
+InternalField:        my_column
 `,
 		},
 	}

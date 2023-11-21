@@ -28,8 +28,8 @@ Description:  field 'my_table.my_column' was removed
 Type:         field-removed
 Severity:     breaking
 Level:        field
-Model:        my_table
-Field:        my_column
+InternalModel:        my_table
+InternalField:        my_column
 `,
 		},
 		{
