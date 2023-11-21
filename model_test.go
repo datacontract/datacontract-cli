@@ -333,6 +333,36 @@ func TestGetSpecModelSpecification(t *testing.T) {
 	fieldType := "int"
 	fieldDescription := "my field description"
 
+	fieldDefinition := map[string]any{
+		"type":        fieldType,
+		"description": fieldDescription,
+	}
+	modelDefinition := map[string]any{
+		"description": modelDescription,
+		"type":        modelType,
+		"fields": map[string]any{
+			fieldName: fieldDefinition,
+		},
+	}
+
+	expected := InternalModelSpecification{
+		Type: "data-contract-specification",
+		Models: []InternalModel{
+			{
+				Name:        modelName,
+				Type:        &modelType,
+				Description: &modelDescription,
+				Fields: []InternalField{
+					{
+						Name:        fieldName,
+						Type:        &fieldType,
+						Description: &fieldDescription,
+					},
+				},
+			},
+		},
+	}
+
 	type args struct {
 		contract     DataContract
 		pathToModels []string
@@ -348,41 +378,67 @@ func TestGetSpecModelSpecification(t *testing.T) {
 			args: args{
 				contract: DataContract{
 					"models": map[string]any{
+						modelName: modelDefinition,
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want:    &expected,
+			wantErr: false,
+		},
+		{
+			name: "with definitions reference on model",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						modelName: map[string]any{
+							"$ref": fmt.Sprintf("#/definitions/%v", modelName),
+						},
+					},
+					"definitions": map[string]any{
+						modelName: modelDefinition,
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want:    &expected,
+			wantErr: false,
+		},
+		{
+			name: "with definitions reference on field",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
 						modelName: map[string]any{
 							"description": modelDescription,
 							"type":        modelType,
 							"fields": map[string]any{
 								fieldName: map[string]any{
-									"type":        fieldType,
-									"description": fieldDescription,
+									"$ref": fmt.Sprintf("#/definitions/%v", fieldName),
 								},
 							},
 						},
 					},
+					"definitions": map[string]any{
+						fieldName: fieldDefinition,
+					},
 				},
 				pathToModels: []string{"models"},
 			},
-			want: &InternalModelSpecification{
-				Type: "data-contract-specification",
-				Models: []InternalModel{
-					{
-						Name:        modelName,
-						Type:        &modelType,
-						Description: &modelDescription,
-						Fields: []InternalField{
-							{
-								Name:        fieldName,
-								Type:        &fieldType,
-								Description: &fieldDescription,
-							},
-						},
-					},
-				},
-			},
+			want:    &expected,
 			wantErr: false,
 		},
 		//{
-		//	name: "with definition resolution",
+		//	name: "with local file reference on model",
+		//},
+		//{
+		//	name: "with local file reference on field",
+		//},
+		//{
+		//	name: "with remote reference on model",
+		//},
+		//{
+		//	name: "with remote reference on field",
 		//},
 	}
 	for _, tt := range tests {

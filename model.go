@@ -1,8 +1,10 @@
 package datacontract
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"strings"
 )
 
 // internal model
@@ -577,24 +579,24 @@ func GetModelsFromSpecification(contract DataContract, pathToModels []string) (*
 		return nil, nil
 	}
 
-	modelsMap, err := fieldAsMap(specModels, pathToModels)
+	modelsMap, err := fieldAsMapWithReferenceResolution(specModels, pathToModels, contract, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	return internalModelSpecification(modelsMap)
+	return internalModelSpecification(modelsMap, contract)
 }
 
-func internalModelSpecification(modelsMap map[string]any) (*InternalModelSpecification, error) {
+func internalModelSpecification(modelsMap map[string]any, contract DataContract) (*InternalModelSpecification, error) {
 	var internalModels []InternalModel
 
 	for modelName, specModel := range modelsMap {
-		specModelMap, err := fieldAsMap(specModel, []string{modelName})
+		specModelMap, err := fieldAsMapWithReferenceResolution(specModel, []string{modelName}, contract, 0)
 		if err != nil {
 			return nil, err
 		}
 
-		model, err := internalModel(specModelMap, modelName)
+		model, err := internalModel(specModelMap, modelName, contract)
 		if err != nil {
 			return nil, err
 		}
@@ -605,10 +607,10 @@ func internalModelSpecification(modelsMap map[string]any) (*InternalModelSpecifi
 	return &InternalModelSpecification{Type: "data-contract-specification", Models: internalModels}, nil
 }
 
-func internalModel(specModelMap map[string]any, modelName string) (*InternalModel, error) {
+func internalModel(specModelMap map[string]any, modelName string, contract DataContract) (*InternalModel, error) {
 	modelType, err := fieldAsString(specModelMap, "type")
 	modelDescription, err := fieldAsString(specModelMap, "description")
-	internalFields, err := internalFields(specModelMap)
+	internalFields, err := internalFields(specModelMap, contract)
 
 	if err != nil {
 		return nil, err
@@ -622,18 +624,18 @@ func internalModel(specModelMap map[string]any, modelName string) (*InternalMode
 	}, nil
 }
 
-func internalFields(specModelMap map[string]any) ([]InternalField, error) {
+func internalFields(specModelMap map[string]any, contract DataContract) ([]InternalField, error) {
 	var internalFields []InternalField
 
 	fields := specModelMap["fields"]
 	if fields != nil {
-		fieldsMap, err := fieldAsMap(fields, []string{"fields"})
+		fieldsMap, err := fieldAsMapWithReferenceResolution(fields, []string{"fields"}, contract, 0)
 		if err != nil {
 			return nil, err
 		}
 
 		for fieldName, specField := range fieldsMap {
-			fieldMap, err := fieldAsMap(specField, []string{fieldName})
+			fieldMap, err := fieldAsMapWithReferenceResolution(specField, []string{fieldName}, contract, 0)
 			if err != nil {
 				return nil, err
 			}
@@ -664,12 +666,33 @@ func internalField(fieldMap map[string]any, fieldName string) (*InternalField, e
 	}, nil
 }
 
-func fieldAsMap(field any, fieldPath []string) (map[string]any, error) {
-	if result, ok := field.(map[string]any); !ok {
+func fieldAsMapWithReferenceResolution(field any, fieldPath []string, contract DataContract, referenceCount int) (map[string]any, error) {
+	if anyMap, isMap := field.(map[string]any); !isMap {
 		return nil, fmt.Errorf("field %v is not a map", fieldPath)
+	} else if reference, isReference := anyMap["$ref"].(string); isReference {
+		return resolveReferencedMap(reference, contract, referenceCount)
 	} else {
-		return result, nil
+		return anyMap, nil
 	}
+}
+
+// todo merge this into GetValue
+func resolveReferencedMap(reference string, contract DataContract, referenceCount int) (map[string]any, error) {
+	if referenceCount >= 50 {
+		return nil, errors.New("reference maximum reached, seems like references are circular")
+	}
+
+	if strings.HasPrefix(reference, "#") {
+		localReferencePath := strings.Split(reference, "/")[1:]
+		resolved, err := GetValue(contract, localReferencePath)
+		if err != nil {
+			return nil, err
+		}
+
+		return fieldAsMapWithReferenceResolution(resolved, localReferencePath, contract, referenceCount+1)
+	}
+
+	return nil, nil
 }
 
 func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
