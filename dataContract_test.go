@@ -8,7 +8,25 @@ import (
 )
 
 func TestGetValue(t *testing.T) {
-	model, _ := os.ReadFile("./test_resources/dataContract/getValue/model.yaml")
+	stringReferenceModel, _ := os.ReadFile("./test_resources/dataContract/getValue/dbt_model.yaml")
+
+	objectReferenceModelName := "myModel"
+	objectReferenceModelDescription := "my model description"
+	objectReferenceModelType := "table"
+	objectReferenceFieldName := "my_id"
+	objectReferenceFieldType := "int"
+	objectReferenceFieldDescription := "my field description"
+
+	objectReferenceModelDefinition := map[string]any{
+		"description": objectReferenceModelDescription,
+		"type":        objectReferenceModelType,
+		"fields": map[string]any{
+			objectReferenceFieldName: map[string]any{
+				"type":        objectReferenceFieldType,
+				"description": objectReferenceFieldDescription,
+			},
+		},
+	}
 
 	type args struct {
 		contract DataContract
@@ -50,23 +68,101 @@ func TestGetValue(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "local reference",
+			name: "local string reference",
 			args: args{
 				contract: DataContract{"schema": map[string]any{
-					"specification": "$ref: test_resources/dataContract/getValue/model.yaml",
+					"specification": "$ref: test_resources/dataContract/getValue/dbt_model.yaml",
 				}},
 				path: []string{"schema", "specification"}},
-			wantValue: string(model),
+			wantValue: string(stringReferenceModel),
 			wantErr:   false,
 		},
 		{
-			name: "remote reference",
+			name: "remote string reference",
 			args: args{
 				contract: DataContract{"schema": map[string]any{
-					"specification": fmt.Sprintf("$ref: %v/dataContract/getValue/model.yaml", TestResourcesServer.URL),
+					"specification": fmt.Sprintf("$ref: %v/dataContract/getValue/dbt_model.yaml", TestResourcesServer.URL),
 				}},
 				path: []string{"schema", "specification"}},
-			wantValue: string(model),
+			wantValue: string(stringReferenceModel),
+			wantErr:   false,
+		},
+		{
+			name: "definitions object reference",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						objectReferenceModelName: map[string]any{
+							"$ref": fmt.Sprintf("#/definitions/%v", objectReferenceModelName),
+						},
+					},
+					"definitions": map[string]any{
+						objectReferenceModelName: objectReferenceModelDefinition,
+					},
+				},
+				path: []string{"models", objectReferenceModelName},
+			},
+			wantValue: objectReferenceModelDefinition,
+			wantErr:   false,
+		},
+		{
+			name: "definitions object reference - root level",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						objectReferenceModelName: map[string]any{
+							"$ref": "#",
+						},
+					},
+				},
+				path: []string{"models", objectReferenceModelName},
+			},
+			wantValue: nil,
+			wantErr:   false,
+		},
+		{
+			name: "file object reference",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						objectReferenceModelName: map[string]any{
+							"$ref": fmt.Sprintf("test_resources/dataContract/getValue/models.yaml#%v", objectReferenceModelName),
+						},
+					},
+				},
+				path: []string{"models", objectReferenceModelName},
+			},
+			wantValue: objectReferenceModelDefinition,
+			wantErr:   false,
+		},
+		{
+			name: "file object reference - root level",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						objectReferenceModelName: map[string]any{
+							"$ref": "test_resources/dataContract/getValue/myModel.yaml",
+						},
+					},
+				},
+				path: []string{"models", objectReferenceModelName},
+			},
+			wantValue: objectReferenceModelDefinition,
+			wantErr:   false,
+		},
+		{
+			name: "remote object reference",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						objectReferenceModelName: map[string]any{
+							"$ref": fmt.Sprintf("%v/dataContract/getValue/models.yaml#%v", TestResourcesServer.URL, objectReferenceModelName),
+						},
+					},
+				},
+				path: []string{"models", objectReferenceModelName},
+			},
+			wantValue: objectReferenceModelDefinition,
 			wantErr:   false,
 		},
 	}

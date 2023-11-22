@@ -6,10 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 )
-
-const referencePrefix = "$ref:"
 
 type DataContract = map[string]any
 
@@ -53,31 +50,35 @@ func parseDataContract(data []byte) (dataContractObject DataContract, err error)
 }
 
 func GetValue(contract DataContract, path []string) (value any, err error) {
+	return getValue(contract, contract, path)
+}
+
+func getValue(contract DataContract, object map[string]any, path []string) (any, error) {
+	if len(path) < 1 {
+		return contract, nil
+	}
+
 	fieldName := path[0]
 
-	if contract[fieldName] == nil {
+	if object[fieldName] == nil {
 		return nil, fmt.Errorf("no field named '%v'", fieldName)
 	}
 
 	if len(path) == 1 {
-		return resolveValue(contract, fieldName)
+		return resolveValue(contract, object[fieldName])
 	}
 
-	next, ok := contract[fieldName].(map[string]any)
+	next, ok := object[fieldName].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("can't follow path using field '%v', it's not a map", fieldName)
 	}
 
-	return GetValue(next, path[1:])
+	return getValue(contract, next, path[1:])
 }
 
-func resolveValue(object map[string]any, fieldName string) (value any, err error) {
-	value = object[fieldName]
-
-	if stringValue, isString := value.(string); isString && strings.HasPrefix(stringValue, referencePrefix) {
-		reference := strings.Trim(strings.TrimPrefix(stringValue, referencePrefix), " ")
-
-		value, err = ResolveReference(reference)
+func resolveValue(contract DataContract, value any) (out any, err error) {
+	if IsReference(value) {
+		value, err = ResolveReference(contract, value)
 		if err != nil {
 			return nil, err
 		}

@@ -10,7 +10,7 @@ func Inline(dataContractLocation string) error {
 		return err
 	}
 
-	err = inlineReferences(&dataContract)
+	err = inlineReferences(&dataContract, dataContract)
 	if err != nil {
 		return err
 	}
@@ -28,24 +28,24 @@ func Inline(dataContractLocation string) error {
 	return nil
 }
 
-func inlineReferences(dataContract *map[string]any) error {
-	for key, field := range *dataContract {
+func inlineReferences(item *map[string]any, contract DataContract) error {
+	for key, field := range *item {
 
 		if object, isObject := field.(map[string]any); isObject {
-			inlineReferences(&object)
+			inlineReferences(&object, contract)
 		} else if list, isList := field.([]any); isList {
 			for _, item := range list {
 				if object, isObject := item.(map[string]any); isObject {
-					inlineReferences(&object)
+					inlineReferences(&object, contract)
 				}
 			}
-		} else if text, isText := field.(string); isText && IsReference(text) {
-			value, err := ResolveReference(text)
+		} else if IsReference(field) {
+			value, err := ResolveReference(contract, field)
 			if err != nil {
 				return err
 			}
 
-			object := *dataContract
+			object := *item
 			object[key] = value
 		}
 	}

@@ -1,0 +1,6 @@
+type: table
+description: my model description
+fields:
+  my_id:
+    type: int
+    description: my field description
