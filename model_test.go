@@ -428,18 +428,78 @@ func TestGetSpecModelSpecification(t *testing.T) {
 			want:    &expected,
 			wantErr: false,
 		},
-		//{
-		//	name: "with local file reference on model",
-		//},
-		//{
-		//	name: "with local file reference on field",
-		//},
-		//{
-		//	name: "with remote reference on model",
-		//},
-		//{
-		//	name: "with remote reference on field",
-		//},
+		{
+			name: "with local file reference on model",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						modelName: map[string]any{
+							"$ref": "test_resources/model/model_definition.yaml",
+						},
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want:    &expected,
+			wantErr: false,
+		},
+		{
+			name: "with local file reference on field",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						modelName: map[string]any{
+							"description": modelDescription,
+							"type":        modelType,
+							"fields": map[string]any{
+								fieldName: map[string]any{
+									"$ref": "test_resources/model/field_definition.yaml",
+								},
+							},
+						},
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want:    &expected,
+			wantErr: false,
+		},
+		{
+			name: "with remote reference on model",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						modelName: map[string]any{
+							"$ref": fmt.Sprintf("%v/model/model_definition.yaml", TestResourcesServer.URL),
+						},
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want:    &expected,
+			wantErr: false,
+		},
+		{
+			name: "with remote reference on field",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						modelName: map[string]any{
+							"description": modelDescription,
+							"type":        modelType,
+							"fields": map[string]any{
+								fieldName: map[string]any{
+									"$ref": fmt.Sprintf("%v/model/field_definition.yaml", TestResourcesServer.URL),
+								},
+							},
+						},
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want:    &expected,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

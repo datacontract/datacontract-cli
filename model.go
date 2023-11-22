@@ -3,7 +3,11 @@ package datacontract
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
+	"io"
 	"log"
+	"net/http"
+	"os"
 	"strings"
 )
 
@@ -579,7 +583,7 @@ func GetModelsFromSpecification(contract DataContract, pathToModels []string) (*
 		return nil, nil
 	}
 
-	modelsMap, err := fieldAsMapWithReferenceResolution(specModels, pathToModels, contract, 0)
+	modelsMap, err := fieldAsMapWithReferenceResolution("", specModels, contract, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -591,7 +595,7 @@ func internalModelSpecification(modelsMap map[string]any, contract DataContract)
 	var internalModels []InternalModel
 
 	for modelName, specModel := range modelsMap {
-		specModelMap, err := fieldAsMapWithReferenceResolution(specModel, []string{modelName}, contract, 0)
+		specModelMap, err := fieldAsMapWithReferenceResolution(modelName, specModel, contract, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -629,13 +633,13 @@ func internalFields(specModelMap map[string]any, contract DataContract) ([]Inter
 
 	fields := specModelMap["fields"]
 	if fields != nil {
-		fieldsMap, err := fieldAsMapWithReferenceResolution(fields, []string{"fields"}, contract, 0)
+		fieldsMap, err := fieldAsMapWithReferenceResolution("", fields, contract, 0) // todo
 		if err != nil {
 			return nil, err
 		}
 
 		for fieldName, specField := range fieldsMap {
-			fieldMap, err := fieldAsMapWithReferenceResolution(specField, []string{fieldName}, contract, 0)
+			fieldMap, err := fieldAsMapWithReferenceResolution(fieldName, specField, contract, 0)
 			if err != nil {
 				return nil, err
 			}
@@ -666,18 +670,18 @@ func internalField(fieldMap map[string]any, fieldName string) (*InternalField, e
 	}, nil
 }
 
-func fieldAsMapWithReferenceResolution(field any, fieldPath []string, contract DataContract, referenceCount int) (map[string]any, error) {
+func fieldAsMapWithReferenceResolution(fieldName string, field any, contract DataContract, referenceCount int) (map[string]any, error) {
 	if anyMap, isMap := field.(map[string]any); !isMap {
-		return nil, fmt.Errorf("field %v is not a map", fieldPath)
+		return nil, fmt.Errorf("field is not a map")
 	} else if reference, isReference := anyMap["$ref"].(string); isReference {
-		return resolveReferencedMap(reference, contract, referenceCount)
+		return resolveReferencedMap(fieldName, reference, contract, referenceCount)
 	} else {
 		return anyMap, nil
 	}
 }
 
-// todo merge this into GetValue
-func resolveReferencedMap(reference string, contract DataContract, referenceCount int) (map[string]any, error) {
+// todo merge this into GetValue / refactor Resolve Reference
+func resolveReferencedMap(fieldName, reference string, contract DataContract, referenceCount int) (map[string]any, error) {
 	if referenceCount >= 50 {
 		return nil, errors.New("reference maximum reached, seems like references are circular")
 	}
@@ -689,10 +693,42 @@ func resolveReferencedMap(reference string, contract DataContract, referenceCoun
 			return nil, err
 		}
 
-		return fieldAsMapWithReferenceResolution(resolved, localReferencePath, contract, referenceCount+1)
+		return fieldAsMapWithReferenceResolution(fieldName, resolved, contract, referenceCount+1)
+	} else if IsURI(reference) {
+		resolved := map[string]any{}
+
+		response, err := http.Get(reference)
+		// response.StatusCode todo: check whole project after refactoring!
+		if err != nil {
+			return nil, err
+		}
+
+		defer response.Body.Close()
+
+		bytes, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		yaml.Unmarshal(bytes, resolved)
+
+		if r, ok := resolved[fieldName].(map[string]any); ok {
+			resolved = r
+		}
+
+		return fieldAsMapWithReferenceResolution(fieldName, resolved, contract, referenceCount+1)
+	} else {
+		resolved := map[string]any{}
+		bytes, _ := os.ReadFile(reference)
+		yaml.Unmarshal(bytes, resolved)
+
+		if r, ok := resolved[fieldName].(map[string]any); ok {
+			resolved = r
+		}
+
+		return fieldAsMapWithReferenceResolution(fieldName, resolved, contract, referenceCount+1)
 	}
 
-	return nil, nil
 }
 
 func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
