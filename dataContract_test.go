@@ -17,13 +17,13 @@ func TestGetValue(t *testing.T) {
 	tests := []struct {
 		name      string
 		args      args
-		wantValue interface{}
+		wantValue any
 		wantErr   bool
 	}{
 		{
 			name: "found",
 			args: args{
-				contract: DataContract{"schema": map[string]interface{}{"type": "dbt"}},
+				contract: DataContract{"schema": map[string]any{"type": "dbt"}},
 				path:     []string{"schema", "type"}},
 			wantValue: "dbt",
 			wantErr:   false,
@@ -38,7 +38,7 @@ func TestGetValue(t *testing.T) {
 		{
 			name: "field not found",
 			args: args{
-				contract: DataContract{"schema": map[string]interface{}{}},
+				contract: DataContract{"schema": map[string]any{}},
 				path:     []string{"schema", "type"}},
 			wantErr: true,
 		},
@@ -52,7 +52,7 @@ func TestGetValue(t *testing.T) {
 		{
 			name: "local reference",
 			args: args{
-				contract: DataContract{"schema": map[string]interface{}{
+				contract: DataContract{"schema": map[string]any{
 					"specification": "$ref: test_resources/dataContract/getValue/model.yaml",
 				}},
 				path: []string{"schema", "specification"}},
@@ -62,7 +62,7 @@ func TestGetValue(t *testing.T) {
 		{
 			name: "remote reference",
 			args: args{
-				contract: DataContract{"schema": map[string]interface{}{
+				contract: DataContract{"schema": map[string]any{
 					"specification": fmt.Sprintf("$ref: %v/dataContract/getValue/model.yaml", TestResourcesServer.URL),
 				}},
 				path: []string{"schema", "specification"}},
@@ -88,7 +88,7 @@ func TestGetDataContract(t *testing.T) {
 	dataContract := DataContract{
 		"dataContractSpecification": "0.9.0",
 		"id":                        "my-data-contract-id",
-		"info": map[string]interface{}{
+		"info": map[string]any{
 			"title":   "My Data Contract",
 			"version": "0.0.1",
 		},

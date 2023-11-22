@@ -18,16 +18,16 @@ models:
         data_type: text
         description: "contains values"`
 
-	specificationMap := map[string]interface{}{
+	specificationMap := map[string]any{
 		"version": 2,
-		"models": []map[string]interface{}{
+		"models": []map[string]any{
 			{
 				"name":        "my_table",
 				"description": "contains data",
-				"config": map[string]interface{}{
+				"config": map[string]any{
 					"materialized": "table",
 				},
-				"columns": []map[string]interface{}{
+				"columns": []map[string]any{
 					{
 						"name":        "my_column",
 						"data_type":   "text",
@@ -45,12 +45,12 @@ models:
 		name              string
 		args              args
 		wantSchemaType    string
-		wantSpecification interface{}
+		wantSpecification any
 		wantErr           bool
 	}{
 		{
 			name: "map",
-			args: args{contract: DataContract{"schema": map[string]interface{}{
+			args: args{contract: DataContract{"schema": map[string]any{
 				"type":          "dbt",
 				"specification": specificationMap,
 			}}},
@@ -60,7 +60,7 @@ models:
 		},
 		{
 			name: "string",
-			args: args{contract: DataContract{"schema": map[string]interface{}{
+			args: args{contract: DataContract{"schema": map[string]any{
 				"type":          "dbt",
 				"specification": specificationString,
 			}}},
@@ -81,7 +81,7 @@ models:
 			}
 
 			var equal bool
-			if _, ok := gotSpecification.(map[string]interface{}); ok {
+			if _, ok := gotSpecification.(map[string]any); ok {
 				equal = reflect.DeepEqual(gotSpecification, tt.wantSpecification)
 			} else {
 				equal = gotSpecification == tt.wantSpecification

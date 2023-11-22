@@ -5,7 +5,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func ToYaml(object interface{}) (result []byte, err error) {
+func ToYaml(object any) (result []byte, err error) {
 	var b bytes.Buffer
 
 	encoder := yaml.NewEncoder(&b)

@@ -28,14 +28,14 @@ func Inline(dataContractLocation string) error {
 	return nil
 }
 
-func inlineReferences(dataContract *map[string]interface{}) error {
+func inlineReferences(dataContract *map[string]any) error {
 	for key, field := range *dataContract {
 
-		if object, isObject := field.(map[string]interface{}); isObject {
+		if object, isObject := field.(map[string]any); isObject {
 			inlineReferences(&object)
-		} else if list, isList := field.([]interface{}); isList {
+		} else if list, isList := field.([]any); isList {
 			for _, item := range list {
-				if object, isObject := item.(map[string]interface{}); isObject {
+				if object, isObject := item.(map[string]any); isObject {
 					inlineReferences(&object)
 				}
 			}

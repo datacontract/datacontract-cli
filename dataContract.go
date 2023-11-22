@@ -11,7 +11,7 @@ import (
 
 const referencePrefix = "$ref:"
 
-type DataContract = map[string]interface{}
+type DataContract = map[string]any
 
 func GetDataContract(location string) (DataContract, error) {
 	if IsURI(location) {
@@ -52,7 +52,7 @@ func parseDataContract(data []byte) (dataContractObject DataContract, err error)
 	return dataContractObject, nil
 }
 
-func GetValue(contract DataContract, path []string) (value interface{}, err error) {
+func GetValue(contract DataContract, path []string) (value any, err error) {
 	fieldName := path[0]
 
 	if contract[fieldName] == nil {
@@ -63,7 +63,7 @@ func GetValue(contract DataContract, path []string) (value interface{}, err erro
 		return resolveValue(contract, fieldName)
 	}
 
-	next, ok := contract[fieldName].(map[string]interface{})
+	next, ok := contract[fieldName].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("can't follow path using field '%v', it's not a map", fieldName)
 	}
@@ -71,7 +71,7 @@ func GetValue(contract DataContract, path []string) (value interface{}, err erro
 	return GetValue(next, path[1:])
 }
 
-func resolveValue(object map[string]interface{}, fieldName string) (value interface{}, err error) {
+func resolveValue(object map[string]any, fieldName string) (value any, err error) {
 	value = object[fieldName]
 
 	if stringValue, isString := value.(string); isString && strings.HasPrefix(stringValue, referencePrefix) {

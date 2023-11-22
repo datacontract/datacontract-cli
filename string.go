@@ -29,11 +29,11 @@ func IsURI(reference string) bool {
 	return err == nil
 }
 
-func TakeStringOrMarshall(object interface{}) []byte {
+func TakeStringOrMarshall(object any) []byte {
 	var bytes []byte
 	if str, isString := object.(string); isString {
 		bytes = []byte(str)
-	} else if mp, isMap := object.(map[string]interface{}); isMap {
+	} else if mp, isMap := object.(map[string]any); isMap {
 		bytes, _ = ToYaml(mp)
 	}
 	return bytes

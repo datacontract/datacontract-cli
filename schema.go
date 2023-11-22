@@ -38,7 +38,7 @@ func extractSchemaSpecification(
 	contract DataContract,
 	pathToType []string,
 	pathToSpecification []string,
-) (schemaType string, specification interface{}, err error) {
+) (schemaType string, specification any, err error) {
 	schemaType, err = getSchemaType(contract, pathToType)
 	if err != nil {
 		log.Println(fmt.Errorf("can't get schema type: %w", err))
@@ -66,7 +66,7 @@ func getSchemaType(contract DataContract, path []string) (schemaType string, err
 	return schemaType, nil
 }
 
-func getSpecification(contract DataContract, path []string) (specification interface{}, err error) {
+func getSpecification(contract DataContract, path []string) (specification any, err error) {
 	specification, err = GetValue(contract, path)
 	if err != nil {
 		return nil, fmt.Errorf("can't get value of schema specification for path %v: %w", path, err)
