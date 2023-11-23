@@ -1,0 +1,16 @@
+dataContractSpecification: 0.9.1
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  my_table:
+    type: table
+    description: "contains data"
+    fields:
+      my_column:
+        type: timestamp
+        description: "contains values"
+      my_column_2:
+        type: text
+        description: "contains values"

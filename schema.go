@@ -25,7 +25,8 @@ func PrintSchema(dataContractLocation string, pathToSpecification []string) erro
 func GetModelSpecificationFromSchema(dataContract DataContract, pathToType []string, pathToSpecification []string) (*InternalModelSpecification, error) {
 	schemaType, schemaSpecification, err := extractSchemaSpecification(dataContract, pathToType, pathToSpecification)
 	if err != nil {
-		return nil, fmt.Errorf("failed extracting schema specification: %w", err)
+		// ignore if no schema found
+		return nil, nil
 	}
 
 	schemaSpecificationBytes := TakeStringOrMarshall(schemaSpecification)
@@ -41,12 +42,12 @@ func extractSchemaSpecification(
 ) (schemaType string, specification any, err error) {
 	schemaType, err = getSchemaType(contract, pathToType)
 	if err != nil {
-		log.Println(fmt.Errorf("can't get schema type: %w", err))
+		return "", nil, fmt.Errorf("can't get schema type: %w", err)
 	}
 
 	specification, err = getSpecification(contract, pathToSpecification)
 	if err != nil {
-		log.Println(fmt.Errorf("can't get specification: %w", err))
+		return schemaType, nil, fmt.Errorf("can't get schema specification: %w", err)
 	}
 
 	return schemaType, specification, nil

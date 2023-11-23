@@ -32,18 +32,41 @@ func GetDifferences(
 		return nil, fmt.Errorf("failed getting stable data contract: %w", err)
 	}
 
-	stableDataset, err := GetModelSpecificationFromSchema(stableDataContract, pathToType, pathToSpecification)
+	// todo path
+	pathToModels := []string{"models"}
+
+	stableDataset, err := getModelSpecification(stableDataContract, pathToModels, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting schema specification for stable dataset: %w", err)
 	}
 
-	localDataset, err := GetModelSpecificationFromSchema(localDataContract, pathToType, pathToSpecification)
+	localDataset, err := getModelSpecification(localDataContract, pathToModels, pathToType, pathToSpecification)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting schema specification for local dataset: %w", err)
 	}
 
 	differences := CompareModelSpecifications(*stableDataset, *localDataset)
 	return differences, nil
+}
+
+func getModelSpecification(
+	contract DataContract,
+	pathToModels []string,
+	pathToSchemaType []string,
+	pathToSchemaSpecification []string,
+) (*InternalModelSpecification, error) {
+	dataset, err := GetModelsFromSpecification(contract, pathToModels)
+	if dataset == nil {
+		dataset, err = GetModelSpecificationFromSchema(contract, pathToSchemaType, pathToSchemaSpecification)
+	}
+	if dataset == nil {
+		dataset = &InternalModelSpecification{
+			Type:   "none",
+			Models: []InternalModel{},
+		}
+	}
+
+	return dataset, err
 }
 
 func PrintDifferences(differences []ModelDifference) {

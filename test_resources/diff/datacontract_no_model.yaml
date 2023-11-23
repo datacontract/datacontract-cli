@@ -1,0 +1,5 @@
+dataContractSpecification: 0.9.1
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1

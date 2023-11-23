@@ -570,7 +570,15 @@ func (field InternalField) findEquivalent(otherFields []InternalField) (result *
 
 func GetModelsFromSpecification(contract DataContract, pathToModels []string) (*InternalModelSpecification, error) {
 	sm, err := GetValue(contract, pathToModels)
-	specModels, _ := enforceMap(sm)
+	if err != nil {
+		// ignore if no contract was found
+		return nil, nil
+	}
+
+	specModels, err := enforceMap(sm)
+	if err != nil {
+		return nil, err
+	}
 
 	// inline all references inside the models section
 	InlineReferences(&specModels, contract)
