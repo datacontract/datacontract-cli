@@ -66,16 +66,13 @@ func resolveObjectReference(reference string, contract DataContract) (any, error
 		return nil, nil
 	}
 
+	// use GetValue to get value inside referenced document
 	field, err := GetValue(document, path)
 	if err != nil {
 		return nil, err
 	}
 
-	return enforceMap(field)
-}
-
-func enforceMap(entity any) (map[string]any, error) {
-	if anyMap, ok := entity.(map[string]any); !ok {
+	if anyMap, ok := field.(map[string]any); !ok {
 		return nil, errors.New("referenced value is not an object")
 	} else {
 		return anyMap, nil
@@ -147,4 +144,34 @@ func resolveFileFromRemote(url string) ([]byte, error) {
 	}
 
 	return io.ReadAll(response.Body)
+}
+
+func InlineReferences(item *map[string]any, contract DataContract) error {
+	for key, field := range *item {
+
+		if IsReference(field) {
+			value, err := ResolveReference(contract, field)
+			if err != nil {
+				return err
+			}
+
+			// also resolve references inside references
+			if object, isObject := value.(map[string]any); isObject {
+				InlineReferences(&object, contract)
+			}
+
+			object := *item
+			object[key] = value
+		} else if object, isObject := field.(map[string]any); isObject {
+			InlineReferences(&object, contract)
+		} else if list, isList := field.([]any); isList {
+			for _, item := range list {
+				if object, isObject := item.(map[string]any); isObject {
+					InlineReferences(&object, contract)
+				}
+			}
+		}
+	}
+
+	return nil
 }

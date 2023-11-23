@@ -405,6 +405,36 @@ func TestGetSpecModelSpecification(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "with definitions reference on model - reference in referenced object",
+			args: args{
+				contract: DataContract{
+					"models": map[string]any{
+						modelName: map[string]any{
+							"$ref": fmt.Sprintf("#/definitions/%v_1", modelName),
+						},
+					},
+					"definitions": map[string]any{
+						fmt.Sprintf("%v_1", modelName): map[string]any{
+							"$ref": fmt.Sprintf("#/definitions/%v", modelName),
+						},
+						modelName: map[string]any{
+							"description": modelDescription,
+							"type":        modelType,
+							"fields": map[string]any{
+								fieldName: map[string]any{
+									"$ref": fmt.Sprintf("#/definitions/%v", fieldName),
+								},
+							},
+						},
+						fieldName: fieldDefinition,
+					},
+				},
+				pathToModels: []string{"models"},
+			},
+			want:    &expected,
+			wantErr: false,
+		},
+		{
 			name: "with definitions reference on field",
 			args: args{
 				contract: DataContract{
@@ -434,7 +464,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 				contract: DataContract{
 					"models": map[string]any{
 						modelName: map[string]any{
-							"$ref": "test_resources/model/model_definition.yaml",
+							"$ref": fmt.Sprintf("test_resources/model/model_definition.yaml#%v", modelName),
 						},
 					},
 				},
@@ -453,7 +483,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 							"type":        modelType,
 							"fields": map[string]any{
 								fieldName: map[string]any{
-									"$ref": "test_resources/model/field_definition.yaml",
+									"$ref": fmt.Sprintf("test_resources/model/field_definition.yaml#%v", fieldName),
 								},
 							},
 						},
@@ -470,7 +500,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 				contract: DataContract{
 					"models": map[string]any{
 						modelName: map[string]any{
-							"$ref": fmt.Sprintf("%v/model/model_definition.yaml", TestResourcesServer.URL),
+							"$ref": fmt.Sprintf("%v/model/model_definition.yaml#%v", TestResourcesServer.URL, modelName),
 						},
 					},
 				},
@@ -489,7 +519,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 							"type":        modelType,
 							"fields": map[string]any{
 								fieldName: map[string]any{
-									"$ref": fmt.Sprintf("%v/model/field_definition.yaml", TestResourcesServer.URL),
+									"$ref": fmt.Sprintf("%v/model/field_definition.yaml#%v", TestResourcesServer.URL, fieldName),
 								},
 							},
 						},

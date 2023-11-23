@@ -1,14 +1,8 @@
 package datacontract
 
 import (
-	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
-	"io"
 	"log"
-	"net/http"
-	"os"
-	"strings"
 )
 
 // internal model
@@ -575,7 +569,11 @@ func (field InternalField) findEquivalent(otherFields []InternalField) (result *
 }
 
 func GetModelsFromSpecification(contract DataContract, pathToModels []string) (*InternalModelSpecification, error) {
-	specModels, err := GetValue(contract, pathToModels)
+	sm, err := GetValue(contract, pathToModels)
+	specModels, _ := enforceMap(sm)
+
+	// inline all references inside the models section
+	InlineReferences(&specModels, contract)
 
 	if err != nil {
 		// only warn on error to be compatible to embedded schema notation, this should fail, when schema support is dropped
@@ -583,24 +581,24 @@ func GetModelsFromSpecification(contract DataContract, pathToModels []string) (*
 		return nil, nil
 	}
 
-	modelsMap, err := fieldAsMapWithReferenceResolution("", specModels, contract, 0)
+	modelsMap, err := enforceMap(specModels)
 	if err != nil {
 		return nil, err
 	}
 
-	return internalModelSpecification(modelsMap, contract)
+	return internalModelSpecification(modelsMap)
 }
 
-func internalModelSpecification(modelsMap map[string]any, contract DataContract) (*InternalModelSpecification, error) {
+func internalModelSpecification(modelsMap map[string]any) (*InternalModelSpecification, error) {
 	var internalModels []InternalModel
 
 	for modelName, specModel := range modelsMap {
-		specModelMap, err := fieldAsMapWithReferenceResolution(modelName, specModel, contract, 0)
+		specModelMap, err := enforceMap(specModel)
 		if err != nil {
 			return nil, err
 		}
 
-		model, err := internalModel(specModelMap, modelName, contract)
+		model, err := internalModel(specModelMap, modelName)
 		if err != nil {
 			return nil, err
 		}
@@ -611,10 +609,10 @@ func internalModelSpecification(modelsMap map[string]any, contract DataContract)
 	return &InternalModelSpecification{Type: "data-contract-specification", Models: internalModels}, nil
 }
 
-func internalModel(specModelMap map[string]any, modelName string, contract DataContract) (*InternalModel, error) {
-	modelType, err := fieldAsString(specModelMap, "type")
-	modelDescription, err := fieldAsString(specModelMap, "description")
-	internalFields, err := internalFields(specModelMap, contract)
+func internalModel(specModel map[string]any, modelName string) (*InternalModel, error) {
+	modelType, err := fieldAsString(specModel, "type")
+	modelDescription, err := fieldAsString(specModel, "description")
+	internalFields, err := internalFields(specModel)
 
 	if err != nil {
 		return nil, err
@@ -628,18 +626,18 @@ func internalModel(specModelMap map[string]any, modelName string, contract DataC
 	}, nil
 }
 
-func internalFields(specModelMap map[string]any, contract DataContract) ([]InternalField, error) {
+func internalFields(specModelMap map[string]any) ([]InternalField, error) {
 	var internalFields []InternalField
 
 	fields := specModelMap["fields"]
 	if fields != nil {
-		fieldsMap, err := fieldAsMapWithReferenceResolution("", fields, contract, 0) // todo
+		fieldsMap, err := enforceMap(fields)
 		if err != nil {
 			return nil, err
 		}
 
 		for fieldName, specField := range fieldsMap {
-			fieldMap, err := fieldAsMapWithReferenceResolution(fieldName, specField, contract, 0)
+			fieldMap, err := enforceMap(specField)
 			if err != nil {
 				return nil, err
 			}
@@ -670,65 +668,12 @@ func internalField(fieldMap map[string]any, fieldName string) (*InternalField, e
 	}, nil
 }
 
-func fieldAsMapWithReferenceResolution(fieldName string, field any, contract DataContract, referenceCount int) (map[string]any, error) {
+func enforceMap(field any) (map[string]any, error) {
 	if anyMap, isMap := field.(map[string]any); !isMap {
 		return nil, fmt.Errorf("field is not a map")
-	} else if reference, isReference := anyMap["$ref"].(string); isReference {
-		return resolveReferencedMap(fieldName, reference, contract, referenceCount)
 	} else {
 		return anyMap, nil
 	}
-}
-
-// todo merge this into GetValue / refactor Resolve Reference
-func resolveReferencedMap(fieldName, reference string, contract DataContract, referenceCount int) (map[string]any, error) {
-	if referenceCount >= 50 {
-		return nil, errors.New("reference maximum reached, seems like references are circular")
-	}
-
-	if strings.HasPrefix(reference, "#") {
-		localReferencePath := strings.Split(reference, "/")[1:]
-		resolved, err := GetValue(contract, localReferencePath)
-		if err != nil {
-			return nil, err
-		}
-
-		return fieldAsMapWithReferenceResolution(fieldName, resolved, contract, referenceCount+1)
-	} else if IsURI(reference) {
-		resolved := map[string]any{}
-
-		response, err := http.Get(reference)
-		// response.StatusCode todo: check whole project after refactoring!
-		if err != nil {
-			return nil, err
-		}
-
-		defer response.Body.Close()
-
-		bytes, err := io.ReadAll(response.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		yaml.Unmarshal(bytes, resolved)
-
-		if r, ok := resolved[fieldName].(map[string]any); ok {
-			resolved = r
-		}
-
-		return fieldAsMapWithReferenceResolution(fieldName, resolved, contract, referenceCount+1)
-	} else {
-		resolved := map[string]any{}
-		bytes, _ := os.ReadFile(reference)
-		yaml.Unmarshal(bytes, resolved)
-
-		if r, ok := resolved[fieldName].(map[string]any); ok {
-			resolved = r
-		}
-
-		return fieldAsMapWithReferenceResolution(fieldName, resolved, contract, referenceCount+1)
-	}
-
 }
 
 func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
