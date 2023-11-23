@@ -5,8 +5,18 @@ import (
 	"log"
 )
 
-func Diff(dataContractLocation string, stableDataContractLocation string, pathToType []string, pathToSpecification []string) error {
-	differences, err := GetDifferences(dataContractLocation, stableDataContractLocation, pathToType, pathToSpecification)
+func Diff(
+	dataContractLocation string,
+	stableDataContractLocation string,
+	pathToModels, pathToType, pathToSpecification []string,
+) error {
+	differences, err := GetDifferences(
+		dataContractLocation,
+		stableDataContractLocation,
+		pathToModels,
+		pathToType,
+		pathToSpecification,
+	)
 	if err != nil {
 		return err
 	}
@@ -19,6 +29,7 @@ func Diff(dataContractLocation string, stableDataContractLocation string, pathTo
 func GetDifferences(
 	dataContractLocation string,
 	stableDataContractLocation string,
+	pathToModels []string,
 	pathToType []string,
 	pathToSpecification []string,
 ) ([]ModelDifference, error) {
@@ -31,9 +42,6 @@ func GetDifferences(
 	if err != nil {
 		return nil, fmt.Errorf("failed getting stable data contract: %w", err)
 	}
-
-	// todo path
-	pathToModels := []string{"models"}
 
 	stableDataset, err := getModelSpecification(stableDataContract, pathToModels, pathToType, pathToSpecification)
 	if err != nil {

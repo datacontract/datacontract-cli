@@ -6,6 +6,7 @@ func TestDiff(t *testing.T) {
 	type args struct {
 		dataContractLocation       string
 		stableDataContractLocation string
+		pathToModels               []string
 		pathToType                 []string
 		pathToSpecification        []string
 	}
@@ -15,6 +16,7 @@ func TestDiff(t *testing.T) {
 			args: args{
 				dataContractLocation:       "test_resources/diff/datacontract_no_model.yaml",
 				stableDataContractLocation: "test_resources/diff/datacontract_no_model.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -27,6 +29,7 @@ func TestDiff(t *testing.T) {
 			args: args{
 				dataContractLocation:       "test_resources/diff/breaking_datacontract.yaml",
 				stableDataContractLocation: "test_resources/diff/datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -55,6 +58,7 @@ InternalField:        my_column_2
 			args: args{
 				dataContractLocation:       "test_resources/diff/not_breaking_datacontract.yaml",
 				stableDataContractLocation: "test_resources/diff/datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -75,6 +79,7 @@ InternalField:        my_column_2
 			args: args{
 				dataContractLocation:       "test_resources/diff/two_fields_datacontract.yaml",
 				stableDataContractLocation: "test_resources/diff/two_fields_stable_datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -95,6 +100,7 @@ InternalField:        my_column
 			args: args{
 				dataContractLocation:       "test_resources/diff/dbt_breaking_datacontract.yaml",
 				stableDataContractLocation: "test_resources/diff/dbt_datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -123,6 +129,7 @@ InternalField:        my_column_2
 			args: args{
 				dataContractLocation:       "test_resources/diff/dbt_not_breaking_datacontract.yaml",
 				stableDataContractLocation: "test_resources/diff/dbt_datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -143,6 +150,7 @@ InternalField:        my_column_2
 			args: args{
 				dataContractLocation:       "test_resources/diff/dbt_two_fields_datacontract.yaml",
 				stableDataContractLocation: "test_resources/diff/dbt_two_fields_stable_datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -163,6 +171,7 @@ InternalField:        my_column
 			args: args{
 				dataContractLocation:       "test_resources/diff/datacontract.yaml",
 				stableDataContractLocation: "test_resources/diff/dbt_datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -179,7 +188,13 @@ Level:        dataset
 	}
 	for _, tt := range tests {
 		RunLogOutputTest(t, tt, "Diff", func() error {
-			return Diff(tt.args.dataContractLocation, tt.args.stableDataContractLocation, tt.args.pathToType, tt.args.pathToSpecification)
+			return Diff(
+				tt.args.dataContractLocation,
+				tt.args.stableDataContractLocation,
+				tt.args.pathToModels,
+				tt.args.pathToType,
+				tt.args.pathToSpecification,
+			)
 		})
 	}
 }

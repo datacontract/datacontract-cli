@@ -5,10 +5,15 @@ import "fmt"
 func Breaking(
 	dataContractLocation string,
 	stableDataContractLocation string,
-	pathToType []string,
-	pathToSpecification []string,
+	pathToModels, pathToType, pathToSpecification []string,
 ) error {
-	all, err := GetDifferences(dataContractLocation, stableDataContractLocation, pathToType, pathToSpecification)
+	all, err := GetDifferences(
+		dataContractLocation,
+		stableDataContractLocation,
+		pathToModels,
+		pathToType,
+		pathToSpecification,
+	)
 	if err != nil {
 		return err
 	}

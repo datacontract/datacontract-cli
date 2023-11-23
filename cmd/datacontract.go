@@ -22,16 +22,22 @@ func main() {
 		Usage: "location of the data contract, path or url (except init)",
 	}
 
+	modelsPathFlag := &cli.StringFlag{
+		Name:  "models-path",
+		Value: "models",
+		Usage: "definition of a custom path to the schema specification in your data contract",
+	}
+
 	schemaTypePathFlag := &cli.StringFlag{
 		Name:  "schema-type-path",
 		Value: "schema.type",
-		Usage: "definition of a custom path to the schema type in your data contract",
+		Usage: "DEPRECATED - definition of a custom path to the schema type in your data contract",
 	}
 
 	schemaSpecificationPathFlag := &cli.StringFlag{
 		Name:  "schema-specification-path",
 		Value: "schema.specification",
-		Usage: "definition of a custom path to the schema specification in your data contract",
+		Usage: "DEPRECATED - definition of a custom path to the schema specification in your data contract",
 	}
 
 	withFlag := &cli.StringFlag{
@@ -176,33 +182,37 @@ func main() {
 				},
 			}, {
 				Name:  "diff",
-				Usage: "(dbt specification only) - show differences of your local and a remote data contract",
+				Usage: "show differences of your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					withFlag,
+					modelsPathFlag,
 					schemaTypePathFlag,
 					schemaSpecificationPathFlag,
 				},
 				Action: func(ctx *cli.Context) error {
+					pathToModels := parsePath(ctx, "models-path")
 					pathToType := parsePath(ctx, "schema-type-path")
 					pathToSpecification := parsePath(ctx, "schema-specification-path")
 
-					return datacontract.Diff(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
+					return datacontract.Diff(ctx.String("file"), ctx.String("with"), pathToModels, pathToType, pathToSpecification)
 				},
 			}, {
 				Name:  "breaking",
-				Usage: "(dbt specification only) - detect breaking changes between your local and a remote data contract",
+				Usage: "detect breaking changes between your local and a remote data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					withFlag,
+					modelsPathFlag,
 					schemaTypePathFlag,
 					schemaSpecificationPathFlag,
 				},
 				Action: func(ctx *cli.Context) error {
+					pathToModels := parsePath(ctx, "models-path")
 					pathToType := parsePath(ctx, "schema-type-path")
 					pathToSpecification := parsePath(ctx, "schema-specification-path")
 
-					return datacontract.Breaking(ctx.String("file"), ctx.String("with"), pathToType, pathToSpecification)
+					return datacontract.Breaking(ctx.String("file"), ctx.String("with"), pathToModels, pathToType, pathToSpecification)
 				},
 			}, {
 				Name:  "inline",

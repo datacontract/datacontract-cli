@@ -8,6 +8,7 @@ func TestBreaking(t *testing.T) {
 	type args struct {
 		dataContractLocation       string
 		stableDataContractLocation string
+		pathToModels               []string
 		pathToType                 []string
 		pathToSpecification        []string
 	}
@@ -17,6 +18,7 @@ func TestBreaking(t *testing.T) {
 			args: args{
 				dataContractLocation:       "test_resources/breaking/breaking_datacontract.yaml",
 				stableDataContractLocation: "test_resources/breaking/datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -37,6 +39,7 @@ InternalField:        my_column
 			args: args{
 				dataContractLocation:       "test_resources/breaking/not_breaking_datacontract.yaml",
 				stableDataContractLocation: "test_resources/breaking/datacontract.yaml",
+				pathToModels:               []string{"models"},
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -47,7 +50,13 @@ InternalField:        my_column
 	}
 	for _, tt := range tests {
 		RunLogOutputTest(t, tt, "Breaking", func() error {
-			return Breaking(tt.args.dataContractLocation, tt.args.stableDataContractLocation, tt.args.pathToType, tt.args.pathToSpecification)
+			return Breaking(
+				tt.args.dataContractLocation,
+				tt.args.stableDataContractLocation,
+				tt.args.pathToModels,
+				tt.args.pathToType,
+				tt.args.pathToSpecification,
+			)
 		})
 	}
 }
