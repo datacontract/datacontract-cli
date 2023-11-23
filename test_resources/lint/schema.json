@@ -5,6 +5,7 @@
     "dataContractSpecification": {
       "type": "string",
       "enum": [
+        "0.9.1",
         "0.9.0"
       ],
       "description": "Specifies the Data Contract Specification being used."
@@ -31,14 +32,6 @@
         "owner": {
           "type": "string",
           "description": "The owner or team responsible for managing the data contract and providing the data."
-        },
-        "dataProduct": {
-          "type": "string",
-          "description": "The data product that contains the output port providing the data."
-        },
-        "outputPort": {
-          "type": "string",
-          "description": "The output port that implements the data contract."
         },
         "contact": {
           "type": "object",
@@ -229,6 +222,7 @@
     },
     "terms": {
       "type": "object",
+      "description": "The terms and conditions of the data contract.",
       "properties": {
         "usage": {
           "type": "string",
@@ -246,14 +240,81 @@
           "type": "string",
           "description": "The period of time that must be given by either party to terminate or modify a data usage agreement. Uses ISO-8601 period format, e.g., 'P3M' for a period of three months."
         }
+      }
+    },
+    "models": {
+      "description": "Specifies the logical data model. Use the models name (e.g., the table name) as the key.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-zA-Z0-9_-]+$"
       },
-      "required": [
-        "usage",
-        "limitations",
-        "billing",
-        "noticePeriod"
-      ],
-      "description": "The terms and conditions of the data contract."
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of the model. Examples: table, object. Default: table.",
+            "type": "string",
+            "default": "table"
+          },
+          "fields": {
+            "description": "Specifies a field in the data model. Use the field name (e.g., the column name) as the key.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "description": "A reference URI to a definition in the specification, internally or externally. Properties will be inherited from the definition."
+                },
+                "type": {
+                  "type": "string",
+                  "description": "The logical data type of the field.",
+                  "enum": [
+                    "number", "decimal", "numeric",
+                    "int", "integer",
+                    "long", "bigint",
+                    "float",
+                    "double",
+                    "string", "text", "varchar",
+                    "boolean",
+                    "timestamp", "timestamp_tz",
+                    "timestamp_ntz",
+                    "date",
+                    "array",
+                    "object", "record", "struct",
+                    "bytes",
+                    "null"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "description": "An optional string describing the semantic of the data in this field."
+                },
+                "pii": {
+                  "type": "boolean",
+                  "description": "An indication, if this field contains Personal Identifiable Information (PII)."
+                },
+                "classification": {
+                  "type": "string",
+                  "description": "The data class defining the sensitivity level for this field, according to the organization's classification scheme.",
+                  "examples": ["sensitive", "restricted", "internal", "public"]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Custom metadata to provide additional context."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "schema": {
       "type": "object",
@@ -320,7 +381,6 @@
         },
         "required": [
           "type",
-          "model",
           "data"
         ]
       },
