@@ -15,8 +15,8 @@ func TestBreaking(t *testing.T) {
 		{
 			name: "breaking",
 			args: args{
-				dataContractLocation:       "test_resources/breaking/dbt_breaking_datacontract.yaml",
-				stableDataContractLocation: "test_resources/breaking/dbt_datacontract.yaml",
+				dataContractLocation:       "test_resources/breaking/breaking_datacontract.yaml",
+				stableDataContractLocation: "test_resources/breaking/datacontract.yaml",
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
@@ -35,8 +35,8 @@ InternalField:        my_column
 		{
 			name: "not-breaking",
 			args: args{
-				dataContractLocation:       "test_resources/breaking/dbt_not_breaking_datacontract.yaml",
-				stableDataContractLocation: "test_resources/breaking/dbt_datacontract.yaml",
+				dataContractLocation:       "test_resources/breaking/not_breaking_datacontract.yaml",
+				stableDataContractLocation: "test_resources/breaking/datacontract.yaml",
 				pathToType:                 []string{"schema", "type"},
 				pathToSpecification:        []string{"schema", "specification"},
 			},
