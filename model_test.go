@@ -346,7 +346,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 	}
 
 	expected := InternalModelSpecification{
-		Type: "data-contract-specification",
+		Type: InternalModelSpecificationType,
 		Models: []InternalModel{
 			{
 				Name:        modelName,
@@ -545,7 +545,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 	}
 }
 
-func TestInsertSchemaAsModel(t *testing.T) {
+func TestInsertModel(t *testing.T) {
 	type args struct {
 		dataContractLocation string
 		schema               []byte
@@ -553,9 +553,26 @@ func TestInsertSchemaAsModel(t *testing.T) {
 	}
 	tests := []FileWriteTest[args]{
 		{
+			name: InternalModelSpecificationType,
+			args: args{
+				dataContractLocation: "test_resources/model/InsertModel/datacontract.yaml",
+				schemaType:           InternalModelSpecificationType,
+				schema: []byte(`my_table:
+  description: contains data
+  fields:
+    my_column:
+      description: contains values
+      type: text
+  type: table
+`),
+			},
+			wantErr:              false,
+			expectedFileLocation: "test_resources/model/InsertModel/datacontract_expected.yaml",
+		},
+		{
 			name: "dbt",
 			args: args{
-				dataContractLocation: "test_resources/model/InsertSchemaAsModel/datacontract.yaml",
+				dataContractLocation: "test_resources/model/InsertModel/datacontract.yaml",
 				schemaType:           "dbt",
 				schema: []byte(`version: 2
 models:
@@ -570,12 +587,12 @@ models:
 `),
 			},
 			wantErr:              false,
-			expectedFileLocation: "test_resources/model/InsertSchemaAsModel/datacontract_expected.yaml",
+			expectedFileLocation: "test_resources/model/InsertModel/datacontract_expected.yaml",
 		},
 	}
 	for _, tt := range tests {
-		RunFileWriteTest(t, tt, "InsertSchemaAsModel", tt.args.dataContractLocation, func(tempFileName string) error {
-			return InsertSchemaAsModel(tempFileName, tt.args.schema, tt.args.schemaType)
+		RunFileWriteTest(t, tt, "InsertModel", tt.args.dataContractLocation, func(tempFileName string) error {
+			return InsertModel(tempFileName, tt.args.schema, tt.args.schemaType)
 		})
 	}
 }

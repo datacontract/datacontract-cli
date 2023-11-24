@@ -2,6 +2,7 @@ package datacontract
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"log"
 	"os"
 )
@@ -45,6 +46,8 @@ type ModelDifference struct {
 	FieldName   *string
 	Description string
 }
+
+const InternalModelSpecificationType = "data-contract-specification"
 
 type ModelDifferenceType int
 
@@ -615,7 +618,7 @@ func internalModelSpecification(modelsMap map[string]any) (*InternalModelSpecifi
 		internalModels = append(internalModels, *model)
 	}
 
-	return &InternalModelSpecification{Type: "data-contract-specification", Models: internalModels}, nil
+	return &InternalModelSpecification{Type: InternalModelSpecificationType, Models: internalModels}, nil
 }
 
 func internalModel(specModel map[string]any, modelName string) (*InternalModel, error) {
@@ -699,13 +702,24 @@ func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
 	}
 }
 
-func InsertSchemaAsModel(dataContractLocation string, schema []byte, schemaType string) error {
+func InsertModel(dataContractLocation string, model []byte, modelType string) error {
 	contract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return err
 	}
 
-	contract["models"] = ParseSchema(schemaType, schema).asMapForDataContract()
+	var models map[string]any
+
+	if modelType == InternalModelSpecificationType {
+		models, err = parseModels(model)
+		if err != nil {
+			return err
+		}
+	} else {
+		models = ParseSchema(modelType, model).asMapForDataContract()
+	}
+
+	contract["models"] = models
 
 	result, err := ToYaml(contract)
 	if err != nil {
@@ -718,6 +732,18 @@ func InsertSchemaAsModel(dataContractLocation string, schema []byte, schemaType 
 	}
 
 	return nil
+}
+
+func parseModels(model []byte) (map[string]any, error) {
+	modelsFromInput := map[string]any{}
+	yaml.Unmarshal(model, modelsFromInput)
+
+	// convert to spec model and back to map, to clean / validate the input
+	specification, err := internalModelSpecification(modelsFromInput)
+	if err != nil {
+		return nil, err
+	}
+	return specification.asMapForDataContract(), nil
 }
 
 func (specification InternalModelSpecification) asMapForDataContract() map[string]any {

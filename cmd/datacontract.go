@@ -126,7 +126,7 @@ func main() {
 					modelsPathFlag,
 					&cli.StringFlag{
 						Name:  "type",
-						Value: "data-contract-specification",
+						Value: datacontract.InternalModelSpecificationType,
 						Usage: "define the type of your model for input or output",
 					},
 				},
@@ -137,10 +137,10 @@ func main() {
 						return err
 					}
 
-					// todo make it work with spec model, use models path flag
+					// todo use models path flag
 
 					if stdin != nil {
-						datacontract.InsertSchemaAsModel(ctx.String("file"), stdin, ctx.String("type"))
+						datacontract.InsertModel(ctx.String("file"), stdin, ctx.String("type"))
 					}
 
 					return nil
