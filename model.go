@@ -702,7 +702,7 @@ func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
 	}
 }
 
-func InsertModel(dataContractLocation string, model []byte, modelType string) error {
+func InsertModel(dataContractLocation string, model []byte, modelType string, pathToModels []string) error {
 	contract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return err
@@ -719,7 +719,7 @@ func InsertModel(dataContractLocation string, model []byte, modelType string) er
 		models = ParseSchema(modelType, model).asMapForDataContract()
 	}
 
-	contract["models"] = models
+	SetValue(contract, pathToModels, models)
 
 	result, err := ToYaml(contract)
 	if err != nil {
@@ -790,4 +790,40 @@ func (field InternalField) asMapForDataContract() map[string]any {
 	}
 
 	return fieldAsMap
+}
+
+func PrintModel(dataContractLocation string, modelType string, pathToModels []string) error {
+	contract, err := GetDataContract(dataContractLocation)
+	if err != nil {
+		return err
+	}
+
+	var output []byte
+
+	if modelType == InternalModelSpecificationType {
+
+		models, err := GetValue(contract, pathToModels)
+		if err != nil {
+			return err
+		}
+
+		output, err = yaml.Marshal(models.(map[string]any))
+		if err != nil {
+			return err
+		}
+	} else {
+		specification, err := GetModelsFromSpecification(contract, pathToModels)
+		if err != nil {
+			return err
+		}
+
+		output, err = CreateSchema(modelType, *specification)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println(string(output))
+
+	return nil
 }

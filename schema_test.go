@@ -396,3 +396,82 @@ func fieldConstraintsAreEqual(constraints, other []InternalFieldConstraint) bool
 
 	return true
 }
+
+func TestCreateSchema(t *testing.T) {
+	modelType := "table"
+	modelDescription := "contains fields"
+	fieldType := "string"
+	fieldDescription := "contains values"
+
+	type args struct {
+		schemaType    string
+		specification InternalModelSpecification
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "dbt",
+			args: args{
+				schemaType: "dbt",
+				specification: InternalModelSpecification{
+					Type: "dbt",
+					Models: []InternalModel{{
+						Name:        "my_model",
+						Type:        &modelType,
+						Description: &modelDescription,
+						Fields: []InternalField{{
+							Name:        "my_field",
+							Type:        &fieldType,
+							Description: &fieldDescription,
+							Required:    true,
+							Unique:      true,
+							AdditionalConstraints: []InternalFieldConstraint{{
+								Type:       "check",
+								Expression: "1 == 1",
+							}},
+							Fields: nil,
+						}},
+					}},
+				},
+			},
+			wantErr: false,
+			want: []byte(`models:
+    - name: my_model
+      description: contains fields
+      config:
+        materialized: table
+      constraints: []
+      columns:
+        - name: my_field
+          description: contains values
+          data_type: contains values
+          constraints:
+            - type: not_null
+              expression: ""
+              columns: []
+            - type: unique
+              expression: ""
+              columns: []
+            - type: check
+              expression: 1 == 1
+              columns: []
+`),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CreateSchema(tt.args.schemaType, tt.args.specification)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateSchema() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CreateSchema() got = %v, want %v", string(got), string(tt.want))
+			}
+		})
+	}
+}

@@ -550,6 +550,7 @@ func TestInsertModel(t *testing.T) {
 		dataContractLocation string
 		schema               []byte
 		schemaType           string
+		pathToModels         []string
 	}
 	tests := []FileWriteTest[args]{
 		{
@@ -565,6 +566,7 @@ func TestInsertModel(t *testing.T) {
       type: text
   type: table
 `),
+				pathToModels: []string{"models"},
 			},
 			wantErr:              false,
 			expectedFileLocation: "test_resources/model/InsertModel/datacontract_expected.yaml",
@@ -585,6 +587,7 @@ models:
         data_type: text
         description: "contains values"
 `),
+				pathToModels: []string{"models"},
 			},
 			wantErr:              false,
 			expectedFileLocation: "test_resources/model/InsertModel/datacontract_expected.yaml",
@@ -592,7 +595,7 @@ models:
 	}
 	for _, tt := range tests {
 		RunFileWriteTest(t, tt, "InsertModel", tt.args.dataContractLocation, func(tempFileName string) error {
-			return InsertModel(tempFileName, tt.args.schema, tt.args.schemaType)
+			return InsertModel(tempFileName, tt.args.schema, tt.args.schemaType, tt.args.pathToModels)
 		})
 	}
 }

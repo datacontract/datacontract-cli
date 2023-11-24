@@ -127,23 +127,23 @@ func main() {
 					&cli.StringFlag{
 						Name:  "type",
 						Value: datacontract.InternalModelSpecificationType,
-						Usage: "define the type of your model for input or output",
+						Usage: "type of the model for input or output",
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					stdin, err := readStdin()
+					pathToModels := parsePath(ctx, "models-path")
 
+					// parse and insert model if something is in stdin
+					stdin, err := readStdin()
 					if err != nil {
 						return err
 					}
-
-					// todo use models path flag
-
 					if stdin != nil {
-						datacontract.InsertModel(ctx.String("file"), stdin, ctx.String("type"))
+						return datacontract.InsertModel(ctx.String("file"), stdin, ctx.String("type"), pathToModels)
 					}
 
-					return nil
+					// print model
+					return datacontract.PrintModel(ctx.String("file"), ctx.String("type"), pathToModels)
 				},
 			},
 			{

@@ -222,3 +222,55 @@ func TestGetDataContract(t *testing.T) {
 		})
 	}
 }
+
+func TestSetValue(t *testing.T) {
+	type args struct {
+		contract DataContract
+		path     []string
+		value    any
+	}
+	tests := []struct {
+		name string
+		args args
+		want any
+	}{
+		{
+			name: "sets string value",
+			args: args{
+				contract: DataContract{"foo": map[string]any{"bar": "baz"}},
+				path:     []string{"foo", "bar"},
+				value:    "bazi",
+			},
+			want: "bazi",
+		},
+		{
+			name: "sets object value",
+			args: args{
+				contract: DataContract{"foo": map[string]any{"bar": "baz"}},
+				path:     []string{"foo", "bar"},
+				value:    map[string]any{"hi": "ho"},
+			},
+			want: map[string]any{"hi": "ho"},
+		},
+		{
+			name: "sets value if path does not exist yet",
+			args: args{
+				contract: DataContract{},
+				path:     []string{"foo", "bar"},
+				value:    "bazi",
+			},
+			want: "bazi",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SetValue(tt.args.contract, tt.args.path, tt.args.value)
+
+			got, _ := GetValue(tt.args.contract, tt.args.path)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SetDataContract() gotDataContractObject = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -49,23 +49,60 @@ func parseDataContract(data []byte) (dataContractObject DataContract, err error)
 	return dataContractObject, nil
 }
 
-func GetValue(contract DataContract, path []string) (value any, err error) {
-	return getValue(contract, contract, path)
+func SetValue(contract DataContract, path []string, value any) {
+	applyOnField(
+		contract,
+		path,
+		true,
+		func(object map[string]any, fieldName string) (any, error) {
+			object[fieldName] = value
+			return nil, nil
+		},
+	)
 }
 
-func getValue(contract DataContract, object map[string]any, path []string) (any, error) {
+func GetValue(contract DataContract, path []string) (value any, err error) {
+	return applyOnField(
+		contract,
+		path,
+		false,
+		func(object map[string]any, fieldName string) (any, error) {
+			field := object[fieldName]
+
+			if field == nil {
+				return nil, fmt.Errorf("no field named '%v'", fieldName)
+			}
+
+			if IsReference(field) {
+				field, err = ResolveReference(contract, field)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			return field, nil
+		},
+	)
+}
+
+func applyOnField(
+	object map[string]any,
+	path []string,
+	pave bool,
+	do func(object map[string]any, fieldName string) (any, error),
+) (any, error) {
 	if len(path) < 1 {
-		return contract, nil
+		return object, nil
 	}
 
 	fieldName := path[0]
 
-	if object[fieldName] == nil {
-		return nil, fmt.Errorf("no field named '%v'", fieldName)
+	if object[fieldName] == nil && pave {
+		object[fieldName] = map[string]any{}
 	}
 
 	if len(path) == 1 {
-		return resolveValue(contract, object[fieldName])
+		return do(object, fieldName)
 	}
 
 	next, ok := object[fieldName].(map[string]any)
@@ -73,16 +110,5 @@ func getValue(contract DataContract, object map[string]any, path []string) (any,
 		return nil, fmt.Errorf("can't follow path using field '%v', it's not a map", fieldName)
 	}
 
-	return getValue(contract, next, path[1:])
-}
-
-func resolveValue(contract DataContract, value any) (out any, err error) {
-	if IsReference(value) {
-		value, err = ResolveReference(contract, value)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return value, nil
+	return applyOnField(next, path[1:], pave, do)
 }

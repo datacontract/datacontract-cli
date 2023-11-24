@@ -85,7 +85,91 @@ func ParseSchema(schemaType string, specification []byte) InternalModelSpecifica
 	}
 }
 
+func CreateSchema(schemaType string, specification InternalModelSpecification) ([]byte, error) {
+	switch schemaType {
+	case "dbt":
+		return createDbtSpecification(specification)
+	default:
+		return nil, nil
+	}
+}
+
 // dbt
+
+func createDbtSpecification(specification InternalModelSpecification) ([]byte, error) {
+	dbtSpecification := dbtSpecification{}
+	dbtSpecification.Models = createDbtModels(specification)
+
+	return yaml.Marshal(dbtSpecification)
+}
+
+func createDbtModels(specification InternalModelSpecification) []dbtModel {
+	var dbtModels []dbtModel
+
+	for _, model := range specification.Models {
+		dbtModels = append(dbtModels, createDbtModel(model))
+	}
+
+	return dbtModels
+}
+
+func createDbtModel(model InternalModel) dbtModel {
+	dbtModel := dbtModel{
+		Name:    model.Name,
+		Columns: createDbtColumns(model.Fields),
+	}
+
+	if model.Description != nil {
+		dbtModel.Description = *model.Description
+	}
+
+	if model.Type != nil {
+		dbtModel.Config = dbtModelConfig{
+			Materialized: *model.Type,
+		}
+	}
+
+	return dbtModel
+}
+
+func createDbtColumns(internalModelFields []InternalField) []dbtColumn {
+	var columns []dbtColumn
+	for _, field := range internalModelFields {
+		columns = append(columns, createDbtColumn(field))
+	}
+	return columns
+}
+
+func createDbtColumn(field InternalField) dbtColumn {
+	dbtColumn := dbtColumn{
+		Name: field.Name,
+	}
+
+	if field.Description != nil {
+		dbtColumn.Description = *field.Description
+	}
+
+	if field.Type != nil {
+		dbtColumn.DataType = *field.Description
+	}
+
+	if field.Required {
+		dbtColumn.Constraints = append(dbtColumn.Constraints, dbtConstraint{Type: "not_null"})
+	}
+
+	if field.Unique {
+		dbtColumn.Constraints = append(dbtColumn.Constraints, dbtConstraint{Type: "unique"})
+	}
+
+	for _, constraint := range field.AdditionalConstraints {
+		dbtConstraint := dbtConstraint{
+			Type:       constraint.Type,
+			Expression: constraint.Expression,
+		}
+		dbtColumn.Constraints = append(dbtColumn.Constraints, dbtConstraint)
+	}
+	return dbtColumn
+}
 
 type dbtSpecification struct {
 	Models []dbtModel
