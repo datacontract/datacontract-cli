@@ -72,6 +72,8 @@ func QualityCheck(
 		return fmt.Errorf("quality checks failed: %w", err)
 	}
 
+	tempFile.Close()
+
 	return nil
 }
 

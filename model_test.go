@@ -464,7 +464,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 				contract: DataContract{
 					"models": map[string]any{
 						modelName: map[string]any{
-							"$ref": fmt.Sprintf("test_resources/model/model_definition.yaml#%v", modelName),
+							"$ref": fmt.Sprintf("test_resources/model/GetSpecModelSpecification/model_definition.yaml#%v", modelName),
 						},
 					},
 				},
@@ -483,7 +483,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 							"type":        modelType,
 							"fields": map[string]any{
 								fieldName: map[string]any{
-									"$ref": fmt.Sprintf("test_resources/model/field_definition.yaml#%v", fieldName),
+									"$ref": fmt.Sprintf("test_resources/model/GetSpecModelSpecification/field_definition.yaml#%v", fieldName),
 								},
 							},
 						},
@@ -500,7 +500,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 				contract: DataContract{
 					"models": map[string]any{
 						modelName: map[string]any{
-							"$ref": fmt.Sprintf("%v/model/model_definition.yaml#%v", TestResourcesServer.URL, modelName),
+							"$ref": fmt.Sprintf("%v/model/GetSpecModelSpecification/model_definition.yaml#%v", TestResourcesServer.URL, modelName),
 						},
 					},
 				},
@@ -519,7 +519,7 @@ func TestGetSpecModelSpecification(t *testing.T) {
 							"type":        modelType,
 							"fields": map[string]any{
 								fieldName: map[string]any{
-									"$ref": fmt.Sprintf("%v/model/field_definition.yaml#%v", TestResourcesServer.URL, fieldName),
+									"$ref": fmt.Sprintf("%v/model/GetSpecModelSpecification/field_definition.yaml#%v", TestResourcesServer.URL, fieldName),
 								},
 							},
 						},
@@ -541,6 +541,41 @@ func TestGetSpecModelSpecification(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetModelsFromSpecification() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestInsertSchemaAsModel(t *testing.T) {
+	type args struct {
+		dataContractLocation string
+		schema               []byte
+		schemaType           string
+	}
+	tests := []FileWriteTest[args]{
+		{
+			name: "dbt",
+			args: args{
+				dataContractLocation: "test_resources/model/InsertSchemaAsModel/datacontract.yaml",
+				schemaType:           "dbt",
+				schema: []byte(`version: 2
+models:
+  - name: my_table
+    description: "contains data"
+    config:
+      materialized: table
+    columns:
+      - name: my_column
+        data_type: text
+        description: "contains values"
+`),
+			},
+			wantErr:              false,
+			expectedFileLocation: "test_resources/model/InsertSchemaAsModel/datacontract_expected.yaml",
+		},
+	}
+	for _, tt := range tests {
+		RunFileWriteTest(t, tt, "InsertSchemaAsModel", tt.args.dataContractLocation, func(tempFileName string) error {
+			return InsertSchemaAsModel(tempFileName, tt.args.schema, tt.args.schemaType)
 		})
 	}
 }

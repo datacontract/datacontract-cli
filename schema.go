@@ -30,7 +30,7 @@ func GetModelSpecificationFromSchema(dataContract DataContract, pathToType []str
 	}
 
 	schemaSpecificationBytes := TakeStringOrMarshall(schemaSpecification)
-	parsedDataset := parseDataset(schemaType, schemaSpecificationBytes)
+	parsedDataset := ParseSchema(schemaType, schemaSpecificationBytes)
 
 	return &parsedDataset, err
 }
@@ -76,7 +76,7 @@ func getSpecification(contract DataContract, path []string) (specification any, 
 	return specification, nil
 }
 
-func parseDataset(schemaType string, specification []byte) InternalModelSpecification {
+func ParseSchema(schemaType string, specification []byte) InternalModelSpecification {
 	switch schemaType {
 	case "dbt":
 		return parseDbtDataset(specification)

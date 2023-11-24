@@ -94,7 +94,7 @@ models:
 	}
 }
 
-func TestParseDataset(t *testing.T) {
+func TestParseSchema(t *testing.T) {
 	modelName := "email_provider_usage"
 	modelType := "table"
 	modelDescription := "Description of the model"
@@ -294,10 +294,10 @@ models:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseDataset(tt.args.schemaType, tt.args.specification)
+			got := ParseSchema(tt.args.schemaType, tt.args.specification)
 
 			if !got.equals(tt.want) {
-				t.Errorf("parseDataset() got = %v, want %v", got, tt.want)
+				t.Errorf("ParseSchema() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -337,12 +337,12 @@ models:
 	}
 }
 
-func (dataset InternalModelSpecification) equals(other InternalModelSpecification) bool {
-	if len(dataset.Models) != len(other.Models) {
+func (specification InternalModelSpecification) equals(other InternalModelSpecification) bool {
+	if len(specification.Models) != len(other.Models) {
 		return false
 	}
 
-	for i, model := range dataset.Models {
+	for i, model := range specification.Models {
 		if !model.equals(other.Models[i]) {
 			return false
 		}

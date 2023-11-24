@@ -25,8 +25,8 @@ func StringPointerString(str *string) string {
 }
 
 func IsURI(reference string) bool {
-	_, err := url.ParseRequestURI(reference)
-	return err == nil
+	uri, err := url.ParseRequestURI(reference)
+	return err == nil && uri.Host != ""
 }
 
 func TakeStringOrMarshall(object any) []byte {

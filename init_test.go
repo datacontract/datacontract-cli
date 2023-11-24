@@ -41,7 +41,7 @@ func TestInit(t *testing.T) {
 		{
 			name: "overwrite-file",
 			args: args{
-				fileName:        CreateTmpFileName(),
+				fileName:        existingFile,
 				initTemplateUrl: templateUrl,
 				overwriteFile:   true,
 			},

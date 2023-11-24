@@ -3,6 +3,7 @@ package datacontract
 import (
 	"fmt"
 	"log"
+	"os"
 )
 
 // internal model
@@ -696,4 +697,71 @@ func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
 	} else {
 		return &result, nil
 	}
+}
+
+func InsertSchemaAsModel(dataContractLocation string, schema []byte, schemaType string) error {
+	contract, err := GetDataContract(dataContractLocation)
+	if err != nil {
+		return err
+	}
+
+	contract["models"] = ParseSchema(schemaType, schema).asMapForDataContract()
+
+	result, err := ToYaml(contract)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(dataContractLocation, result, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (specification InternalModelSpecification) asMapForDataContract() map[string]any {
+	models := map[string]any{}
+
+	for _, model := range specification.Models {
+		models[model.Name] = model.asMapForDataContract()
+	}
+
+	return models
+}
+
+func (model InternalModel) asMapForDataContract() map[string]any {
+	modelAsMAp := map[string]any{}
+
+	if model.Type != nil {
+		modelAsMAp["type"] = *model.Type
+	} else {
+		modelAsMAp["type"] = "table"
+	}
+
+	if model.Description != nil {
+		modelAsMAp["description"] = *model.Description
+	}
+
+	fields := map[string]any{}
+	for _, field := range model.Fields {
+		fields[field.Name] = field.asMapForDataContract()
+	}
+
+	modelAsMAp["fields"] = fields
+
+	return modelAsMAp
+}
+
+func (field InternalField) asMapForDataContract() map[string]any {
+	fieldAsMap := map[string]any{}
+
+	if field.Type != nil {
+		fieldAsMap["type"] = *field.Type
+	}
+	if field.Description != nil {
+		fieldAsMap["description"] = *field.Description
+	}
+
+	return fieldAsMap
 }

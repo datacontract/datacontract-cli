@@ -42,14 +42,14 @@ func RunLogOutputTest[T any](t *testing.T, test LogOutputTest[T], functionName s
 			t.Errorf("%v() error = %v, wantErr %v", functionName, err, test.wantErr)
 		}
 		if buf.String() != test.wantOutput {
-			t.Errorf(`Breaking() gotOutput
+			t.Errorf(`%v() gotOutput
 ---
 %v
 ---
 wantOutput
 ---
 %v
----`, buf.String(), test.wantOutput)
+---`, functionName, buf.String(), test.wantOutput)
 		}
 	})
 
@@ -61,4 +61,33 @@ type LogOutputTest[T any] struct {
 	args       T
 	wantErr    bool
 	wantOutput string
+}
+
+func RunFileWriteTest[T any](t *testing.T, test FileWriteTest[T], functionName string, originalFileLocation string, function func(tempFileName string) error) {
+	tmpFile, _ := os.CreateTemp("", functionName)
+	input, _ := os.ReadFile(originalFileLocation)
+	os.WriteFile(tmpFile.Name(), input, os.ModePerm)
+
+	t.Run(test.name, func(t *testing.T) {
+		if err := function(tmpFile.Name()); (err != nil) != test.wantErr {
+			t.Errorf("%v() error = %v, wantErr %v", functionName, err, test.wantErr)
+		}
+
+		generated, _ := os.ReadFile(tmpFile.Name())
+		expected, _ := os.ReadFile(test.expectedFileLocation)
+
+		if string(generated) != string(expected) {
+			t.Errorf("%v() gotFile = %v, wantFile %v", functionName, string(generated), string(expected))
+		}
+	})
+
+	tmpFile.Close()
+
+}
+
+type FileWriteTest[T any] struct {
+	name                 string
+	args                 T
+	wantErr              bool
+	expectedFileLocation string
 }

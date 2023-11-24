@@ -119,6 +119,34 @@ func main() {
 				},
 			},
 			{
+				Name:  "model",
+				Usage: "write / print model of the data contract",
+				Flags: []cli.Flag{
+					fileNameFlag,
+					modelsPathFlag,
+					&cli.StringFlag{
+						Name:  "type",
+						Value: "data-contract-specification",
+						Usage: "define the type of your model for input or output",
+					},
+				},
+				Action: func(ctx *cli.Context) error {
+					stdin, err := readStdin()
+
+					if err != nil {
+						return err
+					}
+
+					// todo make it work with spec model, use models path flag
+
+					if stdin != nil {
+						datacontract.InsertSchemaAsModel(ctx.String("file"), stdin, ctx.String("type"))
+					}
+
+					return nil
+				},
+			},
+			{
 				Name:  "quality",
 				Usage: "print quality checks of the data contract",
 				Flags: []cli.Flag{
@@ -229,6 +257,36 @@ func main() {
 		log.Printf("Exiting application with error: %v \n", err)
 		os.Exit(1)
 	}
+}
+
+func readStdin() ([]byte, error) {
+	// check if anything in stdin, if not return nil
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if stat.Size() == 0 {
+		return nil, err
+	}
+
+	// read stdin line by line
+	var buffer []byte
+	for {
+		lineBuffer := make([]byte, 1024)
+		size, err := os.Stdin.Read(lineBuffer)
+
+		if size == 0 {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		buffer = append(buffer, lineBuffer[:size]...)
+	}
+
+	return buffer, nil
 }
 
 func parsePath(ctx *cli.Context, path string) []string {
