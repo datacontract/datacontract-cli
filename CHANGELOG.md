@@ -2,7 +2,8 @@
 - Adapt Data Contract Specification in version 0.9.1
 - Use `models` section for `diff`/`breaking`
 - Add `model` command
-- Let inline print to STDOUT instead of overwriting datacontract file
+- Let `inline` print to STDOUT instead of overwriting datacontract file
+- Let `quality` write input from STDIN if present 
 
 # 0.4.0
 - Basic implementation of `test` command for Soda Core
