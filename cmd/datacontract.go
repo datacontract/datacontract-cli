@@ -112,7 +112,7 @@ func main() {
 				},
 			},
 			{
-				Name:  "schema",
+				Name:  "(DEPRECATED) schema",
 				Usage: "print schema of the data contract",
 				Flags: []cli.Flag{fileNameFlag, schemaSpecificationPathFlag},
 				Action: func(ctx *cli.Context) error {
