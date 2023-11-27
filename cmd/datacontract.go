@@ -249,7 +249,7 @@ func main() {
 				},
 			}, {
 				Name:  "inline",
-				Usage: "inline all references specified with '$ref' notation",
+				Usage: "inline all references specified with '$ref' notation and print the result to STDOUT",
 				Flags: []cli.Flag{fileNameFlag},
 				Action: func(ctx *cli.Context) error {
 					return datacontract.Inline(ctx.String("file"))

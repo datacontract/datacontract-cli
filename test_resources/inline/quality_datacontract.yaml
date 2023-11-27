@@ -4,5 +4,7 @@ info:
   title: My Data Contract
   version: 0.0.1
 quality:
+  specification: |
+    checks for my_table:
+      - duplicate_count(order_id) = 0
   type: SodaCL
-  specification: "$ref: test_resources/inline/quality_checks.yaml"

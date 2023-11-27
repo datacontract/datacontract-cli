@@ -1,7 +1,8 @@
 package datacontract
 
 import (
-	"os"
+	"log"
+	"strings"
 )
 
 func Inline(dataContractLocation string) error {
@@ -20,10 +21,7 @@ func Inline(dataContractLocation string) error {
 		return err
 	}
 
-	err = os.WriteFile(dataContractLocation, result, os.ModePerm)
-	if err != nil {
-		return err
-	}
+	log.Println(strings.TrimSpace(string(result)))
 
 	return nil
 }
