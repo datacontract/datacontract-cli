@@ -5,6 +5,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
+	"strings"
 )
 
 // internal model
@@ -801,7 +802,6 @@ func PrintModel(dataContractLocation string, modelType string, pathToModels []st
 	var output []byte
 
 	if modelType == InternalModelSpecificationType {
-
 		models, err := GetValue(contract, pathToModels)
 		if err != nil {
 			return err
@@ -823,7 +823,7 @@ func PrintModel(dataContractLocation string, modelType string, pathToModels []st
 		}
 	}
 
-	log.Println(string(output))
+	log.Println(strings.TrimSpace(string(output)))
 
 	return nil
 }

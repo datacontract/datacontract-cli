@@ -599,3 +599,56 @@ models:
 		})
 	}
 }
+
+func TestPrintModel(t *testing.T) {
+	type args struct {
+		dataContractLocation string
+		modelType            string
+		pathToModels         []string
+	}
+	tests := []LogOutputTest[args]{
+		{
+			name: InternalModelSpecificationType,
+			args: args{
+				dataContractLocation: "test_resources/model/PrintModel/datacontract.yaml",
+				modelType:            InternalModelSpecificationType,
+				pathToModels:         []string{"models"},
+			},
+			wantErr: false,
+			wantOutput: `my_table:
+    description: contains data
+    fields:
+        my_column:
+            description: contains values
+            type: text
+    type: table
+`,
+		},
+		{
+			name: "dbt",
+			args: args{
+				dataContractLocation: "test_resources/model/PrintModel/datacontract.yaml",
+				modelType:            "dbt",
+				pathToModels:         []string{"models"},
+			},
+			wantErr: false,
+			wantOutput: `models:
+    - name: my_table
+      description: contains data
+      config:
+        materialized: table
+      constraints: []
+      columns:
+        - name: my_column
+          description: contains values
+          data_type: contains values
+          constraints: []
+`,
+		},
+	}
+	for _, tt := range tests {
+		RunLogOutputTest(t, tt, "PrintModel", func() error {
+			return PrintModel(tt.args.dataContractLocation, tt.args.modelType, tt.args.pathToModels)
+		})
+	}
+}
