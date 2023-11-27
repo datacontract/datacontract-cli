@@ -303,40 +303,6 @@ models:
 	}
 }
 
-func TestPrintSchema(t *testing.T) {
-	type args struct {
-		dataContractLocation string
-		pathToSpecification  []string
-	}
-	tests := []LogOutputTest[args]{
-		{
-			name: "print",
-			args: args{
-				dataContractLocation: "test_resources/schema/datacontract.yaml",
-				pathToSpecification:  []string{"schema", "specification"},
-			},
-			wantErr: false,
-			wantOutput: `version: 2
-models:
-  - name: my_table
-    description: "contains data"
-    config:
-      materialized: table
-    columns:
-      - name: my_column
-        data_type: text
-        description: "contains values"
-
-`,
-		},
-	}
-	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "PrintSchema", func() error {
-			return PrintSchema(tt.args.dataContractLocation, tt.args.pathToSpecification)
-		})
-	}
-}
-
 func (specification InternalModelSpecification) equals(other InternalModelSpecification) bool {
 	if len(specification.Models) != len(other.Models) {
 		return false

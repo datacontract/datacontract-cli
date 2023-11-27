@@ -1,3 +1,8 @@
+# 0.5.1
+- Remove `schema` command
+- Fix documentation
+- Security update of x/sys
+
 # 0.5.0
 - Adapt Data Contract Specification in version 0.9.1
 - Use `models` section for `diff`/`breaking`

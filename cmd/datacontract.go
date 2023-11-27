@@ -61,7 +61,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "v0.5.0",
+		Version: "v0.5.1",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -81,15 +81,8 @@ func main() {
 						Value: false,
 						Usage: "replace the existing " + dataContractFileName,
 					},
-					&cli.BoolFlag{
-						Name:  "interactive",
-						Value: false,
-						Usage: "EXPERIMENTAL - prompt for required values",
-					},
 				},
 				Action: func(ctx *cli.Context) error {
-					boolOptionNotImplemented(ctx, "interactive")
-
 					return datacontract.Init(ctx.String("file"), ctx.String("from"), ctx.Bool("overwrite-file"))
 				},
 			},
@@ -105,19 +98,7 @@ func main() {
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					boolOptionNotImplemented(ctx, "lint-schema")
-					boolOptionNotImplemented(ctx, "lint-quality")
-
 					return datacontract.Lint(ctx.String("file"), ctx.String("schema"))
-				},
-			},
-			{
-				Name:  "(DEPRECATED) schema",
-				Usage: "print schema of the data contract",
-				Flags: []cli.Flag{fileNameFlag, schemaSpecificationPathFlag},
-				Action: func(ctx *cli.Context) error {
-					pathToSpecification := parsePath(ctx, "schema-specification-path")
-					return datacontract.PrintSchema(ctx.String("file"), pathToSpecification)
 				},
 			},
 			{
@@ -154,8 +135,9 @@ func main() {
 				},
 			},
 			{
-				Name: "quality",
-				Usage: "when data is found in STDIN the command will insert its content into the " +
+				Name:  "quality",
+				Usage: "import / export the data model of the data contract",
+				Description: "when data is found in STDIN the command will insert its content into the " +
 					"quality section of your data contract, otherwise it will print the quality " +
 					"specification",
 				Flags: []cli.Flag{
@@ -307,10 +289,4 @@ func readStdin() ([]byte, error) {
 
 func parsePath(ctx *cli.Context, path string) []string {
 	return strings.Split(ctx.String(path), ".")
-}
-
-func boolOptionNotImplemented(ctx *cli.Context, name string) {
-	if ctx.Bool(name) {
-		log.Printf("Option `%v` not implemented yet!\n", name)
-	}
 }

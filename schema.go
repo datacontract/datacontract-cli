@@ -3,24 +3,7 @@ package datacontract
 import (
 	"fmt"
 	"gopkg.in/yaml.v3"
-	"log"
 )
-
-func PrintSchema(dataContractLocation string, pathToSpecification []string) error {
-	dataContract, err := GetDataContract(dataContractLocation)
-	if err != nil {
-		return fmt.Errorf("failed reading data contract: %w", err)
-	}
-
-	specification, err := getSpecification(dataContract, pathToSpecification)
-	if err != nil {
-		return fmt.Errorf("can't get specification: %w", err)
-	}
-
-	log.Println(string(TakeStringOrMarshall(specification)))
-
-	return nil
-}
 
 func GetModelSpecificationFromSchema(dataContract DataContract, pathToType []string, pathToSpecification []string) (*InternalModelSpecification, error) {
 	schemaType, schemaSpecification, err := extractSchemaSpecification(dataContract, pathToType, pathToSpecification)
