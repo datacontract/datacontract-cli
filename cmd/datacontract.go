@@ -46,6 +46,18 @@ func main() {
 		Usage:    "location (url or path) of the stable version of the data contract",
 	}
 
+	qualityTypePathFlag := &cli.StringFlag{
+		Name:  "quality-type-path",
+		Value: "quality.type",
+		Usage: "definition of a custom path to the quality type in your data contract",
+	}
+
+	qualitySpecificationPathFlag := &cli.StringFlag{
+		Name:  "quality-specification-path",
+		Value: "quality.specification",
+		Usage: "definition of a custom path to the quality specification in your data contract",
+	}
+
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
@@ -121,7 +133,7 @@ func main() {
 			{
 				Name:  "model",
 				Usage: "import / export the data model of the data contract",
-				Description: "when data is found in STDIN the command will parse an insert its " +
+				Description: "when data is found in STDIN the command will parse and insert its " +
 					"content into the models section of your data contract, otherwise it will " +
 					"print your data model",
 				Flags: []cli.Flag{
@@ -152,17 +164,34 @@ func main() {
 				},
 			},
 			{
-				Name:  "quality",
-				Usage: "print quality checks of the data contract",
+				Name: "quality",
+				Usage: "when data is found in STDIN the command will insert its content into the " +
+					"quality section of your data contract, otherwise it will print the quality " +
+					"specification",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					&cli.StringFlag{
-						Name:  "quality-specification-path",
-						Value: "quality.specification",
-						Usage: "definition of a custom path to the quality specification in your data contract",
-					}},
+						Name:  "type",
+						Value: "custom",
+						Usage: "definition of a custom path to the quality type in your data contract",
+					},
+					qualitySpecificationPathFlag,
+					qualityTypePathFlag,
+				},
 				Action: func(ctx *cli.Context) error {
 					pathToSpecification := parsePath(ctx, "quality-specification-path")
+					pathToType := parsePath(ctx, "quality-type-path")
+
+					// parse and insert quality specification if something is in stdin
+					stdin, err := readStdin()
+					if err != nil {
+						return err
+					}
+					if stdin != nil {
+						return datacontract.InsertQuality(ctx.String("file"), stdin, ctx.String("type"), pathToSpecification, pathToType)
+					}
+
+					// print quality specification
 					return datacontract.PrintQuality(ctx.String("file"), pathToSpecification)
 				},
 			},
@@ -171,16 +200,8 @@ func main() {
 				Usage: "(soda core integration only) - run quality checks for the data contract",
 				Flags: []cli.Flag{
 					fileNameFlag,
-					&cli.StringFlag{
-						Name:  "quality-type-path",
-						Value: "quality.type",
-						Usage: "definition of a custom path to the quality type in your data contract",
-					},
-					&cli.StringFlag{
-						Name:  "quality-specification-path",
-						Value: "quality.specification",
-						Usage: "definition of a custom path to the quality specification in your data contract",
-					},
+					qualityTypePathFlag,
+					qualitySpecificationPathFlag,
 					&cli.StringFlag{
 						Name:  "soda-datasource",
 						Value: "default",

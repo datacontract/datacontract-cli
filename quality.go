@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func PrintQuality(dataContractLocation string, pathToQuality []string) error {
@@ -19,7 +20,35 @@ func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 		return fmt.Errorf("can't get specification: %w", err)
 	}
 
-	log.Println(string(qualitySpecification))
+	log.Println(strings.TrimSpace(string(qualitySpecification)))
+
+	return nil
+}
+
+func InsertQuality(
+	dataContractLocation string,
+	qualitySpecification []byte,
+	qualityType string,
+	pathToQuality []string,
+	pathToType []string,
+) error {
+	contract, err := GetDataContract(dataContractLocation)
+	if err != nil {
+		return err
+	}
+
+	SetValue(contract, pathToQuality, string(qualitySpecification))
+	SetValue(contract, pathToType, qualityType)
+
+	result, err := ToYaml(contract)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(dataContractLocation, result, os.ModePerm)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

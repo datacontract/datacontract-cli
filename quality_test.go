@@ -25,13 +25,43 @@ func TestPrintQuality(t *testing.T) {
 			wantErr: false,
 			wantOutput: `checks for my_table:
   - duplicate_count(order_id) = 0
-
 `,
 		},
 	}
 	for _, tt := range tests {
 		RunLogOutputTest(t, tt, "PrintQuality", func() error {
 			return PrintQuality(tt.args.dataContractLocation, tt.args.pathToQuality)
+		})
+	}
+}
+
+func TestInsertQuality(t *testing.T) {
+	type args struct {
+		dataContractLocation string
+		qualitySpecification []byte
+		qualityType          string
+		pathToQuality        []string
+		pathToType           []string
+	}
+	tests := []FileWriteTest[args]{
+		{
+			name: "insert",
+			args: args{
+				dataContractLocation: "test_resources/quality/InsertQuality/datacontract.yaml",
+				qualitySpecification: []byte(`checks for my_table:
+  - duplicate_count(order_id) = 0
+`),
+				qualityType:   "SodaCL",
+				pathToQuality: []string{"quality", "specification"},
+				pathToType:    []string{"quality", "type"},
+			},
+			wantErr:              false,
+			expectedFileLocation: "test_resources/quality/InsertQuality/datacontract_inserted.yaml",
+		},
+	}
+	for _, tt := range tests {
+		RunFileWriteTest(t, tt, "InsertQuality", tt.args.dataContractLocation, func(tempFileName string) error {
+			return InsertQuality(tempFileName, tt.args.qualitySpecification, tt.args.qualityType, tt.args.pathToQuality, tt.args.pathToType)
 		})
 	}
 }
@@ -248,7 +278,7 @@ func checkFileNameArgument(cmd *exec.Cmd) error {
 	if !strings.HasPrefix(fileName, expectedPrefix) {
 		return fmt.Errorf("unwanted quality checks filename argument: %v", fileName)
 	}
-	
+
 	return nil
 }
 
