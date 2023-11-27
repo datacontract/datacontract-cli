@@ -21,6 +21,12 @@ func TestInline(t *testing.T) {
 			wantErr:              false,
 			expectedFileLocation: "test_resources/inline/schema_datacontract_inlined.yaml",
 		},
+		{
+			name:                 "models",
+			args:                 args{dataContractLocation: "test_resources/inline/models_datacontract.yaml"},
+			wantErr:              false,
+			expectedFileLocation: "test_resources/inline/models_datacontract_inlined.yaml",
+		},
 	}
 	for _, tt := range tests {
 		RunFileWriteTest(t, tt, "Inline", tt.args.dataContractLocation, func(tempFileName string) error { return Inline(tempFileName) })
