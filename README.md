@@ -37,13 +37,22 @@ $ datacontract diff --with stable/datacontract.yaml
 # find breaking changes
 $ datacontract breaking --with stable/datacontract.yaml
 
-# print schema
-$ datacontract schema
+# print run quality checks defined in your data contract
+$ datacontract test
+
+# print model
+$ datacontract model
+
+# add model
+$ datacontract model --type=dbt < my_dbt_model.yaml
 
 # print quality definitions
 $ datacontract quality
 
-# inline referenced schema or quality specifications
+# write quality definitions
+$ datacontract quality --type=SodaCL < my_soda_definitions.yaml
+
+# print datacontract with inlined referenced
 $ datacontract inline
 ```
 
@@ -71,7 +80,7 @@ tar -xf datacontract.tar.gz
 
 | Placeholder | Description                                    |
 |-------------|------------------------------------------------|
-| VERSION     | datacontract CLI version (e.g. `v0.4.0`)       |
+| VERSION     | datacontract CLI version (e.g. `v0.5.0`)       |
 | OS          | your operating system (linux, windows, darwin) |
 | ARCH        | your processor architecture (amd64, arm64)     |
 
@@ -106,22 +115,23 @@ USAGE:
    datacontract [global options] command [command options] [arguments...]
 
 VERSION:
-   v0.4.0
+   v0.5.0
 
 AUTHOR:
    Stefan Negele <stefan.negele@innoq.com>
 
 COMMANDS:
-   init      create a new data contract
-   lint      linter for the data contract
-   schema    print schema of the data contract
-   quality   print quality checks of the data contract
-   test      (soda core integration only) - run quality checks for the data contract
-   open      save and open the data contract in Data Contract Studio
-   diff      (dbt specification only) - show differences of your local and a remote data contract
-   breaking  (dbt specification only) - detect breaking changes between your local and a remote data contract
-   inline    inline all references specified with '$ref' notation
-   help, h   Shows a list of commands or help for one command
+   init                 create a new data contract
+   lint                 linter for the data contract
+   (DEPRECATED) schema  print schema of the data contract
+   model                import / export the data model of the data contract
+   quality              when data is found in STDIN the command will insert its content into the quality section of your data contract, otherwise it will print the quality specification
+   test                 (soda core integration only) - run quality checks for the data contract
+   open                 save and open the data contract in Data Contract Studio
+   diff                 show differences of your local and a remote data contract
+   breaking             detect breaking changes between your local and a remote data contract
+   inline               inline all references specified with '$ref' notation and print the result to STDOUT
+   help, h              Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h     show help
@@ -195,7 +205,7 @@ OPTIONS:
 ```
 
 
-#### diff - (dbt specification only)
+#### diff
 ```
 NAME:
    datacontract diff - EXPERIMENTAL (dbt specification only) - show differences of your local and a remote data contract
@@ -211,7 +221,7 @@ OPTIONS:
    --help, -h                         show help
 ```
 
-#### breaking - (dbt specification only)
+#### breaking
 ```
 NAME:
    datacontract breaking - EXPERIMENTAL (dbt specification only) - detect breaking changes between your local and a remote data contract
