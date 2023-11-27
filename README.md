@@ -227,6 +227,28 @@ OPTIONS:
    --help, -h                         show help
 ```
 
+#### model
+
+```
+NAME:
+   datacontract model - import / export the data model of the data contract
+
+USAGE:
+   datacontract model [command options] [arguments...]
+
+DESCRIPTION:
+   when data is found in STDIN the command will parse an insert its content into the models section of your data contract, otherwise it will print your data model
+
+OPTIONS:
+   --file value         location of the data contract, path or url (except init) (default: "datacontract.yaml")
+   --models-path value  definition of a custom path to the schema specification in your data contract (default: "models")
+   --type value         type of the model for input or output, valid options:
+      - data-contract-specification
+      - dbt
+       (default: "data-contract-specification")
+   --help, -h  show help
+```
+
 #### schema
 ```
 NAME:

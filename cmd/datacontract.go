@@ -49,7 +49,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "v0.4.0",
+		Version: "v0.5.0-dev",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -120,14 +120,19 @@ func main() {
 			},
 			{
 				Name:  "model",
-				Usage: "write / print model of the data contract",
+				Usage: "import / export the data model of the data contract",
+				Description: "when data is found in STDIN the command will parse an insert its " +
+					"content into the models section of your data contract, otherwise it will " +
+					"print your data model",
 				Flags: []cli.Flag{
 					fileNameFlag,
 					modelsPathFlag,
 					&cli.StringFlag{
 						Name:  "type",
 						Value: datacontract.InternalModelSpecificationType,
-						Usage: "type of the model for input or output",
+						Usage: "type of the model for input or output, valid options:\n" +
+							"- " + datacontract.InternalModelSpecificationType + "\n" +
+							"- dbt \n",
 					},
 				},
 				Action: func(ctx *cli.Context) error {
