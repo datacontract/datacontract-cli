@@ -103,16 +103,6 @@ func main() {
 						Value: schemaUrl,
 						Usage: "url of Data Contract Specification json schema",
 					},
-					&cli.BoolFlag{
-						Name:  "lint-schema",
-						Value: false,
-						Usage: "EXPERIMENTAL - type specific linting of the schema object",
-					},
-					&cli.BoolFlag{
-						Name:  "lint-quality",
-						Value: false,
-						Usage: "EXPERIMENTAL - type specific validation of the quality object",
-					},
 				},
 				Action: func(ctx *cli.Context) error {
 					boolOptionNotImplemented(ctx, "lint-schema")
