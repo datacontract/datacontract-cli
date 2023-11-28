@@ -14,7 +14,7 @@ func Init(fileName string, initTemplateUrl string, overwriteFile bool) error {
 		return err
 	}
 
-	body, err := readInitTemplate(response, err)
+	body, err := readInitTemplate(response)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func writeFile(name string, body []byte, overwriteFile bool) error {
 	return nil
 }
 
-func readInitTemplate(response *http.Response, err error) ([]byte, error) {
+func readInitTemplate(response *http.Response) ([]byte, error) {
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)

@@ -237,9 +237,7 @@ func combineDbtConstraints(model dbtModel, column dbtColumn) (result []dbtConstr
 		}
 	}
 
-	for _, constraint := range column.Constraints {
-		result = append(result, constraint)
-	}
+	result = append(result, column.Constraints...)
 
 	return result
 }

@@ -77,11 +77,11 @@ func openDataContractInBrowser(contractUrl string) error {
 
 func postForm(formUrl string, formData url.Values) (*http.Response, error) {
 	response, err := http.PostForm(formUrl, formData)
-	defer response.Body.Close()
-
 	if err != nil {
 		return nil, fmt.Errorf("form post to %v failed: %w", formUrl, err)
 	}
+
+	defer response.Body.Close()
 
 	if !(response.StatusCode >= 200 && response.StatusCode < 300) {
 		return nil, fmt.Errorf("form post to %v failed: %v", formUrl, response.Status)
