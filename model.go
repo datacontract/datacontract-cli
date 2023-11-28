@@ -624,9 +624,16 @@ func internalModelSpecification(modelsMap map[string]any) (*InternalModelSpecifi
 
 func internalModel(specModel map[string]any, modelName string) (*InternalModel, error) {
 	modelType, err := fieldAsString(specModel, "type")
-	modelDescription, err := fieldAsString(specModel, "description")
-	internalFields, err := internalFields(specModel)
+	if err != nil {
+		return nil, err
+	}
 
+	modelDescription, err := fieldAsString(specModel, "description")
+	if err != nil {
+		return nil, err
+	}
+
+	internalFields, err := internalFields(specModel)
 	if err != nil {
 		return nil, err
 	}
@@ -669,6 +676,10 @@ func internalFields(specModelMap map[string]any) ([]InternalField, error) {
 
 func internalField(fieldMap map[string]any, fieldName string) (*InternalField, error) {
 	fieldType, err := fieldAsString(fieldMap, "type")
+	if err != nil {
+		return nil, err
+	}
+
 	fieldDescription, err := fieldAsString(fieldMap, "description")
 	if err != nil {
 		return nil, err

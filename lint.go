@@ -12,13 +12,23 @@ import (
 
 func Lint(dataContractLocation string, schemaUrl string) error {
 	schemaResponse, err := fetchSchema(schemaUrl)
+	if err != nil {
+		return err
+	}
+
 	schemaData, err := readSchema(schemaResponse)
+	if err != nil {
+		return err
+	}
+
 	schema, err := parseSchema(schemaData)
+	if err != nil {
+		return err
+	}
 
 	dataContract, err := GetDataContract(dataContractLocation)
-
 	if err != nil {
-		return fmt.Errorf("linting failed: %w", err)
+		return err
 	}
 
 	return lint(schema, dataContract)
@@ -43,7 +53,7 @@ func printValidationState(validationState *jsonschema.ValidationState) {
 	}
 
 	for i, keyError := range *validationState.Errs {
-		log.Println(fmt.Sprintf("%v) %v", i+1, keyError.Message))
+		log.Printf("%v) %v\n", i+1, keyError.Message)
 	}
 }
 

@@ -28,11 +28,12 @@ func getLocalDataContract(dataContractFileName string) (DataContract, error) {
 
 func getRemoteDataContract(url string) (DataContract, error) {
 	response, err := http.Get(url)
-	defer response.Body.Close()
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data contract to compare with: %v", response.Status)
 	}
+
+	defer response.Body.Close()
 
 	if contractData, err := io.ReadAll(response.Body); err != nil {
 		return nil, fmt.Errorf("failed to read data contract to compare with: %w", err)

@@ -260,6 +260,9 @@ func mockSodaCLI(wantedArguments []string) func(cmd *exec.Cmd) (res []byte, err 
 
 		for i, actualArg := range wantedArguments[0:] {
 			err = checkArgument(cmd, i, actualArg)
+			if err != nil {
+				return nil, err
+			}
 		}
 		err = checkFileNameArgument(cmd)
 

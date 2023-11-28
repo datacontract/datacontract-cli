@@ -137,11 +137,11 @@ func resolveFileLocally(path string) ([]byte, error) {
 
 func resolveFileFromRemote(url string) ([]byte, error) {
 	response, err := http.Get(url)
-	defer response.Body.Close()
-
 	if err != nil {
 		return nil, err
 	}
+
+	defer response.Body.Close()
 
 	return io.ReadAll(response.Body)
 }
