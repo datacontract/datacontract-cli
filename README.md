@@ -28,20 +28,11 @@ $ datacontract init
 # lint the data contract
 $ datacontract lint
 
-# open the data contract in Data Contract Studio
-$ datacontract open
-
 # find differences to another version of the data contract
 $ datacontract diff --with stable/datacontract.yaml
 
-# find breaking changes
+# fail pipeline on breaking changes
 $ datacontract breaking --with stable/datacontract.yaml
-
-# print run quality checks defined in your data contract
-$ datacontract test
-
-# print model
-$ datacontract model
 
 # export model as dbt
 $ datacontract model --type=dbt
@@ -49,14 +40,17 @@ $ datacontract model --type=dbt
 # import dbt as model
 $ datacontract model --type=dbt < my_dbt_model.yaml
 
+# print run quality checks defined in your data contract
+$ datacontract test
+
 # print quality definitions
 $ datacontract quality
 
 # write quality definitions
 $ datacontract quality --type=SodaCL < my_soda_definitions.yaml
 
-# print datacontract with inlined referenced
-$ datacontract inline
+# create standalone data contract by inlining reference data
+$ datacontract inline > datacontract.standalone.yaml
 ```
 
 ## Installation
