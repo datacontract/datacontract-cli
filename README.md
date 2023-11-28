@@ -43,7 +43,10 @@ $ datacontract test
 # print model
 $ datacontract model
 
-# add model
+# export model as dbt
+$ datacontract model --type=dbt
+
+# import dbt as model
 $ datacontract model --type=dbt < my_dbt_model.yaml
 
 # print quality definitions
