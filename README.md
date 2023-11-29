@@ -33,10 +33,10 @@ $ datacontract diff --with stable/datacontract.yaml
 $ datacontract breaking --with stable/datacontract.yaml
 
 # export model as dbt
-$ datacontract model --type=dbt
+$ datacontract model --format=dbt
 
 # import dbt as model
-$ datacontract model --type=dbt < my_dbt_model.yaml
+$ datacontract model --format=dbt < my_dbt_model.yaml
 
 # print run quality checks defined in your data contract
 $ datacontract test
@@ -240,12 +240,12 @@ USAGE:
    datacontract model [command options] [arguments...]
 
 DESCRIPTION:
-   when data is found in STDIN the command will parse an insert its content into the models section of your data contract, otherwise it will print your data model
+   when data is found in STDIN the command will parse and insert its content into the models section of your data contract, otherwise it will print your data model
 
 OPTIONS:
    --file value         location of the data contract, path or url (except init) (default: "datacontract.yaml")
    --models-path value  definition of a custom path to the schema specification in your data contract (default: "models")
-   --type value         type of the model for input or output, valid options:
+   --format value       format of the model for input or output, valid options:
       - data-contract-specification
       - dbt
        (default: "data-contract-specification")

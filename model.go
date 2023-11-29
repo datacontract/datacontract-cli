@@ -714,7 +714,7 @@ func fieldAsString(anyMap map[string]any, fieldName string) (*string, error) {
 	}
 }
 
-func InsertModel(dataContractLocation string, model []byte, modelType string, pathToModels []string) error {
+func InsertModel(dataContractLocation string, model []byte, modelFormat string, pathToModels []string) error {
 	contract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return err
@@ -722,13 +722,13 @@ func InsertModel(dataContractLocation string, model []byte, modelType string, pa
 
 	var models map[string]any
 
-	if modelType == InternalModelSpecificationType {
+	if modelFormat == InternalModelSpecificationType {
 		models, err = parseModels(model)
 		if err != nil {
 			return err
 		}
 	} else {
-		models = ParseSchema(modelType, model).asMapForDataContract()
+		models = ParseSchema(modelFormat, model).asMapForDataContract()
 	}
 
 	SetValue(contract, pathToModels, models)

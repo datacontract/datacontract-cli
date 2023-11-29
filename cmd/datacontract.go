@@ -111,9 +111,9 @@ func main() {
 					fileNameFlag,
 					modelsPathFlag,
 					&cli.StringFlag{
-						Name:  "type",
+						Name:  "format",
 						Value: datacontract.InternalModelSpecificationType,
-						Usage: "type of the model for input or output, valid options:\n" +
+						Usage: "format of the model for input or output, valid options:\n" +
 							"- " + datacontract.InternalModelSpecificationType + "\n" +
 							"- dbt \n",
 					},
@@ -127,7 +127,7 @@ func main() {
 						return err
 					}
 					if stdin != nil {
-						return datacontract.InsertModel(ctx.String("file"), stdin, ctx.String("type"), pathToModels)
+						return datacontract.InsertModel(ctx.String("file"), stdin, ctx.String("format"), pathToModels)
 					}
 
 					// print model
