@@ -1,11 +1,15 @@
 package datacontract
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
 
 func Breaking(
 	dataContractLocation string,
 	stableDataContractLocation string,
 	pathToModels, pathToType, pathToSpecification []string,
+	target io.Writer,
 ) error {
 	all, err := GetDifferences(
 		dataContractLocation,
@@ -20,7 +24,7 @@ func Breaking(
 
 	breaking := breakingDifferences(all)
 
-	PrintDifferences(breaking)
+	PrintDifferences(breaking, target)
 
 	if len(breaking) != 0 {
 		return fmt.Errorf("found breaking differences between the data contracts")

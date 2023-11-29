@@ -1,6 +1,7 @@
 package datacontract
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -49,13 +50,14 @@ InternalField:        my_column
 		},
 	}
 	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "Breaking", func() error {
+		RunLogOutputTest(t, tt, "Breaking", func(buffer *bytes.Buffer) error {
 			return Breaking(
 				tt.args.dataContractLocation,
 				tt.args.stableDataContractLocation,
 				tt.args.pathToModels,
 				tt.args.pathToType,
 				tt.args.pathToSpecification,
+				buffer,
 			)
 		})
 	}

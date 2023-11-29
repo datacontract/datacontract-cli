@@ -1,3 +1,6 @@
+# 0.5.2
+- Log to stdout
+
 # 0.5.1
 - Remove `schema` command
 - Fix documentation

@@ -1,6 +1,7 @@
 package datacontract
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -29,8 +30,8 @@ func TestPrintQuality(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "PrintQuality", func() error {
-			return PrintQuality(tt.args.dataContractLocation, tt.args.pathToQuality)
+		RunLogOutputTest(t, tt, "PrintQuality", func(buffer *bytes.Buffer) error {
+			return PrintQuality(tt.args.dataContractLocation, tt.args.pathToQuality, buffer)
 		})
 	}
 }
@@ -112,8 +113,8 @@ func TestQualityCheck_Soda_Output(t *testing.T) {
 			}
 		}
 
-		RunLogOutputTest(t, tt, "Diff", func() error {
-			return QualityCheck(tt.args.dataContractFileName, tt.args.pathToType, tt.args.pathToSpecification, tt.args.options)
+		RunLogOutputTest(t, tt, "Diff", func(buffer *bytes.Buffer) error {
+			return QualityCheck(tt.args.dataContractFileName, tt.args.pathToType, tt.args.pathToSpecification, tt.args.options, buffer)
 		})
 	}
 }
@@ -170,7 +171,7 @@ func TestQualityCheck_Soda_ChecksFileContent(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := QualityCheck(tt.args.dataContractFileName, tt.args.pathToType, tt.args.pathToSpecification, tt.args.options); (err != nil) != tt.wantErr {
+			if err := QualityCheck(tt.args.dataContractFileName, tt.args.pathToType, tt.args.pathToSpecification, tt.args.options, os.Stdout); (err != nil) != tt.wantErr {
 				t.Errorf("QualityCheck() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -244,7 +245,7 @@ func TestQualityCheck_Soda_Arguments(t *testing.T) {
 		cmdCombinedOutput = mockSodaCLI(tt.wantSodaArgs)
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := QualityCheck(tt.args.dataContractFileName, tt.args.pathToType, tt.args.pathToSpecification, tt.args.options); (err != nil) != tt.wantErr {
+			if err := QualityCheck(tt.args.dataContractFileName, tt.args.pathToType, tt.args.pathToSpecification, tt.args.options, os.Stdout); (err != nil) != tt.wantErr {
 				t.Errorf("QualityCheck() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

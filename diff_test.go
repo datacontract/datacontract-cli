@@ -1,6 +1,9 @@
 package datacontract
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 func TestDiff(t *testing.T) {
 	type args struct {
@@ -187,13 +190,14 @@ Level:        dataset
 		},
 	}
 	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "Diff", func() error {
+		RunLogOutputTest(t, tt, "Diff", func(buffer *bytes.Buffer) error {
 			return Diff(
 				tt.args.dataContractLocation,
 				tt.args.stableDataContractLocation,
 				tt.args.pathToModels,
 				tt.args.pathToType,
 				tt.args.pathToSpecification,
+				buffer,
 			)
 		})
 	}

@@ -1,6 +1,7 @@
 package datacontract
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 )
@@ -34,8 +35,8 @@ func TestLint(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "Lint", func() error {
-			return Lint(tt.args.dataContractLocation, tt.args.schemaUrl)
+		RunLogOutputTest(t, tt, "Lint", func(buffer *bytes.Buffer) error {
+			return Lint(tt.args.dataContractLocation, tt.args.schemaUrl, buffer)
 		})
 	}
 }

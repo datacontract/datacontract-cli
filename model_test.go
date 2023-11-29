@@ -1,6 +1,7 @@
 package datacontract
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
@@ -647,8 +648,8 @@ func TestPrintModel(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "PrintModel", func() error {
-			return PrintModel(tt.args.dataContractLocation, tt.args.modelType, tt.args.pathToModels)
+		RunLogOutputTest(t, tt, "PrintModel", func(buffer *bytes.Buffer) error {
+			return PrintModel(tt.args.dataContractLocation, tt.args.modelType, tt.args.pathToModels, buffer)
 		})
 	}
 }

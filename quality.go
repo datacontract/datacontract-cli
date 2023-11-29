@@ -2,13 +2,13 @@ package datacontract
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 )
 
-func PrintQuality(dataContractLocation string, pathToQuality []string) error {
+func PrintQuality(dataContractLocation string, pathToQuality []string, target io.Writer) error {
 
 	dataContract, err := GetDataContract(dataContractLocation)
 	if err != nil {
@@ -20,7 +20,7 @@ func PrintQuality(dataContractLocation string, pathToQuality []string) error {
 		return fmt.Errorf("can't get specification: %w", err)
 	}
 
-	log.Println(strings.TrimSpace(string(qualitySpecification)))
+	Log(target, string(qualitySpecification))
 
 	return nil
 }
@@ -63,6 +63,7 @@ func QualityCheck(
 	pathToType []string,
 	pathToSpecification []string,
 	options QualityCheckOptions,
+	target io.Writer,
 ) error {
 
 	contract, err := GetDataContract(dataContractFileName)
@@ -93,9 +94,9 @@ func QualityCheck(
 
 	tempFile.Write(qualitySpecification)
 
-	err = sodaQualityCheck(tempFile.Name(), options)
+	err = sodaQualityCheck(tempFile.Name(), options, target)
 
-	printQualityChecksResult(err)
+	printQualityChecksResult(err, target)
 
 	if err != nil {
 		return fmt.Errorf("quality checks failed: %w", err)
@@ -106,11 +107,11 @@ func QualityCheck(
 	return nil
 }
 
-func printQualityChecksResult(err error) {
+func printQualityChecksResult(err error, target io.Writer) {
 	if err == nil {
-		log.Println("🟢 quality checks on data contract passed!")
+		Log(target, "🟢 quality checks on data contract passed!")
 	} else {
-		log.Println("🔴 quality checks on data contract failed!")
+		Log(target, "🔴 quality checks on data contract failed!")
 	}
 }
 
@@ -147,7 +148,7 @@ func getQualitySpecification(
 
 // soda core checks
 
-func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) error {
+func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions, target io.Writer) error {
 	var args = []string{"scan"}
 
 	args = append(args, "-d")
@@ -167,7 +168,7 @@ func sodaQualityCheck(qualitySpecFileName string, options QualityCheckOptions) e
 	cmd := exec.Command("soda", args...)
 	output, err := cmdCombinedOutput(cmd)
 
-	log.Println(string(output))
+	Log(target, string(output))
 
 	if err != nil {
 		return fmt.Errorf("the soda CLI failed: %w", err)

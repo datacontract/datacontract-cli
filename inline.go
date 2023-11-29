@@ -1,11 +1,10 @@
 package datacontract
 
 import (
-	"log"
-	"strings"
+	"io"
 )
 
-func Inline(dataContractLocation string) error {
+func Inline(dataContractLocation string, target io.Writer) error {
 	dataContract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return err
@@ -21,7 +20,7 @@ func Inline(dataContractLocation string) error {
 		return err
 	}
 
-	log.Println(strings.TrimSpace(string(result)))
+	Log(target, string(result))
 
 	return nil
 }

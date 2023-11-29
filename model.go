@@ -3,9 +3,9 @@ package datacontract
 import (
 	"fmt"
 	"gopkg.in/yaml.v3"
+	"io"
 	"log"
 	"os"
-	"strings"
 )
 
 // internal model
@@ -804,7 +804,7 @@ func (field InternalField) asMapForDataContract() map[string]any {
 	return fieldAsMap
 }
 
-func PrintModel(dataContractLocation string, modelType string, pathToModels []string) error {
+func PrintModel(dataContractLocation string, modelType string, pathToModels []string, target io.Writer) error {
 	contract, err := GetDataContract(dataContractLocation)
 	if err != nil {
 		return err
@@ -834,7 +834,7 @@ func PrintModel(dataContractLocation string, modelType string, pathToModels []st
 		}
 	}
 
-	log.Println(strings.TrimSpace(string(output)))
+	Log(target, string(output))
 
 	return nil
 }

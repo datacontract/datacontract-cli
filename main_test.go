@@ -32,13 +32,12 @@ func CreateTmpFileName() string {
 	return fmt.Sprintf("tmp/%v.yaml", rand.Int())
 }
 
-func RunLogOutputTest[T any](t *testing.T, test LogOutputTest[T], functionName string, function func() error) {
+func RunLogOutputTest[T any](t *testing.T, test LogOutputTest[T], functionName string, function func(buffer *bytes.Buffer) error) {
 	var buf bytes.Buffer
 	log.SetFlags(0)
-	log.SetOutput(&buf)
 
 	t.Run(test.name, func(t *testing.T) {
-		if err := function(); (err != nil) != test.wantErr {
+		if err := function(&buf); (err != nil) != test.wantErr {
 			t.Errorf("%v() error = %v, wantErr %v", functionName, err, test.wantErr)
 		}
 		if buf.String() != test.wantOutput {
@@ -52,8 +51,6 @@ wantOutput
 ---`, functionName, buf.String(), test.wantOutput)
 		}
 	})
-
-	log.SetOutput(os.Stderr)
 }
 
 type LogOutputTest[T any] struct {

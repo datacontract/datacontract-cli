@@ -1,6 +1,7 @@
 package datacontract
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -78,6 +79,8 @@ models:
 		},
 	}
 	for _, tt := range tests {
-		RunLogOutputTest(t, tt, "Inline", func() error { return Inline(tt.args.dataContractLocation) })
+		RunLogOutputTest(t, tt, "Inline", func(buffer *bytes.Buffer) error {
+			return Inline(tt.args.dataContractLocation, buffer)
+		})
 	}
 }

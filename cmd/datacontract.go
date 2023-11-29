@@ -61,7 +61,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "v0.5.1",
+		Version: "v0.5.2",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -98,7 +98,7 @@ func main() {
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					return datacontract.Lint(ctx.String("file"), ctx.String("schema"))
+					return datacontract.Lint(ctx.String("file"), ctx.String("schema"), os.Stdout)
 				},
 			},
 			{
@@ -131,7 +131,7 @@ func main() {
 					}
 
 					// print model
-					return datacontract.PrintModel(ctx.String("file"), ctx.String("type"), pathToModels)
+					return datacontract.PrintModel(ctx.String("file"), ctx.String("type"), pathToModels, os.Stdout)
 				},
 			},
 			{
@@ -164,7 +164,7 @@ func main() {
 					}
 
 					// print quality specification
-					return datacontract.PrintQuality(ctx.String("file"), pathToSpecification)
+					return datacontract.PrintQuality(ctx.String("file"), pathToSpecification, os.Stdout)
 				},
 			},
 			{
@@ -196,7 +196,7 @@ func main() {
 						*options.SodaConfigurationFileName = ctx.String("soda-config")
 					}
 
-					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification, options)
+					return datacontract.QualityCheck(ctx.String("file"), pathToType, pathToSpecification, options, os.Stdout)
 				},
 			},
 			{
@@ -221,7 +221,7 @@ func main() {
 					pathToType := parsePath(ctx, "schema-type-path")
 					pathToSpecification := parsePath(ctx, "schema-specification-path")
 
-					return datacontract.Diff(ctx.String("file"), ctx.String("with"), pathToModels, pathToType, pathToSpecification)
+					return datacontract.Diff(ctx.String("file"), ctx.String("with"), pathToModels, pathToType, pathToSpecification, os.Stdout)
 				},
 			}, {
 				Name:  "breaking",
@@ -238,14 +238,14 @@ func main() {
 					pathToType := parsePath(ctx, "schema-type-path")
 					pathToSpecification := parsePath(ctx, "schema-specification-path")
 
-					return datacontract.Breaking(ctx.String("file"), ctx.String("with"), pathToModels, pathToType, pathToSpecification)
+					return datacontract.Breaking(ctx.String("file"), ctx.String("with"), pathToModels, pathToType, pathToSpecification, os.Stdout)
 				},
 			}, {
 				Name:  "inline",
 				Usage: "inline all references specified with '$ref' notation and print the result to STDOUT",
 				Flags: []cli.Flag{fileNameFlag},
 				Action: func(ctx *cli.Context) error {
-					return datacontract.Inline(ctx.String("file"))
+					return datacontract.Inline(ctx.String("file"), os.Stdout)
 				},
 			},
 		},

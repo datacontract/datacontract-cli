@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"github.com/qri-io/jsonschema"
 	"io"
-	"log"
 	"net/http"
 )
 
-func Lint(dataContractLocation string, schemaUrl string) error {
+func Lint(dataContractLocation string, schemaUrl string, target io.Writer) error {
 	schemaResponse, err := fetchSchema(schemaUrl)
 	if err != nil {
 		return err
@@ -31,12 +30,12 @@ func Lint(dataContractLocation string, schemaUrl string) error {
 		return err
 	}
 
-	return lint(schema, dataContract)
+	return lint(schema, dataContract, target)
 }
 
-func lint(schema *jsonschema.Schema, contract DataContract) error {
+func lint(schema *jsonschema.Schema, contract DataContract, target io.Writer) error {
 	validationState := schema.Validate(context.Background(), contract)
-	printValidationState(validationState)
+	printValidationState(validationState, target)
 
 	if !validationState.IsValid() {
 		return fmt.Errorf("%v error(s) found in data contract", len(*validationState.Errs))
@@ -45,15 +44,15 @@ func lint(schema *jsonschema.Schema, contract DataContract) error {
 	}
 }
 
-func printValidationState(validationState *jsonschema.ValidationState) {
+func printValidationState(validationState *jsonschema.ValidationState, target io.Writer) {
 	if validationState.IsValid() {
-		log.Println("🟢 data contract is valid!")
+		Log(target, "🟢 data contract is valid!")
 	} else {
-		log.Println("🔴 data contract is invalid, found the following errors:")
+		Log(target, "🔴 data contract is invalid, found the following errors:")
 	}
 
 	for i, keyError := range *validationState.Errs {
-		log.Printf("%v) %v\n", i+1, keyError.Message)
+		Log(target, "%v) %v\n", i+1, keyError.Message)
 	}
 }
 

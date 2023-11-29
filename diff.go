@@ -2,13 +2,14 @@ package datacontract
 
 import (
 	"fmt"
-	"log"
+	"io"
 )
 
 func Diff(
 	dataContractLocation string,
 	stableDataContractLocation string,
 	pathToModels, pathToType, pathToSpecification []string,
+	target io.Writer,
 ) error {
 	differences, err := GetDifferences(
 		dataContractLocation,
@@ -21,7 +22,7 @@ func Diff(
 		return err
 	}
 
-	PrintDifferences(differences)
+	PrintDifferences(differences, target)
 
 	return nil
 }
@@ -77,21 +78,21 @@ func getModelSpecification(
 	return dataset, err
 }
 
-func PrintDifferences(differences []ModelDifference) {
-	log.Printf("Found %v differences between the data contracts!\n", len(differences))
+func PrintDifferences(differences []ModelDifference, target io.Writer) {
+	Log(target, "Found %v differences between the data contracts!\n", len(differences))
 
 	for i, difference := range differences {
-		log.Println()
-		log.Printf("%v Difference %v:\n", severityIcon(difference), i+1)
-		log.Printf("Description:  %v\n", difference.Description)
-		log.Printf("Type:         %v\n", difference.Type)
-		log.Printf("Severity:     %v\n", difference.Severity)
-		log.Printf("Level:        %v\n", difference.Level)
+		Log(target, "\n")
+		Log(target, "%v Difference %v:\n", severityIcon(difference), i+1)
+		Log(target, "Description:  %v\n", difference.Description)
+		Log(target, "Type:         %v\n", difference.Type)
+		Log(target, "Severity:     %v\n", difference.Severity)
+		Log(target, "Level:        %v\n", difference.Level)
 		if difference.ModelName != nil {
-			log.Printf("InternalModel:        %v\n", *difference.ModelName)
+			Log(target, "InternalModel:        %v\n", *difference.ModelName)
 		}
 		if difference.FieldName != nil {
-			log.Printf("InternalField:        %v\n", *difference.FieldName)
+			Log(target, "InternalField:        %v\n", *difference.FieldName)
 		}
 	}
 }
