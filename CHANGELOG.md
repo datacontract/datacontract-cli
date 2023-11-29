@@ -1,5 +1,6 @@
 # 0.5.2
-- Log to stdout
+- Log to STDOUT
+- Rename `model` command parameter, `type` -> `format`
 
 # 0.5.1
 - Remove `schema` command
