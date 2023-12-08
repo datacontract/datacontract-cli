@@ -818,6 +818,8 @@ func PrintModel(dataContractLocation string, modelType string, pathToModels []st
 			return err
 		}
 
+		println(modelType)
+
 		output, err = yaml.Marshal(models.(map[string]any))
 		if err != nil {
 			return err

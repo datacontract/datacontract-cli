@@ -61,7 +61,7 @@ func main() {
 	app := &cli.App{
 		Name:    "datacontract",
 		Usage:   "Manage your data contracts 📄",
-		Version: "v0.5.2",
+		Version: "v0.5.3",
 		Authors: []*cli.Author{
 			{Name: "Stefan Negele", Email: "stefan.negele@innoq.com"},
 		},
@@ -131,7 +131,7 @@ func main() {
 					}
 
 					// print model
-					return datacontract.PrintModel(ctx.String("file"), ctx.String("type"), pathToModels, os.Stdout)
+					return datacontract.PrintModel(ctx.String("file"), ctx.String("format"), pathToModels, os.Stdout)
 				},
 			},
 			{

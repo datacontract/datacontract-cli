@@ -1,3 +1,6 @@
+# 0.5.3
+- Fix format flag bug in model (print) command
+
 # 0.5.2
 - Log to STDOUT
 - Rename `model` command parameter, `type` -> `format`
