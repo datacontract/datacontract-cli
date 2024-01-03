@@ -7,20 +7,50 @@ import (
 	"github.com/qri-io/jsonschema"
 	"io"
 	"net/http"
+	"os"
 )
 
-func Lint(dataContractLocation string, schemaUrl string, target io.Writer) error {
+func GetSchema(location string) (*jsonschema.Schema, error) {
+	if IsURI(location) {
+		return getRemoteSchema(location)
+	} else {
+		return getLocalSchema(location)
+	}
+}
+
+func getLocalSchema(schemaFileName string) (*jsonschema.Schema, error) {
+	if schemaFile, err := os.ReadFile(schemaFileName); err != nil {
+		return nil, fmt.Errorf("failed to read schema file: %w", err)
+	} else {
+        schema, err := parseSchema(schemaFile)
+        if err != nil {
+            return nil, err
+        }
+        return schema, nil
+    }
+}
+
+func getRemoteSchema(schemaUrl string) (*jsonschema.Schema, error) {
 	schemaResponse, err := fetchSchema(schemaUrl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	schemaData, err := readSchema(schemaResponse)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	schema, err := parseSchema(schemaData)
+	if err != nil {
+		return nil, err
+	}
+
+	return schema, nil
+}
+
+func Lint(dataContractLocation string, schemaUrl string, target io.Writer) error {
+	schema, err := GetSchema(schemaUrl)
 	if err != nil {
 		return err
 	}

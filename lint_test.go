@@ -23,6 +23,16 @@ func TestLint(t *testing.T) {
 `,
 		},
 		{
+			name: "valid",
+			args: args{
+				dataContractLocation: "test_resources/lint/valid_datacontract.yaml",
+				schemaUrl:            "test_resources/lint/schema.json",
+			},
+			wantErr: false,
+			wantOutput: `🟢 data contract is valid!
+`,
+		},
+		{
 			name: "invalid",
 			args: args{
 				dataContractLocation: "test_resources/lint/invalid_datacontract.yaml",
