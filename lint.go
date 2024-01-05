@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-func GetSchema(location string) (*jsonschema.Schema, error) {
+func getSchema(location string) (*jsonschema.Schema, error) {
 	if IsURI(location) {
 		return getRemoteSchema(location)
 	} else {
@@ -50,7 +50,7 @@ func getRemoteSchema(schemaUrl string) (*jsonschema.Schema, error) {
 }
 
 func Lint(dataContractLocation string, schemaUrl string, target io.Writer) error {
-	schema, err := GetSchema(schemaUrl)
+	schema, err := getSchema(schemaUrl)
 	if err != nil {
 		return err
 	}

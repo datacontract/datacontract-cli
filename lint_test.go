@@ -13,7 +13,7 @@ func TestLint(t *testing.T) {
 	}
 	tests := []LogOutputTest[args]{
 		{
-			name: "valid",
+			name: "valid with remote file",
 			args: args{
 				dataContractLocation: "test_resources/lint/valid_datacontract.yaml",
 				schemaUrl:            fmt.Sprintf("%v/lint/schema.json", TestResourcesServer.URL),
@@ -23,7 +23,7 @@ func TestLint(t *testing.T) {
 `,
 		},
 		{
-			name: "valid",
+			name: "valid with local file",
 			args: args{
 				dataContractLocation: "test_resources/lint/valid_datacontract.yaml",
 				schemaUrl:            "test_resources/lint/schema.json",
