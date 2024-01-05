@@ -1,3 +1,5 @@
+- Update hint/README to reflect support for local json schema in lint command
+
 # 0.6.0
 - Support local json schema in lint command
 - Update to specification 0.9.2

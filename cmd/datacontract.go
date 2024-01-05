@@ -94,7 +94,7 @@ func main() {
 					&cli.StringFlag{
 						Name:  "schema",
 						Value: schemaUrl,
-						Usage: "url of Data Contract Specification json schema",
+						Usage: "path or url of Data Contract Specification json schema",
 					},
 				},
 				Action: func(ctx *cli.Context) error {

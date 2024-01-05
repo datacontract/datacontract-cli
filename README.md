@@ -159,7 +159,7 @@ USAGE:
 
 OPTIONS:
    --file value    location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --schema value  url of Data Contract Specification json schema (default: "https://datacontract.com/datacontract.schema.json")
+   --schema value  path or url of Data Contract Specification json schema (default: "https://datacontract.com/datacontract.schema.json")
    --help, -h      show help
 ```
 
