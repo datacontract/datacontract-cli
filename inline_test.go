@@ -14,7 +14,7 @@ func TestInline(t *testing.T) {
 			name:    "quality",
 			args:    args{dataContractLocation: "test_resources/inline/quality_datacontract.yaml"},
 			wantErr: false,
-			wantOutput: `dataContractSpecification: 0.9.1
+			wantOutput: `dataContractSpecification: 0.9.2
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -30,7 +30,7 @@ quality:
 			name:    "schema",
 			args:    args{dataContractLocation: "test_resources/inline/schema_datacontract.yaml"},
 			wantErr: false,
-			wantOutput: `dataContractSpecification: 0.9.1
+			wantOutput: `dataContractSpecification: 0.9.2
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -54,7 +54,7 @@ schema:
 			name:    "models",
 			args:    args{dataContractLocation: "test_resources/inline/models_datacontract.yaml"},
 			wantErr: false,
-			wantOutput: `dataContractSpecification: 0.9.1
+			wantOutput: `dataContractSpecification: 0.9.2
 definitions:
   my_table:
     description: contains data

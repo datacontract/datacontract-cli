@@ -5,7 +5,8 @@
     "dataContractSpecification": {
       "type": "string",
       "enum": [
-        "0.9.1",
+        "0.9.2",
+        "0.9.2",
         "0.9.0"
       ],
       "description": "Specifies the Data Contract Specification being used."
@@ -266,33 +267,92 @@
             "additionalProperties": {
               "type": "object",
               "properties": {
-                "$ref": {
+                "description": {
                   "type": "string",
-                  "description": "A reference URI to a definition in the specification, internally or externally. Properties will be inherited from the definition."
+                  "description": "An optional string describing the semantic of the data in this field."
                 },
                 "type": {
                   "type": "string",
                   "description": "The logical data type of the field.",
                   "enum": [
-                    "number", "decimal", "numeric",
-                    "int", "integer",
-                    "long", "bigint",
+                    "number",
+                    "decimal",
+                    "numeric",
+                    "int",
+                    "integer",
+                    "long",
+                    "bigint",
                     "float",
                     "double",
-                    "string", "text", "varchar",
+                    "string",
+                    "text",
+                    "varchar",
                     "boolean",
-                    "timestamp", "timestamp_tz",
+                    "timestamp",
+                    "timestamp_tz",
                     "timestamp_ntz",
                     "date",
                     "array",
-                    "object", "record", "struct",
+                    "object",
+                    "record",
+                    "struct",
                     "bytes",
                     "null"
                   ]
                 },
-                "description": {
+                "required": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "An indication, if this field must contain a value and may not be null."
+                },
+                "unique": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "An indication, if the value must be unique within the model."
+                },
+                "enum": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "uniqueItems": true,
+                  "description": "A value must be equal to one of the elements in this array value. Only evaluated if the value is not null."
+                },
+                "minLength": {
+                  "type": "number",
+                  "description": "A value must greater than, or equal to, the value of this. Only applies to string types."
+                },
+                "maxLength": {
+                  "type": "number",
+                  "description": "A value must less than, or equal to, the value of this. Only applies to string types."
+                },
+                "format": {
                   "type": "string",
-                  "description": "An optional string describing the semantic of the data in this field."
+                  "description": "A specific format the value must comply with (e.g., 'email', 'uri', 'uuid')."
+                },
+                "pattern": {
+                  "type": "string",
+                  "description": "A regular expression the value must match. Only applies to string types."
+                },
+                "minimum": {
+                  "type": "number",
+                  "description": "A value of a number must greater than, or equal to, the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "exclusiveMinimum": {
+                  "type": "number",
+                  "description": "A value of a number must greater than the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "maximum": {
+                  "type": "number",
+                  "description": "A value of a number must less than, or equal to, the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "exclusiveMaximum": {
+                  "type": "number",
+                  "description": "A value of a number must less than the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "example": {
+                  "type": "string",
+                  "description": "An example value for this field."
                 },
                 "pii": {
                   "type": "boolean",
@@ -301,7 +361,12 @@
                 "classification": {
                   "type": "string",
                   "description": "The data class defining the sensitivity level for this field, according to the organization's classification scheme.",
-                  "examples": ["sensitive", "restricted", "internal", "public"]
+                  "examples": [
+                    "sensitive",
+                    "restricted",
+                    "internal",
+                    "public"
+                  ]
                 },
                 "tags": {
                   "type": "array",
@@ -309,12 +374,99 @@
                     "type": "string"
                   },
                   "description": "Custom metadata to provide additional context."
+                },
+                "$ref": {
+                  "type": "string",
+                  "description": "A reference URI to a definition in the specification, internally or externally. Properties will be inherited from the definition."
                 }
               }
             }
           }
         }
       }
+    },
+    "definitions": {
+      "description": "Clear and concise explanations of syntax, semantic, and classification of business objects in a given domain.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-zA-Z0-9_-]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain in which this definition is valid.",
+            "default": "global"
+          },
+          "name": {
+            "type": "string",
+            "description": "The technical name of this definition."
+          },
+          "title": {
+            "type": "string",
+            "description": "The business name of this definition."
+          },
+          "description": {
+            "type": "string",
+            "description": "Clear and concise explanations related to the domain."
+          },
+          "type": {
+            "type": "string",
+            "description": "The logical data type."
+          },
+          "required": {
+            "type": "boolean",
+            "default": false,
+            "description": "An indication if this field must contain a value and may not be null."
+          },
+          "unique": {
+            "type": "boolean",
+            "default": false,
+            "description": "An indication if the value must be unique within the model."
+          },
+          "minLength": {
+            "type": "number",
+            "description": "A value must be greater than or equal to this value. Applies only to string types."
+          },
+          "maxLength": {
+            "type": "number",
+            "description": "A value must be less than or equal to this value. Applies only to string types."
+          },
+          "format": {
+            "type": "string",
+            "description": "Specific format requirements for the value (e.g., 'email', 'uri', 'uuid')."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "A regular expression pattern the value must match. Applies only to string types."
+          },
+          "example": {
+            "type": "string",
+            "description": "An example value."
+          },
+          "pii": {
+            "type": "boolean",
+            "description": "Indicates if the field contains Personal Identifiable Information (PII)."
+          },
+          "classification": {
+            "type": "string",
+            "description": "The data class defining the sensitivity level for this field."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Custom metadata to provide additional context."
+          }
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ]
     },
     "schema": {
       "type": "object",

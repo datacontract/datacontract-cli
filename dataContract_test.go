@@ -182,7 +182,7 @@ func TestGetValue(t *testing.T) {
 
 func TestGetDataContract(t *testing.T) {
 	dataContract := DataContract{
-		"dataContractSpecification": "0.9.1",
+		"dataContractSpecification": "0.9.2",
 		"id":                        "my-data-contract-id",
 		"info": map[string]any{
 			"title":   "My Data Contract",

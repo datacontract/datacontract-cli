@@ -11,7 +11,7 @@
 - Security update of x/sys
 
 # 0.5.0
-- Adapt Data Contract Specification in version 0.9.1
+- Adapt Data Contract Specification in version 0.9.2
 - Use `models` section for `diff`/`breaking`
 - Add `model` command
 - Let `inline` print to STDOUT instead of overwriting datacontract file
