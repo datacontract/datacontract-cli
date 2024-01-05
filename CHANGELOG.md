@@ -1,3 +1,7 @@
+# 0.6.0
+- Support local json schema in lint command
+- Update to specification 0.9.2
+
 # 0.5.3
 - Fix format flag bug in model (print) command
 
