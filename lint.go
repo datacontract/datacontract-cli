@@ -22,11 +22,11 @@ func getLocalSchema(schemaFileName string) (*jsonschema.Schema, error) {
 	if schemaFile, err := os.ReadFile(schemaFileName); err != nil {
 		return nil, fmt.Errorf("failed to read schema file: %w", err)
 	} else {
-        schema, err := parseSchema(schemaFile)
-        if err != nil {
-            return nil, err
-        }
-        return schema, nil
+		schema, err := parseSchema(schemaFile)
+		if err != nil {
+			return nil, err
+		}
+		return schema, nil
     }
 }
 
