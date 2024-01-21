@@ -8,6 +8,7 @@ runner = CliRunner()
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
+
 def test_test_help():
     result = runner.invoke(app, ["test", "--help"])
     assert result.exit_code == 0

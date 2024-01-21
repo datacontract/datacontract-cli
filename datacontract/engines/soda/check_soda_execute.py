@@ -105,6 +105,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
 
 def get_duckdb_connection(data_contract, server):
     con = duckdb.connect(database=":memory:")
+    path: str = ""
     if server.type == "local":
         path = server.path
     if server.type == "s3":

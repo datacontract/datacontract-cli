@@ -4,15 +4,15 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from datacontract.checks.check_jsonschema import check_jsonschema
-from datacontract.checks.check_soda_execute import \
-    check_soda_execute
-from datacontract.checks.check_that_datacontract_contains_valid_servers_configuration import \
+from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
-from datacontract.checks.check_that_datacontract_file_exists import \
+from datacontract.engines.datacontract.check_that_datacontract_file_exists import \
     check_that_datacontract_file_exists
-from datacontract.checks.check_that_datacontract_str_is_valid import \
+from datacontract.engines.datacontract.check_that_datacontract_str_is_valid import \
     check_that_datacontract_str_is_valid
+from datacontract.engines.fastjsonschema.checks.check_jsonschema import \
+    check_jsonschema
+from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.integration.fetch_resource import fetch_resource
