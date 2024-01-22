@@ -1,11 +1,11 @@
 import logging
-import os
 import pprint
 
-import duckdb
-import yaml
 from soda.scan import Scan
 
+from datacontract.engines.soda.connections.duckdb import get_duckdb_connection
+from datacontract.engines.soda.connections.snowflake import \
+    to_snowflake_soda_configuration
 from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
@@ -17,6 +17,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return
+
     run.log_info("Running engine soda-core")
     scan = Scan()
 
@@ -36,20 +37,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             run.log_warn(f"Format {server.format} not yet supported by datacontract CLI")
             return
     elif server.type == "snowflake":
-        soda_configuration = {
-            f"data_source {server.type}": {
-                "type": "snowflake",
-                "username": os.getenv('DATACONTRACT_SNOWFLAKE_USERNAME'),
-                "password": os.getenv('DATACONTRACT_SNOWFLAKE_PASSWORD'),
-                "role": os.getenv('DATACONTRACT_SNOWFLAKE_ROLE'),
-                "account": server.account,
-                "database": server.database,
-                "schema": server.schema_,
-                "warehouse": os.getenv('DATACONTRACT_SNOWFLAKE_WAREHOUSE'),
-                "connection_timeout": 5,  # minutes
-            }
-        }
-        soda_configuration_str = yaml.dump(soda_configuration)
+        soda_configuration_str = to_snowflake_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     else:
@@ -101,85 +89,6 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             engine="soda-core",
         ))
         return
-
-
-def get_duckdb_connection(data_contract, server):
-    con = duckdb.connect(database=":memory:")
-    path: str = ""
-    if server.type == "local":
-        path = server.path
-    if server.type == "s3":
-        path = server.location
-    setup_s3_connection(con, server)
-    for model_name in data_contract.models:
-        logging.info(f"Creating table {model_name} for {path}")
-        if server.format == "json":
-            format = "auto"
-            if server.delimiter == "new_line":
-                format = "newline_delimited"
-            elif server.delimiter == "array":
-                format = "array"
-            con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{path}', format='{format}', hive_partitioning=1);
-                        """)
-        elif server.format == "parquet":
-            con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{path}', hive_partitioning=1);
-                        """)
-        elif server.format == "csv":
-            con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_csv_auto('{path}', hive_partitioning=1);
-                        """)
-    return con
-
-
-def setup_s3_connection(con, server):
-    s3_region = os.getenv('DATACONTRACT_S3_REGION')
-    s3_access_key_id = os.getenv('DATACONTRACT_S3_ACCESS_KEY_ID')
-    s3_secret_access_key = os.getenv('DATACONTRACT_S3_SECRET_ACCESS_KEY')
-    con.install_extension("httpfs")
-    con.load_extension("httpfs")
-    if server.endpointUrl is not None:
-        s3_endpoint = server.endpointUrl.removeprefix("http://").removeprefix("https://")
-        if server.endpointUrl.startswith("http://"):
-            con.sql("SET s3_use_ssl = 0; SET s3_url_style = 'path';")
-        con.sql(f"""
-                SET s3_endpoint = '{s3_endpoint}';
-                """)
-    con.sql(f"""
-                SET s3_region = '{s3_region}';
-                SET s3_access_key_id = '{s3_access_key_id}';
-                SET s3_secret_access_key = '{s3_secret_access_key}';
-                """)
-
-
-# def add_s3_connection_dask_json(data_contract, scan, server):
-#     s3_access_key_id = os.getenv('DATACONTRACT_S3_ACCESS_KEY_ID')
-#     s3_secret_access_key = os.getenv('DATACONTRACT_S3_SECRET_ACCESS_KEY')
-#     lines = server.delimiter == "new_line"
-#     for model_name in data_contract.models:
-#         logging.info(f"Connecting to {server.location}")
-#         df = dd.read_json(
-#             server.location,
-#             lines=lines,
-#             storage_options={'key': s3_access_key_id,
-#                              'secret': s3_secret_access_key,
-#                              'client_kwargs': {'endpoint_url': server.endpointUrl}
-#                              })
-#         scan.add_dask_dataframe(dataset_name=model_name, dask_df=df, data_source_name=server.type)
-
-# def add_s3_connection_dask_csv(data_contract, scan, server):
-#     s3_access_key_id = os.getenv('DATACONTRACT_S3_ACCESS_KEY_ID')
-#     s3_secret_access_key = os.getenv('DATACONTRACT_S3_SECRET_ACCESS_KEY')
-#     for model_name in data_contract.models:
-#         logging.info(f"Connecting to {server.location}")
-#         df = dd.read_csv(
-#             server.location,
-#             storage_options={'key': s3_access_key_id,
-#                              'secret': s3_secret_access_key,
-#                              'client_kwargs': {'endpoint_url': server.endpointUrl}
-#                              })
-#         scan.add_dask_dataframe(dataset_name=model_name, dask_df=df, data_source_name=server.type)
 
 
 def update_reason(check, c):

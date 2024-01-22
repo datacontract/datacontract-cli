@@ -10,7 +10,7 @@ from datacontract.engines.datacontract.check_that_datacontract_file_exists impor
     check_that_datacontract_file_exists
 from datacontract.engines.datacontract.check_that_datacontract_str_is_valid import \
     check_that_datacontract_str_is_valid
-from datacontract.engines.fastjsonschema.checks.check_jsonschema import \
+from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.jsonschema_converter import to_jsonschema

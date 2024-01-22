@@ -4,7 +4,7 @@ import os
 
 import fastjsonschema
 
-from datacontract.connections.s3.s3_read_files import yield_s3_files
+from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
@@ -79,7 +79,7 @@ def process_directory(run, server, model_name, validate):
     return success
 
 
-def process_s3_file(run, server, model_name, validate):
+def process_s3_file(server, model_name, validate):
     s3_endpoint_url = server.endpointUrl
     s3_location = server.location
     json_stream = None
@@ -139,7 +139,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
     if server.type == "local":
         process_local_file(run, server, model_name, validate)
     elif server.type == "s3":
-        process_s3_file(run, server, model_name, validate)
+        process_s3_file(server, model_name, validate)
     else:
         run.checks.append(Check(
             type="schema",
