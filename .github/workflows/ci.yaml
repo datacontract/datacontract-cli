@@ -1,4 +1,8 @@
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore: ["python"]
+  pull_request:
+    branches-ignore: ["python"]
 name: CI
 jobs:
   test:
