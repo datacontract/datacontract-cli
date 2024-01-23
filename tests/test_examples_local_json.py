@@ -7,7 +7,7 @@ runner = CliRunner()
 
 
 def test_cli():
-    result = runner.invoke(app, ["test", "--file", "./examples/local-json/datacontract.yaml"])
+    result = runner.invoke(app, ["test", "./examples/local-json/datacontract.yaml"])
     assert result.exit_code == 0
 
 

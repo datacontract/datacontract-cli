@@ -1,4 +1,4 @@
-class RunFailedException(Exception):
+class DataContractException(Exception):
     """Exception raised for errors in the execution of a run.
 
     Attributes:

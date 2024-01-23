@@ -3,7 +3,7 @@ import os
 
 import requests
 
-from datacontract.model.run_failed_exception import RunFailedException
+from datacontract.model.exceptions import DataContractException
 
 
 def fetch_resource(url: str):
@@ -16,7 +16,7 @@ def fetch_resource(url: str):
     if response.status_code == 200:
         return response.text
     else:
-        raise RunFailedException(
+        raise DataContractException(
             type="lint",
             name=f"Reading data contract from {url}",
             reason=f"Cannot read resource from URL {url}. Response status is {response.status_code}",
@@ -32,7 +32,7 @@ def _set_api_key(headers, url):
     datamesh_manager_api_key = os.getenv('DATAMESH_MANAGER_API_KEY')
     if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
         print(f"Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
-        raise RunFailedException(
+        raise DataContractException(
             type="lint",
             name=f"Reading data contract from {url}",
             reason="Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",

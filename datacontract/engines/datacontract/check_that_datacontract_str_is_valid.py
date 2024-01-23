@@ -1,10 +1,10 @@
 import logging
 
 import fastjsonschema
-import requests
 import yaml
 from fastjsonschema import JsonSchemaValueException
 
+from datacontract.lint.schema import fetch_schema
 from datacontract.model.run import Check, Run
 
 
@@ -42,7 +42,3 @@ def check_that_datacontract_str_is_valid(run: Run, data_contract_str: str):
         ))
 
 
-def fetch_schema():
-    schema_url = "https://datacontract.com/datacontract.schema.json"
-    response = requests.get(schema_url)
-    return response.json()

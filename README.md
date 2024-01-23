@@ -12,7 +12,7 @@ The `datacontract` CLI lets you work with your `datacontract.yaml` files locally
 
 ## Usage
 
-`datacontract` usually works with a `datacontract.yaml` file in your current working directory. You can specify a different file or URL with the `--file` option.
+`datacontract` usually works with a `datacontract.yaml` file in your current working directory. You can specify a different file or URL as an additional argument.
 
 ```bash
 # create a new data contract
@@ -25,13 +25,13 @@ $ datacontract test
 ## Advanced Usage
 ```bash
 # lint the data contract
-$ datacontract lint --file datacontract.yaml
+$ datacontract lint datacontract.yaml
 
-# find differences to another version of the data contract  (Coming Soon)
-$ datacontract diff --with stable/datacontract.yaml
+# find differences between to data contracts (Coming Soon)
+$ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 
 # fail pipeline on breaking changes  (Coming Soon)
-$ datacontract breaking --with stable/datacontract.yaml
+$ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 
 # export model as jsonschema
 $ datacontract export --format jsonschema
@@ -58,13 +58,13 @@ if not run.has_passed():
 ```bash
 # Fetch current data contract, execute tests on production, and publish result to data mesh manager
 $ EXPORT DATAMESH_MANAGER_API_KEY=xxx
-$ datacontract test --file https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish
+$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish
 ```
 
 ## Scenario: CI/CD testing for breaking changes
 ```bash
 # fail pipeline on breaking changes in the data contract yaml (coming soon)
-$ datacontract breaking --file datacontract.yaml --with stable/datacontract.yaml
+$ datacontract breaking datacontract.yaml https://raw.githubusercontent.com/datacontract/cli/main/examples/my-data-contract-id_v0.0.1.yaml
 ```
 
 

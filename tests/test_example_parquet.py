@@ -12,7 +12,7 @@ def test_valid_cli():
     current_file_path = os.path.abspath(__file__)
     print("DEBUG Current file path:" + current_file_path)
 
-    result = runner.invoke(app, ["test", "--file",
+    result = runner.invoke(app, ["test",
                                  "./examples/parquet/datacontract.yaml"])
     assert result.exit_code == 0
     assert "Testing ./examples/parquet/datacontract.yaml" in result.stdout
@@ -26,5 +26,5 @@ def test_valid():
     run = data_contract.test()
     print(run)
     assert run.result == "passed"
-    assert len(run.checks) == 5
+    assert len(run.checks) == 4
     assert all(check.result == "passed" for check in run.checks)

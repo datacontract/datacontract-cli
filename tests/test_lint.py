@@ -32,7 +32,7 @@ def test_lint_cli_valid():
     data_contract_file = "examples/lint/valid_datacontract.yaml"
     expected_output = "🟢 data contract is valid!\n"
 
-    result = runner.invoke(app, ["lint", "--file", data_contract_file])
+    result = runner.invoke(app, ["lint", data_contract_file])
 
     assert result.exit_code == 0
     assert expected_output in result.stdout
@@ -42,7 +42,7 @@ def test_lint_cli_invalid():
     data_contract_file = "examples/lint/invalid_datacontract.yaml"
     expected_output = "🔴 data contract is invalid, found the following errors:\n1) data must contain ['id'] properties\n"
 
-    result = runner.invoke(app, ["lint", "--file", data_contract_file])
+    result = runner.invoke(app, ["lint", data_contract_file])
 
     assert result.exit_code == 1
     assert expected_output in result.stdout

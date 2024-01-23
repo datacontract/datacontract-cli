@@ -8,8 +8,8 @@ from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
-from datacontract.model.run_failed_exception import RunFailedException
 
 
 def validate_json_stream(model_name, validate, json_stream):
@@ -19,7 +19,7 @@ def validate_json_stream(model_name, validate, json_stream):
             validate(json_obj)
         return True
     except fastjsonschema.JsonSchemaValueException as e:
-        raise RunFailedException(
+        raise DataContractException(
             type="schema",
             name="Check that JSON has valid schema",
             model=model_name,
@@ -93,7 +93,7 @@ def process_s3_file(server, model_name, validate):
             json_stream = read_json_file(file_content)
 
     if json_stream is None:
-        raise RunFailedException(
+        raise DataContractException(
             type="schema",
             name="Check that JSON has valid schema",
             result="warning",

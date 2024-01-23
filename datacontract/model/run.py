@@ -40,6 +40,10 @@ class Run(BaseModel):
         self.calculate_result()
         return self.result == "passed"
 
+    def finish(self):
+        self.timestampEnd = datetime.now(timezone.utc)
+        self.calculate_result()
+
     def calculate_result(self):
         if any(check.result == "error" for check in self.checks):
             self.result = "error"
@@ -65,7 +69,7 @@ class Run(BaseModel):
         self.logs.append(Log(level="ERROR", message=message, timestamp=datetime.now(timezone.utc)))
 
     def pretty(self):
-        return self.json
+        return self.model_dump_json()
 
     @staticmethod
     def create_run():

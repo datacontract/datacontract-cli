@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import sys
 
@@ -9,12 +10,14 @@ from datacontract.export.jsonschema_converter import to_jsonschemas
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
+logging.basicConfig(level=logging.DEBUG, force=True)
+
 
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(app, [
         "export",
-        "--file", "./examples/local-json/datacontract.yaml",
+        "./examples/local-json/datacontract.yaml",
         "--format", "jsonschema"
     ])
     assert result.exit_code == 0
