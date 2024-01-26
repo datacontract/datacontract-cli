@@ -162,6 +162,12 @@ python3 -m build
 python3 -m twine upload --repository testpypi dist/*
 ```
 
+Docker Build
+
+```
+docker build -t datacontract .
+docker run --rm -v ${PWD}:/app datacontract
+```
 
 ## Contribution
 
