@@ -7,8 +7,9 @@ info:
   links:
     blog: https://aws.amazon.com/blogs/big-data/a-public-data-lake-for-analysis-of-covid-19-data/
     data-explorer: https://dj2taa9i652rf.cloudfront.net/
+    data: https://covid19-lake.s3.us-east-2.amazonaws.com/enigma-jhu/json/part-00000-adec1cd2-96df-4c6b-a5f2-780f092951ba-c000.json
 servers:
-  production:
+  s3:
     type: s3
     location: s3://covid19-lake/enigma-jhu/json/*.json
     format: json
@@ -29,7 +30,7 @@ models:
         type: string
         description: country name or region name
       last_update:
-        type: string
+        type: timestamp_ntz
         description: last update timestamp
       latitude:
         type: double
@@ -43,3 +44,9 @@ models:
       combined_key:
         type: string
         description: county name+state name+country name
+quality:
+  type: SodaCL
+  specification:
+    checks for enigma_jhu:
+      - freshness(last_update::datetime) < 5000d   # dataset is not updated anymore
+      - row_count > 1000

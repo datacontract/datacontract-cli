@@ -159,9 +159,11 @@ cd tests/
 pytest
 ```
 
-Build
+Release
 
 ```
+git tag v0.9.0
+git push origin v0.9.0
 python3 -m pip install --upgrade build twine
 rm -r dist/
 python3 -m build
