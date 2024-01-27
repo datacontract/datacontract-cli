@@ -119,7 +119,7 @@ def export(
 
 def _handle_result(run):
     if run.result == "passed":
-        print(f"🟢 data contract is valid. Tested {len(run.checks)} checks.")
+        print(f"🟢 data contract is valid. Run {len(run.checks)} checks.")
     else:
         print("🔴 data contract is invalid, found the following errors:")
         i = 1
