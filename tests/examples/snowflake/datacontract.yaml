@@ -1,0 +1,99 @@
+dataContractSpecification: 0.9.2
+id: urn:datacontract:checkout:snowflake_orders_pii_v2
+info:
+  title: Orders
+  version: 1.0.0
+  description: "All order-created events, with PII."
+  owner: checkout
+servers:
+  urn:dataproduct:checkout:orders/snowflake_orders_pii_v2:
+    type: snowflake
+    account: lmtrwxs-xn14859
+    database: ORDER_DB
+    schema: ORDERS_PII_V2
+    dataProductId: urn:dataproduct:checkout:orders
+    outputPortId: snowflake_orders_pii_v2
+terms:
+  usage: Max. 10x queries per day
+  limitations: Not suitable for real-time use cases
+  billing: $1000 / month
+  noticePeriod: P3M
+models:
+  orders:
+    description: One record per order. Includes cancelled and deleted orders.
+    type: table
+    fields:
+      ORDER_ID:
+        $ref: '#/definitions/order_id'
+        required: true
+        unique: true
+      ORDER_TIMESTAMP:
+        description: The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.
+        type: timestamp
+        required: true
+      ORDER_TOTAL:
+        description: Total amount the smallest monetary unit (e.g., cents).
+        type: number
+        required: true
+      CUSTOMER_ID:
+        description: Unique identifier for the customer.
+        type: text
+        minLength: 10
+        maxLength: 20
+      CUSTOMER_EMAIL_ADDRESS:
+        description: The email address, as entered by the customer. The email address was not verified.
+        type: text
+        format: email
+        required: true
+  line_items:
+    description: A single article that is part of an order.
+    type: table
+    fields:
+      LINE_ITEM_ID:
+        type: text
+        description: Primary key of the lines_item_id table
+        required: true
+        unique: true
+      ORDER_ID:
+        $ref: '#/definitions/order_id'
+      SKU:
+        description: The purchased article number
+        $ref: '#/definitions/sku'
+examples:
+  - type: csv # csv, json, yaml, custom
+    model: orders
+    data: |- # expressed as string or inline yaml or via "$ref: data.csv"
+      order_id,order_timestamp,order_total
+      "1001","2023-09-09T08:30:00Z",2500
+      "1002","2023-09-08T15:45:00Z",1800
+      "1003","2023-09-07T12:15:00Z",3200
+      "1004","2023-09-06T19:20:00Z",1500
+      "1005","2023-09-05T10:10:00Z",4200
+      "1006","2023-09-04T14:55:00Z",2800
+      "1007","2023-09-03T21:05:00Z",1900
+      "1008","2023-09-02T17:40:00Z",3600
+      "1009","2023-09-01T09:25:00Z",3100
+      "1010","2023-08-31T22:50:00Z",2700
+  - type: csv
+    model: line_items
+    data: |-
+      lines_item_id,order_id,sku
+      "1","1001","5901234123457"
+      "2","1001","4001234567890"
+      "3","1002","5901234123457"
+      "4","1002","2001234567893"
+      "5","1003","4001234567890"
+      "6","1003","5001234567892"
+      "7","1004","5901234123457"
+      "8","1005","2001234567893"
+      "9","1005","5001234567892"
+      "10","1005","6001234567891"
+quality:
+  type: SodaCL
+  specification:
+    checks for orders:
+      - freshness(order_timestamp) < 24h
+      - row_count >= 5000
+      - duplicate_count(order_id) = 0
+    checks for line_items:
+      - row_count >= 80000

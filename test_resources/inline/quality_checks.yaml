@@ -1,2 +1,0 @@
-checks for my_table:
-  - duplicate_count(order_id) = 0

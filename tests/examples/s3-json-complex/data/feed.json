@@ -1,0 +1,37 @@
+[{
+  "specversion" : "1.0",
+  "type" : "org.http-feeds.example.inventory",
+  "source" : "https://example.http-feeds.org/inventory",
+  "id" : "1c6b8c6e-d8d0-4a91-b51c-1f56bd04c758",
+  "time" : "2021-01-01T00:00:01Z",
+  "subject" : "9521234567899",
+  "data" : {
+    "sku": "9521234567899",
+    "updated": "2022-01-01T00:00:01Z",
+    "quantity": 5
+  }
+},{
+  "specversion" : "1.0",
+  "type" : "org.http-feeds.example.inventory",
+  "source" : "https://example.http-feeds.org/inventory",
+  "id" : "292042fb-ab04-4653-af90-19a24032bffe",
+  "time" : "2021-12-01T00:00:15Z",
+  "subject" : "9521234512349",
+  "data" : {
+    "sku": "9521234512349",
+    "updated": "2022-01-01T00:00:12Z",
+    "quantity": 0
+  }
+},{
+  "specversion" : "1.0",
+  "type" : "org.http-feeds.example.inventory",
+  "source" : "https://example.http-feeds.org/inventory",
+  "id" : "fa3e2a22-398c-4d02-ad08-9415e43178e6",
+  "time" : "2021-01-01T00:00:22Z",
+  "subject" : "9521234567899",
+  "data" : {
+    "sku": "9521234567899",
+    "updated": "2022-01-01T00:00:21Z",
+    "quantity": 4
+  }
+}]

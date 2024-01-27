@@ -5,284 +5,177 @@
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/cli/ci.yaml?branch=main"></a>
   <a href="https://img.shields.io/github/stars/datacontract/cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/cli" /></a>
-  <!-- <a href="https://github.com/datacontract/cli/graphs/contributors">
-    <img alt="Contributors" src="https://img.shields.io/github/contributors/datacontract/cli" /></a>
-  <a href="https://github.com/datacontract/cli/releases">
-    <img alt="Downloads" src="https://img.shields.io/github/downloads/datacontract/cli/total" /></a>
-  <a href="https://github.com/datacontract/cli/releases">
-    <img  alt="Downloads of latest" src="https://img.shields.io/github/downloads/datacontract/cli/latest/total" /></a> -->
 </p>
 
-The `datacontract` CLI lets you work with your `datacontract.yaml` files locally, and in your CI pipeline. It uses the [data contract specification](https://datacontract.com/) to validate your data contracts and to check for backwards compatibility. The CLI is open source and written in Go. It is integrated with [Data Contract Studio](https://studio.datacontract.com/) to easily share and visualize your data contracts.
+The `datacontract` CLI lets you work with your `datacontract.yaml` files locally, and in your CI pipeline. It uses the [Data Contract Specification](https://datacontract.com/) to validate the contract, connect to your data sources and execute tests. The CLI is open source and written in Python. It can be used as a CLI tool or directly as a Python library.
+
+> **_NOTE:_**  This project has been migrated grom Go to Python which adds the possibility to use `datacontract` withing Python code as library, but it comes with some [breaking changes](CHANGELOG.md). The Golang version has been [forked](https://github.com/datacontract/cli-go), if you rely on that.
+
 
 ## Usage
 
-`datacontract` usually works with the `datacontract.yaml` file in your current working directory. You can specify a different file with the `--file` option.
+`datacontract` usually works with a `datacontract.yaml` file in your current working directory. You can specify a different file or URL as an additional argument.
 
 ```bash
 # create a new data contract
 $ datacontract init
 
-# lint the data contract
-$ datacontract lint
-
-# find differences to another version of the data contract
-$ datacontract diff --with stable/datacontract.yaml
-
-# fail pipeline on breaking changes
-$ datacontract breaking --with stable/datacontract.yaml
-
-# export model as dbt
-$ datacontract model --format=dbt
-
-# import dbt as model
-$ datacontract model --format=dbt < my_dbt_model.yaml
-
-# print run quality checks defined in your data contract
+# execute schema and quality checks
 $ datacontract test
-
-# print quality definitions
-$ datacontract quality
-
-# write quality definitions
-$ datacontract quality --type=SodaCL < my_soda_definitions.yaml
-
-# create standalone data contract by inlining reference data
-$ datacontract inline > datacontract.standalone.yaml
 ```
+
+## Advanced Usage
+```bash
+# lint the data contract
+$ datacontract lint datacontract.yaml
+
+# find differences between to data contracts (Coming Soon)
+$ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
+
+# fail pipeline on breaking changes  (Coming Soon)
+$ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
+
+# export model as jsonschema
+$ datacontract export --format jsonschema
+
+# export model as dbt  (Coming Soon)
+$ datacontract export --format dbt
+
+# import protobuf as model (Coming Soon)
+$ datacontract import --format protobuf --source my_protobuf_file.proto
+```
+
+## Programmatic (Python)
+```python
+from datacontract.data_contract import DataContract
+
+data_contract = DataContract(data_contract_file="datacontract.yaml")
+run = data_contract.test()
+if not run.has_passed():
+    print("Data quality validation failed.")
+    # Abort pipeline, alert, or take corrective actions...
+```
+
+## Scenario: Integration with Data Mesh Manager
+```bash
+# Fetch current data contract, execute tests on production, and publish result to data mesh manager
+$ EXPORT DATAMESH_MANAGER_API_KEY=xxx
+$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish
+```
+
+## Scenario: CI/CD testing for breaking changes
+```bash
+# fail pipeline on breaking changes in the data contract yaml (coming soon)
+$ datacontract breaking datacontract.yaml https://raw.githubusercontent.com/datacontract/cli/main/examples/my-data-contract-id_v0.0.1.yaml
+```
+
 
 ## Installation
 
-### Homebrew
+### Pip
 ```bash
-brew install datacontract/brew/datacontract
+pip install datacontract-cli
 ```
 
-### Download binary artifact
 
-#### Using the command line
+[//]: # (### Homebrew)
 
-```bash
-# download + unpack
-curl -L https://github.com/datacontract/cli/releases/download/{VERSION}/datacontract-{VERSION}-{OS}-{ARCH}.tar.gz -o datacontract.tar.gz
-tar -xf datacontract.tar.gz
+[//]: # (```bash)
 
-# use it
-./datacontract --help
-```
+[//]: # (brew install datacontract/brew/datacontract)
 
-**Make sure to fill the placeholders, depending on your system:**
-
-| Placeholder | Description                                    |
-|-------------|------------------------------------------------|
-| VERSION     | datacontract CLI version (e.g. `v0.6.0`)       |
-| OS          | your operating system (linux, windows, darwin) |
-| ARCH        | your processor architecture (amd64, arm64)     |
-
-#### Manually
-
-- go to https://github.com/datacontract/cli/releases and download the artifact of the latest release depending on your operating system and cpu architecture
-- decompress the file (tarball or zipfolder)
-- open the folder in your terminal and use the application:
-  ```bash
-  ./datacontract --help
-  ```
-
-### Build from sources
-```bash
-# build
-git clone https://github.com/datacontract/cli
-cd cli
-git checkout tags/{VERSION}
-go build ./cmd/datacontract.go
-
-# use it
-./datacontract --help
-```
+[//]: # (```)
 
 ## Documentation
 
-```
-NAME:
-   datacontract - Manage your data contracts 📄
+### Tests
 
-USAGE:
-   datacontract [global options] command [command options] [arguments...]
-
-VERSION:
-   v0.6.0
-
-AUTHOR:
-   Stefan Negele <stefan.negele@innoq.com>
-
-COMMANDS:
-   init      create a new data contract
-   lint      linter for the data contract
-   model     import / export the data model of the data contract
-   quality   when data is found in STDIN the command will insert its content into the quality section of your data contract, otherwise it will print the quality specification
-   test      (soda core integration only) - run quality checks for the data contract
-   open      save and open the data contract in Data Contract Studio
-   diff      show differences of your local and a remote data contract
-   breaking  detect breaking changes between your local and a remote data contract
-   inline    inline all references specified with '$ref' notation and print the result to STDOUT
-   help, h   Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --help, -h     show help
-   --version, -v  print the version
-```
-
-### Commands
-
-#### init 
-```
-NAME:
-   datacontract init - create a new data contract
-
-USAGE:
-   datacontract init [command options] [arguments...]
-
-OPTIONS:
-   --file value      location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --from value      url of a template or data contract (default: "https://datacontract.com/datacontract.init.yaml")
-   --overwrite-file  replace the existing datacontract.yaml (default: false)
-   --help, -h        show help
-```
-
-#### lint
-```
-NAME:
-   datacontract lint - linter for the data contract
-
-USAGE:
-   datacontract lint [command options] [arguments...]
-
-OPTIONS:
-   --file value    location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --schema value  path or url of Data Contract Specification json schema (default: "https://datacontract.com/datacontract.schema.json")
-   --help, -h      show help
-```
-
-#### test - (Soda Core integration only)
-The Soda Core integration requires a Soda Core CLI installation, see https://docs.soda.io/soda-library/install.html
+Data Contract CLI can connect to data sources and run schema and quality tests to verify that the data contract is valid.
 
 ```
-NAME:
-   datacontract test - (soda core integration only) - run quality checks for the data contract
-
-USAGE:
-   datacontract test [command options] [arguments...]
-
-OPTIONS:
-   --file value                        location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --quality-type-path value           definition of a custom path to the quality type in your data contract (default: "quality.type")
-   --quality-specification-path value  definition of a custom path to the quality specification in your data contract (default: "quality.specification")
-   --soda-datasource value             data source configured in Soda to run your quality checks against (default: "default")
-   --soda-config value                 location of your soda configuration, falls back to user configuration
-   --help, -h                          show help
+datacontract test
 ```
 
-#### open
+To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection. In addition, credentials, such as username and passwords, may be defined with environment variables.
+
+The application uses different engines, based on the server `type`.
+
+| Type         | Format     | Description                                                               | Status      | Engines                             |
+|--------------|------------|---------------------------------------------------------------------------|-------------|-------------------------------------|
+| `s3`         | `parquet`  | Works for any S3-compliant endpoint., e.g., AWS S3, GCS, MinIO, Ceph, ... | ✅           | soda-core-duckdb                    |
+| `s3`         | `json`     | Support for `new_line` delimited JSON files and one JSON record per file. | ✅           | fastjsonschema<br> soda-core-duckdb |
+| `s3`         | `csv`      |                                                                           | ✅           | soda-core-duckdb                    |
+| `s3`         | `delta`    |                                                                           | Coming soon | TBD                                 |
+| `postgres`   | n/a        |                                                                           | Coming soon | TBD                                 |
+| `snowflake`  | n/a        |                                                                           | ✅ | soda-core-snowflake                 |
+| `bigquery`   | n/a        |                                                                           | Coming soon | TBD                                 |
+| `redshift`   | n/a        |                                                                           | Coming soon | TBD                                 |
+| `databricks` | n/a        |                                                                           | Coming soon | TBD                                 |
+| `kafka`      | `json`     |                                                                           | Coming soon | TBD                                 |
+| `kafka`      | `avro`     |                                                                           | Coming soon | TBD                                 |
+| `kafka`      | `protobuf` |                                                                           | Coming soon | TBD                                 |
+| `local`      | `parquet`  |                                                                           | ✅           | soda-core-duckdb                    |
+| `local`      | `json`     | Support for `new_line` delimited JSON files and one JSON record per file. | ✅           | fastjsonschema<br> soda-core-duckdb |
+| `local`      | `csv`      |                                                                           | ✅           | soda-core-duckdb                    |
+
+Feel free to create an issue, if you need support for an additional type.
+
+### Server Type S3
+
+Example:
+
+datacontract.yaml
 ```
-NAME:
-   datacontract open - save and open the data contract in Data Contract Studio
+servers:
+  production:
+    type: s3
+    endpointUrl: https://minio.example.com # not needed with AWS S3
+    location: s3://bucket-name/path/*/*.json
+    delimiter: new_line # new_line, array, or none
+    format: json
+```
 
-USAGE:
-   datacontract open [command options] [arguments...]
-
-OPTIONS:
-   --file value  location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --help, -h    show help
+Environment variables
+```
+export DATACONTRACT_S3_REGION=eu-central-1
+export DATACONTRACT_S3_ACCESS_KEY_ID=AKIAXV5Q5QABCDEFGH
+export DATACONTRACT_S3_SECRET_ACCESS_KEY=93S7LRrJcqLkdb2/XXXXXXXXXXXXX
 ```
 
 
-#### diff
-```
-NAME:
-   datacontract diff - show differences of your local and a remote data contract
+## Development Setup
 
-USAGE:
-   datacontract diff [command options] [arguments...]
+Python base interpreter should be 3.11.x
 
-OPTIONS:
-   --file value                       location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --with value                       location (url or path) of the stable version of the data contract
-   --models-path value                definition of a custom path to the schema specification in your data contract (default: "models")
-   --schema-type-path value           DEPRECATED - definition of a custom path to the schema type in your data contract (default: "schema.type")
-   --schema-specification-path value  DEPRECATED - definition of a custom path to the schema specification in your data contract (default: "schema.specification")
-   --help, -h                         show help
-```
+```bash
+# create venv
+python3 -m venv venv
+source venv/bin/activate
 
-#### breaking
-```
-NAME:
-   datacontract breaking - detect breaking changes between your local and a remote data contract
-
-USAGE:
-   datacontract breaking [command options] [arguments...]
-
-OPTIONS:
-   --file value                       location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --with value                       location (url or path) of the stable version of the data contract
-   --models-path value                definition of a custom path to the schema specification in your data contract (default: "models")
-   --schema-type-path value           DEPRECATED - definition of a custom path to the schema type in your data contract (default: "schema.type")
-   --schema-specification-path value  DEPRECATED - definition of a custom path to the schema specification in your data contract (default: "schema.specification")
-   --help, -h                         show help
+# Install Requirements
+pip install --upgrade pip setuptools wheel
+pip install -e '.[dev]'
+cd tests/
+pytest
 ```
 
-#### model
+Release
 
 ```
-NAME:
-   datacontract model - import / export the data model of the data contract
-
-USAGE:
-   datacontract model [command options] [arguments...]
-
-DESCRIPTION:
-   when data is found in STDIN the command will parse and insert its content into the models section of your data contract, otherwise it will print your data model
-
-OPTIONS:
-   --file value         location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --models-path value  definition of a custom path to the schema specification in your data contract (default: "models")
-   --format value       format of the model for input or output, valid options:
-      - data-contract-specification
-      - dbt
-       (default: "data-contract-specification")
-   --help, -h  show help
+git tag v0.9.0
+git push origin v0.9.0
+python3 -m pip install --upgrade build twine
+rm -r dist/
+python3 -m build
+# for now only test.pypi.org
+python3 -m twine upload --repository testpypi dist/*
 ```
 
-#### quality
+Docker Build
+
 ```
-NAME:
-   datacontract quality - print quality checks of the data contract
-
-USAGE:
-   datacontract quality [command options] [arguments...]
-
-OPTIONS:
-   --file value                        location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --quality-specification-path value  definition of a custom path to the quality specification in your data contract (default: "quality.specification")
-   --help, -h                          show help
-```
-
-#### inline
-```
-NAME:
-   datacontract inline - inline all references specified with '$ref' notation
-
-USAGE:
-   datacontract inline [command options] [arguments...]
-
-OPTIONS:
-   --file value  location of the data contract, path or url (except init) (default: "datacontract.yaml")
-   --help, -h    show help
-```
-
-#### help
-```
-USAGE:
-   datacontract help
+docker build -t datacontract .
+docker run --rm -v ${PWD}:/app datacontract
 ```
 
 ## Contribution
@@ -295,4 +188,4 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 ## Credits
 
-Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/).
+Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/) and [Jochen Christ](https://www.linkedin.com/in/jochenchrist/).

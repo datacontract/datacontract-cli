@@ -1,0 +1,47 @@
+[project]
+name = "datacontract-cli"
+version = "0.9.0"
+description = "Validate data contracts"
+readme = "README.md"
+authors = [
+  { name = "Jochen Christ", email = "jochen.christ@innoq.com" },
+  { name = "Stefan Negele", email = "stefan.negele@innoq.com" },
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+requires-python = "~=3.11"
+dependencies = [
+  "typer[all]~=0.9.0",
+  "pydantic",
+  "pyyaml",
+  "requests",
+  #    "soda-core-pandas-dask~=3.1.3",
+  "fastparquet",
+  "soda-core-duckdb~=3.1.3",
+  "soda-core-snowflake~=3.1.3", # snowflake
+  "snowflake-connector-python[pandas]", # snowflake
+  "duckdb",
+  "fastjsonschema",
+  "python-dotenv",
+  "s3fs",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "testcontainers-minio"
+]
+
+[project.urls]
+Homepage = "https://cli.datacontract.com"
+Issues = "https://github.com/datacontract/cli/issues"
+
+[project.scripts]
+datacontract = "datacontract.cli:app"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
