@@ -1,5 +1,5 @@
 dataContractSpecification: 0.9.2
-id: enigma_jhu
+id: covid_cases
 info:
   title: COVID-19 cases
   description: Johns Hopkins University Consolidated data on COVID-19 cases, sourced from Enigma
@@ -9,13 +9,13 @@ info:
     data-explorer: https://dj2taa9i652rf.cloudfront.net/
     data: https://covid19-lake.s3.us-east-2.amazonaws.com/enigma-jhu/json/part-00000-adec1cd2-96df-4c6b-a5f2-780f092951ba-c000.json
 servers:
-  s3:
+  s3-json:
     type: s3
     location: s3://covid19-lake/enigma-jhu/json/*.json
     format: json
     delimiter: new_line
 models:
-  enigma_jhu:
+  covid_cases:
     fields:
       fips:
         type: string
@@ -47,6 +47,6 @@ models:
 quality:
   type: SodaCL
   specification:
-    checks for enigma_jhu:
+    checks for covid_cases:
       - freshness(last_update::datetime) < 5000d   # dataset is not updated anymore
       - row_count > 1000

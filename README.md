@@ -7,27 +7,45 @@
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/cli" /></a>
 </p>
 
-The `datacontract` CLI lets you work with your `datacontract.yaml` files locally, and in your CI pipeline. It uses the [Data Contract Specification](https://datacontract.com/) to validate the contract, connect to your data sources and execute tests. The CLI is open source and written in Python. It can be used as a CLI tool or directly as a Python library.
+The `datacontract` CLI is an open source command-line tool for working with [Data Contracts](https://datacontract.com/).
+It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
 
 > **_NOTE:_**  This project has been migrated from Go to Python which adds the possibility to use `datacontract` within Python code as library, but it comes with some [breaking changes](CHANGELOG.md). The Go version has been [forked](https://github.com/datacontract/cli-go), if you still rely on that.
 
 
-## Usage
+## Getting started
 
-`datacontract` usually works with a `datacontract.yaml` file in your current working directory. You can specify a different file or URL as an additional argument.
-
+Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI.  
 ```bash
-# create a new data contract from example
-$ datacontract init --template https://raw.githubusercontent.com/datacontract/cli/main/tests/examples/s3-json-remote/datacontract.yaml
-
-# execute schema and quality checks
-$ datacontract test
+$ pip install datacontract-cli
 ```
 
-## Advanced Usage
+Now, let's look at this data contract: https://raw.githubusercontent.com/datacontract/datacontract-specification/main/examples/covid-cases/datacontract.yaml
+
+We have a _servers_ section with endpoint details to the (public) S3 bucket, a _model_ for the structure of the data, and _quality_ attributes that describe the expected freshness and number of rows.
+
+This data contract contains all data to connect to S3 and check if the actual data meets the defined schema and quality requirements.
+
+We run the tests:
+
 ```bash
-# lint the data contract
+$ datacontract test https://raw.githubusercontent.com/datacontract/datacontract-specification/main/examples/covid-cases/datacontract.yaml
+# returns: 🟢 data contract is valid. Tested 12 checks.
+```
+
+Voilà, the CLI tested, that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
+
+## Usage
+
+```bash
+# create a new data contract from example and write it to datacontract.yaml
+$ datacontract init datacontract.yaml
+
+# lint the datacontract.yaml
 $ datacontract lint datacontract.yaml
+
+# execute schema and quality checks
+$ datacontract test datacontract.yaml
 
 # find differences between to data contracts (Coming Soon)
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
@@ -36,13 +54,13 @@ $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 $ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 
 # export model as jsonschema
-$ datacontract export --format jsonschema
+$ datacontract export --format jsonschema datacontract.yaml
 
 # export model as dbt  (Coming Soon)
-$ datacontract export --format dbt
+$ datacontract export --format dbt datacontract.yaml
 
 # import protobuf as model (Coming Soon)
-$ datacontract import --format protobuf --source my_protobuf_file.proto
+$ datacontract import --format protobuf --source my_protobuf_file.proto datacontract.yaml
 ```
 
 ## Programmatic (Python)
@@ -57,34 +75,48 @@ if not run.has_passed():
 ```
 
 ## Scenario: Integration with Data Mesh Manager
+
+If you use [Data Mesh Manager](https://datamesh-manager.com/), you can use the data contract URL and append the `--publish` option to send and display the test results. Set an environment variable for your API key.
+
 ```bash
 # Fetch current data contract, execute tests on production, and publish result to data mesh manager
 $ EXPORT DATAMESH_MANAGER_API_KEY=xxx
 $ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish
 ```
 
-## Scenario: CI/CD testing for breaking changes
-```bash
-# fail pipeline on breaking changes in the data contract yaml (coming soon)
-$ datacontract breaking datacontract.yaml https://raw.githubusercontent.com/datacontract/cli/main/examples/my-data-contract-id_v0.0.1.yaml
-```
+
+
 
 
 ## Installation
 
-### Pip
+Choose the most appropriate installation method for your needs:
+
+### pip
+Python 3.11 recommended.
+
 ```bash
 pip install datacontract-cli
 ```
 
+### pipx
+pipx installs into an isolated environment.
+```bash
+pipx install datacontract-cli
+```
 
-[//]: # (### Homebrew)
+### Homebrew (coming soon)
 
-[//]: # (```bash)
+```bash
+brew install datacontract/brew/datacontract
+```
 
-[//]: # (brew install datacontract/brew/datacontract)
+### Docker (coming soon)
 
-[//]: # (```)
+```bash
+docker pull datacontract/cli
+docker run --rm -v ${PWD}:/datacontract datacontract/cli
+```
 
 ## Documentation
 
@@ -92,8 +124,8 @@ pip install datacontract-cli
 
 Data Contract CLI can connect to data sources and run schema and quality tests to verify that the data contract is valid.
 
-```
-datacontract test
+```bash 
+$ datacontract test --server production datacontract.yaml
 ```
 
 To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection. In addition, credentials, such as username and passwords, may be defined with environment variables.
@@ -174,8 +206,8 @@ python3 -m twine upload --repository testpypi dist/*
 Docker Build
 
 ```
-docker build -t datacontract .
-docker run --rm -v ${PWD}:/app datacontract
+docker build -t datacontract/cli .
+docker run --rm -v ${PWD}:/datacontract datacontract/cli
 ```
 
 ## Contribution

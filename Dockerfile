@@ -29,8 +29,8 @@ RUN groupadd -r datacontract
 RUN useradd -r -g datacontract datacontract
 USER datacontract
 
-WORKDIR /app
-RUN chown -R datacontract:datacontract /app
+WORKDIR /datacontract
+RUN chown -R datacontract:datacontract /datacontract
 
 ENV PYTHONUNBUFFERED=1
 
