@@ -17,8 +17,8 @@ The `datacontract` CLI lets you work with your `datacontract.yaml` files locally
 `datacontract` usually works with a `datacontract.yaml` file in your current working directory. You can specify a different file or URL as an additional argument.
 
 ```bash
-# create a new data contract
-$ datacontract init
+# create a new data contract from example
+$ datacontract init --template https://raw.githubusercontent.com/datacontract/cli/main/tests/examples/s3-json-remote/datacontract.yaml
 
 # execute schema and quality checks
 $ datacontract test
