@@ -105,9 +105,7 @@ def test_to_jsonschemas():
     "2_Auspraegung_Label",
     "PREIS1__Verbraucherpreisindex__2020=100",
     "PREIS1__Verbraucherpreisindex__q",
-    "Verbraucherpreisindex__CH0004",
     "Verbraucherpreisindex__CH0004__q",
-    "PREIS1__CH0005",
     "PREIS1__CH0005__q"
   ]
 }
@@ -163,7 +161,7 @@ def test_to_jsonschemas_complex():
         "required": ["sku", "updated", "quantity"]
       }
     },
-    "required": ["specversion", "type", "source", "id", "time", "subject", "data"]
+    "required": ["specversion", "type", "source", "id", "time"]
 }
 """
 

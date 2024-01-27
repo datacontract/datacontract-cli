@@ -51,7 +51,8 @@ def to_property(field: Field) -> dict:
 def to_required(fields: Dict[str, Field]):
     required = []
     for field_name, field in fields.items():
-        required.append(field_name)
+        if field.required is True:
+            required.append(field_name)
     return required
 
 

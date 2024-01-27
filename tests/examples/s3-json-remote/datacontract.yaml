@@ -1,0 +1,45 @@
+dataContractSpecification: 0.9.2
+id: enigma_jhu
+info:
+  title: COVID-19 cases
+  description: Johns Hopkins University Consolidated data on COVID-19 cases, sourced from Enigma
+  version: "0.0.1"
+  links:
+    blog: https://aws.amazon.com/blogs/big-data/a-public-data-lake-for-analysis-of-covid-19-data/
+    data-explorer: https://dj2taa9i652rf.cloudfront.net/
+servers:
+  production:
+    type: s3
+    location: s3://covid19-lake/enigma-jhu/json/*.json
+    format: json
+    delimiter: new_line
+models:
+  enigma_jhu:
+    fields:
+      fips:
+        type: string
+        description: state and county two digits code
+      admin2:
+        type: string
+        description: county name
+      province_state:
+        type: string
+        description: province name or state name
+      country_region:
+        type: string
+        description: country name or region name
+      last_update:
+        type: string
+        description: last update timestamp
+      latitude:
+        type: double
+        description: location (latitude)
+      longitude:
+        type: double
+        description: location (longitude)
+      confirmed:
+        type: int
+        description: number of confirmed cases
+      combined_key:
+        type: string
+        description: county name+state name+country name

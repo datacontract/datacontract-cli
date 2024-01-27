@@ -1,4 +1,16 @@
-- Update hint/README to reflect support for local json schema in lint command
+# 0.9.0 BREAKING
+
+BREAKING: Project migrated from Golang to Python.
+The Golang version can be found at https://github.com/datacontract/cli-go
+
+- Added: `test` Support to directly run tests and connect to data sources defined in servers section.
+- Added: `test` generated schema tests from the model definition
+- Added: `test --publish URL` Publish test results to a server URL
+- Added: `export` now exports the data contract so format jsonschema and sodacl
+- Changed: The `--file` option in favor of a direct argument. Use `datacontract test datacontract.yaml` instead of `datacontract test --file datacontract.yaml`
+- Temporary Removed: `diff` is still in development and coming soon
+- Temporary Removed: `breaking` is still in development and coming soon
+- Temporary Removed: `inline` is still in development and coming soon
 
 # 0.6.0
 - Support local json schema in lint command

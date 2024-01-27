@@ -47,8 +47,9 @@ def setup_s3_connection(con, server):
         con.sql(f"""
                 SET s3_endpoint = '{s3_endpoint}';
                 """)
-    con.sql(f"""
-                SET s3_region = '{s3_region}';
-                SET s3_access_key_id = '{s3_access_key_id}';
-                SET s3_secret_access_key = '{s3_secret_access_key}';
-                """)
+    if s3_access_key_id is not None:
+        con.sql(f"""
+                    SET s3_region = '{s3_region}';
+                    SET s3_access_key_id = '{s3_access_key_id}';
+                    SET s3_secret_access_key = '{s3_secret_access_key}';
+                    """)

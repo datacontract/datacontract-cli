@@ -1,5 +1,4 @@
 import logging
-import pprint
 
 from soda.scan import Scan
 
@@ -62,7 +61,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
     scan.execute()
     logging.info("Finished soda scan")
 
-    pprint.PrettyPrinter(indent=2).pprint(scan.build_scan_results())
+    # pprint.PrettyPrinter(indent=2).pprint(scan.build_scan_results())
 
     scan_results = scan.get_scan_results()
     for c in scan_results.get("checks"):

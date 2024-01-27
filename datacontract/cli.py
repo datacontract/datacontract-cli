@@ -47,7 +47,7 @@ def test(
     """
     Run schema and quality tests on configured servers.
     """
-    print(f"Testing {location} on {server}")
+    print(f"Testing {location}")
     run = DataContract(data_contract_file=location, publish_url=publish).test()
     _handle_result(run)
 
@@ -72,7 +72,7 @@ def export(
 
 def _handle_result(run):
     if run.result == "passed":
-        print("🟢 data contract is valid!")
+        print(f"🟢 data contract is valid. Tested {len(run.checks)} checks.")
     else:
         print("🔴 data contract is invalid, found the following errors:")
         i = 1
