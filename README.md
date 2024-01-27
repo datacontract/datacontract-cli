@@ -30,7 +30,7 @@ We run the tests:
 
 ```bash
 $ datacontract test https://raw.githubusercontent.com/datacontract/datacontract-specification/main/examples/covid-cases/datacontract.yaml
-# returns: 🟢 data contract is valid. Tested 12 checks.
+# returns: 🟢 data contract is valid. Run 12 checks.
 ```
 
 Voilà, the CLI tested, that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
