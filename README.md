@@ -9,7 +9,7 @@
 
 The `datacontract` CLI lets you work with your `datacontract.yaml` files locally, and in your CI pipeline. It uses the [Data Contract Specification](https://datacontract.com/) to validate the contract, connect to your data sources and execute tests. The CLI is open source and written in Python. It can be used as a CLI tool or directly as a Python library.
 
-> **_NOTE:_**  This project has been migrated grom Go to Python which adds the possibility to use `datacontract` withing Python code as library, but it comes with some [breaking changes](CHANGELOG.md). The Golang version has been [forked](https://github.com/datacontract/cli-go), if you rely on that.
+> **_NOTE:_**  This project has been migrated from Go to Python which adds the possibility to use `datacontract` within Python code as library, but it comes with some [breaking changes](CHANGELOG.md). The Go version has been [forked](https://github.com/datacontract/cli-go), if you still rely on that.
 
 
 ## Usage
