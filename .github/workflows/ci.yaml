@@ -1,12 +1,13 @@
 on:
   push:
-    branches: [ "main", "python" ] # remove python, once merged
+    branches: [ "main" ] # remove python, once merged
   pull_request:
-    branches: [ "main", "python" ] # remove python, once merged
+    branches: [ "main" ] # remove python, once merged
 
 permissions:
   contents: read
 
+name: CI
 jobs:
   build:
 
