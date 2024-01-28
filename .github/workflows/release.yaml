@@ -42,8 +42,8 @@ jobs:
           pip install toml-cli
           PROJECT_VERSION=$(toml get --toml-path pyproject.toml project.version)
           TAG=$(git describe HEAD --tags --abbrev=0)
-          echo $TAG
-          echo $PROJECT_VERSION
+          echo TAG: $TAG
+          echo PROJECT_VERSION: $PROJECT_VERSION
           if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
       - name: Check tag version > pypi version
         uses: maybe-hello-world/pyproject-check-version@v4
