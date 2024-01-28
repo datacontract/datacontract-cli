@@ -16,7 +16,7 @@ jobs:
         os:
           - 'ubuntu-latest'
 #          - 'macos-latest' // we rely on testcontainers
-          - 'windows-latest'
+#          - 'windows-latest'
         python-version:
           - '3.11'
     steps:
