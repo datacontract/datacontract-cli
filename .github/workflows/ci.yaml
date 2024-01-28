@@ -15,7 +15,7 @@ jobs:
       matrix:
         os:
           - 'ubuntu-latest'
-          - 'macos-latest'
+#          - 'macos-latest' // we rely on testcontainers
           - 'windows-latest'
         python-version:
           - '3.11'
