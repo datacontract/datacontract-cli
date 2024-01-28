@@ -50,7 +50,7 @@ jobs:
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
           if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
       - name: Check tag version > pypi version
-        uses: maybe-hello-world/pyproject-check_version@v4
+        uses: maybe-hello-world/pyproject-check-version@v4
         id: versioncheck
         with:
           pyproject-path: "./pyproject.toml"
