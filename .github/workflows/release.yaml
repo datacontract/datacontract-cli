@@ -40,7 +40,7 @@ jobs:
       - name: check tag version == pyproject.version
         run: |
           pip install toml-cli
-          PROJECT_VERSION=$(toml get pyproject.toml project.version)
+          PROJECT_VERSION=$(toml get --toml-path pyproject.toml project.version)
           TAG=$(git describe HEAD --tags --abbrev=0)
           echo $TAG
           echo $PROJECT_VERSION
