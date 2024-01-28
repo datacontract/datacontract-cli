@@ -6,10 +6,12 @@ on:
 permissions:
   contents: read
 
-name: CI
+name: Release
 jobs:
   test:
     runs-on: ubuntu-latest
+    outputs:
+      project_version: ${{ steps.version.outputs.project_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.11
@@ -33,20 +35,22 @@ jobs:
           cd tests/
           pytest
 
-  check-version:
+  check_version:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: check tag version == pyproject.version
+        id: version
         run: |
           pip install toml-cli
           PROJECT_VERSION=$(toml get --toml-path pyproject.toml project.version)
           TAG=$(git describe HEAD --tags --abbrev=0)
           echo TAG: $TAG
-          echo PROJECT_VERSION: $PROJECT_VERSION
+          echo "PROJECT_VERSION: $PROJECT_VERSION"
+          echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
           if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
       - name: Check tag version > pypi version
-        uses: maybe-hello-world/pyproject-check-version@v4
+        uses: maybe-hello-world/pyproject-check_version@v4
         id: versioncheck
         with:
           pyproject-path: "./pyproject.toml"
@@ -61,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test
-      - check-version
+      - check_version
     steps:
       - uses: actions/checkout@v4
         with:
@@ -84,8 +88,6 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
-    if: ${{ false }}  # currently disabled
-#    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
     needs:
       - build
     runs-on: ubuntu-latest
@@ -172,10 +174,21 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test
-      - check-version
+      - check_version
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            datacontract/cli
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -190,5 +203,6 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
-          tags: datacontract/cli:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

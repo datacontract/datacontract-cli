@@ -3,7 +3,11 @@ set -e
 
 VERSION=$(toml get --toml-path pyproject.toml project.version)
 TAG_VERSION=v$VERSION
+
+echo "Checking that everything is committed"
 git diff --exit-code
+echo "Tagging $TAG_VERSION"
 git tag $TAG_VERSION
+echo "Pushing $TAG_VERSION"
 git push origin $TAG_VERSION
 echo "Pushed $TAG_VERSION"
