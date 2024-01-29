@@ -17,23 +17,24 @@ It uses data contract YAML files to lint the data contract, connect to data sour
 
 Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI.  
 ```bash
-$ pip install datacontract-cli
+$ pip3 install datacontract-cli
 ```
 
-Now, let's look at this data contract: https://raw.githubusercontent.com/datacontract/datacontract-specification/main/examples/covid-cases/datacontract.yaml
+Now, let's look at this data contract:  
+[https://datacontract.com/examples/covid-cases/datacontract.yaml](https://datacontract.com/examples/covid-cases/datacontract.yaml)
 
-We have a _servers_ section with endpoint details to the (public) S3 bucket, a _model_ for the structure of the data, and _quality_ attributes that describe the expected freshness and number of rows.
+We have a _servers_ section with endpoint details to the (public) S3 bucket, _models_ for the structure of the data, and _quality_ attributes that describe the expected freshness and number of rows.
 
-This data contract contains all data to connect to S3 and check if the actual data meets the defined schema and quality requirements.
+This data contract contains all information to connect to S3 and check that the actual data meets the defined schema and quality requirements.
 
 We run the tests:
 
 ```bash
-$ datacontract test https://raw.githubusercontent.com/datacontract/datacontract-specification/main/examples/covid-cases/datacontract.yaml
+$ datacontract test https://datacontract.com/examples/covid-cases/datacontract.yaml
 # returns: 🟢 data contract is valid. Run 12 checks.
 ```
 
-Voilà, the CLI tested, that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
+Voilà, the CLI tested that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
 
 ## Usage
 
@@ -96,7 +97,7 @@ Choose the most appropriate installation method for your needs:
 Python 3.11 recommended.
 
 ```bash
-pip install datacontract-cli
+pip3 install datacontract-cli
 ```
 
 ### pipx

@@ -84,8 +84,7 @@ jobs:
 
   github-release:
     name: >-
-      Sign the Python 🐍 distribution 📦 with Sigstore
-      and upload them to GitHub Release
+      Create a GitHub Release
     needs:
       - publish-to-pypi
     runs-on: ubuntu-latest
