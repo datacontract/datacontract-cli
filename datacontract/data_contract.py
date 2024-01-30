@@ -80,6 +80,9 @@ class DataContract:
             # TODO check yaml contains models
             server_name = list(data_contract.servers.keys())[0]
             server = data_contract.servers.get(server_name)
+            run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
+            run.dataContractId = data_contract.id
+            run.dataContractVersion = data_contract.info.version
             run.dataProductId = server.dataProductId
             run.outputPortId = server.outputPortId
             run.server = server_name
