@@ -1,0 +1,27 @@
+dataContractSpecification: 0.9.2
+id: bigquery
+info:
+  title: bigquery
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  my-dataproduct/bigquery:
+    type: bigquery
+    project: datameshexample-product
+    dataset: datacontract_cli_test_dataset
+    dataProductId: my-dataproduct
+    outputPortId: bigquery
+models:
+  datacontract_cli_test_table:
+    type: table
+    fields:
+      field_one:
+        type: varchar
+        required: true
+        unique: true
+        regex: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+      field_two:
+        type: int
+        minimum: 10
+      field_three:
+        type: timestamp

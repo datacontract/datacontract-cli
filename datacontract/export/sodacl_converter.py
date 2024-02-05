@@ -68,7 +68,7 @@ def check_field_required(field_name):
 
 def check_field_unique(field_name):
     return {
-        f'duplicate_count(\"{field_name}\") = 0': {
+        f'duplicate_count({field_name}) = 0': {
             "name": f"Check that unique field {field_name} has no duplicate values"
         }
     }
