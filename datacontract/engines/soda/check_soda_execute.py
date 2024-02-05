@@ -10,6 +10,7 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.run import \
     Run, Check, Log
+from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 
 
 def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server):
@@ -37,6 +38,10 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             return
     elif server.type == "snowflake":
         soda_configuration_str = to_snowflake_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        scan.set_data_source_name(server.type)
+    elif server.type == "bigquery":
+        soda_configuration_str = to_bigquery_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     else:
