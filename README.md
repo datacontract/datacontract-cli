@@ -141,7 +141,7 @@ The application uses different engines, based on the server `type`.
 | `s3`         | `delta`    |                                                                           | Coming soon | TBD                                 |
 | `postgres`   | n/a        |                                                                           | Coming soon | TBD                                 |
 | `snowflake`  | n/a        |                                                                           | ✅ | soda-core-snowflake                 |
-| `bigquery`   | n/a        |                                                                           | Coming soon | TBD                                 |
+| `bigquery`   | `bigquery` |                                                                           | ✅ | soda-core-bigquery                           |
 | `redshift`   | n/a        |                                                                           | Coming soon | TBD                                 |
 | `databricks` | n/a        |                                                                           | Coming soon | TBD                                 |
 | `kafka`      | `json`     |                                                                           | Coming soon | TBD                                 |
