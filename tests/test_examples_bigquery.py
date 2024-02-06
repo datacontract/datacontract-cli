@@ -1,28 +1,15 @@
 from google.cloud import bigquery
 import logging
+import os
+import pytest
 
 from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.INFO, force=True)
 
-# directly with Google client lib
-# def test_examples_bigquery():
-#     project_id = 'datameshexample-product'
-#     client = bigquery.Client(project=project_id)
-
-#     # Perform a query
-#     QUERY = (
-#         'SELECT field_one FROM `datameshexample-product.datacontract_cli_test_dataset.datacontract_cli_test_table` '
-#         'LIMIT 100'
-#     )
-#     query_job = client.query(QUERY) # API request
-#     rows = query_job.result() # Waits for query to finish
-
-#     for row in rows:
-#         print(row.field_one)
-
 datacontract = "examples/bigquery/datacontract.yaml"
 
+@pytest.mark.skipif(os.environ.get("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH") is None, reason="Requires DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH to be set")
 def test_examples_bigquery():
     data_contract = DataContract(data_contract_file=datacontract)
 
