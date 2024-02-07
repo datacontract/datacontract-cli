@@ -141,7 +141,7 @@ The application uses different engines, based on the server `type`.
 | `s3`         | `delta`    |                                                                           | Coming soon | TBD                                 |
 | `postgres`   | n/a        |                                                                           | Coming soon | TBD                                 |
 | `snowflake`  | n/a        |                                                                           | ✅ | soda-core-snowflake                 |
-| `bigquery`   | `bigquery` |                                                                           | ✅ | soda-core-bigquery                           |
+| `bigquery`   | n/a |                                                                           | ✅ | soda-core-bigquery                           |
 | `redshift`   | n/a        |                                                                           | Coming soon | TBD                                 |
 | `databricks` | n/a        |                                                                           | Coming soon | TBD                                 |
 | `kafka`      | `json`     |                                                                           | Coming soon | TBD                                 |
@@ -158,7 +158,7 @@ Feel free to create an issue, if you need support for an additional type.
 Example:
 
 datacontract.yaml
-```
+```yaml
 servers:
   production:
     type: s3
@@ -169,12 +169,37 @@ servers:
 ```
 
 Environment variables
-```
+```bash
 export DATACONTRACT_S3_REGION=eu-central-1
 export DATACONTRACT_S3_ACCESS_KEY_ID=AKIAXV5Q5QABCDEFGH
 export DATACONTRACT_S3_SECRET_ACCESS_KEY=93S7LRrJcqLkdb2/XXXXXXXXXXXXX
 ```
 
+### Server Type BigQuery
+
+We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
+* BigQuery Job User
+* BigQuery Data Viewer
+
+Example:
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: bigquery
+    project: datameshexample-product
+    dataset: datacontract_cli_test_dataset
+models:
+  datacontract_cli_test_table: # corresponds to a BigQuery table
+    type: table
+    fields: ...
+```
+
+Required environment variable:
+```bash
+export DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH=~/service-access-key.json # as saved on key creation by BigQuery
+```
 
 ## Development Setup
 
