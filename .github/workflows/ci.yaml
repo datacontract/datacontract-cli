@@ -20,9 +20,10 @@ jobs:
 #          - 'windows-latest'
         python-version:
           - '3.11'
+          - '3.12'
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.11
+      - name: Set up Python ${{matrix.python-version}}
         uses: actions/setup-python@v4
         with:
           python-version: ${{matrix.python-version}}

@@ -15,12 +15,12 @@ It uses data contract YAML files to lint the data contract, connect to data sour
 
 ## Getting started
 
-Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI.  
+Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI.
 ```bash
 $ pip3 install datacontract-cli
 ```
 
-Now, let's look at this data contract:  
+Now, let's look at this data contract:
 [https://datacontract.com/examples/covid-cases/datacontract.yaml](https://datacontract.com/examples/covid-cases/datacontract.yaml)
 
 We have a _servers_ section with endpoint details to the (public) S3 bucket, _models_ for the structure of the data, and _quality_ attributes that describe the expected freshness and number of rows.
@@ -95,6 +95,7 @@ Choose the most appropriate installation method for your needs:
 
 ### pip
 Python 3.11 recommended.
+Python 3.12 available as pre-release release candidate for 0.9.3
 
 ```bash
 pip3 install datacontract-cli
@@ -125,7 +126,7 @@ docker run --rm -v ${PWD}:/datacontract datacontract/cli
 
 Data Contract CLI can connect to data sources and run schema and quality tests to verify that the data contract is valid.
 
-```bash 
+```bash
 $ datacontract test --server production datacontract.yaml
 ```
 
@@ -178,7 +179,8 @@ export DATACONTRACT_S3_SECRET_ACCESS_KEY=93S7LRrJcqLkdb2/XXXXXXXXXXXXX
 
 ## Development Setup
 
-Python base interpreter should be 3.11.x
+Python base interpreter should be 3.11.x (unless
+working on 3.12 release candidate).
 
 ```bash
 # create venv

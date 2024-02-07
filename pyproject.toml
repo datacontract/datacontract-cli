@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.9.2"
+version = "0.9.3-rc.1"
 description = "Validate data contracts"
 readme = "README.md"
 authors = [
@@ -12,7 +12,7 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
-requires-python = "~=3.11"
+requires-python = ">=3.11"
 dependencies = [
   "typer[all]~=0.9.0",
   "pydantic~=2.5.3",
@@ -23,7 +23,7 @@ dependencies = [
   "soda-core-duckdb~=3.1.5",
   "soda-core-snowflake~=3.1.5", # snowflake
   "snowflake-connector-python[pandas]~=3.6.0", # snowflake
-  "duckdb~=0.9.2",
+  "duckdb>=0.9.3.dev3920",
   "fastjsonschema~=2.19.1",
   "python-dotenv~=1.0.0",
   "s3fs==2023.12.2",
