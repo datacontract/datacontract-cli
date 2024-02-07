@@ -10,12 +10,47 @@ from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
-from datacontract.lint import resolve
+from datacontract.lint import resolve, linters
+from datacontract.lint import result as lint_result
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import \
     Run, Check
+
+
+def linting_results_to_check(results: list[lint_result.LintingResult]) -> list[Check]:
+    checks = []
+    for result in results:
+        if result.no_errors_or_warnings():
+            checks.append(Check(
+                type="lint",
+                name=f"Linter '{result.linter}'",
+                result="passed",
+                engine="datacontract"
+                ))
+        else:
+            if result.has_warnings():
+                message = "\n".join([warning.message for warning
+                                     in result.warning_results()])
+                checks.append(Check(
+                    type="lint",
+                    name=f"Linter '{result.linter}'",
+                    result="warning",
+                    engine="datacontract",
+                    reason=message
+                    ))
+            if result.has_errors():
+                message = "\n".join([error.message for error
+                                     in result.error_results()])
+                checks.append(Check(
+                    type="lint",
+                    name=f"Linter '{result.linter}'",
+                    result="error",
+                    engine="datacontract",
+                    reason="message"))
+    return checks
+
 
 
 class DataContract:
@@ -39,14 +74,11 @@ class DataContract:
             run.log_info("Linting data contract")
             data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                           self._data_contract)
+            all_results = linters.lint_all(data_contract)
+            run.checks.extend(linting_results_to_check(
+                all_results))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
-            run.checks.append(Check(
-                type="lint",
-                result="passed",
-                name="Check Data Contract",
-                engine="datacontract",
-            ))
         except DataContractException as e:
             run.checks.append(Check(
                 type=e.type,
