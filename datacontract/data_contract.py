@@ -11,6 +11,7 @@ from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
+from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 from datacontract.model.exceptions import DataContractException
@@ -39,14 +40,15 @@ class DataContract:
             run.log_info("Linting data contract")
             data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                           self._data_contract)
-            run.dataContractId = data_contract.id
-            run.dataContractVersion = data_contract.info.version
             run.checks.append(Check(
                 type="lint",
                 result="passed",
-                name="Check Data Contract",
-                engine="datacontract",
-            ))
+                name="Data contract is syntactically valid",
+                engine="datacontract"
+                ))
+            run.checks.extend(ExampleModelLinter().lint(data_contract))
+            run.dataContractId = data_contract.id
+            run.dataContractVersion = data_contract.info.version
         except DataContractException as e:
             run.checks.append(Check(
                 type=e.type,

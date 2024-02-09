@@ -15,7 +15,6 @@ def test_lint_valid_data_contract():
     data_contract = DataContract(data_contract_file=data_contract_file)
 
     run = data_contract.lint()
-
     assert run.result == "passed"
 
 
@@ -30,7 +29,7 @@ def test_lint_invalid_data_contract():
 
 def test_lint_cli_valid():
     data_contract_file = "examples/lint/valid_datacontract.yaml"
-    expected_output = "🟢 data contract is valid. Run 1 checks.\n"
+    expected_output = "🟢 data contract is valid. Run 2 checks.\n"
 
     result = runner.invoke(app, ["lint", data_contract_file])
 
