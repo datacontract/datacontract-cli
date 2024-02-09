@@ -10,7 +10,7 @@ from datacontract.lint.urls import fetch_resource
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 from datacontract.model.exceptions import DataContractException
-from .result import LintingResult
+from .result import LinterResult
 from .linters import lint_all
 
 def resolve_data_contract(
@@ -33,7 +33,7 @@ def resolve_data_contract(
             engine="datacontract",
         )
 
-def lint_data_contract(data_contract_yaml) -> LintingResult:
+def lint_data_contract(data_contract_yaml) -> LinterResult:
     lint_all(data_contract_yaml)
 
 

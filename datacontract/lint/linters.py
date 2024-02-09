@@ -3,7 +3,7 @@ import yaml
 import json
 import io
 
-from .result import LintingResult
+from .result import LinterResult
 from ..model.data_contract_specification import DataContractSpecification, Example
 
 """This module contains linter definitions for linting a data contract.
@@ -30,9 +30,11 @@ def get_example_headers(example: Example) -> list[str]:
             return data.keys()
 
 
-def linter_example_schema(data_contract_yaml: DataContractSpecification) -> LintingResult:
+def linter_examples_conform_to_model(
+    data_contract_yaml: DataContractSpecification
+) -> LinterResult:
     """Check whether the example(s) match the model."""
-    result = LintingResult("Example(s) match schema")
+    result = LinterResult("Example(s) match schema")
     examples = data_contract_yaml.examples
     models = data_contract_yaml.models
     examples_with_model = []
@@ -48,12 +50,18 @@ def linter_example_schema(data_contract_yaml: DataContractSpecification) -> Lint
             result = result.with_warning(f"Example {index + 1} has type"
                                          " \"custom\", cannot check model"
                                          " conformance")
+        elif model.type == "object":
+            result = result.with_warning(
+                f"Example {index + 1} uses a "
+                f"model '{example.model}' with type 'object'. Linting is "
+                "currently only supported for 'table' models")
         else:
             headers = get_example_headers(example)
             for example_header in headers:
                 if example_header not in model.fields:
-                    result = result.with_error(f"Example {index + 1} has field '{example_header}'"
-                                               f" that's not contained in model '{example.model}'")
+                    result = result.with_error(
+                        f"Example {index + 1} has field '{example_header}'"
+                        f" that's not contained in model '{example.model}'")
             for (field_name, field_value) in model.fields.items():
                 if field_name not in headers and field_value.required:
                     result = result.with_error(
@@ -62,17 +70,7 @@ def linter_example_schema(data_contract_yaml: DataContractSpecification) -> Lint
     return result
 
 
-def linter_quality_checks_uses_schema(
-        data_contract_yaml) -> LintingResult:
-    return LintingResult("Quality checks use schema names")
-
-
-def linter_documentation_best_practices(
-        data_contract_yaml) -> LintingResult:
-    return LintingResult("Contract follows documentation best practices")
-
-
-def lint_all(data_contract_yaml) -> list[LintingResult]:
+def lint_all(data_contract_yaml) -> list[LinterResult]:
     linters = [linter for (name, linter) in globals().items()
                if callable(linter) and name.startswith('linter')]
     all_results = []

@@ -19,7 +19,7 @@ from datacontract.model.run import \
     Run, Check
 
 
-def linting_results_to_check(results: list[lint_result.LintingResult]) -> list[Check]:
+def linting_results_to_check(results: list[lint_result.LinterResult]) -> list[Check]:
     checks = []
     for result in results:
         if result.no_errors_or_warnings():
@@ -30,25 +30,18 @@ def linting_results_to_check(results: list[lint_result.LintingResult]) -> list[C
                 engine="datacontract"
                 ))
         else:
-            if result.has_warnings():
-                message = "\n".join([warning.message for warning
-                                     in result.warning_results()])
-                checks.append(Check(
+            # All linter messages are treated as warnings. Severity is
+            # currently ignored, but could be used in filtering in the future
+            message = "\n".join([warning.message for warning
+                                 in result.warning_results()
+                                 + result.error_results()])
+            checks.append(Check(
                     type="lint",
                     name=f"Linter '{result.linter}'",
                     result="warning",
                     engine="datacontract",
                     reason=message
                     ))
-            if result.has_errors():
-                message = "\n".join([error.message for error
-                                     in result.error_results()])
-                checks.append(Check(
-                    type="lint",
-                    name=f"Linter '{result.linter}'",
-                    result="error",
-                    engine="datacontract",
-                    reason="message"))
     return checks
 
 
