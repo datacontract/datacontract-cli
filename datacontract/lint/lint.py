@@ -1,6 +1,18 @@
 from enum import Enum
-from typing import Sequence, Any
 from dataclasses import dataclass, field
+from typing import Sequence, Any
+import abc
+
+from ..model.data_contract_specification import DataContractSpecification
+from datacontract.model.run import Check
+
+"""This module contains linter definitions for linting a data contract.
+
+Lints are quality checks that can succeed, fail, or warn. They are
+distinct from checks such as "valid yaml" or "file not found", which
+will cause the processing of the data contract to stop. Lints can be
+ignored, and are high-level requirements on the format of a data
+contract."""
 
 
 class LintSeverity(Enum):
@@ -48,16 +60,15 @@ class LinterResult:
           results can be present in the list. An empty list means that
           the linter ran without producing warnings or errors.
     """
-    linter: str
     results: Sequence[LinterMessage] = field(default_factory=list)
 
     def with_warning(self, message, model=None):
         result = LinterMessage.warning(message, model)
-        return LinterResult(self.linter, self.results + [result])
+        return LinterResult(self.results + [result])
 
     def with_error(self, message, model=None):
         result = LinterMessage.error(message, model)
-        return LinterResult(self.linter, self.results + [result])
+        return LinterResult(self.results + [result])
 
     def has_errors(self) -> bool:
         return any(map(lambda result: result.outcome == LintSeverity.ERROR,
@@ -77,3 +88,39 @@ class LinterResult:
 
     def no_errors_or_warnings(self) -> bool:
         return len(self.results) == 0
+
+
+class Linter(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def lint_implementation(self, contract: DataContractSpecification) -> LinterResult:
+        pass
+
+    def lint(self, contract: DataContractSpecification) -> list[Check]:
+        result = self.lint_implementation(contract)
+        checks = []
+        if not result.error_results():
+            checks.append(Check(
+                type="lint",
+                name=f"Linter '{self.name()}'",
+                result="passed",
+                engine="datacontract"
+            ))
+        else:
+            # All linter messages are treated as warnings. Severity is
+            # currently ignored, but could be used in filtering in the future
+            # Linter messages with level WARNING are currently ignored, but might
+            # be logged or printed in the future.
+            for lint_error in result.error_results():
+                checks.append(Check(
+                    type="lint",
+                    name=f"Linter '{self.name()}'",
+                    result="warning",
+                    engine="datacontract",
+                    reason=lint_error.message
+                ))
+        return checks
