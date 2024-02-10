@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.9.3"
+version = "0.9.4-rc.1"
 description = "Validate data contracts"
 readme = "README.md"
 authors = [
