@@ -182,7 +182,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          # linux/arm64 is disabled
+          # duckdb currently does not support linux_arm64_gcc4
+          # https://duckdb.org/docs/extensions/working_with_extensions#platforms
+          platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -17,6 +17,7 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY datacontract/ datacontract/
 RUN pip3 --no-cache-dir install .
+RUN python -c "import duckdb; duckdb.connect().sql(\"INSTALL httpfs\");"
 
 FROM ubuntu:22.04 AS runner-image
 
@@ -26,11 +27,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y python3.11 pyth
 COPY --from=builder-image /opt/venv /opt/venv
 
 RUN groupadd -r datacontract
-RUN useradd -r -g datacontract datacontract
+RUN useradd -r --home /home/datacontract -g datacontract datacontract
 USER datacontract
-
-WORKDIR /datacontract
-RUN chown -R datacontract:datacontract /datacontract
+WORKDIR /home/datacontract
 
 ENV PYTHONUNBUFFERED=1
 
