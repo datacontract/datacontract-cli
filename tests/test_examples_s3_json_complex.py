@@ -11,12 +11,14 @@ bucket_name = "feed-bucket"
 s3_access_key = "test-access"
 s3_secret_access_key = "test-secret"
 
+
 @pytest.fixture(scope="session")
 def minio_container():
     with MinioContainer(image="quay.io/minio/minio",
                         access_key=s3_access_key,
                         secret_key=s3_secret_access_key) as minio_container:
         yield minio_container
+
 
 def test_examples_s3_json(minio_container):
     os.environ['DATACONTRACT_S3_ACCESS_KEY_ID'] = "test-access"
@@ -31,7 +33,6 @@ def test_examples_s3_json(minio_container):
     print(run.pretty())
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
-
 
 
 def _prepare_s3_files(minio_container):
