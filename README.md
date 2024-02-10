@@ -107,17 +107,11 @@ pipx installs into an isolated environment.
 pipx install datacontract-cli
 ```
 
-### Homebrew (coming soon)
+### Docker
 
 ```bash
-brew install datacontract/brew/datacontract
-```
-
-### Docker (coming soon)
-
-```bash
-docker pull datacontract/cli
-docker run --rm -v ${PWD}:/datacontract datacontract/cli
+docker pull --platform linux/amd64 datacontract/cli
+docker run --rm --platform linux/amd64 -v ${PWD}:/datacontract datacontract/cli
 ```
 
 ## Documentation
