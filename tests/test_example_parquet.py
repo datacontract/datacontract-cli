@@ -7,7 +7,6 @@ from datacontract.data_contract import DataContract
 
 runner = CliRunner()
 
-
 def test_valid_cli():
     current_file_path = os.path.abspath(__file__)
     print("DEBUG Current file path:" + current_file_path)

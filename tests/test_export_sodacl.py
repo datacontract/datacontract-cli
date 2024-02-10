@@ -41,7 +41,7 @@ quality:
           fail:
             when wrong column type:
               order_id: string
-      - missing_count("order_id") = 0:
+      - missing_count(order_id) = 0:
           name: Check that required field order_id has no null values 
       - schema:
           name: Check that field processed_timestamp is present
@@ -53,7 +53,7 @@ quality:
           fail:
             when wrong column type:
               processed_timestamp: timestamp
-      - missing_count("processed_timestamp") = 0:
+      - missing_count(processed_timestamp) = 0:
           name: Check that required field processed_timestamp has no null values 
       - freshness(processed_timestamp) < 1d
       - row_count > 10
