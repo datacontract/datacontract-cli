@@ -60,18 +60,22 @@ def process_json_file(run, model_name, validate, file, delimiter):
 
 
 def process_local_file(run, server, model_name, validate):
-    if os.path.isdir(server.location):
-        return process_directory(run, server, model_name, validate)
+    path = server.path
+    if "{model}" in path:
+        path = path.format(model = model_name)
+
+    if os.path.isdir(path):
+        return process_directory(run, path, server, model_name, validate)
     else:
-        with open(server.path, 'r') as file:
+        with open(path, 'r') as file:
             process_json_file(run, model_name, validate, file, server.delimiter)
 
 
-def process_directory(run, server, model_name, validate):
+def process_directory(run, path, server, model_name, validate):
     success = True
-    for filename in os.listdir(server.path):
+    for filename in os.listdir(path):
         if filename.endswith('.json'):  # or make this a parameter
-            file_path = os.path.join(server.path, filename)
+            file_path = os.path.join(path, filename)
             with open(file_path, 'r') as file:
                 if not process_json_file(run, model_name, validate, file, server.delimiter):
                     success = False
@@ -82,6 +86,8 @@ def process_directory(run, server, model_name, validate):
 def process_s3_file(server, model_name, validate):
     s3_endpoint_url = server.endpointUrl
     s3_location = server.location
+    if "{model}" in s3_location:
+        s3_location = s3_location.format(model = model_name)
     json_stream = None
 
     for file_content in yield_s3_files(s3_endpoint_url, s3_location):
@@ -123,39 +129,35 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
         run.log_warn("jsonschema: No models found. Skip jsonschema checks.")
         return
 
-    if len(data_contract.models) > 1:
-        run.log_warn("jsonschema: Multiple models are not supported for format 'json'")
-        return
+    for model_name, model in iter(data_contract.models.items()):
+        # Process the model
+        run.log_info(f"jsonschema: Converting model {model_name} to JSON Schema")
+        schema = to_jsonschema(model_name, model)
+        run.log_info(f"jsonschema: {schema}")
 
-    # Process the model
-    run.log_info("jsonschema: Converting model to JSON Schema")
-    model_name, model = next(iter(data_contract.models.items()))
-    schema = to_jsonschema(model_name, model)
-    run.log_info(f"jsonschema: {schema}")
+        validate = fastjsonschema.compile(schema)
 
-    validate = fastjsonschema.compile(schema)
+        # Process files based on server type
+        if server.type == "local":
+            process_local_file(run, server, model_name, validate)
+        elif server.type == "s3":
+            process_s3_file(server, model_name, validate)
+        else:
+            run.checks.append(Check(
+                type="schema",
+                name="Check that JSON has valid schema",
+                model=model_name,
+                result="warn",
+                reason=f"Server type {server.type} not supported",
+                engine="jsonschema",
+            ))
+            return
 
-    # Process files based on server type
-    if server.type == "local":
-        process_local_file(run, server, model_name, validate)
-    elif server.type == "s3":
-        process_s3_file(server, model_name, validate)
-    else:
         run.checks.append(Check(
             type="schema",
             name="Check that JSON has valid schema",
             model=model_name,
-            result="warn",
-            reason=f"Server type {server.type} not supported",
+            result="passed",
+            reason="All JSON entries are valid.",
             engine="jsonschema",
         ))
-        return
-
-    run.checks.append(Check(
-        type="schema",
-        name="Check that JSON has valid schema",
-        model=model_name,
-        result="passed",
-        reason="All JSON entries are valid.",
-        engine="jsonschema",
-    ))

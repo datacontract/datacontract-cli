@@ -13,7 +13,11 @@ def get_duckdb_connection(data_contract, server):
         path = server.location
     setup_s3_connection(con, server)
     for model_name in data_contract.models:
-        logging.info(f"Creating table {model_name} for {path}")
+        model_path = path
+        if "{model}" in model_path:
+            model_path = model_path.format(model = model_name)
+        logging.info(f"Creating table {model_name} for {model_path}")
+
         if server.format == "json":
             format = "auto"
             if server.delimiter == "new_line":
@@ -21,15 +25,15 @@ def get_duckdb_connection(data_contract, server):
             elif server.delimiter == "array":
                 format = "array"
             con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{path}', format='{format}', hive_partitioning=1);
+                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{format}', hive_partitioning=1);
                         """)
         elif server.format == "parquet":
             con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{path}', hive_partitioning=1);
+                        CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
                         """)
         elif server.format == "csv":
             con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_csv_auto('{path}', hive_partitioning=1);
+                        CREATE VIEW "{model_name}" AS SELECT * FROM read_csv_auto('{model_path}', hive_partitioning=1);
                         """)
     return con
 
@@ -38,8 +42,8 @@ def setup_s3_connection(con, server):
     s3_region = os.getenv('DATACONTRACT_S3_REGION')
     s3_access_key_id = os.getenv('DATACONTRACT_S3_ACCESS_KEY_ID')
     s3_secret_access_key = os.getenv('DATACONTRACT_S3_SECRET_ACCESS_KEY')
-    con.install_extension("httpfs")
-    con.load_extension("httpfs")
+    # con.install_extension("httpfs")
+    # con.load_extension("httpfs")
     if server.endpointUrl is not None:
         s3_endpoint = server.endpointUrl.removeprefix("http://").removeprefix("https://")
         if server.endpointUrl.startswith("http://"):

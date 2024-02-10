@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2024-02-10
+
 ### Added
 - Support for BigQuery data connection
+- Support for multiple models with S3
+
+### Fixed
+
+- Fix Docker images. Disable builds for linux/amd64.
 
 ## [0.9.2] - 2024-01-31
 
