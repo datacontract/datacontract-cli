@@ -117,7 +117,7 @@ docker run --rm --platform linux/amd64 -v ${PWD}:/datacontract datacontract/cli
 Or via an alias that automatically uses the latest version:
 
 ```bash
-alias datacontract='docker run -it --rm -v "${PWD}:/datacontract" --platform linux/amd64 datacontract/cli:latest'
+alias datacontract='docker run --rm -v "${PWD}:/datacontract" --platform linux/amd64 datacontract/cli:latest'
 ```
 
 ## Documentation
