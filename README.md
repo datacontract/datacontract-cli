@@ -229,7 +229,7 @@ Docker Build
 
 ```
 docker build -t datacontract/cli .
-docker run --rm -v ${PWD}:/datacontract datacontract/cli
+docker run --rm -v ${PWD}:/home/datacontract datacontract/cli
 ```
 
 ## Contribution
