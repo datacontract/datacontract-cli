@@ -114,6 +114,12 @@ docker pull --platform linux/amd64 datacontract/cli
 docker run --rm --platform linux/amd64 -v ${PWD}:/datacontract datacontract/cli
 ```
 
+Or via an alias:
+
+```bash
+alias datacontract='docker run -it --rm -v "${PWD}:/workdir" --platform linux/amd64 datacontract/cli:latest'
+```
+
 ## Documentation
 
 ### Tests
