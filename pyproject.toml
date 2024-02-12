@@ -21,9 +21,10 @@ dependencies = [
   "fastparquet==2023.10.1",
   "soda-core-bigquery~=3.1.5",
   "soda-core-duckdb~=3.1.5",
-  "soda-core-snowflake~=3.1.5", # snowflake
+  "soda-core-snowflake~=3.1.5",
   "soda-core-spark[databricks]~=3.1.5",
-  "snowflake-connector-python[pandas]>=3.6,<3.8", # snowflake
+  "soda-core-spark_df~=2.4.0",
+  "snowflake-connector-python[pandas]>=3.6,<3.8",
   "duckdb>=0.9.3.dev3920",
   "fastjsonschema~=2.19.1",
   "python-dotenv~=1.0.0",
