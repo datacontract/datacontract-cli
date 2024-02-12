@@ -22,6 +22,7 @@ dependencies = [
   "soda-core-bigquery~=3.1.5",
   "soda-core-duckdb~=3.1.5",
   "soda-core-snowflake~=3.1.5", # snowflake
+  "soda-core-spark[databricks]~=3.1.5",
   "snowflake-connector-python[pandas]>=3.6,<3.8", # snowflake
   "duckdb>=0.9.3.dev3920",
   "fastjsonschema~=2.19.1",

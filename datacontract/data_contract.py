@@ -27,12 +27,14 @@ class DataContract:
         data_contract: DataContractSpecification = None,
         server: str = None,
         publish_url: str = None,
+        spark: str = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
         self._server = server
         self._publish_url = publish_url
+        self._spark = spark
 
     def lint(self):
         run = Run.create_run()
@@ -93,7 +95,7 @@ class DataContract:
             # 6. check server credentials are complete
             if server.format == "json":
                 check_jsonschema(run, data_contract, server)
-            check_soda_execute(run, data_contract, server)
+            check_soda_execute(run, data_contract, server, self._spark)
 
         except DataContractException as e:
             run.checks.append(Check(

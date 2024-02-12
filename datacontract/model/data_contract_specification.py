@@ -23,6 +23,10 @@ class Server(BaseModel):
     account: str = None
     database: str = None
     schema_: str = pydantic.fields.Field(default=None, alias='schema')
+    host: str = None
+    catalog: str = None
+    http_path: str = None # Use ENV variable
+    token: str = None     # Use ENV variable
     dataProductId: str = None
     outputPortId: str = None
 

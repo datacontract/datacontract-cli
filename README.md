@@ -141,10 +141,11 @@ The application uses different engines, based on the server `type`.
 | `s3`         | `csv`      |                                                                           | ✅           | soda-core-duckdb                    |
 | `s3`         | `delta`    |                                                                           | Coming soon | TBD                                 |
 | `postgres`   | n/a        |                                                                           | Coming soon | TBD                                 |
-| `snowflake`  | n/a        |                                                                           | ✅ | soda-core-snowflake                 |
-| `bigquery`   | n/a |                                                                           | ✅ | soda-core-bigquery                           |
+| `snowflake`  | n/a        |                                                                           | ✅           | soda-core-snowflake                 |
+| `bigquery`   | n/a        |                                                                           | ✅           | soda-core-bigquery                  |
 | `redshift`   | n/a        |                                                                           | Coming soon | TBD                                 |
-| `databricks` | n/a        |                                                                           | Coming soon | TBD                                 |
+| `databricks` | n/a        | Support for Databricks SQL with Unity catalog and Hive metastore.         | ✅           | soda-core-spark                     |
+| `databricks` | n/a        | Support for Spark for programmatic use in Notebooks.                      | ✅           | soda-core-spark                     |
 | `kafka`      | `json`     |                                                                           | Coming soon | TBD                                 |
 | `kafka`      | `avro`     |                                                                           | Coming soon | TBD                                 |
 | `kafka`      | `protobuf` |                                                                           | Coming soon | TBD                                 |
@@ -156,7 +157,9 @@ Feel free to create an issue, if you need support for an additional type.
 
 ### Server Type S3
 
-Example:
+Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
+
+#### Example
 
 datacontract.yaml
 ```yaml
@@ -165,16 +168,18 @@ servers:
     type: s3
     endpointUrl: https://minio.example.com # not needed with AWS S3
     location: s3://bucket-name/path/*/*.json
-    delimiter: new_line # new_line, array, or none
     format: json
+    delimiter: new_line # new_line, array, or none
 ```
 
-Environment variables
-```bash
-export DATACONTRACT_S3_REGION=eu-central-1
-export DATACONTRACT_S3_ACCESS_KEY_ID=AKIAXV5Q5QABCDEFGH
-export DATACONTRACT_S3_SECRET_ACCESS_KEY=93S7LRrJcqLkdb2/XXXXXXXXXXXXX
-```
+#### Environment Variables
+
+| Environment Variable              | Example                       | Description           |
+|-----------------------------------|-------------------------------|-----------------------|
+| `DATACONTRACT_S3_REGION`            | `eu-central-1`                  | Region of S3 bucket   |
+| `DATACONTRACT_S3_ACCESS_KEY_ID`     | `AKIAXV5Q5QABCDEFGH`            | AWS Access Key ID     |
+| `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key |
+
 
 ### Server Type BigQuery
 
@@ -182,7 +187,8 @@ We support authentication to BigQuery using Service Account Key. The used Servic
 * BigQuery Job User
 * BigQuery Data Viewer
 
-Example:
+
+#### Example
 
 datacontract.yaml
 ```yaml
@@ -197,24 +203,91 @@ models:
     fields: ...
 ```
 
-Required environment variable:
-```bash
-export DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH=~/service-access-key.json # as saved on key creation by BigQuery
+#### Environment Variables
+
+| Environment Variable                         | Example                   | Description                                             |
+|----------------------------------------------|---------------------------|---------------------------------------------------------|
+| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery |
+
+
+### Server Type Databricks
+
+Works with Unity Catalog and Hive metastore.
+
+Needs a running SQL warehouse or compute cluster.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: databricks
+    host: dbc-abcdefgh-1234.cloud.databricks.com
+    catalog: acme_catalog_prod
+    schema: orders_latest
+models:
+  orders: # corresponds to a table
+    type: table
+    fields: ...
 ```
+
+#### Environment Variables
+
+| Environment Variable                         | Example                              | Description                                           |
+|----------------------------------------------|--------------------------------------|-------------------------------------------------------|
+| `DATACONTRACT_DATABRICKS_TOKEN` | `dapia1926f7c64b7595880909cd300000000` | The personal access token to authenticate             |
+| `DATACONTRACT_DATABRICKS_HTTP_PATH` | `/sql/1.0/warehouses/b053a3ffffffff`   | The HTTP path to the SQL warehouse or compute cluster |
+
+
+### Server Type Databricks (programmatic)
+
+Works with Unity Catalog and Hive metastore.
+When running in a notebook or pipeline, the provided `spark` session can be used.
+An additional authentication is not required.
+
+Requires a Databricks Runtime with Python >= 3.10.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: databricks
+    host: dbc-abcdefgh-1234.cloud.databricks.com # ignored, always use current host
+    catalog: acme_catalog_prod
+    schema: orders_latest
+models:
+  orders: # corresponds to a table
+    type: table
+    fields: ...
+```
+
+Notebook
+```python
+%pip install git+https://github.com/datacontract/cli.git
+
+from datacontract.data_contract import DataContract
+
+data_contract = DataContract(data_contract_file="/Volumes/datacontract_test_2/orders_latest/datacontract/datacontract.yaml", spark=spark)
+data_contract.test()
+```
+
 
 ### Exports
 
 Available export options:
 
-| Type         | Description                                                                | Status       |
-|--------------|----------------------------------------------------------------------------|--------------|
-| `jsonschema` |  Export to JSON Schema                                                     | ✅           | 
-| `sodacl`     |  Export to SodaCL quality checks in YAML format                            | ✅           |
-| `dbt`        |  Export to dbt model in YAML format                                        | TBD          |
-| `avro`       |  Export to avro models                                                     | TBD          |
-| `pydantic`   |  Export to pydantic models                                                 | TBD          |
-| `sql`        |  Export to SQL DDL                                                         | TBD          |
-| `protobuf`   |  Export to Protobuf                                                        | TBD          |
+| Type         | Description                                    | Status |
+|--------------|------------------------------------------------|--------|
+| `jsonschema` | Export to JSON Schema                          | ✅      | 
+| `sodacl`     | Export to SodaCL quality checks in YAML format | ✅      |
+| `dbt`        | Export to dbt model in YAML format             | TBD    |
+| `avro`       | Export to AVRO models                          | TBD    |
+| `pydantic`   | Export to pydantic models                      | TBD    |
+| `sql`        | Export to SQL DDL                              | TBD    |
+| `protobuf`   | Export to Protobuf                             | TBD    |
 
 ## Development Setup
 

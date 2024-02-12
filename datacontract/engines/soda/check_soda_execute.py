@@ -2,6 +2,10 @@ import logging
 
 from soda.scan import Scan
 
+from datacontract.engines.soda.connections.bigquery import \
+    to_bigquery_soda_configuration
+from datacontract.engines.soda.connections.databricks import \
+    to_databricks_soda_configuration
 from datacontract.engines.soda.connections.duckdb import get_duckdb_connection
 from datacontract.engines.soda.connections.snowflake import \
     to_snowflake_soda_configuration
@@ -10,10 +14,9 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.run import \
     Run, Check, Log
-from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 
 
-def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server):
+def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark):
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return
@@ -44,6 +47,15 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         soda_configuration_str = to_bigquery_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
+    elif server.type == "databricks":
+        if spark is not None:
+            logging.info("Use Spark to connect to data source")
+            scan.add_spark_session(spark, data_source_name=server.type)
+            scan.set_data_source_name(server.type)
+        else:
+            soda_configuration_str = to_databricks_soda_configuration(server)
+            scan.add_configuration_yaml_str(soda_configuration_str)
+            scan.set_data_source_name(server.type)
     else:
         run.checks.append(Check(
             type="general",
