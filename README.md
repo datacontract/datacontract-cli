@@ -202,7 +202,7 @@ Required environment variable:
 export DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH=~/service-access-key.json # as saved on key creation by BigQuery
 ```
 
-## Export
+### Exports
 
 Available export options:
 
