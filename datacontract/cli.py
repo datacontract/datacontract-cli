@@ -103,6 +103,7 @@ def test(
 class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     sodacl = "sodacl"
+    dbt = "dbt"
 
 
 @app.command()

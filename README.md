@@ -61,7 +61,7 @@ $ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 # export model as jsonschema
 $ datacontract export --format jsonschema datacontract.yaml
 
-# export model as dbt  (Coming Soon)
+# export model as dbt
 $ datacontract export --format dbt datacontract.yaml
 
 # import protobuf as model (Coming Soon)
@@ -322,7 +322,7 @@ Available export options:
 |--------------|------------------------------------------------|--------|
 | `jsonschema` | Export to JSON Schema                          | ✅      | 
 | `sodacl`     | Export to SodaCL quality checks in YAML format | ✅      |
-| `dbt`        | Export to dbt model in YAML format             | TBD    |
+| `dbt`        | Export to dbt model in YAML format             | ✅      |
 | `avro`       | Export to AVRO models                          | TBD    |
 | `pydantic`   | Export to pydantic models                      | TBD    |
 | `sql`        | Export to SQL DDL                              | TBD    |

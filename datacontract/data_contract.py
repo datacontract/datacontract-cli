@@ -1,8 +1,6 @@
 import json
 import logging
 import tempfile
-from typing import List
-
 import yaml
 
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
@@ -10,6 +8,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
+from datacontract.export.dbt_converter import to_dbt
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.integration.publish_datamesh_manager import \
@@ -151,6 +150,8 @@ class DataContract:
             return json.dumps(jsonschema_dict, indent=2)
         if export_format == "sodacl":
             return to_sodacl(data_contract)
+        if export_format == "dbt":
+            return to_dbt(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
