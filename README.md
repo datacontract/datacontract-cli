@@ -202,6 +202,16 @@ Required environment variable:
 export DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH=~/service-access-key.json # as saved on key creation by BigQuery
 ```
 
+## Export
+
+Available export options:
+
+| Type         | Description                                                                | Status       |
+|--------------|----------------------------------------------------------------------------|--------------|
+| `jsonschema` |  Export to JSON Schema                                                     | ✅           | 
+| `sodacl`     |  Export to SodaCL quality checks in YAML format                            | ✅           |
+| `dbt`        |  Export to dbt model in YAML format                                        | TBD          |
+
 ## Development Setup
 
 Python base interpreter should be 3.11.x (unless
