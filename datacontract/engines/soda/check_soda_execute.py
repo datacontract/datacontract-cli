@@ -52,6 +52,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             logging.info("Use Spark to connect to data source")
             scan.add_spark_session(spark, data_source_name=server.type)
             scan.set_data_source_name(server.type)
+            spark.sql(f"USE {server.catalog}.{server.schema_}")
         else:
             soda_configuration_str = to_databricks_soda_configuration(server)
             scan.add_configuration_yaml_str(soda_configuration_str)
