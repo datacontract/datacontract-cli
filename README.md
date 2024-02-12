@@ -267,11 +267,15 @@ models:
 Notebook
 ```python
 %pip install git+https://github.com/datacontract/cli.git
+dbutils.library.restartPython()
 
 from datacontract.data_contract import DataContract
 
-data_contract = DataContract(data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml", spark=spark)
-data_contract.test()
+data_contract = DataContract(
+  data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml", 
+  spark=spark)
+run = data_contract.test()
+run.result
 ```
 
 
