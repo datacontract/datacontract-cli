@@ -236,8 +236,8 @@ models:
 
 | Environment Variable                         | Example                              | Description                                           |
 |----------------------------------------------|--------------------------------------|-------------------------------------------------------|
-| `DATACONTRACT_DATABRICKS_TOKEN` | `dapia1926f7c64b7595880909cd300000000` | The personal access token to authenticate             |
-| `DATACONTRACT_DATABRICKS_HTTP_PATH` | `/sql/1.0/warehouses/b053a3ffffffff`   | The HTTP path to the SQL warehouse or compute cluster |
+| `DATACONTRACT_DATABRICKS_TOKEN` | `dapia00000000000000000000000000000` | The personal access token to authenticate             |
+| `DATACONTRACT_DATABRICKS_HTTP_PATH` | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster |
 
 
 ### Server Type Databricks (programmatic)
