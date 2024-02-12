@@ -27,8 +27,9 @@ def to_dbt_model(model_key, model_value: Model) -> dict:
     dbt_model["config"]["materialized"] = model_type
 
     if supports_constraints(model_type):
-        dbt_model["config"]["contract"] = {}
-        dbt_model["config"]["contract"]["enforced"] = True
+        dbt_model["config"]["contract"] = {
+            "enforced": True
+        }
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
     columns = to_columns(model_value.fields, model_value.type)
