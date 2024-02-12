@@ -211,6 +211,10 @@ Available export options:
 | `jsonschema` |  Export to JSON Schema                                                     | ✅           | 
 | `sodacl`     |  Export to SodaCL quality checks in YAML format                            | ✅           |
 | `dbt`        |  Export to dbt model in YAML format                                        | TBD          |
+| `avro`       |  Export to avro models                                                     | TBD          |
+| `pydantic`   |  Export to pydantic models                                                 | TBD          |
+| `sql`        |  Export to SQL DDL                                                         | TBD          |
+| `protobuf`   |  Export to Protobuf                                                        | TBD          |
 
 ## Development Setup
 
