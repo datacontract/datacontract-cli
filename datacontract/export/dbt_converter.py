@@ -21,42 +21,50 @@ def to_dbt(data_contract_spec: DataContractSpecification):
 def to_dbt_model(model_key, model_value: Model) -> dict:
     dbt_model = {
         "name": model_key,
-        "config": {
-            "contract": {
-                "enforced": True
-            }
-        },
     }
-    if model_value.type is not None:
-        dbt_model["config"]["materialized"] = model_value.type
-    else:
-        dbt_model["config"]["materialized"] = "table" # TODO where to define the default? should be in the spec
+    model_type = model_value.type or "table" # TODO where to define the default? should be in the spec
+    dbt_model["config"] = {}
+    dbt_model["config"]["materialized"] = model_type
+
+    if supports_constraints(model_type):
+        dbt_model["config"]["contract"] = {}
+        dbt_model["config"]["contract"]["enforced"] = True
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = to_columns(model_value.fields)
+    columns = to_columns(model_value.fields, model_value.type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
 
 
-def to_columns(fields: Dict[str, Field]) -> list:
+def supports_constraints(model_type):
+    return model_type == "table" or model_type == "incremental"
+
+
+def to_columns(fields: Dict[str, Field], model_type: str) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = to_column(field)
+        column = to_column(field, model_type)
         column["name"] = field_name
         columns.append(column)
     return columns
 
 
-def to_column(field: Field) -> dict:
+def to_column(field: Field, model_type: str) -> dict:
     column = {}
     dbt_type = convert_type(field.type)
     if dbt_type is not None:
         column["data_type"] = dbt_type
     if field.required:
-        column.setdefault("constraints", []).append({"type": "not_null"})
+        if supports_constraints(model_type):
+            column.setdefault("constraints", []).append({"type": "not_null"})
+        else:
+            column.setdefault("tests", []).append("not_null")
     if field.unique:
-        column.setdefault("constraints", []).append({"type": "unique"})
+        if supports_constraints(model_type):
+            column.setdefault("constraints", []).append({"type": "unique"})
+        else:
+            column.setdefault("tests", []).append("unique")
 
     # TODO: all constraints
     return column
