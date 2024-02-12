@@ -270,7 +270,7 @@ Notebook
 
 from datacontract.data_contract import DataContract
 
-data_contract = DataContract(data_contract_file="/Volumes/datacontract_test_2/orders_latest/datacontract/datacontract.yaml", spark=spark)
+data_contract = DataContract(data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml", spark=spark)
 data_contract.test()
 ```
 
