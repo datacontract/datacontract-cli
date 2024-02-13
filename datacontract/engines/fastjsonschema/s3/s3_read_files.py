@@ -9,8 +9,8 @@ def yield_s3_files(s3_endpoint_url, s3_location):
     files = fs.glob(s3_location)
     for file in files:
         with fs.open(file) as f:
-            logging.info(f"Reading file {file}")
-            yield f.read()
+            logging.info(f"Opening file {file}")
+            yield f
 
 
 def s3_fs(s3_endpoint_url):

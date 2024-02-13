@@ -40,7 +40,7 @@ def read_json_lines_from_file(file):
 
 
 def read_json_array(file):
-    data = json.load(file)
+    data = json.loads(file)
     for item in data:
         yield item
 
@@ -90,13 +90,13 @@ def process_s3_file(server, model_name, validate):
         s3_location = s3_location.format(model = model_name)
     json_stream = None
 
-    for file_content in yield_s3_files(s3_endpoint_url, s3_location):
+    for file in yield_s3_files(s3_endpoint_url, s3_location):
         if server.delimiter == "new_line":
-            json_stream = read_json_lines(file_content)
+            json_stream = read_json_lines(file)
         elif server.delimiter == "array":
-            json_stream = read_json_array(file_content)
+            json_stream = read_json_array(file)
         else:
-            json_stream = read_json_file(file_content)
+            json_stream = read_json_file(file)
 
     if json_stream is None:
         raise DataContractException(
