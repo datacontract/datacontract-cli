@@ -35,7 +35,7 @@ def read_json_lines(file):
         yield json.loads(line)
 
 
-def read_json_lines_content(file_content):
+def read_json_lines_content(file_content: str):
     for line in file_content.splitlines():
         yield json.loads(line)
 
@@ -45,7 +45,8 @@ def read_json_array(file):
     for item in data:
         yield item
 
-def read_json_array_content(file_content):
+
+def read_json_array_content(file_content: str):
     data = json.loads(file_content)
     for item in data:
         yield item
@@ -55,8 +56,9 @@ def read_json_file(file):
     yield json.load(file)
 
 
-def read_json_file_content(file_content):
+def read_json_file_content(file_content: str):
     yield json.loads(file_content)
+
 
 def process_json_file(run, model_name, validate, file, delimiter):
     if delimiter == "new_line":
