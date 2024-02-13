@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from typer.testing import CliRunner
 
@@ -6,6 +8,7 @@ from datacontract.data_contract import DataContract
 
 runner = CliRunner()
 
+logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     result = runner.invoke(app, ["test", "--examples", "./examples/local-json-simple/datacontract_json_inline.yaml"])

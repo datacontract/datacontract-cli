@@ -63,6 +63,7 @@ def process_local_file(run, server, model_name, validate):
     if os.path.isdir(path):
         return process_directory(run, path, server, model_name, validate)
     else:
+        logging.info(f"Processing file {path}")
         with open(path, 'r') as file:
             process_json_file(run, model_name, validate, file, server.delimiter)
 

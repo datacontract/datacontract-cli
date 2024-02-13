@@ -137,13 +137,13 @@ class DataContract:
                                                           self._data_contract)
 
             # TODO check yaml contains models
-            run.log_info(f"Running tests for data contract {data_contract.id} against examples")
+            run.log_info(f"Running tests for data contract {data_contract.id} ({data_contract.info.version}) against examples")
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
             run.server = "examples"
 
             with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
-                run.log_info(f"Writing example data to {tmp_dir} to be used as a local server")
+                run.log_info(f"Copying examples to files in temporary directory {tmp_dir}")
                 format = "json"
 
                 for example in data_contract.examples:
@@ -152,16 +152,17 @@ class DataContract:
                     run.log_info(f"Creating example file {p}")
                     with open(p, "w") as f:
                         content = ""
-                        if format == "json" and example.data is List:
+                        if format == "json" and type(example.data) is list:
                             content = json.dumps(example.data)
-                        elif format == "json" and example.data is str:
+                        elif format == "json" and type(example.data) is str:
                             content = example.data
-                        elif format == "yaml" and example.data is List:
+                        elif format == "yaml" and type(example.data) is list:
                             content = yaml.dump(example.data)
-                        elif format == "yaml" and example.data is str:
+                        elif format == "yaml" and type(example.data) is str:
                             content = example.data
                         elif format == "csv":
                             content = example.data
+                        logging.debug(f"Content: {content}")
                         f.write(content)
                 path = f"{tmp_dir}" + "/{model}." + format
                 delimiter = "array"
