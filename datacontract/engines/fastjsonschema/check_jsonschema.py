@@ -29,7 +29,8 @@ def validate_json_stream(model_name, validate, json_stream):
         )
 
 
-def read_json_lines(file_content: str):
+def read_json_lines(file):
+    file_content = file.read()
     for line in file_content.splitlines():
         yield json.loads(line)
 
@@ -40,13 +41,13 @@ def read_json_lines_from_file(file):
 
 
 def read_json_array(file):
-    data = json.loads(file)
+    data = json.load(file)
     for item in data:
         yield item
 
 
 def read_json_file(file):
-    yield json.loads(file.read())
+    yield json.load(file)
 
 
 def process_json_file(run, model_name, validate, file, delimiter):
