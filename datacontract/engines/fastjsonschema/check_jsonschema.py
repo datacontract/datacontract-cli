@@ -46,7 +46,7 @@ def read_json_array(file):
 
 
 def read_json_file(file):
-    yield json.loads(file)
+    yield json.loads(file.read())
 
 
 def process_json_file(run, model_name, validate, file, delimiter):
