@@ -1,6 +1,8 @@
 import json
 import logging
 import tempfile
+from typing import List
+
 import yaml
 
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
@@ -142,15 +144,27 @@ class DataContract:
 
             with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
                 run.log_info(f"Writing example data to {tmp_dir} to be used as a local server")
-                path = f"{tmp_dir}" + "/{model}.json"
                 format = "json"
-                delimiter = "array"
+
                 for example in data_contract.examples:
                     format = example.type
-                    p = f"{tmp_dir}/{example.model}.json"
+                    p = f"{tmp_dir}/{example.model}.{format}"
                     run.log_info(f"Creating example file {p}")
                     with open(p, "w") as f:
-                        f.write(json.dumps(example.data))
+                        content = ""
+                        if format == "json" and example.data is List:
+                            content = json.dumps(example.data)
+                        elif format == "json" and example.data is str:
+                            content = example.data
+                        elif format == "yaml" and example.data is List:
+                            content = yaml.dump(example.data)
+                        elif format == "yaml" and example.data is str:
+                            content = example.data
+                        elif format == "csv":
+                            content = example.data
+                        f.write(content)
+                path = f"{tmp_dir}" + "/{model}." + format
+                delimiter = "array"
 
                 server = Server(
                     type="local",

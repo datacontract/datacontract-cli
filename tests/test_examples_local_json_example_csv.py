@@ -8,12 +8,12 @@ runner = CliRunner()
 
 
 def test_cli():
-    result = runner.invoke(app, ["test", "--examples", "./examples/local-json-simple/datacontract_json_inline.yaml"])
+    result = runner.invoke(app, ["test", "--examples", "./examples/local-json-simple/datacontract_csv.yaml"])
     assert result.exit_code == 0
 
 
 def test_local_json():
-    data_contract = DataContract(data_contract_file="examples/local-json-simple/datacontract_json_inline.yaml")
+    data_contract = DataContract(data_contract_file="examples/local-json-simple/datacontract_csv.yaml")
     run = data_contract.testExample()
     print(run)
     print(run.result)
