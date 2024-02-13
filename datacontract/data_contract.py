@@ -1,5 +1,7 @@
 import json
 import logging
+import tempfile
+import yaml
 
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
@@ -13,7 +15,7 @@ from datacontract.integration.publish_datamesh_manager import \
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+    DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import \
     Run, Check
@@ -117,6 +119,65 @@ class DataContract:
             ))
             logging.exception("Exception occurred")
             run.log_error(str(e))
+
+        run.finish()
+
+        if self._publish_url is not None:
+            publish_datamesh_manager(run, self._publish_url)
+
+        return run
+
+    def testExample(self) -> Run:
+        run = Run.create_run()
+        try:
+            run.log_info(f"Testing data contract")
+            data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
+                                                          self._data_contract)
+
+            # TODO check yaml contains models
+            run.log_info(f"Running tests for data contract {data_contract.id} against examples")
+            run.dataContractId = data_contract.id
+            run.dataContractVersion = data_contract.info.version
+            run.server = "examples"
+
+            with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
+                run.log_info(f"Writing example data to {tmp_dir} to be used as a local server")
+                path = f"{tmp_dir}" + "/{model}.json"
+                format = "json"
+                delimiter = "array"
+                for example in data_contract.examples:
+                    format = example.type
+                    p = f"{tmp_dir}/{example.model}.json"
+                    run.log_info(f"Creating example file {p}")
+                    with open(p, "w") as f:
+                        f.write(json.dumps(example.data))
+
+                server = Server(
+                    type="local",
+                    path=path,
+                    format=format,
+                    delimiter=delimiter,
+                )
+                print(server)
+                run.log_info(f"Using {server} for testing the examples")
+
+                # 5. check server is supported type
+                # 6. check server credentials are complete
+                if server.format == "json":
+                    check_jsonschema(run, data_contract, server)
+                check_soda_execute(run, data_contract, server, self._spark)
+
+        except DataContractException as e:
+            run.checks.append(Check(
+                type=e.type,
+                result=e.result,
+                name=e.name,
+                reason=e.reason,
+                engine=e.engine,
+                details=""
+            ))
+            run.log_error(str(e))
+
 
         run.finish()
 

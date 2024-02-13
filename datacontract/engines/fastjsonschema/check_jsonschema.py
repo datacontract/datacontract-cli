@@ -40,7 +40,7 @@ def read_json_lines_from_file(file):
 
 
 def read_json_array(file):
-    data = json.loads(file)
+    data = json.load(file)
     for item in data:
         yield item
 
