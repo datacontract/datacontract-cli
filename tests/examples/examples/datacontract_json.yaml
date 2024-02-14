@@ -28,12 +28,8 @@ examples:
   - type: json
     description: Example entry for CPI data
     model: verbraucherpreisindex
-    data:
-      - wert: 99
-        jahrMonat: "2022-00"
-      - wert: 100
-        jahrMonat: "2022-01"
-      - wert: 101
-        jahrMonat: "2022-02"
-        qualitaet: "vorlaeufig"
+    data: |-
+      [{ "wert": 99, "jahrMonat": "2022-00" },
+      { "wert": 100, "jahrMonat": "2022-01" },
+      { "wert": 101, "jahrMonat": "2022-02", "qualitaet": "vorlaeufig" }]
 

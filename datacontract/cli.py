@@ -96,13 +96,7 @@ def test(
     Run schema and quality tests on configured servers.
     """
     print(f"Testing {location}")
-    if examples:
-        print(f"Using examples")
-        run = DataContract(data_contract_file=location).testExample()
-        _handle_result(run)
-        return
-
-    run = DataContract(data_contract_file=location, publish_url=publish).test()
+    run = DataContract(data_contract_file=location, publish_url=publish, examples=examples).test()
     _handle_result(run)
 
 
