@@ -29,29 +29,40 @@ def validate_json_stream(model_name, validate, json_stream):
         )
 
 
-def read_json_lines(file_content: str):
+def read_json_lines(file):
+    file_content = file.read()
     for line in file_content.splitlines():
         yield json.loads(line)
 
 
-def read_json_lines_from_file(file):
-    for line in file:
+def read_json_lines_content(file_content: str):
+    for line in file_content.splitlines():
         yield json.loads(line)
 
 
 def read_json_array(file):
-    data = json.loads(file)
+    data = json.load(file)
+    for item in data:
+        yield item
+
+
+def read_json_array_content(file_content: str):
+    data = json.loads(file_content)
     for item in data:
         yield item
 
 
 def read_json_file(file):
-    yield json.loads(file.read())
+    yield json.load(file)
+
+
+def read_json_file_content(file_content: str):
+    yield json.loads(file_content)
 
 
 def process_json_file(run, model_name, validate, file, delimiter):
     if delimiter == "new_line":
-        json_stream = read_json_lines_from_file(file)
+        json_stream = read_json_lines(file)
     elif delimiter == "array":
         json_stream = read_json_array(file)
     else:
@@ -62,11 +73,12 @@ def process_json_file(run, model_name, validate, file, delimiter):
 def process_local_file(run, server, model_name, validate):
     path = server.path
     if "{model}" in path:
-        path = path.format(model = model_name)
+        path = path.format(model=model_name)
 
     if os.path.isdir(path):
         return process_directory(run, path, server, model_name, validate)
     else:
+        logging.info(f"Processing file {path}")
         with open(path, 'r') as file:
             process_json_file(run, model_name, validate, file, server.delimiter)
 
@@ -87,16 +99,16 @@ def process_s3_file(server, model_name, validate):
     s3_endpoint_url = server.endpointUrl
     s3_location = server.location
     if "{model}" in s3_location:
-        s3_location = s3_location.format(model = model_name)
+        s3_location = s3_location.format(model=model_name)
     json_stream = None
 
     for file_content in yield_s3_files(s3_endpoint_url, s3_location):
         if server.delimiter == "new_line":
-            json_stream = read_json_lines(file_content)
+            json_stream = read_json_lines_content(file_content)
         elif server.delimiter == "array":
-            json_stream = read_json_array(file_content)
+            json_stream = read_json_array_content(file_content)
         else:
-            json_stream = read_json_file(file_content)
+            json_stream = read_json_file_content(file_content)
 
     if json_stream is None:
         raise DataContractException(

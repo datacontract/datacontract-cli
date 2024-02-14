@@ -87,14 +87,16 @@ def test(
              "Use the key of the server object in the data contract yaml file "
              "to refer to a server, e.g., `production`, or `all` for all "
              "servers (default).")] = "all",
+    examples: Annotated[bool, typer.Option(
+        help="Run the schema and quality tests on the example data within the data contract.")] = None,
     publish: Annotated[str, typer.Option(
-        help="")] = None,
+        help="The url to publish the results after the test")] = None,
 ):
     """
     Run schema and quality tests on configured servers.
     """
     print(f"Testing {location}")
-    run = DataContract(data_contract_file=location, publish_url=publish).test()
+    run = DataContract(data_contract_file=location, publish_url=publish, examples=examples).test()
     _handle_result(run)
 
 

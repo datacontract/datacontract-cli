@@ -1,5 +1,9 @@
 import json
 import logging
+import tempfile
+from typing import List
+
+import yaml
 
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
@@ -13,7 +17,7 @@ from datacontract.integration.publish_datamesh_manager import \
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+    DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import \
     Run, Check
@@ -26,6 +30,7 @@ class DataContract:
         data_contract_str: str = None,
         data_contract: DataContractSpecification = None,
         server: str = None,
+        examples: bool = False,
         publish_url: str = None,
         spark: str = None,
     ):
@@ -33,6 +38,7 @@ class DataContract:
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
         self._server = server
+        self._examples = examples
         self._publish_url = publish_url
         self._spark = spark
 
@@ -82,20 +88,27 @@ class DataContract:
 
             check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
             # TODO check yaml contains models
-            server_name = list(data_contract.servers.keys())[0]
-            server = data_contract.servers.get(server_name)
-            run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
-            run.dataContractId = data_contract.id
-            run.dataContractVersion = data_contract.info.version
-            run.dataProductId = server.dataProductId
-            run.outputPortId = server.outputPortId
-            run.server = server_name
 
-            # 5. check server is supported type
-            # 6. check server credentials are complete
-            if server.format == "json":
-                check_jsonschema(run, data_contract, server)
-            check_soda_execute(run, data_contract, server, self._spark)
+            with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
+                if self._examples:
+                    server_name = "examples"
+                    server = self._get_examples_server(data_contract, run, tmp_dir)
+                else:
+                    server_name = list(data_contract.servers.keys())[0]
+                    server = data_contract.servers.get(server_name)
+
+                run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
+                run.dataContractId = data_contract.id
+                run.dataContractVersion = data_contract.info.version
+                run.dataProductId = server.dataProductId
+                run.outputPortId = server.outputPortId
+                run.server = server_name
+
+                # 5. check server is supported type
+                # 6. check server credentials are complete
+                if server.format == "json":
+                    check_jsonschema(run, data_contract, server)
+                check_soda_execute(run, data_contract, server, self._spark)
 
         except DataContractException as e:
             run.checks.append(Check(
@@ -125,6 +138,7 @@ class DataContract:
 
         return run
 
+
     def diff(self, other):
         pass
 
@@ -140,3 +154,35 @@ class DataContract:
         else:
             print(f"Export format {export_format} not supported.")
             return ""
+
+    def _get_examples_server(self, data_contract, run, tmp_dir):
+        run.log_info(f"Copying examples to files in temporary directory {tmp_dir}")
+        format = "json"
+        for example in data_contract.examples:
+            format = example.type
+            p = f"{tmp_dir}/{example.model}.{format}"
+            run.log_info(f"Creating example file {p}")
+            with open(p, "w") as f:
+                content = ""
+                if format == "json" and type(example.data) is list:
+                    content = json.dumps(example.data)
+                elif format == "json" and type(example.data) is str:
+                    content = example.data
+                elif format == "yaml" and type(example.data) is list:
+                    content = yaml.dump(example.data)
+                elif format == "yaml" and type(example.data) is str:
+                    content = example.data
+                elif format == "csv":
+                    content = example.data
+                logging.debug(f"Content of example file {p}: {content}")
+                f.write(content)
+        path = f"{tmp_dir}" + "/{model}." + format
+        delimiter = "array"
+        server = Server(
+            type="local",
+            path=path,
+            format=format,
+            delimiter=delimiter,
+        )
+        run.log_info(f"Using {server} for testing the examples")
+        return server
