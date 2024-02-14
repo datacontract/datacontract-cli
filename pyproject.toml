@@ -25,7 +25,7 @@ dependencies = [
   "soda-core-spark[databricks]~=3.1.5",
   "soda-core-spark-df~=3.1.5",
   "snowflake-connector-python[pandas]>=3.6,<3.8",
-  "duckdb==0.9.2",
+  "duckdb==0.9.3.dev3920",
   "fastjsonschema~=2.19.1",
   "python-dotenv~=1.0.0",
   "s3fs==2024.2.0",
