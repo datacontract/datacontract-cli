@@ -48,6 +48,9 @@ $ datacontract lint datacontract.yaml
 # execute schema and quality checks
 $ datacontract test datacontract.yaml
 
+# execute schema and quality checks on the examples within the contract
+$ datacontract test --examples datacontract.yaml
+
 # find differences between to data contracts (Coming Soon)
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 
