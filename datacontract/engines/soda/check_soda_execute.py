@@ -7,6 +7,8 @@ from datacontract.engines.soda.connections.bigquery import \
 from datacontract.engines.soda.connections.databricks import \
     to_databricks_soda_configuration
 from datacontract.engines.soda.connections.duckdb import get_duckdb_connection
+from datacontract.engines.soda.connections.postgres import \
+    to_postgres_soda_configuration
 from datacontract.engines.soda.connections.snowflake import \
     to_snowflake_soda_configuration
 from datacontract.export.sodacl_converter import to_sodacl
@@ -45,6 +47,10 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         scan.set_data_source_name(server.type)
     elif server.type == "bigquery":
         soda_configuration_str = to_bigquery_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        scan.set_data_source_name(server.type)
+    elif server.type == "postgres":
+        soda_configuration_str = to_postgres_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     elif server.type == "databricks":

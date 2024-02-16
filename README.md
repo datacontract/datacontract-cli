@@ -143,7 +143,7 @@ The application uses different engines, based on the server `type`.
 | `s3`         | `json`     | Support for `new_line` delimited JSON files and one JSON record per file. | ✅           | fastjsonschema<br> soda-core-duckdb |
 | `s3`         | `csv`      |                                                                           | ✅           | soda-core-duckdb                    |
 | `s3`         | `delta`    |                                                                           | Coming soon | TBD                                 |
-| `postgres`   | n/a        |                                                                           | Coming soon | TBD                                 |
+| `postgres`   | n/a        |                                                                           | ✅           | soda-core-postgres                  |
 | `snowflake`  | n/a        |                                                                           | ✅           | soda-core-snowflake                 |
 | `bigquery`   | n/a        |                                                                           | ✅           | soda-core-bigquery                  |
 | `redshift`   | n/a        |                                                                           | Coming soon | TBD                                 |
@@ -158,7 +158,7 @@ The application uses different engines, based on the server `type`.
 
 Feel free to create an issue, if you need support for an additional type.
 
-### Server Type S3
+### S3
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
@@ -184,7 +184,38 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key |
 
 
-### Server Type BigQuery
+### Postgres
+
+Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  postgres:
+    type: postgres
+    host: localhost
+    port: 5432
+    database: postgres
+    schema: public
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields: 
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable             | Example            | Description |
+|----------------------------------|--------------------|-------------|
+| `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
+| `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
+
+
+### BigQuery
 
 We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
 * BigQuery Job User
@@ -213,7 +244,7 @@ models:
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery |
 
 
-### Server Type Databricks
+### Databricks
 
 Works with Unity Catalog and Hive metastore.
 
@@ -243,7 +274,7 @@ models:
 | `DATACONTRACT_DATABRICKS_HTTP_PATH` | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster |
 
 
-### Server Type Databricks (programmatic)
+### Databricks (programmatic)
 
 Works with Unity Catalog and Hive metastore.
 When running in a notebook or pipeline, the provided `spark` session can be used.
@@ -298,8 +329,7 @@ Available export options:
 
 ## Development Setup
 
-Python base interpreter should be 3.11.x (unless
-working on 3.12 release candidate).
+Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).
 
 ```bash
 # create venv

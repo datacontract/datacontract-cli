@@ -24,6 +24,7 @@ class Server(BaseModel):
     database: str = None
     schema_: str = pydantic.fields.Field(default=None, alias='schema')
     host: str = None
+    port: int = None
     catalog: str = None
     http_path: str = None # Use ENV variable
     token: str = None     # Use ENV variable
