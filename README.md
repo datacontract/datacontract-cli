@@ -300,7 +300,7 @@ models:
 
 Notebook
 ```python
-%pip install git+https://github.com/datacontract/cli.git
+%pip install datacontract-cli
 dbutils.library.restartPython()
 
 from datacontract.data_contract import DataContract
