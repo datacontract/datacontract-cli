@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2024-02-18
+
 ### Added
+- Support for Postgres
 - Support for Databricks
 
 ## [0.9.3] - 2024-02-10

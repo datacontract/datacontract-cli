@@ -1,7 +1,7 @@
 [project]
 name = "datacontract-cli"
-version = "0.9.4-rc.1"
-description = "Validate data contracts"
+version = "0.9.4"
+description = "Test data contracts"
 readme = "README.md"
 authors = [
   { name = "Jochen Christ", email = "jochen.christ@innoq.com" },
