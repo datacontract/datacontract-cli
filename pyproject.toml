@@ -19,7 +19,7 @@ dependencies = [
   "pyyaml~=6.0.1",
   "requests~=2.31.0",
   "fastparquet==2023.10.1",
-  "soda-core-bigquery~=3.1.5",
+  "soda-core-bigquery~=3.2.1",
   "soda-core-duckdb~=3.1.5",
   "soda-core-postgres~=3.1.5",
   "soda-core-snowflake~=3.1.5",
