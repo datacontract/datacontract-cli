@@ -18,7 +18,7 @@ dependencies = [
   "pydantic>=2.5.3,<2.7.0",
   "pyyaml~=6.0.1",
   "requests~=2.31.0",
-  "fastparquet==2023.10.1",
+  "fastparquet==2024.2.0",
   "soda-core-bigquery~=3.2.1",
   "soda-core-duckdb~=3.2.1",
   "soda-core-postgres~=3.2.1",
