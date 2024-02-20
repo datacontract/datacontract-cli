@@ -17,10 +17,13 @@ models:
         classification: sensitive
         tags:
           - order_id
+        pattern: ^B[0-9]+$
       order_total:
         type: bigint
         required: true
         description: The order_total field
+        minimum: 0
+        maximum: 1000000
       order_status:
         type: text
         required: true

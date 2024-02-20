@@ -41,6 +41,9 @@ def to_dbt_model(model_key, model_value: Model) -> dict:
 
 
 def to_dbt_model_type(model_type):
+    # https://docs.getdbt.com/docs/build/materializations
+    # Allowed values: table, view, incremental, ephemeral, materialized view
+    # Custom values also possible
     if model_type is None:
         return "table"
     if model_type.lower() == "table":
@@ -95,6 +98,33 @@ def to_column(field: Field, model_type: str) -> dict:
         column.setdefault("meta", {})["classification"] = field.classification
     if field.tags is not None and len(field.tags) > 0:
         column.setdefault("tags", []).extend(field.tags)
+    if field.pattern is not None:
+        # Beware, the data contract pattern is a regex, not a like pattern
+        column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}})
+    if field.minimum is not None or field.maximum is not None and field.minimumExclusive is None and field.maximumExclusive is None:
+        range_test = {}
+        if field.minimum is not None:
+            range_test["min_value"] = field.minimum
+        if field.maximum is not None:
+            range_test["max_value"] = field.maximum
+        column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": range_test})
+    elif field.minimumExclusive is not None or field.maximumExclusive is not None and field.minimum is None and field.maximum is None:
+        range_test = {}
+        if field.minimumExclusive is not None:
+            range_test["min_value"] = field.minimumExclusive
+        if field.maximumExclusive is not None:
+            range_test["max_value"] = field.maximumExclusive
+        range_test["strictly"] = True
+        column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": range_test})
+    else:
+        if field.minimum is not None:
+            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimum}})
+        if field.maximum is not None:
+            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximum}})
+        if field.minimumExclusive is not None:
+            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimumExclusive, "strictly": True}})
+        if field.maximumExclusive is not None:
+            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximumExclusive, "strictly": True}})
 
     # TODO: all constraints
     return column
