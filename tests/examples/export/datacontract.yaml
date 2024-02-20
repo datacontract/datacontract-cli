@@ -5,6 +5,7 @@ info:
   version: 1.0.0
 models:
   orders:
+    description: The orders model
     fields:
       order_id:
         type: varchar
@@ -13,3 +14,4 @@ models:
       order_total:
         type: bigint
         required: true
+        description: The order_total field

@@ -1,10 +1,12 @@
-from array import array
 from typing import Dict
 
 import yaml
 
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Model, Field
+
+# snowflake data types:
+# https://docs.snowflake.com/en/sql-reference/data-types.html
 
 
 def to_dbt(data_contract_spec: DataContractSpecification):
@@ -22,7 +24,7 @@ def to_dbt_model(model_key, model_value: Model) -> dict:
     dbt_model = {
         "name": model_key,
     }
-    model_type = model_value.type or "table" # TODO where to define the default? should be in the spec
+    model_type = to_dbt_model_type(model_value.type)
     dbt_model["config"] = {}
     dbt_model["config"]["materialized"] = model_type
 
@@ -32,10 +34,20 @@ def to_dbt_model(model_key, model_value: Model) -> dict:
         }
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = to_columns(model_value.fields, model_value.type)
+    columns = to_columns(model_value.fields, model_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
+
+
+def to_dbt_model_type(model_type):
+    if model_type is None:
+        return "table"
+    if model_type.lower() == "table":
+        return "table"
+    if model_type.lower() == "view":
+        return "view"
+    return "table"
 
 
 def supports_constraints(model_type):
@@ -53,9 +65,11 @@ def to_columns(fields: Dict[str, Field], model_type: str) -> list:
 
 def to_column(field: Field, model_type: str) -> dict:
     column = {}
-    dbt_type = convert_type(field.type)
+    dbt_type = convert_type_to_snowflake(field.type)
     if dbt_type is not None:
         column["data_type"] = dbt_type
+    if field.description is not None:
+        column["description"] = field.description
     if field.required:
         if supports_constraints(model_type):
             column.setdefault("constraints", []).append({"type": "not_null"})
@@ -71,27 +85,37 @@ def to_column(field: Field, model_type: str) -> dict:
     return column
 
 
-def convert_type(type) -> None | str:
+def convert_type_to_snowflake(type) -> None | str:
+    # currently optimized for snowflake
+    # LEARNING: data contract has no direct support for CHAR,CHARACTER
+    # LEARNING: data contract has no support for "date-time", "datetime", "time"
+    # LEARNING: No precision and scale support in data contract
+    # LEARNING: no support for any
+    # GEOGRAPHY and GEOMETRY are not supported by the mapping
     if type is None:
         return None
     if type.lower() in ["string", "varchar", "text"]:
-        return "text"
-    if type.lower() in ["timestamp", "timestamp_tz", "date-time", "datetime"]:
-        return "timestamp"
+        return type.upper() # STRING, TEXT, VARCHAR are all the same in snowflake
+    if type.lower() in ["timestamp", "timestamp_tz"]:
+        return "TIMESTAMP_TZ"
     if type.lower() in ["timestamp_ntz"]:
-        return "string"
+        return "TIMESTAMP_NTZ"
     if type.lower() in ["date"]:
-        return "date"
+        return "DATE"
     if type.lower() in ["time"]:
-        return "time"
-    if type.lower() in ["number", "decimal", "numeric", "float", "double"]:
-        return "number"
+        return "TIME"
+    if type.lower() in ["number", "decimal", "numeric"]:
+        return "NUMBER" # precision and scale not supported by data contract
+    if type.lower() in [ "float", "double"]:
+        return "FLOAT"
     if type.lower() in ["integer", "int", "long", "bigint"]:
-        return "integer"
+        return "NUMBER" # always NUMBER(38,0)
     if type.lower() in ["boolean"]:
-        return "boolean"
+        return "BOOLEAN"
     if type.lower() in ["object", "record", "struct"]:
-        return None
+        return "OBJECT"
+    if type.lower() in ["bytes"]:
+        return "BINARY"
     if type.lower() in ["array"]:
-        return "array"
+        return "ARRAY"
     return None

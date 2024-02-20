@@ -34,16 +34,18 @@ models:
       materialized: table
       contract:
         enforced: true
+    description: The orders model
     columns:
       - name: order_id
-        data_type: text
+        data_type: VARCHAR
         constraints:
           - type: not_null
           - type: unique
       - name: order_total
-        data_type: integer
+        data_type: NUMBER
         constraints:
           - type: not_null    
+        description: The order_total field
 """
 
     result = yaml.safe_load(to_dbt(data_contract))
