@@ -11,6 +11,8 @@ models:
         type: varchar
         unique: true
         required: true
+        minLength: 8
+        maxLength: 10
       order_total:
         type: bigint
         required: true

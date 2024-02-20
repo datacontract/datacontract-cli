@@ -48,6 +48,8 @@ class Field(BaseModel):
     description: str = None
     pii: bool = None
     classification: str = None
+    minLength: int = None
+    maxLength: int = None
     enum: List[str] = []
     tags: List[str] = []
     fields: Dict[str, 'Field'] = {}

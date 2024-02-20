@@ -82,6 +82,13 @@ def to_column(field: Field, model_type: str) -> dict:
             column.setdefault("tests", []).append("unique")
     if field.enum is not None and len(field.enum) > 0:
         column.setdefault("tests", []).append({"accepted_values": {"values": field.enum}})
+    if field.minLength is not None or field.maxLength is not None:
+        length_test = {}
+        if field.minLength is not None:
+            length_test["min_value"] = field.minLength
+        if field.maxLength is not None:
+            length_test["max_value"] = field.maxLength
+        column.setdefault("tests", []).append({"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
     # TODO: all constraints
     return column
 

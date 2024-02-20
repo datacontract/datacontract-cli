@@ -41,6 +41,10 @@ models:
         constraints:
           - type: not_null
           - type: unique
+        tests:
+          - dbt_expectations.expect_column_value_lengths_to_be_between:
+              min_value: 8
+              max_value: 10  
       - name: order_total
         data_type: NUMBER
         constraints:
