@@ -89,6 +89,13 @@ def to_column(field: Field, model_type: str) -> dict:
         if field.maxLength is not None:
             length_test["max_value"] = field.maxLength
         column.setdefault("tests", []).append({"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
+    if field.pii is not None:
+        column.setdefault("meta", {})["pii"] = field.pii
+    if field.classification is not None:
+        column.setdefault("meta", {})["classification"] = field.classification
+    if field.tags is not None and len(field.tags) > 0:
+        column.setdefault("tags", []).extend(field.tags)
+
     # TODO: all constraints
     return column
 

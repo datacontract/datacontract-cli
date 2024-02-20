@@ -13,6 +13,10 @@ models:
         required: true
         minLength: 8
         maxLength: 10
+        pii: true
+        classification: sensitive
+        tags:
+          - order_id
       order_total:
         type: bigint
         required: true

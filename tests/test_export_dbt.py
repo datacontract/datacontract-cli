@@ -45,6 +45,11 @@ models:
           - dbt_expectations.expect_column_value_lengths_to_be_between:
               min_value: 8
               max_value: 10  
+        meta:
+          classification: sensitive
+          pii: true
+        tags:
+          - order_id
       - name: order_total
         data_type: NUMBER
         constraints:
