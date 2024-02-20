@@ -48,6 +48,7 @@ class Field(BaseModel):
     description: str = None
     pii: bool = None
     classification: str = None
+    enum: List[str] = []
     tags: List[str] = []
     fields: Dict[str, 'Field'] = {}
 

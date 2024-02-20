@@ -46,6 +46,16 @@ models:
         constraints:
           - type: not_null    
         description: The order_total field
+      - name: order_status
+        data_type: TEXT
+        constraints:
+          - type: not_null
+        tests:
+          - accepted_values:
+              values:
+                - 'pending'
+                - 'shipped'
+                - 'delivered'
 """
 
     result = yaml.safe_load(to_dbt(data_contract))

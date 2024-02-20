@@ -80,7 +80,8 @@ def to_column(field: Field, model_type: str) -> dict:
             column.setdefault("constraints", []).append({"type": "unique"})
         else:
             column.setdefault("tests", []).append("unique")
-
+    if field.enum is not None and len(field.enum) > 0:
+        column.setdefault("tests", []).append({"accepted_values": {"values": field.enum}})
     # TODO: all constraints
     return column
 
