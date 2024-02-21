@@ -19,6 +19,7 @@ dependencies = [
   "pyyaml~=6.0.1",
   "requests~=2.31.0",
   "fastparquet==2024.2.0",
+  "rich~=13.7.0",
   "soda-core-bigquery~=3.2.1",
   "soda-core-duckdb~=3.2.1",
   "soda-core-postgres~=3.2.1",
