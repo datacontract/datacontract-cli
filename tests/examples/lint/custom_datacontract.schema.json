@@ -1,0 +1,666 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "dataContractSpecification": {
+      "type": "string",
+      "enum": [
+        "0.9.2",
+        "0.9.1",
+        "0.9.0"
+      ],
+      "description": "Specifies the Data Contract Specification being used."
+    },
+    "id": {
+      "type": "string",
+      "description": "Specifies the identifier of the data contract."
+    },
+    "info": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the data contract."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the data contract document (which is distinct from the Data Contract Specification version or the Data Product implementation version)."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the data contract."
+        },
+        "owner": {
+          "type": "string",
+          "description": "The owner or team responsible for managing the data contract and providing the data."
+        },
+        "my-custom-required-field": {
+          "type": "string",
+          "description": "The owner or team responsible for managing the data contract and providing the data."
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The identifying name of the contact person/organization."
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "The URL pointing to the contact information. This MUST be in the form of a URL."
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "The email address of the contact person/organization. This MUST be in the form of an email address."
+            }
+          },
+          "description": "Contact information for the data contract."
+        }
+      },
+      "required": [
+        "title",
+        "version",
+        "my-custom-required-field"
+      ],
+      "description": "Metadata and life cycle information about the data contract."
+    },
+    "servers": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "bigquery",
+                  "BigQuery"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "project": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "dataset": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "project",
+              "dataset"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "s3"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "location": {
+                "type": "string",
+                "format": "uri",
+                "description": "An optional string describing the server. Must be in the form of a URL."
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "location"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "redshift"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "account": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "database": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "schema": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "account",
+              "database",
+              "schema"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "snowflake"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "account": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "database": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "schema": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "account",
+              "database",
+              "schema"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "databricks",
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "host": {
+                "type": "string",
+                "description": "The Databricks host",
+                "examples": ["dbc-abcdefgh-1234.cloud.databricks.com"]
+              },
+              "catalog": {
+                "type": "string",
+                "description": "The name of the Hive or Unity catalog"
+              },
+              "schema": {
+                "type": "string",
+                "description": "The schema name in the catalog"
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "host",
+              "catalog",
+              "schema"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "postgres",
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "host": {
+                "type": "string",
+                "description": "The host to the database server",
+                "examples": ["localhost"]
+              },
+              "port": {
+                "type": "integer",
+                "description": "The port to the database server."
+              },
+              "database": {
+                "type": "string",
+                "description": "The name of the database.",
+                "examples": ["postgres"]
+              },
+              "schema": {
+                "type": "string",
+                "description": "The name of the schema in the database.",
+                "examples": ["public"]
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "host",
+              "port",
+              "database",
+              "schema"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "kafka"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "host": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              },
+              "topic": {
+                "type": "string",
+                "description": "An optional string describing the server."
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "host",
+              "topic"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "local"
+                ],
+                "description": "The type of the data product technology that implements the data contract."
+              },
+              "path": {
+                "type": "string",
+                "description": "The relative or absolute path to the data file(s).",
+                "examples": [
+                  "./folder/data.parquet",
+                  "./folder/*.parquet"
+                ]
+              },
+              "format": {
+                "type": "string",
+                "description": "The format of the file(s)",
+                "examples": ["json", "parquet", "csv"]
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "type",
+              "path",
+              "format"
+            ]
+          }
+
+        ]
+      },
+      "description": "Information about the servers."
+    },
+    "terms": {
+      "type": "object",
+      "description": "The terms and conditions of the data contract.",
+      "properties": {
+        "usage": {
+          "type": "string",
+          "description": "The usage describes the way the data is expected to be used. Can contain business and technical information."
+        },
+        "limitations": {
+          "type": "string",
+          "description": "The limitations describe the restrictions on how the data can be used, can be technical or restrictions on what the data may not be used for."
+        },
+        "billing": {
+          "type": "string",
+          "description": "The billing describes the pricing model for using the data, such as whether it's free, having a monthly fee, or metered pay-per-use."
+        },
+        "noticePeriod": {
+          "type": "string",
+          "description": "The period of time that must be given by either party to terminate or modify a data usage agreement. Uses ISO-8601 period format, e.g., 'P3M' for a period of three months."
+        }
+      }
+    },
+    "models": {
+      "description": "Specifies the logical data model. Use the models name (e.g., the table name) as the key.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-zA-Z0-9_-]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of the model. Examples: table, view, object. Default: table.",
+            "type": "string",
+            "default": "table",
+            "enum": [
+              "table",
+              "view",
+              "object"
+            ]
+          },
+          "fields": {
+            "description": "Specifies a field in the data model. Use the field name (e.g., the column name) as the key.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "An optional string describing the semantic of the data in this field."
+                },
+                "type": {
+                  "type": "string",
+                  "description": "The logical data type of the field.",
+                  "enum": [
+                    "number",
+                    "decimal",
+                    "numeric",
+                    "int",
+                    "integer",
+                    "long",
+                    "bigint",
+                    "float",
+                    "double",
+                    "string",
+                    "text",
+                    "varchar",
+                    "boolean",
+                    "timestamp",
+                    "timestamp_tz",
+                    "timestamp_ntz",
+                    "date",
+                    "array",
+                    "object",
+                    "record",
+                    "struct",
+                    "bytes",
+                    "null"
+                  ]
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "An indication, if this field must contain a value and may not be null."
+                },
+                "unique": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "An indication, if the value must be unique within the model."
+                },
+                "enum": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "uniqueItems": true,
+                  "description": "A value must be equal to one of the elements in this array value. Only evaluated if the value is not null."
+                },
+                "minLength": {
+                  "type": "number",
+                  "description": "A value must greater than, or equal to, the value of this. Only applies to string types."
+                },
+                "maxLength": {
+                  "type": "number",
+                  "description": "A value must less than, or equal to, the value of this. Only applies to string types."
+                },
+                "format": {
+                  "type": "string",
+                  "description": "A specific format the value must comply with (e.g., 'email', 'uri', 'uuid')."
+                },
+                "pattern": {
+                  "type": "string",
+                  "description": "A regular expression the value must match. Only applies to string types."
+                },
+                "minimum": {
+                  "type": "number",
+                  "description": "A value of a number must greater than, or equal to, the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "exclusiveMinimum": {
+                  "type": "number",
+                  "description": "A value of a number must greater than the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "maximum": {
+                  "type": "number",
+                  "description": "A value of a number must less than, or equal to, the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "exclusiveMaximum": {
+                  "type": "number",
+                  "description": "A value of a number must less than the value of this. Only evaluated if the value is not null. Only applies to numeric values."
+                },
+                "example": {
+                  "type": "string",
+                  "description": "An example value for this field."
+                },
+                "pii": {
+                  "type": "boolean",
+                  "description": "An indication, if this field contains Personal Identifiable Information (PII)."
+                },
+                "classification": {
+                  "type": "string",
+                  "description": "The data class defining the sensitivity level for this field, according to the organization's classification scheme.",
+                  "examples": [
+                    "sensitive",
+                    "restricted",
+                    "internal",
+                    "public"
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Custom metadata to provide additional context."
+                },
+                "$ref": {
+                  "type": "string",
+                  "description": "A reference URI to a definition in the specification, internally or externally. Properties will be inherited from the definition."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "definitions": {
+      "description": "Clear and concise explanations of syntax, semantic, and classification of business objects in a given domain.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-zA-Z0-9_-]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain in which this definition is valid.",
+            "default": "global"
+          },
+          "name": {
+            "type": "string",
+            "description": "The technical name of this definition."
+          },
+          "title": {
+            "type": "string",
+            "description": "The business name of this definition."
+          },
+          "description": {
+            "type": "string",
+            "description": "Clear and concise explanations related to the domain."
+          },
+          "type": {
+            "type": "string",
+            "description": "The logical data type."
+          },
+          "minLength": {
+            "type": "number",
+            "description": "A value must be greater than or equal to this value. Applies only to string types."
+          },
+          "maxLength": {
+            "type": "number",
+            "description": "A value must be less than or equal to this value. Applies only to string types."
+          },
+          "format": {
+            "type": "string",
+            "description": "Specific format requirements for the value (e.g., 'email', 'uri', 'uuid')."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "A regular expression pattern the value must match. Applies only to string types."
+          },
+          "example": {
+            "type": "string",
+            "description": "An example value."
+          },
+          "pii": {
+            "type": "boolean",
+            "description": "Indicates if the field contains Personal Identifiable Information (PII)."
+          },
+          "classification": {
+            "type": "string",
+            "description": "The data class defining the sensitivity level for this field."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Custom metadata to provide additional context."
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "dbt",
+            "bigquery",
+            "json-schema",
+            "sql-ddl",
+            "avro",
+            "protobuf",
+            "custom"
+          ],
+          "description": "The type of the schema. Typical values are dbt, bigquery, json-schema, sql-ddl, avro, protobuf, custom."
+        },
+        "specification": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "The specification of the schema as a string."
+            },
+            {
+              "type": "object",
+              "description": "The specification of the schema as an object."
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "specification"
+      ],
+      "description": "The schema of the data contract describes the syntax and semantics of provided data sets. It supports different schema types."
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "json",
+              "yaml",
+              "custom"
+            ],
+            "description": "The type of the example data. Well-known types are csv, json, yaml, custom."
+          },
+          "description": {
+            "type": "string",
+            "description": "An optional string describing the example."
+          },
+          "model": {
+            "type": "string",
+            "description": "The reference to the model in the schema, e.g., a table name."
+          },
+          "data": {
+            "oneOf": [{
+              "type": "string",
+              "description": "Example data for this model."
+            },{
+              "type": "array",
+              "description": "Example data for this model in a structured format. Use this for type json or yaml."
+            }]
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ]
+      },
+      "description": "The Examples Object is an array of Example Objects."
+    },
+    "quality": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "SodaCL",
+            "montecarlo",
+            "custom"
+          ],
+          "description": "The type of the quality check. Typical values are SodaCL, montecarlo, custom."
+        },
+        "specification": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "The specification of the quality attributes as a string."
+            },
+            {
+              "type": "object",
+              "description": "The specification of the quality attributes as an object."
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "specification"
+      ],
+      "description": "The quality object contains quality attributes and checks."
+    }
+  },
+  "required": [
+    "dataContractSpecification",
+    "id",
+    "info"
+  ]
+}

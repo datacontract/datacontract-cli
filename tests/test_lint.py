@@ -45,3 +45,12 @@ def test_lint_cli_invalid():
 
     assert result.exit_code == 1
     assert expected_output in result.stdout
+
+
+def test_lint_custom_schema():
+    data_contract_file = "examples/lint/custom_datacontract.yaml"
+    schema_file = "examples/lint/custom_datacontract.schema.json"
+    data_contract = DataContract(data_contract_file=data_contract_file, schema_location=schema_file)
+
+    run = data_contract.lint()
+    assert run.result == "passed"

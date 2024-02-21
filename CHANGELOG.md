@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Export to dbt models
+- Export to dbt models (#37).
+- test - show a test summary table.
+- lint - Support local schema (#46).
 
 ## [0.9.4] - 2024-02-18
 
