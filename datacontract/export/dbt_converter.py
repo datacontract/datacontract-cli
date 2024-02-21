@@ -5,6 +5,7 @@ import yaml
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Model, Field
 
+
 # snowflake data types:
 # https://docs.snowflake.com/en/sql-reference/data-types.html
 
@@ -17,7 +18,7 @@ def to_dbt(data_contract_spec: DataContractSpecification):
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = to_dbt_model(model_key, model_value)
         dbt["models"].append(dbt_model)
-    return yaml.dump(dbt, indent=2)
+    return yaml.dump(dbt, indent=2, sort_keys=False)
 
 
 def to_dbt_model(model_key, model_value: Model) -> dict:

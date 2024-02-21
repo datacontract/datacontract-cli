@@ -11,6 +11,7 @@ from datacontract.engines.fastjsonschema.check_jsonschema import \
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.dbt_converter import to_dbt
 from datacontract.export.jsonschema_converter import to_jsonschema
+from datacontract.export.odcs_converter import to_odcs
 from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
@@ -155,6 +156,8 @@ class DataContract:
             return to_sodacl(data_contract)
         if export_format == "dbt":
             return to_dbt(data_contract)
+        if export_format == "odcs":
+            return to_odcs(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
