@@ -20,3 +20,4 @@ def test_examples_s3_json():
     print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
+

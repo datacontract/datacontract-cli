@@ -1,6 +1,5 @@
 import logging
 
-import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -17,6 +16,14 @@ def test_cli():
 
 def test_csv():
     data_contract = DataContract(data_contract_file="examples/examples/datacontract_csv.yaml", examples=True)
+    run = data_contract.test()
+    print(run)
+    print(run.result)
+    assert run.result == "passed"
+
+
+def test_csv_orders():
+    data_contract = DataContract(data_contract_file="examples/s3-json-remote/datacontract.yaml", examples=True)
     run = data_contract.test()
     print(run)
     print(run.result)
