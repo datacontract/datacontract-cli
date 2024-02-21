@@ -74,7 +74,7 @@ def lint(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Argument(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
+        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -88,7 +88,7 @@ def test(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Argument(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
+        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
     server: Annotated[str, typer.Option(
         help="The server configuration to run the schema and quality tests. "
              "Use the key of the server object in the data contract yaml file "
