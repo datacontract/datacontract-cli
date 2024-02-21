@@ -56,14 +56,15 @@ def to_odcs_table(model_key, model_value: Model) -> dict:
 def to_columns(fields: Dict[str, Field]) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = to_column(field)
-        column["column"] = field_name
+        column = to_column(field_name, field)
         columns.append(column)
     return columns
 
 
-def to_column(field: Field) -> dict:
-    column = {}
+def to_column(field_name: str, field: Field) -> dict:
+    column = {
+        "column": field_name
+    }
     if field.type is not None:
         column["logicalType"] = field.type
         column["physicalType"] = field.type
