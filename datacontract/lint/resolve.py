@@ -16,11 +16,12 @@ def resolve_data_contract(
     data_contract_location: str = None,
     data_contract_str: str = None,
     data_contract: DataContractSpecification = None,
+    schema_location: str = None,
 ) -> DataContractSpecification:
     if data_contract_location is not None:
-        return resolve_data_contract_from_location(data_contract_location)
+        return resolve_data_contract_from_location(data_contract_location, schema_location)
     elif data_contract_str is not None:
-        return resolve_data_contract_from_str(data_contract_str)
+        return resolve_data_contract_from_str(data_contract_str, schema_location)
     elif data_contract is not None:
         return data_contract
     else:
@@ -33,17 +34,17 @@ def resolve_data_contract(
         )
 
 
-def resolve_data_contract_from_location(location) -> DataContractSpecification:
+def resolve_data_contract_from_location(location, schema_location: str = None) -> DataContractSpecification:
     if location.startswith("http://") or location.startswith("https://"):
         data_contract_str = fetch_resource(location)
     else:
         data_contract_str = read_file(location)
-    return resolve_data_contract_from_str(data_contract_str)
+    return resolve_data_contract_from_str(data_contract_str, schema_location)
 
 
-def resolve_data_contract_from_str(data_contract_str):
+def resolve_data_contract_from_str(data_contract_str, schema_location: str = None):
     data_contract_yaml_dict = to_yaml(data_contract_str)
-    validate(data_contract_yaml_dict)
+    validate(data_contract_yaml_dict, schema_location)
     return DataContractSpecification(**data_contract_yaml_dict)
 
 
@@ -62,8 +63,8 @@ def to_yaml(data_contract_str):
         )
 
 
-def validate(data_contract_yaml):
-    schema = fetch_schema()
+def validate(data_contract_yaml, schema_location: str = None):
+    schema = fetch_schema(schema_location)
     try:
         fastjsonschema.validate(schema, data_contract_yaml)
         logging.debug("YAML data is valid.")

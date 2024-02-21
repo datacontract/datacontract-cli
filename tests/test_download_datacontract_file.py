@@ -39,7 +39,7 @@ def test_download_datacontract_file_file_exists():
                                  "--template", _custom_template_url])
 
     assert result.exit_code == 1
-    assert "File already exists, use --overwrite-file to overwrite" in result.stdout
+    assert "File already exists, use --overwrite to overwrite" in result.stdout
     _compare_test_datacontract_with(_default_template_url)
 
 

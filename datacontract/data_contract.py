@@ -1,6 +1,7 @@
 import json
 import logging
 import tempfile
+
 import yaml
 
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
@@ -28,6 +29,7 @@ class DataContract:
         data_contract_file: str = None,
         data_contract_str: str = None,
         data_contract: DataContractSpecification = None,
+        schema_location: str = None,
         server: str = None,
         examples: bool = False,
         publish_url: str = None,
@@ -36,6 +38,7 @@ class DataContract:
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
+        self._schema_location = schema_location
         self._server = server
         self._examples = examples
         self._publish_url = publish_url
@@ -46,7 +49,7 @@ class DataContract:
         try:
             run.log_info("Linting data contract")
             data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                          self._data_contract)
+                                                          self._data_contract, self._schema_location)
             run.checks.append(Check(
                 type="lint",
                 result="passed",
@@ -83,7 +86,7 @@ class DataContract:
         try:
             run.log_info(f"Testing data contract")
             data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                          self._data_contract)
+                                                          self._data_contract, self._schema_location)
 
             check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
             # TODO check yaml contains models

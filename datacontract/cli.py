@@ -63,7 +63,7 @@ def init(
     try:
         download_datacontract_file(location, template, overwrite)
     except FileExistsException:
-        print("File already exists, use --overwrite-file to overwrite")
+        print("File already exists, use --overwrite to overwrite")
         raise typer.Exit(code=1)
     else:
         print("📄 data contract written to " + location)
@@ -73,11 +73,13 @@ def init(
 def lint(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
+    schema: Annotated[
+        str, typer.Argument(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
     """
-    run = DataContract(data_contract_file=location).lint()
+    run = DataContract(data_contract_file=location, schema_location=schema).lint()
     _handle_result(run)
 
 
@@ -85,6 +87,8 @@ def lint(
 def test(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
+    schema: Annotated[
+        str, typer.Argument(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
     server: Annotated[str, typer.Option(
         help="The server configuration to run the schema and quality tests. "
              "Use the key of the server object in the data contract yaml file "
@@ -101,7 +105,9 @@ def test(
     Run schema and quality tests on configured servers.
     """
     print(f"Testing {location}")
-    run = DataContract(data_contract_file=location, publish_url=publish, examples=examples).test()
+    if server == "all":
+        server = None
+    run = DataContract(data_contract_file=location, schema_location=schema, publish_url=publish, server=server, examples=examples).test()
     if logs:
         _print_logs(run)
     _handle_result(run)
