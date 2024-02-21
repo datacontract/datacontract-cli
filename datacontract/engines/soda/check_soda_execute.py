@@ -89,9 +89,15 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
 
     scan_results = scan.get_scan_results()
     for c in scan_results.get("checks"):
-        check = Check(type="schema", result="passed" if c.get("outcome") == "pass" else "failed" if c.get(
-            "outcome") == "fail" else c.get("outcome"), reason=', '.join(c.get("outcomeReasons")), name=c.get("name"),
-                      model=c.get("table"), field=c.get("column"), engine="soda-core", )
+        check = Check(
+            type="schema",
+            result="passed" if c.get("outcome") == "pass" else "failed" if c.get("outcome") == "fail" else c.get("outcome"),
+            reason=', '.join(c.get("outcomeReasons")),
+            name=c.get("name"),
+            model=c.get("table"),
+            field=c.get("column"),
+            engine="soda-core",
+        )
         update_reason(check, c)
         run.checks.append(check)
 
