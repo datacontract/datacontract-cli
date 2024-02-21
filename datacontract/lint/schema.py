@@ -18,8 +18,8 @@ def fetch_schema(location: str = None):
         if not os.path.exists(location):
             raise DataContractException(
                 type="lint",
-                name=f"Reading schema from {path}",
-                reason=f"The file '{path}' does not exist.",
+                name=f"Reading schema from {location}",
+                reason=f"The file '{location}' does not exist.",
                 engine="datacontract",
                 result="error"
             )
