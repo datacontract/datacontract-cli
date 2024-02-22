@@ -105,3 +105,6 @@ class DataContractSpecification(BaseModel):
     def from_string(cls, data_contract_str):
         data = yaml.safe_load(data_contract_str)
         return DataContractSpecification(**data)
+
+    def to_yaml(self):
+        return yaml.dump(self.model_dump(exclude_unset=True, exclude_none=True), sort_keys=False)

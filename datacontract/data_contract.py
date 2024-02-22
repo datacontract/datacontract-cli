@@ -44,7 +44,11 @@ class DataContract:
         self._publish_url = publish_url
         self._spark = spark
 
-    def lint(self):
+    @classmethod
+    def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
+        return resolve.resolve_data_contract(data_contract_location=template)
+
+    def lint(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -55,7 +59,7 @@ class DataContract:
                 result="passed",
                 name="Data contract is syntactically valid",
                 engine="datacontract"
-                ))
+            ))
             run.checks.extend(ExampleModelLinter().lint(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
@@ -140,12 +144,12 @@ class DataContract:
 
         return run
 
-
     def diff(self, other):
         pass
 
     def export(self, export_format) -> str:
-        data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
+        data_contract = resolve.resolve_data_contract(self._data_contract_file,
+                                                      self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
             model_name, model = next(iter(data_contract.models.items()))
@@ -190,3 +194,7 @@ class DataContract:
         )
         run.log_info(f"Using {server} for testing the examples")
         return server
+
+    def import_from_source(self, source: str, sql_file_path: str) -> DataContractSpecification:
+        data_contract_specification = DataContract.init()
+        return data_contract_specification
