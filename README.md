@@ -114,14 +114,14 @@ pipx install datacontract-cli
 ### Docker
 
 ```bash
-docker pull --platform linux/amd64 datacontract/cli
-docker run --rm --platform linux/amd64 -v ${PWD}:/home/datacontract datacontract/cli
+docker pull datacontract/cli
+docker run --rm -v ${PWD}:/home/datacontract datacontract/cli
 ```
 
 Or via an alias that automatically uses the latest version:
 
 ```bash
-alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" --platform linux/amd64 datacontract/cli:latest'
+alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/cli:latest'
 ```
 
 ## Documentation
