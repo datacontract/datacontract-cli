@@ -117,6 +117,7 @@ class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     sodacl = "sodacl"
     dbt = "dbt"
+    odcs = "odcs"
 
 
 @app.command()
