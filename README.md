@@ -40,13 +40,6 @@ Testing https://datacontract.com/examples/orders-latest/datacontract.yaml
 ├────────┼─────────────────────────────────────────────────────────────────────┼───────────────────────────────┼─────────┤
 │ passed │ Check that JSON has valid schema                                    │ orders                        │         │
 │ passed │ Check that JSON has valid schema                                    │ line_items                    │         │
-│ passed │ Check that field lines_item_id is present                           │ line_items                    │         │
-│ passed │ Check that field order_id is present                                │ line_items                    │         │
-│ passed │ Check that field sku is present                                     │ line_items                    │         │
-│ passed │ values in (order_id) must exist in orders (order_id)                │ line_items.order_id           │         │
-│ passed │ row_count >= 5000                                                   │ line_items                    │         │
-│ passed │ Check that required field lines_item_id has no null values          │ line_items.lines_item_id      │         │
-│ passed │ Check that unique field lines_item_id has no duplicate values       │ line_items.lines_item_id      │         │
 │ passed │ Check that field order_id is present                                │ orders                        │         │
 │ passed │ Check that field order_timestamp is present                         │ orders                        │         │
 │ passed │ Check that field order_total is present                             │ orders                        │         │
@@ -60,8 +53,15 @@ Testing https://datacontract.com/examples/orders-latest/datacontract.yaml
 │ passed │ freshness(order_timestamp) < 24h                                    │ orders.order_timestamp        │         │
 │ passed │ Check that required field order_total has no null values            │ orders.order_total            │         │
 │ passed │ Check that required field customer_email_address has no null values │ orders.customer_email_address │         │
+│ passed │ Check that field lines_item_id is present                           │ line_items                    │         │
+│ passed │ Check that field order_id is present                                │ line_items                    │         │
+│ passed │ Check that field sku is present                                     │ line_items                    │         │
+│ passed │ values in (order_id) must exist in orders (order_id)                │ line_items.order_id           │         │
+│ passed │ row_count >= 5000                                                   │ line_items                    │         │
+│ passed │ Check that required field lines_item_id has no null values          │ line_items.lines_item_id      │         │
+│ passed │ Check that unique field lines_item_id has no duplicate values       │ line_items.lines_item_id      │         │
 ╰────────┴─────────────────────────────────────────────────────────────────────┴───────────────────────────────┴─────────╯
-🟢 data contract is valid. Run 22 checks. Took 8.875758 seconds.
+🟢 data contract is valid. Run 22 checks. Took 6.739514 seconds.
 ```
 
 Voilà, the CLI tested that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
