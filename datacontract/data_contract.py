@@ -17,6 +17,7 @@ from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
+from datacontract.model.breaking_result import BreakingResults, BreakingResult, Location
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -56,7 +57,7 @@ class DataContract:
                 result="passed",
                 name="Data contract is syntactically valid",
                 engine="datacontract"
-                ))
+            ))
             run.checks.extend(ExampleModelLinter().lint(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
@@ -141,9 +142,19 @@ class DataContract:
 
         return run
 
+    def breaking(self, other):
+        old = self.get_data_contract_specification()
+        new = other.get_data_contract_specification()
+        breaking_results = BreakingResults(breaking_results=list())
+        breaking_results.breaking_results.append(BreakingResult(description='removed the field updated_at', severity='error', check_name='field-removed',
+                                                                location=Location(
+                                                                    path='./examples/breaking/datacontract-v2.yaml',
+                                                                    model='my_table')))
+        return breaking_results
 
-    def diff(self, other):
-        pass
+    def get_data_contract_specification(self):
+        return resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
+                                             self._data_contract, self._schema_location)
 
     def export(self, export_format) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,

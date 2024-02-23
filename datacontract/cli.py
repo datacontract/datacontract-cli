@@ -134,6 +134,21 @@ def export(
     print(result)
 
 
+@app.command()
+def breaking(
+    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
+    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+):
+    """
+    Convert data contract to a specific format. Prints to stdout.
+    """
+
+    # TODO exception handling
+    result = DataContract(data_contract_file=location_old).breaking(DataContract(data_contract_file=location_new))
+    print(str(result))
+    raise typer.Exit(code=1)
+
+
 def _handle_result(run):
     _print_table(run)
     if run.result == "passed":
