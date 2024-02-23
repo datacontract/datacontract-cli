@@ -18,6 +18,7 @@ dependencies = [
   "pydantic>=2.5.3,<2.7.0",
   "pyyaml~=6.0.1",
   "requests~=2.31.0",
+  "fastapi==0.109.2",
   "fastparquet==2024.2.0",
   "python-multipart==0.0.9",
   "rich~=13.7.0",
