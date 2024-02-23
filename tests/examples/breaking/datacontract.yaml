@@ -12,15 +12,19 @@ models:
       id:
         type: integer
         required: true
+        description: my custom description
       name:
         type: string
-        required: true
       description:
         type: string
-        required: false
       created_at:
         type: timestamp
-        required: true
+        format: YYYY-MM-DD
       updated_at:
         type: timestamp
+  my_table2:
+    type: table
+    fields:
+      id:
+        type: integer
         required: true

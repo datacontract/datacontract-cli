@@ -10,14 +10,19 @@ models:
     type: table
     fields:
       id:
-        type: integer
+        type: string
         required: true
+        description: my changed description
       name:
         type: string
-        required: true
       description:
         type: string
-        required: false
       created_at:
         type: timestamp
+        format: YYYY/MM/DD
+  my_table2:
+    type: table
+    fields:
+      id:
+        type: integer
         required: true

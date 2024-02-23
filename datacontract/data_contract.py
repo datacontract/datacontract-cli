@@ -4,6 +4,7 @@ import tempfile
 
 import yaml
 
+from datacontract.breaking.breaking import models_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
 from datacontract.engines.fastjsonschema.check_jsonschema import \
@@ -142,15 +143,10 @@ class DataContract:
 
         return run
 
-    def breaking(self, other):
+    def breaking(self, other: 'DataContract') -> BreakingResults:
         old = self.get_data_contract_specification()
         new = other.get_data_contract_specification()
-        breaking_results = BreakingResults(breaking_results=list())
-        breaking_results.breaking_results.append(BreakingResult(description='removed the field updated_at', severity='error', check_name='field-removed',
-                                                                location=Location(
-                                                                    path='./examples/breaking/datacontract-v2.yaml',
-                                                                    model='my_table')))
-        return breaking_results
+        return models_breaking_changes(old_models=old.models, new_models=new.models, new_path=other._data_contract_file)
 
     def get_data_contract_specification(self):
         return resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
