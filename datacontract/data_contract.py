@@ -172,7 +172,7 @@ class DataContract:
             else:
                 return to_rdf(data_contract, "").serialize(format="n3")
         else:
-            print(f"Convert format {export_format} not supported.")
+            print(f"Convert format {convert_format} not supported.")
             return ""
 
 
