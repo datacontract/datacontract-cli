@@ -140,7 +140,7 @@ def breaking(
     location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
 ):
     """
-    Convert data contract to a specific format. Prints to stdout.
+    Identifies breaking changes between data contracts. Prints to stdout.
     """
 
     # TODO exception handling
