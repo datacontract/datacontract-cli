@@ -6,9 +6,7 @@ info:
   my-custom-required-field: hello
 
 models:
-  my_table2:
-    type: table
+  my_table:
     fields:
-      id:
-        type: integer
-        required: true
+      my_field:
+        description: My Description

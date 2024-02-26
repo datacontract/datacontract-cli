@@ -146,7 +146,8 @@ def breaking(
     # TODO exception handling
     result = DataContract(data_contract_file=location_old).breaking(DataContract(data_contract_file=location_new))
     print(str(result))
-    raise typer.Exit(code=1)
+    if not result.passed_checks():
+        raise typer.Exit(code=1)
 
 
 def _handle_result(run):

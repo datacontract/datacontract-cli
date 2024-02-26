@@ -18,7 +18,7 @@ from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
-from datacontract.model.breaking_result import BreakingResults, BreakingResult, Location
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -143,7 +143,7 @@ class DataContract:
 
         return run
 
-    def breaking(self, other: 'DataContract') -> BreakingResults:
+    def breaking(self, other: 'DataContract') -> BreakingChanges:
         old = self.get_data_contract_specification()
         new = other.get_data_contract_specification()
         return models_breaking_changes(old_models=old.models, new_models=new.models, new_path=other._data_contract_file)

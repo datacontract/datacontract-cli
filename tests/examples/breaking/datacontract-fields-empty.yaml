@@ -1,0 +1,47 @@
+dataContractSpecification: 0.9.2
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+  my-custom-required-field: hello
+
+models:
+  my_table:
+    type: table
+    fields:
+      field_type:
+        description: My Description
+      field_format:
+        type: string
+      field_required:
+        type: string
+      field_unique:
+        type: string
+      field_description:
+        type: string
+      field_pii:
+        type: string
+      field_classification:
+        type: string
+      field_pattern:
+        type: string
+      field_minLength:
+        type: string
+      field_maxLength:
+        type: string
+      field_minimum:
+        type: string
+      field_minimumExclusive:
+        type: string
+      field_maximum:
+        type: string
+      field_maximumExclusive:
+        type: string
+      field_enum:
+        type: string
+      field_tags:
+        type: string
+      field_fields:
+        fields:
+          nested_field_1:
+            type: string

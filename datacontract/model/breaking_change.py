@@ -8,7 +8,7 @@ class Location(BaseModel):
     composition: List[str]
 
 
-class BreakingResult(BaseModel):
+class BreakingChange(BaseModel):
     description: str
     severity: str
     check_name: str
@@ -20,16 +20,20 @@ class BreakingResult(BaseModel):
             {self.description}"""
 
 
-class BreakingResults(BaseModel):
-    breaking_results: List[BreakingResult]
+class BreakingChanges(BaseModel):
+    breaking_changes: List[BreakingChange]
+
+    def passed_checks(self) -> bool:
+        errors = len(list(filter(lambda x: x.severity == "error", self.breaking_changes)))
+        return errors == 0
 
     def __str__(self) -> str:
-        changes_amount = len(self.breaking_results)
-        errors = len(list(filter(lambda x: x.severity == "error", self.breaking_results)))
-        warnings = len(list(filter(lambda x: x.severity == "warning", self.breaking_results)))
+        changes_amount = len(self.breaking_changes)
+        errors = len(list(filter(lambda x: x.severity == "error", self.breaking_changes)))
+        warnings = len(list(filter(lambda x: x.severity == "warning", self.breaking_changes)))
 
         headline = f"{changes_amount} breaking changes: {errors} error, {warnings} warning\n"
-        content = str.join("\n\n", map(lambda x: str(x), self.breaking_results))
+        content = str.join("\n\n", map(lambda x: str(x), self.breaking_changes))
 
         return headline + content
 
