@@ -180,7 +180,7 @@ class TestBreakingFields:
             return result.stdout
 
         def test_headline(self, output):
-            assert "14 breaking changes: 5 error, 9 warning" in output
+            assert "13 breaking changes: 5 error, 8 warning" in output
 
         def test_type_removed(self, output):
             assert r"""warning [field_type_removed] at 
@@ -252,10 +252,7 @@ class TestBreakingFields:
             removed field property""" in output
 
         def test_enum_removed(self, output):
-            assert r"""warning [field_enum_removed] at 
-./examples/breaking/datacontract-fields-empty.yaml
-        in models -> my_table -> field_enum -> enum
-            removed field property""" in output
+            assert "field_enum_removed" not in output
 
         def test_tags_removed(self, output):
             assert "field_tags_removed" not in output

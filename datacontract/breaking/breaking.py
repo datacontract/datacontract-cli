@@ -15,7 +15,7 @@ def models_breaking_changes(
         if model_name not in old_models.keys():
             rule_name = "model_added"
             severity = _get_rule(rule_name)
-            if severity != "none":
+            if severity != "info":
                 results.append(
                     BreakingChange(
                         description="added the model",
@@ -30,7 +30,7 @@ def models_breaking_changes(
         if model_name not in new_models.keys():
             rule_name = "model_removed"
             severity = _get_rule(rule_name)
-            if severity != "none":
+            if severity != "info":
                 results.append(
                     BreakingChange(
                         description="removed the model",
@@ -87,7 +87,7 @@ def model_breaking_changes(
 
         if rule_name is not None:
             severity = _get_rule(rule_name)
-            if severity != "none":
+            if severity != "info":
                 results.append(
                     BreakingChange(
                         description=description,
@@ -121,7 +121,7 @@ def fields_breaking_changes(
         if field_name not in old_fields.keys():
             rule_name = "field_added"
             severity = _get_rule(rule_name)
-            if severity != "none":
+            if severity != "info":
                 results.append(
                     BreakingChange(
                         description="added the field",
@@ -136,7 +136,7 @@ def fields_breaking_changes(
         if field_name not in new_fields.keys():
             rule_name = "field_removed"
             severity = _get_rule(rule_name)
-            if severity != "none":
+            if severity != "info":
                 results.append(
                     BreakingChange(
                         description='removed the field',
@@ -218,7 +218,7 @@ def field_breaking_changes(
 
         if rule_name is not None:
             severity = _get_rule(rule_name)
-            if severity != "none":
+            if severity != "info":
                 results.append(
                     BreakingChange(
                         description=description,

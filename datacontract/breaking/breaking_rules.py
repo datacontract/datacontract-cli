@@ -1,16 +1,16 @@
 class BreakingRules:
     # model rules
-    model_added = 'none'
+    model_added = 'info'
     model_removed = 'error'
 
-    model_description_added = 'none'
-    model_description_removed = 'none'
-    model_description_updated = 'none'
+    model_description_added = 'info'
+    model_description_removed = 'info'
+    model_description_updated = 'info'
 
     model_type_updated = 'error'
 
     # field rules
-    field_added = 'none'
+    field_added = 'info'
     field_removed = 'error'
 
     field_ref_added = 'warning'
@@ -28,9 +28,9 @@ class BreakingRules:
 
     field_unique_updated = 'error'
 
-    field_description_added = 'none'
-    field_description_removed = 'none'
-    field_description_updated = 'none'
+    field_description_added = 'info'
+    field_description_removed = 'info'
+    field_description_updated = 'info'
 
     field_pii_added = 'warning'
     field_pii_removed = 'error'
@@ -69,9 +69,9 @@ class BreakingRules:
     field_maximumExclusive_updated = 'error'
 
     field_enum_added = 'warning'
-    field_enum_removed = 'warning'
+    field_enum_removed = 'info'
     field_enum_updated = 'error'
 
-    field_tags_added = 'none'
-    field_tags_removed = 'none'
-    field_tags_updated = 'none'
+    field_tags_added = 'info'
+    field_tags_removed = 'info'
+    field_tags_updated = 'info'
