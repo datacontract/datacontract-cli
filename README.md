@@ -357,6 +357,15 @@ Available export options:
 | `sql`        | Export to SQL DDL                              | TBD    |
 | `protobuf`   | Export to Protobuf                             | TBD    |
 
+### Convert
+
+The convert function converts a given data contract into a RDF representation. 
+
+```shell
+datacontract --format rdf --base https://www.example.com/ datacontract.yaml
+``` 
+
+
 ## Development Setup
 
 Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).

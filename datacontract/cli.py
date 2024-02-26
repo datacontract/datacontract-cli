@@ -1,6 +1,6 @@
 from enum import Enum
 from importlib import metadata
-from typing import Iterable
+from typing import Iterable, Optional
 
 import typer
 from click import Context
@@ -131,6 +131,22 @@ def export(
     """
     # TODO exception handling
     result = DataContract(data_contract_file=location).export(format)
+    print(result)
+
+class ConvertFormat(str, Enum):
+    rdf = "rdf"
+
+@app.command()
+def convert(
+    format: Annotated[ConvertFormat, typer.Option(help="The format to convert the data contract to.")],
+    base: Annotated[Optional[str], typer.Option(help="The base URI used to generate the RDF graph.")] = "",
+    location: Annotated[
+        str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
+):
+    """
+    Convert the data contract to a specific format. Prints to stdout
+    """
+    result = DataContract(data_contract_file=location).convert(format, base)
     print(result)
 
 

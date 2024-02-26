@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - export to ODCS (#49).
 - test - show a test summary table.
 - lint - Support local schema (#46).
+- convert to rdf (#52)
 
 ## [0.9.4] - 2024-02-18
 

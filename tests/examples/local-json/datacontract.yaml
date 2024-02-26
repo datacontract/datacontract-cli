@@ -134,7 +134,7 @@ definitions:
       berichtigte Zahl
       s
       geschätzte Zahl
-verbraucherpreisindex:
+examples:
   - type: json
     description: Example entry for CPI data
     model: ConsumerPriceIndex

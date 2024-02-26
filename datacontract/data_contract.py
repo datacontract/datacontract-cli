@@ -13,6 +13,7 @@ from datacontract.export.dbt_converter import to_dbt
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.odcs_converter import to_odcs
 from datacontract.export.sodacl_converter import to_sodacl
+from datacontract.export.rdf_converter import to_rdf
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
@@ -145,7 +146,7 @@ class DataContract:
     def diff(self, other):
         pass
 
-    def export(self, export_format) -> str:
+    def export(self, export_format, base) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
@@ -161,6 +162,19 @@ class DataContract:
         else:
             print(f"Export format {export_format} not supported.")
             return ""
+
+    def convert(self, convert_format, base) -> str:
+        data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
+                                                      self._data_contract)
+        if convert_format == "rdf":
+            if base is not None:
+                return to_rdf(data_contract, base).serialize(format="n3")
+            else:
+                return to_rdf(data_contract, "").serialize(format="n3")
+        else:
+            print(f"Convert format {export_format} not supported.")
+            return ""
+
 
     def _get_examples_server(self, data_contract, run, tmp_dir):
         run.log_info(f"Copying examples to files in temporary directory {tmp_dir}")
