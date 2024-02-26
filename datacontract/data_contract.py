@@ -4,6 +4,7 @@ import tempfile
 
 import yaml
 
+from datacontract.breaking.breaking import models_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
 from datacontract.engines.fastjsonschema.check_jsonschema import \
@@ -17,6 +18,7 @@ from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -56,7 +58,7 @@ class DataContract:
                 result="passed",
                 name="Data contract is syntactically valid",
                 engine="datacontract"
-                ))
+            ))
             run.checks.extend(ExampleModelLinter().lint(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
@@ -141,9 +143,14 @@ class DataContract:
 
         return run
 
+    def breaking(self, other: 'DataContract') -> BreakingChanges:
+        old = self.get_data_contract_specification()
+        new = other.get_data_contract_specification()
+        return models_breaking_changes(old_models=old.models, new_models=new.models, new_path=other._data_contract_file)
 
-    def diff(self, other):
-        pass
+    def get_data_contract_specification(self):
+        return resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
+                                             self._data_contract, self._schema_location)
 
     def export(self, export_format) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
