@@ -12,7 +12,7 @@ sql_file_path = "examples/postgres/data/data.sql"
 
 def test_import_postgres():
 
-    result = DataContract().import_from_source("postgres-sql", sql_file_path)
+    result = DataContract().import_from_source("sql", sql_file_path)
 
     expected = '''
 dataContractSpecification: 0.9.2

@@ -134,7 +134,7 @@ def export(
 
 
 class ImportFormat(str, Enum):
-    postgres_sql = "postgres-sql"
+    sql = "sql"
 
 
 @app.command(name="import")
