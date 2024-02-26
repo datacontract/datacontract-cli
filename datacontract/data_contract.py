@@ -12,6 +12,7 @@ from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.dbt_converter import to_dbt
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.sodacl_converter import to_sodacl
+from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
@@ -195,6 +196,9 @@ class DataContract:
         run.log_info(f"Using {server} for testing the examples")
         return server
 
-    def import_from_source(self, source: str, sql_file_path: str) -> DataContractSpecification:
+    def import_from_source(self, format: str, source: str) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
+
+        data_contract_specification = import_sql(data_contract_specification, format, source)
+
         return data_contract_specification

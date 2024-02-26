@@ -16,18 +16,17 @@ def test_import_postgres():
 
     expected = '''
 dataContractSpecification: 0.9.2
-id: postgres
+id: my-data-contract-id
 info:
-  title: postgres
+  title: My Data Contract
   version: 0.0.1
-  owner: my-domain-team
-servers:
-  postgres:
-    type: postgres
-    host: localhost
-    port: 5432
-    database: postgres
-    schema: public
+# servers:
+#   postgres:
+#     type: postgres
+#     host: localhost
+#     port: 5432
+#     database: postgres
+#     schema: public
 models:
   my_table:
     type: table
@@ -36,12 +35,14 @@ models:
         type: varchar
         required: true
         unique: true
+        maxLength: 10
       field_two:
         type: integer
-        minimum: 10
+        required: true
       field_three:
         type: timestamp
     '''
+    print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint().has_passed()
 
