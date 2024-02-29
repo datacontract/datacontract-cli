@@ -118,6 +118,7 @@ class ExportFormat(str, Enum):
     sodacl = "sodacl"
     dbt = "dbt"
     dbt_sources = "dbt-sources"
+    dbt_staging_sql = "dbt-staging-sql"
     odcs = "odcs"
 
 

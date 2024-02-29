@@ -20,6 +20,19 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
         dbt["models"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False)
 
+def to_dbt_staging_sql(data_contract_spec: DataContractSpecification):
+    id = data_contract_spec.id
+    model_name, model = next(iter(data_contract_spec.models.items()))
+    columns = []
+    for field_name, field in model.fields.items():
+        # TODO escape SQL reserved key words, probably dependent on server type
+        columns.append(field_name)
+    return f"""
+    select 
+        { ", ".join(columns) }
+    from {{{{ source('{id}', '{model_name}') }}}}
+"""
+
 def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
     dbt = {
         "version": 2,
