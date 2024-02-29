@@ -141,8 +141,6 @@ class ImportFormat(str, Enum):
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
     source: Annotated[str, typer.Option(help="The path to the file that should be imported.")],
-    # location: Annotated[
-    #     str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
 ):
     """
     Create a data contract from the given source file. Prints to stdout.

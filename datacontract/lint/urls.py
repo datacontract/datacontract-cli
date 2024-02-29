@@ -1,4 +1,3 @@
-import logging
 import os
 
 import requests
@@ -27,7 +26,6 @@ def fetch_resource(url: str):
 
 def _set_api_key(headers, url):
     if ".datamesh-manager.com/" not in url:
-        logging.debug("Currently only data mesh manager supported")
         return
     datamesh_manager_api_key = os.getenv('DATAMESH_MANAGER_API_KEY')
     if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
