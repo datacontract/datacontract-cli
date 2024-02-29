@@ -28,7 +28,7 @@ def postgres_container(request):
 def test_examples_postgres(postgres_container):
     _init_sql()
 
-    data_contract_str = _setup_datacontract(postgres_container)
+    data_contract_str = _setup_datacontract()
     data_contract = DataContract(data_contract_str=data_contract_str)
 
     run = data_contract.test()
@@ -38,7 +38,7 @@ def test_examples_postgres(postgres_container):
     assert all(check.result == "passed" for check in run.checks)
 
 
-def _setup_datacontract(postgres_container):
+def _setup_datacontract():
     with open(datacontract) as data_contract_file:
         data_contract_str = data_contract_file.read()
     port = postgres.get_exposed_port(5432)

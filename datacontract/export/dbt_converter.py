@@ -16,7 +16,7 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
         "models": [],
     }
     for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = to_dbt_model(model_key, model_value)
+        dbt_model = _to_dbt_model(model_key, model_value)
         dbt["models"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False)
 
@@ -51,44 +51,44 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
         dbt["sources"][0]["schema"] = found_server.schema_
 
     for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = to_dbt_source_table(model_key, model_value)
+        dbt_model = _to_dbt_source_table(model_key, model_value)
         dbt["sources"][0]["tables"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False)
 
 
-def to_dbt_source_table(model_key, model_value: Model) -> dict:
+def _to_dbt_source_table(model_key, model_value: Model) -> dict:
     dbt_model = {
         "name": model_key,
     }
 
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = to_columns(model_value.fields, False, False)
+    columns = _to_columns(model_value.fields, False, False)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
 
-def to_dbt_model(model_key, model_value: Model) -> dict:
+def _to_dbt_model(model_key, model_value: Model) -> dict:
     dbt_model = {
         "name": model_key,
     }
-    model_type = to_dbt_model_type(model_value.type)
+    model_type = _to_dbt_model_type(model_value.type)
     dbt_model["config"] = {}
     dbt_model["config"]["materialized"] = model_type
 
-    if supports_constraints(model_type):
+    if _supports_constraints(model_type):
         dbt_model["config"]["contract"] = {
             "enforced": True
         }
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = to_columns(model_value.fields, supports_constraints(model_type), True)
+    columns = _to_columns(model_value.fields, _supports_constraints(model_type), True)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
 
 
-def to_dbt_model_type(model_type):
+def _to_dbt_model_type(model_type):
     # https://docs.getdbt.com/docs/build/materializations
     # Allowed values: table, view, incremental, ephemeral, materialized view
     # Custom values also possible
@@ -101,22 +101,22 @@ def to_dbt_model_type(model_type):
     return "table"
 
 
-def supports_constraints(model_type):
+def _supports_constraints(model_type):
     return model_type == "table" or model_type == "incremental"
 
 
-def to_columns(fields: Dict[str, Field], supports_constraints: bool, supports_datatype: bool) -> list:
+def _to_columns(fields: Dict[str, Field], supports_constraints: bool, supports_datatype: bool) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = to_column(field, supports_constraints, supports_datatype)
+        column = _to_column(field, supports_constraints, supports_datatype)
         column["name"] = field_name
         columns.append(column)
     return columns
 
 
-def to_column(field: Field, supports_constraints: bool, supports_datatype: bool) -> dict:
+def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool) -> dict:
     column = {}
-    dbt_type = convert_type_to_snowflake(field.type)
+    dbt_type = _convert_type_to_snowflake(field.type)
     if dbt_type is not None:
         if supports_datatype:
             column["data_type"] = dbt_type
@@ -182,7 +182,7 @@ def to_column(field: Field, supports_constraints: bool, supports_datatype: bool)
     return column
 
 
-def convert_type_to_snowflake(type) -> None | str:
+def _convert_type_to_snowflake(type) -> None | str:
     # currently optimized for snowflake
     # LEARNING: data contract has no direct support for CHAR,CHARACTER
     # LEARNING: data contract has no support for "date-time", "datetime", "time"
