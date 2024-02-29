@@ -5,11 +5,12 @@ import yaml
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Model, Field
 
+
 # snowflake data types:
 # https://docs.snowflake.com/en/sql-reference/data-types.html
 
 
-def to_dbt(data_contract_spec: DataContractSpecification):
+def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
     dbt = {
         "version": 2,
         "models": [],
@@ -17,8 +18,55 @@ def to_dbt(data_contract_spec: DataContractSpecification):
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = to_dbt_model(model_key, model_value)
         dbt["models"].append(dbt_model)
-    return yaml.dump(dbt, indent=2)
+    return yaml.dump(dbt, indent=2, sort_keys=False)
 
+def to_dbt_staging_sql(data_contract_spec: DataContractSpecification):
+    id = data_contract_spec.id
+    model_name, model = next(iter(data_contract_spec.models.items()))
+    columns = []
+    for field_name, field in model.fields.items():
+        # TODO escape SQL reserved key words, probably dependent on server type
+        columns.append(field_name)
+    return f"""
+    select 
+        { ", ".join(columns) }
+    from {{{{ source('{id}', '{model_name}') }}}}
+"""
+
+def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
+    dbt = {
+        "version": 2,
+        "sources": [
+            {
+                "name": data_contract_spec.id,
+                "tables": []
+            }
+        ],
+    }
+    if data_contract_spec.info.description is not None:
+        dbt["sources"][0]["description"] = data_contract_spec.info.description
+    found_server = data_contract_spec.servers.get(server)
+    if found_server is not None:
+        dbt["sources"][0]["database"] = found_server.database
+        dbt["sources"][0]["schema"] = found_server.schema_
+
+    for model_key, model_value in data_contract_spec.models.items():
+        dbt_model = to_dbt_source_table(model_key, model_value)
+        dbt["sources"][0]["tables"].append(dbt_model)
+    return yaml.dump(dbt, indent=2, sort_keys=False)
+
+
+def to_dbt_source_table(model_key, model_value: Model) -> dict:
+    dbt_model = {
+        "name": model_key,
+    }
+
+    if model_value.description is not None:
+        dbt_model["description"] = model_value.description
+    columns = to_columns(model_value.fields, False, False)
+    if columns:
+        dbt_model["columns"] = columns
+    return dbt_model
 
 def to_dbt_model(model_key, model_value: Model) -> dict:
     dbt_model = {
@@ -34,7 +82,7 @@ def to_dbt_model(model_key, model_value: Model) -> dict:
         }
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = to_columns(model_value.fields, model_type)
+    columns = to_columns(model_value.fields, supports_constraints(model_type), True)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -57,29 +105,33 @@ def supports_constraints(model_type):
     return model_type == "table" or model_type == "incremental"
 
 
-def to_columns(fields: Dict[str, Field], model_type: str) -> list:
+def to_columns(fields: Dict[str, Field], supports_constraints: bool, supports_datatype: bool) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = to_column(field, model_type)
+        column = to_column(field, supports_constraints, supports_datatype)
         column["name"] = field_name
         columns.append(column)
     return columns
 
 
-def to_column(field: Field, model_type: str) -> dict:
+def to_column(field: Field, supports_constraints: bool, supports_datatype: bool) -> dict:
     column = {}
     dbt_type = convert_type_to_snowflake(field.type)
     if dbt_type is not None:
-        column["data_type"] = dbt_type
+        if supports_datatype:
+            column["data_type"] = dbt_type
+        else:
+            column.setdefault("tests", []).append({"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {
+                "column_type": dbt_type}})
     if field.description is not None:
         column["description"] = field.description
     if field.required:
-        if supports_constraints(model_type):
+        if supports_constraints:
             column.setdefault("constraints", []).append({"type": "not_null"})
         else:
             column.setdefault("tests", []).append("not_null")
     if field.unique:
-        if supports_constraints(model_type):
+        if supports_constraints:
             column.setdefault("constraints", []).append({"type": "unique"})
         else:
             column.setdefault("tests", []).append("unique")

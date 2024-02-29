@@ -117,11 +117,15 @@ class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     sodacl = "sodacl"
     dbt = "dbt"
+    dbt_sources = "dbt-sources"
+    dbt_staging_sql = "dbt-staging-sql"
+    odcs = "odcs"
 
 
 @app.command()
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
+    server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
 ):
@@ -129,8 +133,9 @@ def export(
     Convert data contract to a specific format. Prints to stdout.
     """
     # TODO exception handling
-    result = DataContract(data_contract_file=location).export(format)
+    result = DataContract(data_contract_file=location, server=server).export(format)
     print(result)
+
 
 
 class ImportFormat(str, Enum):
@@ -147,6 +152,23 @@ def import_(
     """
     result = DataContract().import_from_source(format, source)
     print(result.to_yaml())
+
+
+
+@app.command()
+def breaking(
+    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
+    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+):
+    """
+    Identifies breaking changes between data contracts. Prints to stdout.
+    """
+
+    # TODO exception handling
+    result = DataContract(data_contract_file=location_old).breaking(DataContract(data_contract_file=location_new))
+    print(str(result))
+    if not result.passed_checks():
+        raise typer.Exit(code=1)
 
 
 def _handle_result(run):

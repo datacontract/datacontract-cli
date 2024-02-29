@@ -11,7 +11,7 @@ def to_sodacl(data_contract_spec: DataContractSpecification, check_types: bool =
             k, v = to_checks(model_key, model_value, check_types)
             sodacl[k] = v
         add_quality_checks(sodacl, data_contract_spec)
-        sodacl_yaml_str = yaml.dump(sodacl, default_flow_style=False)
+        sodacl_yaml_str = yaml.dump(sodacl, default_flow_style=False, sort_keys=False)
         return sodacl_yaml_str
     except Exception as e:
         return f"Error: {e}"

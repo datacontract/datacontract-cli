@@ -1,0 +1,67 @@
+dataContractSpecification: 0.9.2
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+  my-custom-required-field: hello
+
+models:
+  my_table:
+    type: table
+    fields:
+      field_type:
+        type: string
+        description: My Description
+      field_format:
+        type: string
+        format: email
+      field_required:
+        type: string
+        required: false
+      field_unique:
+        type: string
+        unique: false
+      field_description:
+        type: string
+        description: My Description
+      field_pii:
+        type: string
+        pii: true
+      field_classification:
+        type: string
+        classification: sensitive
+      field_pattern:
+        type: string
+        pattern: ^[A-Za-z0-9]{8,14}$
+      field_minLength:
+        type: string
+        minLength: 8
+      field_maxLength:
+        type: string
+        maxLength: 14
+      field_minimum:
+        type: string
+        minimum: 8
+      field_minimumExclusive:
+        type: string
+        minimumExclusive: 8
+      field_maximum:
+        type: string
+        maximum: 14
+      field_maximumExclusive:
+        type: string
+        maximumExclusive: 14
+      field_enum:
+        type: string
+        enum: [one]
+      field_tags:
+        type: string
+        tags: [one]
+      field_fields:
+        fields:
+          nested_field_1:
+            type: string
+          new_nested_field:
+            type: string
+      new_field:
+        type: string

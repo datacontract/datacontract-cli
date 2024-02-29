@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict
 
 import pydantic
@@ -100,6 +101,14 @@ class DataContractSpecification(BaseModel):
     # schema: Dict[str, str]
     examples: List[Example] = []
     quality: Quality = None
+
+    @classmethod
+    def from_file(cls, file):
+        if not os.path.exists(file):
+            raise(f"The file '{file}' does not exist.")
+        with open(file, 'r') as file:
+            file_content = file.read()
+        return DataContractSpecification.from_string(file_content)
 
     @classmethod
     def from_string(cls, data_contract_str):

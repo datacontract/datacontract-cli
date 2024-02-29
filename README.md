@@ -32,7 +32,36 @@ We run the tests:
 
 ```bash
 $ datacontract test https://datacontract.com/examples/orders-latest/datacontract.yaml
-# returns: 🟢 data contract is valid. Run 22 checks.
+
+# returns:
+Testing https://datacontract.com/examples/orders-latest/datacontract.yaml
+╭────────┬─────────────────────────────────────────────────────────────────────┬───────────────────────────────┬─────────╮
+│ Result │ Check                                                               │ Field                         │ Details │
+├────────┼─────────────────────────────────────────────────────────────────────┼───────────────────────────────┼─────────┤
+│ passed │ Check that JSON has valid schema                                    │ orders                        │         │
+│ passed │ Check that JSON has valid schema                                    │ line_items                    │         │
+│ passed │ Check that field order_id is present                                │ orders                        │         │
+│ passed │ Check that field order_timestamp is present                         │ orders                        │         │
+│ passed │ Check that field order_total is present                             │ orders                        │         │
+│ passed │ Check that field customer_id is present                             │ orders                        │         │
+│ passed │ Check that field customer_email_address is present                  │ orders                        │         │
+│ passed │ row_count >= 5000                                                   │ orders                        │         │
+│ passed │ Check that required field order_id has no null values               │ orders.order_id               │         │
+│ passed │ Check that unique field order_id has no duplicate values            │ orders.order_id               │         │
+│ passed │ duplicate_count(order_id) = 0                                       │ orders.order_id               │         │
+│ passed │ Check that required field order_timestamp has no null values        │ orders.order_timestamp        │         │
+│ passed │ freshness(order_timestamp) < 24h                                    │ orders.order_timestamp        │         │
+│ passed │ Check that required field order_total has no null values            │ orders.order_total            │         │
+│ passed │ Check that required field customer_email_address has no null values │ orders.customer_email_address │         │
+│ passed │ Check that field lines_item_id is present                           │ line_items                    │         │
+│ passed │ Check that field order_id is present                                │ line_items                    │         │
+│ passed │ Check that field sku is present                                     │ line_items                    │         │
+│ passed │ values in (order_id) must exist in orders (order_id)                │ line_items.order_id           │         │
+│ passed │ row_count >= 5000                                                   │ line_items                    │         │
+│ passed │ Check that required field lines_item_id has no null values          │ line_items.lines_item_id      │         │
+│ passed │ Check that unique field lines_item_id has no duplicate values       │ line_items.lines_item_id      │         │
+╰────────┴─────────────────────────────────────────────────────────────────────┴───────────────────────────────┴─────────╯
+🟢 data contract is valid. Run 22 checks. Took 6.739514 seconds.
 ```
 
 Voilà, the CLI tested that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
@@ -114,14 +143,14 @@ pipx install datacontract-cli
 ### Docker
 
 ```bash
-docker pull --platform linux/amd64 datacontract/cli
-docker run --rm --platform linux/amd64 -v ${PWD}:/home/datacontract datacontract/cli
+docker pull datacontract/cli
+docker run --rm -v ${PWD}:/home/datacontract datacontract/cli
 ```
 
 Or via an alias that automatically uses the latest version:
 
 ```bash
-alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" --platform linux/amd64 datacontract/cli:latest'
+alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/cli:latest'
 ```
 
 ## Documentation
@@ -318,15 +347,17 @@ run.result
 
 Available export options:
 
-| Type         | Description                                    | Status |
-|--------------|------------------------------------------------|--------|
-| `jsonschema` | Export to JSON Schema                          | ✅      | 
-| `sodacl`     | Export to SodaCL quality checks in YAML format | ✅      |
-| `dbt`        | Export to dbt model in YAML format             | ✅      |
-| `avro`       | Export to AVRO models                          | TBD    |
-| `pydantic`   | Export to pydantic models                      | TBD    |
-| `sql`        | Export to SQL DDL                              | TBD    |
-| `protobuf`   | Export to Protobuf                             | TBD    |
+| Type              | Description                                    | Status |
+|-------------------|------------------------------------------------|--------|
+| `jsonschema`      | Export to JSON Schema                          | ✅      | 
+| `sodacl`          | Export to SodaCL quality checks in YAML format | ✅      |
+| `dbt`             | Export to dbt models in YAML format            | ✅      |
+| `dbt-sources`     | Export to dbt sources in YAML format           | ✅      |
+| `dbt-staging-sql` | Export to dbt staging SQL models               | ✅      |
+| `avro`            | Export to AVRO models                          | TBD    |
+| `pydantic`        | Export to pydantic models                      | TBD    |
+| `sql`             | Export to SQL DDL                              | TBD    |
+| `protobuf`        | Export to Protobuf                             | TBD    |
 
 ## Development Setup
 

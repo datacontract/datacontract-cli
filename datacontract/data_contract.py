@@ -4,12 +4,13 @@ import tempfile
 
 import yaml
 
+from datacontract.breaking.breaking import models_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-from datacontract.export.dbt_converter import to_dbt
+from datacontract.export.dbt_converter import to_dbt_models_yaml, to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.imports.sql_importer import import_sql
@@ -17,6 +18,7 @@ from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -145,12 +147,17 @@ class DataContract:
 
         return run
 
-    def diff(self, other):
-        pass
+    def breaking(self, other: 'DataContract') -> BreakingChanges:
+        old = self.get_data_contract_specification()
+        new = other.get_data_contract_specification()
+        return models_breaking_changes(old_models=old.models, new_models=new.models, new_path=other._data_contract_file)
+
+    def get_data_contract_specification(self):
+        return resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
+                                             self._data_contract, self._schema_location)
 
     def export(self, export_format) -> str:
-        data_contract = resolve.resolve_data_contract(self._data_contract_file,
-                                                      self._data_contract_str,
+        data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
             model_name, model = next(iter(data_contract.models.items()))
@@ -159,7 +166,13 @@ class DataContract:
         if export_format == "sodacl":
             return to_sodacl(data_contract)
         if export_format == "dbt":
-            return to_dbt(data_contract)
+            return to_dbt_models_yaml(data_contract)
+        if export_format == "dbt-sources":
+            return to_dbt_sources_yaml(data_contract, self._server)
+        if export_format == "dbt-staging-sql":
+            return to_dbt_staging_sql(data_contract)
+        if export_format == "odcs":
+            return to_odcs(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
