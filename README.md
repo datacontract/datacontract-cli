@@ -93,6 +93,9 @@ $ datacontract export --format jsonschema datacontract.yaml
 # export model as dbt
 $ datacontract export --format dbt datacontract.yaml
 
+# import sql
+$ datacontract import --format sql --source my_ddl.sql
+
 # import protobuf as model (Coming Soon)
 $ datacontract import --format protobuf --source my_protobuf_file.proto datacontract.yaml
 ```
