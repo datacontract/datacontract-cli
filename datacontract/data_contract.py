@@ -10,7 +10,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-from datacontract.export.dbt_converter import to_dbt
+from datacontract.export.dbt_converter import to_dbt_models_yaml, to_dbt_sources_yaml
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.odcs_converter import to_odcs
 from datacontract.export.sodacl_converter import to_sodacl
@@ -162,7 +162,9 @@ class DataContract:
         if export_format == "sodacl":
             return to_sodacl(data_contract)
         if export_format == "dbt":
-            return to_dbt(data_contract)
+            return to_dbt_models_yaml(data_contract)
+        if export_format == "dbt-sources":
+            return to_dbt_sources_yaml(data_contract, self._server)
         if export_format == "odcs":
             return to_odcs(data_contract)
         else:

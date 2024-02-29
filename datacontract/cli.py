@@ -117,12 +117,14 @@ class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     sodacl = "sodacl"
     dbt = "dbt"
+    dbt_sources = "dbt-sources"
     odcs = "odcs"
 
 
 @app.command()
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
+    server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
 ):
@@ -130,7 +132,7 @@ def export(
     Convert data contract to a specific format. Prints to stdout.
     """
     # TODO exception handling
-    result = DataContract(data_contract_file=location).export(format)
+    result = DataContract(data_contract_file=location, server=server).export(format)
     print(result)
 
 

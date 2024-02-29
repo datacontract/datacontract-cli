@@ -347,15 +347,16 @@ run.result
 
 Available export options:
 
-| Type         | Description                                    | Status |
-|--------------|------------------------------------------------|--------|
-| `jsonschema` | Export to JSON Schema                          | ✅      | 
-| `sodacl`     | Export to SodaCL quality checks in YAML format | ✅      |
-| `dbt`        | Export to dbt model in YAML format             | ✅      |
-| `avro`       | Export to AVRO models                          | TBD    |
-| `pydantic`   | Export to pydantic models                      | TBD    |
-| `sql`        | Export to SQL DDL                              | TBD    |
-| `protobuf`   | Export to Protobuf                             | TBD    |
+| Type          | Description                                    | Status |
+|---------------|------------------------------------------------|--------|
+| `jsonschema`  | Export to JSON Schema                          | ✅      | 
+| `sodacl`      | Export to SodaCL quality checks in YAML format | ✅      |
+| `dbt`         | Export to dbt models in YAML format            | ✅      |
+| `dbt-sources` | Export to dbt sources in YAML format           | ✅      |
+| `avro`        | Export to AVRO models                          | TBD    |
+| `pydantic`    | Export to pydantic models                      | TBD    |
+| `sql`         | Export to SQL DDL                              | TBD    |
+| `protobuf`    | Export to Protobuf                             | TBD    |
 
 ## Development Setup
 
