@@ -10,15 +10,17 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-from datacontract.export.dbt_converter import to_dbt_models_yaml, to_dbt_sources_yaml, to_dbt_staging_sql
+from datacontract.export.dbt_converter import to_dbt_models_yaml, \
+    to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.odcs_converter import to_odcs
 from datacontract.export.sodacl_converter import to_sodacl
+from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location
+from datacontract.model.breaking_change import BreakingChanges
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -47,7 +49,11 @@ class DataContract:
         self._publish_url = publish_url
         self._spark = spark
 
-    def lint(self):
+    @classmethod
+    def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
+        return resolve.resolve_data_contract(data_contract_location=template)
+
+    def lint(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -204,3 +210,10 @@ class DataContract:
         )
         run.log_info(f"Using {server} for testing the examples")
         return server
+
+    def import_from_source(self, format: str, source: str) -> DataContractSpecification:
+        data_contract_specification = DataContract.init()
+
+        data_contract_specification = import_sql(data_contract_specification, format, source)
+
+        return data_contract_specification

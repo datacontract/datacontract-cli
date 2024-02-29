@@ -137,6 +137,24 @@ def export(
     print(result)
 
 
+
+class ImportFormat(str, Enum):
+    sql = "sql"
+
+
+@app.command(name="import")
+def import_(
+    format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
+    source: Annotated[str, typer.Option(help="The path to the file that should be imported.")],
+):
+    """
+    Create a data contract from the given source file. Prints to stdout.
+    """
+    result = DataContract().import_from_source(format, source)
+    print(result.to_yaml())
+
+
+
 @app.command()
 def breaking(
     location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],

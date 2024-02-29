@@ -22,6 +22,7 @@ dependencies = [
   "fastparquet==2024.2.0",
   "python-multipart==0.0.9",
   "rich~=13.7.0",
+  "simple-ddl-parser==1.0.3",
   "soda-core-bigquery~=3.2.1",
   "soda-core-duckdb~=3.2.1",
   "soda-core-postgres~=3.2.1",
