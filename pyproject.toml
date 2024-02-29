@@ -42,6 +42,7 @@ dev = [
   "pytest",
   "testcontainers-minio",
   "testcontainers-postgres",
+  "testcontainers-kafka",
 ]
 
 [project.urls]
