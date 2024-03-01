@@ -406,7 +406,7 @@ pytest
 
 Release
 
-```
+```bash
 git tag v0.9.0
 git push origin v0.9.0
 python3 -m pip install --upgrade build twine
@@ -418,7 +418,7 @@ python3 -m twine upload --repository testpypi dist/*
 
 Docker Build
 
-```
+```bash
 docker build -t datacontract/cli .
 docker run --rm -v ${PWD}:/home/datacontract datacontract/cli
 ```
