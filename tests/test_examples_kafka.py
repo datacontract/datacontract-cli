@@ -1,6 +1,13 @@
+import sys
+
+import six
+
+if sys.version_info >= (3, 12, 1):
+    sys.modules['kafka.vendor.six.moves'] = six.moves
+
+
 import json
 import logging
-import os
 
 import pytest
 from kafka import KafkaProducer
