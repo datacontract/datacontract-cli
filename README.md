@@ -358,6 +358,7 @@ Available export options:
 | Type               | Description                                    | Status |
 |--------------------|------------------------------------------------|--------|
 | `jsonschema`       | Export to JSON Schema                          | ✅      | 
+| `odcs`             | Export to Open Data Contract Standard (ODCS)   | ✅      | 
 | `sodacl`           | Export to SodaCL quality checks in YAML format | ✅      |
 | `dbt`              | Export to dbt models in YAML format            | ✅      |
 | `dbt-sources`      | Export to dbt sources in YAML format           | ✅      |
