@@ -19,10 +19,19 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(app, [
-        "convert",
+        "export",
         "./examples/export/rdf/datacontract.yaml",
         "--format", "rdf",
-        "--base", "urn:acme:"
+        "--rdf-base", "urn:acme:"
+    ])
+    assert result.exit_code == 0
+
+def test_no_rdf_base():
+    runner = CliRunner()
+    result = runner.invoke(app, [
+        "export",
+        "./examples/export/rdf/datacontract.yaml",
+        "--format", "rdf"
     ])
     assert result.exit_code == 0
 

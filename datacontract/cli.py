@@ -118,11 +118,13 @@ class ExportFormat(str, Enum):
     sodacl = "sodacl"
     dbt = "dbt"
     odcs = "odcs"
+    rdf = "rdf"
 
 
 @app.command()
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
+    rdf_base: Annotated[Optional[str], typer.Option(help="The base URI used to generate the RDF graph.")] = "",
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
 ):
@@ -130,24 +132,9 @@ def export(
     Convert data contract to a specific format. Prints to stdout.
     """
     # TODO exception handling
-    result = DataContract(data_contract_file=location).export(format)
+    result = DataContract(data_contract_file=location).export(format, rdf_base)
     print(result)
 
-class ConvertFormat(str, Enum):
-    rdf = "rdf"
-
-@app.command()
-def convert(
-    format: Annotated[ConvertFormat, typer.Option(help="The format to convert the data contract to.")],
-    base: Annotated[Optional[str], typer.Option(help="The base URI used to generate the RDF graph.")] = "",
-    location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
-):
-    """
-    Convert the data contract to a specific format. Prints to stdout
-    """
-    result = DataContract(data_contract_file=location).convert(format, base)
-    print(result)
 
 
 def _handle_result(run):

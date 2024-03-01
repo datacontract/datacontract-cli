@@ -146,7 +146,7 @@ class DataContract:
     def diff(self, other):
         pass
 
-    def export(self, export_format, base) -> str:
+    def export(self, export_format, rdf_base) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
@@ -159,20 +159,10 @@ class DataContract:
             return to_dbt(data_contract)
         if export_format == "odcs":
             return to_odcs(data_contract)
+        if export_format == "rdf":
+            return to_rdf(data_contract, rdf_base).serialize(format='n3')
         else:
             print(f"Export format {export_format} not supported.")
-            return ""
-
-    def convert(self, convert_format, base) -> str:
-        data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                      self._data_contract)
-        if convert_format == "rdf":
-            if base is not None:
-                return to_rdf(data_contract, base).serialize(format="n3")
-            else:
-                return to_rdf(data_contract, "").serialize(format="n3")
-        else:
-            print(f"Convert format {convert_format} not supported.")
             return ""
 
 
