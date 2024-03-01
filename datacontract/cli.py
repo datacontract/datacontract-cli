@@ -74,7 +74,8 @@ def lint(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
+        str, typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -88,7 +89,8 @@ def test(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
+        str, typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
     server: Annotated[str, typer.Option(
         help="The server configuration to run the schema and quality tests. "
              "Use the key of the server object in the data contract yaml file "
@@ -107,7 +109,8 @@ def test(
     print(f"Testing {location}")
     if server == "all":
         server = None
-    run = DataContract(data_contract_file=location, schema_location=schema, publish_url=publish, server=server, examples=examples).test()
+    run = DataContract(data_contract_file=location, schema_location=schema, publish_url=publish, server=server,
+                       examples=examples).test()
     if logs:
         _print_logs(run)
     _handle_result(run)
@@ -137,7 +140,6 @@ def export(
     print(result)
 
 
-
 class ImportFormat(str, Enum):
     sql = "sql"
 
@@ -152,7 +154,6 @@ def import_(
     """
     result = DataContract().import_from_source(format, source)
     print(result.to_yaml())
-
 
 
 @app.command()
@@ -174,7 +175,8 @@ def breaking(
 def _handle_result(run):
     _print_table(run)
     if run.result == "passed":
-        print(f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds.")
+        print(
+            f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds.")
     else:
         print("🔴 data contract is invalid, found the following errors:")
         i = 1
@@ -203,8 +205,6 @@ def to_field(run, check):
         return check.model + "." + check.field
     else:
         return check.field
-
-
 
 
 def _print_logs(run):

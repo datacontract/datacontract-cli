@@ -20,7 +20,12 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
         dbt["models"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False)
 
+
 def to_dbt_staging_sql(data_contract_spec: DataContractSpecification):
+    if data_contract_spec.models is None or len(data_contract_spec.models.items()) != 1:
+        print(f"Export to dbt-staging-sql currently only works with exactly one model in the data contract.")
+        return ""
+
     id = data_contract_spec.id
     model_name, model = next(iter(data_contract_spec.models.items()))
     columns = []
@@ -29,9 +34,10 @@ def to_dbt_staging_sql(data_contract_spec: DataContractSpecification):
         columns.append(field_name)
     return f"""
     select 
-        { ", ".join(columns) }
+        {", ".join(columns)}
     from {{{{ source('{id}', '{model_name}') }}}}
 """
+
 
 def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
     dbt = {
@@ -67,6 +73,7 @@ def _to_dbt_source_table(model_key, model_value: Model) -> dict:
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
+
 
 def _to_dbt_model(model_key, model_value: Model) -> dict:
     dbt_model = {
@@ -121,8 +128,9 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
         if supports_datatype:
             column["data_type"] = dbt_type
         else:
-            column.setdefault("tests", []).append({"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {
-                "column_type": dbt_type}})
+            column.setdefault("tests", []).append(
+                {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {
+                    "column_type": dbt_type}})
     if field.description is not None:
         column["description"] = field.description
     if field.required:
@@ -143,7 +151,8 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
             length_test["min_value"] = field.minLength
         if field.maxLength is not None:
             length_test["max_value"] = field.maxLength
-        column.setdefault("tests", []).append({"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
+        column.setdefault("tests", []).append(
+            {"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
     if field.pii is not None:
         column.setdefault("meta", {})["pii"] = field.pii
     if field.classification is not None:
@@ -152,7 +161,8 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
         column.setdefault("tags", []).extend(field.tags)
     if field.pattern is not None:
         # Beware, the data contract pattern is a regex, not a like pattern
-        column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}})
+        column.setdefault("tests", []).append(
+            {"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}})
     if field.minimum is not None or field.maximum is not None and field.minimumExclusive is None and field.maximumExclusive is None:
         range_test = {}
         if field.minimum is not None:
@@ -170,13 +180,17 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
         column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": range_test})
     else:
         if field.minimum is not None:
-            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimum}})
+            column.setdefault("tests", []).append(
+                {"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimum}})
         if field.maximum is not None:
-            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximum}})
+            column.setdefault("tests", []).append(
+                {"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximum}})
         if field.minimumExclusive is not None:
-            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimumExclusive, "strictly": True}})
+            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {
+                "min_value": field.minimumExclusive, "strictly": True}})
         if field.maximumExclusive is not None:
-            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximumExclusive, "strictly": True}})
+            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {
+                "max_value": field.maximumExclusive, "strictly": True}})
 
     # TODO: all constraints
     return column
@@ -192,7 +206,7 @@ def _convert_type_to_snowflake(type) -> None | str:
     if type is None:
         return None
     if type.lower() in ["string", "varchar", "text"]:
-        return type.upper() # STRING, TEXT, VARCHAR are all the same in snowflake
+        return type.upper()  # STRING, TEXT, VARCHAR are all the same in snowflake
     if type.lower() in ["timestamp", "timestamp_tz"]:
         return "TIMESTAMP_TZ"
     if type.lower() in ["timestamp_ntz"]:
@@ -202,11 +216,11 @@ def _convert_type_to_snowflake(type) -> None | str:
     if type.lower() in ["time"]:
         return "TIME"
     if type.lower() in ["number", "decimal", "numeric"]:
-        return "NUMBER" # precision and scale not supported by data contract
-    if type.lower() in [ "float", "double"]:
+        return "NUMBER"  # precision and scale not supported by data contract
+    if type.lower() in ["float", "double"]:
         return "FLOAT"
     if type.lower() in ["integer", "int", "long", "bigint"]:
-        return "NUMBER" # always NUMBER(38,0)
+        return "NUMBER"  # always NUMBER(38,0)
     if type.lower() in ["boolean"]:
         return "BOOLEAN"
     if type.lower() in ["object", "record", "struct"]:

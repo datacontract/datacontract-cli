@@ -162,6 +162,9 @@ class DataContract:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
+            if data_contract.models is None or len(data_contract.models.items()) != 1:
+                print(f"Export to jsonschema currently only works with exactly one model in the data contract.")
+                return ""
             model_name, model = next(iter(data_contract.models.items()))
             jsonschema_dict = to_jsonschema(model_name, model)
             return json.dumps(jsonschema_dict, indent=2)
