@@ -7,7 +7,7 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.dbt_converter import to_dbt
+from datacontract.export.dbt_converter import to_dbt_models_yaml
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
@@ -18,13 +18,13 @@ def test_cli():
     runner = CliRunner()
     result = runner.invoke(app, [
         "export",
-        "./examples/local-json/datacontract.yaml",
+        "./examples/export/datacontract.yaml",
         "--format", "dbt"
     ])
     assert result.exit_code == 0
 
 
-def test_to_dbt():
+def test_to_dbt_models():
     data_contract = DataContractSpecification.from_string(read_file("./examples/export/datacontract.yaml"))
     expected_dbt_model = """
 version: 2
@@ -73,7 +73,7 @@ models:
                 - 'delivered'
 """
 
-    result = yaml.safe_load(to_dbt(data_contract))
+    result = yaml.safe_load(to_dbt_models_yaml(data_contract))
 
     assert result == yaml.safe_load(expected_dbt_model)
 

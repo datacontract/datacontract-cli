@@ -4,20 +4,24 @@ import tempfile
 
 import yaml
 
+from datacontract.breaking.breaking import models_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-from datacontract.export.dbt_converter import to_dbt
+from datacontract.export.dbt_converter import to_dbt_models_yaml, \
+    to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.odcs_converter import to_odcs
 from datacontract.export.sodacl_converter import to_sodacl
+from datacontract.imports.sql_importer import import_sql
 from datacontract.export.rdf_converter import to_rdf
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
+from datacontract.model.breaking_change import BreakingChanges
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -46,7 +50,11 @@ class DataContract:
         self._publish_url = publish_url
         self._spark = spark
 
-    def lint(self):
+    @classmethod
+    def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
+        return resolve.resolve_data_contract(data_contract_location=template)
+
+    def lint(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -57,7 +65,7 @@ class DataContract:
                 result="passed",
                 name="Data contract is syntactically valid",
                 engine="datacontract"
-                ))
+            ))
             run.checks.extend(ExampleModelLinter().lint(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
@@ -93,6 +101,7 @@ class DataContract:
             check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
             # TODO check yaml contains models
 
+            # TODO create directory only for examples
             with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
                 if self._examples:
                     server_name = "examples"
@@ -142,21 +151,33 @@ class DataContract:
 
         return run
 
+    def breaking(self, other: 'DataContract') -> BreakingChanges:
+        old = self.get_data_contract_specification()
+        new = other.get_data_contract_specification()
+        return models_breaking_changes(old_models=old.models, new_models=new.models, new_path=other._data_contract_file)
 
-    def diff(self, other):
-        pass
+    def get_data_contract_specification(self):
+        return resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
+                                             self._data_contract, self._schema_location)
 
     def export(self, export_format, rdf_base) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
+            if data_contract.models is None or len(data_contract.models.items()) != 1:
+                print(f"Export to jsonschema currently only works with exactly one model in the data contract.")
+                return ""
             model_name, model = next(iter(data_contract.models.items()))
             jsonschema_dict = to_jsonschema(model_name, model)
             return json.dumps(jsonschema_dict, indent=2)
         if export_format == "sodacl":
             return to_sodacl(data_contract)
         if export_format == "dbt":
-            return to_dbt(data_contract)
+            return to_dbt_models_yaml(data_contract)
+        if export_format == "dbt-sources":
+            return to_dbt_sources_yaml(data_contract, self._server)
+        if export_format == "dbt-staging-sql":
+            return to_dbt_staging_sql(data_contract)
         if export_format == "odcs":
             return to_odcs(data_contract)
         if export_format == "rdf":
@@ -164,7 +185,6 @@ class DataContract:
         else:
             print(f"Export format {export_format} not supported.")
             return ""
-
 
     def _get_examples_server(self, data_contract, run, tmp_dir):
         run.log_info(f"Copying examples to files in temporary directory {tmp_dir}")
@@ -197,3 +217,10 @@ class DataContract:
         )
         run.log_info(f"Using {server} for testing the examples")
         return server
+
+    def import_from_source(self, format: str, source: str) -> DataContractSpecification:
+        data_contract_specification = DataContract.init()
+
+        data_contract_specification = import_sql(data_contract_specification, format, source)
+
+        return data_contract_specification

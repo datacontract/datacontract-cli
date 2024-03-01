@@ -74,7 +74,8 @@ def lint(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
+        str, typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -88,7 +89,8 @@ def test(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
+        str, typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
     server: Annotated[str, typer.Option(
         help="The server configuration to run the schema and quality tests. "
              "Use the key of the server object in the data contract yaml file "
@@ -107,7 +109,8 @@ def test(
     print(f"Testing {location}")
     if server == "all":
         server = None
-    run = DataContract(data_contract_file=location, schema_location=schema, publish_url=publish, server=server, examples=examples).test()
+    run = DataContract(data_contract_file=location, schema_location=schema, publish_url=publish, server=server,
+                       examples=examples).test()
     if logs:
         _print_logs(run)
     _handle_result(run)
@@ -117,6 +120,8 @@ class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     sodacl = "sodacl"
     dbt = "dbt"
+    dbt_sources = "dbt-sources"
+    dbt_staging_sql = "dbt-staging-sql"
     odcs = "odcs"
     rdf = "rdf"
 
@@ -124,6 +129,7 @@ class ExportFormat(str, Enum):
 @app.command()
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
+    server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     rdf_base: Annotated[Optional[str], typer.Option(help="The base URI used to generate the RDF graph.")] = "",
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
@@ -132,15 +138,47 @@ def export(
     Convert data contract to a specific format. Prints to stdout.
     """
     # TODO exception handling
-    result = DataContract(data_contract_file=location).export(format, rdf_base)
+    result = DataContract(data_contract_file=location, server=server).export(format, rdf_base)
     print(result)
 
+
+class ImportFormat(str, Enum):
+    sql = "sql"
+
+
+@app.command(name="import")
+def import_(
+    format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
+    source: Annotated[str, typer.Option(help="The path to the file that should be imported.")],
+):
+    """
+    Create a data contract from the given source file. Prints to stdout.
+    """
+    result = DataContract().import_from_source(format, source)
+    print(result.to_yaml())
+
+
+@app.command()
+def breaking(
+    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
+    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+):
+    """
+    Identifies breaking changes between data contracts. Prints to stdout.
+    """
+
+    # TODO exception handling
+    result = DataContract(data_contract_file=location_old).breaking(DataContract(data_contract_file=location_new))
+    print(str(result))
+    if not result.passed_checks():
+        raise typer.Exit(code=1)
 
 
 def _handle_result(run):
     _print_table(run)
     if run.result == "passed":
-        print(f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds.")
+        print(
+            f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds.")
     else:
         print("🔴 data contract is invalid, found the following errors:")
         i = 1
@@ -169,8 +207,6 @@ def to_field(run, check):
         return check.model + "." + check.field
     else:
         return check.field
-
-
 
 
 def _print_logs(run):

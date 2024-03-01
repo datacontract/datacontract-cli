@@ -93,6 +93,9 @@ $ datacontract export --format jsonschema datacontract.yaml
 # export model as dbt
 $ datacontract export --format dbt datacontract.yaml
 
+# import sql
+$ datacontract import --format sql --source my_ddl.sql
+
 # import protobuf as model (Coming Soon)
 $ datacontract import --format protobuf --source my_protobuf_file.proto datacontract.yaml
 ```
@@ -179,7 +182,7 @@ The application uses different engines, based on the server `type`.
 | `redshift`   | n/a        |                                                                           | Coming soon | TBD                                 |
 | `databricks` | n/a        | Support for Databricks SQL with Unity catalog and Hive metastore.         | ✅           | soda-core-spark                     |
 | `databricks` | n/a        | Support for Spark for programmatic use in Notebooks.                      | ✅           | soda-core-spark-df                  |
-| `kafka`      | `json`     |                                                                           | Coming soon | TBD                                 |
+| `kafka`      | `json`     | Experimental.                                                             | ✅           | pyspark<br>soda-core-spark-df       |
 | `kafka`      | `avro`     |                                                                           | Coming soon | TBD                                 |
 | `kafka`      | `protobuf` |                                                                           | Coming soon | TBD                                 |
 | `local`      | `parquet`  |                                                                           | ✅           | soda-core-duckdb                    |
@@ -345,18 +348,27 @@ run.result
 
 ### Exports
 
+```bash
+# Example export to dbt model
+datacontract export --format dbt
+```
+
 Available export options:
 
-| Type         | Description                                             | Status |
-|--------------|---------------------------------------------------------|--------|
-| `jsonschema` | Export to JSON Schema                                   | ✅      | 
-| `sodacl`     | Export to SodaCL quality checks in YAML format          | ✅      |
-| `dbt`        | Export to dbt model in YAML format                      | ✅      |
-| `rdf`        | Export data contract to RDF representation in N3 format | ✅      |
-| `avro`       | Export to AVRO models                                   | TBD    |
-| `pydantic`   | Export to pydantic models                               | TBD    |
-| `sql`        | Export to SQL DDL                                       | TBD    |
-| `protobuf`   | Export to Protobuf                                      | TBD    |
+| Type               | Description                                             | Status   |
+|--------------------|---------------------------------------------------------|----------|
+| `jsonschema`       | Export to JSON Schema                                   | ✅       | 
+| `odcs`             | Export to Open Data Contract Standard (ODCS)            | ✅       | 
+| `sodacl`           | Export to SodaCL quality checks in YAML format          | ✅       |
+| `dbt`              | Export to dbt models in YAML format                     | ✅       |
+| `dbt-sources`      | Export to dbt sources in YAML format                    | ✅       |
+| `dbt-staging-sql`  | Export to dbt staging SQL models                        | ✅       |
+| `rdf`              | Export data contract to RDF representation in N3 format | ✅       |
+| `avro`             | Export to AVRO models                                   | TBD      |
+| `pydantic`         | Export to pydantic models                               | TBD      |
+| `sql`              | Export to SQL DDL                                       | TBD      |
+| `protobuf`         | Export to Protobuf                                      | TBD      |
+| Missing something? | Please create an issue on GitHub                        | TBD      |
 
 #### RDF
 
@@ -382,6 +394,24 @@ Having the data contract inside an RDF Graph gives us access the following use c
 - Apply graph algorithms on multiple data contracts (Find similar data contracts, find "gatekeeper"
 data products, find the true domain owner of a field attribute)
 
+### Imports
+
+```bash
+# Example import from SQL DDL
+datacontract import --format sql --source my_ddl.sql
+```
+
+Available import options:
+
+| Type               | Description                                    | Status  |
+|--------------------|------------------------------------------------|---------|
+| `sql`              | Import from SQL DDL                            | ✅       | 
+| `protobuf`         | Import from Protobuf schemas                   | TBD     |
+| `avro`             | Import from AVRO schemas                       | TBD     |
+| `jsonschema`       | Import from JSON Schemas                       | TBD     |
+| `dbt`              | Import from dbt models                         | TBD     |
+| `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
+| Missing something? | Please create an issue on GitHub               | TBD     |
 
 ## Development Setup
 
@@ -401,7 +431,7 @@ pytest
 
 Release
 
-```
+```bash
 git tag v0.9.0
 git push origin v0.9.0
 python3 -m pip install --upgrade build twine
@@ -413,7 +443,7 @@ python3 -m twine upload --repository testpypi dist/*
 
 Docker Build
 
-```
+```bash
 docker build -t datacontract/cli .
 docker run --rm -v ${PWD}:/home/datacontract datacontract/cli
 ```

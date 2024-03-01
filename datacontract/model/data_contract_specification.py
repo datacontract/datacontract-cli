@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict
 
 import pydantic
@@ -26,6 +27,7 @@ class Server(BaseModel):
     host: str = None
     port: int = None
     catalog: str = None
+    topic: str = None
     http_path: str = None # Use ENV variable
     token: str = None     # Use ENV variable
     dataProductId: str = None
@@ -102,6 +104,17 @@ class DataContractSpecification(BaseModel):
     quality: Quality = None
 
     @classmethod
+    def from_file(cls, file):
+        if not os.path.exists(file):
+            raise(f"The file '{file}' does not exist.")
+        with open(file, 'r') as file:
+            file_content = file.read()
+        return DataContractSpecification.from_string(file_content)
+
+    @classmethod
     def from_string(cls, data_contract_str):
         data = yaml.safe_load(data_contract_str)
         return DataContractSpecification(**data)
+
+    def to_yaml(self):
+        return yaml.dump(self.model_dump(exclude_defaults=True, exclude_none=True), sort_keys=False)
