@@ -348,19 +348,45 @@ run.result
 
 ### Exports
 
+```bash
+# Example export to dbt model
+datacontract export --format dbt
+```
+
 Available export options:
 
-| Type              | Description                                    | Status |
-|-------------------|------------------------------------------------|--------|
-| `jsonschema`      | Export to JSON Schema                          | ✅      | 
-| `sodacl`          | Export to SodaCL quality checks in YAML format | ✅      |
-| `dbt`             | Export to dbt models in YAML format            | ✅      |
-| `dbt-sources`     | Export to dbt sources in YAML format           | ✅      |
-| `dbt-staging-sql` | Export to dbt staging SQL models               | ✅      |
-| `avro`            | Export to AVRO models                          | TBD    |
-| `pydantic`        | Export to pydantic models                      | TBD    |
-| `sql`             | Export to SQL DDL                              | TBD    |
-| `protobuf`        | Export to Protobuf                             | TBD    |
+| Type               | Description                                    | Status |
+|--------------------|------------------------------------------------|--------|
+| `jsonschema`       | Export to JSON Schema                          | ✅      | 
+| `sodacl`           | Export to SodaCL quality checks in YAML format | ✅      |
+| `dbt`              | Export to dbt models in YAML format            | ✅      |
+| `dbt-sources`      | Export to dbt sources in YAML format           | ✅      |
+| `dbt-staging-sql`  | Export to dbt staging SQL models               | ✅      |
+| `avro`             | Export to AVRO models                          | TBD    |
+| `pydantic`         | Export to pydantic models                      | TBD    |
+| `sql`              | Export to SQL DDL                              | TBD    |
+| `protobuf`         | Export to Protobuf                             | TBD    |
+| Missing something? | Please create an issue on GitHub               | TBD    |
+
+
+### Imports
+
+```bash
+# Example import from SQL DDL
+datacontract import --format sql --source my_ddl.sql
+```
+
+Available import options:
+
+| Type               | Description                                    | Status  |
+|--------------------|------------------------------------------------|---------|
+| `sql`              | Import from SQL DDL                            | ✅       | 
+| `protobuf`         | Import from Protobuf schemas                   | TBD     |
+| `avro`             | Import from AVRO schemas                       | TBD     |
+| `jsonschema`       | Import from JSON Schemas                       | TBD     |
+| `dbt`              | Import from dbt models                         | TBD     |
+| `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
+| Missing something? | Please create an issue on GitHub               | TBD     |
 
 ## Development Setup
 
