@@ -27,6 +27,7 @@ class Server(BaseModel):
     host: str = None
     port: int = None
     catalog: str = None
+    topic: str = None
     http_path: str = None # Use ENV variable
     token: str = None     # Use ENV variable
     dataProductId: str = None

@@ -182,7 +182,7 @@ The application uses different engines, based on the server `type`.
 | `redshift`   | n/a        |                                                                           | Coming soon | TBD                                 |
 | `databricks` | n/a        | Support for Databricks SQL with Unity catalog and Hive metastore.         | ✅           | soda-core-spark                     |
 | `databricks` | n/a        | Support for Spark for programmatic use in Notebooks.                      | ✅           | soda-core-spark-df                  |
-| `kafka`      | `json`     |                                                                           | Coming soon | TBD                                 |
+| `kafka`      | `json`     | Experimental.                                                             | ✅           | pyspark<br>soda-core-spark-df       |
 | `kafka`      | `avro`     |                                                                           | Coming soon | TBD                                 |
 | `kafka`      | `protobuf` |                                                                           | Coming soon | TBD                                 |
 | `local`      | `parquet`  |                                                                           | ✅           | soda-core-duckdb                    |

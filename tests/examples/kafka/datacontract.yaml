@@ -17,7 +17,7 @@ models:
       updated_at:
         type: string
       available:
-        type: numeric
+        type: int
       location:
         type: string
       sku:

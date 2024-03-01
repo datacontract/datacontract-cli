@@ -100,6 +100,7 @@ class DataContract:
             check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
             # TODO check yaml contains models
 
+            # TODO create directory only for examples
             with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
                 if self._examples:
                     server_name = "examples"

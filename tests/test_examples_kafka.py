@@ -2,9 +2,9 @@ import sys
 
 import six
 
+# Fix for Python 3.12
 if sys.version_info >= (3, 12, 1):
     sys.modules['kafka.vendor.six.moves'] = six.moves
-
 
 import json
 import logging
@@ -15,7 +15,7 @@ from testcontainers.kafka import KafkaContainer
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "examples/kafka/datacontract.yaml"
 
@@ -31,22 +31,19 @@ def kafka_container(request):
 
     request.addfinalizer(remove_container)
 
-# skip this test
+
 def test_examples_kafka(kafka_container: KafkaContainer):
     send_messages_to_topic("examples/kafka/data/messages.json", 'json-topic')
-
-    assert True
     data_contract_str = _setup_datacontract()
     data_contract = DataContract(data_contract_str=data_contract_str)
 
     run = data_contract.test()
 
     print(run)
-    assert run.result == "warning"
-    # assert all(check.result == "passed" for check in run.checks)
+    assert run.result == "passed"
 
 
-def send_messages_to_topic(messages_file_path : str, topic_name : str):
+def send_messages_to_topic(messages_file_path: str, topic_name: str):
     print(f"Sending messages from {messages_file_path} to Kafka topic {topic_name}")
 
     producer = KafkaProducer(bootstrap_servers=kafka.get_bootstrap_server(),
