@@ -11,8 +11,6 @@
 The `datacontract` CLI is an open source command-line tool for working with [Data Contracts](https://datacontract.com/).
 It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
 
-> **_NOTE:_**  This project has been migrated from Go to Python which adds the possibility to use `datacontract` within Python code as library, but it comes with some [breaking changes](CHANGELOG.md). The Go version has been [forked](https://github.com/datacontract/cli-go), if you still rely on that.
-
 
 ## Getting started
 
