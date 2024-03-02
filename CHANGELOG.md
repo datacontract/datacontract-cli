@@ -6,7 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- export to rdf (#52)
 
 This is a hugh step forward, we now support testing Kafka messages. 
 We start with JSON messages, Avro and Protobuf will follow.
@@ -16,6 +15,7 @@ We start with JSON messages, Avro and Protobuf will follow.
 - import sql (#51)
 - export to dbt sources: `datacontract export --format dbt-sources`
 - export to dbt staging sql: `datacontract export --format dbt-staging-sql`
+- export to rdf (#52)
 - add `datacontract breaking` command
 
 ## [0.9.5] - 2024-02-22
