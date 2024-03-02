@@ -26,8 +26,8 @@ def to_odcs(data_contract_spec: DataContractSpecification):
     if data_contract_spec.terms is not None:
         odcs["description"] = {
             "purpose": None,
-            "usage": data_contract_spec.terms.usage,
-            "limitations": data_contract_spec.terms.limitations,
+            "usage": data_contract_spec.terms.usage.strip() if data_contract_spec.terms.usage is not None else None,
+            "limitations": data_contract_spec.terms.limitations.strip() if data_contract_spec.terms.limitations is not None else None,
         }
 
     odcs["type"] = "tables" # required, TODO read from models.type?
