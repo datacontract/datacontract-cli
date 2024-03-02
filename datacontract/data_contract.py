@@ -121,7 +121,7 @@ class DataContract:
                 # 6. check server credentials are complete
                 if server.format == "json":
                     check_jsonschema(run, data_contract, server)
-                check_soda_execute(run, data_contract, server, self._spark)
+                check_soda_execute(run, data_contract, server, self._spark, tmp_dir)
 
         except DataContractException as e:
             run.checks.append(Check(

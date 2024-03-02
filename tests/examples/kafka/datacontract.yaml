@@ -22,3 +22,8 @@ models:
         type: string
       sku:
         type: string
+quality:
+  type: SodaCL
+  specification:
+    checks for inventory:
+      - row_count >= 10

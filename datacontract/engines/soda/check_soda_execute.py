@@ -20,7 +20,7 @@ from datacontract.model.run import \
     Run, Check, Log
 
 
-def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark):
+def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark, tmp_dir):
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return
@@ -67,8 +67,8 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             scan.set_data_source_name(server.type)
     elif server.type == "kafka":
         if spark is None:
-            spark = create_spark_session()
-        read_kafka_topic(spark, data_contract, server)
+            spark = create_spark_session(tmp_dir)
+        read_kafka_topic(spark, data_contract, server, tmp_dir)
         scan.add_spark_session(spark, data_source_name=server.type)
         scan.set_data_source_name(server.type)
 
