@@ -14,9 +14,9 @@ from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.export.odcs_converter import to_odcs
+from datacontract.export.rdf_converter import to_rdf
 from datacontract.export.sodacl_converter import to_sodacl
 from datacontract.imports.sql_importer import import_sql
-from datacontract.export.rdf_converter import to_rdf
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
@@ -160,7 +160,7 @@ class DataContract:
         return resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                              self._data_contract, self._schema_location)
 
-    def export(self, export_format, rdf_base) -> str:
+    def export(self, export_format, rdf_base: str = None) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
