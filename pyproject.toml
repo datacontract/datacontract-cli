@@ -34,6 +34,7 @@ dependencies = [
   "fastjsonschema~=2.19.1",
   "python-dotenv~=1.0.0",
   "s3fs==2024.2.0",
+  "rdflib==7.0.0",
 ]
 
 [project.optional-dependencies]

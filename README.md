@@ -355,20 +355,44 @@ datacontract export --format dbt
 
 Available export options:
 
-| Type               | Description                                    | Status |
-|--------------------|------------------------------------------------|--------|
-| `jsonschema`       | Export to JSON Schema                          | ✅      | 
-| `odcs`             | Export to Open Data Contract Standard (ODCS)   | ✅      | 
-| `sodacl`           | Export to SodaCL quality checks in YAML format | ✅      |
-| `dbt`              | Export to dbt models in YAML format            | ✅      |
-| `dbt-sources`      | Export to dbt sources in YAML format           | ✅      |
-| `dbt-staging-sql`  | Export to dbt staging SQL models               | ✅      |
-| `avro`             | Export to AVRO models                          | TBD    |
-| `pydantic`         | Export to pydantic models                      | TBD    |
-| `sql`              | Export to SQL DDL                              | TBD    |
-| `protobuf`         | Export to Protobuf                             | TBD    |
-| Missing something? | Please create an issue on GitHub               | TBD    |
+| Type               | Description                                             | Status   |
+|--------------------|---------------------------------------------------------|----------|
+| `jsonschema`       | Export to JSON Schema                                   | ✅       | 
+| `odcs`             | Export to Open Data Contract Standard (ODCS)            | ✅       | 
+| `sodacl`           | Export to SodaCL quality checks in YAML format          | ✅       |
+| `dbt`              | Export to dbt models in YAML format                     | ✅       |
+| `dbt-sources`      | Export to dbt sources in YAML format                    | ✅       |
+| `dbt-staging-sql`  | Export to dbt staging SQL models                        | ✅       |
+| `rdf`              | Export data contract to RDF representation in N3 format | ✅       |
+| `avro`             | Export to AVRO models                                   | TBD      |
+| `pydantic`         | Export to pydantic models                               | TBD      |
+| `sql`              | Export to SQL DDL                                       | TBD      |
+| `protobuf`         | Export to Protobuf                                      | TBD      |
+| Missing something? | Please create an issue on GitHub                        | TBD      |
 
+#### RDF
+
+The export function converts a given data contract into a RDF representation. You have the option to 
+add a base_url which will be used as the default prefix to resolve relative IRIs inside the document.
+
+```shell
+datacontract export --format rdf --rdf-base https://www.example.com/ datacontract.yaml
+```
+
+The data contract is mapped onto the following concepts of a yet to be defined Data Contract
+Ontology named https://datacontract.com/DataContractSpecification/ :
+- DataContract
+- Server
+- Model
+
+Having the data contract inside an RDF Graph gives us access the following use cases:
+- Interoperability with other data contract specification formats
+- Store data contracts inside a knowledge graph
+- Enhance a semantic search to find and retrieve data contracts
+- Linking model elements to already established ontologies and knowledge
+- Using full power of OWL to reason about the graph structure of data contracts
+- Apply graph algorithms on multiple data contracts (Find similar data contracts, find "gatekeeper"
+data products, find the true domain owner of a field attribute)
 
 ### Imports
 
