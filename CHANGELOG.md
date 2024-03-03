@@ -12,6 +12,7 @@ We start with JSON messages, Avro and Protobuf will follow.
 
 ### Added
 - test kafka for JSON messages
+- test kafka for AVRO messages
 - import sql (#51)
 - export to dbt sources: `datacontract export --format dbt-sources`
 - export to dbt staging sql: `datacontract export --format dbt-staging-sql`
