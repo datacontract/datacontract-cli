@@ -130,7 +130,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
         run.checks.append(Check(
             type="schema",
             name="Check that JSON has valid schema",
-            result="warn",
+            result="warning",
             reason="Server format is not 'json'. Skip validating jsonschema.",
             engine="jsonschema",
         ))

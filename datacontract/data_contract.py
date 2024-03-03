@@ -119,7 +119,7 @@ class DataContract:
 
                 # 5. check server is supported type
                 # 6. check server credentials are complete
-                if server.format == "json":
+                if server.format == "json" and server.type != "kafka":
                     check_jsonschema(run, data_contract, server)
                 check_soda_execute(run, data_contract, server, self._spark, tmp_dir)
 

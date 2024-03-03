@@ -15,6 +15,7 @@ models:
     fields:
       ordertime:
         type: bigint
+        required: true
       orderid:
         type: int
       itemid:
