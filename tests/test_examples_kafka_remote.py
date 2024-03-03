@@ -16,16 +16,28 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.INFO, force=True)
 
-datacontract = "examples/kafka-remote/datacontract.yaml"
+
+@pytest.mark.skipif(os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
+                    reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set")
+def _test_examples_kafka_json_remote():
+    load_dotenv(override=True)
+    # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"
+    # os.environ['DATACONTRACT_KAFKA_SASL_PASSWORD'] = "xxx"
+    data_contract = DataContract(data_contract_file="examples/kafka-json-remote/datacontract.yaml")
+
+    run = data_contract.test()
+
+    print(run)
+    assert run.result == "passed"
 
 
 @pytest.mark.skipif(os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
                     reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set")
-def _test_examples_kafka_remote():
+def _test_examples_kafka_avro_remote():
     load_dotenv(override=True)
     # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"
     # os.environ['DATACONTRACT_KAFKA_SASL_PASSWORD'] = "xxx"
-    data_contract = DataContract(data_contract_file=datacontract)
+    data_contract = DataContract(data_contract_file="examples/kafka-avro-remote/datacontract.yaml")
 
     run = data_contract.test()
 
