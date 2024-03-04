@@ -124,6 +124,7 @@ class ExportFormat(str, Enum):
     dbt_staging_sql = "dbt-staging-sql"
     odcs = "odcs"
     rdf = "rdf"
+    avro = "avro"
 
 
 @app.command()

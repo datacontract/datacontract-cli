@@ -10,12 +10,13 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
+from datacontract.export.avro_converter import to_avro_schema, to_avro_schema_json
 from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
-from datacontract.export.jsonschema_converter import to_jsonschema
-from datacontract.export.odcs_converter import to_odcs
-from datacontract.export.rdf_converter import to_rdf
-from datacontract.export.sodacl_converter import to_sodacl
+from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschema_json
+from datacontract.export.odcs_converter import to_odcs_yaml
+from datacontract.export.rdf_converter import to_rdf, to_rdf_n3
+from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
@@ -165,13 +166,12 @@ class DataContract:
                                                       self._data_contract)
         if export_format == "jsonschema":
             if data_contract.models is None or len(data_contract.models.items()) != 1:
-                print(f"Export to jsonschema currently only works with exactly one model in the data contract.")
+                print(f"Export to {export_format} currently only works with exactly one model in the data contract.")
                 return ""
             model_name, model = next(iter(data_contract.models.items()))
-            jsonschema_dict = to_jsonschema(model_name, model)
-            return json.dumps(jsonschema_dict, indent=2)
+            return to_jsonschema_json(model_name, model)
         if export_format == "sodacl":
-            return to_sodacl(data_contract)
+            return to_sodacl_yaml(data_contract)
         if export_format == "dbt":
             return to_dbt_models_yaml(data_contract)
         if export_format == "dbt-sources":
@@ -179,9 +179,15 @@ class DataContract:
         if export_format == "dbt-staging-sql":
             return to_dbt_staging_sql(data_contract)
         if export_format == "odcs":
-            return to_odcs(data_contract)
+            return to_odcs_yaml(data_contract)
         if export_format == "rdf":
-            return to_rdf(data_contract, rdf_base).serialize(format='n3')
+            return to_rdf_n3(data_contract, rdf_base)
+        if export_format == "avro":
+            if data_contract.models is None or len(data_contract.models.items()) != 1:
+                print(f"Export to {export_format} currently only works with exactly one model in the data contract.")
+                return ""
+            model_name, model = next(iter(data_contract.models.items()))
+            return to_avro_schema_json(model_name, model)
         else:
             print(f"Export format {export_format} not supported.")
             return ""

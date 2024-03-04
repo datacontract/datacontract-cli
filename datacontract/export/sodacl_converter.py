@@ -4,7 +4,7 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
 
-def to_sodacl(data_contract_spec: DataContractSpecification, check_types: bool = True) -> str:
+def to_sodacl_yaml(data_contract_spec: DataContractSpecification, check_types: bool = True) -> str:
     try:
         sodacl = {}
         for model_key, model_value in data_contract_spec.models.items():

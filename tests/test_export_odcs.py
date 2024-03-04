@@ -6,7 +6,7 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.odcs_converter import to_odcs
+from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
@@ -73,7 +73,7 @@ dataset:
         isNullable: false
 """
 
-    odcs = to_odcs(data_contract)
+    odcs = to_odcs_yaml(data_contract)
     result = yaml.safe_load(odcs)
 
     assert result == yaml.safe_load(expected_odcs_model)

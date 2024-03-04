@@ -6,13 +6,15 @@ from pyspark.sql.avro.functions import from_avro
 from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import *
 
-from datacontract.export.avro_converter import to_avro_schema
+from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server, Field
 from datacontract.model.exceptions import DataContractException
 
 
 def create_spark_session(tmp_dir) -> SparkSession:
+    # TODO: Update dependency versions when updating pyspark
+    # TODO: add protobuf library
     spark = SparkSession.builder.appName("datacontract") \
         .config("spark.sql.warehouse.dir", tmp_dir + "/spark-warehouse") \
         .config("spark.streaming.stopGracefullyOnShutdown", True) \
@@ -28,6 +30,7 @@ def read_kafka_topic(spark: SparkSession, data_contract: DataContractSpecificati
     topic = server.topic
     auth_options = get_auth_options()
 
+    # read full kafka topic
     df = spark \
         .read \
         .format("kafka") \
@@ -39,17 +42,21 @@ def read_kafka_topic(spark: SparkSession, data_contract: DataContractSpecificati
     # TODO a warning if none or multiple models
     model_name, model = next(iter(data_contract.models.items()))
     if server.format == "avro":
-        avro_schema = to_avro_schema(model_name, model.fields)
-        options = {"mode": "PERMISSIVE"}
+        avro_schema = to_avro_schema_json(model_name, model)
+
         # Parse out the extra bytes from the Avro data
         # A Kafka message contains a key and a value. Data going through a Kafka topic in Confluent Cloud has five bytes added to the beginning of every Avro value. If you are using Avro format keys, then five bytes will be added to the beginning of those as well. For this example, we’re assuming string keys. These bytes consist of one magic byte and four bytes representing the schema ID of the schema in the registry that is needed to decode that data. The bytes need to be removed so that the schema ID can be determined and the Avro data can be parsed. To manipulate the data, we need a couple of imports:
         df2 = df.withColumn("fixedValue", fn.expr("substring(value, 6, length(value)-5)"))
+
+        options = {"mode": "PERMISSIVE"}
         df3 = df2.select(from_avro(col("fixedValue"), avro_schema, options).alias("avro")).select(col("avro.*"))
     elif server.format == "json":
         # TODO A good warning when the conversion to json fails
-        schema = to_struct_type(model.fields)
+        struct_type = to_struct_type(model.fields)
         df2 = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-        df3 = df2.select(from_json(df2.value, schema).alias("json")).select(col("json.*"))
+
+        options = {"mode": "PERMISSIVE"}
+        df3 = df2.select(from_json(df2.value, struct_type, options).alias("json")).select(col("json.*"))
     else:
         raise DataContractException(
             type="test",

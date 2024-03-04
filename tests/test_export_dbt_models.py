@@ -25,7 +25,7 @@ def test_cli():
 
 
 def test_to_dbt_models():
-    data_contract = DataContractSpecification.from_string(read_file("./examples/export/datacontract.yaml"))
+    data_contract = DataContractSpecification.from_file("./examples/export/datacontract.yaml")
     expected_dbt_model = """
 version: 2
 models:

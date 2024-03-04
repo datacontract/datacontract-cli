@@ -3,17 +3,22 @@ import json
 from datacontract.model.data_contract_specification import Field
 
 
-def to_avro_schema(model_name, fields) -> str:
-    schema = to_avro_record(model_name, fields)
-    return json.dumps(schema)
+def to_avro_schema(model_name, model) -> dict:
+    return to_avro_record(model_name, model.fields, model.description)
+
+def to_avro_schema_json(model_name, model) -> str:
+    schema = to_avro_schema(model_name, model)
+    return json.dumps(schema, indent=2, sort_keys=False)
 
 
-def to_avro_record(name, fields):
+def to_avro_record(name, fields, description) -> dict:
     schema = {
         "type": "record",
-        "name": name,
-        "fields": to_avro_fields(fields)
+        "name": name
     }
+    if description is not None:
+        schema["doc"] = description
+    schema["fields"] = to_avro_fields(fields)
     return schema
 
 
@@ -25,10 +30,13 @@ def to_avro_fields(fields):
 
 
 def to_avro_field(field, field_name):
-    return {
-        "name": field_name,
-        "type": to_avro_type(field, field_name)
+    avro_field = {
+        "name": field_name
     }
+    if field.description is not None:
+        avro_field["doc"] = field.description
+    avro_field["type"] = to_avro_type(field, field_name)
+    return avro_field
 
 
 def to_avro_type(field: Field, field_name: str):
@@ -56,7 +64,7 @@ def to_avro_type(field: Field, field_name: str):
     elif field.type in ["time"]:
         return "long"
     elif field.type in ["object", "record", "struct"]:
-        return to_avro_record(field_name, field.fields)
+        return to_avro_record(field_name, field.fields, field.description)
     elif field.type in ["binary"]:
         return "bytes"
     elif field.type in ["array"]:

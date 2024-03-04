@@ -1,6 +1,6 @@
 import yaml
 
-from datacontract.export.sodacl_converter import to_sodacl
+from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
@@ -64,7 +64,7 @@ quality:
     data = yaml.safe_load(data_contract_specification_str)
     data_contract_specification = DataContractSpecification(**data)
 
-    result = to_sodacl(data_contract_specification)
+    result = to_sodacl_yaml(data_contract_specification)
 
     assert yaml.safe_load(result) == yaml.safe_load(expected)
 

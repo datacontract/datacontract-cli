@@ -3,32 +3,34 @@ import logging
 import os
 import sys
 
-from datacontract.export.avro_converter import to_avro_schema
+from typer.testing import CliRunner
+
+from datacontract.cli import app
+from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
 
-# def test_cli():
-#     runner = CliRunner()
-#     result = runner.invoke(app, [
-#         "export",
-#         "./examples/local-json/datacontract.yaml",
-#         "--format", "jsonschema"
-#     ])
-#     assert result.exit_code == 0
+def test_cli():
+    runner = CliRunner()
+    result = runner.invoke(app, [
+        "export",
+        "./examples/kafka-avro-remote/datacontract.yaml",
+        "--format", "avro"
+    ])
+    assert result.exit_code == 0
 
 
 def test_to_avro_schema():
-    data_contract_file = ("./examples/kafka-avro-remote/datacontract.yaml")
-    file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+    data_contract = DataContractSpecification.from_file("./examples/kafka-avro-remote/datacontract.yaml")
     expected_avro_schema = """
     {
   "fields": [
     {
       "name": "ordertime",
+      "doc": "My Field",
       "type": "long"
     },
     {
@@ -66,12 +68,13 @@ def test_to_avro_schema():
     }
   ],
   "name": "orders",
+  "doc": "My Model",
   "type": "record"
 }
 """
 
     model_name, model = next(iter(data_contract.models.items()))
-    result = to_avro_schema(model_name, model.fields)
+    result = to_avro_schema_json(model_name, model)
 
     assert json.loads(result) == json.loads(expected_avro_schema)
 

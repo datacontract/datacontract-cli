@@ -13,9 +13,11 @@ servers:
 models:
   orders:
     type: table
+    description: My Model
     fields:
       ordertime:
         type: bigint
+        description: My Field
       orderid:
         type: int
       itemid:
