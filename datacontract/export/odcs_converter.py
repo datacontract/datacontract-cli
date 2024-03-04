@@ -36,7 +36,7 @@ def to_odcs_yaml(data_contract_spec: DataContractSpecification):
     for model_key, model_value in data_contract_spec.models.items():
         odcs_table = to_odcs_table(model_key, model_value)
         odcs["dataset"].append(odcs_table)
-    return yaml.dump(odcs, indent=2, sort_keys=False)
+    return yaml.dump(odcs, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def to_odcs_table(model_key, model_value: Model) -> dict:

@@ -224,7 +224,7 @@ class DataContract:
                 elif format == "json" and type(example.data) is str:
                     content = example.data
                 elif format == "yaml" and type(example.data) is list:
-                    content = yaml.dump(example.data)
+                    content = yaml.dump(example.data, allow_unicode=True)
                 elif format == "yaml" and type(example.data) is str:
                     content = example.data
                 elif format == "csv":

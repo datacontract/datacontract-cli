@@ -118,4 +118,4 @@ class DataContractSpecification(BaseModel):
         return DataContractSpecification(**data)
 
     def to_yaml(self):
-        return yaml.dump(self.model_dump(exclude_defaults=True, exclude_none=True), sort_keys=False)
+        return yaml.dump(self.model_dump(exclude_defaults=True, exclude_none=True), sort_keys=False, allow_unicode=True)

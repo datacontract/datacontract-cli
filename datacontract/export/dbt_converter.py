@@ -18,7 +18,7 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = _to_dbt_model(model_key, model_value, data_contract_spec)
         dbt["models"].append(dbt_model)
-    return yaml.dump(dbt, indent=2, sort_keys=False)
+    return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def to_dbt_staging_sql(data_contract_spec: DataContractSpecification):
@@ -62,7 +62,7 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = _to_dbt_source_table(model_key, model_value)
         source["tables"].append(dbt_model)
-    return yaml.dump(dbt, indent=2, sort_keys=False)
+    return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def _to_dbt_source_table(model_key, model_value: Model) -> dict:
