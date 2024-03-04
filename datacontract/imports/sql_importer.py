@@ -33,6 +33,7 @@ def import_sql(data_contract_specification: DataContractSpecification, format: s
             if primary_key in fields:
                 fields[primary_key].unique = True
                 fields[primary_key].required = True
+                fields[primary_key].primary = True
 
         data_contract_specification.models[table_name] = Model(
             type="table",

@@ -38,6 +38,7 @@ models:
       field_one:
         type: varchar
         required: true
+        primary: true
         unique: true
         maxLength: 10
       field_two:

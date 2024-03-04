@@ -46,6 +46,7 @@ class Field(BaseModel):
     type: str = None
     format: str = None
     required: bool = None
+    primary: bool = None
     unique: bool = None
     description: str = None
     pii: bool = None
