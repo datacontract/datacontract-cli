@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6-2] - 2024-03-04
+
 - test kafka for avro messages
 - added export format **avro**: `datacontract export --format avro`
 
