@@ -410,20 +410,20 @@ datacontract export --format dbt
 
 Available export options:
 
-| Type               | Description                                             | Status   |
-|--------------------|---------------------------------------------------------|----------|
-| `jsonschema`       | Export to JSON Schema                                   | ✅       | 
-| `odcs`             | Export to Open Data Contract Standard (ODCS)            | ✅       | 
-| `sodacl`           | Export to SodaCL quality checks in YAML format          | ✅       |
-| `dbt`              | Export to dbt models in YAML format                     | ✅       |
-| `dbt-sources`      | Export to dbt sources in YAML format                    | ✅       |
-| `dbt-staging-sql`  | Export to dbt staging SQL models                        | ✅       |
-| `rdf`              | Export data contract to RDF representation in N3 format | ✅       |
-| `avro`             | Export to AVRO models                                   | TBD      |
-| `pydantic`         | Export to pydantic models                               | TBD      |
-| `sql`              | Export to SQL DDL                                       | TBD      |
-| `protobuf`         | Export to Protobuf                                      | TBD      |
-| Missing something? | Please create an issue on GitHub                        | TBD      |
+| Type               | Description                                             | Status |
+|--------------------|---------------------------------------------------------|--------|
+| `jsonschema`       | Export to JSON Schema                                   | ✅      | 
+| `odcs`             | Export to Open Data Contract Standard (ODCS)            | ✅      | 
+| `sodacl`           | Export to SodaCL quality checks in YAML format          | ✅      |
+| `dbt`              | Export to dbt models in YAML format                     | ✅      |
+| `dbt-sources`      | Export to dbt sources in YAML format                    | ✅      |
+| `dbt-staging-sql`  | Export to dbt staging SQL models                        | ✅      |
+| `rdf`              | Export data contract to RDF representation in N3 format | ✅      |
+| `avro`             | Export to AVRO models                                   | ✅      |
+| `pydantic`         | Export to pydantic models                               | TBD    |
+| `sql`              | Export to SQL DDL                                       | TBD    |
+| `protobuf`         | Export to Protobuf                                      | TBD    |
+| Missing something? | Please create an issue on GitHub                        | TBD    |
 
 #### RDF
 

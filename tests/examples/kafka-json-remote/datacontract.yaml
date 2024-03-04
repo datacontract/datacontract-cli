@@ -7,8 +7,9 @@ info:
 servers:
   production:
     type: kafka
-    topic: datamesh.orders.v1
     host: pkc-7xoy1.eu-central-1.aws.confluent.cloud:9092
+    topic: datamesh.orders.v1
+    format: json
 models:
   orders:
     type: table

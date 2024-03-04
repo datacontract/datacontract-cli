@@ -6,7 +6,7 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification, Model, Field
 
 
-def to_odcs(data_contract_spec: DataContractSpecification):
+def to_odcs_yaml(data_contract_spec: DataContractSpecification):
     odcs = {
         "kind": "DataContract",
         "apiVersion": "2.3.0",

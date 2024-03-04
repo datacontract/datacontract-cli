@@ -13,7 +13,7 @@ from datacontract.engines.soda.connections.postgres import \
     to_postgres_soda_configuration
 from datacontract.engines.soda.connections.snowflake import \
     to_snowflake_soda_configuration
-from datacontract.export.sodacl_converter import to_sodacl
+from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.run import \
@@ -84,9 +84,10 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         return
 
     # Don't check types for json format, as they are checked with json schema
+    # Don't check types for avro format, as they are checked with avro schema
     # Don't check types for csv format, as they are hard to detect
-    check_types = server.format != "json" and server.format != "csv"
-    sodacl_yaml_str = to_sodacl(data_contract, check_types)
+    check_types = server.format != "json" and server.format != "csv" and server.format != "avro"
+    sodacl_yaml_str = to_sodacl_yaml(data_contract, check_types)
     # print("sodacl_yaml_str:\n" + sodacl_yaml_str)
     scan.add_sodacl_yaml_str(sodacl_yaml_str)
 

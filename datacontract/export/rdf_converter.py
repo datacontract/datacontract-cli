@@ -18,7 +18,10 @@ def is_uriref(property_name):
     return property_name in ["model", "domain", "owner"]
 
 
-def to_rdf(data_contract_spec: DataContractSpecification, base):
+def to_rdf_n3(data_contract_spec: DataContractSpecification, base) -> Graph:
+    return to_rdf(data_contract_spec, base).serialize(format="n3")
+
+def to_rdf(data_contract_spec: DataContractSpecification, base) -> Graph:
     if base is not None:
         g = Graph(base=base)
     else:

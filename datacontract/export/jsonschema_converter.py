@@ -1,3 +1,4 @@
+import json
 from typing import Dict
 
 from datacontract.model.data_contract_specification import \
@@ -11,6 +12,9 @@ def to_jsonschemas(data_contract_spec: DataContractSpecification):
         jsonschmemas[model_key] = jsonschema
     return jsonschmemas
 
+def to_jsonschema_json(model_key, model_value: Model) -> str:
+    jsonschema = to_jsonschema(model_key, model_value)
+    return json.dumps(jsonschema, indent=2)
 
 def to_jsonschema(model_key, model_value: Model) -> dict:
     return {
