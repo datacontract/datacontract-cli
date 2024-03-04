@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - test kafka for avro messages
+- added export format **avro**: `datacontract export --format avro`
 
 ## [0.9.6] - 2024-03-04
 
@@ -19,7 +20,6 @@ We start with JSON messages and avro, and Protobuf will follow.
 - added import format **sql**: `datacontract import --format sql` (#51)
 - added export format **dbt-sources**: `datacontract export --format dbt-sources`
 - added export format **dbt-staging-sql**: `datacontract export --format dbt-staging-sql`
-- added export format **avro**: `datacontract export --format avro`
 - added export format **rdf**: `datacontract export --format rdf` (#52)
 - added command `datacontract breaking` to detect breaking changes in between two data contracts.
 
