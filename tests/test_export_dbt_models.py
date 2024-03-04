@@ -31,6 +31,9 @@ version: 2
 models:
   - name: orders    
     config:
+      meta:
+        owner: checkout
+        data_contract: orders-unit-test
       materialized: table
       contract:
         enforced: true

@@ -99,8 +99,26 @@ class DataContract:
             data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                           self._data_contract, self._schema_location)
 
-            check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
-            # TODO check yaml contains models
+            if data_contract.models is None or len(data_contract.models) == 0:
+                raise DataContractException(
+                    type="lint",
+                    name="Check that data contract contains models",
+                    result="warning",
+                    reason="Models block is missing. Skip executing tests.",
+                    engine="datacontract",
+                )
+
+            if self._examples:
+                if data_contract.examples is None or len(data_contract.examples) == 0:
+                    raise DataContractException(
+                        type="lint",
+                        name="Check that data contract contains valid examples",
+                        result="warning",
+                        reason="Examples block is missing. Skip executing tests.",
+                        engine="datacontract",
+                    )
+            else:
+                check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
 
             # TODO create directory only for examples
             with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
@@ -120,7 +138,7 @@ class DataContract:
 
                 # 5. check server is supported type
                 # 6. check server credentials are complete
-                if server.format == "json":
+                if server.format == "json" and server.type != "kafka":
                     check_jsonschema(run, data_contract, server)
                 check_soda_execute(run, data_contract, server, self._spark, tmp_dir)
 

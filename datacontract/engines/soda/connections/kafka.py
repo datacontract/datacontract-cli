@@ -21,6 +21,7 @@ def create_spark_session(tmp_dir) -> SparkSession:
         .config('spark.jars.packages',
                 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0') \
         .getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
     print(f'Using PySpark version {spark.version}')
     return spark
 

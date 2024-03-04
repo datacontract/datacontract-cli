@@ -16,7 +16,7 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
         "models": [],
     }
     for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = _to_dbt_model(model_key, model_value)
+        dbt_model = _to_dbt_model(model_key, model_value, data_contract_spec)
         dbt["models"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False)
 
@@ -40,25 +40,28 @@ def to_dbt_staging_sql(data_contract_spec: DataContractSpecification):
 
 
 def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
+    source = {
+        "name": data_contract_spec.id,
+        "tables": []
+    }
     dbt = {
         "version": 2,
         "sources": [
-            {
-                "name": data_contract_spec.id,
-                "tables": []
-            }
+            source
         ],
     }
+    if data_contract_spec.info.owner is not None:
+        source["meta"] = {"owner": data_contract_spec.info.owner}
     if data_contract_spec.info.description is not None:
-        dbt["sources"][0]["description"] = data_contract_spec.info.description
+        source["description"] = data_contract_spec.info.description
     found_server = data_contract_spec.servers.get(server)
     if found_server is not None:
-        dbt["sources"][0]["database"] = found_server.database
-        dbt["sources"][0]["schema"] = found_server.schema_
+        source["database"] = found_server.database
+        source["schema"] = found_server.schema_
 
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = _to_dbt_source_table(model_key, model_value)
-        dbt["sources"][0]["tables"].append(dbt_model)
+        source["tables"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False)
 
 
@@ -75,13 +78,20 @@ def _to_dbt_source_table(model_key, model_value: Model) -> dict:
     return dbt_model
 
 
-def _to_dbt_model(model_key, model_value: Model) -> dict:
+def _to_dbt_model(model_key, model_value: Model, data_contract_spec: DataContractSpecification) -> dict:
     dbt_model = {
         "name": model_key,
     }
     model_type = _to_dbt_model_type(model_value.type)
-    dbt_model["config"] = {}
+    dbt_model["config"] = {
+        "meta": {
+            "data_contract": data_contract_spec.id
+        }
+    }
     dbt_model["config"]["materialized"] = model_type
+
+    if data_contract_spec.info.owner is not None:
+        dbt_model["config"]["meta"]["owner"] = data_contract_spec.info.owner
 
     if _supports_constraints(model_type):
         dbt_model["config"]["contract"] = {

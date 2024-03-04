@@ -32,6 +32,8 @@ sources:
     description: The orders data contract  
     database: my-database
     schema: my-schema  
+    meta:
+      owner: checkout
     tables:
       - name: orders 
         description: The orders model

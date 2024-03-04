@@ -9,7 +9,7 @@ from pydantic import BaseModel
 class Check(BaseModel):
     type: str
     name: Optional[str]
-    result: str
+    result: str  # passed, failed, warning, unknown
     engine: str
     reason: Optional[str] = None
     model: Optional[str] = None
