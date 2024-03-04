@@ -246,6 +246,39 @@ models:
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
 
 
+### Snowflake
+
+Data Contract CLI can test data in Snowflake.
+
+#### Example
+
+datacontract.yaml
+```yaml
+
+servers:
+  snowflake:
+    type: snowflake
+    account: abcdefg-xn12345
+    database: ORDER_DB
+    schema: ORDERS_PII_V2
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields: 
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable               | Example            | Description                                         |
+|------------------------------------|--------------------|-----------------------------------------------------|
+| `DATACONTRACT_SNOWFLAKE_USERNAME`  | `datacontract`     | Username                                            |
+| `DATACONTRACT_SNOWFLAKE_PASSWORD`  | `mysecretpassword` | Password                                            |
+| `DATACONTRACT_SNOWFLAKE_ROLE`      | `DATAVALIDATION`   | The snowflake role to use.                          |
+| `DATACONTRACT_SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH`       | The Snowflake Warehouse to use executing the tests. |
+
+
 ### BigQuery
 
 We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
