@@ -7,16 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.9.6] - 2024-03-04
+
 This is a hugh step forward, we now support testing Kafka messages. 
-We start with JSON messages, Avro and Protobuf will follow.
+We start with JSON messages and avro, and Protobuf will follow.
 
 ### Added
 - test kafka for JSON messages
-- import sql (#51)
-- export to dbt sources: `datacontract export --format dbt-sources`
-- export to dbt staging sql: `datacontract export --format dbt-staging-sql`
-- export to rdf (#52)
-- add `datacontract breaking` command
+- test kafka for avro messages
+- added import format **sql**: `datacontract import --format sql` (#51)
+- added export format **dbt-sources**: `datacontract export --format dbt-sources`
+- added export format **dbt-staging-sql**: `datacontract export --format dbt-staging-sql`
+- added export format **avro**: `datacontract export --format avro`
+- added export format **rdf**: `datacontract export --format rdf` (#52)
+- added command `datacontract breaking` to detect breaking changes in between two data contracts.
 
 ## [0.9.5] - 2024-02-22
 
