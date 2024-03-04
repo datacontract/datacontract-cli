@@ -503,6 +503,15 @@ docker build -t datacontract/cli .
 docker run --rm -v ${PWD}:/home/datacontract datacontract/cli
 ```
 
+## Release Steps
+
+1. Update the version in `pyproject.toml`
+2. Have a look at the `CHANGELOG.md`
+3. Create release commit manually
+4. Execute `./release`
+5. Wait until GitHub Release is created
+6. Add the release notes to the GitHub Release
+
 ## Contribution
 
 We are happy to receive your contributions. Propose your change in an issue or directly create a pull request with your improvements.
