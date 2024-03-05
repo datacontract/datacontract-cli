@@ -125,6 +125,7 @@ class ExportFormat(str, Enum):
     odcs = "odcs"
     rdf = "rdf"
     avro = "avro"
+    protobuf = "protobuf"
 
 
 @app.command()

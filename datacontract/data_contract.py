@@ -15,6 +15,7 @@ from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
+from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.export.rdf_converter import to_rdf, to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.imports.sql_importer import import_sql
@@ -200,6 +201,8 @@ class DataContract:
             return to_odcs_yaml(data_contract)
         if export_format == "rdf":
             return to_rdf_n3(data_contract, rdf_base)
+        if export_format == "protobuf":
+            return to_protobuf(data_contract)
         if export_format == "avro":
             if data_contract.models is None or len(data_contract.models.items()) != 1:
                 print(f"Export to {export_format} currently only works with exactly one model in the data contract.")

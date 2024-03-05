@@ -421,9 +421,9 @@ Available export options:
 | `dbt-staging-sql`  | Export to dbt staging SQL models                        | ✅      |
 | `rdf`              | Export data contract to RDF representation in N3 format | ✅      |
 | `avro`             | Export to AVRO models                                   | ✅      |
+| `protobuf`         | Export to Protobuf                                      | ✅      |
 | `pydantic`         | Export to pydantic models                               | TBD    |
 | `sql`              | Export to SQL DDL                                       | TBD    |
-| `protobuf`         | Export to Protobuf                                      | TBD    |
 | Missing something? | Please create an issue on GitHub                        | TBD    |
 
 #### RDF
