@@ -15,6 +15,10 @@ models:
         type: string
       field_required:
         type: string
+      field_primary:
+        type: string
+      field_references:
+        type: string
       field_unique:
         type: string
       field_description:
