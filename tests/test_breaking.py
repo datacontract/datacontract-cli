@@ -17,6 +17,60 @@ def test_no_breaking_changes():
     assert "0 breaking changes: 0 error, 0 warning" in result.stdout
 
 
+def test_quality_added():
+    result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-quality-v1.yaml",
+                                 "./examples/breaking/datacontract-quality-v2.yaml"])
+    assert result.exit_code == 0
+    assert "0 breaking changes: 0 error, 0 warning" in result.stdout
+
+
+class TestQualityRemoved:
+
+    @pytest.fixture(scope='class')
+    def output(self):
+        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-quality-v2.yaml",
+                                     "./examples/breaking/datacontract-quality-v1.yaml"])
+        assert result.exit_code == 0
+        return result.stdout
+
+    def test_headline(self, output):
+        print(output)
+        assert "1 breaking changes: 0 error, 1 warning" in output
+
+    def test_quality_removed(self, output):
+        assert r"""warning [quality_removed] at ./examples/breaking/datacontract-quality-v1.yaml
+        in quality
+            removed quality""" in output
+
+
+class TestQualityUpdated:
+
+    @pytest.fixture(scope='class')
+    def output(self):
+        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-quality-v2.yaml",
+                                     "./examples/breaking/datacontract-quality-v3.yaml"])
+        assert result.exit_code == 0
+        return result.stdout
+
+    def test_headline(self, output):
+        print(output)
+        assert "2 breaking changes: 0 error, 2 warning" in output
+
+    def test_type_updated(self, output):
+        assert r"""warning [quality_type_updated] at 
+./examples/breaking/datacontract-quality-v3.yaml
+        in quality.type
+            changed from `SodaCL` to `custom`""" in output
+
+    def test_specification_updated(self, output):
+        assert r"""warning [quality_specification_updated] at 
+./examples/breaking/datacontract-quality-v3.yaml
+        in quality.specification
+            changed from `checks for orders:
+  - freshness(column_1) < 1d` to `checks for orders:
+  - freshness(column_1) < 2d`""" in output
+
+
 class TestModelsAdded:
 
     @pytest.fixture(scope='class')

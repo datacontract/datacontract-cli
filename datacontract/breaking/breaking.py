@@ -1,13 +1,86 @@
 from datacontract.breaking.breaking_rules import BreakingRules
 from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location
-from datacontract.model.data_contract_specification import Field, Model
+from datacontract.model.data_contract_specification import Field, Model, Quality
+
+
+def quality_breaking_changes(
+    old_quality: Quality,
+    new_quality: Quality,
+    new_path: str
+) -> list[BreakingChange]:
+    results = list[BreakingChange]()
+
+    if not old_quality and new_quality:
+        rule_name = "quality_added"
+        severity = _get_rule(rule_name)
+        description = "added quality"
+
+        if severity != "info":
+            results.append(
+                BreakingChange(
+                    description=description,
+                    check_name=rule_name,
+                    severity=severity,
+                    location=Location(
+                        path=new_path,
+                        composition=["quality"]
+                    )))
+    elif old_quality and not new_quality:
+        rule_name = "quality_removed"
+        severity = _get_rule(rule_name)
+        description = "removed quality"
+
+        if severity != "info":
+            results.append(
+                BreakingChange(
+                    description=description,
+                    check_name=rule_name,
+                    severity=severity,
+                    location=Location(
+                        path=new_path,
+                        composition=["quality"]
+                    )))
+
+    elif old_quality and new_quality:
+        if old_quality.type != new_quality.type:
+            rule_name = "quality_type_updated"
+            severity = _get_rule(rule_name)
+            description = f"changed from `{old_quality.type}` to `{new_quality.type}`"
+
+            if severity != "info":
+                results.append(
+                    BreakingChange(
+                        description=description,
+                        check_name=rule_name,
+                        severity=severity,
+                        location=Location(
+                            path=new_path,
+                            composition=["quality", "type"]
+                        )))
+
+        if old_quality.specification != new_quality.specification:
+            rule_name = "quality_specification_updated"
+            severity = _get_rule(rule_name)
+            description = f"changed from `{old_quality.specification}` to `{new_quality.specification}`"
+            if severity != "info":
+                results.append(
+                    BreakingChange(
+                        description=description,
+                        check_name=rule_name,
+                        severity=severity,
+                        location=Location(
+                            path=new_path,
+                            composition=["quality", "specification"]
+                        )))
+
+    return results
 
 
 def models_breaking_changes(
     old_models: dict[str, Model],
     new_models: dict[str, Model],
     new_path: str
-) -> BreakingChanges:
+) -> list[BreakingChange]:
     composition = ["models"]
     results = list[BreakingChange]()
 
@@ -50,7 +123,7 @@ def models_breaking_changes(
                 composition=composition + [model_name]
             ))
 
-    return BreakingChanges(breaking_changes=results)
+    return results
 
 
 def model_breaking_changes(
@@ -165,7 +238,7 @@ def field_breaking_changes(
     new_path: str,
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
-    
+
     field_definition_fields = vars(new_field)
     for field_definition_field in field_definition_fields.keys():
         if field_definition_field == "ref_obj":
