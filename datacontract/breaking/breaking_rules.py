@@ -51,29 +51,29 @@ class BreakingRules:
     field_pattern_removed = 'error'
     field_pattern_updated = 'error'
 
-    field_minLength_added = 'warning'
-    field_minLength_removed = 'warning'
-    field_minLength_updated = 'error'
+    field_min_length_added = 'warning'
+    field_min_length_removed = 'warning'
+    field_min_length_updated = 'error'
 
-    field_maxLength_added = 'warning'
-    field_maxLength_removed = 'warning'
-    field_maxLength_updated = 'error'
+    field_max_length_added = 'warning'
+    field_max_length_removed = 'warning'
+    field_max_length_updated = 'error'
 
     field_minimum_added = 'warning'
     field_minimum_removed = 'warning'
     field_minimum_updated = 'error'
 
-    field_exclusiveMinimum_added = 'warning'
-    field_exclusiveMinimum_removed = 'warning'
-    field_exclusiveMinimum_updated = 'error'
+    field_exclusive_minimum_added = 'warning'
+    field_exclusive_minimum_removed = 'warning'
+    field_exclusive_minimum_updated = 'error'
 
     field_maximum_added = 'warning'
     field_maximum_removed = 'warning'
     field_maximum_updated = 'error'
 
-    field_exclusiveMaximum_added = 'warning'
-    field_exclusiveMaximum_removed = 'warning'
-    field_exclusiveMaximum_updated = 'error'
+    field_exclusive_maximum_added = 'warning'
+    field_exclusive_maximum_removed = 'warning'
+    field_exclusive_maximum_updated = 'error'
 
     field_enum_added = 'warning'
     field_enum_removed = 'info'
