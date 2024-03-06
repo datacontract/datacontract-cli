@@ -31,6 +31,10 @@ class QualityUsesSchemaLinter(Linter):
         result = LinterResult()
         models = contract.models
         check = contract.quality
+        if not check:
+            return LinterResult()
+        if not check.specification:
+            return LinterResult.cautious("Quality check without specification.")
         if isinstance(check.specification, str):
             check_specification = yaml.safe_load(check.specification)
         else:
