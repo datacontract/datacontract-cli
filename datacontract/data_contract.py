@@ -84,7 +84,16 @@ class DataContract:
                 engine="datacontract"
                 ))
             for linter in self.enabled_linters:
-                run.checks.extend(linter.lint(data_contract))
+                try:
+                    run.checks.extend(linter.lint(data_contract))
+                except Exception as e:
+                    run.checks.append(Check(
+                        type="general",
+                        result="error",
+                        name=f"Linter '{linter.name}'",
+                        reason=str(e),
+                        engine="datacontract",
+                    ))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
         except DataContractException as e:
