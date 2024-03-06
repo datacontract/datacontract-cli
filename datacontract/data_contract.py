@@ -24,6 +24,11 @@ from datacontract.integration.publish_datamesh_manager import \
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.model.breaking_change import BreakingChanges
+from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
+from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
+from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
+from datacontract.lint.linters.primary_field_linter import PrimaryFieldUniqueRequired
+from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -53,6 +58,14 @@ class DataContract:
         self._publish_url = publish_url
         self._spark = spark
         self._inline_definitions = inline_definitions
+        self.enabled_linters = {
+            ExampleModelLinter(),
+            QualityUsesSchemaLinter(),
+            FieldPatternLinter(),
+            FieldReferenceLinter(),
+            NoticePeriodLinter(),
+            PrimaryFieldUniqueRequired(),
+        }
 
     @classmethod
     def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
@@ -69,8 +82,9 @@ class DataContract:
                 result="passed",
                 name="Data contract is syntactically valid",
                 engine="datacontract"
-            ))
-            run.checks.extend(ExampleModelLinter().lint(data_contract))
+                ))
+            for linter in self.enabled_linters:
+                run.checks.extend(linter.lint(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
         except DataContractException as e:
