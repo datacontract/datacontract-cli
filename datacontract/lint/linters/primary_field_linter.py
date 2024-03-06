@@ -2,6 +2,7 @@ from ..lint import Linter, LinterResult
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 class PrimaryFieldUniqueRequired(Linter):
+    """Checks that all fields defined as primary are also defined as unique and required."""
     @property
     def name(self) -> str:
         return "Model primary fields unique and required"

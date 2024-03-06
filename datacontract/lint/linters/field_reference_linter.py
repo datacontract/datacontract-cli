@@ -2,6 +2,10 @@ from ..lint import Linter, LinterResult
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 class FieldReferenceLinter(Linter):
+    """Checks that all references definitions in fields refer to existing
+      fields.
+
+    """
     @property
     def name(self):
         return "Field references existing field"

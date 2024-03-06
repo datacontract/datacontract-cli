@@ -4,7 +4,10 @@ from ..lint import Linter, LinterResult
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 class FieldPatternLinter(Linter):
+    """Checks that all patterns defined for fields are correct Python regex
+      syntax.
 
+    """
     @property
     def name(self):
         return "Field pattern is correct regex"
