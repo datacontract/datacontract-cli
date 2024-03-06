@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, ForwardRef
+from typing import List, Dict
 
 import yaml
 import pydantic as pyd
