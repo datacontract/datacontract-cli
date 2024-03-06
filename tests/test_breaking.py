@@ -140,9 +140,9 @@ class TestFieldsAdded:
             added with value: `8`""" in output
 
     def test_minimum_exclusive_added(self, output):
-        assert r"""warning [field_minimumExclusive_added] at 
+        assert r"""warning [field_exclusiveMinimum_added] at 
 ./examples/breaking/datacontract-fields-v2.yaml
-        in models.my_table.fields.field_minimumExclusive.minimumExclusive
+        in models.my_table.fields.field_exclusiveMinimum.exclusiveMinimum
             added with value: `8`""" in output
 
     def test_maximum_added(self, output):
@@ -151,9 +151,9 @@ class TestFieldsAdded:
             added with value: `14`""" in output
 
     def test_maximum_exclusive_added(self, output):
-        assert r"""warning [field_maximumExclusive_added] at 
+        assert r"""warning [field_exclusiveMaximum_added] at 
 ./examples/breaking/datacontract-fields-v2.yaml
-        in models.my_table.fields.field_maximumExclusive.maximumExclusive
+        in models.my_table.fields.field_exclusiveMaximum.exclusiveMaximum
             added with value: `14`""" in output
 
     def test_enum_added(self, output):
@@ -231,9 +231,9 @@ class TestFieldsRemoved:
             removed field property""" in output
 
     def test_minimum_exclusive_removed(self, output):
-        assert r"""warning [field_minimumExclusive_removed] at 
+        assert r"""warning [field_exclusiveMinimum_removed] at 
 ./examples/breaking/datacontract-fields-v1.yaml
-        in models.my_table.fields.field_minimumExclusive.minimumExclusive
+        in models.my_table.fields.field_exclusiveMinimum.exclusiveMinimum
             removed field property""" in output
 
     def test_maximum_removed(self, output):
@@ -243,9 +243,9 @@ class TestFieldsRemoved:
             removed field property""" in output
 
     def test_maximum_exclusive_removed(self, output):
-        assert r"""warning [field_maximumExclusive_removed] at 
+        assert r"""warning [field_exclusiveMaximum_removed] at 
 ./examples/breaking/datacontract-fields-v1.yaml
-        in models.my_table.fields.field_maximumExclusive.maximumExclusive
+        in models.my_table.fields.field_exclusiveMaximum.exclusiveMaximum
             removed field property""" in output
 
     def test_ref_removed(self, output):
@@ -344,9 +344,9 @@ class TestFieldsUpdated:
             changed from `8` to `10`""" in output
 
     def test_minimum_exclusive_updated(self, output):
-        assert r"""error   [field_minimumExclusive_updated] at 
+        assert r"""error   [field_exclusiveMinimum_updated] at 
 ./examples/breaking/datacontract-fields-v3.yaml
-        in models.my_table.fields.field_minimumExclusive.minimumExclusive
+        in models.my_table.fields.field_exclusiveMinimum.exclusiveMinimum
             changed from `8` to `10`""" in output
 
     def test_maximum_updated(self, output):
@@ -356,9 +356,9 @@ class TestFieldsUpdated:
             changed from `14` to `20`""" in output
 
     def test_maximum_exclusive_updated(self, output):
-        assert r"""error   [field_maximumExclusive_updated] at 
+        assert r"""error   [field_exclusiveMaximum_updated] at 
 ./examples/breaking/datacontract-fields-v3.yaml
-        in models.my_table.fields.field_maximumExclusive.maximumExclusive
+        in models.my_table.fields.field_exclusiveMaximum.exclusiveMaximum
             changed from `14` to `20`""" in output
 
     def test_enum_updated(self, output):
@@ -451,9 +451,9 @@ class TestDefinitionAdded:
             added with value: `8`""" in output
 
     def test_minimum_exclusive_added(self, output):
-        assert r"""warning [field_minimumExclusive_added] at 
+        assert r"""warning [field_exclusiveMinimum_added] at 
 ./examples/breaking/datacontract-definitions-v2.yaml
-        in models.my_table.fields.my_field.minimumExclusive
+        in models.my_table.fields.my_field.exclusiveMinimum
             added with value: `14`""" in output
 
     def test_maximum_added(self, output):
@@ -463,9 +463,9 @@ class TestDefinitionAdded:
             added with value: `14`""" in output
 
     def test_maximum_exclusive_added(self, output):
-        assert r"""warning [field_maximumExclusive_added] at 
+        assert r"""warning [field_exclusiveMaximum_added] at 
 ./examples/breaking/datacontract-definitions-v2.yaml
-        in models.my_table.fields.my_field.maximumExclusive
+        in models.my_table.fields.my_field.exclusiveMaximum
             added with value: `8`""" in output
 
     def test_tags_added(self, output):
@@ -548,9 +548,9 @@ class TestDefinitionRemoved:
             removed field property""" in output
 
     def test_minimum_exclusive_removed(self, output):
-        assert r"""warning [field_minimumExclusive_removed] at 
+        assert r"""warning [field_exclusiveMinimum_removed] at 
 ./examples/breaking/datacontract-definitions-v1.yaml
-        in models.my_table.fields.my_field.minimumExclusive
+        in models.my_table.fields.my_field.exclusiveMinimum
             removed field property""" in output
 
     def test_maximum_removed(self, output):
@@ -560,9 +560,9 @@ class TestDefinitionRemoved:
             removed field property""" in output
 
     def test_maximum_exclusive_removed(self, output):
-        assert r"""warning [field_maximumExclusive_removed] at 
+        assert r"""warning [field_exclusiveMaximum_removed] at 
 ./examples/breaking/datacontract-definitions-v1.yaml
-        in models.my_table.fields.my_field.maximumExclusive
+        in models.my_table.fields.my_field.exclusiveMaximum
             removed field property""" in output
 
     def test_tags_removed(self, output):
@@ -644,9 +644,9 @@ class TestDefinitionUpdated:
             changed from `8` to `10`""" in output
 
     def test_minimum_exclusive_updated(self, output):
-        assert r"""error   [field_minimumExclusive_updated] at 
+        assert r"""error   [field_exclusiveMinimum_updated] at 
 ./examples/breaking/datacontract-definitions-v3.yaml
-        in models.my_table.fields.my_field.minimumExclusive
+        in models.my_table.fields.my_field.exclusiveMinimum
             changed from `14` to `10`""" in output
 
     def test_maximum_updated(self, output):
@@ -656,9 +656,9 @@ class TestDefinitionUpdated:
             changed from `14` to `20`""" in output
 
     def test_maximum_exclusive_updated(self, output):
-        assert r"""error   [field_maximumExclusive_updated] at 
+        assert r"""error   [field_exclusiveMaximum_updated] at 
 ./examples/breaking/datacontract-definitions-v3.yaml
-        in models.my_table.fields.my_field.maximumExclusive
+        in models.my_table.fields.my_field.exclusiveMaximum
             changed from `8` to `20`""" in output
 
     def test_tags_updated(self, output):

@@ -26,7 +26,7 @@ def test_import_sql():
     result = DataContract().import_from_source("sql", sql_file_path)
 
     expected = '''
-dataContractSpecification: 0.9.2
+dataContractSpecification: 0.9.3
 id: my-data-contract-id
 info:
   title: My Data Contract

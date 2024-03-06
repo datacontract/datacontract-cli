@@ -25,9 +25,9 @@ definitions:
     maxLength: 14
     pattern: .*
     minimum: 8
-    maximumExclusive: 8
+    exclusiveMaximum: 8
     maximum: 14
-    minimumExclusive: 14
+    exclusiveMinimum: 14
     example: my_example
     pii: false
     classification: internal

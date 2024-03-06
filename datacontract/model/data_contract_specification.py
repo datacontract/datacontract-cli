@@ -1,8 +1,8 @@
 import os
 from typing import List, Dict
 
-import yaml
 import pydantic as pyd
+import yaml
 
 
 class Contact(pyd.BaseModel):
@@ -52,9 +52,9 @@ class Definition(pyd.BaseModel):
     maxLength: int = None
     pattern: str = None
     minimum: int = None
-    minimumExclusive: int = None
+    exclusiveMinimum: int = None
     maximum: int = None
-    maximumExclusive: int = None
+    exclusiveMaximum: int = None
     pii: bool = None
     classification: str = None
     tags: List[str] = []
@@ -75,9 +75,9 @@ class Field(pyd.BaseModel):
     minLength: int = None
     maxLength: int = None
     minimum: int = None
-    minimumExclusive: int = None
+    exclusiveMinimum: int = None
     maximum: int = None
-    maximumExclusive: int = None
+    exclusiveMaximum: int = None
     enum: List[str] = []
     tags: List[str] = []
     fields: Dict[str, 'Field'] = {}

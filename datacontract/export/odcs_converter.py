@@ -91,10 +91,10 @@ def to_column(field_name: str, field: Field) -> dict:
         column["tags"].append(f"minimum:{field.minimum}")
     if field.maximum is not None:
         column["tags"].append(f"maximum:{field.maximum}")
-    if field.minimumExclusive is not None:
-        column["tags"].append(f"minimumExclusive:{field.minimumExclusive}")
-    if field.maximumExclusive is not None:
-        column["tags"].append(f"maximumExclusive:{field.maximumExclusive}")
+    if field.exclusiveMinimum is not None:
+        column["tags"].append(f"exclusiveMinimum:{field.exclusiveMinimum}")
+    if field.exclusiveMaximum is not None:
+        column["tags"].append(f"exclusiveMaximum:{field.exclusiveMaximum}")
     if not column["tags"]:
         del column["tags"]
 

@@ -57,17 +57,17 @@ class BreakingRules:
     field_minimum_removed = 'warning'
     field_minimum_updated = 'error'
 
-    field_minimumExclusive_added = 'warning'
-    field_minimumExclusive_removed = 'warning'
-    field_minimumExclusive_updated = 'error'
+    field_exclusiveMinimum_added = 'warning'
+    field_exclusiveMinimum_removed = 'warning'
+    field_exclusiveMinimum_updated = 'error'
 
     field_maximum_added = 'warning'
     field_maximum_removed = 'warning'
     field_maximum_updated = 'error'
 
-    field_maximumExclusive_added = 'warning'
-    field_maximumExclusive_removed = 'warning'
-    field_maximumExclusive_updated = 'error'
+    field_exclusiveMaximum_added = 'warning'
+    field_exclusiveMaximum_removed = 'warning'
+    field_exclusiveMaximum_updated = 'error'
 
     field_enum_added = 'warning'
     field_enum_removed = 'info'

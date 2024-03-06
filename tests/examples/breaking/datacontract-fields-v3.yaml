@@ -42,15 +42,15 @@ models:
       field_minimum:
         type: string
         minimum: 10
-      field_minimumExclusive:
+      field_exclusiveMinimum:
         type: string
-        minimumExclusive: 10
+        exclusiveMinimum: 10
       field_maximum:
         type: string
         maximum: 20
-      field_maximumExclusive:
+      field_exclusiveMaximum:
         type: string
-        maximumExclusive: 20
+        exclusiveMaximum: 20
       field_enum:
         type: string
         enum: [one, two]

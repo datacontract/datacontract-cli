@@ -25,9 +25,9 @@ definitions:
     maxLength: 20
     pattern: .*.*
     minimum: 10
-    maximumExclusive: 20
+    exclusiveMaximum: 20
     maximum: 20
-    minimumExclusive: 10
+    exclusiveMinimum: 10
     example: my_example_2
     pii: true
     classification: sensitive

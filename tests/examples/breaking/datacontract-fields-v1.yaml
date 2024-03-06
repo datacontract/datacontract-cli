@@ -31,11 +31,11 @@ models:
         type: string
       field_minimum:
         type: string
-      field_minimumExclusive:
+      field_exclusiveMinimum:
         type: string
       field_maximum:
         type: string
-      field_maximumExclusive:
+      field_exclusiveMaximum:
         type: string
       field_enum:
         type: string
