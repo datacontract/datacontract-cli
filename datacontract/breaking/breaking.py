@@ -264,26 +264,26 @@ def field_breaking_changes(
         # logic for enum, tags and other arrays
         if type(old_value) is list and type(new_value) is list:
             if not old_value and new_value:
-                rule_name = f"field_{field_definition_field}_added"
+                rule_name = f"field_{_camel_to_snake(field_definition_field)}_added"
                 description = f"added with value: `{new_value}`"
             elif old_value and not new_value:
-                rule_name = f"field_{field_definition_field}_removed"
+                rule_name = f"field_{_camel_to_snake(field_definition_field)}_removed"
                 description = "removed field property"
             elif sorted(old_value) != sorted(new_value):
-                rule_name = f"field_{field_definition_field}_updated"
+                rule_name = f"field_{_camel_to_snake(field_definition_field)}_updated"
                 description = f"changed from `{old_value}` to `{new_value}`"
 
         # logic for normal fields
         elif old_value is None and new_value is not None:
-            rule_name = f"field_{field_definition_field}_added"
+            rule_name = f"field_{_camel_to_snake(field_definition_field)}_added"
             description = f"added with value: `{str(new_value).lower() if type(new_value) is bool else new_value}`"
 
         elif old_value is not None and new_value is None:
-            rule_name = f"field_{field_definition_field}_removed"
+            rule_name = f"field_{_camel_to_snake(field_definition_field)}_removed"
             description = "removed field property"
 
         elif old_value != new_value:
-            rule_name = f"field_{field_definition_field}_updated"
+            rule_name = f"field_{_camel_to_snake(field_definition_field)}_updated"
             description = (f"changed from `{str(old_value).lower() if type(old_value) is bool else old_value}` "
                            f"to `{str(new_value).lower() if type(new_value) is bool else new_value}`")
 
@@ -310,3 +310,7 @@ def _get_rule(rule_name):
     except AttributeError:
         print(f'WARNING: Breaking Rule not found for {rule_name}!')
         return 'error'
+
+def _camel_to_snake(s):
+    return ''.join(['_'+c.lower() if c.isupper() else c for c in s]).lstrip('_')
+
