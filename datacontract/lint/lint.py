@@ -62,6 +62,14 @@ class LinterResult:
     """
     results: Sequence[LinterMessage] = field(default_factory=list)
 
+    @classmethod
+    def erroneous(cls, message, model=None):
+        return cls([LinterMessage.error(message, model)])
+
+    @classmethod
+    def cautious(cls, message, model=None):
+        return cls([LinterMessage.warning(message, model)])
+
     def with_warning(self, message, model=None):
         result = LinterMessage.warning(message, model)
         return LinterResult(cast(list[LinterMessage],self.results) + [result])
