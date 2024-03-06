@@ -41,6 +41,8 @@ models:
         type: string
       field_tags:
         type: string
+      field_ref:
+        type: string
       field_fields:
         fields:
           nested_field_1:

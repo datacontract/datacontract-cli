@@ -1,0 +1,36 @@
+dataContractSpecification: 0.9.2
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+  my-custom-required-field: hello
+
+models:
+  my_table:
+    type: table
+    fields:
+      my_field:
+        $ref: '#/definitions/my_definition_2'
+
+definitions:
+  my_definition_2:
+    name: my_definition_2
+    domain: global
+    title: my_title_2
+    description: My Description 2
+    type: integer
+    enum: [my_enum_2]
+    format: url
+    minLength: 10
+    maxLength: 20
+    pattern: .*.*
+    minimum: 10
+    maximumExclusive: 20
+    maximum: 20
+    minimumExclusive: 10
+    example: my_example_2
+    pii: true
+    classification: sensitive
+    tags: [my_tags_2]
+
+

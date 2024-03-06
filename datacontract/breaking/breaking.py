@@ -103,7 +103,7 @@ def model_breaking_changes(
             old_fields=old_model.fields,
             new_fields=new_model.fields,
             new_path=new_path,
-            composition=composition
+            composition=composition + ["fields"]
         ))
 
     return results
@@ -165,12 +165,10 @@ def field_breaking_changes(
     new_path: str,
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
-
+    
     field_definition_fields = vars(new_field)
     for field_definition_field in field_definition_fields.keys():
-
-        # TODO(torbenkeller): handle ref case
-        if field_definition_field == "ref":
+        if field_definition_field == "ref_obj":
             continue
 
         old_value = getattr(old_field, field_definition_field)
@@ -218,6 +216,7 @@ def field_breaking_changes(
 
         if rule_name is not None:
             severity = _get_rule(rule_name)
+            field_schema_name = "$ref" if field_definition_field == "ref" else field_definition_field
             if severity != "info":
                 results.append(
                     BreakingChange(
@@ -226,7 +225,7 @@ def field_breaking_changes(
                         severity=severity,
                         location=Location(
                             path=new_path,
-                            composition=composition + [field_definition_field]
+                            composition=composition + [field_schema_name]
                         )))
 
     return results

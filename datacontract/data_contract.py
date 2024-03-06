@@ -42,6 +42,7 @@ class DataContract:
         examples: bool = False,
         publish_url: str = None,
         spark: str = None,
+        inline_definitions: bool = False,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -51,6 +52,7 @@ class DataContract:
         self._examples = examples
         self._publish_url = publish_url
         self._spark = spark
+        self._inline_definitions = inline_definitions
 
     @classmethod
     def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
@@ -176,9 +178,14 @@ class DataContract:
         new = other.get_data_contract_specification()
         return models_breaking_changes(old_models=old.models, new_models=new.models, new_path=other._data_contract_file)
 
-    def get_data_contract_specification(self):
-        return resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                             self._data_contract, self._schema_location)
+    def get_data_contract_specification(self) -> DataContractSpecification:
+        return resolve.resolve_data_contract(
+            data_contract_location=self._data_contract_file,
+            data_contract_str=self._data_contract_str,
+            data_contract=self._data_contract,
+            schema_location=self._schema_location,
+            inline_definitions=self._inline_definitions,
+        )
 
     def export(self, export_format, rdf_base: str = None) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,

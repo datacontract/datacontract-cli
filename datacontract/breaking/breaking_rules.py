@@ -14,7 +14,8 @@ class BreakingRules:
     field_removed = 'error'
 
     field_ref_added = 'warning'
-    field_ref_removed = 'error'
+    field_ref_removed = 'warning'
+    field_ref_updated = 'warning'
 
     field_type_added = 'warning'
     field_type_removed = 'warning'

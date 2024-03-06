@@ -8,7 +8,7 @@ from datacontract.lint.files import read_file
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
 from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+    DataContractSpecification, Definition
 from datacontract.model.exceptions import DataContractException
 
 
@@ -17,11 +17,12 @@ def resolve_data_contract(
     data_contract_str: str = None,
     data_contract: DataContractSpecification = None,
     schema_location: str = None,
+    inline_definitions: bool = False
 ) -> DataContractSpecification:
     if data_contract_location is not None:
-        return resolve_data_contract_from_location(data_contract_location, schema_location)
+        return resolve_data_contract_from_location(data_contract_location, schema_location, inline_definitions)
     elif data_contract_str is not None:
-        return resolve_data_contract_from_str(data_contract_str, schema_location)
+        return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
     elif data_contract is not None:
         return data_contract
     else:
@@ -34,18 +35,67 @@ def resolve_data_contract(
         )
 
 
-def resolve_data_contract_from_location(location, schema_location: str = None) -> DataContractSpecification:
+def resolve_data_contract_from_location(
+    location, schema_location: str = None,
+    inline_definitions: bool = False
+) -> DataContractSpecification:
     if location.startswith("http://") or location.startswith("https://"):
         data_contract_str = fetch_resource(location)
     else:
         data_contract_str = read_file(location)
-    return resolve_data_contract_from_str(data_contract_str, schema_location)
+    return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
 
 
-def resolve_data_contract_from_str(data_contract_str, schema_location: str = None):
+def inline_definitions_into_data_contract(spec: DataContractSpecification):
+    for model in spec.models.values():
+        for field in model.fields.values():
+            if field.ref is None:
+                continue
+
+            definition = resolve_ref(field.ref, spec.definitions)
+            field.ref_obj = definition
+
+            field_properties = vars(field)
+            for field_property_name, field_property_value in field_properties.items():
+                if isinstance(field_property_value, list) and len(field_property_value) == 0:
+                    setattr(field, field_property_name, getattr(definition, field_property_name))
+
+                if field_property_value is None and hasattr(definition, field_property_name):
+                    setattr(field, field_property_name, getattr(definition, field_property_name))
+
+
+def resolve_ref(ref, definitions) -> Definition:
+    if ref.startswith("http://") or ref.startswith("https://"):
+        definition_str = fetch_resource(ref)
+        definition_dict = to_yaml(definition_str)
+        return Definition(**definition_dict)
+
+    elif ref.startswith("#/definitions/"):
+        definition_name = ref.split("#/definitions/")[1]
+        return definitions[definition_name]
+    else:
+        raise DataContractException(
+            type="lint",
+            result="failed",
+            name="Check that data contract YAML is valid",
+            reason=f"Cannot resolve reference {ref}",
+            engine="datacontract",
+        )
+
+
+def resolve_data_contract_from_str(
+    data_contract_str, schema_location: str = None,
+    inline_definitions: bool = False
+) -> DataContractSpecification:
     data_contract_yaml_dict = to_yaml(data_contract_str)
     validate(data_contract_yaml_dict, schema_location)
-    return DataContractSpecification(**data_contract_yaml_dict)
+
+    spec = DataContractSpecification(**data_contract_yaml_dict)
+
+    if inline_definitions:
+        inline_definitions_into_data_contract(spec)
+
+    return spec
 
 
 def to_yaml(data_contract_str):
