@@ -1,5 +1,3 @@
-import re
-
 from ..lint import Linter, LinterResult
 from datacontract.model.data_contract_specification import DataContractSpecification
 
