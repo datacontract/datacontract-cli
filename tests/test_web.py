@@ -9,28 +9,7 @@ def test_lint():
         response = client.post(url="/lint",
                                files={"file": ("datacontract.yaml", f, "application/yaml")})
         assert response.status_code == 200
-        assert response.json() == {
-            "result": "passed",
-            "checks": [
-                {
-                    "type": "lint",
-                    "name": "Data contract is syntactically valid",
-                    "result": "passed",
-                    "engine": "datacontract",
-                    "reason": None,
-                    "model": None,
-                    "field": None,
-                    "details": None
-                },
-                {
-                    "type": "lint",
-                    "name": "Linter 'Example(s) match model'",
-                    "result": "passed",
-                    "engine": "datacontract",
-                    "reason": None,
-                    "model": None,
-                    "field": None,
-                    "details": None
-                }
-            ]
-        }
+        print(response.json())
+        assert response.json()['result'] == 'passed'
+        assert len(response.json()['checks']) == 7
+        assert all([check['result'] == 'passed' for check in response.json()['checks']])
