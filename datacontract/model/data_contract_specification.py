@@ -69,6 +69,7 @@ class Field(pyd.BaseModel):
     required: bool = None
     primary: bool = None
     unique: bool = None
+    references: str = None
     description: str = None
     pii: bool = None
     classification: str = None
