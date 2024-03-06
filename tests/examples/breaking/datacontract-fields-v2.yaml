@@ -57,6 +57,9 @@ models:
       field_tags:
         type: string
         tags: [one]
+      field_ref:
+        type: string
+        $ref: '#/definitions/my_definition'
       field_fields:
         fields:
           nested_field_1:
@@ -65,3 +68,7 @@ models:
             type: string
       new_field:
         type: string
+definitions:
+  my_definition:
+    name: my_definition
+    type: string

@@ -170,7 +170,14 @@ def breaking(
     """
 
     # TODO exception handling
-    result = DataContract(data_contract_file=location_old).breaking(DataContract(data_contract_file=location_new))
+    result = DataContract(
+        data_contract_file=location_old,
+        inline_definitions=True
+    ).breaking(
+        DataContract(
+            data_contract_file=location_new,
+            inline_definitions=True
+        ))
     print(str(result))
     if not result.passed_checks():
         raise typer.Exit(code=1)

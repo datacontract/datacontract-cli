@@ -1,18 +1,17 @@
 import os
 from typing import List, Dict
 
-import pydantic
 import yaml
-from pydantic import BaseModel
+import pydantic as pyd
 
 
-class Contact(BaseModel):
+class Contact(pyd.BaseModel):
     name: str = None
     url: str = None
     email: str = None
 
 
-class Server(BaseModel):
+class Server(pyd.BaseModel):
     type: str = None
     format: str = None
     project: str = None
@@ -23,7 +22,7 @@ class Server(BaseModel):
     location: str = None
     account: str = None
     database: str = None
-    schema_: str = pydantic.fields.Field(default=None, alias='schema')
+    schema_: str = pyd.Field(default=None, alias='schema')
     host: str = None
     port: int = None
     catalog: str = None
@@ -34,15 +33,36 @@ class Server(BaseModel):
     outputPortId: str = None
 
 
-class Terms(BaseModel):
+class Terms(pyd.BaseModel):
     usage: str = None
     limitations: str = None
     billing: str = None
     noticePeriod: str = None
 
 
-class Field(BaseModel):
-    ref: str = None
+class Definition(pyd.BaseModel):
+    domain: str = None
+    name: str = None
+    title: str = None
+    description: str = None
+    type: str = None
+    enum: List[str] = []
+    format: str = None
+    minLength: int = None
+    maxLength: int = None
+    pattern: str = None
+    minimum: int = None
+    minimumExclusive: int = None
+    maximum: int = None
+    maximumExclusive: int = None
+    pii: bool = None
+    classification: str = None
+    tags: List[str] = []
+
+
+class Field(pyd.BaseModel):
+    ref: str = pyd.Field(default=None, alias="$ref")
+    ref_obj: Definition = pyd.Field(default=None, exclude=True)
     type: str = None
     format: str = None
     required: bool = None
@@ -62,18 +82,14 @@ class Field(BaseModel):
     tags: List[str] = []
     fields: Dict[str, 'Field'] = {}
 
-    @property
-    def ref(self):
-        return self.schema.get("$ref")
 
-
-class Model(BaseModel):
+class Model(pyd.BaseModel):
     description: str = None
     type: str = None
     fields: Dict[str, Field] = {}
 
 
-class Info(BaseModel):
+class Info(pyd.BaseModel):
     title: str = None
     version: str = None
     description: str = None
@@ -81,25 +97,26 @@ class Info(BaseModel):
     contact: Contact = None
 
 
-class Example(BaseModel):
+class Example(pyd.BaseModel):
     type: str = None
     description: str = None
     model: str = None
     data: str | object = None
 
 
-class Quality(BaseModel):
+class Quality(pyd.BaseModel):
     type: str = None
     specification: str | object = None
 
 
-class DataContractSpecification(BaseModel):
+class DataContractSpecification(pyd.BaseModel):
     dataContractSpecification: str = None
     id: str = None
     info: Info = None
     servers: Dict[str, Server] = {}
     terms: Terms = None
     models: Dict[str, Model] = {}
+    definitions: Dict[str, Definition] = {}
     # schema: Dict[str, str]
     examples: List[Example] = []
     quality: Quality = None
