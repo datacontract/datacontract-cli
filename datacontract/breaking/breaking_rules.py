@@ -82,3 +82,10 @@ class BreakingRules:
     field_tags_added = 'info'
     field_tags_removed = 'info'
     field_tags_updated = 'info'
+
+    # quality Rules
+    quality_added = 'info'
+    quality_removed = 'warning'
+
+    quality_type_updated = 'warning'
+    quality_specification_updated = 'warning'

@@ -4,7 +4,7 @@ import tempfile
 
 import yaml
 
-from datacontract.breaking.breaking import models_breaking_changes
+from datacontract.breaking.breaking import models_breaking_changes, quality_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
 from datacontract.engines.fastjsonschema.check_jsonschema import \
@@ -23,7 +23,7 @@ from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
-from datacontract.model.breaking_change import BreakingChanges
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
 from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
@@ -82,7 +82,7 @@ class DataContract:
                 result="passed",
                 name="Data contract is syntactically valid",
                 engine="datacontract"
-                ))
+            ))
             for linter in self.enabled_linters:
                 try:
                     run.checks.extend(linter.lint(data_contract))
@@ -199,7 +199,22 @@ class DataContract:
     def breaking(self, other: 'DataContract') -> BreakingChanges:
         old = self.get_data_contract_specification()
         new = other.get_data_contract_specification()
-        return models_breaking_changes(old_models=old.models, new_models=new.models, new_path=other._data_contract_file)
+
+        breaking_changes = list[BreakingChange]()
+
+        breaking_changes.extend(quality_breaking_changes(
+            old_quality=old.quality,
+            new_quality=new.quality,
+            new_path=other._data_contract_file,
+        ))
+
+        breaking_changes.extend(models_breaking_changes(
+            old_models=old.models,
+            new_models=new.models,
+            new_path=other._data_contract_file,
+        ))
+
+        return BreakingChanges(breaking_changes=breaking_changes)
 
     def get_data_contract_specification(self) -> DataContractSpecification:
         return resolve.resolve_data_contract(
