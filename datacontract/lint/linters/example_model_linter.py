@@ -39,7 +39,12 @@ class ExampleModelLinter(Linter):
         self,
         contract: DataContractSpecification
     ) -> LinterResult:
-        """Check whether the example(s) match the model."""
+        """Check whether the example(s) headers match the model.
+
+          This linter checks whether the example's fields match the model
+          fields, and whether all required fields of the model are present in
+          the example.
+        """
         result = LinterResult()
         examples = contract.examples
         models = contract.models
