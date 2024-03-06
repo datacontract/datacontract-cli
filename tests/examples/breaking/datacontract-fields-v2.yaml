@@ -18,6 +18,12 @@ models:
       field_required:
         type: string
         required: false
+      field_primary:
+        type: string
+        primary: false
+      field_references:
+        type: string
+        references: my_table.field_type
       field_unique:
         type: string
         unique: false

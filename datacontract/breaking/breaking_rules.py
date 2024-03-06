@@ -27,6 +27,12 @@ class BreakingRules:
 
     field_required_updated = 'error'
 
+    field_primary_updated = 'warning'
+
+    field_references_added = 'warning'
+    field_references_removed = 'warning'
+    field_references_updated = 'warning'
+
     field_unique_updated = 'error'
 
     field_description_added = 'info'

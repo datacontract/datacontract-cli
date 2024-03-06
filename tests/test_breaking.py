@@ -88,10 +88,16 @@ class TestFieldsAdded:
         return result.stdout
 
     def test_headline(self, output):
-        assert "13 breaking changes: 0 error, 13 warning" in output
+        assert "14 breaking changes: 0 error, 14 warning" in output
 
     def test_field_added(self, output):
         assert "field_added" not in output
+
+    def test_references_added(self, output):
+        assert """warning [field_references_added] at 
+./examples/breaking/datacontract-fields-v2.yaml
+        in models.my_table.fields.field_references.references
+            added with value: `my_table.field_type`""" in output
 
     def test_type_added(self, output):
         assert r"""warning [field_type_added] at ./examples/breaking/datacontract-fields-v2.yaml
@@ -179,7 +185,7 @@ class TestFieldsRemoved:
         return result.stdout
 
     def test_headline(self, output):
-        assert "14 breaking changes: 5 error, 9 warning" in output
+        assert "15 breaking changes: 5 error, 10 warning" in output
 
     def test_type_removed(self, output):
         assert r"""warning [field_type_removed] at ./examples/breaking/datacontract-fields-v1.yaml
@@ -190,6 +196,12 @@ class TestFieldsRemoved:
         assert r"""warning [field_format_removed] at 
 ./examples/breaking/datacontract-fields-v1.yaml
         in models.my_table.fields.field_format.format
+            removed field property""" in output
+
+    def test_references_removed(self, output):
+        assert """warning [field_references_removed] at 
+./examples/breaking/datacontract-fields-v1.yaml
+        in models.my_table.fields.field_references.references
             removed field property""" in output
 
     def test_description_removed(self, output):
@@ -280,7 +292,7 @@ class TestFieldsUpdated:
         return result.stdout
 
     def test_headline(self, output):
-        assert "16 breaking changes: 15 error, 1 warning" in output
+        assert "18 breaking changes: 15 error, 3 warning" in output
 
     def test_type_updated(self, output):
         assert r"""error   [field_type_updated] at ./examples/breaking/datacontract-fields-v3.yaml
@@ -298,6 +310,18 @@ class TestFieldsUpdated:
 ./examples/breaking/datacontract-fields-v3.yaml
         in models.my_table.fields.field_required.required
             changed from `false` to `true`""" in output
+
+    def test_primary_updated(self, output):
+        assert """warning [field_primary_updated] at 
+./examples/breaking/datacontract-fields-v3.yaml
+        in models.my_table.fields.field_primary.primary
+            changed from `false` to `true`""" in output
+
+    def test_references_updated(self, output):
+        assert """warning [field_references_updated] at 
+./examples/breaking/datacontract-fields-v3.yaml
+        in models.my_table.fields.field_references.references
+            changed from `my_table.field_type` to `my_table.field_format`""" in output
 
     def test_unique_updated(self, output):
         assert r"""error   [field_unique_updated] at 
@@ -582,7 +606,6 @@ class TestDefinitionUpdated:
         return result.stdout
 
     def test_headline(self, output):
-        print(output)
         assert "13 breaking changes: 12 error, 1 warning" in output
 
     def test_ref_updated(self, output):
