@@ -22,8 +22,9 @@ from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
-from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.model.breaking_change import BreakingChanges, BreakingChange
+from datacontract.lint.linters.example_model_linter import ExampleModelLinter
+from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
 from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
@@ -65,6 +66,7 @@ class DataContract:
             FieldReferenceLinter(),
             NoticePeriodLinter(),
             PrimaryFieldUniqueRequired(),
+            ValidFieldConstraintsLinter(),
         }
 
     @classmethod
