@@ -24,6 +24,20 @@ def test_quality_added():
     assert "0 breaking changes: 0 error, 0 warning" in result.stdout
 
 
+def test_fail_on_warning():
+    result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-quality-v2.yaml",
+                                 "./examples/breaking/datacontract-quality-v1.yaml", "--fail-on-warning"])
+    assert "1 breaking changes: 0 error, 1 warning" in result.stdout
+    assert result.exit_code == 1
+
+
+def test_fail_on_error():
+    result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-models-v2.yaml",
+                                 "./examples/breaking/datacontract-models-v1.yaml", "--fail-on-error=false"])
+    assert "1 breaking changes: 1 error, 0 warning" in result.stdout
+    assert result.exit_code == 0
+
+
 class TestQualityRemoved:
 
     @pytest.fixture(scope='class')
@@ -34,7 +48,6 @@ class TestQualityRemoved:
         return result.stdout
 
     def test_headline(self, output):
-        print(output)
         assert "1 breaking changes: 0 error, 1 warning" in output
 
     def test_quality_removed(self, output):
@@ -53,7 +66,6 @@ class TestQualityUpdated:
         return result.stdout
 
     def test_headline(self, output):
-        print(output)
         assert "2 breaking changes: 0 error, 2 warning" in output
 
     def test_type_updated(self, output):

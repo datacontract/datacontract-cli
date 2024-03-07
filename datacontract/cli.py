@@ -164,6 +164,13 @@ def import_(
 def breaking(
     location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
     location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+    fail_on_error: Annotated[bool, typer.Option(help="Exit with code 1 if there are breaking changes.",is_flag=False)] = True,
+    fail_on_warning: Annotated[
+        bool, typer.Option(
+            help="Exit with code 1 if there are breaking changes with severity `warning`.",
+            is_flag=True,
+            flag_value=True,
+        )] = False,
 ):
     """
     Identifies breaking changes between data contracts. Prints to stdout.
@@ -179,7 +186,11 @@ def breaking(
             inline_definitions=True
         ))
     print(str(result))
-    if not result.passed_checks():
+
+    if fail_on_error and result.contains_error():
+        raise typer.Exit(code=1)
+
+    if fail_on_warning and result.contains_warning():
         raise typer.Exit(code=1)
 
 

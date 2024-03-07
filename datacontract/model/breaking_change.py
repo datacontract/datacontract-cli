@@ -23,9 +23,13 @@ class BreakingChange(BaseModel):
 class BreakingChanges(BaseModel):
     breaking_changes: List[BreakingChange]
 
-    def passed_checks(self) -> bool:
+    def contains_error(self) -> bool:
         errors = len(list(filter(lambda x: x.severity == "error", self.breaking_changes)))
-        return errors == 0
+        return errors != 0
+
+    def contains_warning(self) -> bool:
+        errors = len(list(filter(lambda x: x.severity == "warning", self.breaking_changes)))
+        return errors != 0
 
     def __str__(self) -> str:
         changes_amount = len(self.breaking_changes)
