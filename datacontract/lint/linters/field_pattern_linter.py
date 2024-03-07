@@ -12,6 +12,10 @@ class FieldPatternLinter(Linter):
     def name(self):
         return "Field pattern is correct regex"
 
+    @property
+    def id(self) -> str:
+        return "field-pattern"
+
     def lint_implementation(
         self,
         contract: DataContractSpecification

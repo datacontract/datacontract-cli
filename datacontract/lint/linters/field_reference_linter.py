@@ -10,6 +10,10 @@ class FieldReferenceLinter(Linter):
     def name(self):
         return "Field references existing field"
 
+    @property
+    def id(self) -> str:
+        return "field-reference"
+
     def lint_implementation(
         self,
         contract: DataContractSpecification

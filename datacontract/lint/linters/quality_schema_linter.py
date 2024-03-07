@@ -11,6 +11,10 @@ class QualityUsesSchemaLinter(Linter):
     def name(self) -> str:
         return "Quality check(s) use model"
 
+    @property
+    def id(self) -> str:
+        return "quality-schema"
+
     def lint_sodacl(self, check, models: dict[str, Model]) ->\
             LinterResult:
         result = LinterResult()

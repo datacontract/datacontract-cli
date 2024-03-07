@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Fixed a bug where the export to YAML always escaped the unicode characters.
-- added export format **protobuf**: `datacontract export --format protobuf`
+- Added export format **protobuf**: `datacontract export --format protobuf`
+- Added extensive linting on data contracts. `datacontract lint` will now check for a variety of possible errors in the data contract, such as missing descriptions, incorrect references to models or fields, nonsensical constraints, and more.
 
 ## [0.9.6-2] - 2024-03-04
 
@@ -17,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.6] - 2024-03-04
 
-This is a hugh step forward, we now support testing Kafka messages. 
+This is a huge step forward, we now support testing Kafka messages.
 We start with JSON messages and avro, and Protobuf will follow.
 
 ### Added

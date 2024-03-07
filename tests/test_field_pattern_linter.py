@@ -1,5 +1,4 @@
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
-import datacontract.lint.resolve as resolve
 import datacontract.model.data_contract_specification as spec
 from datacontract.model.run import Check
 

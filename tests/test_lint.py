@@ -29,7 +29,7 @@ def test_lint_invalid_data_contract():
 
 def test_lint_cli_valid():
     data_contract_file = "examples/lint/valid_datacontract.yaml"
-    expected_output = "🟢 data contract is valid. Run 7 checks."
+    expected_output = "🟢 data contract is valid. Run 9 checks."
 
     result = runner.invoke(app, ["lint", data_contract_file])
 

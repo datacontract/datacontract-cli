@@ -1,6 +1,7 @@
 import json
 import logging
 import tempfile
+import typing
 
 import yaml
 
@@ -22,8 +23,11 @@ from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
-from datacontract.lint.linters.example_model_linter import ExampleModelLinter
+
 from datacontract.model.breaking_change import BreakingChanges, BreakingChange
+from datacontract.lint.linters.description_linter import DescriptionLinter
+from datacontract.lint.linters.example_model_linter import ExampleModelLinter
+from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
 from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
@@ -58,20 +62,26 @@ class DataContract:
         self._publish_url = publish_url
         self._spark = spark
         self._inline_definitions = inline_definitions
-        self.enabled_linters = {
+        self.all_linters = {
             ExampleModelLinter(),
             QualityUsesSchemaLinter(),
             FieldPatternLinter(),
             FieldReferenceLinter(),
             NoticePeriodLinter(),
             PrimaryFieldUniqueRequired(),
+            ValidFieldConstraintsLinter(),
+            DescriptionLinter()
         }
 
     @classmethod
     def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
         return resolve.resolve_data_contract(data_contract_location=template)
 
-    def lint(self) -> Run:
+    def lint(self, enabled_linters: typing.Union[str, set[str]]="all") -> Run:
+        """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
+
+          enabled_linters can be either "all" or "none", or a set of linter IDs.
+          """
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -83,7 +93,16 @@ class DataContract:
                 name="Data contract is syntactically valid",
                 engine="datacontract"
             ))
-            for linter in self.enabled_linters:
+            if enabled_linters == "none":
+                linters_to_check = set()
+            elif enabled_linters == "all":
+                linters_to_check = self.all_linters
+            elif isinstance(enabled_linters, set):
+                linters_to_check = {linter for linter in self.all_linters
+                    if linter.id in enabled_linters}
+            else:
+                raise RuntimeError(f"Unknown argument enabled_linters={enabled_linters} for lint()")
+            for linter in linters_to_check:
                 try:
                     run.checks.extend(linter.lint(data_contract))
                 except Exception as e:
