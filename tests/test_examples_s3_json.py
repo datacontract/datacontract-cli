@@ -43,14 +43,3 @@ def _prepare_s3_files(minio_container):
         data_contract_str = data_contract_file.read()
     data_contract_str = data_contract_str.replace("__S3_ENDPOINT_URL__", s3_endpoint_url)
     return data_contract_str
-
-def _prepare_s3_files(minio_container):
-    s3_endpoint_url = f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}"
-    minio_client = minio_container.get_client()
-    minio_client.make_bucket(bucket_name)
-    with open(file_name, "rb") as file:
-        minio_client.put_object(bucket_name, file_name, file, os.path.getsize(file_name))
-    with open(datacontract) as data_contract_file:
-        data_contract_str = data_contract_file.read()
-    data_contract_str = data_contract_str.replace("__S3_ENDPOINT_URL__", s3_endpoint_url)
-    return data_contract_str
