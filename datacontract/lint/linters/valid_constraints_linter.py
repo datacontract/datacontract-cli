@@ -31,26 +31,28 @@ class ValidFieldConstraintsLinter(Linter):
     }
 
     def check_minimum_maximum(self, field: Field, field_name: str, model_name: str) -> LinterResult:
-        match (field.minimum, field.maximum, field.exclusiveMinimum, field.exclusiveMaximum):
-            case (_min, _max, None, None) if _min > _max:
+        (min, max, xmin, xmax) = (field.minimum, field.maximum, field.exclusiveMinimum, field.exclusiveMaximum)
+        match ("minimum" in field.model_fields_set, "maximum" in field.model_fields_set,
+               "exclusiveMinimum" in field.model_fields_set, "exclusiveMaximum" in field.model_fields_set):
+            case (True, True, _, _) if min > max:
                 return LinterResult.erroneous(
-                    f"Minimum {_min} is greater than maximum {_max} on "
+                    f"Minimum {min} is greater than maximum {max} on "
                     f"field '{field_name}' in model '{model_name}'.")
-            case (None, None, _min, _max) if _min >= max:
+            case (_, _, True, True) if xmin >= xmax:
+                  return LinterResult.erroneous(
+                    f"Exclusive minimum {xmin} is greater than exclusive"
+                    f" maximum {xmax} on field '{field_name}' in model '{model_name}'.")
+            case (True, True, True, True):
                 return LinterResult.erroneous(
-                    f"Exclusive minimum {_min} is greater than exclusive"
-                    f" maximum {_max} on field '{field_name}' in model '{model_name}'.")
-            case (_min, _max, _xmin, _xmax):
-                return LinterResult.erroneous(
-                    f"Both exclusive minimum and exclusive maximum are "
+                    f"Both exclusive and non-exclusive minimum and maximum are "
                     f"defined on field '{field_name}' in model '{model_name}'.")
-            case (_min, None, _xmin, None):
+            case (True, _, True, _):
                 return LinterResult.erroneous(
                     f"Both exclusive and non-exclusive minimum are "
                     f"defined on field '{field_name}' in model '{model_name}'.")
-            case (None, _max, None, _xmax):
+            case (_, True, _, True):
                 return LinterResult.erroneous(
-                    f"Both exclusive and non-exclusive minimum are "
+                    f"Both exclusive and non-exclusive maximum are "
                     f"defined on field '{field_name}' in model '{model_name}'.")
         return LinterResult()
 
@@ -69,6 +71,10 @@ class ValidFieldConstraintsLinter(Linter):
     @property
     def name(self):
         return "Fields use valid constraints"
+
+    @property
+    def id(self):
+        return "field-constraints"
 
     def lint_implementation(
             self,

@@ -106,6 +106,13 @@ class Linter(abc.ABC):
     @property
     @abc.abstractmethod
     def name(self) -> str:
+        """Human-readable name of the linter."""
+        pass
+
+    @property
+    @abc.abstractmethod
+    def id(self) -> str:
+        """A linter ID for configuration (i.e. enabling and disabling)."""
         pass
 
     @abc.abstractmethod
@@ -113,6 +120,7 @@ class Linter(abc.ABC):
         pass
 
     def lint(self, contract: DataContractSpecification) -> list[Check]:
+        """Call with a data contract to get a list of check results from the linter."""
         result = self.lint_implementation(contract)
         checks = []
         if not result.error_results():

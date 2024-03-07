@@ -8,6 +8,10 @@ class NoticePeriodLinter(Linter):
     def name(self) -> str:
         return "noticePeriod in ISO8601 format"
 
+    @property
+    def id(self) -> str:
+        return "notice-period"
+
     # Regex matching the "simple" ISO8601 duration format
     simple = re.compile(
         r"""P             # Introduces period

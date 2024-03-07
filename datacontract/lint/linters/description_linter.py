@@ -10,6 +10,10 @@ class DescriptionLinter(Linter):
     def name(self) -> str:
         return "Objects have descriptions"
 
+    @property
+    def id(self) -> str:
+        return "description"
+
     def lint_implementation(
         self,
         contract: DataContractSpecification

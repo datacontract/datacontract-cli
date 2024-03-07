@@ -7,6 +7,10 @@ class PrimaryFieldUniqueRequired(Linter):
     def name(self) -> str:
         return "Model primary fields unique and required"
 
+    @property
+    def id(self) -> str:
+        return "notice-period"
+
     def lint_implementation(
             self,
             contract: DataContractSpecification

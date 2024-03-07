@@ -13,6 +13,10 @@ class ExampleModelLinter(Linter):
     def name(self) -> str:
         return "Example(s) match model"
 
+    @property
+    def id(self) -> str:
+        return "example-model"
+
     @staticmethod
     def get_example_headers(example: Example) -> list[str]:
         if isinstance(example.data, str):
