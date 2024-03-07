@@ -9,6 +9,10 @@ datacontract = "examples/s3-json-remote/datacontract.yaml"
 
 
 def test_examples_s3_json():
+    if 'AWS_ACCESS_KEY_ID' in os.environ:
+        del os.environ['AWS_ACCESS_KEY_ID']
+    if 'AWS_SECRET_ACCESS_KEY' in os.environ:
+        del os.environ['AWS_SECRET_ACCESS_KEY']
     if 'DATACONTRACT_S3_ACCESS_KEY_ID' in os.environ:
         del os.environ['DATACONTRACT_S3_ACCESS_KEY_ID']
     if 'DATACONTRACT_S3_SECRET_ACCESS_KEY' in os.environ:
