@@ -4,4 +4,4 @@ info:
   title: My Data Contract
   version: 0.0.1
   my-custom-required-field: hello
-
+  description: Custom data contract description.

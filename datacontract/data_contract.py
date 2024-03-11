@@ -80,7 +80,7 @@ class DataContract:
     def lint(self, enabled_linters: typing.Union[str, set[str]]="all") -> Run:
         """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
 
-          enabled_linters can be either "all" or "none", or a set of linter IDs.
+          enabled_linters can be either "all" or "none", or a set of linter IDs. The "schema" linter is always enabled, even with enabled_linters="none".
           """
         run = Run.create_run()
         try:

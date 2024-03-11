@@ -4,7 +4,7 @@ from datacontract.model.data_contract_specification import\
 
 
 class DescriptionLinter(Linter):
-    """Check for a description on models, model fields, definitions and examples."""
+    """Check for a description on contracts, models, model fields, definitions and examples."""
 
     @property
     def name(self) -> str:
@@ -19,6 +19,9 @@ class DescriptionLinter(Linter):
         contract: DataContractSpecification
     ) -> LinterResult:
         result = LinterResult()
+        if not contract.info or not contract.info.description:
+            result = result.with_error(
+                f"Contract has empty description.")
         for (model_name, model) in contract.models.items():
             if not model.description:
                 result = result.with_error(
