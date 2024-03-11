@@ -24,6 +24,9 @@ linter = DescriptionLinter()
 
 def test_correct_contract():
     specification = spec.DataContractSpecification(
+        info=spec.Info(
+            description="Test contract description"
+            ),
         models={
             "test_model": spec.Model(
                 description="Test model description",
@@ -50,6 +53,7 @@ def test_missing_contract():
         definitions={
             "test_definition": spec.Definition()})
     assert linter.lint(specification) == [
+        construct_error_check("Contract has empty description."),
         construct_error_check("Model 'test_model' has empty description."),
         construct_error_check("Field 'test_field' in model 'test_model' has empty description."),
         construct_error_check("Definition 'test_definition' has empty description."),

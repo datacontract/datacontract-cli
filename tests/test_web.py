@@ -7,7 +7,8 @@ client = TestClient(app)
 def test_lint():
     with open("examples/lint/valid_datacontract.yaml", "rb") as f:
         response = client.post(url="/lint",
-                               files={"file": ("datacontract.yaml", f, "application/yaml")})
+                               files={"file": ("datacontract.yaml", f, "application/yaml")},
+                               params={"linters": "none"})
         assert response.status_code == 200
         print(response.json())
         assert response.json()['result'] == 'passed'

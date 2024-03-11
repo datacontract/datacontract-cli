@@ -3,3 +3,4 @@ id: my-data-contract-id
 info:
   title: My Data Contract
   version: 0.0.1
+  description: An empty data contract
