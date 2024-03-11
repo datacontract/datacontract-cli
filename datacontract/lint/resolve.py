@@ -55,14 +55,11 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
             definition = resolve_ref(field.ref, spec.definitions)
             field.ref_obj = definition
 
-            field_properties = vars(field)
-            for field_property_name, field_property_value in field_properties.items():
-                if isinstance(field_property_value, list) and len(field_property_value) == 0:
-                    setattr(field, field_property_name, getattr(definition, field_property_name))
-
-                if field_property_value is None and hasattr(definition, field_property_name):
-                    setattr(field, field_property_name, getattr(definition, field_property_name))
-
+            for field_name in field.model_fields.keys():
+                if (field_name in definition.model_fields_set and
+                    field_name not in field.model_fields_set):
+                    setattr(field, field_name,
+                            getattr(definition, field_name))
 
 def resolve_ref(ref, definitions) -> Definition:
     if ref.startswith("http://") or ref.startswith("https://"):

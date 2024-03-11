@@ -1,0 +1,30 @@
+dataContractSpecification: 0.9.3
+id: urn:datacontract:checkout:orders-latest
+info:
+  title: Orders Latest
+  version: 1.0.0
+  description: |
+    Successful customer orders in the webshop.
+    All orders since 2020-01-01.
+    Orders with their line items are in their current state (no history included).
+models:
+  orders:
+    description: One record per order. Includes cancelled and deleted orders.
+    type: table
+    fields:
+      order_id:
+        $ref: '#/definitions/order_id'
+        required: true
+        unique: true
+        primary: true
+definitions:
+  order_id:
+    domain: checkout
+    name: order_id
+    title: Order ID
+    type: text
+    format: uuid
+    description: An internal ID that identifies an order in the online shop.
+    example: 243c25e5-a081-43a9-aeab-6d5d5b6cb5e2
+    pii: true
+    classification: restricted

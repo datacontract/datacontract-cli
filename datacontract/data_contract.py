@@ -86,7 +86,8 @@ class DataContract:
         try:
             run.log_info("Linting data contract")
             data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                          self._data_contract, self._schema_location)
+                                                          self._data_contract, self._schema_location,
+                                                          inline_definitions=True)
             run.checks.append(Check(
                 type="lint",
                 result="passed",
