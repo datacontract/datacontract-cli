@@ -21,6 +21,17 @@ success_check = Check(
 
 linter = ValidFieldConstraintsLinter()
 
+def test_empty_constraints():
+    specification = spec.DataContractSpecification(
+        models={
+            "test_model": spec.Model(
+                fields={
+                    "test_field_1": spec.Field(
+                        type="string"),
+                    "test_field_2": spec.Field(
+                        type="number")})})
+    assert linter.lint(specification) == [success_check]
+
 def test_correct_constraints():
     specification = spec.DataContractSpecification(
         models={
@@ -56,4 +67,4 @@ def test_incorrect_constraints():
             "Forbidden constraint 'maximum' defined on "
             "field 'test_field_2' in model 'test_model'. "
             "Field type is 'string'.")
-        ]
+    ]
