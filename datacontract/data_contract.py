@@ -12,6 +12,7 @@ from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.avro_converter import to_avro_schema, to_avro_schema_json
+from datacontract.export.avro_idl_converter import to_avro_idl
 from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschema_json
@@ -309,6 +310,8 @@ class DataContract:
             return to_odcs_yaml(data_contract)
         if export_format == "rdf":
             return to_rdf_n3(data_contract, rdf_base)
+        if export_format == "avro-idl":
+            return to_avro_idl(data_contract)
         if export_format == "protobuf":
             return to_protobuf(data_contract)
         if export_format == "avro":
