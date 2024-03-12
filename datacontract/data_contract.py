@@ -18,6 +18,10 @@ from datacontract.export.dbt_converter import to_dbt_models_yaml, \
 from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
+from datacontract.export.great_expectations_converter import to_great_expectations
+
+
+from datacontract.export.rdf_converter import to_rdf, to_rdf_n3
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.imports.avro_importer import import_avro
@@ -389,6 +393,8 @@ class DataContract:
                     raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
 
                 return to_sql_query(data_contract, model_name, model_value, server_type)
+        if export_format == "great-expectations":
+            return to_great_expectations(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""

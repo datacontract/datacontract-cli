@@ -1,0 +1,26 @@
+dataContractSpecification: 0.9.1
+models:
+  orders:
+    description: test
+    fields:
+      order_id:
+        type: string
+        required: true
+      processed_timestamp:
+        type: timestamp
+        required: true
+quality:
+  type: great-expectations
+  specification:
+    orders: |-
+      [
+          {
+              "expectation_type": "expect_table_row_count_to_be_between",
+              "kwargs": {
+                  "min_value": 10
+              },
+              "meta": {
+      
+              }
+          }
+      ]
