@@ -86,11 +86,8 @@ $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 # fail pipeline on breaking changes  (Coming Soon)
 $ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 
-# export model as jsonschema
+# export model as jsonschema (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql (coming soon), sodacl, terraform)
 $ datacontract export --format jsonschema datacontract.yaml
-
-# export model as dbt
-$ datacontract export --format dbt datacontract.yaml
 
 # import sql
 $ datacontract import --format sql --source my_ddl.sql
