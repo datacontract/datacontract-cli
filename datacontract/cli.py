@@ -126,6 +126,7 @@ class ExportFormat(str, Enum):
     rdf = "rdf"
     avro = "avro"
     protobuf = "protobuf"
+    terraform = "terraform"
 
 
 @app.command()

@@ -422,6 +422,7 @@ Available export options:
 | `rdf`              | Export data contract to RDF representation in N3 format | ✅      |
 | `avro`             | Export to AVRO models                                   | ✅      |
 | `protobuf`         | Export to Protobuf                                      | ✅      |
+| `terraform`        | Export to terraform resources                           | ✅      |
 | `pydantic`         | Export to pydantic models                               | TBD    |
 | `sql`              | Export to SQL DDL                                       | TBD    |
 | Missing something? | Please create an issue on GitHub                        | TBD    |

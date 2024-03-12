@@ -19,6 +19,7 @@ from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.export.rdf_converter import to_rdf, to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
+from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
@@ -274,6 +275,8 @@ class DataContract:
                 return ""
             model_name, model = next(iter(data_contract.models.items()))
             return to_avro_schema_json(model_name, model)
+        if export_format == "terraform":
+            return to_terraform(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
