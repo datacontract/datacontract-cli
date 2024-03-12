@@ -1,10 +1,12 @@
 from typer.testing import CliRunner
-from datacontract.export.avro_idl_converter import model_to_avro_idl_ir,\
-    AvroPrimitiveType, AvroFieldType, AvroModelType,\
+from datacontract.export.avro_idl_converter import contract_to_avro_idl_ir,\
+    AvroPrimitiveType, AvroPrimitiveField, AvroModelType,\
     AvroIDLProtocol, to_avro_idl
 from datacontract.lint.resolve import resolve_data_contract_from_location
 from datacontract.cli import app
 from textwrap import dedent
+
+import datacontract.model.data_contract_specification as spec
 
 def test_ir():
     contract = resolve_data_contract_from_location("examples/lint/valid_datacontract_references.yaml",
@@ -18,12 +20,12 @@ def test_ir():
             AvroModelType(
                 "orders",
                 "One record per order. Includes cancelled and deleted orders.",
-                [AvroFieldType(
+                [AvroPrimitiveField(
                     "order_id",
                     "An internal ID that identifies an order in the online shop.",
                     type=AvroPrimitiveType.string)]),
         ])
-    assert model_to_avro_idl_ir(contract) == expected
+    assert contract_to_avro_idl_ir(contract) == expected
 
 def test_avro_idl_str():
     contract = resolve_data_contract_from_location("examples/lint/valid_datacontract_references.yaml",
@@ -54,3 +56,31 @@ def test_avro_idl_cli_export():
     if result.exit_code:
         print(result.output)
     assert result.exit_code == 0
+
+def test_avro_idl_complex_type():
+    contract = spec.DataContractSpecification(
+        models={
+            "test_model": spec.Model(
+                description="Test model",
+                fields={
+                    "test_field": spec.Field(
+                        type="object",
+                        description="Complex field",
+                        fields={
+                            "nested_field_1": spec.Field(
+                                description="Primitive field",
+                                type="text")})})})
+    expected=dedent("""
+    protocol Unnamed {
+        /** Test model */
+        record test_model {
+            /** Complex field */
+            record test_field_type {
+                /** Primitive field */
+                string nested_field_1;
+            }
+            test_field_type test_field;
+        }
+    }
+    """).strip()
+    assert to_avro_idl(contract).strip() == expected
