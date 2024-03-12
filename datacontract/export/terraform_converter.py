@@ -1,5 +1,5 @@
 from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+    DataContractSpecification, Server
 import re
 
 
@@ -18,20 +18,37 @@ def to_terraform(data_contract_spec: DataContractSpecification, server_id: str =
     return result.strip()
 
 
-def server_to_terraform_resource(data_contract_spec, result, server, server_name):
+def server_to_terraform_resource(data_contract_spec, result, server : Server, server_name):
     tag_data_contract = data_contract_spec.id
     tag_name = data_contract_spec.info.title
     tag_server = server_name
     bucket_name = extract_bucket_name(server)
-    resource_id = f"{data_contract_spec.id}_{server.type}_{server_name}"
-    result += f"""
+    resource_id = f"{data_contract_spec.id}_{server_name}"
+    data_product_id = server.dataProductId
+
+    if data_product_id is not None:
+        result += f"""
 resource "aws_s3_bucket" "{resource_id}" {{
   bucket = "{bucket_name}"
 
   tags = {{
-    Name               = "{tag_name}"
-    DataContractId     = "{tag_data_contract}"
-    DataContractServer = "{tag_server}"
+    Name         = "{tag_name}"
+    DataContract = "{tag_data_contract}"
+    Server       = "{tag_server}"
+    DataProduct  = "{data_product_id}"
+  }}
+}}
+
+"""
+    else:
+        result += f"""
+resource "aws_s3_bucket" "{resource_id}" {{
+  bucket = "{bucket_name}"
+
+  tags = {{
+    Name         = "{tag_name}"
+    DataContract = "{tag_data_contract}"
+    Server       = "{tag_server}"
   }}
 }}
 

@@ -23,13 +23,14 @@ def test_cli():
 def test_to_terraform():
     data_contract = DataContractSpecification.from_file("./examples/export/datacontract_s3.yaml")
     expected_terraform_file = """
-resource "aws_s3_bucket" "orders-unit-test_s3_production" {
+resource "aws_s3_bucket" "orders-unit-test_production" {
   bucket = "datacontract-example-orders-latest"
 
   tags = {
-    Name               = "Orders Unit Test"
-    DataContractId     = "orders-unit-test"
-    DataContractServer = "production"
+    Name         = "Orders Unit Test"
+    DataContract = "orders-unit-test"
+    Server       = "production"
+    DataProduct  = "orders"
   }
 }
 """.strip()

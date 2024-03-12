@@ -19,6 +19,7 @@ servers:
     location: s3://datacontract-example-orders-latest/data/{model}/*.json
     format: json
     delimiter: new_line
+    dataProductId: orders
 models:
   orders:
     description: The orders model
