@@ -313,14 +313,11 @@ class DataContract:
     def import_from_source(self, format: str, source: str) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
 
-        #TODO: default format?
         if format == "sql":
             data_contract_specification = import_sql(data_contract_specification, format, source)
         elif format == "avro":
-            data_contract_specification = import_avro(data_contract_specification, format, source)
+            data_contract_specification = import_avro(data_contract_specification, source)
         else:
             print(f"Import format {format} not supported.")
-            #TODO: let initialized contract return or is it better to return None?
 
-            
         return data_contract_specification  

@@ -1,45 +1,45 @@
 {
-  "fields": [
-    {
-      "name": "ordertime",
-      "doc": "My Field",
-      "type": "long"
-    },
-    {
-      "name": "orderid",
-      "type": "int"
-    },
-    {
-      "name": "itemid",
-      "type": "string"
-    },
-    {
-      "name": "orderunits",
-      "type": "double"
-    },
-    {
-      "name": "address",
-      "type": {
-        "fields": [
-          {
-            "name": "city",
-            "type": "string"
-          },
-          {
-            "name": "state",
-            "type": "string"
-          },
-          {
-            "name": "zipcode",
-            "type": "long"
-          }
-        ],
+    "fields": [
+      {
+        "name": "ordertime",
+        "doc": "My Field",
+        "type": "long"
+      },
+      {
+        "name": "orderid",
+        "type": "int"
+      },
+      {
+        "name": "itemid",
+        "type": "string"
+      },
+      {
+        "name": "orderunits",
+        "type": "double"
+      },
+      {
         "name": "address",
-        "type": "record"
+        "type": {
+          "fields": [
+            {
+              "name": "city",
+              "type": "string"
+            },
+            {
+              "name": "state",
+              "type": "string"
+            },
+            {
+              "name": "zipcode",
+              "type": "long"
+            }
+          ],
+          "name": "address",
+          "type": "record"
+        }
       }
-    }
-  ],
-  "name": "orders",
-  "doc": "My Model",
-  "type": "record"
-}
+    ],
+    "name": "orders",
+    "doc": "My Model",
+    "type": "record"
+  }

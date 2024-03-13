@@ -146,6 +146,7 @@ def export(
 
 class ImportFormat(str, Enum):
     sql = "sql"
+    avro = "avro"
 
 
 @app.command(name="import")
