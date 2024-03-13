@@ -1,8 +1,6 @@
 import logging
-import logging
-import os
-import sys
 
+import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -23,10 +21,22 @@ def test_cli():
     assert result.exit_code == 0
 
 
-def test_to_great_expectation():
-    data_contract_file = "./examples/export/datacontract.yaml"
-    file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+@pytest.fixture
+def data_contract_basic() -> DataContractSpecification:
+    return DataContractSpecification.from_file("./examples/export/datacontract.yaml")
+
+
+@pytest.fixture
+def data_contract_complex() -> DataContractSpecification:
+    return DataContractSpecification.from_file("./examples/export/rdf/datacontract-complex.yaml")
+
+
+@pytest.fixture
+def data_contract_great_expectations() -> DataContractSpecification:
+    return DataContractSpecification.from_file("./examples/great-expectations/datacontract.yaml")
+
+
+def test_to_great_expectation(data_contract_basic: DataContractSpecification):
     expected_json_suite = {
         "data_asset_type": "null",
         "expectation_suite_name": "user-defined.orders",
@@ -110,14 +120,15 @@ def test_to_great_expectation():
             "great_expectations_version": "0.17.23"
         }
     }
-    result = to_great_expectations(data_contract)
+    result = to_great_expectations(data_contract_basic)
     assert result["orders"] == expected_json_suite
 
 
-def test_to_great_expectation_complex():
-    data_contract_file = "./examples/export/rdf/datacontract-complex.yaml"
-    file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+def test_to_great_expectation_complex(data_contract_complex: DataContractSpecification):
+    """
+    Test with 2 model definitions in the contract
+    """
+
     expected_orders = {
         "data_asset_type": "null",
         "expectation_suite_name": "user-defined.orders",
@@ -351,15 +362,16 @@ def test_to_great_expectation_complex():
             "great_expectations_version": "0.17.23"
         }
     }
-    result = to_great_expectations(data_contract)
+    result = to_great_expectations(data_contract_complex)
     assert result["orders"] == expected_orders
     assert result["line_items"] == expected_line_items
 
 
-def test_to_great_expectation_quality():
-    data_contract_file = "./examples/great-expectations/datacontract.yaml"
-    file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+def test_to_great_expectation_quality(data_contract_great_expectations: DataContractSpecification):
+    """
+    Test with Quality definition in the contract
+    """
+
     expected_json_suite = {
         "data_asset_type": "null",
         "expectation_suite_name": "user-defined.orders",
@@ -410,14 +422,5 @@ def test_to_great_expectation_quality():
             "great_expectations_version": "0.17.23"
         }
     }
-    result = to_great_expectations(data_contract)
+    result = to_great_expectations(data_contract_great_expectations)
     assert result["orders"] == expected_json_suite
-
-
-def read_file(data_contract_file):
-    if not os.path.exists(data_contract_file):
-        print(f"The file '{data_contract_file}' does not exist.")
-        sys.exit(1)
-    with open(data_contract_file, 'r') as file:
-        file_content = file.read()
-    return file_content

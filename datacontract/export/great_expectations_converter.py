@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Dict, List, Any
 
 import yaml
 
@@ -7,31 +7,41 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification, Field, Quality
 
 
-def to_great_expectations(data_contract_spec: DataContractSpecification):
-    great_expectation_jsons = {}
+def to_great_expectations(data_contract_spec: DataContractSpecification) -> Dict[str, Dict[str, Any]]:
+    """
+    Convert each model in the contract to a Great Expectation suite
+    @param data_contract_spec: data contract to export to great expectations
+    @return: a dictionary of great expectation suites
+    """
+    expectation_dict = {}
     expectations = []
     quality_checks = get_quality_checks(data_contract_spec.quality)
     for model_key, model_value in data_contract_spec.models.items():
         expectations.extend(model_to_expectations(model_value.fields))
         expectations.extend(checks_to_expectations(quality_checks, model_key))
-        great_expectation_json = to_suite(model_key, expectations)
-        great_expectation_jsons[model_key] = great_expectation_json
+        model_expectation_suite = to_suite(model_key, expectations)
+        expectation_dict[model_key] = model_expectation_suite
 
-    return great_expectation_jsons
+    return expectation_dict
 
 
-def to_suite(model_key: str, expectations: [], ) -> dict:
+def to_suite(model_key: str, expectations: List[Dict[str, Any]], ) -> Dict[str, Any]:
     return {
         "data_asset_type": "null",
         "expectation_suite_name": "user-defined." + model_key,
         "expectations": expectations,
         "meta": {
-            "great_expectations_version": "0.17.23"
+            "great_expectations_version": "0.18.9"
         }
     }
 
 
-def model_to_expectations(fields: Dict[str, Field]) -> list:
+def model_to_expectations(fields: Dict[str, Field]) -> List[Dict[str, Any]]:
+    """
+    Convert the model information to expectations
+    @param fields: model field
+    @return: list of expectations
+    """
     expectations = []
     add_column_order_exp(fields, expectations)
     for field_name, field in fields.items():
@@ -39,7 +49,7 @@ def model_to_expectations(fields: Dict[str, Field]) -> list:
     return expectations
 
 
-def add_field_expectations(field_name, field: Field, expectations: []) -> dict:
+def add_field_expectations(field_name, field: Field, expectations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if field.type is not None:
         expectations.append(to_column_types_exp(field_name, field.type))
     if field.unique is not None:
@@ -53,7 +63,7 @@ def add_field_expectations(field_name, field: Field, expectations: []) -> dict:
     return expectations
 
 
-def add_column_order_exp(fields: Dict[str, Field], expectations: []):
+def add_column_order_exp(fields: Dict[str, Field], expectations: List[Dict[str, Any]]):
     expectations.append({"expectation_type": "expect_table_columns_to_match_ordered_list",
                          "kwargs": {
                              "column_list": list(fields.keys())
@@ -62,7 +72,7 @@ def add_column_order_exp(fields: Dict[str, Field], expectations: []):
                          })
 
 
-def to_column_types_exp(field_name, field_type) -> dict:
+def to_column_types_exp(field_name, field_type) -> Dict[str, Any]:
     return {
         "expectation_type": "expect_column_values_to_be_of_type",
         "kwargs": {
@@ -73,7 +83,7 @@ def to_column_types_exp(field_name, field_type) -> dict:
     }
 
 
-def to_column_unique_exp(field_name) -> dict:
+def to_column_unique_exp(field_name) -> Dict[str, Any]:
     return {
         "expectation_type": "expect_column_values_to_be_unique",
         "kwargs": {
@@ -83,7 +93,7 @@ def to_column_unique_exp(field_name) -> dict:
     }
 
 
-def to_column_length_exp(field_name, min_length, max_length) -> dict:
+def to_column_length_exp(field_name, min_length, max_length) -> Dict[str, Any]:
     return {
         "expectation_type": "expect_column_value_lengths_to_be_between",
         "kwargs": {
@@ -95,7 +105,7 @@ def to_column_length_exp(field_name, min_length, max_length) -> dict:
     }
 
 
-def to_column_min_max_exp(field_name, minimum, maximum) -> dict:
+def to_column_min_max_exp(field_name, minimum, maximum) -> Dict[str, Any]:
     return {
         "expectation_type": "expect_column_values_to_be_between",
         "kwargs": {
@@ -107,7 +117,7 @@ def to_column_min_max_exp(field_name, minimum, maximum) -> dict:
     }
 
 
-def get_quality_checks(quality: Quality) -> dict:
+def get_quality_checks(quality: Quality) -> Dict[str, Any]:
     if quality is None:
         return {}
     if quality.type is None:
@@ -121,7 +131,13 @@ def get_quality_checks(quality: Quality) -> dict:
     return quality_specification
 
 
-def checks_to_expectations(quality_checks: {}, model_key: str) -> []:
+def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> List[Dict[str, Any]]:
+    """
+    Get the quality definition for each model to the model expectation list
+    @param quality_checks: dictionary of quality checks by model
+    @param model_key: id of the model
+    @return: the list of expectations for that model
+    """
     if quality_checks is None or model_key not in quality_checks:
         return []
 
