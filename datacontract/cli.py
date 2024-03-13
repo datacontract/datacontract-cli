@@ -133,7 +133,7 @@ class ExportFormat(str, Enum):
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
-    rdf_base: Annotated[Optional[str], typer.Option(help="[rdf] The base URI used to generate the RDF graph.")] = None,
+    rdf_base: Annotated[Optional[str], typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options")] = None,
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
 ):
