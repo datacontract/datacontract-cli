@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added export format **protobuf**: `datacontract export --format protobuf`
 - Added export format **terraform**: `datacontract export --format terraform`
 - Added extensive linting on data contracts. `datacontract lint` will now check for a variety of possible errors in the data contract, such as missing descriptions, incorrect references to models or fields, nonsensical constraints, and more.
+- Added changelog command: `datacontract changelog` will now generate a changelog based on the changes in the data contract. This will be useful for keeping track of changes in the data contract over time. 
 
 ## [0.9.6-2] - 2024-03-04
 
