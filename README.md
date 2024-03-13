@@ -95,6 +95,9 @@ $ datacontract export --format dbt datacontract.yaml
 # import sql
 $ datacontract import --format sql --source my_ddl.sql
 
+# import avro
+$ datacontract import --format avro --source avro_schema.avsc
+
 # import protobuf as model (Coming Soon)
 $ datacontract import --format protobuf --source my_protobuf_file.proto datacontract.yaml
 ```
@@ -463,7 +466,7 @@ Available import options:
 |--------------------|------------------------------------------------|---------|
 | `sql`              | Import from SQL DDL                            | ✅       | 
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
-| `avro`             | Import from AVRO schemas                       | TBD     |
+| `avro`             | Import from AVRO schemas                       | ✅     |
 | `jsonschema`       | Import from JSON Schemas                       | TBD     |
 | `dbt`              | Import from dbt models                         | TBD     |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a bug where the export to YAML always escaped the unicode characters.
 - Added export format **protobuf**: `datacontract export --format protobuf`
 - Added extensive linting on data contracts. `datacontract lint` will now check for a variety of possible errors in the data contract, such as missing descriptions, incorrect references to models or fields, nonsensical constraints, and more.
+- Added importer for avro schemas. `datacontract import --format avro` will now import avro schemas into a data contract.
 
 ## [0.9.6-2] - 2024-03-04
 
