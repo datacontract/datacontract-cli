@@ -1,6 +1,16 @@
 from typing import List
 
 from pydantic import BaseModel
+from enum import Enum
+
+
+class Severity(Enum):
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class Location(BaseModel):
@@ -10,7 +20,7 @@ class Location(BaseModel):
 
 class BreakingChange(BaseModel):
     description: str
-    severity: str
+    severity: Severity
     check_name: str
     location: Location
 
@@ -24,15 +34,26 @@ class BreakingChanges(BaseModel):
     breaking_changes: List[BreakingChange]
 
     def passed_checks(self) -> bool:
-        errors = len(list(filter(lambda x: x.severity == "error", self.breaking_changes)))
+        errors = len(list(filter(lambda x: x.severity == Severity.ERROR, self.breaking_changes)))
         return errors == 0
 
-    def __str__(self) -> str:
+    def breaking_str(self) -> str:
         changes_amount = len(self.breaking_changes)
-        errors = len(list(filter(lambda x: x.severity == "error", self.breaking_changes)))
-        warnings = len(list(filter(lambda x: x.severity == "warning", self.breaking_changes)))
+        errors = len(list(filter(lambda x: x.severity == Severity.ERROR, self.breaking_changes)))
+        warnings = len(list(filter(lambda x: x.severity == Severity.WARNING, self.breaking_changes)))
 
         headline = f"{changes_amount} breaking changes: {errors} error, {warnings} warning\n"
+        content = str.join("\n\n", map(lambda x: str(x), self.breaking_changes))
+
+        return headline + content
+
+    def changelog_str(self) -> str:
+        changes_amount = len(self.breaking_changes)
+        errors = len(list(filter(lambda x: x.severity == Severity.ERROR, self.breaking_changes)))
+        warnings = len(list(filter(lambda x: x.severity == Severity.WARNING, self.breaking_changes)))
+        infos = len(list(filter(lambda x: x.severity == Severity.INFO, self.breaking_changes)))
+
+        headline = f"{changes_amount} changes: {errors} error, {warnings} warning, {infos} info\n"
         content = str.join("\n\n", map(lambda x: str(x), self.breaking_changes))
 
         return headline + content

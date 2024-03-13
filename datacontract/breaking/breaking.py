@@ -1,12 +1,13 @@
 from datacontract.breaking.breaking_rules import BreakingRules
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location, Severity
 from datacontract.model.data_contract_specification import Field, Model, Quality
 
 
 def quality_breaking_changes(
     old_quality: Quality,
     new_quality: Quality,
-    new_path: str
+    new_path: str,
+    include_severities: [Severity],
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
@@ -15,7 +16,7 @@ def quality_breaking_changes(
         severity = _get_rule(rule_name)
         description = "added quality"
 
-        if severity != "info":
+        if severity in include_severities:
             results.append(
                 BreakingChange(
                     description=description,
@@ -30,7 +31,7 @@ def quality_breaking_changes(
         severity = _get_rule(rule_name)
         description = "removed quality"
 
-        if severity != "info":
+        if severity in include_severities:
             results.append(
                 BreakingChange(
                     description=description,
@@ -47,7 +48,7 @@ def quality_breaking_changes(
             severity = _get_rule(rule_name)
             description = f"changed from `{old_quality.type}` to `{new_quality.type}`"
 
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description=description,
@@ -62,7 +63,7 @@ def quality_breaking_changes(
             rule_name = "quality_specification_updated"
             severity = _get_rule(rule_name)
             description = f"changed from `{old_quality.specification}` to `{new_quality.specification}`"
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description=description,
@@ -79,7 +80,8 @@ def quality_breaking_changes(
 def models_breaking_changes(
     old_models: dict[str, Model],
     new_models: dict[str, Model],
-    new_path: str
+    new_path: str,
+    include_severities: [Severity],
 ) -> list[BreakingChange]:
     composition = ["models"]
     results = list[BreakingChange]()
@@ -88,7 +90,7 @@ def models_breaking_changes(
         if model_name not in old_models.keys():
             rule_name = "model_added"
             severity = _get_rule(rule_name)
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description="added the model",
@@ -103,7 +105,7 @@ def models_breaking_changes(
         if model_name not in new_models.keys():
             rule_name = "model_removed"
             severity = _get_rule(rule_name)
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description="removed the model",
@@ -120,7 +122,8 @@ def models_breaking_changes(
                 old_model=old_model,
                 new_model=new_models[model_name],
                 new_path=new_path,
-                composition=composition + [model_name]
+                composition=composition + [model_name],
+                include_severities=include_severities,
             ))
 
     return results
@@ -130,7 +133,8 @@ def model_breaking_changes(
     old_model: Model,
     new_model: Model,
     new_path: str,
-    composition: list[str]
+    composition: list[str],
+    include_severities: [Severity]
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
@@ -160,7 +164,7 @@ def model_breaking_changes(
 
         if rule_name is not None:
             severity = _get_rule(rule_name)
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description=description,
@@ -176,7 +180,8 @@ def model_breaking_changes(
             old_fields=old_model.fields,
             new_fields=new_model.fields,
             new_path=new_path,
-            composition=composition + ["fields"]
+            composition=composition + ["fields"],
+            include_severities=include_severities,
         ))
 
     return results
@@ -186,7 +191,8 @@ def fields_breaking_changes(
     old_fields: dict[str, Field],
     new_fields: dict[str, Field],
     new_path: str,
-    composition: list[str]
+    composition: list[str],
+    include_severities: [Severity]
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
@@ -194,7 +200,7 @@ def fields_breaking_changes(
         if field_name not in old_fields.keys():
             rule_name = "field_added"
             severity = _get_rule(rule_name)
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description="added the field",
@@ -209,7 +215,7 @@ def fields_breaking_changes(
         if field_name not in new_fields.keys():
             rule_name = "field_removed"
             severity = _get_rule(rule_name)
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description='removed the field',
@@ -227,6 +233,7 @@ def fields_breaking_changes(
                 new_field=new_fields[field_name],
                 composition=composition + [field_name],
                 new_path=new_path,
+                include_severities=include_severities,
             ))
     return results
 
@@ -236,6 +243,7 @@ def field_breaking_changes(
     new_field: Field,
     composition: list[str],
     new_path: str,
+    include_severities: [Severity],
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
@@ -253,7 +261,8 @@ def field_breaking_changes(
                     old_fields=old_field.fields,
                     new_fields=new_field.fields,
                     new_path=new_path,
-                    composition=composition + [field_definition_field]
+                    composition=composition + [field_definition_field],
+                    include_severities=include_severities,
                 )
             )
             continue
@@ -290,7 +299,7 @@ def field_breaking_changes(
         if rule_name is not None:
             severity = _get_rule(rule_name)
             field_schema_name = "$ref" if field_definition_field == "ref" else field_definition_field
-            if severity != "info":
+            if severity in include_severities:
                 results.append(
                     BreakingChange(
                         description=description,
@@ -304,13 +313,13 @@ def field_breaking_changes(
     return results
 
 
-def _get_rule(rule_name):
+def _get_rule(rule_name) -> Severity:
     try:
         return getattr(BreakingRules, rule_name)
     except AttributeError:
         print(f'WARNING: Breaking Rule not found for {rule_name}!')
-        return 'error'
+        return Severity.ERROR
+
 
 def _camel_to_snake(s):
-    return ''.join(['_'+c.lower() if c.isupper() else c for c in s]).lstrip('_')
-
+    return ''.join(['_' + c.lower() if c.isupper() else c for c in s]).lstrip('_')

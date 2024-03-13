@@ -25,7 +25,7 @@ from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.lint import resolve
 
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Severity
 from datacontract.lint.linters.description_linter import DescriptionLinter
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
@@ -78,7 +78,7 @@ class DataContract:
     def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
         return resolve.resolve_data_contract(data_contract_location=template)
 
-    def lint(self, enabled_linters: typing.Union[str, set[str]]="all") -> Run:
+    def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
         """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
 
           enabled_linters can be either "all" or "none", or a set of linter IDs. The "schema" linter is always enabled, even with enabled_linters="none".
@@ -101,7 +101,7 @@ class DataContract:
                 linters_to_check = self.all_linters
             elif isinstance(enabled_linters, set):
                 linters_to_check = {linter for linter in self.all_linters
-                    if linter.id in enabled_linters}
+                                    if linter.id in enabled_linters}
             else:
                 raise RuntimeError(f"Unknown argument enabled_linters={enabled_linters} for lint()")
             for linter in linters_to_check:
@@ -218,6 +218,16 @@ class DataContract:
         return run
 
     def breaking(self, other: 'DataContract') -> BreakingChanges:
+        return self.changelog(
+            other,
+            include_severities=[Severity.ERROR, Severity.WARNING]
+        )
+
+    def changelog(
+        self,
+        other: 'DataContract',
+        include_severities: [Severity] = (Severity.ERROR, Severity.WARNING, Severity.INFO)
+    ) -> BreakingChanges:
         old = self.get_data_contract_specification()
         new = other.get_data_contract_specification()
 
@@ -227,12 +237,14 @@ class DataContract:
             old_quality=old.quality,
             new_quality=new.quality,
             new_path=other._data_contract_file,
+            include_severities=include_severities,
         ))
 
         breaking_changes.extend(models_breaking_changes(
             old_models=old.models,
             new_models=new.models,
             new_path=other._data_contract_file,
+            include_severities=include_severities,
         ))
 
         return BreakingChanges(breaking_changes=breaking_changes)
