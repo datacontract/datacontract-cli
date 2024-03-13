@@ -24,22 +24,25 @@ class AvroLogicalType(Enum):
     timestamp_ms = "timestamp_ms"
 
 @dataclass
-class AvroPrimitiveField:
+class AvroField:
     name: str
     description: typing.Optional[str]
+
+@dataclass
+class AvroPrimitiveField(AvroField):
     type: typing.Union[AvroPrimitiveType, AvroLogicalType]
 
 @dataclass
-class AvroComplexField:
-    name: str
-    description: typing.Optional[str]
-    subfields: list[typing.Union[AvroPrimitiveField, 'AvroComplexField']]
+class AvroComplexField(AvroField):
+    subfields: list[AvroField]
 
 @dataclass
-class AvroModelType:
-    name: str
-    description: typing.Optional[str]
-    fields: list[typing.Union[AvroPrimitiveField, AvroComplexField]]
+class AvroArrayField(AvroField):
+    type: AvroField
+
+@dataclass
+class AvroModelType(AvroField):
+    fields: list[AvroField]
 
 @dataclass
 class AvroIDLProtocol:
@@ -51,6 +54,7 @@ avro_primitive_types = set(["string", "text", "varchar",
                             "float", "double", "int",
                             "integer", "long", "bigint",
                             "boolean", "timestamp_ntz",
+                            "timestamp", "timestamp_tz",
                             "date", "bytes",
                             "null"])
 
@@ -69,6 +73,8 @@ def to_avro_primitive_logical_type(field_name: str, field: Field) -> AvroPrimiti
             result.type = AvroPrimitiveType.long
         case "boolean":
             result.type = AvroPrimitiveType.boolean
+        case "timestamp" | "timestamp_tz":
+            result.type = AvroPrimitiveType.string
         case "timestamp_ntz":
             result.type = AvroLogicalType.timestamp_ms
         case "date":
@@ -88,30 +94,18 @@ def to_avro_primitive_logical_type(field_name: str, field: Field) -> AvroPrimiti
             )
     return result
 
-def to_avro_idl_type(field_name: str, field: Field) -> typing.Union[AvroPrimitiveField, AvroComplexField]:
+def to_avro_idl_type(field_name: str, field: Field) -> AvroField:
     if field.type in avro_primitive_types:
         return to_avro_primitive_logical_type(field_name, field)
     else:
         match field.type:
-            case "timestamp" | "timestamp_tz":
-                raise DataContractException(
-                    type="general",
-                    name="avro-idl-export",
-                    model=type,
-                    reason="Avro IDL does not support timestamps with timezone.",
-                    result="failed",
-                    message="Avro IDL type conversion failed."
-                )
             case "array":
-                raise DataContractException(
-                    type="general",
-                    name="avro-idl-export",
-                    model=type,
-                    reason="Avro IDL export for arrays is not implemented.",
-                    result="failed",
-                    message="Avro IDL type conversion failed."
+                return AvroArrayField(
+                    field_name,
+                    field.description,
+                    to_avro_idl_type(field_name, field.items)
                 )
-            case "object" | "record":
+            case "object" | "record" | "struct":
                 return AvroComplexField(
                     field_name,
                     field.description,
@@ -128,7 +122,7 @@ def to_avro_idl_type(field_name: str, field: Field) -> typing.Union[AvroPrimitiv
                 )
 
 
-def generate_field_types(contract: DataContractSpecification) -> list[typing.Union[AvroPrimitiveField, AvroComplexField]]:
+def generate_field_types(contract: DataContractSpecification) -> list[AvroField]:
     result = []
     for (_, model) in contract.models.items():
         for (field_name, field) in model.fields.items():
@@ -168,24 +162,42 @@ def contract_to_avro_idl_ir(contract: DataContractSpecification) -> AvroIDLProto
 def write_indent(indent: int, stream: typing.TextIO):
     stream.write("    " * indent)
 
-def write_field_type(field: typing.Union[AvroPrimitiveField, AvroComplexField],
-                     stream: typing.TextIO, indent=2):
+def write_field_description(field: AvroField, indent: int, stream: typing.TextIO):
     if field.description:
         write_indent(indent, stream)
         stream.write(f"/** {field.description} */\n")
+
+def write_field_type_definition(field: AvroField, indent: int, stream: typing.TextIO) -> str:
     match field:
-        case AvroPrimitiveField(name, _, type):
-            write_indent(indent, stream)
-            stream.write(f"{type.value} {name};\n")
+        case AvroPrimitiveField(name, _, typ):
+            return typ.value
         case AvroComplexField(name, _, subfields):
+            write_field_description(field, indent, stream)
             write_indent(indent, stream)
             stream.write(f"record {name}_type {{\n")
+            subfield_types = []
             for subfield in subfields:
-                write_field_type(subfield, stream, indent + 1)
+                subfield_types.append(write_field_type_definition(subfield, indent + 1, stream))
+            for (field, subfield_type) in zip(field.subfields, subfield_types):
+                write_field_description(field, indent + 1, stream)
+                write_indent(indent + 1, stream)
+                stream.write(f"{subfield_type} {field.name};\n")
             write_indent(indent, stream)
             stream.write("}\n")
-            write_indent(indent, stream)
-            stream.write(f"{name}_type {name};\n");
+            return f"{name}_type"
+        case AvroArrayField(name, _, item_type):
+            subfield_type = write_field_type_definition(item_type, indent, stream)
+            return f"array<{subfield_type}>"
+        case _:
+            raise RuntimeError("Unknown Avro field type {field}")
+
+def write_field(field: AvroField,
+                indent,
+                stream: typing.TextIO):
+    typename = write_field_type_definition(field, indent, stream)
+    write_field_description(field, indent, stream)
+    write_indent(indent, stream)
+    stream.write(f"{typename} {field.name};\n")
 
 def write_model_type(model: AvroModelType, stream: typing.TextIO):
     if model.description:
@@ -194,7 +206,7 @@ def write_model_type(model: AvroModelType, stream: typing.TextIO):
     write_indent(1, stream)
     stream.write(f"record {model.name} {{\n")
     for field in model.fields:
-        write_field_type(field, stream)
+        write_field(field, 2, stream)
     write_indent(1, stream)
     stream.write("}\n")
 

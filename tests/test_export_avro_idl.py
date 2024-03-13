@@ -79,7 +79,40 @@ def test_avro_idl_complex_type():
                 /** Primitive field */
                 string nested_field_1;
             }
+            /** Complex field */
             test_field_type test_field;
+        }
+    }
+    """).strip()
+    assert to_avro_idl(contract).strip() == expected
+
+def test_avro_idl_array_type():
+    contract = spec.DataContractSpecification(
+        models={
+            "test_model": spec.Model(
+                description="Test model",
+                fields={
+                    "test_field": spec.Field(
+                        type="array",
+                        description="Array field",
+                        items=spec.Field(
+                            type="record",
+                            description="Record field",
+                            fields={
+                                "nested_field_1": spec.Field(
+                                    type="text",
+                                    description="Primitive field")}))})})
+    expected = dedent("""
+    protocol Unnamed {
+        /** Test model */
+        record test_model {
+            /** Record field */
+            record test_field_type {
+                /** Primitive field */
+                string nested_field_1;
+            }
+            /** Array field */
+            array<test_field_type> test_field;
         }
     }
     """).strip()
