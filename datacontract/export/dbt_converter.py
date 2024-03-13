@@ -21,15 +21,14 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
     return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def to_dbt_staging_sql(data_contract_spec: DataContractSpecification):
+def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name: str, model_value: Model) -> str:
     if data_contract_spec.models is None or len(data_contract_spec.models.items()) != 1:
         print(f"Export to dbt-staging-sql currently only works with exactly one model in the data contract.")
         return ""
 
     id = data_contract_spec.id
-    model_name, model = next(iter(data_contract_spec.models.items()))
     columns = []
-    for field_name, field in model.fields.items():
+    for field_name, field in model_value.fields.items():
         # TODO escape SQL reserved key words, probably dependent on server type
         columns.append(field_name)
     return f"""

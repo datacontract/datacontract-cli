@@ -17,7 +17,7 @@ from datacontract.export.dbt_converter import to_dbt_models_yaml, \
 from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
-from datacontract.export.rdf_converter import to_rdf, to_rdf_n3
+from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.sql_importer import import_sql
@@ -246,15 +246,28 @@ class DataContract:
             inline_definitions=self._inline_definitions,
         )
 
-    def export(self, export_format, rdf_base: str = None) -> str:
+    def export(self, export_format, model: str = "all", rdf_base: str = None) -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                       self._data_contract)
         if export_format == "jsonschema":
-            if data_contract.models is None or len(data_contract.models.items()) != 1:
-                print(f"Export to {export_format} currently only works with exactly one model in the data contract.")
-                return ""
-            model_name, model = next(iter(data_contract.models.items()))
-            return to_jsonschema_json(model_name, model)
+            if data_contract.models is None:
+                raise RuntimeError( f"Export to {export_format} requires models in the data contract.")
+
+            model_names = list(data_contract.models.keys())
+
+            if model == "all":
+                if len(data_contract.models.items()) != 1:
+                    raise RuntimeError( f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+
+                model_name, model_value = next(iter(data_contract.models.items()))
+                return to_jsonschema_json(model_name, model_value)
+            else:
+                model_name = model
+                model_value = data_contract.models.get(model_name)
+                if model_value is None:
+                    raise RuntimeError( f"Model {model_name} not found in the data contract. Available models: {model_names}")
+
+                return to_jsonschema_json(model_name, model_value)
         if export_format == "sodacl":
             return to_sodacl_yaml(data_contract)
         if export_format == "dbt":
@@ -262,7 +275,24 @@ class DataContract:
         if export_format == "dbt-sources":
             return to_dbt_sources_yaml(data_contract, self._server)
         if export_format == "dbt-staging-sql":
-            return to_dbt_staging_sql(data_contract)
+            if data_contract.models is None:
+                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
+
+            model_names = list(data_contract.models.keys())
+
+            if model == "all":
+                if len(data_contract.models.items()) != 1:
+                    raise RuntimeError(f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+
+                model_name, model_value = next(iter(data_contract.models.items()))
+                return to_dbt_staging_sql(data_contract, model_name, model_value)
+            else:
+                model_name = model
+                model_value = data_contract.models.get(model_name)
+                if model_value is None:
+                    raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+
+                return to_dbt_staging_sql(data_contract, model_name, model_value)
         if export_format == "odcs":
             return to_odcs_yaml(data_contract)
         if export_format == "rdf":
@@ -270,11 +300,24 @@ class DataContract:
         if export_format == "protobuf":
             return to_protobuf(data_contract)
         if export_format == "avro":
-            if data_contract.models is None or len(data_contract.models.items()) != 1:
-                print(f"Export to {export_format} currently only works with exactly one model in the data contract.")
-                return ""
-            model_name, model = next(iter(data_contract.models.items()))
-            return to_avro_schema_json(model_name, model)
+            if data_contract.models is None:
+                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
+
+            model_names = list(data_contract.models.keys())
+
+            if model == "all":
+                if len(data_contract.models.items()) != 1:
+                    raise RuntimeError(f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+
+                model_name, model_value = next(iter(data_contract.models.items()))
+                return to_avro_schema_json(model_name, model_value)
+            else:
+                model_name = model
+                model_value = data_contract.models.get(model_name)
+                if model_value is None:
+                    raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+
+                return to_avro_schema_json(model_name, model_value)
         if export_format == "terraform":
             return to_terraform(data_contract)
         else:
