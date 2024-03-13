@@ -310,8 +310,6 @@ class DataContract:
             return to_odcs_yaml(data_contract)
         if export_format == "rdf":
             return to_rdf_n3(data_contract, rdf_base)
-        if export_format == "avro-idl":
-            return to_avro_idl(data_contract)
         if export_format == "protobuf":
             return to_protobuf(data_contract)
         if export_format == "avro":
@@ -333,6 +331,8 @@ class DataContract:
                     raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
 
                 return to_avro_schema_json(model_name, model_value)
+        if export_format == "avro-idl":
+            return to_avro_idl(data_contract)
         if export_format == "terraform":
             return to_terraform(data_contract)
         else:

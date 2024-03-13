@@ -1,5 +1,5 @@
 from typer.testing import CliRunner
-from datacontract.export.avro_idl_converter import contract_to_avro_idl_ir,\
+from datacontract.export.avro_idl_converter import _contract_to_avro_idl_ir,\
     AvroPrimitiveType, AvroPrimitiveField, AvroModelType,\
     AvroIDLProtocol, to_avro_idl
 from datacontract.lint.resolve import resolve_data_contract_from_location
@@ -22,10 +22,11 @@ def test_ir():
                 "One record per order. Includes cancelled and deleted orders.",
                 [AvroPrimitiveField(
                     "order_id",
+                    True,
                     "An internal ID that identifies an order in the online shop.",
                     type=AvroPrimitiveType.string)]),
         ])
-    assert contract_to_avro_idl_ir(contract) == expected
+    assert _contract_to_avro_idl_ir(contract) == expected
 
 def test_avro_idl_str():
     contract = resolve_data_contract_from_location("examples/lint/valid_datacontract_references.yaml",
@@ -65,6 +66,7 @@ def test_avro_idl_complex_type():
                 fields={
                     "test_field": spec.Field(
                         type="object",
+                        required=True,
                         description="Complex field",
                         fields={
                             "nested_field_1": spec.Field(
@@ -77,7 +79,7 @@ def test_avro_idl_complex_type():
             /** Complex field */
             record test_field_type {
                 /** Primitive field */
-                string nested_field_1;
+                string? nested_field_1;
             }
             /** Complex field */
             test_field_type test_field;
@@ -109,10 +111,10 @@ def test_avro_idl_array_type():
             /** Record field */
             record test_field_type {
                 /** Primitive field */
-                string nested_field_1;
+                string? nested_field_1;
             }
             /** Array field */
-            array<test_field_type> test_field;
+            array<test_field_type?>? test_field;
         }
     }
     """).strip()
