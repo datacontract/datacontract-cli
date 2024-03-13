@@ -83,7 +83,10 @@ $ datacontract test --examples datacontract.yaml
 # find differences between to data contracts (Coming Soon)
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 
-# fail pipeline on breaking changes  (Coming Soon)
+# find differences between to data contracts categorized into error, warning, and info.
+$ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
+
+# fail pipeline on breaking changes. Uses changelog internally and showing only error and warning.
 $ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 
 # export model as jsonschema (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql (coming soon), sodacl, terraform)

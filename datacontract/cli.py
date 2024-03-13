@@ -182,9 +182,33 @@ def breaking(
             data_contract_file=location_new,
             inline_definitions=True
         ))
-    print(str(result))
+
+    print(result.breaking_str())
+
     if not result.passed_checks():
         raise typer.Exit(code=1)
+
+
+@app.command()
+def changelog(
+    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
+    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+):
+    """
+    Generate a changelog between data contracts. Prints to stdout.
+    """
+
+    # TODO exception handling
+    result = DataContract(
+        data_contract_file=location_old,
+        inline_definitions=True
+    ).changelog(
+        DataContract(
+            data_contract_file=location_new,
+            inline_definitions=True
+        ))
+
+    print(result.changelog_str())
 
 
 def _handle_result(run):
