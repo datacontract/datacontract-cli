@@ -423,8 +423,9 @@ Available export options:
 | `avro`             | Export to AVRO models                                   | ✅      |
 | `protobuf`         | Export to Protobuf                                      | ✅      |
 | `terraform`        | Export to terraform resources                           | ✅      |
+| `sql`              | Export to SQL DDL                                       | ✅      |
+| `sql-query`        | Export to SQL Query                                     | ✅      |
 | `pydantic`         | Export to pydantic models                               | TBD    |
-| `sql`              | Export to SQL DDL                                       | TBD    |
 | Missing something? | Please create an issue on GitHub                        | TBD    |
 
 #### RDF

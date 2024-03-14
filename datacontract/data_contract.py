@@ -20,6 +20,7 @@ from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
+from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
@@ -40,6 +41,23 @@ from datacontract.model.data_contract_specification import \
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import \
     Run, Check
+
+
+def _determine_sql_server_type(data_contract, sql_server_type):
+    if sql_server_type == "auto":
+        if data_contract.servers is None or len(data_contract.servers) == 0:
+            raise RuntimeError(f"Export with server_type='auto' requires servers in the data contract.")
+
+        server_types = set([server.type for server in data_contract.servers.values()])
+        if "snowflake" in server_types:
+            return "snowflake"
+        elif "postgres" in server_types:
+            return "postgres"
+        else:
+            # default to snowflake dialect
+            return "snowflake"
+    else:
+        return sql_server_type
 
 
 class DataContract:
@@ -259,9 +277,9 @@ class DataContract:
             inline_definitions=self._inline_definitions,
         )
 
-    def export(self, export_format, model: str = "all", rdf_base: str = None) -> str:
+    def export(self, export_format, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto") -> str:
         data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                      self._data_contract)
+                                                      self._data_contract, inline_definitions=True)
         if export_format == "jsonschema":
             if data_contract.models is None:
                 raise RuntimeError( f"Export to {export_format} requires models in the data contract.")
@@ -335,6 +353,30 @@ class DataContract:
             return to_avro_idl(data_contract)
         if export_format == "terraform":
             return to_terraform(data_contract)
+        if export_format == "sql":
+            server_type = _determine_sql_server_type(data_contract, sql_server_type)
+            return to_sql_ddl(data_contract, server_type=server_type)
+        if export_format == "sql-query":
+            if data_contract.models is None:
+                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
+
+            server_type = _determine_sql_server_type(data_contract, sql_server_type)
+
+            model_names = list(data_contract.models.keys())
+
+            if model == "all":
+                if len(data_contract.models.items()) != 1:
+                    raise RuntimeError(f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+
+                model_name, model_value = next(iter(data_contract.models.items()))
+                return to_sql_query(data_contract, model_name, model_value, server_type)
+            else:
+                model_name = model
+                model_value = data_contract.models.get(model_name)
+                if model_value is None:
+                    raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+
+                return to_sql_query(data_contract, model_name, model_value, server_type)
         else:
             print(f"Export format {export_format} not supported.")
             return ""

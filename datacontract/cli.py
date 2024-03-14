@@ -128,6 +128,8 @@ class ExportFormat(str, Enum):
     protobuf = "protobuf"
     terraform = "terraform"
     avro_idl = "avro-idl"
+    sql = "sql"
+    sql_query = "sql-query"
 
 
 @app.command()
@@ -138,6 +140,7 @@ def export(
                                             "to refer to a model, e.g., `orders`, or `all` for all "
                                             "models (default).")] = "all",
     rdf_base: Annotated[Optional[str], typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options")] = None,
+    sql_server_type: Annotated[Optional[str], typer.Option(help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract.", rich_help_panel="SQL Options")] = "auto",
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
 ):
@@ -145,7 +148,12 @@ def export(
     Convert data contract to a specific format. Prints to stdout.
     """
     # TODO exception handling
-    result = DataContract(data_contract_file=location, server=server).export(export_format=format, model=model,rdf_base=rdf_base)
+    result = DataContract(data_contract_file=location, server=server).export(
+        export_format=format,
+        model=model,
+        rdf_base=rdf_base,
+        sql_server_type=sql_server_type,
+    )
     print(result)
 
 

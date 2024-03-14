@@ -2,12 +2,12 @@ from typing import Dict
 
 import yaml
 
+from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Model, Field
 
 
-# snowflake data types:
-# https://docs.snowflake.com/en/sql-reference/data-types.html
+
 
 
 def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
@@ -132,7 +132,7 @@ def _to_columns(fields: Dict[str, Field], supports_constraints: bool, supports_d
 
 def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool) -> dict:
     column = {}
-    dbt_type = _convert_type_to_snowflake(field.type)
+    dbt_type = convert_to_sql_type(field, "snowflake")
     if dbt_type is not None:
         if supports_datatype:
             column["data_type"] = dbt_type
@@ -204,38 +204,3 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
     # TODO: all constraints
     return column
 
-
-def _convert_type_to_snowflake(type) -> None | str:
-    # currently optimized for snowflake
-    # LEARNING: data contract has no direct support for CHAR,CHARACTER
-    # LEARNING: data contract has no support for "date-time", "datetime", "time"
-    # LEARNING: No precision and scale support in data contract
-    # LEARNING: no support for any
-    # GEOGRAPHY and GEOMETRY are not supported by the mapping
-    if type is None:
-        return None
-    if type.lower() in ["string", "varchar", "text"]:
-        return type.upper()  # STRING, TEXT, VARCHAR are all the same in snowflake
-    if type.lower() in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP_TZ"
-    if type.lower() in ["timestamp_ntz"]:
-        return "TIMESTAMP_NTZ"
-    if type.lower() in ["date"]:
-        return "DATE"
-    if type.lower() in ["time"]:
-        return "TIME"
-    if type.lower() in ["number", "decimal", "numeric"]:
-        return "NUMBER"  # precision and scale not supported by data contract
-    if type.lower() in ["float", "double"]:
-        return "FLOAT"
-    if type.lower() in ["integer", "int", "long", "bigint"]:
-        return "NUMBER"  # always NUMBER(38,0)
-    if type.lower() in ["boolean"]:
-        return "BOOLEAN"
-    if type.lower() in ["object", "record", "struct"]:
-        return "OBJECT"
-    if type.lower() in ["bytes"]:
-        return "BINARY"
-    if type.lower() in ["array"]:
-        return "ARRAY"
-    return None
