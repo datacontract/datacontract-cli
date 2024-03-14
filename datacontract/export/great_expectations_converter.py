@@ -31,7 +31,6 @@ def to_suite(model_key: str, expectations: List[Dict[str, Any]], ) -> Dict[str, 
         "expectation_suite_name": "user-defined." + model_key,
         "expectations": expectations,
         "meta": {
-            "great_expectations_version": "0.18.9"
         }
     }
 
