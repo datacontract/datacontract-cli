@@ -44,6 +44,8 @@ dev = [
   "testcontainers-minio",
   "testcontainers-postgres",
   "testcontainers-kafka",
+  "black",
+  "mypy"
 ]
 
 [project.urls]
