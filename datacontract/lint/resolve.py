@@ -49,7 +49,8 @@ def resolve_data_contract_from_location(
 def inline_definitions_into_data_contract(spec: DataContractSpecification):
     for model in spec.models.values():
         for field in model.fields.values():
-            if field.ref is None:
+            # If ref_obj is not empty, we've already inlined definitions.
+            if not field.ref and not field.ref_obj:
                 continue
 
             definition = resolve_ref(field.ref, spec.definitions)

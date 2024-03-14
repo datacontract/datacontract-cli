@@ -83,6 +83,7 @@ class Field(pyd.BaseModel):
     enum: List[str] = []
     tags: List[str] = []
     fields: Dict[str, 'Field'] = {}
+    items: 'Field' = None
 
 
 class Model(pyd.BaseModel):

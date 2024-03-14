@@ -12,6 +12,7 @@ from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.avro_converter import to_avro_schema, to_avro_schema_json
+from datacontract.export.avro_idl_converter import to_avro_idl
 from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschema_json
@@ -330,6 +331,8 @@ class DataContract:
                     raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
 
                 return to_avro_schema_json(model_name, model_value)
+        if export_format == "avro-idl":
+            return to_avro_idl(data_contract)
         if export_format == "terraform":
             return to_terraform(data_contract)
         else:
