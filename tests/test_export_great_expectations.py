@@ -117,7 +117,6 @@ def test_to_great_expectation(data_contract_basic: DataContractSpecification):
             }
         ],
         "meta": {
-            "great_expectations_version": "0.17.23"
         }
     }
     result = to_great_expectations(data_contract_basic)
@@ -242,7 +241,6 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
             }
         ],
         "meta": {
-            "great_expectations_version": "0.17.23"
         }
     }
 
@@ -359,7 +357,6 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
             }
         ],
         "meta": {
-            "great_expectations_version": "0.17.23"
         }
     }
     result = to_great_expectations(data_contract_complex)
@@ -419,7 +416,6 @@ def test_to_great_expectation_quality(data_contract_great_expectations: DataCont
             }
         ],
         "meta": {
-            "great_expectations_version": "0.17.23"
         }
     }
     result = to_great_expectations(data_contract_great_expectations)

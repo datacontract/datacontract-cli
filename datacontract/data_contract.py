@@ -19,8 +19,6 @@ from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschem
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.export.great_expectations_converter import to_great_expectations
-
-
 from datacontract.export.rdf_converter import to_rdf, to_rdf_n3
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
