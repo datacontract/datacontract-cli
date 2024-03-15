@@ -16,9 +16,9 @@ from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExpo
 logging.basicConfig(level=logging.DEBUG, force=True)
 
 
-def publish_opentelemetry(run: Run, publish_url: str):
+def publish_opentelemetry(run: Run):
     try:
-        otel_exporter_otlp_endpoint = publish_url
+        otel_exporter_otlp_endpoint = os.getenv('OTEL_EXPORTER_OTLP_ENDPOINT')
         otel_exporter_otlp_headers = os.getenv('OTEL_EXPORTER_OTLP_HEADERS')
         otel_service_name = "datacontract-cli"
         otel_service_version = metadata.version("datacontract-cli")
@@ -33,7 +33,7 @@ def publish_opentelemetry(run: Run, publish_url: str):
             raise Exception("Cannot publish run results, as OTEL_EXPORTER_OTLP_HEADERS is not set")
 
         telemetry = Telemetry(endpoint=otel_exporter_otlp_endpoint, headers={
-            "Authorization": "Bearer GfGQRPmvr8piYGFX7I",
+            "Authorization": "Bearer TBD",
         })
         provider = metrics.get_meter_provider()
         meter = provider.get_meter(otel_service_name, otel_service_version)
@@ -92,4 +92,4 @@ if __name__ == "__main__":
         checks=[],
         logs=[],
     )
-    publish_opentelemetry(run, "TBD")
+    publish_opentelemetry(run)
