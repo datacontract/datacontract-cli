@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+
+## [0.9.7] - 2024-03-15
+
 - Fixed a bug where the export to YAML always escaped the unicode characters.
 - Added option publish test results to **OpenTelemetry**: `datacontract test --publish-to-opentelemetry`
 - Added export format **protobuf**: `datacontract export --format protobuf`
@@ -17,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added new command **changelog**: `datacontract changelog datacontract1.yaml datacontract2.yaml` will now generate a changelog based on the changes in the data contract. This will be useful for keeping track of changes in the data contract over time.
 - Added extensive linting on data contracts. `datacontract lint` will now check for a variety of possible errors in the data contract, such as missing descriptions, incorrect references to models or fields, nonsensical constraints, and more.
 - Added importer for avro schemas. `datacontract import --format avro` will now import avro schemas into a data contract.
-
 
 ## [0.9.6-2] - 2024-03-04
 
