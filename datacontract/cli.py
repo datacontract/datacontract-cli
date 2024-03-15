@@ -228,6 +228,28 @@ def changelog(
     print(result.changelog_str())
 
 
+@app.command()
+def diff(
+    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
+    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+):
+    """
+    PLACEHOLDER. Currently works as 'changelog' does.
+    """
+
+    # TODO change to diff output, not the changelog entries
+    result = DataContract(
+        data_contract_file=location_old,
+        inline_definitions=True
+    ).changelog(
+        DataContract(
+            data_contract_file=location_new,
+            inline_definitions=True
+        ))
+
+    print(result.changelog_str())
+
+
 def _handle_result(run):
     _print_table(run)
     if run.result == "passed":
