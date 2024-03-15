@@ -20,6 +20,7 @@ from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
+from datacontract.imports.avro_importer import import_avro
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.sql_importer import import_sql
@@ -416,6 +417,11 @@ class DataContract:
     def import_from_source(self, format: str, source: str) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
 
-        data_contract_specification = import_sql(data_contract_specification, format, source)
+        if format == "sql":
+            data_contract_specification = import_sql(data_contract_specification, format, source)
+        elif format == "avro":
+            data_contract_specification = import_avro(data_contract_specification, source)
+        else:
+            print(f"Import format {format} not supported.")
 
         return data_contract_specification
