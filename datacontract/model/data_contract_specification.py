@@ -65,7 +65,6 @@ class Field(pyd.BaseModel):
     ref_obj: Definition = pyd.Field(default=None, exclude=True)
     type: str = None
     format: str = None
-    primary: bool = None
     required: bool = None
     primary: bool = None
     unique: bool = None
@@ -83,6 +82,7 @@ class Field(pyd.BaseModel):
     enum: List[str] = []
     tags: List[str] = []
     fields: Dict[str, 'Field'] = {}
+    items: 'Field' = None
 
 
 class Model(pyd.BaseModel):

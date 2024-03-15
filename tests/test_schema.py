@@ -15,40 +15,38 @@ id: urn:datacontract:checkout:orders-latest
 info:
   title: Orders Latest
   version: 1.0.0
-schema:
-  type: json-schema
-  specification:
-    orders:
-      description: One record per order. Includes cancelled and deleted orders.
-      type: object
-      properties:
-        order_id:
-          type: string
-          description: Primary key of the orders table
-        order_timestamp:
-          type: string
-          format: date-time
-          description: The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.
-        order_total:
-          type: integer
-          description: Total amount of the order in the smallest monetary unit (e.g., cents).
-    line_items:
-      type: object
-      properties:
-        lines_item_id:
-          type: string
-          description: Primary key of the lines_item_id table
-        order_id:
-          type: string
-          description: Foreign key to the orders table
-        sku:
-          type: string
-          description: The purchased article number""")
+models:
+  orders:
+    description: One record per order. Includes cancelled and deleted orders.
+    type: object
+    fields:
+      order_id:
+        type: string
+        description: Primary key of the orders table
+      order_timestamp:
+        type: string
+        format: date-time
+        description: The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.
+      order_total:
+        type: integer
+        description: Total amount of the order in the smallest monetary unit (e.g., cents).
+  line_items:
+    type: object
+    fields:
+      lines_item_id:
+        type: string
+        description: Primary key of the lines_item_id table
+      order_id:
+        type: string
+        description: Foreign key to the orders table
+      sku:
+        type: string
+        description: The purchased article number""")
 
     data_contract.lint()
     data_contract.test()
     data_contract.export(export_format="odcs")
     data_contract.export(export_format="dbt-model")
     data_contract.export(export_format="dbt-source")
-    data_contract.export(export_format="dbt-staging-sql")
-    data_contract.export(export_format="jsonschema")
+    data_contract.export(export_format="dbt-staging-sql", model="orders")
+    data_contract.export(export_format="jsonschema", model="orders")

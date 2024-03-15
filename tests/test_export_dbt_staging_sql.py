@@ -32,7 +32,7 @@ select
 from {{ source('orders-unit-test', 'orders') }}
 """
 
-    result = to_dbt_staging_sql(data_contract)
+    result = to_dbt_staging_sql(data_contract, "orders", data_contract.models.get("orders"))
 
     assert yaml.safe_load(result) == yaml.safe_load(expected)
 

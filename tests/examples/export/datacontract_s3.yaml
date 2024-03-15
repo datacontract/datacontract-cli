@@ -1,0 +1,50 @@
+dataContractSpecification: 0.9.2
+id: orders-unit-test
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+  owner: checkout
+  description: The orders data contract
+  contact:
+    email: team-orders@example.com
+    url: https://wiki.example.com/teams/checkout
+terms:
+  usage: This data contract serves to demo datacontract CLI export.
+  limitations: Not intended to use in production
+  billing: free
+  noticePeriod: P3M
+servers:
+  production:
+    type: s3
+    location: s3://datacontract-example-orders-latest/data/{model}/*.json
+    format: json
+    delimiter: new_line
+    dataProductId: orders
+models:
+  orders:
+    description: The orders model
+    fields:
+      order_id:
+        type: varchar
+        unique: true
+        required: true
+        minLength: 8
+        maxLength: 10
+        pii: true
+        classification: sensitive
+        tags:
+          - order_id
+        pattern: ^B[0-9]+$
+      order_total:
+        type: bigint
+        required: true
+        description: The order_total field
+        minimum: 0
+        maximum: 1000000
+      order_status:
+        type: text
+        required: true
+        enum:
+          - pending
+          - shipped
+          - delivered
