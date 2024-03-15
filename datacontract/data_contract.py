@@ -320,4 +320,4 @@ class DataContract:
         else:
             print(f"Import format {format} not supported.")
 
-        return data_contract_specification  
+        return data_contract_specification
