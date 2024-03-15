@@ -12,9 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added export format **terraform**: `datacontract export --format terraform` (limitation: only works for AWS S3 right now)
 - Added export format **sql**: `datacontract export --format sql`
 - Added export format **sql-query**: `datacontract export --format sql-query`
+- Added export format **avro-idl**: `datacontract export --format avro-idl`: Generates an Avro IDL file containing records for each model.
+- Added new command **changelog**: `datacontract changelog datacontract1.yaml datacontract2.yaml` will now generate a changelog based on the changes in the data contract. This will be useful for keeping track of changes in the data contract over time.
 - Added extensive linting on data contracts. `datacontract lint` will now check for a variety of possible errors in the data contract, such as missing descriptions, incorrect references to models or fields, nonsensical constraints, and more.
-- Added changelog command: `datacontract changelog` will now generate a changelog based on the changes in the data contract. This will be useful for keeping track of changes in the data contract over time.
-- Added Avro IDL export: Generates an Avro IDL file containing records for each model.
+
 
 ## [0.9.6-2] - 2024-03-04
 
