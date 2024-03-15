@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Fixed a bug where the export to YAML always escaped the unicode characters.
+- Added option publish test results to **OpenTelemetry**: `datacontract test --publish-to-opentelemetry`
 - Added export format **protobuf**: `datacontract export --format protobuf`
 - Added export format **terraform**: `datacontract export --format terraform` (limitation: only works for AWS S3 right now)
 - Added export format **sql**: `datacontract export --format sql`
