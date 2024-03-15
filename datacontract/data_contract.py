@@ -26,6 +26,7 @@ from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
+from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
 
 from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Severity
@@ -71,6 +72,7 @@ class DataContract:
         server: str = None,
         examples: bool = False,
         publish_url: str = None,
+        publish_to_opentelemetry: bool = False,
         spark: str = None,
         inline_definitions: bool = False,
     ):
@@ -81,6 +83,7 @@ class DataContract:
         self._server = server
         self._examples = examples
         self._publish_url = publish_url
+        self._publish_to_opentelemetry = publish_to_opentelemetry
         self._spark = spark
         self._inline_definitions = inline_definitions
         self.all_linters = {
@@ -233,7 +236,15 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None:
-            publish_datamesh_manager(run, self._publish_url)
+            try:
+                publish_datamesh_manager(run, self._publish_url)
+            except:
+                logging.error("Failed to publish to datamesh manager")
+        if self._publish_to_opentelemetry:
+            try:
+                publish_opentelemetry(run)
+            except:
+                logging.error("Failed to publish to opentelemetry")
 
         return run
 
