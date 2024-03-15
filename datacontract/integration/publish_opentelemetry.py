@@ -45,7 +45,7 @@ def publish_opentelemetry(run: Run):
 
         telemetry.send_to_publish_url()
 
-        logging.info("Published test results to %s", publish_url)
+        logging.info("Published test results to %s", otel_exporter_otlp_endpoint)
     except Exception as e:
         logging.error(f"Failed publishing test results. Error: {str(e)}")
 
