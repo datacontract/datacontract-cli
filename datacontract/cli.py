@@ -100,6 +100,8 @@ def test(
         help="Run the schema and quality tests on the example data within the data contract.")] = None,
     publish: Annotated[str, typer.Option(
         help="The url to publish the results after the test")] = None,
+    publish_to_opentelemetry: Annotated[bool, typer.Option(
+        help="Publish the results to opentelemetry. Use environment variables to configure the OTLP endpoint, headers, etc.")] = False,
     logs: Annotated[bool, typer.Option(
         help="Print logs")] = False,
 ):
@@ -109,8 +111,13 @@ def test(
     print(f"Testing {location}")
     if server == "all":
         server = None
-    run = DataContract(data_contract_file=location, schema_location=schema, publish_url=publish, server=server,
-                       examples=examples).test()
+    run = DataContract(data_contract_file=location,
+                       schema_location=schema,
+                       publish_url=publish,
+                       publish_to_opentelemetry=publish_to_opentelemetry,
+                       server=server,
+                       examples=examples,
+                       ).test()
     if logs:
         _print_logs(run)
     _handle_result(run)

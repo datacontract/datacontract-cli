@@ -15,39 +15,38 @@ from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExpo
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
-
+# Tested with three environment variables:
+#
+# OTEL_SERVICE_NAME=datacontract-cli
+# OTEL_EXPORTER_OTLP_ENDPOINT=https://YOUR_ID.apm.westeurope.azure.elastic-cloud.com:443
+# OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20secret
 def publish_opentelemetry(run: Run):
     try:
-        otel_exporter_otlp_endpoint = os.getenv('OTEL_EXPORTER_OTLP_ENDPOINT')
-        otel_exporter_otlp_headers = os.getenv('OTEL_EXPORTER_OTLP_HEADERS')
-        otel_service_name = "datacontract-cli"
-        otel_service_version = metadata.version("datacontract-cli")
+        meter_name = "datacontract-cli"
+        meter_version = metadata.version("datacontract-cli")
 
         if run.dataContractId is None:
             raise Exception("Cannot publish run results, as data contract ID is unknown")
 
-        if otel_exporter_otlp_endpoint is None:
-            raise Exception("Cannot publish run results, as publish_url is not set")
+        endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+        logging.info(f"Publishing test results to opentelemetry at {endpoint}")
 
-        if otel_exporter_otlp_headers is None:
-            raise Exception("Cannot publish run results, as OTEL_EXPORTER_OTLP_HEADERS is not set")
-
-        telemetry = Telemetry(endpoint=otel_exporter_otlp_endpoint, headers={
-            "Authorization": "Bearer TBD",
-        })
+        telemetry = Telemetry()
         provider = metrics.get_meter_provider()
-        meter = provider.get_meter(otel_service_name, otel_service_version)
+        meter = provider.get_meter(meter_name, meter_version)
         meter.create_observable_gauge(
             name="datacontract.cli.run",
-            callbacks=[lambda x: _to_observation(run)],
+            callbacks=[lambda x: _to_observation_callback(run)],
             unit="result",
             description="The overall result of the data contract test run")
 
-        telemetry.send_to_publish_url()
-
-        logging.info("Published test results to %s", otel_exporter_otlp_endpoint)
+        telemetry.publish()
     except Exception as e:
         logging.error(f"Failed publishing test results. Error: {str(e)}")
+
+
+def _to_observation_callback(run):
+    yield _to_observation(run)
 
 
 def _to_observation(run):
@@ -56,40 +55,24 @@ def _to_observation(run):
         "datacontract.version": run.dataContractVersion,
     }
     if run.result == "passed":
-        result_value = 0 # think of exit codes
+        result_value = 0  # think of exit codes
     elif run.result == "warning":
         result_value = 1
     else:
         result_value = 2
-
-    yield Observation(value=result_value, attributes=attributes)
+    return Observation(value=result_value, attributes=attributes)
 
 
 class Telemetry:
-    def __init__(self, endpoint: str, headers):
+    def __init__(self):
         self.exporter = ConsoleMetricExporter()
-        self.remote_exporter = OTLPMetricExporter(endpoint=endpoint, headers=headers)
+        self.remote_exporter = OTLPMetricExporter()
         # using math.inf so it does not collect periodically. we do this in collect ourselves, one-time.
         self.reader = PeriodicExportingMetricReader(self.exporter, export_interval_millis=math.inf)
         self.remote_reader = PeriodicExportingMetricReader(self.remote_exporter, export_interval_millis=math.inf)
         provider = MeterProvider(metric_readers=[self.reader, self.remote_reader])
         metrics.set_meter_provider(provider)
 
-    def send_to_publish_url(self):
+    def publish(self):
         self.reader.collect()
         self.remote_reader.collect()
-
-
-# create a main method I can run
-if __name__ == "__main__":
-    run = Run(
-        runId=uuid4(),
-        dataContractId="datacontract-id-1234",
-        dataContractVersion="1.0.0",
-        result="passed",
-        timestampStart="2021-01-01T00:00:00Z",
-        timestampEnd="2021-01-01T00:00:00Z",
-        checks=[],
-        logs=[],
-    )
-    publish_opentelemetry(run)
