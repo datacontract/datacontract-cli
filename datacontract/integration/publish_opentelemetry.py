@@ -13,16 +13,28 @@ from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
 
-# Tested with three environment variables:
+# Publishes metrics of a test run. 
+# Metric contains the values: 
+# 0 == test run passed, 
+# 1 == test run has warnings
+# 2 == test run failed
+# 3 == test run not possible due to an error
+# 4 == test status unknown
+#
+# Tested with these environment variables:
 #
 # OTEL_SERVICE_NAME=datacontract-cli
 # OTEL_EXPORTER_OTLP_ENDPOINT=https://YOUR_ID.apm.westeurope.azure.elastic-cloud.com:443
-# OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20secret
+# OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20secret (Optional, when using SaaS Products)
+# OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf (Optional, because it is the default value)
+#
+# Current limitations:
+# - no gRPC support
+# - currently, only ConsoleExporter and OTLP Exporter
+# - Metrics only, no logs yet (but loosely planned)
+
 def publish_opentelemetry(run: Run):
     try:
-        meter_name = "datacontract-cli"
-        meter_version = metadata.version("datacontract-cli")
-
         if run.dataContractId is None:
             raise Exception("Cannot publish run results, as data contract ID is unknown")
 
@@ -31,9 +43,9 @@ def publish_opentelemetry(run: Run):
 
         telemetry = Telemetry()
         provider = metrics.get_meter_provider()
-        meter = provider.get_meter(meter_name, meter_version)
+        meter = provider.get_meter("com.datacontract.cli", metadata.version("datacontract-cli"))
         meter.create_observable_gauge(
-            name="datacontract.cli.run",
+            name="datacontract.cli.test",
             callbacks=[lambda x: _to_observation_callback(run)],
             unit="result",
             description="The overall result of the data contract test run")
@@ -52,12 +64,17 @@ def _to_observation(run):
         "datacontract.id": run.dataContractId,
         "datacontract.version": run.dataContractVersion,
     }
+
     if run.result == "passed":
         result_value = 0  # think of exit codes
     elif run.result == "warning":
         result_value = 1
-    else:
+    elif run.result == "failed":
         result_value = 2
+    elif run.result == "error":
+        result_value = 3
+    else:
+        result_value = 4
     return Observation(value=result_value, attributes=attributes)
 
 
