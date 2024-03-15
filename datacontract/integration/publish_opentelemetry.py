@@ -13,8 +13,6 @@ from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
 
-logging.basicConfig(level=logging.DEBUG, force=True)
-
 # Tested with three environment variables:
 #
 # OTEL_SERVICE_NAME=datacontract-cli
