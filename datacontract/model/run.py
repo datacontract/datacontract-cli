@@ -32,7 +32,7 @@ class Run(BaseModel):
     server: Optional[str] = None
     timestampStart: datetime
     timestampEnd: datetime
-    result: str = "unknown"
+    result: str = "unknown" # passed, warning, failed, error, unknown
     checks: List[Check]
     logs: List[Log]
 
