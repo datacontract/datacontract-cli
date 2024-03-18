@@ -30,6 +30,11 @@ class QualityUsesSchemaLinter(Linter):
         return LinterResult().with_warning(
             "Linting montecarlo checks is not currently implemented")
 
+    def lint_great_expectations(self, check, models: dict[str, Model]) ->\
+            LinterResult:
+        return LinterResult().with_warning(
+            "Linting great expectations checks is not currently implemented")
+
     def lint_implementation(self, contract: DataContractSpecification) ->\
             LinterResult:
         result = LinterResult()
@@ -50,6 +55,9 @@ class QualityUsesSchemaLinter(Linter):
             case "montecarlo":
                 result = result.combine(
                     self.lint_montecarlo(check_specification, models))
+            case "great-expectations":
+                result = result.combine(
+                    self.lint_great_expectations(check_specification, models))
             case _:
                 result = result.with_warning("Can't lint quality check "
                                              f"with type '{check.type}'")

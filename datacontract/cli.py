@@ -133,6 +133,7 @@ class ExportFormat(str, Enum):
     rdf = "rdf"
     avro = "avro"
     protobuf = "protobuf"
+    great_expectations = "great-expectations"
     terraform = "terraform"
     avro_idl = "avro-idl"
     sql = "sql"

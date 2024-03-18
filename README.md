@@ -440,22 +440,34 @@ datacontract export --format dbt
 
 Available export options:
 
-| Type               | Description                                             | Status |
-|--------------------|---------------------------------------------------------|--------|
-| `jsonschema`       | Export to JSON Schema                                   | ✅      | 
-| `odcs`             | Export to Open Data Contract Standard (ODCS)            | ✅      | 
-| `sodacl`           | Export to SodaCL quality checks in YAML format          | ✅      |
-| `dbt`              | Export to dbt models in YAML format                     | ✅      |
-| `dbt-sources`      | Export to dbt sources in YAML format                    | ✅      |
-| `dbt-staging-sql`  | Export to dbt staging SQL models                        | ✅      |
-| `rdf`              | Export data contract to RDF representation in N3 format | ✅      |
-| `avro`             | Export to AVRO models                                   | ✅      |
-| `protobuf`         | Export to Protobuf                                      | ✅      |
-| `terraform`        | Export to terraform resources                           | ✅      |
-| `sql`              | Export to SQL DDL                                       | ✅      |
-| `sql-query`        | Export to SQL Query                                     | ✅      |
-| `pydantic`         | Export to pydantic models                               | TBD    |
-| Missing something? | Please create an issue on GitHub                        | TBD    |
+| Type                 | Description                                             | Status |
+|----------------------|---------------------------------------------------------|--------|
+| `jsonschema`         | Export to JSON Schema                                   | ✅      | 
+| `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅      | 
+| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
+| `dbt`                | Export to dbt models in YAML format                     | ✅      |
+| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅      |
+| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅      |
+| `rdf`                | Export data contract to RDF representation in N3 format | ✅      |
+| `avro`               | Export to AVRO models                                   | ✅      |
+| `protobuf`           | Export to Protobuf                                      | ✅      |
+| `terraform`          | Export to terraform resources                           | ✅      |
+| `sql`                | Export to SQL DDL                                       | ✅      |
+| `sql-query`          | Export to SQL Query                                     | ✅      |
+| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
+| `pydantic`           | Export to pydantic models                               | TBD    |
+| Missing something?   | Please create an issue on GitHub                        | TBD    |
+
+#### Great Expectations
+The export function transforms a specified data contract into a comprehensive Great Expectations JSON suite. 
+If the contract includes multiple models, you need to specify the names of the model you wish to export.
+```shell
+datacontract  export datacontract.yaml --format great-expectations --model orders 
+```
+The export creates a list of expectations by utilizing:
+
+- The data from the Model definition with a fixed mapping
+- The expectations provided in the quality field for each model (find here the expectations gallery https://greatexpectations.io/expectations/)
 
 #### RDF
 
