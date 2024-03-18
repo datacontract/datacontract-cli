@@ -1,4 +1,12 @@
 dataContractSpecification: 0.9.1
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+  owner: checkout
+  description: The orders data contract
+  contact:
+    email: team-orders@example.com
+    url: https://wiki.example.com/teams/checkout
 models:
   orders:
     description: test

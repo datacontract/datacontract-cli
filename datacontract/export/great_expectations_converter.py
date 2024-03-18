@@ -7,32 +7,33 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification, Field, Quality
 
 
-def to_great_expectations(data_contract_spec: DataContractSpecification) -> Dict[str, Dict[str, Any]]:
+def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str) -> str:
     """
     Convert each model in the contract to a Great Expectation suite
     @param data_contract_spec: data contract to export to great expectations
+    @param model_key: model to great expectations to
     @return: a dictionary of great expectation suites
     """
-    expectation_dict = {}
     expectations = []
+    model_value = data_contract_spec.models.get(model_key)
     quality_checks = get_quality_checks(data_contract_spec.quality)
-    for model_key, model_value in data_contract_spec.models.items():
-        expectations.extend(model_to_expectations(model_value.fields))
-        expectations.extend(checks_to_expectations(quality_checks, model_key))
-        model_expectation_suite = to_suite(model_key, expectations)
-        expectation_dict[model_key] = model_expectation_suite
+    expectations.extend(model_to_expectations(model_value.fields))
+    expectations.extend(checks_to_expectations(quality_checks, model_key))
+    model_expectation_suite = to_suite(model_key, data_contract_spec.info.version, expectations)
 
-    return expectation_dict
+    return model_expectation_suite
 
 
-def to_suite(model_key: str, expectations: List[Dict[str, Any]], ) -> Dict[str, Any]:
-    return {
+def to_suite(model_key: str, contract_version: str, expectations: List[Dict[str, Any]], ) -> str:
+    return json.dumps({
         "data_asset_type": "null",
-        "expectation_suite_name": "user-defined." + model_key,
+        "expectation_suite_name": "user-defined.{model_key}.{contract_version}"
+        .format(model_key=model_key,
+                contract_version=contract_version),
         "expectations": expectations,
         "meta": {
         }
-    }
+    }, indent=2)
 
 
 def model_to_expectations(fields: Dict[str, Field]) -> List[Dict[str, Any]]:
