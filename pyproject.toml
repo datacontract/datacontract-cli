@@ -33,7 +33,7 @@ dependencies = [
   "duckdb==0.10.0",
   "fastjsonschema~=2.19.1",
   "python-dotenv~=1.0.0",
-  "s3fs==2024.2.0",
+  "s3fs==2024.3.0",
   "rdflib==7.0.0",
   "avro==1.11.3",
 ]
