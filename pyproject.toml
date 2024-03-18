@@ -27,7 +27,7 @@ dependencies = [
   "soda-core-duckdb~=3.2.1",
   "soda-core-postgres~=3.2.1",
   "soda-core-snowflake~=3.2.1",
-  "soda-core-spark[databricks]~=3.2.1",
+  "soda-core-spark[databricks]>=3.2.1,<3.4.0",
   "soda-core-spark-df~=3.2.1",
   "snowflake-connector-python[pandas]>=3.6,<3.8",
   "duckdb==0.10.0",
