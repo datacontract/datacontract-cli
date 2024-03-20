@@ -113,7 +113,15 @@ if not run.has_passed():
     # Abort pipeline, alert, or take corrective actions...
 ```
 
-## Scenario: Integration with Data Mesh Manager
+## Integrations
+
+
+| Integration       | Option                       | Description                                                                                           |
+|-------------------|------------------------------|-------------------------------------------------------------------------------------------------------|
+| Data Mesh Manager | `--publish`                  | Push full results to the [Data Mesh Manager API](https://api.datamesh-manager.com/swagger/index.html) |
+| OpenTelemetry     | `--publish-to-opentelemetry` | Push result as gauge metrics (logs are planned)                                                       |
+
+### Integration with Data Mesh Manager
 
 If you use [Data Mesh Manager](https://datamesh-manager.com/), you can use the data contract URL and append the `--publish` option to send and display the test results. Set an environment variable for your API key.
 
@@ -123,7 +131,7 @@ $ EXPORT DATAMESH_MANAGER_API_KEY=xxx
 $ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish
 ```
 
-## Scenario: Integration with OpenTelemetry
+### Integration with OpenTelemetry
 
 If you use OpenTelemetry, you can use the data contract URL and append the `--publish-to-opentelemetry` option to send the test results to your OLTP-compatible instance, e.g., Prometheus.
 
@@ -505,8 +513,8 @@ Available import options:
 | Type               | Description                                    | Status  |
 |--------------------|------------------------------------------------|---------|
 | `sql`              | Import from SQL DDL                            | ✅       | 
-| `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `avro`             | Import from AVRO schemas                       | ✅     |
+| `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `jsonschema`       | Import from JSON Schemas                       | TBD     |
 | `dbt`              | Import from dbt models                         | TBD     |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
