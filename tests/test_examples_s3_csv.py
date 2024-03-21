@@ -23,9 +23,9 @@ def minio_container():
         yield minio_container
 
 
-def test_examples_s3_csv(minio_container):
-    os.environ['DATACONTRACT_S3_ACCESS_KEY_ID'] = s3_access_key
-    os.environ['DATACONTRACT_S3_SECRET_ACCESS_KEY'] = s3_secret_access_key
+def test_examples_s3_csv(minio_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", s3_access_key)
+    monkeypatch.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", s3_secret_access_key)
     data_contract_str = _prepare_s3_files(minio_container)
     data_contract = DataContract(data_contract_str=data_contract_str)
 
