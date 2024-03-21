@@ -520,6 +520,67 @@ Available import options:
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
 | Missing something? | Please create an issue on GitHub               | TBD     |
 
+## Best Practices
+
+### Data-first Approach
+
+1. Use an existing physical schema (e.g., SQL DDL) as a starting point to define your logical data model in the contract. Double check right after the import whether the actual data meets the imported logical data model. Just to be sure.
+    ```bash
+    $ datacontract import --format sql ddl.sql
+    $ datacontract test
+    ```
+
+2. Add examples to the `datacontract.yaml`. If you can, use actual data and anonymize. Make sure that the examples match the imported logical data model.
+   ```bash
+   $ datacontract test --examples
+   ```
+
+
+3. Add quality checks and additional type constraints one by one to the contract and make sure the examples and the actual data still adheres to the contract. Check against examples for a very fast feedback loop.
+   ```bash
+   $ datacontract test --examples
+   $ datacontract test
+   ```
+
+4. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You probably forgot to document some fields and add the terms and conditions.
+   ```bash
+   $ datacontract lint
+   ```
+
+5. Set up a CI pipeline that executes daily and reports the results to the [Data Mesh Manager](https://datamesh-manager.com). Or to some place else. You can even publish to any opentelemetry compatible system.
+   ```bash
+   $ datacontract test --publish https://api.datamesh-manager.com/api/runs
+   ```
+
+### Schema Evolution
+
+#### Non-breaking Changes
+Examples: adding models or fields
+
+- Add the models or fields in the datacontract.yaml
+- Increment the minor version of the datacontract.yaml on any change. Simply edit the datacontract.yaml for this.
+- You need a policy that these changes are non-breaking. That means that one cannot use the star expression in SQL to query a table under contract. Make the consequences known.
+- Fail the build in the Pull Request if a datacontract.yaml accidentially adds a breaking change even despite only a minor version change
+   ```bash
+  $ datacontract breaking datacontract-from-pr.yaml datacontract-from-main.yaml
+  ```
+- Create a changelog of this minor change.
+   ```bash
+  $ datacontract changelog datacontract-from-pr.yaml datacontract-from-main.yaml
+  ```
+#### Breaking Changes
+Examples: Removing or renaming models and fields.
+
+- Remove or rename models and fields in the datacontract.yaml, and any other change that might be part of this new major version of this data contract.
+- Increment the major version of the datacontract.yaml for this and create a new file for the major version. The reason being, that one needs to offer an upgrade path for the data consumers from the old to the new major version.
+- As data consumers need to migrate, try to reduce the frequency of major versions by making multiple breaking changes together if possible.
+- Be aware of the notice period in the data contract as this is the minimum amount of time you have to offer both the old and the new version for a migration path.
+- Do not fear making breaking changes with data contracts. It's okay to do them in this controlled way. Really!
+- Create a changelog of this major change.
+   ```bash
+  $ datacontract changelog datacontract-from-pr.yaml datacontract-from-main.yaml
+  ```
+
 ## Development Setup
 
 Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).
