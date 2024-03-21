@@ -472,6 +472,7 @@ Available export options:
 | `sql-query`          | Export to SQL Query                                     | ✅      |
 | `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
 | `pydantic`           | Export to pydantic models                               | TBD    |
+| `html`               | Export to HTML page                                     | TBD    |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
