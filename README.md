@@ -150,14 +150,13 @@ The metric name is "datacontract.cli.test.result" and it uses the following enco
 # Fetch current data contract, execute tests on production, and publish result to open telemetry
 $ EXPORT OTEL_SERVICE_NAME=datacontract-cli
 $ EXPORT OTEL_EXPORTER_OTLP_ENDPOINT=https://YOUR_ID.apm.westeurope.azure.elastic-cloud.com:443
-$ EXPORT OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20secret (Optional, when using SaaS Products)
-$ EXPORT OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf (Optional, because it is the default value)
+$ EXPORT OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20secret # Optional, when using SaaS Products
+$ EXPORT OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf # Optional, default is http/protobuf - use value grpc to use the gRPC protocol instead
 # Send to OpenTelemetry
 $ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish-to-opentelemetry
 ```
 
 Current limitations:
-- no gRPC support
 - currently, only ConsoleExporter and OTLP Exporter
 - Metrics only, no logs yet (but loosely planned)
 

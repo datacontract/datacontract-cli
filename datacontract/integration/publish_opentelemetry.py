@@ -1,10 +1,11 @@
 import logging
 import os
 from importlib import metadata
-from uuid import uuid4
 import math
 
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter as OTLPgRPCMetricExporter
+
 from opentelemetry.metrics import Observation
 
 from datacontract.model.run import \
@@ -13,7 +14,8 @@ from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
 
-# Publishes metrics of a test run. 
+
+# Publishes metrics of a test run.
 # Metric contains the values: 
 # 0 == test run passed, 
 # 1 == test run has warnings
@@ -26,7 +28,7 @@ from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExpo
 # OTEL_SERVICE_NAME=datacontract-cli
 # OTEL_EXPORTER_OTLP_ENDPOINT=https://YOUR_ID.apm.westeurope.azure.elastic-cloud.com:443
 # OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20secret (Optional, when using SaaS Products)
-# OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf (Optional, because it is the default value)
+# OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf and OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 #
 # Current limitations:
 # - no gRPC support
@@ -80,10 +82,20 @@ def _to_observation(run):
 
 class Telemetry:
     def __init__(self):
-        self.exporter = ConsoleMetricExporter()
-        self.remote_exporter = OTLPMetricExporter()
+
+        protocol = os.getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
+
+        # lower to allow grpc, GRPC and alike values.
+        if protocol and protocol.lower() == "grpc":
+            self.remote_exporter = OTLPgRPCMetricExporter()
+        else:
+            # Fallback to default OTEL http/protobuf which is used when the variable is not set.
+            # This Exporter also works for http/json.
+            self.remote_exporter = OTLPMetricExporter()
+
+        self.console_exporter = ConsoleMetricExporter()
         # using math.inf so it does not collect periodically. we do this in collect ourselves, one-time.
-        self.reader = PeriodicExportingMetricReader(self.exporter, export_interval_millis=math.inf)
+        self.reader = PeriodicExportingMetricReader(self.console_exporter, export_interval_millis=math.inf)
         self.remote_reader = PeriodicExportingMetricReader(self.remote_exporter, export_interval_millis=math.inf)
         provider = MeterProvider(metric_readers=[self.reader, self.remote_reader])
         metrics.set_meter_provider(provider)

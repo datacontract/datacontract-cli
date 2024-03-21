@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Added export format **great-expectations**: `datacontract export --format great-expectations`  
-
+- Added gRPC support to opentelemetry integration for publishing test results
 
 
 ## [0.9.7] - 2024-03-15

@@ -1,10 +1,12 @@
 import logging
 from uuid import uuid4
 
-from opentelemetry.metrics import Observation
-from typer.testing import CliRunner
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter as OTLPgRPCMetricExporter
 
-from datacontract.integration.publish_opentelemetry import _to_observation
+from opentelemetry.metrics import Observation
+
+from datacontract.integration.publish_opentelemetry import _to_observation, Telemetry
 from datacontract.model.run import Run
 
 logging.basicConfig(level=logging.DEBUG, force=True)
@@ -29,3 +31,41 @@ def test_convert_to_observation():
     actual = _to_observation(run)
 
     assert expected == actual
+
+
+def test_http_exporter_chosen_without_env():
+    telemetry = Telemetry()
+
+    assert isinstance(telemetry.remote_exporter,
+                      OTLPMetricExporter), ("Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is "
+                                            "not set")
+
+
+def test_http_exporter_chosen_with_env_httpprotobuf(monkeypatch):
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
+
+    telemetry = Telemetry()
+
+    assert isinstance(telemetry.remote_exporter,
+                      OTLPMetricExporter), ("Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is "
+                                            "http/protobuf")
+
+
+def test_http_exporter_chosen_with_env_httpjson(monkeypatch):
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "http/json")
+
+    telemetry = Telemetry()
+
+    assert isinstance(telemetry.remote_exporter,
+                      OTLPMetricExporter), ("Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is "
+                                            "http/json")
+
+
+def test_grpc_exporter_chosen_with_env_GRPC(monkeypatch):
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "GRPC")
+
+    telemetry = Telemetry()
+
+    assert isinstance(telemetry.remote_exporter,
+                      OTLPgRPCMetricExporter), ("Should use OTLPMetricExporter from gRPC package "
+                                                "when OTEL_EXPORTER_OTLP_PROTOCOL is GRPC")
