@@ -13,8 +13,6 @@ It uses data contract YAML files to lint the data contract, connect to data sour
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
 
-<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/B1dixhgO2vQ?si=QV00Idoe_W4QyRwe" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
 [![Demo of Data Contract CLI](http://img.youtube.com/vi/B1dixhgO2vQ/0.jpg)](http://www.youtube.com/watch?v=B1dixhgO2vQ "Demo of Data Contract CLI")
 
 ## Getting started
