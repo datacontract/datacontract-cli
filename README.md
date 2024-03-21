@@ -552,6 +552,45 @@ Available import options:
    $ datacontract test --publish https://api.datamesh-manager.com/api/runs
    ```
 
+### Contract-First
+
+1. Start with a `datacontract.yaml` template.
+   ```bash
+   $ datacontract init
+   ```
+   
+2. Add examples to the `datacontract.yaml`. Do not start with the data model, although you are probably tempted to do that. Examples are the fastest way to get feedback from everybody and not loose someone in the discussion.
+
+3. Create the model based on the examples. Test the model against the examples to double check whether the model matches the examples.
+    ```bash
+    $ datacontract test --examples
+    ```
+   
+4. Add quality checks and additional type constraints one by one to the contract and make sure the examples and the actual data still adheres to the contract. Check against examples for a very fast feedback loop.
+    ```bash
+    $ datacontract test --examples
+    ```
+
+5. Fill in the terms, descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the linter.
+    ```bash
+    $ datacontract lint
+    ```
+
+6. Set up a CI pipeline that lints and tests the examples so you make sure that any changes later do not decrease the quality of the contract.
+    ```bash
+    $ datacontract lint
+    $ datacontract test --examples
+    ```
+
+7. Use the export function to start building the providing data product as well as the integration into the consuming data products.
+    ```bash
+    # data provider
+    $ datacontract export --format dbt
+    # data consumer
+    $ datacontract export --format dbt-sources
+    $ datacontract export --format dbt-staging-sql
+    ```
+
 ### Schema Evolution
 
 #### Non-breaking Changes
