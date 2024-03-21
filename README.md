@@ -13,6 +13,8 @@ It uses data contract YAML files to lint the data contract, connect to data sour
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
 
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/B1dixhgO2vQ?si=QV00Idoe_W4QyRwe" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ## Getting started
 
 Let's look at this data contract:
