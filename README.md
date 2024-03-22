@@ -528,7 +528,11 @@ Available import options:
 
 ## Best Practices
 
+We share best practices in using the Data Contract CLI.
+
 ### Data-first Approach
+
+Create a data contract based on the actual data. This is the fastest way to get started and to get feedback from the data consumers.
 
 1. Use an existing physical schema (e.g., SQL DDL) as a starting point to define your logical data model in the contract. Double check right after the import whether the actual data meets the imported logical data model. Just to be sure.
     ```bash
@@ -560,6 +564,8 @@ Available import options:
 
 ### Contract-First
 
+Create a data contract based on the requirements from use cases.
+
 1. Start with a `datacontract.yaml` template.
    ```bash
    $ datacontract init
@@ -567,7 +573,7 @@ Available import options:
    
 2. Add examples to the `datacontract.yaml`. Do not start with the data model, although you are probably tempted to do that. Examples are the fastest way to get feedback from everybody and not loose someone in the discussion.
 
-3. Create the model based on the examples. Test the model against the examples to double check whether the model matches the examples.
+3. Create the model based on the examples. Test the model against the examples to double-check whether the model matches the examples.
     ```bash
     $ datacontract test --examples
     ```
