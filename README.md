@@ -468,6 +468,7 @@ Available export options:
 | `sql`                | Export to SQL DDL                                       | ✅      |
 | `sql-query`          | Export to SQL Query                                     | ✅      |
 | `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
+| `bigquery`           | Export to BigQuery Schemas                              | TBD    |
 | `pydantic`           | Export to pydantic models                               | TBD    |
 | `html`               | Export to HTML page                                     | TBD    |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
@@ -522,6 +523,7 @@ Available import options:
 | `avro`             | Import from AVRO schemas                       | ✅     |
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `jsonschema`       | Import from JSON Schemas                       | TBD     |
+| `bigquery`         | Import from BigQuery Schemas                   | TBD     |
 | `dbt`              | Import from dbt models                         | TBD     |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
 | Missing something? | Please create an issue on GitHub               | TBD     |
