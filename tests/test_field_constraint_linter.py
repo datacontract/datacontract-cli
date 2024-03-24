@@ -1,6 +1,5 @@
 import datacontract.model.data_contract_specification as spec
-from datacontract.lint.linters.valid_constraints_linter import \
-    ValidFieldConstraintsLinter
+from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
 from datacontract.model.run import Check
 
 

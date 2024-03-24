@@ -15,15 +15,17 @@ def construct_error_check(msg: str) -> Check:
 
 success_check = Check(type="lint", name="Linter 'Quality check(s) use model'", result="passed", engine="datacontract")
 
-base_contract_sodacl = resolve.resolve_data_contract_from_location("examples/lint/datacontract_quality_schema.yaml")
+data_contract_file = "examples/lint/datacontract_quality_schema.yaml"
 
 
 def test_lint_correct_sodacl():
+    base_contract_sodacl = resolve.resolve_data_contract_from_location(data_contract_file)
     result = QualityUsesSchemaLinter().lint(base_contract_sodacl)
     assert result == [success_check]
 
 
 def test_lint_incorrect_sodacl():
+    base_contract_sodacl = resolve.resolve_data_contract_from_location(data_contract_file)
     incorrect_contract = base_contract_sodacl.model_copy(deep=True)
     incorrect_contract.quality.specification = """
       checks for tests:

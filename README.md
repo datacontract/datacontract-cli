@@ -648,7 +648,6 @@ pip install --upgrade pip setuptools wheel
 pip install -e '.[dev]'
 ruff check --fix
 ruff format --check
-cd tests/
 pytest
 ```
 
