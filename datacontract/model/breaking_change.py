@@ -1,7 +1,7 @@
+from enum import Enum
 from typing import List
 
 from pydantic import BaseModel
-from enum import Enum
 
 
 class Severity(Enum):
@@ -57,6 +57,7 @@ class BreakingChanges(BaseModel):
         content = str.join("\n\n", map(lambda x: str(x), self.breaking_changes))
 
         return headline + content
+
 
 #
 # [

@@ -16,27 +16,20 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/export/rdf/datacontract.yaml",
-        "--format", "rdf",
-        "--rdf-base", "urn:acme:"
-    ])
+    result = runner.invoke(
+        app, ["export", "./examples/export/rdf/datacontract.yaml", "--format", "rdf", "--rdf-base", "urn:acme:"]
+    )
     assert result.exit_code == 0
 
 
 def test_no_rdf_base():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/export/rdf/datacontract.yaml",
-        "--format", "rdf"
-    ])
+    result = runner.invoke(app, ["export", "./examples/export/rdf/datacontract.yaml", "--format", "rdf"])
     assert result.exit_code == 0
 
 
 def test_to_rdf():
-    data_contract_file = ("./examples/export/rdf/datacontract.yaml")
+    data_contract_file = "./examples/export/rdf/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
     expected_rdf = """
@@ -91,7 +84,7 @@ def test_to_rdf():
             dc1:unique true ] .
 
 """
-    g = Graph().parse(format='n3', data=expected_rdf)
+    g = Graph().parse(format="n3", data=expected_rdf)
 
     result = to_rdf(data_contract, "https://example.com/")
 
@@ -102,7 +95,7 @@ def test_to_rdf():
 
 
 def test_to_rdf_complex():
-    data_contract_file = ("./examples/export/rdf/datacontract-complex.yaml")
+    data_contract_file = "./examples/export/rdf/datacontract-complex.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
     expected_rdf = """
@@ -214,7 +207,7 @@ def test_to_rdf_complex():
 
 """
 
-    g = Graph().parse(format='n3', data=expected_rdf)
+    g = Graph().parse(format="n3", data=expected_rdf)
 
     result = to_rdf(data_contract, base="http://test.com/")
 
@@ -228,6 +221,6 @@ def read_file(data_contract_file):
     if not os.path.exists(data_contract_file):
         print(f"The file '{data_contract_file}' does not exist.")
         sys.exit(1)
-    with open(data_contract_file, 'r') as file:
+    with open(data_contract_file, "r") as file:
         file_content = file.read()
     return file_content

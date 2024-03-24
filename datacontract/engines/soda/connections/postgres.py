@@ -10,8 +10,8 @@ def to_postgres_soda_configuration(server):
             "type": "postgres",
             "host": server.host,
             "port": str(server.port),
-            "username": os.getenv('DATACONTRACT_POSTGRES_USERNAME'),
-            "password": os.getenv('DATACONTRACT_POSTGRES_PASSWORD'),
+            "username": os.getenv("DATACONTRACT_POSTGRES_USERNAME"),
+            "password": os.getenv("DATACONTRACT_POSTGRES_PASSWORD"),
             "database": server.database,
             "schema": server.schema_,
         }

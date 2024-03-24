@@ -6,10 +6,34 @@ from datacontract.model.data_contract_specification import \
 
 
 def is_literal(property_name):
-    return property_name in ["dataContractSpecification", "title", "version", "description", "name", "url", "type",
-                             "location", "format", "delimiter", "usage", "limitations",
-                             "billing", "noticePeriod", "required", "unique", "minLength", "maxLength", "example",
-                             "pii", "classification", "data", "enum", "minimum", "maximum", "patterns"]
+    return property_name in [
+        "dataContractSpecification",
+        "title",
+        "version",
+        "description",
+        "name",
+        "url",
+        "type",
+        "location",
+        "format",
+        "delimiter",
+        "usage",
+        "limitations",
+        "billing",
+        "noticePeriod",
+        "required",
+        "unique",
+        "minLength",
+        "maxLength",
+        "example",
+        "pii",
+        "classification",
+        "data",
+        "enum",
+        "minimum",
+        "maximum",
+        "patterns",
+    ]
 
 
 def is_uriref(property_name):
@@ -18,6 +42,7 @@ def is_uriref(property_name):
 
 def to_rdf_n3(data_contract_spec: DataContractSpecification, base) -> str:
     return to_rdf(data_contract_spec, base).serialize(format="n3")
+
 
 def to_rdf(data_contract_spec: DataContractSpecification, base) -> Graph:
     if base is not None:
@@ -59,7 +84,7 @@ def to_rdf(data_contract_spec: DataContractSpecification, base) -> Graph:
 
 def add_example(contract, example, graph, dc, dcx):
     an_example = BNode()
-    graph.add((contract, dc['example'], an_example))
+    graph.add((contract, dc["example"], an_example))
     graph.add((an_example, RDF.type, URIRef(dc + "Example")))
     for example_property in example.model_fields:
         add_triple(sub=an_example, pred=example_property, obj=example, graph=graph, dc=dc, dcx=dcx)
@@ -79,14 +104,14 @@ def add_triple(sub, pred, obj, graph, dc, dcx):
 
 def add_model(contract, model, model_name, graph, dc, dcx):
     a_model = URIRef(model_name)
-    graph.add((contract, dc['model'], a_model))
+    graph.add((contract, dc["model"], a_model))
     graph.add((a_model, dc.description, Literal(model.description)))
     graph.add((a_model, RDF.type, URIRef(dc + "Model")))
     for field_name, field in model.fields.items():
         a_field = BNode()
-        graph.add((a_model, dc['field'], a_field))
+        graph.add((a_model, dc["field"], a_field))
         graph.add((a_field, RDF.type, URIRef(dc + "Field")))
-        graph.add((a_field, dc['name'], Literal(field_name)))
+        graph.add((a_field, dc["name"], Literal(field_name)))
         for field_property in field.model_fields:
             add_triple(sub=a_field, pred=field_property, obj=field, graph=graph, dc=dc, dcx=dcx)
 

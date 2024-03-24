@@ -12,11 +12,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/export/datacontract_s3.yaml",
-        "--format", "terraform"
-    ])
+    result = runner.invoke(app, ["export", "./examples/export/datacontract_s3.yaml", "--format", "terraform"])
     assert result.exit_code == 0
 
 

@@ -13,11 +13,15 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/export/datacontract.yaml",
-        "--format", "dbt-staging-sql",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "./examples/export/datacontract.yaml",
+            "--format",
+            "dbt-staging-sql",
+        ],
+    )
     print(result.stdout)
     assert result.exit_code == 0
 
@@ -35,4 +39,3 @@ from {{ source('orders-unit-test', 'orders') }}
     result = to_dbt_staging_sql(data_contract, "orders", data_contract.models.get("orders"))
 
     assert yaml.safe_load(result) == yaml.safe_load(expected)
-

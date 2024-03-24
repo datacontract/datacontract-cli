@@ -15,11 +15,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/export/datacontract.yaml",
-        "--format", "dbt"
-    ])
+    result = runner.invoke(app, ["export", "./examples/export/datacontract.yaml", "--format", "dbt"])
     assert result.exit_code == 0
 
 
@@ -84,6 +80,6 @@ def read_file(file):
     if not os.path.exists(file):
         print(f"The file '{file}' does not exist.")
         sys.exit(1)
-    with open(file, 'r') as file:
+    with open(file, "r") as file:
         file_content = file.read()
     return file_content

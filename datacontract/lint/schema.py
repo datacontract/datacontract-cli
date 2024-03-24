@@ -7,7 +7,6 @@ from datacontract.model.exceptions import DataContractException
 
 
 def fetch_schema(location: str = None):
-
     if location is None:
         location = "https://datacontract.com/datacontract.schema.json"
 
@@ -21,8 +20,8 @@ def fetch_schema(location: str = None):
                 name=f"Reading schema from {location}",
                 reason=f"The file '{location}' does not exist.",
                 engine="datacontract",
-                result="error"
+                result="error",
             )
-        with open(location, 'r') as file:
+        with open(location, "r") as file:
             file_content = file.read()
         return json.loads(file_content)

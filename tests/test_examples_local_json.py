@@ -19,5 +19,3 @@ def _test_local_json():
     run = data_contract.test()
     print(run)
     assert run.result == "passed"
-
-

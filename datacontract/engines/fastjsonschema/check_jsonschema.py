@@ -25,7 +25,7 @@ def validate_json_stream(model_name, validate, json_stream):
             model=model_name,
             reason=e.message,
             engine="jsonschema",
-            original_exception=e
+            original_exception=e,
         )
 
 
@@ -79,16 +79,16 @@ def process_local_file(run, server, model_name, validate):
         return process_directory(run, path, server, model_name, validate)
     else:
         logging.info(f"Processing file {path}")
-        with open(path, 'r') as file:
+        with open(path, "r") as file:
             process_json_file(run, model_name, validate, file, server.delimiter)
 
 
 def process_directory(run, path, server, model_name, validate):
     success = True
     for filename in os.listdir(path):
-        if filename.endswith('.json'):  # or make this a parameter
+        if filename.endswith(".json"):  # or make this a parameter
             file_path = os.path.join(path, filename)
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 if not process_json_file(run, model_name, validate, file, server.delimiter):
                     success = False
                     break
@@ -127,13 +127,15 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
 
     # Early exit conditions
     if server.format != "json":
-        run.checks.append(Check(
-            type="schema",
-            name="Check that JSON has valid schema",
-            result="warning",
-            reason="Server format is not 'json'. Skip validating jsonschema.",
-            engine="jsonschema",
-        ))
+        run.checks.append(
+            Check(
+                type="schema",
+                name="Check that JSON has valid schema",
+                result="warning",
+                reason="Server format is not 'json'. Skip validating jsonschema.",
+                engine="jsonschema",
+            )
+        )
         run.log_warn("jsonschema: Server format is not 'json'. Skip jsonschema checks.")
         return
 
@@ -155,21 +157,25 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
         elif server.type == "s3":
             process_s3_file(server, model_name, validate)
         else:
-            run.checks.append(Check(
+            run.checks.append(
+                Check(
+                    type="schema",
+                    name="Check that JSON has valid schema",
+                    model=model_name,
+                    result="warn",
+                    reason=f"Server type {server.type} not supported",
+                    engine="jsonschema",
+                )
+            )
+            return
+
+        run.checks.append(
+            Check(
                 type="schema",
                 name="Check that JSON has valid schema",
                 model=model_name,
-                result="warn",
-                reason=f"Server type {server.type} not supported",
+                result="passed",
+                reason="All JSON entries are valid.",
                 engine="jsonschema",
-            ))
-            return
-
-        run.checks.append(Check(
-            type="schema",
-            name="Check that JSON has valid schema",
-            model=model_name,
-            result="passed",
-            reason="All JSON entries are valid.",
-            engine="jsonschema",
-        ))
+            )
+        )

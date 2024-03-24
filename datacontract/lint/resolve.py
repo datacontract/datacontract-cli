@@ -17,7 +17,7 @@ def resolve_data_contract(
     data_contract_str: str = None,
     data_contract: DataContractSpecification = None,
     schema_location: str = None,
-    inline_definitions: bool = False
+    inline_definitions: bool = False,
 ) -> DataContractSpecification:
     if data_contract_location is not None:
         return resolve_data_contract_from_location(data_contract_location, schema_location, inline_definitions)
@@ -36,8 +36,7 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None,
-    inline_definitions: bool = False
+    location, schema_location: str = None, inline_definitions: bool = False
 ) -> DataContractSpecification:
     if location.startswith("http://") or location.startswith("https://"):
         data_contract_str = fetch_resource(location)
@@ -57,10 +56,9 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
             field.ref_obj = definition
 
             for field_name in field.model_fields.keys():
-                if (field_name in definition.model_fields_set and
-                    field_name not in field.model_fields_set):
-                    setattr(field, field_name,
-                            getattr(definition, field_name))
+                if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
+                    setattr(field, field_name, getattr(definition, field_name))
+
 
 def resolve_ref(ref, definitions) -> Definition:
     if ref.startswith("http://") or ref.startswith("https://"):
@@ -82,8 +80,7 @@ def resolve_ref(ref, definitions) -> Definition:
 
 
 def resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None,
-    inline_definitions: bool = False
+    data_contract_str, schema_location: str = None, inline_definitions: bool = False
 ) -> DataContractSpecification:
     data_contract_yaml_dict = to_yaml(data_contract_str)
     validate(data_contract_yaml_dict, schema_location)

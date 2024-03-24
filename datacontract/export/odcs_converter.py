@@ -27,10 +27,12 @@ def to_odcs_yaml(data_contract_spec: DataContractSpecification):
         odcs["description"] = {
             "purpose": None,
             "usage": data_contract_spec.terms.usage.strip() if data_contract_spec.terms.usage is not None else None,
-            "limitations": data_contract_spec.terms.limitations.strip() if data_contract_spec.terms.limitations is not None else None,
+            "limitations": data_contract_spec.terms.limitations.strip()
+            if data_contract_spec.terms.limitations is not None
+            else None,
         }
 
-    odcs["type"] = "tables" # required, TODO read from models.type?
+    odcs["type"] = "tables"  # required, TODO read from models.type?
     odcs["dataset"] = []
 
     for model_key, model_value in data_contract_spec.models.items():
@@ -62,9 +64,7 @@ def to_columns(fields: Dict[str, Field]) -> list:
 
 
 def to_column(field_name: str, field: Field) -> dict:
-    column = {
-        "column": field_name
-    }
+    column = {"column": field_name}
     if field.type is not None:
         column["logicalType"] = field.type
         column["physicalType"] = field.type
@@ -100,5 +100,3 @@ def to_column(field_name: str, field: Field) -> dict:
 
     # todo enum
     return column
-
-

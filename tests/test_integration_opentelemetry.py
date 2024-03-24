@@ -1,12 +1,14 @@
 import logging
 from uuid import uuid4
 
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter as OTLPgRPCMetricExporter
-
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import \
+    OTLPMetricExporter as OTLPgRPCMetricExporter
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import \
+    OTLPMetricExporter
 from opentelemetry.metrics import Observation
 
-from datacontract.integration.publish_opentelemetry import _to_observation, Telemetry
+from datacontract.integration.publish_opentelemetry import _to_observation, \
+    Telemetry
 from datacontract.model.run import Run
 
 logging.basicConfig(level=logging.DEBUG, force=True)
@@ -23,10 +25,13 @@ def test_convert_to_observation():
         checks=[],
         logs=[],
     )
-    expected = Observation(value=0, attributes={
-        "datacontract.id": "datacontract-id-1234",
-        "datacontract.version": "1.0.0",
-    })
+    expected = Observation(
+        value=0,
+        attributes={
+            "datacontract.id": "datacontract-id-1234",
+            "datacontract.version": "1.0.0",
+        },
+    )
 
     actual = _to_observation(run)
 
@@ -36,9 +41,9 @@ def test_convert_to_observation():
 def test_http_exporter_chosen_without_env():
     telemetry = Telemetry()
 
-    assert isinstance(telemetry.remote_exporter,
-                      OTLPMetricExporter), ("Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is "
-                                            "not set")
+    assert isinstance(telemetry.remote_exporter, OTLPMetricExporter), (
+        "Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is " "not set"
+    )
 
 
 def test_http_exporter_chosen_with_env_httpprotobuf(monkeypatch):
@@ -46,9 +51,9 @@ def test_http_exporter_chosen_with_env_httpprotobuf(monkeypatch):
 
     telemetry = Telemetry()
 
-    assert isinstance(telemetry.remote_exporter,
-                      OTLPMetricExporter), ("Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is "
-                                            "http/protobuf")
+    assert isinstance(telemetry.remote_exporter, OTLPMetricExporter), (
+        "Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is " "http/protobuf"
+    )
 
 
 def test_http_exporter_chosen_with_env_httpjson(monkeypatch):
@@ -56,9 +61,9 @@ def test_http_exporter_chosen_with_env_httpjson(monkeypatch):
 
     telemetry = Telemetry()
 
-    assert isinstance(telemetry.remote_exporter,
-                      OTLPMetricExporter), ("Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is "
-                                            "http/json")
+    assert isinstance(telemetry.remote_exporter, OTLPMetricExporter), (
+        "Should use OTLPMetricExporter when OTEL_EXPORTER_OTLP_PROTOCOL is " "http/json"
+    )
 
 
 def test_grpc_exporter_chosen_with_env_GRPC(monkeypatch):
@@ -66,6 +71,6 @@ def test_grpc_exporter_chosen_with_env_GRPC(monkeypatch):
 
     telemetry = Telemetry()
 
-    assert isinstance(telemetry.remote_exporter,
-                      OTLPgRPCMetricExporter), ("Should use OTLPMetricExporter from gRPC package "
-                                                "when OTEL_EXPORTER_OTLP_PROTOCOL is GRPC")
+    assert isinstance(telemetry.remote_exporter, OTLPgRPCMetricExporter), (
+        "Should use OTLPMetricExporter from gRPC package " "when OTEL_EXPORTER_OTLP_PROTOCOL is GRPC"
+    )

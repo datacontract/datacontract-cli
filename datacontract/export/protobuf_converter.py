@@ -1,7 +1,4 @@
-
-
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 def to_protobuf(data_contract_spec: DataContractSpecification):
@@ -22,7 +19,7 @@ def _to_protobuf_message_name(model_name):
     return model_name[0].upper() + model_name[1:]
 
 
-def to_protobuf_message(model_name, fields, description, indent_level:int = 0):
+def to_protobuf_message(model_name, fields, description, indent_level: int = 0):
     result = ""
 
     if description is not None:
@@ -32,8 +29,15 @@ def to_protobuf_message(model_name, fields, description, indent_level:int = 0):
     number = 1
     for field_name, field in fields.items():
         if field.type in ["object", "record", "struct"]:
-            fields_protobuf += "\n".join(
-                map(lambda x: "  " + x, to_protobuf_message(field_name, field.fields, field.description, indent_level + 1).splitlines())) + "\n"
+            fields_protobuf += (
+                "\n".join(
+                    map(
+                        lambda x: "  " + x,
+                        to_protobuf_message(field_name, field.fields, field.description, indent_level + 1).splitlines(),
+                    )
+                )
+                + "\n"
+            )
 
         fields_protobuf += to_protobuf_field(field_name, field, field.description, number, 1) + "\n"
         number += 1
@@ -42,7 +46,7 @@ def to_protobuf_message(model_name, fields, description, indent_level:int = 0):
     return result
 
 
-def to_protobuf_field(field_name, field, description, number:int, indent_level:int = 0):
+def to_protobuf_field(field_name, field, description, number: int, indent_level: int = 0):
     optional = ""
     if not field.required:
         optional = "optional "

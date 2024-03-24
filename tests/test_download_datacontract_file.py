@@ -22,9 +22,7 @@ def test_download_datacontract_file_with_defaults():
 def test_download_datacontract_file_from_custom_url():
     _setup()
 
-    runner.invoke(app, ["init",
-                        _datacontract_test_path,
-                        "--template", _custom_template_url])
+    runner.invoke(app, ["init", _datacontract_test_path, "--template", _custom_template_url])
 
     _compare_test_datacontract_with(_custom_template_url)
 
@@ -33,10 +31,8 @@ def test_download_datacontract_file_file_exists():
     _setup()
 
     # invoke twice to produce error
-    runner.invoke(app, ["init",_datacontract_test_path])
-    result = runner.invoke(app, ["init",
-                                _datacontract_test_path,
-                                 "--template", _custom_template_url])
+    runner.invoke(app, ["init", _datacontract_test_path])
+    result = runner.invoke(app, ["init", _datacontract_test_path, "--template", _custom_template_url])
 
     assert result.exit_code == 1
     assert "File already exists, use --overwrite to overwrite" in result.stdout
@@ -46,10 +42,8 @@ def test_download_datacontract_file_file_exists():
 def test_download_datacontract_file_overwrite_file():
     _setup()
 
-    runner.invoke(app, ["init",_datacontract_test_path])
-    result = runner.invoke(app, ["init",_datacontract_test_path,
-                                 "--template", _custom_template_url,
-                                 "--overwrite"])
+    runner.invoke(app, ["init", _datacontract_test_path])
+    result = runner.invoke(app, ["init", _datacontract_test_path, "--template", _custom_template_url, "--overwrite"])
 
     assert result.exit_code == 0
     _compare_test_datacontract_with(_custom_template_url)

@@ -6,7 +6,7 @@ from datacontract.model.data_contract_specification import \
 
 
 def test_to_sodacl():
-    data_contract_specification_str = '''
+    data_contract_specification_str = """
 dataContractSpecification: 0.9.1
 models:
   orders:
@@ -27,9 +27,9 @@ quality:
       checks for line_items:
          - row_count > 10:
              name: Have at lease 10 line items
-    '''
+    """
 
-    expected = '''
+    expected = """
     checks for orders:
       - schema:
           name: Check that field order_id is present
@@ -60,11 +60,10 @@ quality:
     checks for line_items:
       - row_count > 10:
           name: Have at lease 10 line items
-    '''
+    """
     data = yaml.safe_load(data_contract_specification_str)
     data_contract_specification = DataContractSpecification(**data)
 
     result = to_sodacl_yaml(data_contract_specification)
 
     assert yaml.safe_load(result) == yaml.safe_load(expected)
-

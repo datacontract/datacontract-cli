@@ -22,13 +22,13 @@ class Server(pyd.BaseModel):
     location: str = None
     account: str = None
     database: str = None
-    schema_: str = pyd.Field(default=None, alias='schema')
+    schema_: str = pyd.Field(default=None, alias="schema")
     host: str = None
     port: int = None
     catalog: str = None
     topic: str = None
-    http_path: str = None # Use ENV variable
-    token: str = None     # Use ENV variable
+    http_path: str = None  # Use ENV variable
+    token: str = None  # Use ENV variable
     dataProductId: str = None
     outputPortId: str = None
 
@@ -81,8 +81,8 @@ class Field(pyd.BaseModel):
     exclusiveMaximum: int = None
     enum: List[str] = []
     tags: List[str] = []
-    fields: Dict[str, 'Field'] = {}
-    items: 'Field' = None
+    fields: Dict[str, "Field"] = {}
+    items: "Field" = None
 
 
 class Model(pyd.BaseModel):
@@ -126,8 +126,8 @@ class DataContractSpecification(pyd.BaseModel):
     @classmethod
     def from_file(cls, file):
         if not os.path.exists(file):
-            raise(f"The file '{file}' does not exist.")
-        with open(file, 'r') as file:
+            raise (f"The file '{file}' does not exist.")
+        with open(file, "r") as file:
             file_content = file.read()
         return DataContractSpecification.from_string(file_content)
 

@@ -8,6 +8,7 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_postgres(field)
     return str(type)
 
+
 # snowflake data types:
 # https://docs.snowflake.com/en/sql-reference/data-types.html
 def convert_to_snowflake(field) -> None | str:
@@ -48,17 +49,16 @@ def convert_to_snowflake(field) -> None | str:
     return None
 
 
-
 # https://www.postgresql.org/docs/current/datatype.html
 # Using the name whenever possible
-def convert_type_to_postgres(field : Field) -> None | str:
+def convert_type_to_postgres(field: Field) -> None | str:
     type = field.type
     if type is None:
         return None
     if type.lower() in ["string", "varchar", "text"]:
         if field.format == "uuid":
             return "uuid"
-        return "text" # STRING does not exist, TEXT and VARCHAR are all the same in postrges
+        return "text"  # STRING does not exist, TEXT and VARCHAR are all the same in postrges
     if type.lower() in ["timestamp", "timestamp_tz"]:
         return "timestamptz"
     if type.lower() in ["timestamp_ntz"]:

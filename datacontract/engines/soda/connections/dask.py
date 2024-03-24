@@ -1,4 +1,3 @@
-
 # def add_s3_connection_dask_json(data_contract, scan, server):
 #     s3_access_key_id = os.getenv('DATACONTRACT_S3_ACCESS_KEY_ID')
 #     s3_secret_access_key = os.getenv('DATACONTRACT_S3_SECRET_ACCESS_KEY')

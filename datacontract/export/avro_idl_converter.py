@@ -1,11 +1,13 @@
-from datacontract.model.data_contract_specification import DataContractSpecification, Field
-from datacontract.lint.resolve import inline_definitions_into_data_contract
+import typing
 from dataclasses import dataclass
 from enum import Enum
-import typing
 from io import StringIO
 
+from datacontract.lint.resolve import inline_definitions_into_data_contract
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification, Field
 from datacontract.model.exceptions import DataContractException
+
 
 def to_avro_idl(contract: DataContractSpecification) -> str:
     """Serialize the provided data contract specification into an Avro IDL string.
@@ -18,6 +20,7 @@ def to_avro_idl(contract: DataContractSpecification) -> str:
     to_avro_idl_stream(contract, stream)
     return stream.getvalue()
 
+
 def to_avro_idl_stream(contract: DataContractSpecification, stream: typing.TextIO):
     """Serialize the provided data contract specification into Avro IDL."""
     ir = _contract_to_avro_idl_ir(contract)
@@ -27,6 +30,7 @@ def to_avro_idl_stream(contract: DataContractSpecification, stream: typing.TextI
     for model_type in ir.model_types:
         _write_model_type(model_type, stream)
     stream.write("}\n")
+
 
 class AvroPrimitiveType(Enum):
     int = "int"
@@ -38,11 +42,13 @@ class AvroPrimitiveType(Enum):
     null = "null"
     bytes = "bytes"
 
+
 class AvroLogicalType(Enum):
     decimal = "decimal"
     date = "date"
     time_ms = "time_ms"
     timestamp_ms = "timestamp_ms"
+
 
 @dataclass
 class AvroField:
@@ -50,17 +56,21 @@ class AvroField:
     required: bool
     description: typing.Optional[str]
 
+
 @dataclass
 class AvroPrimitiveField(AvroField):
     type: typing.Union[AvroPrimitiveType, AvroLogicalType]
+
 
 @dataclass
 class AvroComplexField(AvroField):
     subfields: list[AvroField]
 
+
 @dataclass
 class AvroArrayField(AvroField):
     type: AvroField
+
 
 @dataclass
 class AvroModelType:
@@ -68,19 +78,35 @@ class AvroModelType:
     description: typing.Optional[str]
     fields: list[AvroField]
 
+
 @dataclass
 class AvroIDLProtocol:
     name: typing.Optional[str]
     description: typing.Optional[str]
     model_types: list[AvroModelType]
 
-avro_primitive_types = set(["string", "text", "varchar",
-                            "float", "double", "int",
-                            "integer", "long", "bigint",
-                            "boolean", "timestamp_ntz",
-                            "timestamp", "timestamp_tz",
-                            "date", "bytes",
-                            "null"])
+
+avro_primitive_types = set(
+    [
+        "string",
+        "text",
+        "varchar",
+        "float",
+        "double",
+        "int",
+        "integer",
+        "long",
+        "bigint",
+        "boolean",
+        "timestamp_ntz",
+        "timestamp",
+        "timestamp_tz",
+        "date",
+        "bytes",
+        "null",
+    ]
+)
+
 
 def _to_avro_primitive_logical_type(field_name: str, field: Field) -> AvroPrimitiveField:
     result = AvroPrimitiveField(field_name, field.required, field.description, AvroPrimitiveType.string)
@@ -114,9 +140,10 @@ def _to_avro_primitive_logical_type(field_name: str, field: Field) -> AvroPrimit
                 model=field,
                 reason="Unknown field type {field.type}",
                 result="failed",
-                message="Avro IDL type conversion failed."
+                message="Avro IDL type conversion failed.",
             )
     return result
+
 
 def _to_avro_idl_type(field_name: str, field: Field) -> AvroField:
     if field.type in avro_primitive_types:
@@ -125,17 +152,14 @@ def _to_avro_idl_type(field_name: str, field: Field) -> AvroField:
         match field.type:
             case "array":
                 return AvroArrayField(
-                    field_name,
-                    field.required,
-                    field.description,
-                    _to_avro_idl_type(field_name, field.items)
+                    field_name, field.required, field.description, _to_avro_idl_type(field_name, field.items)
                 )
             case "object" | "record" | "struct":
                 return AvroComplexField(
                     field_name,
                     field.required,
                     field.description,
-                    [_to_avro_idl_type(field_name, field) for (field_name, field) in field.fields.items()]
+                    [_to_avro_idl_type(field_name, field) for (field_name, field) in field.fields.items()],
                 )
             case _:
                 raise DataContractException(
@@ -144,55 +168,54 @@ def _to_avro_idl_type(field_name: str, field: Field) -> AvroField:
                     model=type,
                     reason="Unknown Data Contract field type",
                     result="failed",
-                    message="Avro IDL type conversion failed."
+                    message="Avro IDL type conversion failed.",
                 )
 
 
 def _generate_field_types(contract: DataContractSpecification) -> list[AvroField]:
     result = []
-    for (_, model) in contract.models.items():
-        for (field_name, field) in model.fields.items():
+    for _, model in contract.models.items():
+        for field_name, field in model.fields.items():
             result.append(_to_avro_idl_type(field_name, field))
     return result
 
+
 def generate_model_types(contract: DataContractSpecification) -> list[AvroModelType]:
     result = []
-    for (model_name, model) in contract.models.items():
-        result.append(AvroModelType(
-            name=model_name,
-            description=model.description,
-            fields=_generate_field_types(contract)
-        ))
+    for model_name, model in contract.models.items():
+        result.append(
+            AvroModelType(name=model_name, description=model.description, fields=_generate_field_types(contract))
+        )
     return result
 
+
 def _model_name_to_identifier(model_name: str):
-    return "".join([word.title() for word in  model_name.split()])
+    return "".join([word.title() for word in model_name.split()])
+
 
 def _contract_to_avro_idl_ir(contract: DataContractSpecification) -> AvroIDLProtocol:
-
     """Convert models into an intermediate representation for later serialization into Avro IDL.
 
-      Each model is converted to a record containing a field for each model field.
-      """
+    Each model is converted to a record containing a field for each model field.
+    """
     inlined_contract = contract.model_copy()
     inline_definitions_into_data_contract(inlined_contract)
-    protocol_name = (_model_name_to_identifier(contract.info.title)
-                     if contract.info and contract.info.title
-                     else None)
-    description = (contract.info.description if
-                   contract.info and contract.info.description
-                   else None)
-    return AvroIDLProtocol(name=protocol_name,
-                           description=description,
-                           model_types=generate_model_types(inlined_contract))
+    protocol_name = _model_name_to_identifier(contract.info.title) if contract.info and contract.info.title else None
+    description = contract.info.description if contract.info and contract.info.description else None
+    return AvroIDLProtocol(
+        name=protocol_name, description=description, model_types=generate_model_types(inlined_contract)
+    )
+
 
 def _write_indent(indent: int, stream: typing.TextIO):
     stream.write("    " * indent)
+
 
 def _write_field_description(field: AvroField, indent: int, stream: typing.TextIO):
     if field.description:
         _write_indent(indent, stream)
         stream.write(f"/** {field.description} */\n")
+
 
 def _write_field_type_definition(field: AvroField, indent: int, stream: typing.TextIO) -> str:
     # Write any extra information (such as record type definition) and return
@@ -215,7 +238,7 @@ def _write_field_type_definition(field: AvroField, indent: int, stream: typing.T
             for subfield in subfields:
                 subfield_types.append(_write_field_type_definition(subfield, indent + 1, stream))
             # Reference all defined record types.
-            for (field, subfield_type) in zip(field.subfields, subfield_types):
+            for field, subfield_type in zip(field.subfields, subfield_types):
                 _write_field_description(field, indent + 1, stream)
                 _write_indent(indent + 1, stream)
                 stream.write(f"{subfield_type} {field.name};\n")
@@ -234,14 +257,14 @@ def _write_field_type_definition(field: AvroField, indent: int, stream: typing.T
         case _:
             raise RuntimeError("Unknown Avro field type {field}")
 
-def _write_field(field: AvroField,
-                indent,
-                stream: typing.TextIO):
+
+def _write_field(field: AvroField, indent, stream: typing.TextIO):
     # Start of recursion.
     typename = _write_field_type_definition(field, indent, stream)
     _write_field_description(field, indent, stream)
     _write_indent(indent, stream)
     stream.write(f"{typename} {field.name};\n")
+
 
 def _write_model_type(model: AvroModelType, stream: typing.TextIO):
     # Called once for each model

@@ -14,18 +14,23 @@ sql_file_path = "examples/postgres/data/data.sql"
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "import",
-        "--format", "sql",
-        "--source", sql_file_path,
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "import",
+            "--format",
+            "sql",
+            "--source",
+            sql_file_path,
+        ],
+    )
     assert result.exit_code == 0
 
 
 def test_import_sql():
     result = DataContract().import_from_source("sql", sql_file_path)
 
-    expected = '''
+    expected = """
 dataContractSpecification: 0.9.3
 id: my-data-contract-id
 info:
@@ -46,7 +51,7 @@ models:
         required: true
       field_three:
         type: timestamp
-    '''
+    """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings

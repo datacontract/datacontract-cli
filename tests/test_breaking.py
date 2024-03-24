@@ -11,42 +11,71 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_no_breaking_changes():
-    result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-fields-v2.yaml",
-                                 "./examples/breaking/datacontract-fields-v2.yaml"])
+    result = runner.invoke(
+        app,
+        [
+            "breaking",
+            "./examples/breaking/datacontract-fields-v2.yaml",
+            "./examples/breaking/datacontract-fields-v2.yaml",
+        ],
+    )
     assert result.exit_code == 0
     assert "0 breaking changes: 0 error, 0 warning\n" in result.stdout
 
 
 def test_quality_added():
-    result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-quality-v1.yaml",
-                                 "./examples/breaking/datacontract-quality-v2.yaml"])
+    result = runner.invoke(
+        app,
+        [
+            "breaking",
+            "./examples/breaking/datacontract-quality-v1.yaml",
+            "./examples/breaking/datacontract-quality-v2.yaml",
+        ],
+    )
     assert result.exit_code == 0
     assert "0 breaking changes: 0 error, 0 warning\n" in result.stdout
 
 
 def test_quality_removed():
-    result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-quality-v2.yaml",
-                                 "./examples/breaking/datacontract-quality-v1.yaml"])
+    result = runner.invoke(
+        app,
+        [
+            "breaking",
+            "./examples/breaking/datacontract-quality-v2.yaml",
+            "./examples/breaking/datacontract-quality-v1.yaml",
+        ],
+    )
     assert result.exit_code == 0
     assert "1 breaking changes: 0 error, 1 warning\n" in result.stdout
 
 
 def test_quality_updated():
-    result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-quality-v2.yaml",
-                                 "./examples/breaking/datacontract-quality-v3.yaml"])
+    result = runner.invoke(
+        app,
+        [
+            "breaking",
+            "./examples/breaking/datacontract-quality-v2.yaml",
+            "./examples/breaking/datacontract-quality-v3.yaml",
+        ],
+    )
     assert result.exit_code == 0
     assert "2 breaking changes: 0 error, 2 warning\n" in result.stdout
 
 
 class TestModelsAdded:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-models-v1.yaml",
-                                     "./examples/breaking/datacontract-models-v2.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-models-v1.yaml",
+                "./examples/breaking/datacontract-models-v2.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -62,14 +91,19 @@ class TestModelsAdded:
 
 
 class TestModelsRemoved:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-models-v2.yaml",
-                                     "./examples/breaking/datacontract-models-v1.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-models-v2.yaml",
+                "./examples/breaking/datacontract-models-v1.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -84,14 +118,19 @@ class TestModelsRemoved:
 
 
 class TestModelsUpdated:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-models-v2.yaml",
-                                     "./examples/breaking/datacontract-models-v3.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-models-v2.yaml",
+                "./examples/breaking/datacontract-models-v3.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -106,14 +145,19 @@ class TestModelsUpdated:
 
 
 class TestFieldsAdded:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-fields-v1.yaml",
-                                     "./examples/breaking/datacontract-fields-v2.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-fields-v1.yaml",
+                "./examples/breaking/datacontract-fields-v2.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -130,13 +174,19 @@ class TestFieldsAdded:
 
 
 class TestFieldsRemoved:
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-fields-v2.yaml",
-                                     "./examples/breaking/datacontract-fields-v1.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-fields-v2.yaml",
+                "./examples/breaking/datacontract-fields-v1.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -153,14 +203,19 @@ class TestFieldsRemoved:
 
 
 class TestFieldsUpdated:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-fields-v2.yaml",
-                                     "./examples/breaking/datacontract-fields-v3.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-fields-v2.yaml",
+                "./examples/breaking/datacontract-fields-v3.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -176,14 +231,19 @@ class TestFieldsUpdated:
 
 
 class TestDefinitionAdded:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-definitions-v1.yaml",
-                                     "./examples/breaking/datacontract-definitions-v2.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-definitions-v1.yaml",
+                "./examples/breaking/datacontract-definitions-v2.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -199,14 +259,19 @@ class TestDefinitionAdded:
 
 
 class TestDefinitionRemoved:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-definitions-v2.yaml",
-                                     "./examples/breaking/datacontract-definitions-v1.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-definitions-v2.yaml",
+                "./examples/breaking/datacontract-definitions-v1.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 
@@ -223,14 +288,19 @@ class TestDefinitionRemoved:
 
 
 class TestDefinitionUpdated:
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def result(self):
-        result = runner.invoke(app, ["breaking", "./examples/breaking/datacontract-definitions-v2.yaml",
-                                     "./examples/breaking/datacontract-definitions-v3.yaml"])
+        result = runner.invoke(
+            app,
+            [
+                "breaking",
+                "./examples/breaking/datacontract-definitions-v2.yaml",
+                "./examples/breaking/datacontract-definitions-v3.yaml",
+            ],
+        )
         return result
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def output(self, result):
         return result.stdout
 

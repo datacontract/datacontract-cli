@@ -1,6 +1,5 @@
 import datacontract.lint.resolve as resolve
-from datacontract.lint.linters.quality_schema_linter import \
-    QualityUsesSchemaLinter
+from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
 from datacontract.model.run import Check
 
 
@@ -14,15 +13,9 @@ def construct_error_check(msg: str) -> Check:
     )
 
 
-success_check = Check(
-    type="lint",
-    name="Linter 'Quality check(s) use model'",
-    result="passed",
-    engine="datacontract"
-)
+success_check = Check(type="lint", name="Linter 'Quality check(s) use model'", result="passed", engine="datacontract")
 
-base_contract_sodacl = resolve.resolve_data_contract_from_location(
-    "examples/lint/datacontract_quality_schema.yaml")
+base_contract_sodacl = resolve.resolve_data_contract_from_location("examples/lint/datacontract_quality_schema.yaml")
 
 
 def test_lint_correct_sodacl():

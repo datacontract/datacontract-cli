@@ -1,6 +1,6 @@
 import logging
-import yaml
 
+import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -13,12 +13,9 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/export/datacontract.yaml",
-        "--format", "dbt-sources",
-        "--server", "production"
-    ])
+    result = runner.invoke(
+        app, ["export", "./examples/export/datacontract.yaml", "--format", "dbt-sources", "--server", "production"]
+    )
     print(result.stdout)
     assert result.exit_code == 0
 
@@ -78,4 +75,3 @@ sources:
     result = to_dbt_sources_yaml(data_contract, "production")
 
     assert yaml.safe_load(result) == yaml.safe_load(expected_dbt_model)
-

@@ -1,13 +1,16 @@
 import re
 
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification
 from ..lint import Linter, LinterResult
-from datacontract.model.data_contract_specification import DataContractSpecification
+
 
 class FieldPatternLinter(Linter):
     """Checks that all patterns defined for fields are correct Python regex
-      syntax.
+    syntax.
 
     """
+
     @property
     def name(self):
         return "Field pattern is correct regex"
@@ -16,13 +19,10 @@ class FieldPatternLinter(Linter):
     def id(self) -> str:
         return "field-pattern"
 
-    def lint_implementation(
-        self,
-        contract: DataContractSpecification
-    ) -> LinterResult:
+    def lint_implementation(self, contract: DataContractSpecification) -> LinterResult:
         result = LinterResult()
-        for (model_name, model) in contract.models.items():
-            for (field_name, field) in model.fields.items():
+        for model_name, model in contract.models.items():
+            for field_name, field in model.fields.items():
                 if field.pattern:
                     try:
                         re.compile(field.pattern)

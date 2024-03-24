@@ -14,9 +14,11 @@ def yield_s3_files(s3_endpoint_url, s3_location):
 
 
 def s3_fs(s3_endpoint_url):
-    aws_access_key_id = os.getenv('DATACONTRACT_S3_ACCESS_KEY_ID')
-    aws_secret_access_key = os.getenv('DATACONTRACT_S3_SECRET_ACCESS_KEY')
-    return s3fs.S3FileSystem(key=aws_access_key_id,
-                             secret=aws_secret_access_key,
-                             anon=aws_access_key_id is None,
-                             client_kwargs={'endpoint_url': s3_endpoint_url})
+    aws_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
+    aws_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
+    return s3fs.S3FileSystem(
+        key=aws_access_key_id,
+        secret=aws_secret_access_key,
+        anon=aws_access_key_id is None,
+        client_kwargs={"endpoint_url": s3_endpoint_url},
+    )

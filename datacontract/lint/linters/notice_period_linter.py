@@ -27,17 +27,13 @@ class NoticePeriodLinter(Linter):
           (:?[0-9\.,]+M)? # Number of minutes
           (:?[0-9\.,]+S)? # Number of seconds
         )?
-        """, re.VERBOSE
-        )
-    datetime_basic = re.compile(
-        r"P\d{8}T\d{6}")
-    datetime_extended = re.compile(
-        r"P\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
+        """,
+        re.VERBOSE,
+    )
+    datetime_basic = re.compile(r"P\d{8}T\d{6}")
+    datetime_extended = re.compile(r"P\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 
-    def lint_implementation(
-        self,
-        contract: DataContractSpecification
-    ) -> LinterResult:
+    def lint_implementation(self, contract: DataContractSpecification) -> LinterResult:
         """Check whether the notice period is specified using ISO8601 duration syntax."""
         if not contract.terms:
             return LinterResult.cautious("No terms defined.")
@@ -45,17 +41,15 @@ class NoticePeriodLinter(Linter):
         if not period:
             return LinterResult.cautious("No notice period defined.")
         if not period.startswith("P"):
-            return LinterResult.erroneous(
-                f"Notice period '{period}' is not a valid"
-                 "ISO8601 duration.")
+            return LinterResult.erroneous(f"Notice period '{period}' is not a valid" "ISO8601 duration.")
         if period == "P":
             return LinterResult.erroneous(
-                "Notice period 'P' is not a valid"
-                 "ISO8601 duration, requires at least one"
-                 "duration to be specified.")
-        if (not self.simple.fullmatch(period) and
-            not self.datetime_basic.fullmatch(period) and
-            not self.datetime_extended.fullmatch(period)):
-            return LinterResult.erroneous(
-                f"Notice period '{period}' is not a valid ISO8601 duration.")
+                "Notice period 'P' is not a valid" "ISO8601 duration, requires at least one" "duration to be specified."
+            )
+        if (
+            not self.simple.fullmatch(period)
+            and not self.datetime_basic.fullmatch(period)
+            and not self.datetime_extended.fullmatch(period)
+        ):
+            return LinterResult.erroneous(f"Notice period '{period}' is not a valid ISO8601 duration.")
         return LinterResult()

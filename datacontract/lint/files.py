@@ -10,8 +10,8 @@ def read_file(path):
             name=f"Reading data contract from {path}",
             reason=f"The file '{path}' does not exist.",
             engine="datacontract",
-            result="error"
+            result="error",
         )
-    with open(path, 'r') as file:
+    with open(path, "r") as file:
         file_content = file.read()
     return file_content

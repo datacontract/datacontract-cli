@@ -21,4 +21,3 @@ runner = CliRunner()
 #     assert run.result == "passed"
 #     assert len(run.checks) == 4
 #     assert all(check.result == "passed" for check in run.checks)
-

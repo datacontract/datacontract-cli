@@ -1,6 +1,7 @@
+import re
+
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
-import re
 
 
 def to_terraform(data_contract_spec: DataContractSpecification, server_id: str = None) -> str:
@@ -18,7 +19,7 @@ def to_terraform(data_contract_spec: DataContractSpecification, server_id: str =
     return result.strip()
 
 
-def server_to_terraform_resource(data_contract_spec, result, server : Server, server_name):
+def server_to_terraform_resource(data_contract_spec, result, server: Server, server_name):
     tag_data_contract = data_contract_spec.id
     tag_name = data_contract_spec.info.title
     tag_server = server_name
@@ -60,7 +61,7 @@ def extract_bucket_name(server) -> str | None:
     if server.type == "s3":
         s3_url = server.location
         # Regular expression to match the S3 bucket name
-        match = re.search(r's3://([^/]+)/', s3_url)
+        match = re.search(r"s3://([^/]+)/", s3_url)
         if match:
             # Return the first group (bucket name)
             return match.group(1)

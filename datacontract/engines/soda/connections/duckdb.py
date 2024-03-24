@@ -15,7 +15,7 @@ def get_duckdb_connection(data_contract, server):
     for model_name in data_contract.models:
         model_path = path
         if "{model}" in model_path:
-            model_path = model_path.format(model = model_name)
+            model_path = model_path.format(model=model_name)
         logging.info(f"Creating table {model_name} for {model_path}")
 
         if server.format == "json":
@@ -39,9 +39,9 @@ def get_duckdb_connection(data_contract, server):
 
 
 def setup_s3_connection(con, server):
-    s3_region = os.getenv('DATACONTRACT_S3_REGION')
-    s3_access_key_id = os.getenv('DATACONTRACT_S3_ACCESS_KEY_ID')
-    s3_secret_access_key = os.getenv('DATACONTRACT_S3_SECRET_ACCESS_KEY')
+    s3_region = os.getenv("DATACONTRACT_S3_REGION")
+    s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
+    s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
     # con.install_extension("httpfs")
     # con.load_extension("httpfs")
     if server.endpointUrl is not None:

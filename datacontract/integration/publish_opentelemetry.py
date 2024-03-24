@@ -1,23 +1,24 @@
 import logging
+import math
 import os
 from importlib import metadata
-import math
 
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter as OTLPgRPCMetricExporter
-
-from opentelemetry.metrics import Observation
-
-from datacontract.model.run import \
-    Run
 from opentelemetry import metrics
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import \
+    OTLPMetricExporter as OTLPgRPCMetricExporter
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import \
+    OTLPMetricExporter
+from opentelemetry.metrics import Observation
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
+from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, \
+    PeriodicExportingMetricReader
+
+from datacontract.model.run import Run
 
 
 # Publishes metrics of a test run.
-# Metric contains the values: 
-# 0 == test run passed, 
+# Metric contains the values:
+# 0 == test run passed,
 # 1 == test run has warnings
 # 2 == test run failed
 # 3 == test run not possible due to an error
@@ -35,6 +36,7 @@ from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExpo
 # - currently, only ConsoleExporter and OTLP Exporter
 # - Metrics only, no logs yet (but loosely planned)
 
+
 def publish_opentelemetry(run: Run):
     try:
         if run.dataContractId is None:
@@ -50,7 +52,8 @@ def publish_opentelemetry(run: Run):
             name="datacontract.cli.test",
             callbacks=[lambda x: _to_observation_callback(run)],
             unit="result",
-            description="The overall result of the data contract test run")
+            description="The overall result of the data contract test run",
+        )
 
         telemetry.publish()
     except Exception as e:
@@ -82,7 +85,6 @@ def _to_observation(run):
 
 class Telemetry:
     def __init__(self):
-
         protocol = os.getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
 
         # lower to allow grpc, GRPC and alike values.

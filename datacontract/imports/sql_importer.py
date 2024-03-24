@@ -5,12 +5,10 @@ from datacontract.model.data_contract_specification import \
 
 
 def import_sql(data_contract_specification: DataContractSpecification, format: str, source: str):
-
     ddl = parse_from_file(source, group_by_type=True)
     tables = ddl["tables"]
 
     for table in tables:
-
         if data_contract_specification.models is None:
             data_contract_specification.models = {}
 

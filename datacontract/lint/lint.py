@@ -1,10 +1,10 @@
-from enum import Enum
-from dataclasses import dataclass, field
-from typing import Sequence, Any, cast
 import abc
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Sequence, Any, cast
 
-from ..model.data_contract_specification import DataContractSpecification
 from datacontract.model.run import Check
+from ..model.data_contract_specification import DataContractSpecification
 
 """This module contains linter definitions for linting a data contract.
 
@@ -17,10 +17,11 @@ contract."""
 
 class LintSeverity(Enum):
     """The severity of a lint message. Generally, lint messages should be
-       emitted with a severity of ERROR. WARNING should be used when the linter
-       cannot determine a lint result, for example, when an unsupported model
-       type is used.
+    emitted with a severity of ERROR. WARNING should be used when the linter
+    cannot determine a lint result, for example, when an unsupported model
+    type is used.
     """
+
     ERROR = 2
     WARNING = 1
 
@@ -36,6 +37,7 @@ class LinterMessage:
        model: The model that caused the lint to fail. Is optional.
 
     """
+
     outcome: LintSeverity
     message: str
     model: Any = None
@@ -60,6 +62,7 @@ class LinterResult:
           results can be present in the list. An empty list means that
           the linter ran without producing warnings or errors.
     """
+
     results: Sequence[LinterMessage] = field(default_factory=list)
 
     @classmethod
@@ -72,34 +75,29 @@ class LinterResult:
 
     def with_warning(self, message, model=None):
         result = LinterMessage.warning(message, model)
-        return LinterResult(cast(list[LinterMessage],self.results) + [result])
+        return LinterResult(cast(list[LinterMessage], self.results) + [result])
 
     def with_error(self, message, model=None):
         result = LinterMessage.error(message, model)
         return LinterResult(cast(list[LinterMessage], self.results) + [result])
 
     def has_errors(self) -> bool:
-        return any(map(lambda result: result.outcome == LintSeverity.ERROR,
-                       self.results))
+        return any(map(lambda result: result.outcome == LintSeverity.ERROR, self.results))
 
     def has_warnings(self) -> bool:
-        return any(map(lambda result: result.outcome == LintSeverity.WARNING,
-                       self.results))
+        return any(map(lambda result: result.outcome == LintSeverity.WARNING, self.results))
 
     def error_results(self) -> Sequence[LinterMessage]:
-        return [result for result in self.results
-                if result.outcome == LintSeverity.ERROR]
+        return [result for result in self.results if result.outcome == LintSeverity.ERROR]
 
     def warning_results(self) -> Sequence[LinterMessage]:
-        return [result for result in self.results
-                if result.outcome == LintSeverity.WARNING]
+        return [result for result in self.results if result.outcome == LintSeverity.WARNING]
 
     def no_errors_or_warnings(self) -> bool:
         return len(self.results) == 0
 
-    def combine(self, other: 'LinterResult') -> 'LinterResult':
-        return LinterResult(cast(list[Any], self.results) +
-                            cast(list[Any], other.results))
+    def combine(self, other: "LinterResult") -> "LinterResult":
+        return LinterResult(cast(list[Any], self.results) + cast(list[Any], other.results))
 
 
 class Linter(abc.ABC):
@@ -124,23 +122,20 @@ class Linter(abc.ABC):
         result = self.lint_implementation(contract)
         checks = []
         if not result.error_results():
-            checks.append(Check(
-                type="lint",
-                name=f"Linter '{self.name}'",
-                result="passed",
-                engine="datacontract"
-            ))
+            checks.append(Check(type="lint", name=f"Linter '{self.name}'", result="passed", engine="datacontract"))
         else:
             # All linter messages are treated as warnings. Severity is
             # currently ignored, but could be used in filtering in the future
             # Linter messages with level WARNING are currently ignored, but might
             # be logged or printed in the future.
             for lint_error in result.error_results():
-                checks.append(Check(
-                    type="lint",
-                    name=f"Linter '{self.name}'",
-                    result="warning",
-                    engine="datacontract",
-                    reason=lint_error.message
-                ))
+                checks.append(
+                    Check(
+                        type="lint",
+                        name=f"Linter '{self.name}'",
+                        result="warning",
+                        engine="datacontract",
+                        reason=lint_error.message,
+                    )
+                )
         return checks

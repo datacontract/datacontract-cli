@@ -22,10 +22,9 @@ def quality_breaking_changes(
                     description=description,
                     check_name=rule_name,
                     severity=severity,
-                    location=Location(
-                        path=new_path,
-                        composition=["quality"]
-                    )))
+                    location=Location(path=new_path, composition=["quality"]),
+                )
+            )
     elif old_quality and not new_quality:
         rule_name = "quality_removed"
         severity = _get_rule(rule_name)
@@ -37,10 +36,9 @@ def quality_breaking_changes(
                     description=description,
                     check_name=rule_name,
                     severity=severity,
-                    location=Location(
-                        path=new_path,
-                        composition=["quality"]
-                    )))
+                    location=Location(path=new_path, composition=["quality"]),
+                )
+            )
 
     elif old_quality and new_quality:
         if old_quality.type != new_quality.type:
@@ -54,10 +52,9 @@ def quality_breaking_changes(
                         description=description,
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=["quality", "type"]
-                        )))
+                        location=Location(path=new_path, composition=["quality", "type"]),
+                    )
+                )
 
         if old_quality.specification != new_quality.specification:
             rule_name = "quality_specification_updated"
@@ -69,10 +66,9 @@ def quality_breaking_changes(
                         description=description,
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=["quality", "specification"]
-                        )))
+                        location=Location(path=new_path, composition=["quality", "specification"]),
+                    )
+                )
 
     return results
 
@@ -96,10 +92,9 @@ def models_breaking_changes(
                         description="added the model",
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=composition + [model_name]
-                        )))
+                        location=Location(path=new_path, composition=composition + [model_name]),
+                    )
+                )
 
     for model_name, old_model in old_models.items():
         if model_name not in new_models.keys():
@@ -111,10 +106,9 @@ def models_breaking_changes(
                         description="removed the model",
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=composition + [model_name]
-                        )))
+                        location=Location(path=new_path, composition=composition + [model_name]),
+                    )
+                )
             continue
 
         results.extend(
@@ -124,17 +118,14 @@ def models_breaking_changes(
                 new_path=new_path,
                 composition=composition + [model_name],
                 include_severities=include_severities,
-            ))
+            )
+        )
 
     return results
 
 
 def model_breaking_changes(
-    old_model: Model,
-    new_model: Model,
-    new_path: str,
-    composition: list[str],
-    include_severities: [Severity]
+    old_model: Model, new_model: Model, new_path: str, composition: list[str], include_severities: [Severity]
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
@@ -170,10 +161,9 @@ def model_breaking_changes(
                         description=description,
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=composition + [model_definition_field]
-                        )))
+                        location=Location(path=new_path, composition=composition + [model_definition_field]),
+                    )
+                )
 
     results.extend(
         fields_breaking_changes(
@@ -182,7 +172,8 @@ def model_breaking_changes(
             new_path=new_path,
             composition=composition + ["fields"],
             include_severities=include_severities,
-        ))
+        )
+    )
 
     return results
 
@@ -192,7 +183,7 @@ def fields_breaking_changes(
     new_fields: dict[str, Field],
     new_path: str,
     composition: list[str],
-    include_severities: [Severity]
+    include_severities: [Severity],
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
@@ -206,10 +197,9 @@ def fields_breaking_changes(
                         description="added the field",
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=composition + [field_name]
-                        )))
+                        location=Location(path=new_path, composition=composition + [field_name]),
+                    )
+                )
 
     for field_name, old_field in old_fields.items():
         if field_name not in new_fields.keys():
@@ -218,13 +208,12 @@ def fields_breaking_changes(
             if severity in include_severities:
                 results.append(
                     BreakingChange(
-                        description='removed the field',
+                        description="removed the field",
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=composition + [field_name]
-                        )))
+                        location=Location(path=new_path, composition=composition + [field_name]),
+                    )
+                )
             continue
 
         results.extend(
@@ -234,7 +223,8 @@ def fields_breaking_changes(
                 composition=composition + [field_name],
                 new_path=new_path,
                 include_severities=include_severities,
-            ))
+            )
+        )
     return results
 
 
@@ -293,8 +283,10 @@ def field_breaking_changes(
 
         elif old_value != new_value:
             rule_name = f"field_{_camel_to_snake(field_definition_field)}_updated"
-            description = (f"changed from `{str(old_value).lower() if isinstance(old_value, bool) else old_value}` "
-                           f"to `{str(new_value).lower() if isinstance(new_value, bool) else new_value}`")
+            description = (
+                f"changed from `{str(old_value).lower() if isinstance(old_value, bool) else old_value}` "
+                f"to `{str(new_value).lower() if isinstance(new_value, bool) else new_value}`"
+            )
 
         if rule_name is not None:
             severity = _get_rule(rule_name)
@@ -305,10 +297,9 @@ def field_breaking_changes(
                         description=description,
                         check_name=rule_name,
                         severity=severity,
-                        location=Location(
-                            path=new_path,
-                            composition=composition + [field_schema_name]
-                        )))
+                        location=Location(path=new_path, composition=composition + [field_schema_name]),
+                    )
+                )
 
     return results
 
@@ -317,9 +308,9 @@ def _get_rule(rule_name) -> Severity:
     try:
         return getattr(BreakingRules, rule_name)
     except AttributeError:
-        print(f'WARNING: Breaking Rule not found for {rule_name}!')
+        print(f"WARNING: Breaking Rule not found for {rule_name}!")
         return Severity.ERROR
 
 
 def _camel_to_snake(s):
-    return ''.join(['_' + c.lower() if c.isupper() else c for c in s]).lstrip('_')
+    return "".join(["_" + c.lower() if c.isupper() else c for c in s]).lstrip("_")

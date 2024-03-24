@@ -6,7 +6,6 @@ from datacontract.model.exceptions import DataContractException
 
 
 def import_avro(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
-
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
 
@@ -18,7 +17,7 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
             name="Parse avro schema",
             reason=f"Failed to parse avro schema from {source}",
             engine="datacontract",
-            original_exception=e
+            original_exception=e,
         )
 
     # type record is being used for both the table and the object types in data contract
@@ -35,7 +34,6 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
 
 
 def import_record_fields(record_fields):
-
     imported_fields = {}
     for field in record_fields:
         if field.type.type == "record":

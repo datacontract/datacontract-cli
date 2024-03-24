@@ -8,11 +8,7 @@ app = FastAPI()
 
 
 @app.post("/lint")
-def lint(file: Annotated[bytes, File()],
-         linters: Union[str, set[str]]="all"):
+def lint(file: Annotated[bytes, File()], linters: Union[str, set[str]] = "all"):
     data_contract = DataContract(data_contract_str=str(file, encoding="utf-8"))
     lint_result = data_contract.lint(enabled_linters=linters)
-    return {
-        "result": lint_result.result,
-        "checks": lint_result.checks
-    }
+    return {"result": lint_result.result, "checks": lint_result.checks}

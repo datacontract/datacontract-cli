@@ -7,8 +7,9 @@ import yaml
 
 from datacontract.breaking.breaking import models_breaking_changes, \
     quality_breaking_changes
-from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
-    check_that_datacontract_contains_valid_server_configuration
+from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
+    check_that_datacontract_contains_valid_server_configuration,
+)
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
@@ -48,8 +49,7 @@ from datacontract.model.breaking_change import BreakingChanges, BreakingChange, 
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import \
-    Run, Check
+from datacontract.model.run import Run, Check
 
 
 def _determine_sql_server_type(data_contract, sql_server_type):
@@ -101,7 +101,7 @@ class DataContract:
             NoticePeriodLinter(),
             PrimaryFieldUniqueRequired(),
             ValidFieldConstraintsLinter(),
-            DescriptionLinter()
+            DescriptionLinter(),
         }
 
     @classmethod
@@ -111,60 +111,59 @@ class DataContract:
     def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
         """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
 
-          enabled_linters can be either "all" or "none", or a set of linter IDs. The "schema" linter is always enabled, even with enabled_linters="none".
-          """
+        enabled_linters can be either "all" or "none", or a set of linter IDs. The "schema" linter is always enabled, even with enabled_linters="none".
+        """
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
-            data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                          self._data_contract, self._schema_location,
-                                                          inline_definitions=True)
-            run.checks.append(Check(
-                type="lint",
-                result="passed",
-                name="Data contract is syntactically valid",
-                engine="datacontract"
-            ))
+            data_contract = resolve.resolve_data_contract(
+                self._data_contract_file,
+                self._data_contract_str,
+                self._data_contract,
+                self._schema_location,
+                inline_definitions=True,
+            )
+            run.checks.append(
+                Check(type="lint", result="passed", name="Data contract is syntactically valid", engine="datacontract")
+            )
             if enabled_linters == "none":
                 linters_to_check = set()
             elif enabled_linters == "all":
                 linters_to_check = self.all_linters
             elif isinstance(enabled_linters, set):
-                linters_to_check = {linter for linter in self.all_linters
-                                    if linter.id in enabled_linters}
+                linters_to_check = {linter for linter in self.all_linters if linter.id in enabled_linters}
             else:
                 raise RuntimeError(f"Unknown argument enabled_linters={enabled_linters} for lint()")
             for linter in linters_to_check:
                 try:
                     run.checks.extend(linter.lint(data_contract))
                 except Exception as e:
-                    run.checks.append(Check(
-                        type="general",
-                        result="error",
-                        name=f"Linter '{linter.name}'",
-                        reason=str(e),
-                        engine="datacontract",
-                    ))
+                    run.checks.append(
+                        Check(
+                            type="general",
+                            result="error",
+                            name=f"Linter '{linter.name}'",
+                            reason=str(e),
+                            engine="datacontract",
+                        )
+                    )
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
         except DataContractException as e:
-            run.checks.append(Check(
-                type=e.type,
-                result=e.result,
-                name=e.name,
-                reason=e.reason,
-                engine=e.engine,
-                details=""
-            ))
+            run.checks.append(
+                Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
+            )
             run.log_error(str(e))
         except Exception as e:
-            run.checks.append(Check(
-                type="general",
-                result="error",
-                name="Check Data Contract",
-                reason=str(e),
-                engine="datacontract",
-            ))
+            run.checks.append(
+                Check(
+                    type="general",
+                    result="error",
+                    name="Check Data Contract",
+                    reason=str(e),
+                    engine="datacontract",
+                )
+            )
             run.log_error(str(e))
         run.finish()
         return run
@@ -173,8 +172,9 @@ class DataContract:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
-            data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                          self._data_contract, self._schema_location)
+            data_contract = resolve.resolve_data_contract(
+                self._data_contract_file, self._data_contract_str, self._data_contract, self._schema_location
+            )
 
             if data_contract.models is None or len(data_contract.models) == 0:
                 raise DataContractException(
@@ -220,23 +220,20 @@ class DataContract:
                 check_soda_execute(run, data_contract, server, self._spark, tmp_dir)
 
         except DataContractException as e:
-            run.checks.append(Check(
-                type=e.type,
-                result=e.result,
-                name=e.name,
-                reason=e.reason,
-                engine=e.engine,
-                details=""
-            ))
+            run.checks.append(
+                Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
+            )
             run.log_error(str(e))
         except Exception as e:
-            run.checks.append(Check(
-                type="general",
-                result="error",
-                name="Test Data Contract",
-                reason=str(e),
-                engine="datacontract",
-            ))
+            run.checks.append(
+                Check(
+                    type="general",
+                    result="error",
+                    name="Test Data Contract",
+                    reason=str(e),
+                    engine="datacontract",
+                )
+            )
             logging.exception("Exception occurred")
             run.log_error(str(e))
 
@@ -255,35 +252,34 @@ class DataContract:
 
         return run
 
-    def breaking(self, other: 'DataContract') -> BreakingChanges:
-        return self.changelog(
-            other,
-            include_severities=[Severity.ERROR, Severity.WARNING]
-        )
+    def breaking(self, other: "DataContract") -> BreakingChanges:
+        return self.changelog(other, include_severities=[Severity.ERROR, Severity.WARNING])
 
     def changelog(
-        self,
-        other: 'DataContract',
-        include_severities: [Severity] = (Severity.ERROR, Severity.WARNING, Severity.INFO)
+        self, other: "DataContract", include_severities: [Severity] = (Severity.ERROR, Severity.WARNING, Severity.INFO)
     ) -> BreakingChanges:
         old = self.get_data_contract_specification()
         new = other.get_data_contract_specification()
 
         breaking_changes = list[BreakingChange]()
 
-        breaking_changes.extend(quality_breaking_changes(
-            old_quality=old.quality,
-            new_quality=new.quality,
-            new_path=other._data_contract_file,
-            include_severities=include_severities,
-        ))
+        breaking_changes.extend(
+            quality_breaking_changes(
+                old_quality=old.quality,
+                new_quality=new.quality,
+                new_path=other._data_contract_file,
+                include_severities=include_severities,
+            )
+        )
 
-        breaking_changes.extend(models_breaking_changes(
-            old_models=old.models,
-            new_models=new.models,
-            new_path=other._data_contract_file,
-            include_severities=include_severities,
-        ))
+        breaking_changes.extend(
+            models_breaking_changes(
+                old_models=old.models,
+                new_models=new.models,
+                new_path=other._data_contract_file,
+                include_severities=include_severities,
+            )
+        )
 
         return BreakingChanges(breaking_changes=breaking_changes)
 
@@ -297,17 +293,20 @@ class DataContract:
         )
 
     def export(self, export_format, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto") -> str:
-        data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
-                                                      self._data_contract, inline_definitions=True)
+        data_contract = resolve.resolve_data_contract(
+            self._data_contract_file, self._data_contract_str, self._data_contract, inline_definitions=True
+        )
         if export_format == "jsonschema":
             if data_contract.models is None:
-                raise RuntimeError( f"Export to {export_format} requires models in the data contract.")
+                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
 
             model_names = list(data_contract.models.keys())
 
             if model == "all":
                 if len(data_contract.models.items()) != 1:
-                    raise RuntimeError( f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
+                    )
 
                 model_name, model_value = next(iter(data_contract.models.items()))
                 return to_jsonschema_json(model_name, model_value)
@@ -315,7 +314,9 @@ class DataContract:
                 model_name = model
                 model_value = data_contract.models.get(model_name)
                 if model_value is None:
-                    raise RuntimeError( f"Model {model_name} not found in the data contract. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
+                    )
 
                 return to_jsonschema_json(model_name, model_value)
         if export_format == "sodacl":
@@ -332,7 +333,9 @@ class DataContract:
 
             if model == "all":
                 if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
+                    )
 
                 model_name, model_value = next(iter(data_contract.models.items()))
                 return to_dbt_staging_sql(data_contract, model_name, model_value)
@@ -340,7 +343,9 @@ class DataContract:
                 model_name = model
                 model_value = data_contract.models.get(model_name)
                 if model_value is None:
-                    raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
+                    )
 
                 return to_dbt_staging_sql(data_contract, model_name, model_value)
         if export_format == "odcs":
@@ -357,7 +362,9 @@ class DataContract:
 
             if model == "all":
                 if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
+                    )
 
                 model_name, model_value = next(iter(data_contract.models.items()))
                 return to_avro_schema_json(model_name, model_value)
@@ -365,7 +372,9 @@ class DataContract:
                 model_name = model
                 model_value = data_contract.models.get(model_name)
                 if model_value is None:
-                    raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
+                    )
 
                 return to_avro_schema_json(model_name, model_value)
         if export_format == "avro-idl":
@@ -385,7 +394,9 @@ class DataContract:
 
             if model == "all":
                 if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
+                    )
 
                 model_name, model_value = next(iter(data_contract.models.items()))
                 return to_sql_query(data_contract, model_name, model_value, server_type)
@@ -393,7 +404,9 @@ class DataContract:
                 model_name = model
                 model_value = data_contract.models.get(model_name)
                 if model_value is None:
-                    raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
+                    )
 
                 return to_sql_query(data_contract, model_name, model_value, server_type)
 
@@ -405,8 +418,10 @@ class DataContract:
 
             if model == "all":
                 if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(f"Export to {export_format} is model specific. Specify the model via --model "
-                                       f"$MODEL_NAME. Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Export to {export_format} is model specific. Specify the model via --model "
+                        f"$MODEL_NAME. Available models: {model_names}"
+                    )
 
                 model_name, model_value = next(iter(data_contract.models.items()))
                 return to_great_expectations(data_contract, model_name)
@@ -414,8 +429,9 @@ class DataContract:
                 model_name = model
                 model_value = data_contract.models.get(model_name)
                 if model_value is None:
-                    raise RuntimeError(f"Model {model_name} not found in the data contract. "
-                                        f"Available models: {model_names}")
+                    raise RuntimeError(
+                        f"Model {model_name} not found in the data contract. " f"Available models: {model_names}"
+                    )
 
                 return to_great_expectations(data_contract, model_name)
 

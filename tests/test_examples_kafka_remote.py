@@ -6,7 +6,7 @@ import six
 
 # Fix for Python 3.12
 if sys.version_info >= (3, 12, 1):
-    sys.modules['kafka.vendor.six.moves'] = six.moves
+    sys.modules["kafka.vendor.six.moves"] = six.moves
 
 import logging
 
@@ -17,8 +17,10 @@ from datacontract.data_contract import DataContract
 logging.basicConfig(level=logging.INFO, force=True)
 
 
-@pytest.mark.skipif(os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
-                    reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set")
+@pytest.mark.skipif(
+    os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
+    reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set",
+)
 def _test_examples_kafka_json_remote():
     load_dotenv(override=True)
     # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"
@@ -31,8 +33,10 @@ def _test_examples_kafka_json_remote():
     assert run.result == "passed"
 
 
-@pytest.mark.skipif(os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
-                    reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set")
+@pytest.mark.skipif(
+    os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
+    reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set",
+)
 def _test_examples_kafka_avro_remote():
     load_dotenv(override=True)
     # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"

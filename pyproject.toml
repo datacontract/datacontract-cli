@@ -60,3 +60,6 @@ datacontract = "datacontract.cli:app"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 120

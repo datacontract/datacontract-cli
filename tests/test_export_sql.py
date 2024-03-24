@@ -10,11 +10,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/postgres-export/datacontract.yaml",
-        "--format", "sql"
-    ])
+    result = runner.invoke(app, ["export", "./examples/postgres-export/datacontract.yaml", "--format", "sql"])
     assert result.exit_code == 0
 
 
@@ -30,7 +26,6 @@ CREATE TABLE my_table (
 );
 """.strip()
     assert actual == expected
-
 
 
 def test_to_sql_ddl_snowflake():
@@ -52,4 +47,3 @@ CREATE TABLE line_items (
 );
 """.strip()
     assert actual == expected
-

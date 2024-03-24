@@ -6,16 +6,14 @@ from datacontract.model.data_contract_specification import Field
 def to_avro_schema(model_name, model) -> dict:
     return to_avro_record(model_name, model.fields, model.description)
 
+
 def to_avro_schema_json(model_name, model) -> str:
     schema = to_avro_schema(model_name, model)
     return json.dumps(schema, indent=2, sort_keys=False)
 
 
 def to_avro_record(name, fields, description) -> dict:
-    schema = {
-        "type": "record",
-        "name": name
-    }
+    schema = {"type": "record", "name": name}
     if description is not None:
         schema["doc"] = description
     schema["fields"] = to_avro_fields(fields)
@@ -30,9 +28,7 @@ def to_avro_fields(fields):
 
 
 def to_avro_field(field, field_name):
-    avro_field = {
-        "name": field_name
-    }
+    avro_field = {"name": field_name}
     if field.description is not None:
         avro_field["doc"] = field.description
     avro_field["type"] = to_avro_type(field, field_name)

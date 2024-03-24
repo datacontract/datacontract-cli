@@ -4,7 +4,7 @@ import six
 
 # Fix for Python 3.12
 if sys.version_info >= (3, 12, 1):
-    sys.modules['kafka.vendor.six.moves'] = six.moves
+    sys.modules["kafka.vendor.six.moves"] = six.moves
 
 import json
 import logging
@@ -46,8 +46,9 @@ def test_examples_kafka(kafka_container: KafkaContainer):
 def send_messages_to_topic(messages_file_path: str, topic_name: str):
     print(f"Sending messages from {messages_file_path} to Kafka topic {topic_name}")
 
-    producer = KafkaProducer(bootstrap_servers=kafka.get_bootstrap_server(),
-                             value_serializer=lambda m: json.dumps(m).encode('ascii'))
+    producer = KafkaProducer(
+        bootstrap_servers=kafka.get_bootstrap_server(), value_serializer=lambda m: json.dumps(m).encode("ascii")
+    )
     messages_sent = 0
 
     with open(messages_file_path) as messages_file:

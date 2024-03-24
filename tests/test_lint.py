@@ -39,7 +39,9 @@ def test_lint_cli_valid():
 
 def test_lint_cli_invalid():
     data_contract_file = "examples/lint/invalid_datacontract.yaml"
-    expected_output = "🔴 data contract is invalid, found the following errors:\n1) data must contain ['id'] properties\n"
+    expected_output = (
+        "🔴 data contract is invalid, found the following errors:\n1) data must contain ['id'] properties\n"
+    )
 
     result = runner.invoke(app, ["lint", data_contract_file])
 
@@ -57,6 +59,7 @@ def test_lint_custom_schema():
 
 
 def test_lint_with_references():
-    data_contract = DataContract(data_contract_file="examples/lint/valid_datacontract_references.yaml",
-                                 inline_definitions=True)
+    data_contract = DataContract(
+        data_contract_file="examples/lint/valid_datacontract_references.yaml", inline_definitions=True
+    )
     DataContractSpecification.model_validate(data_contract.get_data_contract_specification())

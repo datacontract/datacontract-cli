@@ -36,15 +36,10 @@ def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name
 
 
 def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
-    source = {
-        "name": data_contract_spec.id,
-        "tables": []
-    }
+    source = {"name": data_contract_spec.id, "tables": []}
     dbt = {
         "version": 2,
-        "sources": [
-            source
-        ],
+        "sources": [source],
     }
     if data_contract_spec.info.owner is not None:
         source["meta"] = {"owner": data_contract_spec.info.owner}
@@ -79,20 +74,14 @@ def _to_dbt_model(model_key, model_value: Model, data_contract_spec: DataContrac
         "name": model_key,
     }
     model_type = _to_dbt_model_type(model_value.type)
-    dbt_model["config"] = {
-        "meta": {
-            "data_contract": data_contract_spec.id
-        }
-    }
+    dbt_model["config"] = {"meta": {"data_contract": data_contract_spec.id}}
     dbt_model["config"]["materialized"] = model_type
 
     if data_contract_spec.info.owner is not None:
         dbt_model["config"]["meta"]["owner"] = data_contract_spec.info.owner
 
     if _supports_constraints(model_type):
-        dbt_model["config"]["contract"] = {
-            "enforced": True
-        }
+        dbt_model["config"]["contract"] = {"enforced": True}
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
     columns = _to_columns(model_value.fields, _supports_constraints(model_type), True)
@@ -135,8 +124,8 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
             column["data_type"] = dbt_type
         else:
             column.setdefault("tests", []).append(
-                {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {
-                    "column_type": dbt_type}})
+                {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
+            )
     if field.description is not None:
         column["description"] = field.description
     if field.required:
@@ -158,7 +147,8 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
         if field.maxLength is not None:
             length_test["max_value"] = field.maxLength
         column.setdefault("tests", []).append(
-            {"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
+            {"dbt_expectations.expect_column_value_lengths_to_be_between": length_test}
+        )
     if field.pii is not None:
         column.setdefault("meta", {})["pii"] = field.pii
     if field.classification is not None:
@@ -168,15 +158,26 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
     if field.pattern is not None:
         # Beware, the data contract pattern is a regex, not a like pattern
         column.setdefault("tests", []).append(
-            {"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}})
-    if field.minimum is not None or field.maximum is not None and field.exclusiveMinimum is None and field.exclusiveMaximum is None:
+            {"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}}
+        )
+    if (
+        field.minimum is not None
+        or field.maximum is not None
+        and field.exclusiveMinimum is None
+        and field.exclusiveMaximum is None
+    ):
         range_test = {}
         if field.minimum is not None:
             range_test["min_value"] = field.minimum
         if field.maximum is not None:
             range_test["max_value"] = field.maximum
         column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": range_test})
-    elif field.exclusiveMinimum is not None or field.exclusiveMaximum is not None and field.minimum is None and field.maximum is None:
+    elif (
+        field.exclusiveMinimum is not None
+        or field.exclusiveMaximum is not None
+        and field.minimum is None
+        and field.maximum is None
+    ):
         range_test = {}
         if field.exclusiveMinimum is not None:
             range_test["min_value"] = field.exclusiveMinimum
@@ -187,17 +188,30 @@ def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool
     else:
         if field.minimum is not None:
             column.setdefault("tests", []).append(
-                {"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimum}})
+                {"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimum}}
+            )
         if field.maximum is not None:
             column.setdefault("tests", []).append(
-                {"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximum}})
+                {"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximum}}
+            )
         if field.exclusiveMinimum is not None:
-            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {
-                "min_value": field.exclusiveMinimum, "strictly": True}})
+            column.setdefault("tests", []).append(
+                {
+                    "dbt_expectations.expect_column_values_to_be_between": {
+                        "min_value": field.exclusiveMinimum,
+                        "strictly": True,
+                    }
+                }
+            )
         if field.exclusiveMaximum is not None:
-            column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": {
-                "max_value": field.exclusiveMaximum, "strictly": True}})
+            column.setdefault("tests", []).append(
+                {
+                    "dbt_expectations.expect_column_values_to_be_between": {
+                        "max_value": field.exclusiveMaximum,
+                        "strictly": True,
+                    }
+                }
+            )
 
     # TODO: all constraints
     return column
-

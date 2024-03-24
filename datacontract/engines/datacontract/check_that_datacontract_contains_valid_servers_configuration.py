@@ -3,7 +3,9 @@ from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
 
-def check_that_datacontract_contains_valid_server_configuration(run: Run, data_contract: DataContractSpecification, server_name: str):
+def check_that_datacontract_contains_valid_server_configuration(
+    run: Run, data_contract: DataContractSpecification, server_name: str
+):
     if data_contract.servers is None:
         raise DataContractException(
             type="lint",
@@ -28,4 +30,6 @@ def check_that_datacontract_contains_valid_server_configuration(run: Run, data_c
             reason=f"Cannot find server '{server_name}' in the data contract servers configuration. Skip executing tests.",
             engine="datacontract",
         )
+
+
 #     TODO check for server.type, if all required fields are present

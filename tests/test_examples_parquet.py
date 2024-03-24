@@ -7,12 +7,12 @@ from datacontract.data_contract import DataContract
 
 runner = CliRunner()
 
+
 def test_valid_cli():
     current_file_path = os.path.abspath(__file__)
     print("DEBUG Current file path:" + current_file_path)
 
-    result = runner.invoke(app, ["test",
-                                 "./examples/parquet/datacontract.yaml"])
+    result = runner.invoke(app, ["test", "./examples/parquet/datacontract.yaml"])
     assert result.exit_code == 0
     assert "Testing ./examples/parquet/datacontract.yaml" in result.stdout
 

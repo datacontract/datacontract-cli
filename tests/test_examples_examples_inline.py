@@ -9,6 +9,7 @@ runner = CliRunner()
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
+
 def test_cli():
     result = runner.invoke(app, ["test", "--examples", "./examples/examples/datacontract_inline.yaml"])
     assert result.exit_code == 0
@@ -20,5 +21,3 @@ def test_json_inline():
     print(run)
     print(run.result)
     assert run.result == "passed"
-
-

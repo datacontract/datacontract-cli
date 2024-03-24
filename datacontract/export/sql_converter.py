@@ -1,9 +1,10 @@
 from datacontract.export.sql_type_converter import convert_to_sql_type
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model
+from datacontract.model.data_contract_specification import DataContractSpecification, Model
 
 
-def to_sql_query(data_contract_spec: DataContractSpecification, model_name: str, model_value: Model, server_type: str = "snowflake") -> str:
+def to_sql_query(
+    data_contract_spec: DataContractSpecification, model_name: str, model_value: Model, server_type: str = "snowflake"
+) -> str:
     if data_contract_spec is None:
         return ""
     if data_contract_spec.models is None or len(data_contract_spec.models) == 0:
@@ -78,5 +79,3 @@ def _to_sql_table(model_name, model, server_type="snowflake"):
         current_field_index += 1
     result += ");\n"
     return result
-
-

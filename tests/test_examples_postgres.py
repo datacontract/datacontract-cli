@@ -18,8 +18,10 @@ postgres = PostgresContainer("postgres:16")
 @pytest.fixture(scope="module", autouse=True)
 def postgres_container(request):
     postgres.start()
+
     def remove_container():
         postgres.stop()
+
     request.addfinalizer(remove_container)
     os.environ["DATACONTRACT_POSTGRES_USERNAME"] = postgres.POSTGRES_USER
     os.environ["DATACONTRACT_POSTGRES_PASSWORD"] = postgres.POSTGRES_PASSWORD
@@ -52,10 +54,10 @@ def _init_sql():
         user=postgres.POSTGRES_USER,
         password=postgres.POSTGRES_PASSWORD,
         host=postgres.get_container_host_ip(),
-        port=postgres.get_exposed_port(5432)
+        port=postgres.get_exposed_port(5432),
     )
     cursor = connection.cursor()
-    with open(sql_file_path, 'r') as sql_file:
+    with open(sql_file_path, "r") as sql_file:
         sql_commands = sql_file.read()
         cursor.execute(sql_commands)
     connection.commit()

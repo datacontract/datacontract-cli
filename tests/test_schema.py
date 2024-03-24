@@ -9,7 +9,8 @@ def test_schema():
     """
     A schema in a data contract would not do anything, but should also raise no errors.
     """
-    data_contract = DataContract(data_contract_str="""
+    data_contract = DataContract(
+        data_contract_str="""
 dataContractSpecification: 0.9.2
 id: urn:datacontract:checkout:orders-latest
 info:
@@ -41,7 +42,8 @@ models:
         description: Foreign key to the orders table
       sku:
         type: string
-        description: The purchased article number""")
+        description: The purchased article number"""
+    )
 
     data_contract.lint()
     data_contract.test()

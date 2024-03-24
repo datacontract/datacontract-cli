@@ -9,7 +9,7 @@ def download_datacontract_file(file_path: str, from_url: str, overwrite_file: bo
 
     with requests.get(from_url) as response:
         response.raise_for_status()
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             f.write(response.text)
 
 

@@ -3,8 +3,7 @@ import os
 
 import requests
 
-from datacontract.model.run import \
-    Run
+from datacontract.model.run import Run
 
 
 def publish_datamesh_manager(run: Run, publish_url: str):
@@ -13,7 +12,7 @@ def publish_datamesh_manager(run: Run, publish_url: str):
             url = "https://api.datamesh-manager.com/api/runs"
         else:
             url = publish_url
-        datamesh_manager_api_key = os.getenv('DATAMESH_MANAGER_API_KEY')
+        datamesh_manager_api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
 
         if run.dataContractId is None:
             raise Exception("Cannot publish run results, as data contract ID is unknown")
@@ -21,10 +20,7 @@ def publish_datamesh_manager(run: Run, publish_url: str):
         if datamesh_manager_api_key is None:
             raise Exception("Cannot publish run results, as DATAMESH_MANAGER_API_KEY is not set")
 
-        headers = {
-            'Content-Type': 'application/json',
-            'x-api-key': datamesh_manager_api_key
-        }
+        headers = {"Content-Type": "application/json", "x-api-key": datamesh_manager_api_key}
         request_body = run.model_dump_json()
         # print("Request Body:", request_body)
         response = requests.post(url, data=request_body, headers=headers)
@@ -36,4 +32,3 @@ def publish_datamesh_manager(run: Run, publish_url: str):
         logging.info("Published test results to %s", url)
     except Exception as e:
         logging.error(f"Failed publishing test results. Error: {str(e)}")
-

@@ -12,11 +12,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/export/datacontract.yaml",
-        "--format", "protobuf"
-    ])
+    result = runner.invoke(app, ["export", "./examples/export/datacontract.yaml", "--format", "protobuf"])
     assert result.exit_code == 0
 
 

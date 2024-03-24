@@ -11,7 +11,17 @@ class DataContractException(Exception):
         message (str): General message for the error.
     """
 
-    def __init__(self, type, name, reason, engine="datacontract", model=None, original_exception=None, result: str = "failed", message="Run operation failed"):
+    def __init__(
+        self,
+        type,
+        name,
+        reason,
+        engine="datacontract",
+        model=None,
+        original_exception=None,
+        result: str = "failed",
+        message="Run operation failed",
+    ):
         self.type = type
         self.name = name
         self.model = model
@@ -21,4 +31,5 @@ class DataContractException(Exception):
         self.original_exception = original_exception
         self.message = message
         super().__init__(
-            f"{self.message}: [{self.type}] {self.name} - {self.model} - {self.result} - {self.reason} - {self.engine}")
+            f"{self.message}: [{self.type}] {self.name} - {self.model} - {self.result} - {self.reason} - {self.engine}"
+        )

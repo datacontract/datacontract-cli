@@ -4,10 +4,23 @@ import pyspark.sql.functions as fn
 from pyspark.sql import SparkSession
 from pyspark.sql.avro.functions import from_avro
 from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import StructType, DataType, NullType, ArrayType, \
-    BinaryType, DateType, TimestampNTZType, \
-    TimestampType, BooleanType, LongType, IntegerType, DoubleType, DecimalType, \
-    StringType, StructField
+from pyspark.sql.types import (
+    StructType,
+    DataType,
+    NullType,
+    ArrayType,
+    BinaryType,
+    DateType,
+    TimestampNTZType,
+    TimestampType,
+    BooleanType,
+    LongType,
+    IntegerType,
+    DoubleType,
+    DecimalType,
+    StringType,
+    StructField,
+)
 
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import \
@@ -18,14 +31,18 @@ from datacontract.model.exceptions import DataContractException
 def create_spark_session(tmp_dir) -> SparkSession:
     # TODO: Update dependency versions when updating pyspark
     # TODO: add protobuf library
-    spark = SparkSession.builder.appName("datacontract") \
-        .config("spark.sql.warehouse.dir", tmp_dir + "/spark-warehouse") \
-        .config("spark.streaming.stopGracefullyOnShutdown", True) \
-        .config('spark.jars.packages',
-                'org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0') \
+    spark = (
+        SparkSession.builder.appName("datacontract")
+        .config("spark.sql.warehouse.dir", tmp_dir + "/spark-warehouse")
+        .config("spark.streaming.stopGracefullyOnShutdown", True)
+        .config(
+            "spark.jars.packages",
+            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0",
+        )
         .getOrCreate()
+    )
     spark.sparkContext.setLogLevel("WARN")
-    print(f'Using PySpark version {spark.version}')
+    print(f"Using PySpark version {spark.version}")
     return spark
 
 
@@ -35,14 +52,14 @@ def read_kafka_topic(spark: SparkSession, data_contract: DataContractSpecificati
     auth_options = get_auth_options()
 
     # read full kafka topic
-    df = spark \
-        .read \
-        .format("kafka") \
-        .options(**auth_options) \
-        .option("kafka.bootstrap.servers", host) \
-        .option("subscribe", topic) \
-        .option("startingOffsets", "earliest") \
+    df = (
+        spark.read.format("kafka")
+        .options(**auth_options)
+        .option("kafka.bootstrap.servers", host)
+        .option("subscribe", topic)
+        .option("startingOffsets", "earliest")
         .load()
+    )
     # TODO a warning if none or multiple models
     model_name, model = next(iter(data_contract.models.items()))
     if server.format == "avro":
@@ -76,8 +93,8 @@ def read_kafka_topic(spark: SparkSession, data_contract: DataContractSpecificati
 
 
 def get_auth_options():
-    kafka_sasl_username = os.getenv('DATACONTRACT_KAFKA_SASL_USERNAME')
-    kafka_sasl_password = os.getenv('DATACONTRACT_KAFKA_SASL_PASSWORD')
+    kafka_sasl_username = os.getenv("DATACONTRACT_KAFKA_SASL_USERNAME")
+    kafka_sasl_password = os.getenv("DATACONTRACT_KAFKA_SASL_PASSWORD")
     if kafka_sasl_username is None:
         auth_options = {}
     else:
@@ -133,4 +150,3 @@ def to_struct_field(field_name: str, field: Field) -> StructField:
         data_type = DataType()
 
     return StructField(field_name, data_type, nullable=not field.required)
-

@@ -10,11 +10,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/postgres-export/datacontract.yaml",
-        "--format", "sql-query"
-    ])
+    result = runner.invoke(app, ["export", "./examples/postgres-export/datacontract.yaml", "--format", "sql-query"])
     assert result.exit_code == 0
 
 
@@ -32,9 +28,10 @@ from my_table
     assert actual.strip() == expected.strip()
 
 
-
 def test_to_sql_ddl_snowflake():
-    actual = DataContract(data_contract_file="./examples/snowflake/datacontract.yaml").export("sql-query", model="orders")
+    actual = DataContract(data_contract_file="./examples/snowflake/datacontract.yaml").export(
+        "sql-query", model="orders"
+    )
     expected = """
 -- Data Contract: urn:datacontract:checkout:snowflake_orders_pii_v2
 -- SQL Dialect: snowflake
@@ -47,4 +44,3 @@ select
 from orders
 """
     assert actual.strip() == expected.strip()
-

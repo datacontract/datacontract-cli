@@ -37,10 +37,8 @@ def check_field_is_present(field_name):
         "schema": {
             "name": f"Check that field {field_name} is present",
             "fail": {
-                "when required column missing": [
-                    field_name
-                ],
-            }
+                "when required column missing": [field_name],
+            },
         }
     }
 
@@ -49,28 +47,18 @@ def check_field_type(field_name: str, type: str):
     return {
         "schema": {
             "name": f"Check that field {field_name} has type {type}",
-            "fail": {
-                "when wrong column type": {
-                    field_name: type
-                }
-            }
+            "fail": {"when wrong column type": {field_name: type}},
         }
     }
 
 
 def check_field_required(field_name):
-    return {
-        f"missing_count({field_name}) = 0": {
-            "name": f"Check that required field {field_name} has no null values"
-        }
-    }
+    return {f"missing_count({field_name}) = 0": {"name": f"Check that required field {field_name} has no null values"}}
 
 
 def check_field_unique(field_name):
     return {
-        f'duplicate_count({field_name}) = 0': {
-            "name": f"Check that unique field {field_name} has no duplicate values"
-        }
+        f"duplicate_count({field_name}) = 0": {"name": f"Check that unique field {field_name} has no duplicate values"}
     }
 
 

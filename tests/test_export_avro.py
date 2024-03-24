@@ -15,11 +15,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, [
-        "export",
-        "./examples/kafka-avro-remote/datacontract.yaml",
-        "--format", "avro"
-    ])
+    result = runner.invoke(app, ["export", "./examples/kafka-avro-remote/datacontract.yaml", "--format", "avro"])
     assert result.exit_code == 0
 
 
@@ -83,6 +79,6 @@ def read_file(data_contract_file):
     if not os.path.exists(data_contract_file):
         print(f"The file '{data_contract_file}' does not exist.")
         sys.exit(1)
-    with open(data_contract_file, 'r') as file:
+    with open(data_contract_file, "r") as file:
         file_content = file.read()
     return file_content

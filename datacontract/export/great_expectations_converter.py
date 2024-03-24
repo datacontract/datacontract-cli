@@ -24,16 +24,22 @@ def to_great_expectations(data_contract_spec: DataContractSpecification, model_k
     return model_expectation_suite
 
 
-def to_suite(model_key: str, contract_version: str, expectations: List[Dict[str, Any]], ) -> str:
-    return json.dumps({
-        "data_asset_type": "null",
-        "expectation_suite_name": "user-defined.{model_key}.{contract_version}"
-        .format(model_key=model_key,
-                contract_version=contract_version),
-        "expectations": expectations,
-        "meta": {
-        }
-    }, indent=2)
+def to_suite(
+    model_key: str,
+    contract_version: str,
+    expectations: List[Dict[str, Any]],
+) -> str:
+    return json.dumps(
+        {
+            "data_asset_type": "null",
+            "expectation_suite_name": "user-defined.{model_key}.{contract_version}".format(
+                model_key=model_key, contract_version=contract_version
+            ),
+            "expectations": expectations,
+            "meta": {},
+        },
+        indent=2,
+    )
 
 
 def model_to_expectations(fields: Dict[str, Field]) -> List[Dict[str, Any]]:
@@ -64,56 +70,40 @@ def add_field_expectations(field_name, field: Field, expectations: List[Dict[str
 
 
 def add_column_order_exp(fields: Dict[str, Field], expectations: List[Dict[str, Any]]):
-    expectations.append({"expectation_type": "expect_table_columns_to_match_ordered_list",
-                         "kwargs": {
-                             "column_list": list(fields.keys())
-                         },
-                         "meta": {}
-                         })
+    expectations.append(
+        {
+            "expectation_type": "expect_table_columns_to_match_ordered_list",
+            "kwargs": {"column_list": list(fields.keys())},
+            "meta": {},
+        }
+    )
 
 
 def to_column_types_exp(field_name, field_type) -> Dict[str, Any]:
     return {
         "expectation_type": "expect_column_values_to_be_of_type",
-        "kwargs": {
-            "column": field_name,
-            "type_": field_type
-        },
-        "meta": {}
+        "kwargs": {"column": field_name, "type_": field_type},
+        "meta": {},
     }
 
 
 def to_column_unique_exp(field_name) -> Dict[str, Any]:
-    return {
-        "expectation_type": "expect_column_values_to_be_unique",
-        "kwargs": {
-            "column": field_name
-        },
-        "meta": {}
-    }
+    return {"expectation_type": "expect_column_values_to_be_unique", "kwargs": {"column": field_name}, "meta": {}}
 
 
 def to_column_length_exp(field_name, min_length, max_length) -> Dict[str, Any]:
     return {
         "expectation_type": "expect_column_value_lengths_to_be_between",
-        "kwargs": {
-            "column": field_name,
-            "min_value": min_length,
-            "max_value": max_length
-        },
-        "meta": {}
+        "kwargs": {"column": field_name, "min_value": min_length, "max_value": max_length},
+        "meta": {},
     }
 
 
 def to_column_min_max_exp(field_name, minimum, maximum) -> Dict[str, Any]:
     return {
         "expectation_type": "expect_column_values_to_be_between",
-        "kwargs": {
-            "column": field_name,
-            "min_value": minimum,
-            "max_value": maximum
-        },
-        "meta": {}
+        "kwargs": {"column": field_name, "min_value": minimum, "max_value": maximum},
+        "meta": {},
     }
 
 

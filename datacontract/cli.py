@@ -36,8 +36,9 @@ def version_callback(value: bool):
 @app.callback()
 def common(
     ctx: typer.Context,
-    version: bool = typer.Option(None, "--version", help="Prints the current version.", callback=version_callback,
-                                 is_eager=True),
+    version: bool = typer.Option(
+        None, "--version", help="Prints the current version.", callback=version_callback, is_eager=True
+    ),
 ):
     """
     The datacontract CLI is an open source command-line tool for working with Data Contracts (https://datacontract.com).
@@ -51,10 +52,12 @@ def common(
 
 @app.command()
 def init(
-    location: Annotated[str, typer.Argument(
-        help="The location (url or path) of the data contract yaml to create.")] = "datacontract.yaml",
-    template: Annotated[str, typer.Option(
-        help="URL of a template or data contract")] = "https://datacontract.com/datacontract.init.yaml",
+    location: Annotated[
+        str, typer.Argument(help="The location (url or path) of the data contract yaml to create.")
+    ] = "datacontract.yaml",
+    template: Annotated[
+        str, typer.Option(help="URL of a template or data contract")
+    ] = "https://datacontract.com/datacontract.init.yaml",
     overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
 ):
     """
@@ -72,10 +75,11 @@ def init(
 @app.command()
 def lint(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
+        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+    ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(
-            help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
+        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+    ] = "https://datacontract.com/datacontract.schema.json",
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -87,23 +91,31 @@ def lint(
 @app.command()
 def test(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
+        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+    ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(
-            help="The location (url or path) of the Data Contract Specification JSON Schema")] = "https://datacontract.com/datacontract.schema.json",
-    server: Annotated[str, typer.Option(
-        help="The server configuration to run the schema and quality tests. "
-             "Use the key of the server object in the data contract yaml file "
-             "to refer to a server, e.g., `production`, or `all` for all "
-             "servers (default).")] = "all",
-    examples: Annotated[bool, typer.Option(
-        help="Run the schema and quality tests on the example data within the data contract.")] = None,
-    publish: Annotated[str, typer.Option(
-        help="The url to publish the results after the test")] = None,
-    publish_to_opentelemetry: Annotated[bool, typer.Option(
-        help="Publish the results to opentelemetry. Use environment variables to configure the OTLP endpoint, headers, etc.")] = False,
-    logs: Annotated[bool, typer.Option(
-        help="Print logs")] = False,
+        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+    ] = "https://datacontract.com/datacontract.schema.json",
+    server: Annotated[
+        str,
+        typer.Option(
+            help="The server configuration to run the schema and quality tests. "
+            "Use the key of the server object in the data contract yaml file "
+            "to refer to a server, e.g., `production`, or `all` for all "
+            "servers (default)."
+        ),
+    ] = "all",
+    examples: Annotated[
+        bool, typer.Option(help="Run the schema and quality tests on the example data within the data contract.")
+    ] = None,
+    publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
+    publish_to_opentelemetry: Annotated[
+        bool,
+        typer.Option(
+            help="Publish the results to opentelemetry. Use environment variables to configure the OTLP endpoint, headers, etc."
+        ),
+    ] = False,
+    logs: Annotated[bool, typer.Option(help="Print logs")] = False,
 ):
     """
     Run schema and quality tests on configured servers.
@@ -111,13 +123,14 @@ def test(
     print(f"Testing {location}")
     if server == "all":
         server = None
-    run = DataContract(data_contract_file=location,
-                       schema_location=schema,
-                       publish_url=publish,
-                       publish_to_opentelemetry=publish_to_opentelemetry,
-                       server=server,
-                       examples=examples,
-                       ).test()
+    run = DataContract(
+        data_contract_file=location,
+        schema_location=schema,
+        publish_url=publish,
+        publish_to_opentelemetry=publish_to_opentelemetry,
+        server=server,
+        examples=examples,
+    ).test()
     if logs:
         _print_logs(run)
     _handle_result(run)
@@ -144,13 +157,28 @@ class ExportFormat(str, Enum):
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
-    model: Annotated[str, typer.Option(help="Use the key of the model in the data contract yaml file "
-                                            "to refer to a model, e.g., `orders`, or `all` for all "
-                                            "models (default).")] = "all",
-    rdf_base: Annotated[Optional[str], typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options")] = None,
-    sql_server_type: Annotated[Optional[str], typer.Option(help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract.", rich_help_panel="SQL Options")] = "auto",
+    model: Annotated[
+        str,
+        typer.Option(
+            help="Use the key of the model in the data contract yaml file "
+            "to refer to a model, e.g., `orders`, or `all` for all "
+            "models (default)."
+        ),
+    ] = "all",
+    rdf_base: Annotated[
+        Optional[str],
+        typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options"),
+    ] = None,
+    sql_server_type: Annotated[
+        Optional[str],
+        typer.Option(
+            help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract.",
+            rich_help_panel="SQL Options",
+        ),
+    ] = "auto",
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")] = "datacontract.yaml",
+        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+    ] = "datacontract.yaml",
 ):
     """
     Convert data contract to a specific format. Prints to stdout.
@@ -192,14 +220,9 @@ def breaking(
     """
 
     # TODO exception handling
-    result = DataContract(
-        data_contract_file=location_old,
-        inline_definitions=True
-    ).breaking(
-        DataContract(
-            data_contract_file=location_new,
-            inline_definitions=True
-        ))
+    result = DataContract(data_contract_file=location_old, inline_definitions=True).breaking(
+        DataContract(data_contract_file=location_new, inline_definitions=True)
+    )
 
     print(result.breaking_str())
 
@@ -217,14 +240,9 @@ def changelog(
     """
 
     # TODO exception handling
-    result = DataContract(
-        data_contract_file=location_old,
-        inline_definitions=True
-    ).changelog(
-        DataContract(
-            data_contract_file=location_new,
-            inline_definitions=True
-        ))
+    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
+        DataContract(data_contract_file=location_new, inline_definitions=True)
+    )
 
     print(result.changelog_str())
 
@@ -239,14 +257,9 @@ def diff(
     """
 
     # TODO change to diff output, not the changelog entries
-    result = DataContract(
-        data_contract_file=location_old,
-        inline_definitions=True
-    ).changelog(
-        DataContract(
-            data_contract_file=location_new,
-            inline_definitions=True
-        ))
+    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
+        DataContract(data_contract_file=location_new, inline_definitions=True)
+    )
 
     print(result.changelog_str())
 
@@ -255,7 +268,8 @@ def _handle_result(run):
     _print_table(run)
     if run.result == "passed":
         print(
-            f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds.")
+            f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
+        )
     else:
         print("🔴 data contract is invalid, found the following errors:")
         i = 1

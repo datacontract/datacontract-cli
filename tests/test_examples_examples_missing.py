@@ -21,5 +21,3 @@ def test_missing():
     print(run)
     print(run.result)
     assert run.result == "warning"
-
-
