@@ -647,6 +647,7 @@ source venv/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -e '.[dev]'
 ruff check
+ruff format
 cd tests/
 pytest
 ```
