@@ -1,6 +1,6 @@
-from datacontract.lint.linters.primary_field_linter import PrimaryFieldUniqueRequired
-import datacontract.lint.resolve as resolve
 import datacontract.model.data_contract_specification as spec
+from datacontract.lint.linters.primary_field_linter import \
+    PrimaryFieldUniqueRequired
 from datacontract.model.run import Check
 
 
@@ -23,6 +23,7 @@ success_check = Check(
 
 linter = PrimaryFieldUniqueRequired()
 
+
 def test_correct_model():
     specification = spec.DataContractSpecification(
         models={
@@ -34,16 +35,16 @@ def test_correct_model():
         })
     assert linter.lint(specification) == [success_check]
 
+
 def test_incorrect_model():
     specification = spec.DataContractSpecification(
-    models={
-        "test_model": spec.Model(
-            fields={
-                "test_field": spec.Field(primary=True)
-            }
-        )
-    })
+        models={
+            "test_model": spec.Model(
+                fields={
+                    "test_field": spec.Field(primary=True)
+                }
+            )
+        })
     assert linter.lint(specification) == [construct_error_check(
         "Field 'test_field' in model 'test_model' is marked as "
         "primary, but not as unique and required.")]
-    

@@ -71,7 +71,7 @@ def map_type_from_avro(avro_type_str: str):
             type="schema",
             result="failed",
             name="Map avro type to data contract type",
-            reason=f"Array type not supported",
+            reason="Array type not supported",
             engine="datacontract",
         )
     else:

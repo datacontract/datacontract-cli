@@ -10,7 +10,7 @@ from datacontract.model.run import \
 def publish_datamesh_manager(run: Run, publish_url: str):
     try:
         if publish_url is None:
-            url = f"https://api.datamesh-manager.com/api/runs"
+            url = "https://api.datamesh-manager.com/api/runs"
         else:
             url = publish_url
         datamesh_manager_api_key = os.getenv('DATAMESH_MANAGER_API_KEY')

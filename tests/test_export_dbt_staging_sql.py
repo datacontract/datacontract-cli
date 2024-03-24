@@ -1,10 +1,10 @@
 import logging
-import yaml
 
+import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.dbt_converter import to_dbt_sources_yaml, to_dbt_staging_sql
+from datacontract.export.dbt_converter import to_dbt_staging_sql
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 

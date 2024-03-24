@@ -29,7 +29,7 @@ def _set_api_key(headers, url):
         return
     datamesh_manager_api_key = os.getenv('DATAMESH_MANAGER_API_KEY')
     if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
-        print(f"Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
+        print("Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
         raise DataContractException(
             type="lint",
             name=f"Reading data contract from {url}",

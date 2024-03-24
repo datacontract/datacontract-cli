@@ -1,6 +1,6 @@
-from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
-import datacontract.lint.resolve as resolve
 import datacontract.model.data_contract_specification as spec
+from datacontract.lint.linters.field_reference_linter import \
+    FieldReferenceLinter
 from datacontract.model.run import Check
 
 
@@ -23,6 +23,7 @@ success_check = Check(
 
 linter = FieldReferenceLinter()
 
+
 def test_correct_field_reference():
     specification = spec.DataContractSpecification(
         models={
@@ -34,6 +35,7 @@ def test_correct_field_reference():
                     "test_field_1": spec.Field()})})
     assert linter.lint(specification) == [success_check]
 
+
 def test_incorrect_model_reference():
     specification = spec.DataContractSpecification(
         models={
@@ -43,7 +45,8 @@ def test_incorrect_model_reference():
     assert linter.lint(specification) == [
         construct_error_check(
             "Field 'test_field_1' in model 'test_model_1' references non-existing model 'test_model_2'."
-          )]
+        )]
+
 
 def test_incorrect_field_reference():
     specification = spec.DataContractSpecification(

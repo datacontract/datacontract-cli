@@ -1,13 +1,8 @@
-import json
 import logging
-import os
-import sys
-import yaml
 
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.dbt_converter import to_dbt_models_yaml
 from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.model.data_contract_specification import \
     DataContractSpecification

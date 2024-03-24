@@ -1,10 +1,8 @@
-from typing import Dict
-import inspect
 from pydantic import BaseModel
 from rdflib import Graph, Literal, BNode, RDF, URIRef, Namespace
 
 from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model, Field
+    DataContractSpecification
 
 
 def is_literal(property_name):

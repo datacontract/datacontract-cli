@@ -1,7 +1,9 @@
 import re
 
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification
 from ..lint import Linter, LinterResult
-from datacontract.model.data_contract_specification import DataContractSpecification
+
 
 class NoticePeriodLinter(Linter):
     @property
@@ -48,7 +50,7 @@ class NoticePeriodLinter(Linter):
                  "ISO8601 duration.")
         if period == "P":
             return LinterResult.erroneous(
-                f"Notice period 'P' is not a valid"
+                "Notice period 'P' is not a valid"
                  "ISO8601 duration, requires at least one"
                  "duration to be specified.")
         if (not self.simple.fullmatch(period) and

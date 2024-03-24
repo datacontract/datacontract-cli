@@ -1,6 +1,5 @@
 import logging
 
-import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app

@@ -7,9 +7,6 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification, Model, Field
 
 
-
-
-
 def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
     dbt = {
         "version": 2,
@@ -23,7 +20,7 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
 
 def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name: str, model_value: Model) -> str:
     if data_contract_spec.models is None or len(data_contract_spec.models.items()) != 1:
-        print(f"Export to dbt-staging-sql currently only works with exactly one model in the data contract.")
+        print("Export to dbt-staging-sql currently only works with exactly one model in the data contract.")
         return ""
 
     id = data_contract_spec.id

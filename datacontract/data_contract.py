@@ -5,41 +5,46 @@ import typing
 
 import yaml
 
-from datacontract.breaking.breaking import models_breaking_changes, quality_breaking_changes
+from datacontract.breaking.breaking import models_breaking_changes, \
+    quality_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import \
     check_that_datacontract_contains_valid_server_configuration
 from datacontract.engines.fastjsonschema.check_jsonschema import \
     check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-from datacontract.export.avro_converter import to_avro_schema, to_avro_schema_json
+from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.export.avro_idl_converter import to_avro_idl
 from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
-from datacontract.export.jsonschema_converter import to_jsonschema, to_jsonschema_json
+from datacontract.export.great_expectations_converter import \
+    to_great_expectations
+from datacontract.export.jsonschema_converter import to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
-from datacontract.export.great_expectations_converter import to_great_expectations
-from datacontract.export.rdf_converter import to_rdf, to_rdf_n3
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
-from datacontract.imports.avro_importer import import_avro
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
+from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
-
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Severity
 from datacontract.lint.linters.description_linter import DescriptionLinter
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
-from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
-from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
+from datacontract.lint.linters.field_reference_linter import \
+    FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
-from datacontract.lint.linters.primary_field_linter import PrimaryFieldUniqueRequired
-from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
+from datacontract.lint.linters.primary_field_linter import \
+    PrimaryFieldUniqueRequired
+from datacontract.lint.linters.quality_schema_linter import \
+    QualityUsesSchemaLinter
+from datacontract.lint.linters.valid_constraints_linter import \
+    ValidFieldConstraintsLinter
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, \
+    Severity
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -50,7 +55,7 @@ from datacontract.model.run import \
 def _determine_sql_server_type(data_contract, sql_server_type):
     if sql_server_type == "auto":
         if data_contract.servers is None or len(data_contract.servers) == 0:
-            raise RuntimeError(f"Export with server_type='auto' requires servers in the data contract.")
+            raise RuntimeError("Export with server_type='auto' requires servers in the data contract.")
 
         server_types = set([server.type for server in data_contract.servers.values()])
         if "snowflake" in server_types:
@@ -167,7 +172,7 @@ class DataContract:
     def test(self) -> Run:
         run = Run.create_run()
         try:
-            run.log_info(f"Testing data contract")
+            run.log_info("Testing data contract")
             data_contract = resolve.resolve_data_contract(self._data_contract_file, self._data_contract_str,
                                                           self._data_contract, self._schema_location)
 
@@ -240,12 +245,12 @@ class DataContract:
         if self._publish_url is not None:
             try:
                 publish_datamesh_manager(run, self._publish_url)
-            except:
+            except Exception:
                 logging.error("Failed to publish to datamesh manager")
         if self._publish_to_opentelemetry:
             try:
                 publish_opentelemetry(run)
-            except:
+            except Exception:
                 logging.error("Failed to publish to opentelemetry")
 
         return run
@@ -427,13 +432,13 @@ class DataContract:
             run.log_info(f"Creating example file {p}")
             with open(p, "w") as f:
                 content = ""
-                if format == "json" and type(example.data) is list:
+                if format == "json" and isinstance(example.data, list):
                     content = json.dumps(example.data)
-                elif format == "json" and type(example.data) is str:
+                elif format == "json" and isinstance(example.data, str):
                     content = example.data
-                elif format == "yaml" and type(example.data) is list:
+                elif format == "yaml" and isinstance(example.data, list):
                     content = yaml.dump(example.data, allow_unicode=True)
-                elif format == "yaml" and type(example.data) is str:
+                elif format == "yaml" and isinstance(example.data, str):
                     content = example.data
                 elif format == "csv":
                     content = example.data

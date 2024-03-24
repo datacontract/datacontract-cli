@@ -1,6 +1,6 @@
 from typing import Annotated, Union
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File
 
 from datacontract.data_contract import DataContract
 

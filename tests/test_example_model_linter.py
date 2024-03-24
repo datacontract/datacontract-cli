@@ -1,7 +1,6 @@
-from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 import datacontract.lint.resolve as resolve
-import datacontract.lint.lint as lint
 import datacontract.model.data_contract_specification as spec
+from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.model.run import Check
 
 

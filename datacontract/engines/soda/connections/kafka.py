@@ -4,7 +4,10 @@ import pyspark.sql.functions as fn
 from pyspark.sql import SparkSession
 from pyspark.sql.avro.functions import from_avro
 from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import *
+from pyspark.sql.types import StructType, DataType, NullType, ArrayType, \
+    BinaryType, DateType, TimestampNTZType, \
+    TimestampType, BooleanType, LongType, IntegerType, DoubleType, DecimalType, \
+    StringType, StructField
 
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import \

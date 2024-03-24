@@ -30,7 +30,7 @@ def resolve_data_contract(
             type="lint",
             result="failed",
             name="Check that data contract YAML is valid",
-            reason=f"Data contract needs to be provided",
+            reason="Data contract needs to be provided",
             engine="datacontract",
         )
 

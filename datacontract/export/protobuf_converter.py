@@ -1,9 +1,7 @@
-from typing import Dict
 
-import yaml
 
 from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model, Field
+    DataContractSpecification
 
 
 def to_protobuf(data_contract_spec: DataContractSpecification):

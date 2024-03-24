@@ -1,12 +1,10 @@
-import json
 import logging
 import os
 import sys
 
+from rdflib.compare import to_isomorphic
+from rdflib.graph import Graph
 from typer.testing import CliRunner
-
-from rdflib.graph import Graph, Namespace
-from rdflib.compare import graph_diff, to_isomorphic, to_canonical_graph
 
 from datacontract.cli import app
 from datacontract.export.rdf_converter import to_rdf
@@ -25,6 +23,7 @@ def test_cli():
         "--rdf-base", "urn:acme:"
     ])
     assert result.exit_code == 0
+
 
 def test_no_rdf_base():
     runner = CliRunner()
@@ -100,6 +99,7 @@ def test_to_rdf():
     iso_result = to_isomorphic(Graph().parse(data=result.serialize()))
 
     assert iso_g1 == iso_result
+
 
 def test_to_rdf_complex():
     data_contract_file = ("./examples/export/rdf/datacontract-complex.yaml")
@@ -222,7 +222,6 @@ def test_to_rdf_complex():
     iso_result = to_isomorphic(Graph().parse(data=result.serialize()))
 
     assert iso_g1 == iso_result
-
 
 
 def read_file(data_contract_file):

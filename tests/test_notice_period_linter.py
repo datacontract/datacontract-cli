@@ -1,6 +1,5 @@
-from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
-import datacontract.lint.resolve as resolve
 import datacontract.model.data_contract_specification as spec
+from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
 from datacontract.model.run import Check
 
 

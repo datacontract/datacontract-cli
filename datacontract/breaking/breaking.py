@@ -1,5 +1,5 @@
 from datacontract.breaking.breaking_rules import BreakingRules
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Location, Severity
+from datacontract.model.breaking_change import BreakingChange, Location, Severity
 from datacontract.model.data_contract_specification import Field, Model, Quality
 
 
@@ -271,7 +271,7 @@ def field_breaking_changes(
         description = None
 
         # logic for enum, tags and other arrays
-        if type(old_value) is list and type(new_value) is list:
+        if isinstance(old_value, list) and isinstance(new_value, list):
             if not old_value and new_value:
                 rule_name = f"field_{_camel_to_snake(field_definition_field)}_added"
                 description = f"added with value: `{new_value}`"
@@ -285,7 +285,7 @@ def field_breaking_changes(
         # logic for normal fields
         elif old_value is None and new_value is not None:
             rule_name = f"field_{_camel_to_snake(field_definition_field)}_added"
-            description = f"added with value: `{str(new_value).lower() if type(new_value) is bool else new_value}`"
+            description = f"added with value: `{str(new_value).lower() if isinstance(new_value, bool) else new_value}`"
 
         elif old_value is not None and new_value is None:
             rule_name = f"field_{_camel_to_snake(field_definition_field)}_removed"
@@ -293,8 +293,8 @@ def field_breaking_changes(
 
         elif old_value != new_value:
             rule_name = f"field_{_camel_to_snake(field_definition_field)}_updated"
-            description = (f"changed from `{str(old_value).lower() if type(old_value) is bool else old_value}` "
-                           f"to `{str(new_value).lower() if type(new_value) is bool else new_value}`")
+            description = (f"changed from `{str(old_value).lower() if isinstance(old_value, bool) else old_value}` "
+                           f"to `{str(new_value).lower() if isinstance(new_value, bool) else new_value}`")
 
         if rule_name is not None:
             severity = _get_rule(rule_name)

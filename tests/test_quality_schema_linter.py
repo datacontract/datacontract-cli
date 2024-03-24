@@ -1,6 +1,6 @@
-from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
 import datacontract.lint.resolve as resolve
-import datacontract.model.data_contract_specification as spec
+from datacontract.lint.linters.quality_schema_linter import \
+    QualityUsesSchemaLinter
 from datacontract.model.run import Check
 
 
@@ -21,7 +21,6 @@ success_check = Check(
     engine="datacontract"
 )
 
-
 base_contract_sodacl = resolve.resolve_data_contract_from_location(
     "examples/lint/datacontract_quality_schema.yaml")
 
@@ -29,6 +28,7 @@ base_contract_sodacl = resolve.resolve_data_contract_from_location(
 def test_lint_correct_sodacl():
     result = QualityUsesSchemaLinter().lint(base_contract_sodacl)
     assert result == [success_check]
+
 
 def test_lint_incorrect_sodacl():
     incorrect_contract = base_contract_sodacl.model_copy(deep=True)

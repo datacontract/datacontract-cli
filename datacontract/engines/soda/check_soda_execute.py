@@ -126,7 +126,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             type="general",
             name="Execute quality checks",
             result="warning",
-            reason=f"Engine soda-core has errors. See the logs for details.",
+            reason="Engine soda-core has errors. See the logs for details.",
             engine="soda-core",
         ))
         return

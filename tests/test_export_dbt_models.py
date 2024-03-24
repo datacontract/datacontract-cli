@@ -1,9 +1,8 @@
-import json
 import logging
 import os
 import sys
-import yaml
 
+import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app

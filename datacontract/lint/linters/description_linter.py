@@ -1,6 +1,6 @@
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification
 from ..lint import Linter, LinterResult
-from datacontract.model.data_contract_specification import\
-    DataContractSpecification, Model
 
 
 class DescriptionLinter(Linter):
@@ -21,7 +21,7 @@ class DescriptionLinter(Linter):
         result = LinterResult()
         if not contract.info or not contract.info.description:
             result = result.with_error(
-                f"Contract has empty description.")
+                "Contract has empty description.")
         for (model_name, model) in contract.models.items():
             if not model.description:
                 result = result.with_error(
