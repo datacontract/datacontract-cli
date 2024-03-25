@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 import typer
 from click import Context
 from rich import box
-from rich import print
+from rich.console import Console
 from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
@@ -14,6 +14,7 @@ from datacontract.data_contract import DataContract
 from datacontract.init.download_datacontract_file import \
     download_datacontract_file, FileExistsException
 
+console = Console()
 
 class OrderedCommands(TyperGroup):
     def list_commands(self, ctx: Context) -> Iterable[str]:
@@ -29,7 +30,7 @@ app = typer.Typer(
 
 def version_callback(value: bool):
     if value:
-        print(metadata.version("datacontract-cli"))
+        console.print(metadata.version("datacontract-cli"))
         raise typer.Exit()
 
 
@@ -66,10 +67,10 @@ def init(
     try:
         download_datacontract_file(location, template, overwrite)
     except FileExistsException:
-        print("File already exists, use --overwrite to overwrite")
+        console.print("File already exists, use --overwrite to overwrite")
         raise typer.Exit(code=1)
     else:
-        print("📄 data contract written to " + location)
+        console.print("📄 data contract written to " + location)
 
 
 @app.command()
@@ -120,7 +121,7 @@ def test(
     """
     Run schema and quality tests on configured servers.
     """
-    print(f"Testing {location}")
+    console.print(f"Testing {location}")
     if server == "all":
         server = None
     run = DataContract(
@@ -138,6 +139,7 @@ def test(
 
 class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
+    pydantic_model = "pydantic-model"
     sodacl = "sodacl"
     dbt = "dbt"
     dbt_sources = "dbt-sources"
@@ -181,7 +183,7 @@ def export(
     ] = "datacontract.yaml",
 ):
     """
-    Convert data contract to a specific format. Prints to stdout.
+    Convert data contract to a specific format. console.prints to stdout.
     """
     # TODO exception handling
     result = DataContract(data_contract_file=location, server=server).export(
@@ -190,7 +192,8 @@ def export(
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,
     )
-    print(result)
+    # Don't interpret console markup in output.
+    console.print(result, markup=False)
 
 
 class ImportFormat(str, Enum):
@@ -207,7 +210,7 @@ def import_(
     Create a data contract from the given source file. Prints to stdout.
     """
     result = DataContract().import_from_source(format, source)
-    print(result.to_yaml())
+    console.print(result.to_yaml())
 
 
 @app.command()
@@ -224,7 +227,7 @@ def breaking(
         DataContract(data_contract_file=location_new, inline_definitions=True)
     )
 
-    print(result.breaking_str())
+    console.print(result.breaking_str())
 
     if not result.passed_checks():
         raise typer.Exit(code=1)
@@ -244,7 +247,7 @@ def changelog(
         DataContract(data_contract_file=location_new, inline_definitions=True)
     )
 
-    print(result.changelog_str())
+    console.print(result.changelog_str())
 
 
 @app.command()
@@ -261,21 +264,21 @@ def diff(
         DataContract(data_contract_file=location_new, inline_definitions=True)
     )
 
-    print(result.changelog_str())
+    console.print(result.changelog_str())
 
 
 def _handle_result(run):
     _print_table(run)
     if run.result == "passed":
-        print(
+        console.print(
             f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
     else:
-        print("🔴 data contract is invalid, found the following errors:")
+        console.print("🔴 data contract is invalid, found the following errors:")
         i = 1
         for check in run.checks:
             if check.result != "passed":
-                print(str(++i) + ") " + check.reason)
+                console.print(str(++i) + ") " + check.reason)
         raise typer.Exit(code=1)
 
 
@@ -287,7 +290,7 @@ def _print_table(run):
     table.add_column("Details", max_width=50)
     for check in run.checks:
         table.add_row(with_markup(check.result), check.name, to_field(run, check), check.reason)
-    print(table)
+    console.print(table)
 
 
 def to_field(run, check):
@@ -301,9 +304,9 @@ def to_field(run, check):
 
 
 def _print_logs(run):
-    print("\nLogs:")
+    console.print("\nLogs:")
     for log in run.logs:
-        print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
+        console.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
 
 
 def with_markup(result):
