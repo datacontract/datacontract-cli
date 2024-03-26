@@ -2,6 +2,7 @@ import logging
 import os
 
 import pytest
+from dotenv import load_dotenv
 
 from datacontract.data_contract import DataContract
 
@@ -9,6 +10,7 @@ logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "examples/bigquery/datacontract.yaml"
 
+load_dotenv(override=True)
 
 # Deactivated because the test requires special setup on a non-free BigQuery account.
 # Can activate for testing locally, using a custom account_info file.

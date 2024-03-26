@@ -4,11 +4,11 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
 
-def to_sodacl_yaml(data_contract_spec: DataContractSpecification, check_types: bool = True) -> str:
+def to_sodacl_yaml(data_contract_spec: DataContractSpecification, server_type: str = None, check_types: bool = True) -> str:
     try:
         sodacl = {}
         for model_key, model_value in data_contract_spec.models.items():
-            k, v = to_checks(model_key, model_value, check_types)
+            k, v = to_checks(model_key, model_value, server_type, check_types)
             sodacl[k] = v
         add_quality_checks(sodacl, data_contract_spec)
         sodacl_yaml_str = yaml.dump(sodacl, default_flow_style=False, sort_keys=False)
@@ -17,17 +17,20 @@ def to_sodacl_yaml(data_contract_spec: DataContractSpecification, check_types: b
         return f"Error: {e}"
 
 
-def to_checks(model_key, model_value, check_types: bool):
+def to_checks(model_key, model_value, server_type: str, check_types: bool):
     checks = []
     fields = model_value.fields
+
+    quote_field_name = server_type in ["postgres"]
+
     for field_name, field in fields.items():
         checks.append(check_field_is_present(field_name))
         if check_types and field.type is not None:
             checks.append(check_field_type(field_name, field.type))
         if field.required:
-            checks.append(check_field_required(field_name))
+            checks.append(check_field_required(field_name, quote_field_name))
         if field.unique:
-            checks.append(check_field_unique(field_name))
+            checks.append(check_field_unique(field_name, quote_field_name))
 
     return f"checks for {model_key}", checks
 
@@ -52,13 +55,20 @@ def check_field_type(field_name: str, type: str):
     }
 
 
-def check_field_required(field_name):
-    return {f"missing_count({field_name}) = 0": {"name": f"Check that required field {field_name} has no null values"}}
+def check_field_required(field_name: str, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
 
-
-def check_field_unique(field_name):
     return {
-        f"duplicate_count({field_name}) = 0": {"name": f"Check that unique field {field_name} has no duplicate values"}
+        f"missing_count({field_name}) = 0": {"name": f"Check that required field {field_name} has no null values"}}
+
+
+def check_field_unique(field_name, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"duplicate_count({field_name}) = 0": {
+            "name": f"Check that unique field {field_name} has no duplicate values"}
     }
 
 

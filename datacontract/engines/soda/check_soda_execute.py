@@ -89,8 +89,9 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
     # Don't check types for json format, as they are checked with json schema
     # Don't check types for avro format, as they are checked with avro schema
     # Don't check types for csv format, as they are hard to detect
+    server_type = server.type
     check_types = server.format != "json" and server.format != "csv" and server.format != "avro"
-    sodacl_yaml_str = to_sodacl_yaml(data_contract, check_types)
+    sodacl_yaml_str = to_sodacl_yaml(data_contract, server_type, check_types)
     # print("sodacl_yaml_str:\n" + sodacl_yaml_str)
     scan.add_sodacl_yaml_str(sodacl_yaml_str)
 
