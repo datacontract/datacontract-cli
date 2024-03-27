@@ -43,21 +43,28 @@ def to_sql_ddl(data_contract_spec: DataContractSpecification, server_type: str =
     if data_contract_spec.models is None or len(data_contract_spec.models) == 0:
         return ""
 
+    table_prefix = ""
+
     for server_name, server in iter(data_contract_spec.servers.items()):
-        if server.type == server_type:
-            break
         if server.type == "snowflake":
             server_type = "snowflake"
             break
         if server.type == "postgres":
             server_type = "postgres"
             break
+        if server.type == "databricks":
+            server_type = "databricks"
+            if server.catalog is not None and server.schema_ is not None:
+                table_prefix = server.catalog + "." + server.schema_ + "."
+            break
+        if server.type == server_type:
+            break
 
     result = ""
     result += f"-- Data Contract: {data_contract_spec.id}\n"
     result += f"-- SQL Dialect: {server_type}\n"
     for model_name, model in iter(data_contract_spec.models.items()):
-        result += _to_sql_table(model_name, model, server_type)
+        result += _to_sql_table(table_prefix + model_name, model, server_type)
 
     return result.strip()
 

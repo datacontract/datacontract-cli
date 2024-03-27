@@ -58,7 +58,7 @@ models:
     description: A single article that is part of an order.
     type: table
     fields:
-      lines_item_id:
+      line_item_id:
         type: string
         description: Primary key of the lines_item_id table
         required: true

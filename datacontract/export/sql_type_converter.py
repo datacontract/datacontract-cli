@@ -6,6 +6,8 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_to_snowflake(field)
     if server_type == "postgres":
         return convert_type_to_postgres(field)
+    if server_type == "databricks":
+        return convert_to_databricks(field)
     return str(type)
 
 
@@ -88,4 +90,42 @@ def convert_type_to_postgres(field: Field) -> None | str:
         return "bytea"
     if type.lower() in ["array"]:
         return convert_to_sql_type(field.items, "postgres") + "[]"
+    return None
+
+
+# databricks data types:
+# https://docs.databricks.com/en/sql/language-manual/sql-ref-datatypes.html
+def convert_to_databricks(field) -> None | str:
+    type = field.type
+    if type is None:
+        return None
+    if type.lower() in ["string", "varchar", "text"]:
+        return "STRING"
+    if type.lower() in ["timestamp", "timestamp_tz"]:
+        return "TIMESTAMP"
+    if type.lower() in ["timestamp_ntz"]:
+        return "TIMESTAMP_NTZ"
+    if type.lower() in ["date"]:
+        return "DATE"
+    if type.lower() in ["time"]:
+        return "STRING"
+    if type.lower() in ["number", "decimal", "numeric"]:
+        # precision and scale not supported by data contract
+        return "DECIMAL"
+    if type.lower() in ["float"]:
+        return "FLOAT"
+    if type.lower() in ["double"]:
+        return "DOUBLE"
+    if type.lower() in ["integer", "int"]:
+        return "INT"
+    if type.lower() in ["long", "bigint"]:
+        return "BIGINT"
+    if type.lower() in ["boolean"]:
+        return "BOOLEAN"
+    if type.lower() in ["object", "record", "struct"]:
+        return "STRUCT"
+    if type.lower() in ["bytes"]:
+        return "BINARY"
+    if type.lower() in ["array"]:
+        return "ARRAY"
     return None

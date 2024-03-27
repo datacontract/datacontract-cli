@@ -47,3 +47,24 @@ CREATE TABLE line_items (
 );
 """.strip()
     assert actual == expected
+
+
+def test_to_sql_ddl_databricks_unity_catalog():
+    actual = DataContract(data_contract_file="./examples/databricks-sql/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: urn:datacontract:checkout:orders-latest
+-- SQL Dialect: databricks
+CREATE TABLE datacontract_test_2.orders_latest.orders (
+  order_id STRING not null,
+  order_timestamp TIMESTAMP not null,
+  order_total BIGINT not null,
+  customer_id STRING,
+  customer_email_address STRING not null
+);
+CREATE TABLE datacontract_test_2.orders_latest.line_items (
+  line_item_id STRING not null,
+  order_id STRING,
+  sku STRING
+);
+""".strip()
+    assert actual == expected
