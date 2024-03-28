@@ -2,20 +2,19 @@ import datacontract.model.data_contract_specification as spec
 import typing
 import ast
 
-
 def to_pydantic_model_str(contract: spec.DataContractSpecification) -> str:
     classdefs = [generate_model_class(model_name, model) for (model_name, model) in contract.models.items()]
-    result = ast.unparse(with_imports(classdefs))
-    return result
-
-def with_imports(classdefs: list[ast.ClassDef]) -> ast.Module:
-    return ast.Module(body=[
+    documentation = [ast.Expr(ast.Constant(contract.info.description))] if (
+        contract.info and contract.info.description) else []
+    result = ast.Module(body=[
         ast.Import(
             names=[ast.Name("datetime", ctx=ast.Load()),
                    ast.Name("typing", ctx=ast.Load()),
                    ast.Name("pydantic", ctx=ast.Load())]),
+        *documentation,
         *classdefs],
         type_ignores=[])
+    return ast.unparse(result)
 
 def optional_of(node) -> ast.Subscript:
     return ast.Subscript(
@@ -87,8 +86,11 @@ def type_annotation(field_name: str, field: spec.Field) -> tuple[type_annotation
         (annotated_type, new_classes) = constant_field_annotation(field_name, field)
         return (optional_of(annotated_type), new_classes)
 
+def is_simple_field(field: spec.Field) -> bool:
+    return field.type not in set(["object", "record", "struct"])
+
 def field_definitions(fields: dict[str, spec.Field]) ->\
-        tuple[list[ast.AnnAssign],
+        tuple[list[ast.Expr],
               list[ast.ClassDef]]:
     annotations = []
     classes = []
@@ -99,6 +101,9 @@ def field_definitions(fields: dict[str, spec.Field]) ->\
                 target=ast.Name(id=field_name, ctx=ast.Store()),
                 annotation=ann,
                 simple=1))
+        if field.description and is_simple_field(field):
+            annotations.append(
+                ast.Expr(ast.Constant(field.description)))
         if new_class:
             classes.append(new_class)
     return (annotations, classes)
@@ -106,26 +111,30 @@ def field_definitions(fields: dict[str, spec.Field]) ->\
 def generate_field_class(field_name: str, field: spec.Field) -> ast.ClassDef:
     assert(field.type in set(["object", "record", "struct"]))
     (annotated_type, new_classes) = field_definitions(field.fields)
+    documentation = [ast.Expr(ast.Constant(field.description))] if field.description else []
     return ast.ClassDef(
         name=field_name,
         bases=[ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()),
                              attr="BaseModel",
                              ctx=ast.Load())],
         body=[
+            *documentation,
             *new_classes,
-            *annotated_type],
+            *annotated_type
+        ],
         keywords=[],
         decorator_list=[])
 
 
 def generate_model_class(name: str, model_definition: spec.Model) -> ast.ClassDef:
     (field_assignments, nested_classes) = field_definitions(model_definition.fields)
+    documentation = [ast.Expr(ast.Constant(model_definition.description))] if model_definition.description else []
     result = ast.ClassDef(
         name=name.capitalize(),
         bases=[ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()),
                              attr="BaseModel",
                              ctx=ast.Load())],
-        body=[*nested_classes, *field_assignments],
+        body=[*documentation, *nested_classes, *field_assignments],
         keywords=[],
         decorator_list=[])
     return result
