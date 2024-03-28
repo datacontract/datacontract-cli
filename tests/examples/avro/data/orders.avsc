@@ -18,6 +18,14 @@
         "type": "double"
       },
       {
+        "name": "email_adresses",
+        "type": "array",
+        "items": "string",
+        "format": "email",
+        "pattern": "^.*@.*$",
+        "doc": "Different email adresses of a customer"
+      },
+      {
         "name": "address",
         "type": {
           "fields": [

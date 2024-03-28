@@ -49,6 +49,13 @@ models:
         type: string
       orderunits:
         type: double
+      email_adresses:
+        type: array
+        description: Different email adresses of a customer
+        items:
+           type: text
+           format: email
+           pattern: ^.*@.*$
       address:
         type: object
         fields:
