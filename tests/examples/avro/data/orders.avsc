@@ -14,16 +14,28 @@
         "type": "string"
       },
       {
+        "name": "material",
+        "type": [
+            "null",
+            {
+                "type": "string",
+                "avro.java.string": "String"
+            }
+        ]
+      },
+      {
         "name": "orderunits",
         "type": "double"
       },
       {
-        "name": "email_adresses",
-        "type": "array",
-        "items": "string",
-        "format": "email",
-        "pattern": "^.*@.*$",
-        "doc": "Different email adresses of a customer"
+        "name": "emailadresses",
+        "doc": "Different email adresses of a customer",
+        "type": {
+          "type": "array",
+          "items": "string",
+          "format": "email",
+          "pattern": "^.*@.*$"
+        }
       },
       {
         "name": "address",

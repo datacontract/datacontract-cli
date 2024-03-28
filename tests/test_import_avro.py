@@ -43,28 +43,40 @@ models:
       ordertime:
         type: long
         description: My Field
+        required: true
       orderid:
         type: int
+        required: true
       itemid:
         type: string
+        required: true
+      material:
+        type: string
+        required: false
       orderunits:
         type: double
-      email_adresses:
+        required: true
+      emailadresses:
         type: array
         description: Different email adresses of a customer
         items:
-           type: text
+           type: string
            format: email
            pattern: ^.*@.*$
+        required: true
       address:
         type: object
+        required: true
         fields:
           city:
             type: string
+            required: true
           state:
             type: string
+            required: true
           zipcode:
             type: long
+            required: true
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
