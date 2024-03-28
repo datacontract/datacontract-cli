@@ -36,16 +36,34 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
 def import_record_fields(record_fields):
     imported_fields = {}
     for field in record_fields:
+
+        imported_fields[field.name] = Field()
+        imported_fields[field.name].required = True
+        imported_fields[field.name].description = field.doc
+
         if field.type.type == "record":
-            imported_fields[field.name] = Field()
             imported_fields[field.name].type = "object"
             imported_fields[field.name].description = field.type.doc
             imported_fields[field.name].fields = import_record_fields(field.type.fields)
-        else:
-            imported_fields[field.name] = Field()
+        elif field.type.type == "union":
+            imported_fields[field.name].required = False
+            imported_fields[field.name].type = import_type_of_optional_field(field)
+        else: # primitive type
             imported_fields[field.name].type = map_type_from_avro(field.type.type)
-            imported_fields[field.name].description = field.doc
     return imported_fields
+
+
+def import_type_of_optional_field(field):
+    for field_type in field.type.schemas:
+        if field_type.type != "null":
+            return map_type_from_avro(field_type.type)
+    raise DataContractException(
+        type="schema",
+        result="failed",
+        name="Map avro type to data contract type",
+        reason="Could not import optional field: union type does not contain a non-null type",
+        engine="datacontract",
+    )
 
 
 def map_type_from_avro(avro_type_str: str):

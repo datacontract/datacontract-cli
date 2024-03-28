@@ -14,6 +14,17 @@
         "type": "string"
       },
       {
+        "name": "material",
+        "doc": "An optional field",
+        "type": [
+            "null",
+            {
+                "type": "string",
+                "avro.java.string": "String"
+            }
+        ]
+      },
+      {
         "name": "orderunits",
         "type": "double"
       },
