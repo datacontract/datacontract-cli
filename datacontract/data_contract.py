@@ -22,6 +22,7 @@ from datacontract.export.great_expectations_converter import \
 from datacontract.export.jsonschema_converter import to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
+from datacontract.export.pydantic_converter import to_pydantic_model_str
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
@@ -436,7 +437,8 @@ class DataContract:
                     )
 
                 return to_great_expectations(data_contract, model_name)
-
+        if export_format == "pydantic-model":
+            return to_pydantic_model_str(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
