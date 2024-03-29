@@ -1,5 +1,6 @@
 import yaml
 
+from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
@@ -26,7 +27,8 @@ def to_checks(model_key, model_value, server_type: str, check_types: bool):
     for field_name, field in fields.items():
         checks.append(check_field_is_present(field_name))
         if check_types and field.type is not None:
-            checks.append(check_field_type(field_name, field.type))
+            sql_type = convert_to_sql_type(field, server_type)
+            checks.append(check_field_type(field_name, sql_type))
         if field.required:
             checks.append(check_field_required(field_name, quote_field_name))
         if field.unique:

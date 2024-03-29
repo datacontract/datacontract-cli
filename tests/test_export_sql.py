@@ -62,7 +62,7 @@ CREATE TABLE datacontract_test_2.orders_latest.orders (
   customer_email_address STRING not null
 );
 CREATE TABLE datacontract_test_2.orders_latest.line_items (
-  line_item_id STRING not null,
+  lines_item_id STRING not null,
   order_id STRING,
   sku STRING
 );

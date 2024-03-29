@@ -42,7 +42,7 @@ models:
         required: true
       order_total:
         description: Total amount the smallest monetary unit (e.g., cents).
-        type: bigint
+        type: long
         required: true
       customer_id:
         description: Unique identifier for the customer.
@@ -58,7 +58,7 @@ models:
     description: A single article that is part of an order.
     type: table
     fields:
-      line_item_id:
+      lines_item_id:
         type: string
         description: Primary key of the lines_item_id table
         required: true
