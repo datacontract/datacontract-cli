@@ -29,6 +29,11 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
         fields=fields,
     )
     data_contract_specification.models[avro_schema.name].description = avro_schema.doc
+
+    # TODO: custom attributes in data contract fields
+    # TODO: avro schema namespace
+    # data_contract_specification.models[avro_schema.name].__setattr__("domain", avro_schema.namespace)
+
     return data_contract_specification
 
 
@@ -52,9 +57,9 @@ def import_record_fields(record_fields):
         elif field.type.type == "array":
             imported_fields[field.name].type = "array"
             imported_fields[field.name].items = import_avro_array_items(field)
-
-        else: # primitive type
+        else:    # primitive type
             imported_fields[field.name].type = map_type_from_avro(field.type.type)
+
     return imported_fields
 
 
