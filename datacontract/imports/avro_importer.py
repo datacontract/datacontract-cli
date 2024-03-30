@@ -27,9 +27,8 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
     data_contract_specification.models[avro_schema.name] = Model(
         type="table",
         fields=fields,
-        description=avro_schema.doc,
     )
-
+    data_contract_specification.models[avro_schema.name].description = avro_schema.doc
     return data_contract_specification
 
 
