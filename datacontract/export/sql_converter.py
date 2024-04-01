@@ -70,7 +70,12 @@ def to_sql_ddl(data_contract_spec: DataContractSpecification, server_type: str =
 
 
 def _to_sql_table(model_name, model, server_type="snowflake"):
-    result = f"CREATE TABLE {model_name} (\n"
+    if server_type == "databricks":
+        # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
+        # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
+        result = f"CREATE OR REPLACE TABLE {model_name} (\n"
+    else:
+        result = f"CREATE TABLE {model_name} (\n"
     fields = len(model.fields)
     current_field_index = 1
     for field_name, field in iter(model.fields.items()):
