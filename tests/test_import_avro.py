@@ -39,6 +39,7 @@ models:
   orders:
     type: table
     description: My Model
+    namespace: com.sample.schema
     fields:
       ordertime:
         type: long

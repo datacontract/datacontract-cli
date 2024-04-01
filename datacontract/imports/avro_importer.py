@@ -10,7 +10,8 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
         data_contract_specification.models = {}
 
     try:
-        avro_schema = avro.schema.parse(open(source, "rb").read())
+        with open(source, "r") as file:
+            avro_schema = avro.schema.parse(file.read())
     except Exception as e:
         raise DataContractException(
             type="schema",
@@ -27,8 +28,13 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
     data_contract_specification.models[avro_schema.name] = Model(
         type="table",
         fields=fields,
-        description=avro_schema.doc,
     )
+
+    if avro_schema.get_prop("doc") is not None:
+        data_contract_specification.models[avro_schema.name].description = avro_schema.get_prop("doc")
+
+    if avro_schema.get_prop("namespace") is not None:
+        data_contract_specification.models[avro_schema.name].namespace = avro_schema.get_prop("namespace")
 
     return data_contract_specification
 
