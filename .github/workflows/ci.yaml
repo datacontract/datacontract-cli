@@ -74,6 +74,6 @@ jobs:
           # https://duckdb.org/docs/extensions/working_with_extensions#platforms
           platforms: linux/amd64,linux/arm64
 #          push: ${{ github.event_name != 'pull_request' }}
-          push: true
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
