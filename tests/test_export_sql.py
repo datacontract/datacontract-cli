@@ -54,14 +54,14 @@ def test_to_sql_ddl_databricks_unity_catalog():
     expected = """
 -- Data Contract: urn:datacontract:checkout:orders-latest
 -- SQL Dialect: databricks
-CREATE TABLE datacontract_test_2.orders_latest.orders (
+CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.orders (
   order_id STRING not null,
   order_timestamp TIMESTAMP not null,
   order_total BIGINT not null,
   customer_id STRING,
   customer_email_address STRING not null
 );
-CREATE TABLE datacontract_test_2.orders_latest.line_items (
+CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.line_items (
   lines_item_id STRING not null,
   order_id STRING,
   sku STRING
