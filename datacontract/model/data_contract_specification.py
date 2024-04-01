@@ -88,6 +88,7 @@ class Field(pyd.BaseModel):
 class Model(pyd.BaseModel):
     description: str = None
     type: str = None
+    namespace: str = None
     fields: Dict[str, Field] = {}
 
 

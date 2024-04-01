@@ -6,13 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+ 
 - Added export format **great-expectations**: `datacontract export --format great-expectations`  
-- Added gRPC support to opentelemetry integration for publishing test results
+- Added gRPC support to OpenTelemetry integration for publishing test results
+- Added AVRO import support for namespace (#121)
 - Added handling for optional fields in avro import #112
+- Added Databricks SQL dialect for `datacontract export --format sql`
+
+### Fixed
+
+- Use `sql_type_converter` to build checks.
+- Fixed AVRO import when doc is missing (#121)
 
 ## [0.9.7] - 2024-03-15
 
-- Fixed a bug where the export to YAML always escaped the unicode characters.
+### Added
+
 - Added option publish test results to **OpenTelemetry**: `datacontract test --publish-to-opentelemetry`
 - Added export format **protobuf**: `datacontract export --format protobuf`
 - Added export format **terraform**: `datacontract export --format terraform` (limitation: only works for AWS S3 right now)
@@ -23,7 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added extensive linting on data contracts. `datacontract lint` will now check for a variety of possible errors in the data contract, such as missing descriptions, incorrect references to models or fields, nonsensical constraints, and more.
 - Added importer for avro schemas. `datacontract import --format avro` will now import avro schemas into a data contract.
 
+### Fixed
+
+- Fixed a bug where the export to YAML always escaped the unicode characters.
+
+
 ## [0.9.6-2] - 2024-03-04
+
+### Added
 
 - test kafka for avro messages
 - added export format **avro**: `datacontract export --format avro`
