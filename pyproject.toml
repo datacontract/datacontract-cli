@@ -36,7 +36,7 @@ dependencies = [
   "s3fs==2024.3.1",
   "rdflib==7.0.0",
   "avro==1.11.3",
-  "opentelemetry-exporter-otlp-proto-grpc~=1.16.0",
+  "opentelemetry-exporter-otlp-proto-grpc>=1.16,<1.25",
   "opentelemetry-exporter-otlp-proto-http~=1.16.0"
 ]
 
