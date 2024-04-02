@@ -85,9 +85,20 @@ def _to_sql_table(model_name, model, server_type="snowflake"):
             result += " not null"
         if field.primary:
             result += " primary key"
+        if server_type == "databricks" and field.description is not None:
+            result += f" COMMENT \"{_escape(field.description)}\""
         if current_field_index < fields:
             result += ","
         result += "\n"
         current_field_index += 1
-    result += ");\n"
+    result += ")"
+    if server_type == "databricks" and model.description is not None:
+        result += f" COMMENT \"{_escape(model.description)}\""
+    result += ";\n"
     return result
+
+
+def _escape(text: str|None) -> str|None:
+    if text is None:
+        return None
+    return text.replace("\"", "\\\"")
