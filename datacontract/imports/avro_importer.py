@@ -29,6 +29,7 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
         type="table",
         fields=fields,
     )
+    data_contract_specification.models[avro_schema.name].description = avro_schema.doc
 
     if avro_schema.get_prop("doc") is not None:
         data_contract_specification.models[avro_schema.name].description = avro_schema.get_prop("doc")
