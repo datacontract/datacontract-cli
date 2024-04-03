@@ -8,7 +8,7 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_postgres(field)
     if server_type == "databricks":
         return convert_to_databricks(field)
-    return str(type)
+    return field.type
 
 
 # snowflake data types:

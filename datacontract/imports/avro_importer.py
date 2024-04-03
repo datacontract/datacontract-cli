@@ -10,7 +10,8 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
         data_contract_specification.models = {}
 
     try:
-        avro_schema = avro.schema.parse(open(source, "rb").read())
+        with open(source, "r") as file:
+            avro_schema = avro.schema.parse(file.read())
     except Exception as e:
         raise DataContractException(
             type="schema",
@@ -28,11 +29,12 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
         type="table",
         fields=fields,
     )
-    data_contract_specification.models[avro_schema.name].description = avro_schema.doc
 
-    # TODO: custom attributes in data contract fields
-    # TODO: avro schema namespace
-    # data_contract_specification.models[avro_schema.name].__setattr__("domain", avro_schema.namespace)
+    if avro_schema.get_prop("doc") is not None:
+        data_contract_specification.models[avro_schema.name].description = avro_schema.get_prop("doc")
+
+    if avro_schema.get_prop("namespace") is not None:
+        data_contract_specification.models[avro_schema.name].namespace = avro_schema.get_prop("namespace")
 
     return data_contract_specification
 
@@ -46,7 +48,7 @@ def import_record_fields(record_fields):
         imported_fields[field.name].description = field.doc
         for prop in field.other_props:
             imported_fields[field.name].__setattr__(prop, field.other_props[prop])
-        
+
         if field.type.type == "record":
             imported_fields[field.name].type = "object"
             imported_fields[field.name].description = field.type.doc
@@ -78,6 +80,19 @@ def import_avro_array_items(array_schema):
         items.type = map_type_from_avro(array_schema.items.type)
 
     return items
+
+
+def import_type_of_optional_field(field):
+    for field_type in field.type.schemas:
+        if field_type.type != "null":
+            return map_type_from_avro(field_type.type)
+    raise DataContractException(
+        type="schema",
+        result="failed",
+        name="Map avro type to data contract type",
+        reason="Could not import optional field: union type does not contain a non-null type",
+        engine="datacontract",
+    )
 
 
 def import_type_of_optional_field(field):

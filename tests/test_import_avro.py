@@ -40,6 +40,7 @@ models:
   orders:
     type: table
     description: My Model
+    namespace: com.sample.schema
     fields:
       ordertime:
         type: long
@@ -54,6 +55,7 @@ models:
       material:
         type: string
         required: false
+        description: An optional field
       orderunits:
         type: double
         required: true
