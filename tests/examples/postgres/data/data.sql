@@ -2,7 +2,7 @@
 CREATE TABLE public.my_table (
                         field_one VARCHAR(10) primary key,
                         field_two INT not null,
-                        field_three TIMESTAMP
+                        field_three TIMESTAMPTZ
 );
 
 -- Insert the data

@@ -15,6 +15,7 @@
       },
       {
         "name": "material",
+        "doc": "An optional field",
         "type": [
             "null",
             {
@@ -61,5 +62,6 @@
     ],
     "name": "orders",
     "doc": "My Model",
-    "type": "record"
+    "type": "record",
+    "namespace": "com.sample.schema"
   }
