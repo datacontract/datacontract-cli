@@ -29,6 +29,16 @@
         "type": "double"
       },
       {
+        "name": "emailadresses",
+        "doc": "Different email adresses of a customer",
+        "type": {
+          "type": "array",
+          "items": "string",
+          "format": "email",
+          "pattern": "^.*@.*$"
+        }
+      },
+      {
         "name": "address",
         "type": {
           "fields": [

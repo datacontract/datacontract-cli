@@ -1,0 +1,47 @@
+{
+    "fields": [
+      {
+        "name": "orderid",
+        "type": "int"
+      },
+      {
+        "name": "adresses",
+        "doc": "Adresses of a customer",
+        "type": {
+          "type": "array",
+          "items": {
+            "name": "address",
+            "type": "record",
+            "fields": [
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "state",
+                "type": "string"
+              },
+              {
+                "name": "zipcode",
+                "type": "long"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "nestedArrays",
+        "doc": "Example schema for an array of arrays",
+        "type": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": "int"
+          }
+        }
+      }
+    ],
+    "name": "orders",
+    "doc": "My Model",
+    "type": "record"
+  }

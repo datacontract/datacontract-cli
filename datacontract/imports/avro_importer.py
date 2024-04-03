@@ -46,6 +46,8 @@ def import_record_fields(record_fields):
         imported_fields[field.name] = Field()
         imported_fields[field.name].required = True
         imported_fields[field.name].description = field.doc
+        for prop in field.other_props:
+            imported_fields[field.name].__setattr__(prop, field.other_props[prop])
 
         if field.type.type == "record":
             imported_fields[field.name].type = "object"
@@ -54,9 +56,30 @@ def import_record_fields(record_fields):
         elif field.type.type == "union":
             imported_fields[field.name].required = False
             imported_fields[field.name].type = import_type_of_optional_field(field)
-        else: # primitive type
+        elif field.type.type == "array":
+            imported_fields[field.name].type = "array"
+            imported_fields[field.name].items = import_avro_array_items(field.type)
+        else:    # primitive type
             imported_fields[field.name].type = map_type_from_avro(field.type.type)
+
     return imported_fields
+
+
+def import_avro_array_items(array_schema):
+    items = Field()
+    for prop in array_schema.other_props:
+        items.__setattr__(prop, array_schema.other_props[prop])
+
+    if array_schema.items.type == "record":
+        items.type = "object"
+        items.fields = import_record_fields(array_schema.items.fields)
+    elif array_schema.items.type == "array":
+        items.type = "array"
+        items.items = import_avro_array_items(array_schema.items)
+    else:    # primitive type
+        items.type = map_type_from_avro(array_schema.items.type)
+
+    return items
 
 
 def import_type_of_optional_field(field):
@@ -88,14 +111,6 @@ def map_type_from_avro(avro_type_str: str):
         return "long"
     elif avro_type_str == "boolean":
         return "boolean"
-    elif avro_type_str == "array":
-        raise DataContractException(
-            type="schema",
-            result="failed",
-            name="Map avro type to data contract type",
-            reason="Array type not supported",
-            engine="datacontract",
-        )
     else:
         raise DataContractException(
             type="schema",
