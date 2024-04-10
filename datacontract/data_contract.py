@@ -228,12 +228,12 @@ class DataContract:
             try:
                 publish_datamesh_manager(run, self._publish_url)
             except Exception:
-                logging.error("Failed to publish to datamesh manager")
+                run.log_error("Failed to publish to datamesh manager")
         if self._publish_to_opentelemetry:
             try:
                 publish_opentelemetry(run)
             except Exception:
-                logging.error("Failed to publish to opentelemetry")
+                run.log_error("Failed to publish to opentelemetry")
 
         return run
 
@@ -425,7 +425,7 @@ class DataContract:
             print(f"Export format {export_format} not supported.")
             return ""
 
-    def _determine_sql_server_type(data_contract, sql_server_type):
+    def _determine_sql_server_type(self, data_contract: DataContractSpecification, sql_server_type: str):
         if sql_server_type == "auto":
             if data_contract.servers is None or len(data_contract.servers) == 0:
                 raise RuntimeError("Export with server_type='auto' requires servers in the data contract.")

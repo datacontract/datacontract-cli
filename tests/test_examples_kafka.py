@@ -32,6 +32,7 @@ def kafka_container(request):
     request.addfinalizer(remove_container)
 
 
+@pytest.mark.skipif(sys.platform == 'darwin', reason="Fails on ARM mac, https://github.com/testcontainers/testcontainers-python/issues/450")
 def test_examples_kafka(kafka_container: KafkaContainer):
     send_messages_to_topic("examples/kafka/data/messages.json", "inventory-events")
     data_contract_str = _setup_datacontract()

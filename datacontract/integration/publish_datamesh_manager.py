@@ -1,4 +1,3 @@
-import logging
 import os
 
 import requests
@@ -29,6 +28,6 @@ def publish_datamesh_manager(run: Run, publish_url: str):
         if response.status_code != 200:
             run.log_error(f"Error publishing test results to Data Mesh Manager: {response.text}")
             return
-        logging.info("Published test results to %s", url)
+        run.log_info(f"Published test results to {url}")
     except Exception as e:
-        logging.error(f"Failed publishing test results. Error: {str(e)}")
+        run.log_error(f"Failed publishing test results. Error: {str(e)}")
