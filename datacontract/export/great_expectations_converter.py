@@ -5,6 +5,7 @@ import yaml
 
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Field, Quality
+from datacontract.utils.os_utils import read_file
 
 
 def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str) -> str:
@@ -124,7 +125,7 @@ def get_quality_checks(quality: Quality) -> Dict[str, Any]:
 def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> List[Dict[str, Any]]:
     """
     Get the quality definition for each model to the model expectation list
-    @param quality_checks: dictionary of quality checks by model
+    @param quality_checks: dictionary of quality checks by model or quality json file path
     @param model_key: id of the model
     @return: the list of expectations for that model
     """
@@ -137,5 +138,12 @@ def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> Li
         return []
 
     if isinstance(model_quality_checks, str):
-        expectation_list = json.loads(model_quality_checks)
+        if model_quality_checks.startswith("$ref"):
+            file_path = model_quality_checks.replace("$ref: ", "")
+            if not file_path.endswith(".json"):
+                raise f"The file '{file_path}' is not a JSON. Only JSON file are supported"
+            file_content = read_file(file_path)
+            expectation_list = json.loads(file_content)
+        else:
+            expectation_list = json.loads(model_quality_checks)
         return expectation_list
