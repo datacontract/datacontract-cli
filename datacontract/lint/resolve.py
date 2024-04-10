@@ -1,4 +1,5 @@
 import logging
+import os
 
 import fastjsonschema
 import yaml
@@ -52,7 +53,7 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
             if not field.ref and not field.ref_obj:
                 continue
 
-            definition = resolve_ref(field.ref, spec.definitions)
+            definition = resolve_definition_ref(field.ref, spec.definitions)
             field.ref_obj = definition
 
             for field_name in field.model_fields.keys():
@@ -60,7 +61,7 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
                     setattr(field, field_name, getattr(definition, field_name))
 
 
-def resolve_ref(ref, definitions) -> Definition:
+def resolve_definition_ref(ref, definitions) -> Definition:
     if ref.startswith("http://") or ref.startswith("https://"):
         definition_str = fetch_resource(ref)
         definition_dict = to_yaml(definition_str)
@@ -77,6 +78,25 @@ def resolve_ref(ref, definitions) -> Definition:
             reason=f"Cannot resolve reference {ref}",
             engine="datacontract",
         )
+
+
+def resolve_quality_ref(ref) -> str:
+    """
+    Return the content of a ref file path
+    @param ref: ref path
+    @return: the ref content as a string
+    """
+    if not os.path.exists(ref):
+        raise DataContractException(
+            type="export",
+            result="failed",
+            name="Check that data contract quality is valid",
+            reason=f"Cannot resolve reference {ref}",
+            engine="datacontract",
+        )
+    with open(ref, "r") as file:
+        file_content = file.read()
+    return file_content
 
 
 def resolve_data_contract_from_str(

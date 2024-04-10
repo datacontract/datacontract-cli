@@ -10,6 +10,7 @@ from datacontract.export.great_expectations_converter import \
     to_great_expectations
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
+from datacontract.model.exceptions import DataContractException
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -66,8 +67,13 @@ def data_contract_great_expectations() -> DataContractSpecification:
 
 
 @pytest.fixture
-def data_contract_great_expectations_qualty_file() -> DataContractSpecification:
+def data_contract_great_expectations_quality_file() -> DataContractSpecification:
     return DataContractSpecification.from_file("./examples/great-expectations/datacontract_quality_file.yaml")
+
+
+@pytest.fixture
+def data_contract_great_expectations_missing_quality_file() -> DataContractSpecification:
+    return DataContractSpecification.from_file("./examples/great-expectations/datacontract_missing_quality_file.yaml")
 
 
 @pytest.fixture
@@ -233,10 +239,23 @@ def test_to_great_expectation_quality(data_contract_great_expectations: DataCont
     assert result == json.dumps(expected_json_suite, indent=2)
 
 
-def test_to_great_expectation_quality_json_file(data_contract_great_expectations_qualty_file: DataContractSpecification,
-                                                expected_json_suite: Dict[str, Any]):
+def test_to_great_expectation_quality_json_file(
+    data_contract_great_expectations_quality_file: DataContractSpecification,
+    expected_json_suite: Dict[str, Any]):
     """
     Test with Quality definition in a json file
     """
-    result = to_great_expectations(data_contract_great_expectations_qualty_file, "orders")
+    result = to_great_expectations(data_contract_great_expectations_quality_file, "orders")
     assert result == json.dumps(expected_json_suite, indent=2)
+
+
+def test_to_great_expectation_missing_quality_json_file(
+    data_contract_great_expectations_missing_quality_file: DataContractSpecification):
+    """
+    Test with Quality definition in a json file
+    """
+    try:
+        to_great_expectations(data_contract_great_expectations_missing_quality_file, "orders")
+        assert False
+    except DataContractException as dataContractException:
+        assert dataContractException.reason == "Cannot resolve reference ./examples/great-expectations/missing.json"

@@ -1,11 +1,13 @@
 import json
+import logging
 from typing import Dict, List, Any
 
 import yaml
 
+from datacontract.lint.resolve import resolve_quality_ref
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Field, Quality
-from datacontract.utils.os_utils import read_file
+from datacontract.model.exceptions import DataContractException
 
 
 def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str) -> str:
@@ -138,12 +140,22 @@ def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> Li
         return []
 
     if isinstance(model_quality_checks, str):
-        if model_quality_checks.startswith("$ref"):
-            file_path = model_quality_checks.replace("$ref: ", "")
-            if not file_path.endswith(".json"):
-                raise f"The file '{file_path}' is not a JSON. Only JSON file are supported"
-            file_content = read_file(file_path)
-            expectation_list = json.loads(file_content)
-        else:
-            expectation_list = json.loads(model_quality_checks)
+        expectation_list = json.loads(model_quality_checks)
         return expectation_list
+    elif isinstance(model_quality_checks, dict):
+        if "ref" in model_quality_checks:
+            file_content = resolve_quality_ref(model_quality_checks["ref"])
+            try:
+                expectation_list = json.loads(file_content)
+                return expectation_list
+            except ValueError as e:
+                logging.error(e)
+                raise DataContractException(
+                    type="export",
+                    result="failed",
+                    name="Check that quality ref is valid",
+                    reason="Cannot resolve reference {ref}".format(ref=model_quality_checks["ref"]),
+                    engine="datacontract"
+                )
+        else:
+            return []
