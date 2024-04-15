@@ -15,6 +15,7 @@ class Check(BaseModel):
     model: Optional[str] = None
     field: Optional[str] = None
     details: Optional[str] = None
+    diagnostics: Optional[dict] = None
 
 
 class Log(BaseModel):
@@ -69,7 +70,7 @@ class Run(BaseModel):
         self.logs.append(Log(level="ERROR", message=message, timestamp=datetime.now(timezone.utc)))
 
     def pretty(self):
-        return self.model_dump_json()
+        return self.model_dump_json(indent=2)
 
     @staticmethod
     def create_run():

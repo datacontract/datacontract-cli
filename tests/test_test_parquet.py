@@ -23,7 +23,7 @@ def test_valid():
         # publish=True,
     )
     run = data_contract.test()
-    print(run)
+    print(run.pretty())
     assert run.result == "passed"
     assert len(run.checks) == 4
     assert all(check.result == "passed" for check in run.checks)

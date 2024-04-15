@@ -20,7 +20,8 @@ from datacontract.model.data_contract_specification import \
 from datacontract.model.run import Run, Check, Log
 
 
-def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark: SparkSession, tmp_dir):
+def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark: SparkSession,
+    tmp_dir):
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return
@@ -107,16 +108,13 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
     for c in scan_results.get("checks"):
         check = Check(
             type="schema",
-            result="passed"
-            if c.get("outcome") == "pass"
-            else "failed"
-            if c.get("outcome") == "fail"
-            else c.get("outcome"),
+            result=to_result(c),
             reason=", ".join(c.get("outcomeReasons")),
             name=c.get("name"),
             model=c.get("table"),
             field=c.get("column"),
             engine="soda-core",
+            diagnostics=c.get("diagnostics"),
         )
         update_reason(check, c)
         run.checks.append(check)
@@ -142,6 +140,16 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             )
         )
         return
+
+
+def to_result(c) -> str:
+    soda_outcome = c.get("outcome")
+    if soda_outcome == "pass":
+        return "passed"
+    elif soda_outcome == "fail":
+        return "failed"
+    else:
+        return soda_outcome
 
 
 def update_reason(check, c):
