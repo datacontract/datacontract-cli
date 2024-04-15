@@ -40,8 +40,6 @@ from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
 from datacontract.lint.linters.field_reference_linter import \
     FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
-from datacontract.lint.linters.primary_field_linter import \
-    PrimaryFieldUniqueRequired
 from datacontract.lint.linters.quality_schema_linter import \
     QualityUsesSchemaLinter
 from datacontract.lint.linters.valid_constraints_linter import \
@@ -84,7 +82,6 @@ class DataContract:
             FieldPatternLinter(),
             FieldReferenceLinter(),
             NoticePeriodLinter(),
-            PrimaryFieldUniqueRequired(),
             ValidFieldConstraintsLinter(),
             DescriptionLinter(),
         }

@@ -13,5 +13,5 @@ def test_lint():
         assert response.status_code == 200
         print(response.json())
         assert response.json()["result"] == "passed"
-        assert len(response.json()["checks"]) == 9
+        assert len(response.json()["checks"]) == 8
         assert all([check["result"] == "passed" for check in response.json()["checks"]])
