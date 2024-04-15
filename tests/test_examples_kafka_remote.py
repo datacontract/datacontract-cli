@@ -25,7 +25,7 @@ def _test_examples_kafka_json_remote():
     load_dotenv(override=True)
     # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"
     # os.environ['DATACONTRACT_KAFKA_SASL_PASSWORD'] = "xxx"
-    data_contract = DataContract(data_contract_file="examples/kafka-json-remote/datacontract.yaml")
+    data_contract = DataContract(data_contract_file="fixtures/kafka-json-remote/datacontract.yaml")
 
     run = data_contract.test()
 
@@ -41,7 +41,7 @@ def _test_examples_kafka_avro_remote():
     load_dotenv(override=True)
     # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"
     # os.environ['DATACONTRACT_KAFKA_SASL_PASSWORD'] = "xxx"
-    data_contract = DataContract(data_contract_file="examples/kafka-avro-remote/datacontract.yaml")
+    data_contract = DataContract(data_contract_file="fixtures/kafka-avro-remote/datacontract.yaml")
 
     run = data_contract.test()
 

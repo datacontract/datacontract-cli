@@ -15,8 +15,8 @@ servers:
     dataProductId: verbraucherpreisindex
     outputPortId: s3
     type: local
-    path: ./examples/local-json/data/verbraucherpreisindex.json
-    location: ./examples/local-json/data/verbraucherpreisindex.json
+    path: ./fixtures/local-json/data/verbraucherpreisindex.json
+    location: ./fixtures/local-json/data/verbraucherpreisindex.json
     format: json
     delimiter: new_line
 models:

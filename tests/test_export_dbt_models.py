@@ -15,12 +15,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/export/datacontract.yaml", "--format", "dbt"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "dbt"])
     assert result.exit_code == 0
 
 
 def test_to_dbt_models():
-    data_contract = DataContractSpecification.from_file("./examples/export/datacontract.yaml")
+    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
     expected_dbt_model = """
 version: 2
 models:

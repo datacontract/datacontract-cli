@@ -8,8 +8,8 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
-datacontract = "examples/s3-csv/datacontract.yaml"
-file_name = "examples/s3-csv/data/sample_data.csv"
+datacontract = "fixtures/s3-csv/datacontract.yaml"
+file_name = "fixtures/s3-csv/data/sample_data.csv"
 bucket_name = "test-bucket"
 s3_access_key = "test-access"
 s3_secret_access_key = "test-secret"

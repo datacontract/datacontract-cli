@@ -8,7 +8,7 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.INFO, force=True)
 
-datacontract = "examples/bigquery/datacontract.yaml"
+datacontract = "fixtures/bigquery/datacontract.yaml"
 
 load_dotenv(override=True)
 

@@ -15,12 +15,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/export/datacontract.yaml", "--format", "odcs"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "odcs"])
     assert result.exit_code == 0
 
 
 def test_to_odcs():
-    data_contract = DataContractSpecification.from_string(read_file("./examples/export/datacontract.yaml"))
+    data_contract = DataContractSpecification.from_string(read_file("fixtures/export/datacontract.yaml"))
     expected_odcs_model = """
 kind: DataContract
 apiVersion: 2.3.0

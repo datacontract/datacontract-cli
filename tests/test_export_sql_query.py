@@ -10,12 +10,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/postgres-export/datacontract.yaml", "--format", "sql-query"])
+    result = runner.invoke(app, ["export", "./fixtures/postgres-export/datacontract.yaml", "--format", "sql-query"])
     assert result.exit_code == 0
 
 
 def test_to_sql_ddl_postgres():
-    actual = DataContract(data_contract_file="./examples/postgres-export/datacontract.yaml").export("sql-query")
+    actual = DataContract(data_contract_file="fixtures/postgres-export/datacontract.yaml").export("sql-query")
     expected = """
 -- Data Contract: postgres
 -- SQL Dialect: postgres
@@ -29,7 +29,7 @@ from my_table
 
 
 def test_to_sql_ddl_snowflake():
-    actual = DataContract(data_contract_file="./examples/snowflake/datacontract.yaml").export(
+    actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export(
         "sql-query", model="orders"
     )
     expected = """

@@ -11,7 +11,7 @@ servers:
     type: s3
     endpointUrl: __S3_ENDPOINT_URL__
 #    location: s3://test-bucket/topics/inventory/*/*/*/*/*.json
-    location: s3://test-bucket/examples/s3-json/data/{model}/year=2022/month=04/day=20/hour=00/inventory+0+0001327496.json
+    location: s3://test-bucket/fixtures/s3-json/data/{model}/year=2022/month=04/day=20/hour=00/inventory+0+0001327496.json
     delimiter: new_line
     format: json
     dataProductId: inventory

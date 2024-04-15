@@ -1,13 +1,11 @@
 dataContractSpecification: 0.9.2
-id: urn:datacontract:checkout:orders-latest
+id: orders-latest
 info:
   title: Orders Latest
   version: 1.0.0
   description: |
-    Successful customer orders in the webshop. 
-    All orders since 2020-01-01. 
-    Orders with their line items are in their current state (no history included). 
-  owner: Checkout Team
+    Successful customer orders in the webshop. All orders since 2020-01-01. Orders with their line items are in their current state (no history included).
+  owner: urn:acme:CheckoutTeam
   contact:
     name: John Doe (Data Product Owner)
     url: https://teams.microsoft.com/l/channel/acme/checkout
@@ -15,7 +13,7 @@ servers:
   production:
     type: "s3"
     endpointUrl: __S3_ENDPOINT_URL__
-    location: "s3://multiple-bucket/examples/s3-json-multiple-models/data/{model}/*.json"
+    location: "s3://multiple-bucket/fixtures/s3-json-multiple-models/data/{model}/*.json"
     format: "json"
     delimiter: "new_line"
 terms:

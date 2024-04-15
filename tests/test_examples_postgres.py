@@ -9,8 +9,8 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
-datacontract = "examples/postgres/datacontract.yaml"
-sql_file_path = "examples/postgres/data/data.sql"
+datacontract = "fixtures/postgres/datacontract.yaml"
+sql_file_path = "fixtures/postgres/data/data.sql"
 
 postgres = PostgresContainer("postgres:16")
 

@@ -10,12 +10,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/postgres-export/datacontract.yaml", "--format", "sql"])
+    result = runner.invoke(app, ["export", "./fixtures/postgres-export/datacontract.yaml", "--format", "sql"])
     assert result.exit_code == 0
 
 
 def test_to_sql_ddl_postgres():
-    actual = DataContract(data_contract_file="./examples/postgres-export/datacontract.yaml").export("sql")
+    actual = DataContract(data_contract_file="fixtures/postgres-export/datacontract.yaml").export("sql")
     expected = """
 -- Data Contract: postgres
 -- SQL Dialect: postgres
@@ -29,7 +29,7 @@ CREATE TABLE my_table (
 
 
 def test_to_sql_ddl_snowflake():
-    actual = DataContract(data_contract_file="./examples/snowflake/datacontract.yaml").export("sql")
+    actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export("sql")
     expected = """
 -- Data Contract: urn:datacontract:checkout:snowflake_orders_pii_v2
 -- SQL Dialect: snowflake
@@ -50,7 +50,7 @@ CREATE TABLE line_items (
 
 
 def test_to_sql_ddl_databricks_unity_catalog():
-    actual = DataContract(data_contract_file="./examples/databricks-sql/datacontract.yaml").export("sql")
+    actual = DataContract(data_contract_file="fixtures/databricks-sql/datacontract.yaml").export("sql")
     expected = """
 -- Data Contract: urn:datacontract:checkout:orders-latest
 -- SQL Dialect: databricks

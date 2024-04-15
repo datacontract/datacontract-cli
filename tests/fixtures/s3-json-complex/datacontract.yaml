@@ -8,7 +8,7 @@ servers:
   feed/s3:
     type: s3
     endpointUrl: __S3_ENDPOINT_URL__
-    location: s3://feed-bucket/examples/s3-json-complex/data/*.json
+    location: s3://feed-bucket/fixtures/s3-json-complex/data/*.json
     delimiter: array
     format: json
     dataProductId: feed

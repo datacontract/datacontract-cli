@@ -24,4 +24,4 @@ models:
 quality:
     type: SodaCL
     specification:
-      $ref: "./examples/sodacl/checks.yaml"
+      $ref: "./fixtures/sodacl/checks.yaml"

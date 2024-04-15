@@ -6,8 +6,8 @@ from testcontainers.minio import MinioContainer
 
 from datacontract.data_contract import DataContract
 
-datacontract = "./examples/s3-json-multiple-models/datacontract.yaml"
-data_directory = "./examples/s3-json-multiple-models/data/"
+datacontract = "./fixtures/s3-json-multiple-models/datacontract.yaml"
+data_directory = "./fixtures/s3-json-multiple-models/data/"
 bucket_name = "multiple-bucket"
 s3_access_key = "test-access"
 s3_secret_access_key = "test-secret"

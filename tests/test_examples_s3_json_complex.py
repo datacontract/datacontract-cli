@@ -5,8 +5,8 @@ from testcontainers.minio import MinioContainer
 
 from datacontract.data_contract import DataContract
 
-datacontract = "./examples/s3-json-complex/datacontract.yaml"
-file_name = "examples/s3-json-complex/data/feed.json"
+datacontract = "./fixtures/s3-json-complex/datacontract.yaml"
+file_name = "fixtures/s3-json-complex/data/feed.json"
 bucket_name = "feed-bucket"
 s3_access_key = "test-access"
 s3_secret_access_key = "test-secret"

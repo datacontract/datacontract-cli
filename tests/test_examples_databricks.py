@@ -8,7 +8,7 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
-datacontract = "examples/databricks-sql/datacontract.yaml"
+datacontract = "fixtures/databricks-sql/datacontract.yaml"
 
 load_dotenv(override=True)
 

@@ -15,12 +15,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/kafka-avro-remote/datacontract.yaml", "--format", "avro"])
+    result = runner.invoke(app, ["export", "./fixtures/kafka-avro-remote/datacontract.yaml", "--format", "avro"])
     assert result.exit_code == 0
 
 
 def test_to_avro_schema():
-    data_contract = DataContractSpecification.from_file("./examples/kafka-avro-remote/datacontract.yaml")
+    data_contract = DataContractSpecification.from_file("fixtures/kafka-avro-remote/datacontract.yaml")
     expected_avro_schema = """
     {
   "fields": [

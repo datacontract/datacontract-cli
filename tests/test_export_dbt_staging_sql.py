@@ -17,7 +17,7 @@ def test_cli():
         app,
         [
             "export",
-            "./examples/export/datacontract.yaml",
+            "./fixtures/export/datacontract.yaml",
             "--format",
             "dbt-staging-sql",
         ],
@@ -27,7 +27,7 @@ def test_cli():
 
 
 def test_to_dbt_staging():
-    data_contract = DataContractSpecification.from_file("./examples/export/datacontract.yaml")
+    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
     expected = """
 select 
     order_id,

@@ -5,7 +5,7 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.INFO, force=True)
 
-datacontract = "examples/s3-json-remote/datacontract.yaml"
+datacontract = "fixtures/s3-json-remote/datacontract.yaml"
 
 
 def test_examples_s3_json():

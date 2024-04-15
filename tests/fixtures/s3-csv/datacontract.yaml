@@ -8,7 +8,7 @@ servers:
   my-dataproduct/s3:
     type: s3
     endpointUrl: __S3_ENDPOINT_URL__
-    location: s3://test-bucket/examples/s3-csv/data/sample_data.csv
+    location: s3://test-bucket/fixtures/s3-csv/data/sample_data.csv
     format: csv
     dataProductId: my-dataproduct
     outputPortId: s3

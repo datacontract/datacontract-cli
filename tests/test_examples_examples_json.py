@@ -11,12 +11,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():
-    result = runner.invoke(app, ["test", "--examples", "./examples/examples/datacontract_json.yaml"])
+    result = runner.invoke(app, ["test", "--examples", "./fixtures/examples/datacontract_json.yaml"])
     assert result.exit_code == 0
 
 
 def test_json():
-    data_contract = DataContract(data_contract_file="examples/examples/datacontract_json.yaml", examples=True)
+    data_contract = DataContract(data_contract_file="fixtures/examples/datacontract_json.yaml", examples=True)
     run = data_contract.test()
     print(run)
     print(run.result)

@@ -2,7 +2,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO, force=True)
 
-datacontract = "examples/snowflake/datacontract.yaml"
+datacontract = "fixtures/snowflake/datacontract.yaml"
 
 
 # @pytest.mark.skipif(os.environ.get("DATACONTRACT_SNOWFLAKE_USERNAME") is None, reason="Requires DATACONTRACT_SNOWFLAKE_USERNAME to be set")

@@ -6,7 +6,7 @@ info:
 servers:
   production:
     type: local
-    path: ./examples/parquet/data/orders.parquet
+    path: ./fixtures/parquet/data/orders.parquet
     format: parquet
     dataProductId: orders
     outputPortId: parquet

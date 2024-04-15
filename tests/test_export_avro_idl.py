@@ -17,7 +17,7 @@ from datacontract.lint.resolve import resolve_data_contract_from_location
 
 def test_ir():
     contract = resolve_data_contract_from_location(
-        "examples/lint/valid_datacontract_references.yaml", inline_definitions=True
+        "fixtures/lint/valid_datacontract_references.yaml", inline_definitions=True
     )
     expected = AvroIDLProtocol(
         name="OrdersLatest",
@@ -44,7 +44,7 @@ def test_ir():
 
 def test_avro_idl_str():
     contract = resolve_data_contract_from_location(
-        "examples/lint/valid_datacontract_references.yaml", inline_definitions=True
+        "fixtures/lint/valid_datacontract_references.yaml", inline_definitions=True
     )
     expected = dedent(
         """
@@ -67,7 +67,7 @@ def test_avro_idl_str():
 def test_avro_idl_cli_export():
     runner = CliRunner()
     result = runner.invoke(
-        app, ["export", "./examples/lint/valid_datacontract_references.yaml", "--format", "avro-idl"]
+        app, ["export", "./fixtures/lint/valid_datacontract_references.yaml", "--format", "avro-idl"]
     )
     if result.exit_code:
         print(result.output)

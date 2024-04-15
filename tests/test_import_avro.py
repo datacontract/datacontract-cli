@@ -8,8 +8,8 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
-avro_file_path = "examples/avro/data/orders.avsc"
-avro_arrays_file_path = "examples/avro/data/arrays.avsc"
+avro_file_path = "fixtures/avro/data/orders.avsc"
+avro_arrays_file_path = "fixtures/avro/data/arrays.avsc"
 
 
 def test_cli():

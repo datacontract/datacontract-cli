@@ -14,8 +14,8 @@ def test_no_breaking_changes():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-fields-v2.yaml",
-            "./examples/breaking/datacontract-fields-v2.yaml",
+            "./fixtures/breaking/datacontract-fields-v2.yaml",
+            "./fixtures/breaking/datacontract-fields-v2.yaml",
         ],
     )
     assert result.exit_code == 0
@@ -27,8 +27,8 @@ def test_quality_added():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-quality-v1.yaml",
-            "./examples/breaking/datacontract-quality-v2.yaml",
+            "./fixtures/breaking/datacontract-quality-v1.yaml",
+            "./fixtures/breaking/datacontract-quality-v2.yaml",
         ],
     )
     assert result.exit_code == 0
@@ -40,8 +40,8 @@ def test_quality_removed():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-quality-v2.yaml",
-            "./examples/breaking/datacontract-quality-v1.yaml",
+            "./fixtures/breaking/datacontract-quality-v2.yaml",
+            "./fixtures/breaking/datacontract-quality-v1.yaml",
         ],
     )
     assert result.exit_code == 0
@@ -53,8 +53,8 @@ def test_quality_updated():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-quality-v2.yaml",
-            "./examples/breaking/datacontract-quality-v3.yaml",
+            "./fixtures/breaking/datacontract-quality-v2.yaml",
+            "./fixtures/breaking/datacontract-quality-v3.yaml",
         ],
     )
     assert result.exit_code == 0
@@ -66,8 +66,8 @@ def test_models_added():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-models-v1.yaml",
-            "./examples/breaking/datacontract-models-v2.yaml",
+            "./fixtures/breaking/datacontract-models-v1.yaml",
+            "./fixtures/breaking/datacontract-models-v2.yaml",
         ],
     )
 
@@ -84,8 +84,8 @@ def test_models_removed():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-models-v2.yaml",
-            "./examples/breaking/datacontract-models-v1.yaml",
+            "./fixtures/breaking/datacontract-models-v2.yaml",
+            "./fixtures/breaking/datacontract-models-v1.yaml",
         ],
     )
 
@@ -101,8 +101,8 @@ def test_models_updated():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-models-v2.yaml",
-            "./examples/breaking/datacontract-models-v3.yaml",
+            "./fixtures/breaking/datacontract-models-v2.yaml",
+            "./fixtures/breaking/datacontract-models-v3.yaml",
         ],
     )
 
@@ -118,8 +118,8 @@ def test_fields_added():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-fields-v1.yaml",
-            "./examples/breaking/datacontract-fields-v2.yaml",
+            "./fixtures/breaking/datacontract-fields-v1.yaml",
+            "./fixtures/breaking/datacontract-fields-v2.yaml",
         ],
     )
 
@@ -137,8 +137,8 @@ def test_fields_removed():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-fields-v2.yaml",
-            "./examples/breaking/datacontract-fields-v1.yaml",
+            "./fixtures/breaking/datacontract-fields-v2.yaml",
+            "./fixtures/breaking/datacontract-fields-v1.yaml",
         ],
     )
 
@@ -156,8 +156,8 @@ def test_fields_updated():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-fields-v2.yaml",
-            "./examples/breaking/datacontract-fields-v3.yaml",
+            "./fixtures/breaking/datacontract-fields-v2.yaml",
+            "./fixtures/breaking/datacontract-fields-v3.yaml",
         ],
     )
 
@@ -174,8 +174,8 @@ def test_definition_added():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-definitions-v1.yaml",
-            "./examples/breaking/datacontract-definitions-v2.yaml",
+            "./fixtures/breaking/datacontract-definitions-v1.yaml",
+            "./fixtures/breaking/datacontract-definitions-v2.yaml",
         ],
     )
 
@@ -192,8 +192,8 @@ def test_definition_removed():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-definitions-v2.yaml",
-            "./examples/breaking/datacontract-definitions-v1.yaml",
+            "./fixtures/breaking/datacontract-definitions-v2.yaml",
+            "./fixtures/breaking/datacontract-definitions-v1.yaml",
         ],
     )
 
@@ -211,8 +211,8 @@ def test_definition_updated():
         app,
         [
             "breaking",
-            "./examples/breaking/datacontract-definitions-v2.yaml",
-            "./examples/breaking/datacontract-definitions-v3.yaml",
+            "./fixtures/breaking/datacontract-definitions-v2.yaml",
+            "./fixtures/breaking/datacontract-definitions-v3.yaml",
         ],
     )
 

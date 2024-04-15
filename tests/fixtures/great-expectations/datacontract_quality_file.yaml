@@ -23,4 +23,4 @@ quality:
   type: great-expectations
   specification:
     orders:
-      $ref: ./examples/great-expectations/quality.json
+      $ref: ./fixtures/great-expectations/quality.json

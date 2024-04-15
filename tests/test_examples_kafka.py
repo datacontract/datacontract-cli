@@ -17,7 +17,7 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.INFO, force=True)
 
-datacontract = "examples/kafka/datacontract.yaml"
+datacontract = "fixtures/kafka/datacontract.yaml"
 
 kafka = KafkaContainer("confluentinc/cp-kafka:7.6.0")
 
@@ -34,7 +34,7 @@ def kafka_container(request):
 
 @pytest.mark.skipif(sys.platform == 'darwin', reason="Fails on ARM mac, https://github.com/testcontainers/testcontainers-python/issues/450")
 def test_examples_kafka(kafka_container: KafkaContainer):
-    send_messages_to_topic("examples/kafka/data/messages.json", "inventory-events")
+    send_messages_to_topic("fixtures/kafka/data/messages.json", "inventory-events")
     data_contract_str = _setup_datacontract()
     data_contract = DataContract(data_contract_str=data_contract_str)
 

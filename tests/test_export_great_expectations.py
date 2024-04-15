@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/export/datacontract.yaml", "--format", "great-expectations"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "great-expectations"])
     assert result.exit_code == 0
 
 
@@ -31,7 +31,7 @@ def test_cli_multi_models():
         app,
         [
             "export",
-            "./examples/export/rdf/datacontract-complex.yaml",
+            "./fixtures/export/rdf/datacontract-complex.yaml",
             "--format",
             "great-expectations",
             "--model",
@@ -47,30 +47,30 @@ def test_cli_multi_models_failed():
     """
     runner = CliRunner()
     result = runner.invoke(
-        app, ["export", "./examples/export/rdf/datacontract-complex.yaml", "--format", "great-expectations"]
+        app, ["export", "./fixtures/export/rdf/datacontract-complex.yaml", "--format", "great-expectations"]
     )
     assert result.exit_code == 1
 
 
 @pytest.fixture
 def data_contract_basic() -> DataContractSpecification:
-    return DataContractSpecification.from_file("./examples/export/datacontract.yaml")
+    return DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
 
 
 @pytest.fixture
 def data_contract_complex() -> DataContractSpecification:
-    return DataContractSpecification.from_file("./examples/export/rdf/datacontract-complex.yaml")
+    return DataContractSpecification.from_file("fixtures/export/rdf/datacontract-complex.yaml")
 
 
 @pytest.fixture
 def data_contract_great_expectations() -> DataContractSpecification:
-    return resolve.resolve_data_contract_from_location("./examples/great-expectations/datacontract.yaml",
+    return resolve.resolve_data_contract_from_location("./fixtures/great-expectations/datacontract.yaml",
                                                        include_quality=True)
 
 
 @pytest.fixture
 def data_contract_great_expectations_quality_file() -> DataContractSpecification:
-    return resolve.resolve_data_contract_from_location("./examples/great-expectations/datacontract_quality_file.yaml",
+    return resolve.resolve_data_contract_from_location("./fixtures/great-expectations/datacontract_quality_file.yaml",
                                                        include_quality=True)
 
 
@@ -253,7 +253,7 @@ def test_to_great_expectation_missing_quality_json_file():
     """
     try:
         resolve.resolve_data_contract_from_location(
-            "./examples/great-expectations/datacontract_missing_quality_file.yaml", include_quality=True)
+            "./fixtures/great-expectations/datacontract_missing_quality_file.yaml", include_quality=True)
         assert False
     except DataContractException as dataContractException:
-        assert dataContractException.reason == "Cannot resolve reference ./examples/great-expectations/missing.json"
+        assert dataContractException.reason == "Cannot resolve reference ./fixtures/great-expectations/missing.json"

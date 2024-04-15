@@ -17,19 +17,19 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(
-        app, ["export", "./examples/export/rdf/datacontract.yaml", "--format", "rdf", "--rdf-base", "urn:acme:"]
+        app, ["export", "./fixtures/export/rdf/datacontract.yaml", "--format", "rdf", "--rdf-base", "urn:acme:"]
     )
     assert result.exit_code == 0
 
 
 def test_no_rdf_base():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/export/rdf/datacontract.yaml", "--format", "rdf"])
+    result = runner.invoke(app, ["export", "./fixtures/export/rdf/datacontract.yaml", "--format", "rdf"])
     assert result.exit_code == 0
 
 
 def test_to_rdf():
-    data_contract_file = "./examples/export/rdf/datacontract.yaml"
+    data_contract_file = "fixtures/export/rdf/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
     expected_rdf = """
@@ -95,7 +95,7 @@ def test_to_rdf():
 
 
 def test_to_rdf_complex():
-    data_contract_file = "./examples/export/rdf/datacontract-complex.yaml"
+    data_contract_file = "fixtures/export/rdf/datacontract-complex.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
     expected_rdf = """
@@ -159,7 +159,7 @@ def test_to_rdf_complex():
     dcx:endpointUrl "__S3_ENDPOINT_URL__" ;
     dc1:delimiter "new_line" ;
     dc1:format "json" ;
-    dc1:location "s3://multiple-bucket/examples/s3-json-multiple-models/data/{model}/*.json" ;
+    dc1:location "s3://multiple-bucket/fixtures/s3-json-multiple-models/data/{model}/*.json" ;
     dc1:type "s3" .
 
 <line_items> a dc1:Model ;

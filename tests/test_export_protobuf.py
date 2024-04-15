@@ -12,12 +12,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/export/datacontract.yaml", "--format", "protobuf"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "protobuf"])
     assert result.exit_code == 0
 
 
 def test_to_protobuf():
-    data_contract = DataContractSpecification.from_file("./examples/export/datacontract.yaml")
+    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
     expected_protobuf = """
 syntax = "proto3";
 
@@ -36,7 +36,7 @@ message Orders {
 
 
 def test_to_protobuf_nested():
-    data_contract = DataContractSpecification.from_file("./examples/export/datacontract_nested.yaml")
+    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract_nested.yaml")
     expected_protobuf = """
 syntax = "proto3";
 

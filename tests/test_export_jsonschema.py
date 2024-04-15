@@ -15,12 +15,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/local-json/datacontract.yaml", "--format", "jsonschema"])
+    result = runner.invoke(app, ["export", "./fixtures/local-json/datacontract.yaml", "--format", "jsonschema"])
     assert result.exit_code == 0
 
 
 def test_to_jsonschemas():
-    data_contract_file = "./examples/local-json/datacontract.yaml"
+    data_contract_file = "fixtures/local-json/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
     expected_json_schema = """{
@@ -113,7 +113,7 @@ def test_to_jsonschemas():
 
 
 def test_to_jsonschemas_complex():
-    data_contract_file = "./examples/s3-json-complex/datacontract.yaml"
+    data_contract_file = "fixtures/s3-json-complex/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
     expected_json_schema = """{

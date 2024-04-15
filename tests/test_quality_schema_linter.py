@@ -15,7 +15,7 @@ def construct_error_check(msg: str) -> Check:
 
 success_check = Check(type="lint", name="Linter 'Quality check(s) use model'", result="passed", engine="datacontract")
 
-data_contract_file = "examples/lint/datacontract_quality_schema.yaml"
+data_contract_file = "fixtures/lint/datacontract_quality_schema.yaml"
 
 
 def test_lint_correct_sodacl():

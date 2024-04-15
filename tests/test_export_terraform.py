@@ -12,12 +12,12 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./examples/export/datacontract_s3.yaml", "--format", "terraform"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract_s3.yaml", "--format", "terraform"])
     assert result.exit_code == 0
 
 
 def test_to_terraform():
-    data_contract = DataContractSpecification.from_file("./examples/export/datacontract_s3.yaml")
+    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract_s3.yaml")
     expected_terraform_file = """
 resource "aws_s3_bucket" "orders-unit-test_production" {
   bucket = "datacontract-example-orders-latest"
