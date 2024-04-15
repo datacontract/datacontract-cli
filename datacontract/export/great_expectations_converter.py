@@ -58,7 +58,7 @@ def model_to_expectations(fields: Dict[str, Field]) -> List[Dict[str, Any]]:
 def add_field_expectations(field_name, field: Field, expectations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if field.type is not None:
         expectations.append(to_column_types_exp(field_name, field.type))
-    if field.unique is not None:
+    if field.unique:
         expectations.append(to_column_unique_exp(field_name))
     if field.maxLength is not None or field.minLength is not None:
         expectations.append(to_column_length_exp(field_name, field.minLength, field.maxLength))

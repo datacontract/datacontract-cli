@@ -1,5 +1,6 @@
 dataContractSpecification: 0.9.1
 id: my-data-contract-id
+
 info:
   title: Orders Unit Test
   version: 1.0.0
@@ -21,15 +22,5 @@ models:
 quality:
   type: great-expectations
   specification:
-    orders: |-
-      [
-          {
-              "expectation_type": "expect_table_row_count_to_be_between",
-              "kwargs": {
-                  "min_value": 10
-              },
-              "meta": {
-      
-              }
-          }
-      ]
+    orders:
+      $ref: ./examples/great-expectations/quality.json

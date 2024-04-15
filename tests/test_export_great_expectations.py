@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Dict, Any
 
 import pytest
 from typer.testing import CliRunner
@@ -7,8 +8,10 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.export.great_expectations_converter import \
     to_great_expectations
+from datacontract.lint import resolve
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
+from datacontract.model.exceptions import DataContractException
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -61,7 +64,41 @@ def data_contract_complex() -> DataContractSpecification:
 
 @pytest.fixture
 def data_contract_great_expectations() -> DataContractSpecification:
-    return DataContractSpecification.from_file("./examples/great-expectations/datacontract.yaml")
+    return resolve.resolve_data_contract_from_location("./examples/great-expectations/datacontract.yaml",
+                                                       include_quality=True)
+
+
+@pytest.fixture
+def data_contract_great_expectations_quality_file() -> DataContractSpecification:
+    return resolve.resolve_data_contract_from_location("./examples/great-expectations/datacontract_quality_file.yaml",
+                                                       include_quality=True)
+
+
+@pytest.fixture
+def expected_json_suite() -> Dict[str, Any]:
+    return {
+        "data_asset_type": "null",
+        "expectation_suite_name": "user-defined.orders.1.0.0",
+        "expectations": [
+            {
+                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "string"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "processed_timestamp", "type_": "timestamp"},
+                "meta": {},
+            },
+            {"expectation_type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 10}, "meta": {}},
+        ],
+        "meta": {},
+    }
 
 
 def test_to_great_expectation(data_contract_basic: DataContractSpecification):
@@ -190,33 +227,33 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
     assert result_line_items == json.dumps(expected_line_items, indent=2)
 
 
-def test_to_great_expectation_quality(data_contract_great_expectations: DataContractSpecification):
+def test_to_great_expectation_quality(data_contract_great_expectations: DataContractSpecification,
+                                      expected_json_suite: Dict[str, Any]):
     """
     Test with Quality definition in the contract
     """
 
-    expected_json_suite = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "user-defined.orders.1.0.0",
-        "expectations": [
-            {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
-                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "order_id", "type_": "string"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "processed_timestamp", "type_": "timestamp"},
-                "meta": {},
-            },
-            {"expectation_type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 10}, "meta": {}},
-        ],
-        "meta": {},
-    }
     result = to_great_expectations(data_contract_great_expectations, "orders")
     assert result == json.dumps(expected_json_suite, indent=2)
+
+
+def test_to_great_expectation_quality_json_file(
+    data_contract_great_expectations_quality_file: DataContractSpecification,
+    expected_json_suite: Dict[str, Any]):
+    """
+    Test with Quality definition in a json file
+    """
+    result = to_great_expectations(data_contract_great_expectations_quality_file, "orders")
+    assert result == json.dumps(expected_json_suite, indent=2)
+
+
+def test_to_great_expectation_missing_quality_json_file():
+    """
+    Test failed with missing Quality definition in a json file
+    """
+    try:
+        resolve.resolve_data_contract_from_location(
+            "./examples/great-expectations/datacontract_missing_quality_file.yaml", include_quality=True)
+        assert False
+    except DataContractException as dataContractException:
+        assert dataContractException.reason == "Cannot resolve reference ./examples/great-expectations/missing.json"

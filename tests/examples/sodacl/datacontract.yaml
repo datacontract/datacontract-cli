@@ -1,0 +1,27 @@
+dataContractSpecification: 0.9.3
+id: urn:datacontract:checkout:orders-latest
+info:
+  title: Orders Latest
+  version: 1.0.0
+  description: |
+    Successful customer orders in the webshop. 
+    All orders since 2020-01-01. 
+    Orders with their line items are in their current state (no history included).
+  owner: Checkout Team
+  contact:
+    name: John Doe (Data Product Owner)
+    url: https://teams.microsoft.com/l/channel/example/checkout
+models:
+  orders:
+    description: test
+    fields:
+      order_id:
+        type: string
+        required: true
+      processed_timestamp:
+        type: timestamp
+        required: true
+quality:
+    type: SodaCL
+    specification:
+      $ref: "./examples/sodacl/checks.yaml"

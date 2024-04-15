@@ -1,4 +1,5 @@
 import logging
+import os
 
 import fastjsonschema
 import yaml
@@ -8,7 +9,7 @@ from datacontract.lint.files import read_file
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
 from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Definition
+    DataContractSpecification, Definition, Quality
 from datacontract.model.exceptions import DataContractException
 
 
@@ -36,13 +37,13 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_definitions: bool = False
+    location, schema_location: str = None, inline_definitions: bool = False, include_quality: bool = False
 ) -> DataContractSpecification:
     if location.startswith("http://") or location.startswith("https://"):
         data_contract_str = fetch_resource(location)
     else:
         data_contract_str = read_file(location)
-    return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
+    return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, include_quality)
 
 
 def inline_definitions_into_data_contract(spec: DataContractSpecification):
@@ -52,7 +53,7 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
             if not field.ref and not field.ref_obj:
                 continue
 
-            definition = resolve_ref(field.ref, spec.definitions)
+            definition = resolve_definition_ref(field.ref, spec.definitions)
             field.ref_obj = definition
 
             for field_name in field.model_fields.keys():
@@ -60,7 +61,7 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
                     setattr(field, field_name, getattr(definition, field_name))
 
 
-def resolve_ref(ref, definitions) -> Definition:
+def resolve_definition_ref(ref, definitions) -> Definition:
     if ref.startswith("http://") or ref.startswith("https://"):
         definition_str = fetch_resource(ref)
         definition_dict = to_yaml(definition_str)
@@ -79,8 +80,44 @@ def resolve_ref(ref, definitions) -> Definition:
         )
 
 
+def resolve_quality_ref(quality: Quality):
+    """
+    Return the content of a ref file path
+    @param quality data contract quality specification
+    """
+    if isinstance(quality.specification, dict):
+        specification = quality.specification
+        if quality.type == "great-expectations":
+            for model, model_quality in specification.items():
+                specification[model] = get_quality_ref_file(model_quality)
+        else:
+            if "$ref" in specification:
+                quality.specification = get_quality_ref_file(specification)
+
+
+def get_quality_ref_file(quality_spec: str | object) -> str | object:
+    """
+    Get the file associated with a quality reference
+    @param quality_spec quality specification
+    @returns: the content of the quality file
+    """
+    if isinstance(quality_spec, dict) and "$ref" in quality_spec:
+        ref = quality_spec["$ref"]
+        if not os.path.exists(ref):
+            raise DataContractException(
+                type="export",
+                result="failed",
+                name="Check that data contract quality is valid",
+                reason=f"Cannot resolve reference {ref}",
+                engine="datacontract",
+            )
+        with open(ref, "r") as file:
+            quality_spec = file.read()
+    return quality_spec
+
+
 def resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False
+    data_contract_str, schema_location: str = None, inline_definitions: bool = False, include_quality: bool = False
 ) -> DataContractSpecification:
     data_contract_yaml_dict = to_yaml(data_contract_str)
     validate(data_contract_yaml_dict, schema_location)
@@ -89,6 +126,8 @@ def resolve_data_contract_from_str(
 
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
+    if include_quality:
+        resolve_quality_ref(spec.quality)
 
     return spec
 
