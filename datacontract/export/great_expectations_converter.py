@@ -1,13 +1,10 @@
 import json
-import logging
 from typing import Dict, List, Any
 
 import yaml
 
-from datacontract.lint.resolve import resolve_quality_ref
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Field, Quality
-from datacontract.model.exceptions import DataContractException
 
 
 def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str) -> str:
@@ -61,7 +58,7 @@ def model_to_expectations(fields: Dict[str, Field]) -> List[Dict[str, Any]]:
 def add_field_expectations(field_name, field: Field, expectations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if field.type is not None:
         expectations.append(to_column_types_exp(field_name, field.type))
-    if field.unique is not None:
+    if field.unique:
         expectations.append(to_column_unique_exp(field_name))
     if field.maxLength is not None or field.minLength is not None:
         expectations.append(to_column_length_exp(field_name, field.minLength, field.maxLength))
@@ -127,7 +124,7 @@ def get_quality_checks(quality: Quality) -> Dict[str, Any]:
 def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> List[Dict[str, Any]]:
     """
     Get the quality definition for each model to the model expectation list
-    @param quality_checks: dictionary of quality checks by model or quality json file path
+    @param quality_checks: dictionary of quality checks by model
     @param model_key: id of the model
     @return: the list of expectations for that model
     """
@@ -142,20 +139,3 @@ def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> Li
     if isinstance(model_quality_checks, str):
         expectation_list = json.loads(model_quality_checks)
         return expectation_list
-    elif isinstance(model_quality_checks, dict):
-        if "ref" in model_quality_checks:
-            file_content = resolve_quality_ref(model_quality_checks["ref"])
-            try:
-                expectation_list = json.loads(file_content)
-                return expectation_list
-            except ValueError as e:
-                logging.error(e)
-                raise DataContractException(
-                    type="export",
-                    result="failed",
-                    name="Check that quality ref is valid",
-                    reason="Cannot resolve reference {ref}".format(ref=model_quality_checks["ref"]),
-                    engine="datacontract"
-                )
-        else:
-            return []

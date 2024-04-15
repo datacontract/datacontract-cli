@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.export.great_expectations_converter import \
     to_great_expectations
+from datacontract.lint import resolve
 from datacontract.model.data_contract_specification import \
     DataContractSpecification
 from datacontract.model.exceptions import DataContractException
@@ -63,17 +64,14 @@ def data_contract_complex() -> DataContractSpecification:
 
 @pytest.fixture
 def data_contract_great_expectations() -> DataContractSpecification:
-    return DataContractSpecification.from_file("./examples/great-expectations/datacontract.yaml")
+    return resolve.resolve_data_contract_from_location("./examples/great-expectations/datacontract.yaml",
+                                                       include_quality=True)
 
 
 @pytest.fixture
 def data_contract_great_expectations_quality_file() -> DataContractSpecification:
-    return DataContractSpecification.from_file("./examples/great-expectations/datacontract_quality_file.yaml")
-
-
-@pytest.fixture
-def data_contract_great_expectations_missing_quality_file() -> DataContractSpecification:
-    return DataContractSpecification.from_file("./examples/great-expectations/datacontract_missing_quality_file.yaml")
+    return resolve.resolve_data_contract_from_location("./examples/great-expectations/datacontract_quality_file.yaml",
+                                                       include_quality=True)
 
 
 @pytest.fixture
@@ -249,13 +247,13 @@ def test_to_great_expectation_quality_json_file(
     assert result == json.dumps(expected_json_suite, indent=2)
 
 
-def test_to_great_expectation_missing_quality_json_file(
-    data_contract_great_expectations_missing_quality_file: DataContractSpecification):
+def test_to_great_expectation_missing_quality_json_file():
     """
-    Test with Quality definition in a json file
+    Test failed with missing Quality definition in a json file
     """
     try:
-        to_great_expectations(data_contract_great_expectations_missing_quality_file, "orders")
+        resolve.resolve_data_contract_from_location(
+            "./examples/great-expectations/datacontract_missing_quality_file.yaml", include_quality=True)
         assert False
     except DataContractException as dataContractException:
         assert dataContractException.reason == "Cannot resolve reference ./examples/great-expectations/missing.json"

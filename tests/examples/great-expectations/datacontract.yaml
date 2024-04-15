@@ -1,4 +1,5 @@
 dataContractSpecification: 0.9.1
+id: my-data-contract-id
 info:
   title: Orders Unit Test
   version: 1.0.0

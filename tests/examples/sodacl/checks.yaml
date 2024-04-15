@@ -1,0 +1,6 @@
+checks for orders:
+   - freshness(processed_timestamp) < 1d
+   - row_count > 10
+checks for line_items:
+   - row_count > 10:
+       name: Have at lease 10 line items
