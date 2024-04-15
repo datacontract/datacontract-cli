@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO, force=True)
 datacontract = "fixtures/s3-json-remote/datacontract.yaml"
 
 
-def test_examples_s3_json():
+def test_test_s3_json():
     if "AWS_ACCESS_KEY_ID" in os.environ:
         del os.environ["AWS_ACCESS_KEY_ID"]
     if "AWS_SECRET_ACCESS_KEY" in os.environ:

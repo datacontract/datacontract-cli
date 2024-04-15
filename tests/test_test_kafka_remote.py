@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO, force=True)
     os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
     reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set",
 )
-def _test_examples_kafka_json_remote():
+def _test_test_kafka_json_remote():
     load_dotenv(override=True)
     # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"
     # os.environ['DATACONTRACT_KAFKA_SASL_PASSWORD'] = "xxx"
@@ -37,7 +37,7 @@ def _test_examples_kafka_json_remote():
     os.environ.get("DATACONTRACT_KAFKA_SASL_USERNAME") is None,
     reason="Requires DATACONTRACT_KAFKA_SASL_USERNAME to be set",
 )
-def _test_examples_kafka_avro_remote():
+def _test_test_kafka_avro_remote():
     load_dotenv(override=True)
     # os.environ['DATACONTRACT_KAFKA_SASL_USERNAME'] = "xxx"
     # os.environ['DATACONTRACT_KAFKA_SASL_PASSWORD'] = "xxx"

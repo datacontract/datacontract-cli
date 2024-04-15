@@ -23,7 +23,7 @@ def minio_container():
         yield minio_container
 
 
-def test_examples_s3_json(minio_container):
+def test_test_s3_json(minio_container):
     os.environ["DATACONTRACT_S3_ACCESS_KEY_ID"] = s3_access_key
     os.environ["DATACONTRACT_S3_SECRET_ACCESS_KEY"] = s3_secret_access_key
 

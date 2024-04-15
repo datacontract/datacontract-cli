@@ -6,7 +6,7 @@ datacontract = "fixtures/snowflake/datacontract.yaml"
 
 
 # @pytest.mark.skipif(os.environ.get("DATACONTRACT_SNOWFLAKE_USERNAME") is None, reason="Requires DATACONTRACT_SNOWFLAKE_USERNAME to be set")
-# def test_examples_snowflake():
+# def test_test_snowflake():
 #     load_dotenv(override=True)
 #     # os.environ['DATACONTRACT_SNOWFLAKE_USERNAME'] = "xxx"
 #     # os.environ['DATACONTRACT_SNOWFLAKE_PASSWORD'] = "xxx"

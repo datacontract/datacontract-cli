@@ -19,7 +19,7 @@ load_dotenv(override=True)
     os.environ.get("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH") is None,
     reason="Requires DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH to be set",
 )
-def _test_examples_bigquery():
+def _test_test_bigquery():
     data_contract = DataContract(data_contract_file=datacontract)
 
     run = data_contract.test()

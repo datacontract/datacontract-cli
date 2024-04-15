@@ -27,7 +27,7 @@ def postgres_container(request):
     os.environ["DATACONTRACT_POSTGRES_PASSWORD"] = postgres.POSTGRES_PASSWORD
 
 
-def test_examples_postgres(postgres_container):
+def test_test_postgres(postgres_container):
     _init_sql()
 
     data_contract_str = _setup_datacontract()
