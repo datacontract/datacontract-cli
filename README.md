@@ -98,8 +98,8 @@ $ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 # fail pipeline on breaking changes. Uses changelog internally and showing only error and warning.
 $ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 
-# export model as jsonschema (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql (coming soon), sodacl, terraform)
-$ datacontract export --format jsonschema datacontract.yaml
+# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
+$ datacontract export --format html datacontract.yaml > datacontract.html
 
 # import sql
 $ datacontract import --format sql --source my_ddl.sql
@@ -455,6 +455,7 @@ Available export options:
 
 | Type                 | Description                                             | Status |
 |----------------------|---------------------------------------------------------|--------|
+| `html`               | Export to HTML                                          | ✅      | 
 | `jsonschema`         | Export to JSON Schema                                   | ✅      | 
 | `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅      | 
 | `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
@@ -470,7 +471,6 @@ Available export options:
 | `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
 | `bigquery`           | Export to BigQuery Schemas                              | TBD    |
 | `pydantic`           | Export to pydantic models                               | TBD    |
-| `html`               | Export to HTML page                                     | TBD    |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
