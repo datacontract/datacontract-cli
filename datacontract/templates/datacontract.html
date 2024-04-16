@@ -406,7 +406,7 @@
 
           {# TODO add service levels #}
 
-          {% if datacontract.quality %}
+          {% if quality_specification %}
             <section id="quality">
               <div class="px-4 sm:px-0">
                 <h1 class="text-base font-semibold leading-6 text-gray-900">
@@ -421,7 +421,7 @@
               <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
                 <div class="px-4 py-5 sm:px-6">
                   <div id="schema-specification">
-                      <pre><code class="text-sm">{{ datacontract.quality.specification }}</code></pre>
+                      <pre><code class="text-sm">{{ quality_specification }}</code></pre>
                   </div>
                 </div>
               </div>
