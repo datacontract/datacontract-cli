@@ -8,9 +8,6 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
-avro_file_path = "fixtures/avro/data/orders.avsc"
-avro_arrays_file_path = "fixtures/avro/data/arrays.avsc"
-
 
 def test_cli():
     runner = CliRunner()
@@ -21,14 +18,14 @@ def test_cli():
             "--format",
             "avro",
             "--source",
-            avro_file_path,
+            "fixtures/avro/data/orders.avsc",
         ],
     )
     assert result.exit_code == 0
 
 
 def test_import_avro_schema():
-    result = DataContract().import_from_source("avro", avro_file_path)
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/orders.avsc")
 
     expected = """
 dataContractSpecification: 0.9.3
@@ -38,7 +35,6 @@ info:
   version: 0.0.1
 models:
   orders:
-    type: table
     description: My Model
     namespace: com.sample.schema
     fields:
@@ -87,7 +83,7 @@ models:
 
 
 def test_import_avro_arrays_of_records_and_nested_arrays():
-    result = DataContract().import_from_source("avro", avro_arrays_file_path)
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/arrays.avsc")
 
     expected = """
 dataContractSpecification: 0.9.3
@@ -98,7 +94,6 @@ info:
 models:
   orders:
     description: My Model
-    type: table
     fields:
       orderid:
         type: int
@@ -127,6 +122,35 @@ models:
           type: array
           items:
             type: int
+"""
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+
+def test_import_avro_nested_records():
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/nested.avsc")
+
+    expected = """
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  Doc:
+    namespace: com.xxx
+    fields:
+      fieldA:
+        type: long
+        required: false
+      fieldB:
+        type: record
+        required: false
+        fields:
+          fieldC:
+            type: string
+            required: false
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

@@ -26,7 +26,6 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
     fields = import_record_fields(avro_schema.fields)
 
     data_contract_specification.models[avro_schema.name] = Model(
-        type="table",
         fields=fields,
     )
 
@@ -55,7 +54,10 @@ def import_record_fields(record_fields):
             imported_fields[field.name].fields = import_record_fields(field.type.fields)
         elif field.type.type == "union":
             imported_fields[field.name].required = False
-            imported_fields[field.name].type = import_type_of_optional_field(field)
+            type = import_type_of_optional_field(field)
+            imported_fields[field.name].type = type
+            if type == "record":
+                imported_fields[field.name].fields = import_record_fields(get_record_from_union_field(field).fields)
         elif field.type.type == "array":
             imported_fields[field.name].type = "array"
             imported_fields[field.name].items = import_avro_array_items(field.type)
@@ -95,6 +97,13 @@ def import_type_of_optional_field(field):
     )
 
 
+def get_record_from_union_field(field):
+    for field_type in field.type.schemas:
+        if field_type.type == "record":
+            return field_type
+    return None
+
+
 def map_type_from_avro(avro_type_str: str):
     # TODO: ambiguous mapping in the export
     if avro_type_str == "null":
@@ -111,6 +120,8 @@ def map_type_from_avro(avro_type_str: str):
         return "long"
     elif avro_type_str == "boolean":
         return "boolean"
+    elif avro_type_str == "record":
+        return "record"
     else:
         raise DataContractException(
             type="schema",

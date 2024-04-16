@@ -1,0 +1,39 @@
+{
+  "fields": [
+    {
+      "default": null,
+      "name": "fieldA",
+      "type": [
+        "null",
+        "long"
+      ]
+    },
+    {
+      "default": null,
+      "name": "fieldB",
+      "type": [
+        "null",
+        {
+          "fields": [
+            {
+              "default": null,
+              "name": "fieldC",
+              "type": [
+                "null",
+                {
+                  "avro.java.string": "String",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "name": "ObjectB",
+          "type": "record"
+        }
+      ]
+    }
+  ],
+  "name": "Doc",
+  "namespace": "com.xxx",
+  "type": "record"
+}
