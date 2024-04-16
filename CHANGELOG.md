@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added export format **html** (#15)
 - Added descriptions as comments to `datacontract export --format sql` for Databricks dialects
 - Added import of arrays in Avro import 
 

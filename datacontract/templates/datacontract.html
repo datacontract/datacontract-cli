@@ -1,0 +1,454 @@
+<!doctype html>
+<html class="h-full bg-gray-100" lang="en">
+<head>
+  <title>Data Contract</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-full">
+
+<div class="min-h-full flex flex-col">
+
+  <nav class="bg-white shadow-sm">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 justify-between">
+        <div class="flex">
+          <div class="flex flex-shrink-0 items-center mr-6">
+            <a class="text-xl text-gray-900 font-semibold" href="/">
+              Data Contract
+            </a>
+          </div>
+        </div>
+        <div class="hidden sm:ml-6 sm:flex sm:items-center">
+          <a href="https://datacontract.com" class="text-sky-500 hover:text-gray-700 text-sm font-semibold" target="_blank">datacontract.com</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pb-7">
+
+    <div class="pt-5 mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <div>
+        <div class="lg:flex lg:items-center lg:justify-between px-4 sm:px-0">
+          <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+              Data Contract</h2>
+            <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+              {{ datacontract.id }}
+            </div>
+          </div>
+          <div class="mt-5 flex lg:mt-0 lg:ml-4 gap-3 items-center">
+<!--            <a href="#" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">-->
+<!--              <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-600" viewBox="-0.5 -0.5 24 24" xmlns="http://www.w3.org/2000/svg">-->
+<!--                <path d="m4.3125 8.145833333333334 9.104166666666668 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 11.020833333333334 9.104166666666668 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 5.270833333333334 6.708333333333334 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 13.895833333333334 7.1875 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 16.770833333333336 3.8333333333333335 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="M8.145833333333334 22.520833333333336h-6.708333333333334a0.9583333333333334 0.9583333333333334 0 0 1 -0.9583333333333334 -0.9583333333333334v-20.125a0.9583333333333334 0.9583333333333334 0 0 1 0.9583333333333334 -0.9583333333333334h12.739125a0.9583333333333334 0.9583333333333334 0 0 1 0.6775416666666667 0.28079166666666666L18.406708333333334 4.3125a0.9583333333333334 0.9583333333333334 0 0 1 0.28079166666666666 0.6775416666666667V8.145833333333334" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m15.045833333333333 21.370833333333334 -4.025 1.15 1.15 -4.025 6.879875 -6.879875a2.032625 2.032625 0 0 1 2.875 2.875Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m18.188208333333332 12.478458333333334 2.875 2.875" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m12.170833333333333 18.495833333333334 2.875 2.875" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path>-->
+<!--              </svg>-->
+<!--              Show YAML-->
+<!--            </a>-->
+          </div>
+        </div>
+
+
+      </div>
+
+      <div>
+
+        <div class="space-y-6 mt-6">
+
+
+          <section>
+            <div class=" px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900" id="info">Info</h1>
+              <p class="text-sm text-gray-500">Information about the data contract</p>
+            </div>
+            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+
+              <div class="px-4 py-5 sm:px-6">
+
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Title</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.title }}</dd>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Version</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.version }}</dd>
+                  </div>
+
+                  <div class="sm:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Description</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">{{ datacontract.info.description }}</span>
+
+                    </dd>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Owner</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                      <span>{{ datacontract.info.owner }}</span>
+
+                    </dd>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Contact</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                      {% if datacontract.info.contact.name %}
+                        {{ datacontract.info.contact.name }}
+                      {% endif %}
+                      {% if datacontract.info.contact.email %}
+                        <a href="mailto:{{ datacontract.info.contact.email }}" class="text-sky-500 hover:text-gray-700">{{ datacontract.info.contact.email }}</a>
+                      {% endif %}
+                      {% if datacontract.info.contact.url %}
+                        <div>
+                          <a href="{{ datacontract.info.contact.url }}" class="text-sky-500 hover:text-gray-700">{{ datacontract.info.contact.url }}</a>
+                        </div>
+                      {% endif %}
+                    </dd>
+                  </div>
+
+                </dl>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900" id="servers">Servers</h1>
+              <p class="text-sm text-gray-500">Servers of the data contract</p>
+            </div>
+
+
+
+
+            <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+
+              {% for server_name, server in datacontract.servers.items() %}
+              <li class="relative flex gap-x-6 px-4 py-5 sm:px-6">
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Server</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server_name}}</dd>
+                  </div>
+                </div>
+
+                {% if server.type %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Type</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.type}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.project %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Project</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.project}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.dataset %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Dataset</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.dataset}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.location %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Location</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.location}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.endpointUrl %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Endpoint URL</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.endpointUrl}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.account %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Account</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.account}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.host %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Host</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.host}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.port %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Port</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.port}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.catalog %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Catalog</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.catalog}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.database %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Database</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.database}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.schema_ %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Schema</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.schema_}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.topic %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Topic</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.topic}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.path %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Path</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.path}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.format %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Format</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.format}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if server.delimiter %}
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Delimiter</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{server.delimiter}}</dd>
+                  </div>
+                </div>
+                {% endif %}
+
+              </li>
+              {% endfor %}
+
+            </ul>
+
+          </section>
+
+          <section>
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900" id="terms">Terms</h1>
+              <p class="text-sm text-gray-500">Terms and conditions of the data contract</p>
+            </div>
+            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+
+              <div class="px-4 py-5 sm:px-6">
+
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Usage</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">{{ datacontract.terms.usage }}</span>
+                    </dd>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Limitations</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">{{ datacontract.terms.limitations }}</span>
+                    </dd>
+                  </div>
+
+                  {% if datacontract.terms.billing %}
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Billing</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">{{ datacontract.terms.billing }}</span>
+                    </dd>
+                  </div>
+                  {% endif %}
+
+                  {% if datacontract.terms.noticePeriod %}
+                    <div class="sm:col-span-1">
+                      <dt class="text-sm font-medium text-gray-500">Notice Period</dt>
+                      <dd class="mt-1 text-sm text-gray-900 flex" >
+                        <span class="whitespace-pre-wrap">{{ datacontract.terms.noticePeriod }}</span>
+                      </dd>
+                    </div>
+                  {% endif %}
+
+                </dl>
+              </div>
+            </div>
+          </section>
+
+
+
+          <section id="models">
+            <div class="flex justify-between">
+              <div class="px-4 sm:px-0">
+                <h1 class="text-base font-semibold leading-6 text-gray-900">
+                  Data Model
+                </h1>
+                <p class="text-sm text-gray-500">The logical data model</p>
+              </div>
+            </div>
+
+            {% for model_name, model in datacontract.models.items() %}
+
+            <div class="mt-3 flow-root">
+              <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                  <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+
+                    <table class="min-w-full divide-y divide-gray-300">
+                      <thead class="bg-gray-50">
+                      <tr>
+                        <th scope="colgroup" colspan="4" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+                          <span>{{ model_name }}</span>
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ model.type }}</span>
+                          <div class="text-sm font-medium text-gray-500">{{ model.description }}</div>
+                        </th>
+
+                      </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-200 bg-white">
+
+                      {% for field_name, field in model.fields.items() %}
+
+                      <tr>
+                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-fit">
+                          <div class="px-3 py-2 text-sm">
+                            {{ field_name }}
+                            {# TODO nested fields #}
+                          </div>
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
+                          {% if field.required %}
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
+                          {% endif %}
+                          {% if field.required %}
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="unique">U</span>
+                          {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/6">
+                          {{ field.type }}
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-500 w-4/6">
+                          <div class="text-gray-400">{{ field.description }}</div>
+                          {# TODO add format information #}
+                        </td>
+
+                      </tr>
+                      {% endfor %}
+
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+
+          </section>
+
+          {# TODO add definitions #}
+
+          {# TODO add service levels #}
+
+          {% if datacontract.quality %}
+            <section id="quality">
+              <div class="px-4 sm:px-0">
+                <h1 class="text-base font-semibold leading-6 text-gray-900">
+                  Quality
+                </h1>
+                <p class="text-sm text-gray-500">
+                  <span>{{ datacontract.quality.type }}</span>
+                </p>
+
+
+              </div>
+              <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+                <div class="px-4 py-5 sm:px-6">
+                  <div id="schema-specification">
+                      <pre><code class="text-sm">{{ datacontract.quality.specification }}</code></pre>
+                  </div>
+                </div>
+              </div>
+            </section>
+          {% endif %}
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+
+  <footer class="bg-white mt-auto text-sm text-gray-400">
+    <div class="mx-auto max-w-7xl py-5 px-6 md:flex md:items-center md:justify-between lg:px-8">
+      <div class="flex justify-center space-x-6 md:order-2">
+        <div>
+          <a href="https://cli.datacontract.com" class="text-gray-400 hover:text-gray-500 px-2">Data Contract CLI</a>
+
+          <a href="https://datacontract.com" class="text-gray-400 hover:text-gray-500 px-2">Data Contract Specification</a>
+        </div>
+
+
+      </div>
+      <div class="mt-8 md:order-1 md:mt-0">
+        <p class="text-center leading-5 text-gray-400">
+          Supported with ❤️ by <a href="https://datamesh-manager.com" class="text-gray-400 hover:text-gray-500">Data Mesh Manager</a>
+        </p>
+      </div>
+    </div>
+
+  </footer>
+
+</div>
+
+</body>
+</html>

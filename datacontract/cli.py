@@ -153,6 +153,7 @@ class ExportFormat(str, Enum):
     avro_idl = "avro-idl"
     sql = "sql"
     sql_query = "sql-query"
+    html = "html"
 
 
 @app.command()

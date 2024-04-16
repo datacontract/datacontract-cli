@@ -20,6 +20,7 @@ from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.great_expectations_converter import \
     to_great_expectations
+from datacontract.export.html_export import to_html
 from datacontract.export.jsonschema_converter import to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
@@ -418,6 +419,8 @@ class DataContract:
                 return to_great_expectations(data_contract, model_name)
         if export_format == "pydantic-model":
             return to_pydantic_model_str(data_contract)
+        if export_format == "html":
+            return to_html(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
