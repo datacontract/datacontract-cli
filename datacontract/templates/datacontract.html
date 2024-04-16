@@ -359,7 +359,7 @@
                       {% for field_name, field in model.fields.items() %}
 
                       <tr>
-                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-fit">
+                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
                           <div class="px-3 py-2 text-sm">
                             {{ field_name }}
                             {# TODO nested fields #}
@@ -369,14 +369,14 @@
                           {% if field.required %}
                           <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
                           {% endif %}
-                          {% if field.required %}
+                          {% if field.unique %}
                           <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="unique">U</span>
                           {% endif %}
                         </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/6">
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
                           {{ field.type }}
                         </td>
-                        <td class="px-3 py-2 text-sm text-gray-500 w-4/6">
+                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
                           <div class="text-gray-400">{{ field.description }}</div>
                           {# TODO add format information #}
                         </td>
