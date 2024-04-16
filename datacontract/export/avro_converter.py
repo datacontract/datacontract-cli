@@ -35,7 +35,7 @@ def to_avro_field(field, field_name):
     return avro_field
 
 
-def to_avro_type(field: Field, field_name: str):
+def to_avro_type(field: Field, field_name: str) -> str:
     if field.type is None:
         return "null"
     if field.type in ["string", "varchar", "text"]:
