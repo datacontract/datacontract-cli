@@ -1,0 +1,11 @@
+
+services:
+  datacontract:
+    image: datacontract/cli
+    container_name: datacontract    
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    volumes:
+      - .:/home/datacontract:ro
+
