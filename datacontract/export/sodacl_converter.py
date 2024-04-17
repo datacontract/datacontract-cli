@@ -5,7 +5,8 @@ from datacontract.model.data_contract_specification import \
     DataContractSpecification
 
 
-def to_sodacl_yaml(data_contract_spec: DataContractSpecification, server_type: str = None, check_types: bool = True) -> str:
+def to_sodacl_yaml(data_contract_spec: DataContractSpecification, server_type: str = None,
+    check_types: bool = True) -> str:
     try:
         sodacl = {}
         for model_key, model_value in data_contract_spec.models.items():
@@ -33,6 +34,26 @@ def to_checks(model_key, model_value, server_type: str, check_types: bool):
             checks.append(check_field_required(field_name, quote_field_name))
         if field.unique:
             checks.append(check_field_unique(field_name, quote_field_name))
+        if field.minLength is not None:
+            checks.append(check_field_min_length(field_name, field.minLength))
+        if field.maxLength is not None:
+            checks.append(check_field_max_length(field_name, field.maxLength))
+        if field.minimum is not None:
+            checks.append(check_field_minimum(field_name, field.minimum))
+        if field.maximum is not None:
+            checks.append(check_field_maximum(field_name, field.maximum))
+        if field.exclusiveMinimum is not None:
+            checks.append(check_field_minimum(field_name, field.exclusiveMinimum))
+            checks.append(check_field_not_equal(field_name, field.exclusiveMinimum))
+        if field.exclusiveMaximum is not None:
+            checks.append(check_field_maximum(field_name, field.exclusiveMaximum))
+            checks.append(check_field_not_equal(field_name, field.exclusiveMaximum))
+        if field.pattern is not None:
+            checks.append(check_field_regex(field_name, field.pattern))
+        if field.enum is not None and len(field.enum) > 0:
+            checks.append(check_field_enum(field_name, field.enum))
+        # TODO references: str = None
+        # TODO format
 
     return f"checks for {model_key}", checks
 
@@ -72,6 +93,82 @@ def check_field_unique(field_name, quote_field_name: bool = False):
         f"duplicate_count({field_name}) = 0": {
             "name": f"Check that unique field {field_name} has no duplicate values"}
     }
+
+
+def check_field_min_length(field_name, min_length, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"invalid_count({field_name}) = 0": {
+            "name": f"Check that field {field_name} has a min length of {min}",
+            "valid min length": min_length
+        }
+    }
+
+def check_field_max_length(field_name, max_length, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"invalid_count({field_name}) = 0": {
+            "name": f"Check that field {field_name} has a max length of {max_length}",
+            "valid max length": max_length
+        }
+    }
+
+
+def check_field_minimum(field_name, minimum, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"invalid_count({field_name}) = 0": {
+            "name": f"Check that field {field_name} has a minimum of {min}",
+            "valid min": minimum
+        }
+    }
+
+
+def check_field_maximum(field_name, maximum, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"invalid_count({field_name}) = 0": {
+            "name": f"Check that field {field_name} has a maximum of {maximum}",
+            "valid max": maximum
+        }
+    }
+
+def check_field_not_equal(field_name, value, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"invalid_count({field_name}) = 0": {
+            "name": f"Check that field {field_name} is not equal to {value}",
+            "invalid values": [value]
+        }
+    }
+
+
+def check_field_enum(field_name, enum, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"invalid_count({field_name}) = 0": {
+            "name": f"Check that field {field_name} only contains enum values {enum}",
+            "valid values": enum
+        }
+    }
+
+
+def check_field_regex(field_name, pattern, quote_field_name: bool = False):
+    if quote_field_name:
+        field_name = f"\"{field_name}\""
+    return {
+        f"invalid_count({field_name}) = 0": {
+            "name": f"Check that field {field_name} matches regex pattern {pattern}",
+            "valid regex": pattern
+        }
+    }
+
 
 
 def add_quality_checks(sodacl, data_contract_spec):

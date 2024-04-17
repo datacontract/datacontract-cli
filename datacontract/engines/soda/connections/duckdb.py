@@ -2,6 +2,7 @@ import logging
 import os
 
 import duckdb
+from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 
 
 def get_duckdb_connection(data_contract, server):
@@ -12,7 +13,7 @@ def get_duckdb_connection(data_contract, server):
     if server.type == "s3":
         path = server.location
     setup_s3_connection(con, server)
-    for model_name in data_contract.models:
+    for model_name, model in data_contract.models.items():
         model_path = path
         if "{model}" in model_path:
             model_path = model_path.format(model=model_name)
@@ -32,10 +33,22 @@ def get_duckdb_connection(data_contract, server):
                         CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
                         """)
         elif server.format == "csv":
-            con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_csv_auto('{model_path}', hive_partitioning=1);
-                        """)
+            columns = to_csv_types(model)
+            if columns is None:
+                con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);""")
+            else:
+                con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});""")
     return con
+
+
+def to_csv_types(model) -> dict:
+    if model is None:
+        return None
+    columns = {}
+    # ['SQLNULL', 'BOOLEAN', 'BIGINT', 'DOUBLE', 'TIME', 'DATE', 'TIMESTAMP', 'VARCHAR']
+    for field_name, field in model.fields.items():
+        columns[field_name] = convert_to_duckdb_csv_type(field)
+    return columns
 
 
 def setup_s3_connection(con, server):
