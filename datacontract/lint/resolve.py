@@ -37,7 +37,7 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_definitions: bool = False, include_quality: bool = False
+    location, schema_location: str = None, inline_definitions: bool = False, include_quality: bool = True
 ) -> DataContractSpecification:
     if location.startswith("http://") or location.startswith("https://"):
         data_contract_str = fetch_resource(location)
@@ -126,7 +126,7 @@ def resolve_data_contract_from_str(
 
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
-    if include_quality:
+    if spec.quality and include_quality:
         resolve_quality_ref(spec.quality)
 
     return spec
