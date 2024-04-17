@@ -287,24 +287,24 @@ Credentials are read from the environment variables.
 
 Supported server types:
 
-| Type         | Format     | Status      |
-|--------------|------------|-------------|
-| `s3`         | `parquet`  | ✅           |
-| `s3`         | `json`     | ✅           |
-| `s3`         | `csv`      | ✅           |
-| `s3`         | `delta`    | Coming soon |
-| `s3`         | `iceberg`  | Coming soon |
-| `postgres`   | n/a        | ✅           |
-| `snowflake`  | n/a        | ✅           |
-| `bigquery`   | n/a        | ✅           |
-| `redshift`   | n/a        | Coming soon |
-| `databricks` | n/a        | ✅           |
-| `kafka`      | `json`     | ✅           |
-| `kafka`      | `avro`     | Coming soon |
-| `kafka`      | `protobuf` | Coming soon |
-| `local`      | `parquet`  | ✅           |
-| `local`      | `json`     | ✅           |
-| `local`      | `csv`      | ✅           |
+| Type         | Format     | Status                                                             |
+|--------------|------------|--------------------------------------------------------------------|
+| `s3`         | `parquet`  | ✅                                                                  |
+| `s3`         | `json`     | ✅                                                                  |
+| `s3`         | `csv`      | ✅                                                                  |
+| `s3`         | `delta`    | Coming soon ([#24](https://github.com/datacontract/cli/issues/24)) |
+| `s3`         | `iceberg`  | Coming soon                                                        |
+| `postgres`   | n/a        | ✅                                                                  |
+| `snowflake`  | n/a        | ✅                                                                  |
+| `bigquery`   | n/a        | ✅                                                                  |
+| `redshift`   | n/a        | Coming soon                                                        |
+| `databricks` | n/a        | ✅                                                                  |
+| `kafka`      | `json`     | ✅                                                                  |
+| `kafka`      | `avro`     | Coming soon                                                        |
+| `kafka`      | `protobuf` | Coming soon                                                        |
+| `local`      | `parquet`  | ✅                                                                  |
+| `local`      | `json`     | ✅                                                                  |
+| `local`      | `csv`      | ✅                                                                  |
 
 Feel free to create an issue, if you need support for an additional type.
 
