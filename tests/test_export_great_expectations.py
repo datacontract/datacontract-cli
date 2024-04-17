@@ -247,6 +247,13 @@ def test_to_great_expectation_quality_json_file(
     assert result == json.dumps(expected_json_suite, indent=2)
 
 
+def test_cli_with_quality_file(expected_json_suite: Dict[str, Any]):
+    runner = CliRunner()
+    result = runner.invoke(app, ["export", "./fixtures/great-expectations/datacontract_quality_file.yaml", "--format",
+                                 "great-expectations"])
+    assert result.output.replace('\n', '') == json.dumps(expected_json_suite, indent=2).replace('\n', '')
+
+
 def test_to_great_expectation_missing_quality_json_file():
     """
     Test failed with missing Quality definition in a json file
