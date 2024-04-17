@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# npm install --global tailwindcss
+tailwindcss --input input.css --output output.css

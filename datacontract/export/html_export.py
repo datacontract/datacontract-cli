@@ -7,9 +7,9 @@ from datacontract.model.data_contract_specification import \
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:
     # Load templates from templates folder
-    file_loader = PackageLoader("datacontract", "templates")
+    package_loader = PackageLoader("datacontract", "templates")
     env = Environment(
-        loader=file_loader,
+        loader=package_loader,
         autoescape=select_autoescape(
             enabled_extensions=('html', 'xml'),
             default_for_string=True,
@@ -29,10 +29,13 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     else:
         quality_specification = None
 
+    style_content, _, _ = package_loader.get_source(env, "style/output.css")
+
     # Render the template with necessary data
     html_string = template.render(
         datacontract=data_contract_spec,
-        quality_specification=quality_specification
+        quality_specification=quality_specification,
+        style=style_content,
     )
 
     return html_string
