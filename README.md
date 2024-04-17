@@ -66,6 +66,31 @@ Testing https://datacontract.com/examples/orders-latest/datacontract.yaml
 
 Voilà, the CLI tested that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
 
+We can also use the datacontract.yaml to export in many [formats](#format), e.g., to SQL:
+
+```bash
+$ datacontract export --format sql https://datacontract.com/examples/orders-latest/datacontract.yaml
+
+# returns:
+-- Data Contract: urn:datacontract:checkout:orders-latest
+-- SQL Dialect: snowflake
+CREATE TABLE orders (
+  order_id TEXT not null primary key,
+  order_timestamp TIMESTAMP_TZ not null,
+  order_total NUMBER not null,
+  customer_id TEXT,
+  customer_email_address TEXT not null,
+  processed_timestamp TIMESTAMP_TZ not null
+);
+CREATE TABLE line_items (
+  lines_item_id TEXT not null primary key,
+  order_id TEXT,
+  sku TEXT
+);
+```
+
+Or generate this [HTML page](https://datacontract.com/examples/orders-latest/datacontract.html).
+
 ## Usage
 
 ```bash
@@ -81,6 +106,12 @@ $ datacontract test datacontract.yaml
 # execute schema and quality checks on the examples within the contract
 $ datacontract test --examples datacontract.yaml
 
+# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
+$ datacontract export --format html datacontract.yaml > datacontract.html
+
+# import avro (other formats: sql, ...)
+$ datacontract import --format avro --source avro_schema.avsc
+
 # find differences between to data contracts
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 
@@ -89,15 +120,6 @@ $ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 
 # fail pipeline on breaking changes. Uses changelog internally and showing only error and warning.
 $ datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
-
-# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
-$ datacontract export --format html datacontract.yaml > datacontract.html
-
-# import sql
-$ datacontract import --format sql --source my_ddl.sql
-
-# import avro
-$ datacontract import --format avro --source avro_schema.avsc
 ```
 
 ## Programmatic (Python)
@@ -168,6 +190,8 @@ docker compose run --rm datacontract --version
 This command runs the container momentarily to check the version of the `datacontract` CLI. The `--rm` flag ensures that the container is automatically removed after the command executes, keeping your environment clean.
 
 ## Documentation
+
+Commands
 
 - [init](#init)
 - [lint](#lint)
