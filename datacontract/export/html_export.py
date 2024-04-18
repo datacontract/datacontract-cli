@@ -31,11 +31,14 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
 
     style_content, _, _ = package_loader.get_source(env, "style/output.css")
 
+    datacontract_yaml = data_contract_spec.to_yaml()
+
     # Render the template with necessary data
     html_string = template.render(
         datacontract=data_contract_spec,
         quality_specification=quality_specification,
         style=style_content,
+        datacontract_yaml=datacontract_yaml,
     )
 
     return html_string
