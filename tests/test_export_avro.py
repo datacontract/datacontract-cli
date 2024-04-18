@@ -72,4 +72,3 @@ def test_to_avro_schema():
     result = to_avro_schema_json(model_name, model)
 
     assert json.loads(result) == json.loads(expected_avro_schema)
-

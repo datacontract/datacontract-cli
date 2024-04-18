@@ -64,14 +64,16 @@ def data_contract_complex() -> DataContractSpecification:
 
 @pytest.fixture
 def data_contract_great_expectations() -> DataContractSpecification:
-    return resolve.resolve_data_contract_from_location("./fixtures/great-expectations/datacontract.yaml",
-                                                       include_quality=True)
+    return resolve.resolve_data_contract_from_location(
+        "./fixtures/great-expectations/datacontract.yaml", include_quality=True
+    )
 
 
 @pytest.fixture
 def data_contract_great_expectations_quality_file() -> DataContractSpecification:
-    return resolve.resolve_data_contract_from_location("./fixtures/great-expectations/datacontract_quality_file.yaml",
-                                                       include_quality=True)
+    return resolve.resolve_data_contract_from_location(
+        "./fixtures/great-expectations/datacontract_quality_file.yaml", include_quality=True
+    )
 
 
 @pytest.fixture
@@ -227,8 +229,9 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
     assert result_line_items == json.dumps(expected_line_items, indent=2)
 
 
-def test_to_great_expectation_quality(data_contract_great_expectations: DataContractSpecification,
-                                      expected_json_suite: Dict[str, Any]):
+def test_to_great_expectation_quality(
+    data_contract_great_expectations: DataContractSpecification, expected_json_suite: Dict[str, Any]
+):
     """
     Test with Quality definition in the contract
     """
@@ -238,8 +241,8 @@ def test_to_great_expectation_quality(data_contract_great_expectations: DataCont
 
 
 def test_to_great_expectation_quality_json_file(
-    data_contract_great_expectations_quality_file: DataContractSpecification,
-    expected_json_suite: Dict[str, Any]):
+    data_contract_great_expectations_quality_file: DataContractSpecification, expected_json_suite: Dict[str, Any]
+):
     """
     Test with Quality definition in a json file
     """
@@ -249,9 +252,11 @@ def test_to_great_expectation_quality_json_file(
 
 def test_cli_with_quality_file(expected_json_suite: Dict[str, Any]):
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/great-expectations/datacontract_quality_file.yaml", "--format",
-                                 "great-expectations"])
-    assert result.output.replace('\n', '') == json.dumps(expected_json_suite, indent=2).replace('\n', '')
+    result = runner.invoke(
+        app,
+        ["export", "./fixtures/great-expectations/datacontract_quality_file.yaml", "--format", "great-expectations"],
+    )
+    assert result.output.replace("\n", "") == json.dumps(expected_json_suite, indent=2).replace("\n", "")
 
 
 def test_to_great_expectation_missing_quality_json_file():
@@ -260,7 +265,8 @@ def test_to_great_expectation_missing_quality_json_file():
     """
     try:
         resolve.resolve_data_contract_from_location(
-            "./fixtures/great-expectations/datacontract_missing_quality_file.yaml", include_quality=True)
+            "./fixtures/great-expectations/datacontract_missing_quality_file.yaml", include_quality=True
+        )
         assert False
     except DataContractException as dataContractException:
         assert dataContractException.reason == "Cannot resolve reference ./fixtures/great-expectations/missing.json"

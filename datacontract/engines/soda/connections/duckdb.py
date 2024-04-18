@@ -35,9 +35,13 @@ def get_duckdb_connection(data_contract, server):
         elif server.format == "csv":
             columns = to_csv_types(model)
             if columns is None:
-                con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);""")
+                con.sql(
+                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""
+                )
             else:
-                con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});""")
+                con.sql(
+                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
+                )
     return con
 
 

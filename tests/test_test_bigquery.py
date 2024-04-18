@@ -12,6 +12,7 @@ datacontract = "fixtures/bigquery/datacontract.yaml"
 
 load_dotenv(override=True)
 
+
 # Deactivated because the test requires special setup on a non-free BigQuery account.
 # Can activate for testing locally, using a custom account_info file.
 # For the provided datacontract.yaml the data file from s3-csv should be imported in the target BigQuery table.

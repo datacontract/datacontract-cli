@@ -1,4 +1,3 @@
-
 # https://duckdb.org/docs/data/csv/overview.html
 # ['SQLNULL', 'BOOLEAN', 'BIGINT', 'DOUBLE', 'TIME', 'DATE', 'TIMESTAMP', 'VARCHAR']
 def convert_to_duckdb_csv_type(field) -> None | str:
@@ -35,4 +34,3 @@ def convert_to_duckdb_csv_type(field) -> None | str:
     if type.lower() in ["null"]:
         return "SQLNULL"
     return "VARCHAR"
-

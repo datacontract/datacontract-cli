@@ -77,8 +77,9 @@ quality:
 
 
 def test_export_sodacl(check_expected: str):
-    data_contract_specification = resolve.resolve_data_contract_from_location("./fixtures/sodacl/datacontract.yaml",
-                                                                              include_quality=True)
+    data_contract_specification = resolve.resolve_data_contract_from_location(
+        "./fixtures/sodacl/datacontract.yaml", include_quality=True
+    )
 
     result = to_sodacl_yaml(data_contract_specification)
 

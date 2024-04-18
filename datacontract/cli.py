@@ -16,6 +16,7 @@ from datacontract.init.download_datacontract_file import \
 
 console = Console()
 
+
 class OrderedCommands(TyperGroup):
     def list_commands(self, ctx: Context) -> Iterable[str]:
         return self.commands.keys()

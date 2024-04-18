@@ -11,19 +11,21 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     env = Environment(
         loader=package_loader,
         autoescape=select_autoescape(
-            enabled_extensions=('html', 'xml'),
+            enabled_extensions=("html", "xml"),
             default_for_string=True,
-        )
+        ),
     )
 
     # Load the required template
-    template = env.get_template('datacontract.html')
+    template = env.get_template("datacontract.html")
 
     if data_contract_spec.quality is not None and isinstance(data_contract_spec.quality.specification, str):
         quality_specification = data_contract_spec.quality.specification
     elif data_contract_spec.quality is not None and isinstance(data_contract_spec.quality.specification, object):
         if data_contract_spec.quality.type == "great-expectations":
-            quality_specification = yaml.dump(data_contract_spec.quality.specification, sort_keys=False, default_style = "|")
+            quality_specification = yaml.dump(
+                data_contract_spec.quality.specification, sort_keys=False, default_style="|"
+            )
         else:
             quality_specification = yaml.dump(data_contract_spec.quality.specification, sort_keys=False)
     else:
