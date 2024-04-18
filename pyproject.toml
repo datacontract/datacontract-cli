@@ -64,5 +64,8 @@ datacontract = "datacontract.cli:app"
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.pytest.ini_options]
+addopts="-n 8"
+
 [tool.ruff]
 line-length = 120
