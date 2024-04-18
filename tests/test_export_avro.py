@@ -62,6 +62,7 @@ def test_to_avro_schema():
     }
   ],
   "name": "orders",
+  "namespace": "com.example.checkout",
   "doc": "My Model",
   "type": "record"
 }
