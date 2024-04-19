@@ -1,3 +1,7 @@
+import datetime
+from importlib.metadata import version
+
+import pytz
 import yaml
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -11,7 +15,7 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     env = Environment(
         loader=package_loader,
         autoescape=select_autoescape(
-            enabled_extensions=("html", "xml"),
+            enabled_extensions="html",
             default_for_string=True,
         ),
     )
@@ -35,12 +39,26 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
 
     datacontract_yaml = data_contract_spec.to_yaml()
 
+    tz = pytz.timezone('UTC')
+    now = datetime.datetime.now(tz)
+    formatted_date = now.strftime('%d %b %Y %H:%M:%S UTC')
+    datacontract_cli_version = get_version()
+
     # Render the template with necessary data
     html_string = template.render(
         datacontract=data_contract_spec,
         quality_specification=quality_specification,
         style=style_content,
         datacontract_yaml=datacontract_yaml,
+        formatted_date=formatted_date,
+        datacontract_cli_version=datacontract_cli_version,
     )
 
     return html_string
+
+
+def get_version() -> str:
+    try:
+        return version("datacontract_cli")
+    except:
+        return ""
