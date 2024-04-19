@@ -1,4 +1,5 @@
 import datetime
+import logging
 from importlib.metadata import version
 
 import pytz
@@ -60,5 +61,6 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
 def get_version() -> str:
     try:
         return version("datacontract_cli")
-    except:
+    except Exception as e:
+        logging.debug("Ignoring exception", e)
         return ""
