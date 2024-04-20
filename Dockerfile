@@ -36,7 +36,6 @@ WORKDIR /home/datacontract
 # the stdout and stderr streams are sent straight to terminal (e.g. your container log) without
 # being first buffered and that you can see the output of your application in real time.
 ENV PYTHONUNBUFFERED=1
-ENV COLUMNS=5000
 
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
