@@ -20,8 +20,9 @@ from datacontract.model.data_contract_specification import \
 from datacontract.model.run import Run, Check, Log
 
 
-def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark: SparkSession,
-    tmp_dir):
+def check_soda_execute(
+    run: Run, data_contract: DataContractSpecification, server: Server, spark: SparkSession, tmp_dir
+):
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return
@@ -93,6 +94,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
     # Don't check types for csv format, as they are hard to detect
     server_type = server.type
     check_types = server.format != "json" and server.format != "csv" and server.format != "avro"
+
     sodacl_yaml_str = to_sodacl_yaml(data_contract, server_type, check_types)
     # print("sodacl_yaml_str:\n" + sodacl_yaml_str)
     scan.add_sodacl_yaml_str(sodacl_yaml_str)

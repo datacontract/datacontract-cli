@@ -41,7 +41,6 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
 def import_record_fields(record_fields):
     imported_fields = {}
     for field in record_fields:
-
         imported_fields[field.name] = Field()
         imported_fields[field.name].required = True
         imported_fields[field.name].description = field.doc
@@ -61,7 +60,7 @@ def import_record_fields(record_fields):
         elif field.type.type == "array":
             imported_fields[field.name].type = "array"
             imported_fields[field.name].items = import_avro_array_items(field.type)
-        else:    # primitive type
+        else:  # primitive type
             imported_fields[field.name].type = map_type_from_avro(field.type.type)
 
     return imported_fields
@@ -78,7 +77,7 @@ def import_avro_array_items(array_schema):
     elif array_schema.items.type == "array":
         items.type = "array"
         items.items = import_avro_array_items(array_schema.items)
-    else:    # primitive type
+    else:  # primitive type
         items.type = map_type_from_avro(array_schema.items.type)
 
     return items

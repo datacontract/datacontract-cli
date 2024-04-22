@@ -29,9 +29,7 @@ from my_table
 
 
 def test_to_sql_ddl_snowflake():
-    actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export(
-        "sql-query", model="orders"
-    )
+    actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export("sql-query", model="orders")
     expected = """
 -- Data Contract: urn:datacontract:checkout:snowflake_orders_pii_v2
 -- SQL Dialect: snowflake
