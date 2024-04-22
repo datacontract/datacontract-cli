@@ -89,7 +89,13 @@ CREATE TABLE line_items (
 );
 ```
 
-Or generate this [HTML page](https://datacontract.com/examples/orders-latest/datacontract.html).
+Or generate an HTML export:
+
+```bash
+$ datacontract export --format html https://datacontract.com/examples/orders-latest/datacontract.yaml > datacontract.html
+```
+
+which will create this [HTML export](https://datacontract.com/examples/orders-latest/datacontract.html).
 
 ## Usage
 
