@@ -2,8 +2,7 @@ from typing import Dict
 
 import yaml
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
 
 def to_odcs_yaml(data_contract_spec: DataContractSpecification):

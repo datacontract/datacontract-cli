@@ -3,8 +3,7 @@ import yaml
 
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.lint import resolve
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 @pytest.fixture

@@ -103,4 +103,3 @@ def setup_azure_connection(con, server):
         CLIENT_SECRET '{client_secret}'
     );
     """)
-

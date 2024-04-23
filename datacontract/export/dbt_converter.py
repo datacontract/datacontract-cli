@@ -3,8 +3,7 @@ from typing import Dict
 import yaml
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
 
 def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
