@@ -71,7 +71,6 @@ def init(
     try:
         template_content = download_template_from_url(settings.default_template_url)
         if not storage.exists(file_name, sub_dir) or overwrite:
-            console.print("Entrou nessa merda")
             storage.save(template_content, file_name, sub_dir)
         else:
             raise DataContractException(
