@@ -286,8 +286,8 @@ Supported formats:
 - parquet
 - json
 - csv
+- delta
 - iceberg (coming soon)
-- delta (coming soon)
 
 Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for an additional type and formats.
 
@@ -295,7 +295,9 @@ Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
-#### Example
+#### Examples
+
+##### JSON
 
 datacontract.yaml
 ```yaml
@@ -306,6 +308,18 @@ servers:
     location: s3://bucket-name/path/*/*.json
     format: json
     delimiter: new_line # new_line, array, or none
+```
+
+##### Delta Tables
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: s3
+    endpointUrl: https://minio.example.com # not needed with AWS S3
+    location: s3://bucket-name/path/table.delta # path to the Delta table folder containing parquet data files and the _delta_log
+    format: delta
 ```
 
 #### Environment Variables

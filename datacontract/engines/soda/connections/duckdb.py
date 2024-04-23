@@ -59,7 +59,7 @@ def get_duckdb_connection(data_contract, server):
                 "AWS_ALLOW_HTTP": "True" if server.endpointUrl.startswith("http://") else "False",
             }
 
-            delta_table_arrow = DeltaTable(model_path, storage_options=storage_options).to_pyarrow_table()
+            delta_table_arrow = DeltaTable(model_path, storage_options=storage_options).to_pyarrow_dataset()
 
             con.register(model_name, delta_table_arrow)
     return con

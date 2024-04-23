@@ -30,9 +30,7 @@ def test_test_s3_delta(minio_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", s3_access_key)
     monkeypatch.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", s3_secret_access_key)
     data_contract_str = _prepare_s3_files(minio_container)
-    data_contract = DataContract(
-        data_contract_str=data_contract_str, schema_location="fixtures/lint/custom_datacontract.schema.json"
-    )
+    data_contract = DataContract(data_contract_str=data_contract_str)
 
     run = data_contract.test()
 
