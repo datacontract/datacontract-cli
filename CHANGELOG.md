@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added test for Azure Blob storage an Azure Data Lake Storage (#146)
+- Added test support for `azure` (#146)
 
 
 ## [0.10.1] - 2024-04-19
