@@ -1,7 +1,6 @@
 import re
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Server
+from datacontract.model.data_contract_specification import DataContractSpecification, Server
 
 
 def to_terraform(data_contract_spec: DataContractSpecification, server_id: str = None) -> str:

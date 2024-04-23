@@ -3,8 +3,7 @@ from typing import Dict, List, Any
 
 import yaml
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Field, Quality
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Quality
 
 
 def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str) -> str:
