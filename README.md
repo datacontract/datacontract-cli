@@ -727,6 +727,28 @@ Current limitations:
 - Metrics only, no logs yet (but loosely planned)
 
 
+### Using Google Cloud Storage to store data contracts
+
+By default, the data contract CLI uses the local file system to store data contracts.
+However, you can also use Google Cloud Storage to store and manage your data contracts.
+
+To use Google Cloud Storage, you need to set the following environment variables:
+
+- GOOGLE_APPLICATION_CREDENTIALS: The path to your Google Cloud Service Account Key.
+- DATACONTRACT_STORAGE__STORAGE_CLASS: The storage class of the bucket (The default value is 'local').
+- DATACONTRACT_STORAGE__STORAGE_OPTIONS: Some options for the storage class.
+
+The options for the google cloud storage are:
+- service_account_path: The path to your Google Cloud Service Account Key (uses GOOGLE_APPLICATION_CREDENTIALS if not set).
+- bucket_name: The name of the bucket to store the data contracts.
+- project_id: The project ID of the Google Cloud Project (uses the project ID from the service account if not set).
+
+> NOTE: The `DATACONTRACT_STORAGE__STORAGE_OPTIONS` environment variable should be set as a JSON string. Ex.:
+```bash
+$ export DATACONTRACT_STORAGE__STORAGE_OPTIONS='{"service_account_path": "/path/to/service-account.json", "bucket_name": "my-bucket", "project_id": "my-project"}'
+```
+After setting the environment variables, you can use the data contract CLI as usual.
+
 ## Best Practices
 
 We share best practices in using the Data Contract CLI.

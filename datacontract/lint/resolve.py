@@ -5,12 +5,11 @@ import fastjsonschema
 import yaml
 from fastjsonschema import JsonSchemaValueException
 
-from datacontract.lint.files import read_file
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Definition, Quality
+from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Quality
 from datacontract.model.exceptions import DataContractException
+from datacontract.settings import CLISettings
 
 
 def resolve_data_contract(
@@ -42,7 +41,14 @@ def resolve_data_contract_from_location(
     if location.startswith("http://") or location.startswith("https://"):
         data_contract_str = fetch_resource(location)
     else:
-        data_contract_str = read_file(location)
+        settings = CLISettings()
+        storage = settings.storage.build_storage_class()
+        path_parts = location.split("/")
+        file_name = path_parts[-1]
+        sub_dir = "/".join(path_parts[:-1])
+        if sub_dir.startswith("./"):
+            sub_dir = sub_dir.replace("./", "")
+        data_contract_str = storage.load(file_name, sub_dir)
     return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, include_quality)
 
 

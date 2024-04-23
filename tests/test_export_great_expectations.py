@@ -6,11 +6,9 @@ import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.great_expectations_converter import \
-    to_great_expectations
+from datacontract.export.great_expectations_converter import to_great_expectations
 from datacontract.lint import resolve
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.exceptions import DataContractException
 
 logging.basicConfig(level=logging.DEBUG, force=True)

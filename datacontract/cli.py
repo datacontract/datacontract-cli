@@ -11,8 +11,9 @@ from typer.core import TyperGroup
 from typing_extensions import Annotated
 
 from datacontract.data_contract import DataContract
-from datacontract.init.download_datacontract_file import \
-    download_datacontract_file, FileExistsException
+from datacontract.init.download_datacontract_file import download_template_from_url
+from datacontract.settings import CLISettings
+from datacontract.model.exceptions import DataContractException
 
 console = Console()
 
@@ -55,23 +56,34 @@ def common(
 @app.command()
 def init(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml to create.")
+        str, typer.Argument(help="The location (uri or path) of the data contract yaml to create.")
     ] = "datacontract.yaml",
-    template: Annotated[
-        str, typer.Option(help="URL of a template or data contract")
-    ] = "https://datacontract.com/datacontract.init.yaml",
     overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
 ):
     """
     Download a datacontract.yaml template and write it to file.
     """
+    path_parts = location.split("/")
+    file_name = path_parts[-1]
+    sub_dir = "/".join(path_parts[:-1])
+    settings = CLISettings()
+    storage = settings.storage.build_storage_class()
     try:
-        download_datacontract_file(location, template, overwrite)
-    except FileExistsException:
-        console.print("File already exists, use --overwrite to overwrite")
+        template_content = download_template_from_url(settings.default_template_url)
+        if not storage.exists(file_name, sub_dir) or overwrite:
+            console.print("Entrou nessa merda")
+            storage.save(template_content, file_name, sub_dir)
+        else:
+            raise DataContractException(
+                type="init",
+                name="Download data contract template",
+                reason="File already exists, use --overwrite to overwrite",
+            )
+    except Exception as e:
+        console.print("🔴 Unexpected error: " + str(e))
         raise typer.Exit(code=1)
     else:
-        console.print("📄 data contract written to " + location)
+        console.print("📄 data contract written to " + storage.get_file_uri(file_name, sub_dir))
 
 
 @app.command()

@@ -4,8 +4,7 @@ import json
 
 import yaml
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Example
+from datacontract.model.data_contract_specification import DataContractSpecification, Example
 from ..lint import Linter, LinterResult
 
 

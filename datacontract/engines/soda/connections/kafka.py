@@ -23,8 +23,7 @@ from pyspark.sql.types import (
 )
 
 from datacontract.export.avro_converter import to_avro_schema_json
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Server, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Server, Field
 from datacontract.model.exceptions import DataContractException
 
 
