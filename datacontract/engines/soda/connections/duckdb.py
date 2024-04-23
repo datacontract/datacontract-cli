@@ -4,6 +4,8 @@ import os
 import duckdb
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 
+from deltalake import DeltaTable
+
 
 def get_duckdb_connection(data_contract, server):
     con = duckdb.connect(database=":memory:")
@@ -45,6 +47,21 @@ def get_duckdb_connection(data_contract, server):
                 con.sql(
                     f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
                 )
+        elif server.format == "delta":
+            if server.type == "azure":
+                raise NotImplementedError("Support for Delta Tables on Azure Storage is not implemented yet")
+
+            storage_options = {
+                "AWS_ENDPOINT_URL": server.endpointUrl,
+                "AWS_ACCESS_KEY_ID": os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID"),
+                "AWS_SECRET_ACCESS_KEY": os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"),
+                "AWS_REGION": os.getenv("DATACONTRACT_S3_REGION", "us-east-1"),
+                "AWS_ALLOW_HTTP": "True" if server.endpointUrl.startswith("http://") else "False",
+            }
+
+            delta_table_arrow = DeltaTable(model_path, storage_options=storage_options).to_pyarrow_table()
+
+            con.register(model_name, delta_table_arrow)
     return con
 
 

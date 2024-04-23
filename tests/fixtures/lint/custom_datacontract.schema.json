@@ -295,7 +295,7 @@
               "format": {
                 "type": "string",
                 "description": "The format of the file(s)",
-                "examples": ["json", "parquet", "csv"]
+                "examples": ["json", "parquet", "csv", "delta"]
               }
             },
             "additionalProperties": true,
