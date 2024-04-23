@@ -12,7 +12,6 @@ info:
 servers:
   production:
     type: "s3"
-    endpointUrl: __S3_ENDPOINT_URL__
     location: "s3://multiple-bucket/fixtures/s3-json-multiple-models/data/{model}/*.json"
     format: "json"
     delimiter: "new_line"

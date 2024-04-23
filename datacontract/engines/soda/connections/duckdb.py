@@ -12,7 +12,10 @@ def get_duckdb_connection(data_contract, server):
         path = server.path
     if server.type == "s3":
         path = server.location
-    setup_s3_connection(con, server)
+        setup_s3_connection(con, server)
+    if server.type == "azure":
+        path = server.location
+        setup_azure_connection(con, server)
     for model_name, model in data_contract.models.items():
         model_path = path
         if "{model}" in model_path:
@@ -74,3 +77,30 @@ def setup_s3_connection(con, server):
                     SET s3_access_key_id = '{s3_access_key_id}';
                     SET s3_secret_access_key = '{s3_secret_access_key}';
                     """)
+
+
+def setup_azure_connection(con, server):
+    tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
+    client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
+    client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
+
+    if tenant_id is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
+    if client_id is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_CLIENT_ID is not set")
+    if client_secret is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_CLIENT_SECRET is not set")
+
+    con.install_extension("azure")
+    con.load_extension("azure")
+
+    con.sql(f"""
+    CREATE SECRET azure_spn (
+        TYPE AZURE,
+        PROVIDER SERVICE_PRINCIPAL,
+        TENANT_ID '{tenant_id}',
+        CLIENT_ID '{client_id}',
+        CLIENT_SECRET '{client_secret}'
+    );
+    """)
+

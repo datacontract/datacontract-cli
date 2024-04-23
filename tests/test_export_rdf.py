@@ -156,7 +156,6 @@ def test_to_rdf_complex():
 \"\"\" ] .
 
 <production> a dc1:Server ;
-    dcx:endpointUrl "__S3_ENDPOINT_URL__" ;
     dc1:delimiter "new_line" ;
     dc1:format "json" ;
     dc1:location "s3://multiple-bucket/fixtures/s3-json-multiple-models/data/{model}/*.json" ;
