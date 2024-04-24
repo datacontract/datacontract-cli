@@ -49,7 +49,7 @@ dev = [
   "pytest-xdist",
   # testcontainers 4.x have issues with Kafka on arm
   # https://github.com/testcontainers/testcontainers-python/issues/450
-  "testcontainers<4.0",
+  "testcontainers~=4.4.0",
   "testcontainers-minio",
   "testcontainers-postgres",
   "testcontainers-kafka",
