@@ -25,8 +25,10 @@ def postgres_container(request):
 
 
 def test_test_postgres(postgres_container, monkeypatch):
-    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
-    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.POSTGRES_USER)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.POSTGRES_PASSWORD)
+    # monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    # monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
     _init_sql()
 
     data_contract_str = _setup_datacontract()
@@ -49,9 +51,12 @@ def _setup_datacontract():
 
 def _init_sql():
     connection = psycopg2.connect(
-        database=postgres.dbname,
-        user=postgres.username,
-        password=postgres.password,
+        database=postgres.POSTGRES_DB,
+        user=postgres.POSTGRES_USER,
+        password=postgres.POSTGRES_PASSWORD,
+        # database=postgres.dbname,
+        # user=postgres.username,
+        # password=postgres.password,
         host=postgres.get_container_host_ip(),
         port=postgres.get_exposed_port(5432),
     )
