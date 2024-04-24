@@ -5,6 +5,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.imports.integrations.avro import AvroDataContractImporter
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -17,15 +18,15 @@ def test_cli():
             "import",
             "--format",
             "avro",
-            "--source",
-            "fixtures/avro/data/orders.avsc",
         ],
+        input="fixtures/avro/data/orders.avsc",
     )
     assert result.exit_code == 0
 
 
 def test_import_avro_schema():
-    result = DataContract().import_from_source("avro", "fixtures/avro/data/orders.avsc")
+    importer = AvroDataContractImporter()
+    result = importer.import_from_source(path="fixtures/avro/data/orders.avsc")
 
     expected = """
 dataContractSpecification: 0.9.3
@@ -83,7 +84,8 @@ models:
 
 
 def test_import_avro_arrays_of_records_and_nested_arrays():
-    result = DataContract().import_from_source("avro", "fixtures/avro/data/arrays.avsc")
+    importer = AvroDataContractImporter()
+    result = importer.import_from_source(path="fixtures/avro/data/arrays.avsc")
 
     expected = """
 dataContractSpecification: 0.9.3
@@ -129,7 +131,8 @@ models:
 
 
 def test_import_avro_nested_records():
-    result = DataContract().import_from_source("avro", "fixtures/avro/data/nested.avsc")
+    importer = AvroDataContractImporter()
+    result = importer.import_from_source(path="fixtures/avro/data/nested.avsc")
 
     expected = """
 dataContractSpecification: 0.9.3

@@ -38,7 +38,8 @@ dependencies = [
   "avro==1.11.3",
   "opentelemetry-exporter-otlp-proto-grpc~=1.16.0",
   "opentelemetry-exporter-otlp-proto-http~=1.16.0",
-  "deltalake~=0.17.0"
+  "deltalake~=0.17.0",
+  "google-cloud-bigquery==3.21.0"
 ]
 
 [project.optional-dependencies]

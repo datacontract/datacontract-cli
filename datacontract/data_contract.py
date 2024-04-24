@@ -25,8 +25,6 @@ from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
-from datacontract.imports.avro_importer import import_avro
-from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
@@ -464,15 +462,3 @@ class DataContract:
         )
         run.log_info(f"Using {server} for testing the examples")
         return server
-
-    def import_from_source(self, format: str, source: str) -> DataContractSpecification:
-        data_contract_specification = DataContract.init()
-
-        if format == "sql":
-            data_contract_specification = import_sql(data_contract_specification, format, source)
-        elif format == "avro":
-            data_contract_specification = import_avro(data_contract_specification, source)
-        else:
-            print(f"Import format {format} not supported.")
-
-        return data_contract_specification

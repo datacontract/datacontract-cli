@@ -12,8 +12,10 @@ from typing_extensions import Annotated
 
 from datacontract.data_contract import DataContract
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
+from datacontract.imports import DataContractsImporterRegistry
 
 console = Console()
+importer_registry = DataContractsImporterRegistry()
 
 
 class OrderedCommands(TyperGroup):
@@ -197,20 +199,25 @@ def export(
     console.print(result, markup=False)
 
 
-class ImportFormat(str, Enum):
-    sql = "sql"
-    avro = "avro"
-
-
 @app.command(name="import")
-def import_(
-    format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
-    source: Annotated[str, typer.Option(help="The path to the file that should be imported.")],
-):
+def import_(format: Annotated[str, typer.Option(help="The format of the source file.")]):
     """
     Create a data contract from the given source file. Prints to stdout.
     """
-    result = DataContract().import_from_source(format, source)
+    if not importer_registry.has_importer(format):
+        console.print(f"🔴 Invalid format '{format}'. Available formats are: {importer_registry.list_importers()}")
+        exit(0)
+    importer = importer_registry.get_importer(format)
+    console.clear()
+    console.print("Provide the following arguments to import the data contract:\n\n")
+    arguments_values = {}
+    for argument in importer.get_arguments():
+        value = typer.prompt(f"{argument.description}", default="", show_default=False)
+        if value:
+            arguments_values[argument.name] = value
+    console.print("Importing data contract...\n\n")
+    result = importer.import_from_source(**arguments_values)
+    console.clear()
     console.print(result.to_yaml())
 
 

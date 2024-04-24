@@ -5,6 +5,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.imports.integrations.sql import SQLDataContractImporter
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -20,15 +21,15 @@ def test_cli():
             "import",
             "--format",
             "sql",
-            "--source",
-            sql_file_path,
         ],
+        input=sql_file_path,
     )
     assert result.exit_code == 0
 
 
 def test_import_sql():
-    result = DataContract().import_from_source("sql", sql_file_path)
+    importer = SQLDataContractImporter()
+    result = importer.import_from_source(path=sql_file_path)
 
     expected = """
 dataContractSpecification: 0.9.3
@@ -52,7 +53,6 @@ models:
       field_three:
         type: timestamp
     """
-    print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings
     assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
