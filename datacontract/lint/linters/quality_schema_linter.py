@@ -1,7 +1,6 @@
 import yaml
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model
+from datacontract.model.data_contract_specification import DataContractSpecification, Model
 from ..lint import Linter, LinterResult
 
 

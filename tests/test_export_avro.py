@@ -5,8 +5,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.avro_converter import to_avro_schema_json
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 

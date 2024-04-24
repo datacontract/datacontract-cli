@@ -6,8 +6,7 @@ import pytz
 import yaml
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:
@@ -40,9 +39,9 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
 
     datacontract_yaml = data_contract_spec.to_yaml()
 
-    tz = pytz.timezone('UTC')
+    tz = pytz.timezone("UTC")
     now = datetime.datetime.now(tz)
-    formatted_date = now.strftime('%d %b %Y %H:%M:%S UTC')
+    formatted_date = now.strftime("%d %b %Y %H:%M:%S UTC")
     datacontract_cli_version = get_version()
 
     # Render the template with necessary data

@@ -4,8 +4,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.html_export import to_html
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
