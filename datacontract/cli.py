@@ -1,9 +1,13 @@
+from datetime import datetime
 from enum import Enum
 from importlib import metadata
+from pathlib import Path
 from typing import Iterable, Optional
 
+import pytz
 import typer
 from click import Context
+from jinja2 import PackageLoader, Environment, select_autoescape
 from rich import box
 from rich.console import Console
 from rich.table import Table
@@ -11,6 +15,7 @@ from typer.core import TyperGroup
 from typing_extensions import Annotated
 
 from datacontract.data_contract import DataContract
+from datacontract.export.html_export import get_version
 from datacontract.init.download_datacontract_file import \
     download_datacontract_file, FileExistsException
 
@@ -213,6 +218,58 @@ def import_(
     """
     result = DataContract().import_from_source(format, source)
     console.print(result.to_yaml())
+
+
+@app.command(name="catalog")
+def catalog(
+    files: Annotated[str, typer.Option(help="Glob pattern for the data contract files to include in the catalog.", default="*.yaml")] = "*.yaml",
+    output: Annotated[str, typer.Option(help="Output folder for the catalog.", default="catalog")] = "catalog",
+):
+    """
+    Create a html catalog of data contracts.
+    """
+    path = Path(output)
+    path.mkdir(parents=True, exist_ok=True)
+
+    contracts = []
+    for file in Path().glob(files):
+        data_contract = DataContract(data_contract_file=f"{file.absolute()}", inline_definitions=True)
+        html = data_contract.export(export_format="html")
+        html_filename = f"{file.name}.html"
+        with open(html_filename, "w") as f:
+            f.write(html)
+        contracts.append(html_filename)
+
+    with open(path / "index.html", "w") as f:
+
+        # Load templates from templates folder
+        package_loader = PackageLoader("datacontract", "templates")
+        env = Environment(
+            loader=package_loader,
+            autoescape=select_autoescape(
+                enabled_extensions="html",
+                default_for_string=True,
+            ),
+        )
+
+        # Load the required template
+        template = env.get_template("index.html")
+
+        style_content, _, _ = package_loader.get_source(env, "style/output.css")
+
+        tz = pytz.timezone('UTC')
+        now = datetime.datetime.now(tz)
+        formatted_date = now.strftime('%d %b %Y %H:%M:%S UTC')
+        datacontract_cli_version = get_version()
+
+        # Render the template with necessary data
+        html_string = template.render(
+            style=style_content,
+            formatted_date=formatted_date,
+            datacontract_cli_version=datacontract_cli_version,
+            contracts=contracts,
+        )
+        f.write(html_string)
 
 
 @app.command()
