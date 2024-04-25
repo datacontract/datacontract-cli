@@ -1,17 +1,22 @@
 from enum import Enum
 from importlib import metadata
+from pathlib import Path
 from typing import Iterable, Optional
+
 
 import typer
 from click import Context
+
 from rich import box
 from rich.console import Console
 from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
+from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract
-from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
+from datacontract.init.download_datacontract_file import \
+    download_datacontract_file, FileExistsException
 
 console = Console()
 
@@ -212,6 +217,25 @@ def import_(
     """
     result = DataContract().import_from_source(format, source)
     console.print(result.to_yaml())
+
+
+@app.command(name="catalog")
+def catalog(
+    files: Annotated[Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")] = "*.yaml",
+    output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
+):
+    """
+    Create a html catalog of data contracts.
+    """
+    path = Path(output)
+    path.mkdir(parents=True, exist_ok=True)
+    console.print(f"Created {output}")
+
+    contracts = []
+    for file in Path().glob(files):
+        create_data_contract_html(contracts, file, path)
+
+    create_index_html(contracts, path)
 
 
 @app.command()
