@@ -183,6 +183,7 @@ Commands
 - [breaking](#breaking)
 - [changelog](#changelog)
 - [diff](#diff)
+- [catalog](#catalog)
 
 ### init
 
@@ -723,6 +724,21 @@ Available import options:
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                                               │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+### catalog
+
+```
+
+ Usage: datacontract catalog [OPTIONS]
+
+ Create a html catalog of data contracts.
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --files         TEXT  Glob pattern for the data contract files to include in the catalog. [default: *.yaml]              │
+│ --output        TEXT  Output directory for the catalog html files. [default: catalog/]                                   │
+│ --help                Show this message and exit.                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 
