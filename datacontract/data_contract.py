@@ -6,20 +6,16 @@ import typing
 import yaml
 from pyspark.sql import SparkSession
 
-from datacontract.breaking.breaking import models_breaking_changes, \
-    quality_breaking_changes
+from datacontract.breaking.breaking import models_breaking_changes, quality_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
 )
-from datacontract.engines.fastjsonschema.check_jsonschema import \
-    check_jsonschema
+from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.export.avro_idl_converter import to_avro_idl
-from datacontract.export.dbt_converter import to_dbt_models_yaml, \
-    to_dbt_sources_yaml, to_dbt_staging_sql
-from datacontract.export.great_expectations_converter import \
-    to_great_expectations
+from datacontract.export.dbt_converter import to_dbt_models_yaml, to_dbt_sources_yaml, to_dbt_staging_sql
+from datacontract.export.great_expectations_converter import to_great_expectations
 from datacontract.export.html_export import to_html
 from datacontract.export.jsonschema_converter import to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
@@ -31,24 +27,18 @@ from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.sql_importer import import_sql
-from datacontract.integration.publish_datamesh_manager import \
-    publish_datamesh_manager
+from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
-from datacontract.lint.linters.field_reference_linter import \
-    FieldReferenceLinter
+from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
-from datacontract.lint.linters.quality_schema_linter import \
-    QualityUsesSchemaLinter
-from datacontract.lint.linters.valid_constraints_linter import \
-    ValidFieldConstraintsLinter
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange, \
-    Severity
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Server
+from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
+from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Severity
+from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
 

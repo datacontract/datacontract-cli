@@ -4,6 +4,8 @@ import os
 import duckdb
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 
+from deltalake import DeltaTable
+
 
 def get_duckdb_connection(data_contract, server):
     con = duckdb.connect(database=":memory:")
@@ -12,7 +14,10 @@ def get_duckdb_connection(data_contract, server):
         path = server.path
     if server.type == "s3":
         path = server.location
-    setup_s3_connection(con, server)
+        setup_s3_connection(con, server)
+    if server.type == "azure":
+        path = server.location
+        setup_azure_connection(con, server)
     for model_name, model in data_contract.models.items():
         model_path = path
         if "{model}" in model_path:
@@ -42,6 +47,21 @@ def get_duckdb_connection(data_contract, server):
                 con.sql(
                     f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
                 )
+        elif server.format == "delta":
+            if server.type == "azure":
+                raise NotImplementedError("Support for Delta Tables on Azure Storage is not implemented yet")
+
+            storage_options = {
+                "AWS_ENDPOINT_URL": server.endpointUrl,
+                "AWS_ACCESS_KEY_ID": os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID"),
+                "AWS_SECRET_ACCESS_KEY": os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"),
+                "AWS_REGION": os.getenv("DATACONTRACT_S3_REGION", "us-east-1"),
+                "AWS_ALLOW_HTTP": "True" if server.endpointUrl.startswith("http://") else "False",
+            }
+
+            delta_table_arrow = DeltaTable(model_path, storage_options=storage_options).to_pyarrow_dataset()
+
+            con.register(model_name, delta_table_arrow)
     return con
 
 
@@ -74,3 +94,29 @@ def setup_s3_connection(con, server):
                     SET s3_access_key_id = '{s3_access_key_id}';
                     SET s3_secret_access_key = '{s3_secret_access_key}';
                     """)
+
+
+def setup_azure_connection(con, server):
+    tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
+    client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
+    client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
+
+    if tenant_id is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
+    if client_id is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_CLIENT_ID is not set")
+    if client_secret is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_CLIENT_SECRET is not set")
+
+    con.install_extension("azure")
+    con.load_extension("azure")
+
+    con.sql(f"""
+    CREATE SECRET azure_spn (
+        TYPE AZURE,
+        PROVIDER SERVICE_PRINCIPAL,
+        TENANT_ID '{tenant_id}',
+        CLIENT_ID '{client_id}',
+        CLIENT_SECRET '{client_secret}'
+    );
+    """)

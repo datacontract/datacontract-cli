@@ -8,8 +8,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.rdf_converter import to_rdf
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -156,7 +155,6 @@ def test_to_rdf_complex():
 \"\"\" ] .
 
 <production> a dc1:Server ;
-    dcx:endpointUrl "__S3_ENDPOINT_URL__" ;
     dc1:delimiter "new_line" ;
     dc1:format "json" ;
     dc1:location "s3://multiple-bucket/fixtures/s3-json-multiple-models/data/{model}/*.json" ;

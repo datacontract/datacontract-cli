@@ -16,8 +16,7 @@ from typing_extensions import Annotated
 
 from datacontract.data_contract import DataContract
 from datacontract.export.html_export import get_version
-from datacontract.init.download_datacontract_file import \
-    download_datacontract_file, FileExistsException
+from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
 
 console = Console()
 

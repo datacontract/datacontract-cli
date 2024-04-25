@@ -4,14 +4,11 @@ import os
 from importlib import metadata
 
 from opentelemetry import metrics
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import \
-    OTLPMetricExporter as OTLPgRPCMetricExporter
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import \
-    OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter as OTLPgRPCMetricExporter
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.metrics import Observation
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, \
-    PeriodicExportingMetricReader
+from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
 
 from datacontract.model.run import Run
 
