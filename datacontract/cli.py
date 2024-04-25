@@ -221,24 +221,26 @@ def import_(
 
 
 @app.command(name="catalog")
-def catalog(
-    files: Annotated[str, typer.Option(help="Glob pattern for the data contract files to include in the catalog.", default="*.yaml")] = "*.yaml",
-    output: Annotated[str, typer.Option(help="Output folder for the catalog.", default="catalog")] = "catalog",
+def catalog2(
+    files: Annotated[Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")] = "*.yaml",
+    output: Annotated[Optional[str], typer.Option(help="Output folder for the catalog.")] = "catalog",
 ):
     """
     Create a html catalog of data contracts.
     """
     path = Path(output)
     path.mkdir(parents=True, exist_ok=True)
+    print(f"Created {output}")
 
     contracts = []
     for file in Path().glob(files):
         data_contract = DataContract(data_contract_file=f"{file.absolute()}", inline_definitions=True)
         html = data_contract.export(export_format="html")
-        html_filename = f"{file.name}.html"
+        html_filename = f"{file.name.removesuffix(".yaml").removesuffix(".yml")}.html"
         with open(html_filename, "w") as f:
             f.write(html)
         contracts.append(html_filename)
+        print(f"Created {output}/{html_filename}")
 
     with open(path / "index.html", "w") as f:
 
@@ -258,7 +260,7 @@ def catalog(
         style_content, _, _ = package_loader.get_source(env, "style/output.css")
 
         tz = pytz.timezone('UTC')
-        now = datetime.datetime.now(tz)
+        now = datetime.now(tz)
         formatted_date = now.strftime('%d %b %Y %H:%M:%S UTC')
         datacontract_cli_version = get_version()
 
@@ -270,6 +272,7 @@ def catalog(
             contracts=contracts,
         )
         f.write(html_string)
+    print(f"Created {output}/index.html")
 
 
 @app.command()
