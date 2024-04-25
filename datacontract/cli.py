@@ -1,21 +1,20 @@
-from datetime import datetime
 from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
 
-import pytz
+
 import typer
 from click import Context
-from jinja2 import PackageLoader, Environment, select_autoescape
+
 from rich import box
 from rich.console import Console
 from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
+from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract
-from datacontract.export.html_export import get_version
 from datacontract.init.download_datacontract_file import \
     download_datacontract_file, FileExistsException
 
@@ -234,45 +233,9 @@ def catalog(
 
     contracts = []
     for file in Path().glob(files):
-        data_contract = DataContract(data_contract_file=f"{file.absolute()}", inline_definitions=True)
-        html = data_contract.export(export_format="html")
-        html_filename = f"{file.name.removesuffix('.yaml').removesuffix('.yml')}.html"
-        with open(path / html_filename, "w") as f:
-            f.write(html)
-        contracts.append(html_filename)
-        print(f"Created {output}/{html_filename}")
+        create_data_contract_html(contracts, file, path)
 
-    with open(path / "index.html", "w") as f:
-
-        # Load templates from templates folder
-        package_loader = PackageLoader("datacontract", "templates")
-        env = Environment(
-            loader=package_loader,
-            autoescape=select_autoescape(
-                enabled_extensions="html",
-                default_for_string=True,
-            ),
-        )
-
-        # Load the required template
-        template = env.get_template("index.html")
-
-        style_content, _, _ = package_loader.get_source(env, "style/output.css")
-
-        tz = pytz.timezone('UTC')
-        now = datetime.now(tz)
-        formatted_date = now.strftime('%d %b %Y %H:%M:%S UTC')
-        datacontract_cli_version = get_version()
-
-        # Render the template with necessary data
-        html_string = template.render(
-            style=style_content,
-            formatted_date=formatted_date,
-            datacontract_cli_version=datacontract_cli_version,
-            contracts=contracts,
-        )
-        f.write(html_string)
-    print(f"Created {output}/index.html")
+    create_index_html(contracts, path)
 
 
 @app.command()

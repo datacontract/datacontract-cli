@@ -38,6 +38,9 @@
           <div class="min-w-0 flex-1">
             <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
               Data Contracts</h2>
+            <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+              There are {{ contracts_size }} contracts in the catalog
+            </div>
           </div>
         </div>
 
@@ -50,11 +53,43 @@
 
           <section id="catalog">
 
-            <ul class="list-disc list-inside text-gray-900 text-sm">
+
+            <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+              <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+
+            <table class="min-w-full divide-y divide-gray-300">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Title</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">ID</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Version</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Owner</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
             {% for contract in contracts %}
-              <li><a href="{{contract}}">{{contract}}</a></li>
+              <tr>
+                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                  <a class="text-indigo-600 hover:text-indigo-900" href="{{contract.html_filename}}">{{contract.spec.info.title}}</a>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  {{contract.spec.id}}
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  {{contract.spec.info.version}}
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  {{contract.spec.info.owner}}
+                </td>
+              </tr>
             {% endfor %}
-            </ul>
+              </tbody>
+            </table>
+
+                </div>
+              </div>
+            </div>
 
           </section>
 
