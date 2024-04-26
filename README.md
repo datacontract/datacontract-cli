@@ -959,6 +959,11 @@ This command runs the container momentarily to check the version of the `datacon
 
 We are happy to receive your contributions. Propose your change in an issue or directly create a pull request with your improvements.
 
+## Companies using this tool
+
+- [INNOQ](https://innoq.com)
+- And many more. To add your company, please create a pull request.
+
 ## License
 
 [MIT License](LICENSE)
