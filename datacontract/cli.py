@@ -3,17 +3,16 @@ from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
 
-
 import typer
 from click import Context
-
 from rich import box
 from rich.console import Console
 from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
-from datacontract.catalog.catalog import create_index_html, create_data_contract_html
+from datacontract.catalog.catalog import create_index_html, \
+    create_data_contract_html
 from datacontract.data_contract import DataContract
 from datacontract.init.download_datacontract_file import \
     download_datacontract_file, FileExistsException
@@ -225,7 +224,7 @@ def catalog(
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
 ):
     """
-    Create a html catalog of data contracts.
+    Create an html catalog of data contracts.
     """
     path = Path(output)
     path.mkdir(parents=True, exist_ok=True)

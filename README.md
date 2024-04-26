@@ -554,7 +554,7 @@ models:
 ```
  Usage: datacontract export [OPTIONS] [LOCATION]                                                                                                                           
                                                                                                                                                                            
- Convert data contract to a specific format. console.prints to stdout.                                                                                                     
+ Convert data contract to a specific format. Prints to stdout or to the specified output file.                                                                                                     
                                                                                                                                                                            
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                                                          │
@@ -732,7 +732,7 @@ Available import options:
 
  Usage: datacontract catalog [OPTIONS]
 
- Create a html catalog of data contracts.
+ Create an html catalog of data contracts.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --files         TEXT  Glob pattern for the data contract files to include in the catalog. [default: *.yaml]              │
