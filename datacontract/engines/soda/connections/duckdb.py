@@ -6,8 +6,10 @@ from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 
 from deltalake import DeltaTable
 
+from datacontract.model.run import Run
 
-def get_duckdb_connection(data_contract, server):
+
+def get_duckdb_connection(data_contract, server, run: Run):
     con = duckdb.connect(database=":memory:")
     path: str = ""
     if server.type == "local":
@@ -22,7 +24,7 @@ def get_duckdb_connection(data_contract, server):
         model_path = path
         if "{model}" in model_path:
             model_path = model_path.format(model=model_name)
-        logging.info(f"Creating table {model_name} for {model_path}")
+        run.log_info(f"Creating table {model_name} for {model_path}")
 
         if server.format == "json":
             format = "auto"
@@ -39,6 +41,7 @@ def get_duckdb_connection(data_contract, server):
                         """)
         elif server.format == "csv":
             columns = to_csv_types(model)
+            run.log_info("Using columns: " + str(columns))
             if columns is None:
                 con.sql(
                     f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""

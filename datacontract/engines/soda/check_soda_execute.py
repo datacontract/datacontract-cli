@@ -26,7 +26,7 @@ def check_soda_execute(
 
     if server.type in ["s3", "azure", "local"]:
         if server.format in ["json", "parquet", "csv", "delta"]:
-            con = get_duckdb_connection(data_contract, server)
+            con = get_duckdb_connection(data_contract, server, run)
             scan.add_duckdb_connection(duckdb_connection=con, data_source_name=server.type)
             scan.set_data_source_name(server.type)
         else:
