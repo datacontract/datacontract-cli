@@ -11,7 +11,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 
 def create_data_contract_html(contracts, file: Path, path: Path):
-    data_contract = DataContract(data_contract_file=f"{file.absolute()}", inline_definitions=True)
+    data_contract = DataContract(data_contract_file=f"{file.absolute()}", inline_definitions=True, inline_quality=True)
     html = data_contract.export(export_format="html")
     spec = data_contract.get_data_contract_specification()
     file_without_suffix = file.with_suffix(".html")

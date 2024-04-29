@@ -18,11 +18,12 @@ def resolve_data_contract(
     data_contract: DataContractSpecification = None,
     schema_location: str = None,
     inline_definitions: bool = False,
+    inline_quality: bool = False,
 ) -> DataContractSpecification:
     if data_contract_location is not None:
-        return resolve_data_contract_from_location(data_contract_location, schema_location, inline_definitions)
+        return resolve_data_contract_from_location(data_contract_location, schema_location, inline_definitions, inline_quality)
     elif data_contract_str is not None:
-        return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
+        return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
     elif data_contract is not None:
         return data_contract
     else:
@@ -36,13 +37,13 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_definitions: bool = False, include_quality: bool = True
+    location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
     if location.startswith("http://") or location.startswith("https://"):
         data_contract_str = fetch_resource(location)
     else:
         data_contract_str = read_file(location)
-    return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, include_quality)
+    return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
 
 
 def inline_definitions_into_data_contract(spec: DataContractSpecification):
@@ -116,7 +117,7 @@ def get_quality_ref_file(quality_spec: str | object) -> str | object:
 
 
 def resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False, include_quality: bool = False
+    data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
     data_contract_yaml_dict = to_yaml(data_contract_str)
     validate(data_contract_yaml_dict, schema_location)
@@ -125,7 +126,7 @@ def resolve_data_contract_from_str(
 
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
-    if spec.quality and include_quality:
+    if spec.quality and inline_quality:
         resolve_quality_ref(spec.quality)
 
     return spec
