@@ -14,4 +14,4 @@ def test_cli(tmp_path: PosixPath):
     result = runner.invoke(app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--output", tmp_path])
     assert result.exit_code == 0
     assert os.path.exists(tmp_path / "index.html")
-    assert os.path.exists(tmp_path / "datacontract-1.html")
+    assert os.path.exists(tmp_path / "fixtures/catalog/datacontract-1.html")
