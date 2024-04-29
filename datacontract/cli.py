@@ -11,7 +11,10 @@ from typer.core import TyperGroup
 from typing_extensions import Annotated
 
 from datacontract.data_contract import DataContract
-from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
+from datacontract.init.download_datacontract_file import (
+    download_datacontract_file,
+    FileExistsException,
+)
 
 console = Console()
 
@@ -38,7 +41,11 @@ def version_callback(value: bool):
 def common(
     ctx: typer.Context,
     version: bool = typer.Option(
-        None, "--version", help="Prints the current version.", callback=version_callback, is_eager=True
+        None,
+        "--version",
+        help="Prints the current version.",
+        callback=version_callback,
+        is_eager=True,
     ),
 ):
     """
@@ -54,12 +61,17 @@ def common(
 @app.command()
 def init(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml to create.")
+        str,
+        typer.Argument(
+            help="The location (url or path) of the data contract yaml to create."
+        ),
     ] = "datacontract.yaml",
     template: Annotated[
         str, typer.Option(help="URL of a template or data contract")
     ] = "https://datacontract.com/datacontract.init.yaml",
-    overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
+    overwrite: Annotated[
+        bool, typer.Option(help="Replace the existing datacontract.yaml")
+    ] = False,
 ):
     """
     Download a datacontract.yaml template and write it to file.
@@ -76,10 +88,14 @@ def init(
 @app.command()
 def lint(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+        str,
+        typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema"
+        ),
     ] = "https://datacontract.com/datacontract.schema.json",
 ):
     """
@@ -92,10 +108,14 @@ def lint(
 @app.command()
 def test(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+        str,
+        typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema"
+        ),
     ] = "https://datacontract.com/datacontract.schema.json",
     server: Annotated[
         str,
@@ -107,9 +127,14 @@ def test(
         ),
     ] = "all",
     examples: Annotated[
-        bool, typer.Option(help="Run the schema and quality tests on the example data within the data contract.")
+        bool,
+        typer.Option(
+            help="Run the schema and quality tests on the example data within the data contract."
+        ),
     ] = None,
-    publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
+    publish: Annotated[
+        str, typer.Option(help="The url to publish the results after the test")
+    ] = None,
     publish_to_opentelemetry: Annotated[
         bool,
         typer.Option(
@@ -170,7 +195,10 @@ def export(
     ] = "all",
     rdf_base: Annotated[
         Optional[str],
-        typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options"),
+        typer.Option(
+            help="[rdf] The base URI used to generate the RDF graph.",
+            rich_help_panel="RDF Options",
+        ),
     ] = None,
     sql_server_type: Annotated[
         Optional[str],
@@ -180,7 +208,8 @@ def export(
         ),
     ] = "auto",
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
 ):
     """
@@ -200,12 +229,17 @@ def export(
 class ImportFormat(str, Enum):
     sql = "sql"
     avro = "avro"
+    glue = "glue"
 
 
 @app.command(name="import")
 def import_(
-    format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
-    source: Annotated[str, typer.Option(help="The path to the file that should be imported.")],
+    format: Annotated[
+        ImportFormat, typer.Option(help="The format of the source file.")
+    ],
+    source: Annotated[
+        str, typer.Option(help="The path to the file that should be imported.")
+    ],
 ):
     """
     Create a data contract from the given source file. Prints to stdout.
@@ -216,17 +250,27 @@ def import_(
 
 @app.command()
 def breaking(
-    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
-    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+    location_old: Annotated[
+        str,
+        typer.Argument(
+            help="The location (url or path) of the old data contract yaml."
+        ),
+    ],
+    location_new: Annotated[
+        str,
+        typer.Argument(
+            help="The location (url or path) of the new data contract yaml."
+        ),
+    ],
 ):
     """
     Identifies breaking changes between data contracts. Prints to stdout.
     """
 
     # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).breaking(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
+    result = DataContract(
+        data_contract_file=location_old, inline_definitions=True
+    ).breaking(DataContract(data_contract_file=location_new, inline_definitions=True))
 
     console.print(result.breaking_str())
 
@@ -236,34 +280,54 @@ def breaking(
 
 @app.command()
 def changelog(
-    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
-    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+    location_old: Annotated[
+        str,
+        typer.Argument(
+            help="The location (url or path) of the old data contract yaml."
+        ),
+    ],
+    location_new: Annotated[
+        str,
+        typer.Argument(
+            help="The location (url or path) of the new data contract yaml."
+        ),
+    ],
 ):
     """
     Generate a changelog between data contracts. Prints to stdout.
     """
 
     # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
+    result = DataContract(
+        data_contract_file=location_old, inline_definitions=True
+    ).changelog(DataContract(data_contract_file=location_new, inline_definitions=True))
 
     console.print(result.changelog_str())
 
 
 @app.command()
 def diff(
-    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
-    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+    location_old: Annotated[
+        str,
+        typer.Argument(
+            help="The location (url or path) of the old data contract yaml."
+        ),
+    ],
+    location_new: Annotated[
+        str,
+        typer.Argument(
+            help="The location (url or path) of the new data contract yaml."
+        ),
+    ],
 ):
     """
     PLACEHOLDER. Currently works as 'changelog' does.
     """
 
     # TODO change to diff output, not the changelog entries
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
+    result = DataContract(
+        data_contract_file=location_old, inline_definitions=True
+    ).changelog(DataContract(data_contract_file=location_new, inline_definitions=True))
 
     console.print(result.changelog_str())
 
@@ -290,7 +354,9 @@ def _print_table(run):
     table.add_column("Field", max_width=32)
     table.add_column("Details", max_width=50)
     for check in run.checks:
-        table.add_row(with_markup(check.result), check.name, to_field(run, check), check.reason)
+        table.add_row(
+            with_markup(check.result), check.name, to_field(run, check), check.reason
+        )
     console.print(table)
 
 
@@ -307,7 +373,9 @@ def to_field(run, check):
 def _print_logs(run):
     console.print("\nLogs:")
     for log in run.logs:
-        console.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
+        console.print(
+            log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message
+        )
 
 
 def with_markup(result):
