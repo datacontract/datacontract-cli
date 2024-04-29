@@ -1,5 +1,5 @@
 module.exports = {
-  content: ["../datacontract.html"],
+  content: ["../datacontract.html", "../index.html"],
   theme: { },
   plugins: [],
 }

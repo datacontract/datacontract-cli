@@ -1,4 +1,12 @@
-/*
+<!doctype html>
+<html class="h-full bg-gray-100" lang="en">
+<head>
+  <title>Data Contract</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <style>
+    /*
 ! tailwindcss v3.4.3 | MIT License | https://tailwindcss.com
 */
 
@@ -594,10 +602,6 @@ video {
   z-index: 10;
 }
 
-.col-span-1 {
-  grid-column: span 1 / span 1;
-}
-
 .-mx-4 {
   margin-left: -1rem;
   margin-right: -1rem;
@@ -665,13 +669,6 @@ video {
   margin-top: auto;
 }
 
-.line-clamp-3 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
 .inline-block {
   display: inline-block;
 }
@@ -700,16 +697,8 @@ video {
   display: none;
 }
 
-.h-10 {
-  height: 2.5rem;
-}
-
 .h-16 {
   height: 4rem;
-}
-
-.h-4 {
-  height: 1rem;
 }
 
 .h-5 {
@@ -732,20 +721,12 @@ video {
   width: 8.333333%;
 }
 
-.w-10 {
-  width: 2.5rem;
-}
-
 .w-16 {
   width: 4rem;
 }
 
 .w-3\/12 {
   width: 25%;
-}
-
-.w-4 {
-  width: 1rem;
 }
 
 .w-5 {
@@ -800,10 +781,6 @@ video {
   flex-direction: column;
 }
 
-.flex-wrap {
-  flex-wrap: wrap;
-}
-
 .items-end {
   align-items: flex-end;
 }
@@ -820,16 +797,8 @@ video {
   justify-content: space-between;
 }
 
-.gap-1 {
-  gap: 0.25rem;
-}
-
 .gap-3 {
   gap: 0.75rem;
-}
-
-.gap-6 {
-  gap: 1.5rem;
 }
 
 .gap-x-4 {
@@ -844,18 +813,6 @@ video {
 
 .gap-y-6 {
   row-gap: 1.5rem;
-}
-
-.space-x-1 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 0;
-  margin-right: calc(0.25rem * var(--tw-space-x-reverse));
-  margin-left: calc(0.25rem * calc(1 - var(--tw-space-x-reverse)));
-}
-
-.space-x-3 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 0;
-  margin-right: calc(0.75rem * var(--tw-space-x-reverse));
-  margin-left: calc(0.75rem * calc(1 - var(--tw-space-x-reverse)));
 }
 
 .space-x-6 > :not([hidden]) ~ :not([hidden]) {
@@ -903,22 +860,12 @@ video {
   overflow-y: auto;
 }
 
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .whitespace-nowrap {
   white-space: nowrap;
 }
 
 .whitespace-pre-wrap {
   white-space: pre-wrap;
-}
-
-.rounded-full {
-  border-radius: 9999px;
 }
 
 .rounded-lg {
@@ -960,10 +907,6 @@ video {
 
 .p-4 {
   padding: 1rem;
-}
-
-.p-6 {
-  padding: 1.5rem;
 }
 
 .px-1 {
@@ -1008,10 +951,6 @@ video {
 
 .pb-4 {
   padding-bottom: 1rem;
-}
-
-.pb-6 {
-  padding-bottom: 1.5rem;
 }
 
 .pb-7 {
@@ -1181,10 +1120,6 @@ video {
 
 .ring-opacity-5 {
   --tw-ring-opacity: 0.05;
-}
-
-.filter {
-  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
 .transition-all {
@@ -1390,10 +1325,6 @@ video {
     display: flex;
   }
 
-  .lg\:grid-cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .lg\:items-center {
     align-items: center;
   }
@@ -1407,3 +1338,504 @@ video {
     padding-right: 2rem;
   }
 }
+  </style>
+</head>
+<body class="h-full">
+
+<div class="min-h-full flex flex-col">
+
+  <nav class="bg-white shadow-sm">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 justify-between">
+        <div class="flex">
+          <div class="flex flex-shrink-0 items-center mr-6">
+            <a class="text-xl text-gray-900 font-semibold" href="/">
+              Data Contract
+            </a>
+          </div>
+        </div>
+        <div class="hidden sm:ml-6 sm:flex sm:items-center">
+          <a href="https://datacontract.com" class="text-sky-500 hover:text-gray-700 text-sm font-semibold" target="_blank">datacontract.com</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pb-7">
+
+    <div class="pt-5 mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <div>
+        <div class="md:flex md:items-center md:justify-between px-4 sm:px-0">
+          <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+              Data Contract</h2>
+            <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+              orders-unit-test
+            </div>
+          </div>
+          <div class="mt-5 flex lg:mt-0 lg:ml-4 gap-3 items-center">
+            <button
+              type="button"
+              onclick="document.getElementById('dialog-datacontract-yaml').showModal()"
+              class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+              <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-600" viewBox="-0.5 -0.5 24 24">
+                <path d="m4.3125 8.145833333333334 9.104166666666668 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 11.020833333333334 9.104166666666668 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 5.270833333333334 6.708333333333334 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 13.895833333333334 7.1875 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m4.3125 16.770833333333336 3.8333333333333335 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="M8.145833333333334 22.520833333333336h-6.708333333333334a0.9583333333333334 0.9583333333333334 0 0 1 -0.9583333333333334 -0.9583333333333334v-20.125a0.9583333333333334 0.9583333333333334 0 0 1 0.9583333333333334 -0.9583333333333334h12.739125a0.9583333333333334 0.9583333333333334 0 0 1 0.6775416666666667 0.28079166666666666L18.406708333333334 4.3125a0.9583333333333334 0.9583333333333334 0 0 1 0.28079166666666666 0.6775416666666667V8.145833333333334" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m15.045833333333333 21.370833333333334 -4.025 1.15 1.15 -4.025 6.879875 -6.879875a2.032625 2.032625 0 0 1 2.875 2.875Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m18.188208333333332 12.478458333333334 2.875 2.875" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path><path d="m12.170833333333333 18.495833333333334 2.875 2.875" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path>
+              </svg>
+              Show YAML
+            </button>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div>
+
+        <div class="space-y-6 mt-6">
+
+
+          <section>
+            <div class=" px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900" id="info">Info</h1>
+              <p class="text-sm text-gray-500">Information about the data contract</p>
+            </div>
+            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+
+              <div class="px-4 py-5 sm:px-6">
+
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Title</dt>
+                    <dd class="mt-1 text-sm text-gray-900">Orders Unit Test</dd>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Version</dt>
+                    <dd class="mt-1 text-sm text-gray-900">1.0.0</dd>
+                  </div>
+
+                  
+                  <div class="sm:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Description</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">The orders data contract</span>
+                    </dd>
+                  </div>
+                  
+
+                  
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Owner</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                      <span>checkout</span>
+                    </dd>
+                  </div>
+                  
+
+                  
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Contact</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                      
+                      
+                        <a href="mailto:team-orders@example.com" class="text-sky-500 hover:text-gray-700">team-orders@example.com</a>
+                      
+                      
+                        <div>
+                          <a href="https://wiki.example.com/teams/checkout" class="text-sky-500 hover:text-gray-700">https://wiki.example.com/teams/checkout</a>
+                        </div>
+                      
+                    </dd>
+                  </div>
+                  
+
+                </dl>
+              </div>
+            </div>
+          </section>
+
+
+          
+          <section>
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900" id="servers">Servers</h1>
+              <p class="text-sm text-gray-500">Servers of the data contract</p>
+            </div>
+
+            <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+
+              
+              <li class="relative flex gap-x-6 px-4 py-5 sm:px-6">
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Server</dt>
+                    <dd class="mt-1 text-sm text-gray-900">production</dd>
+                  </div>
+                </div>
+
+                
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Type</dt>
+                    <dd class="mt-1 text-sm text-gray-900">snowflake</dd>
+                  </div>
+                </div>
+                
+
+                
+
+                
+
+                
+
+                
+
+                
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Account</dt>
+                    <dd class="mt-1 text-sm text-gray-900">my-account</dd>
+                  </div>
+                </div>
+                
+
+                
+
+                
+
+                
+
+                
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Database</dt>
+                    <dd class="mt-1 text-sm text-gray-900">my-database</dd>
+                  </div>
+                </div>
+                
+
+                
+                <div class="flex items-center gap-x-4">
+                  <div class="hidden sm:flex sm:flex-col">
+                    <dt class="text-sm font-medium text-gray-500">Schema</dt>
+                    <dd class="mt-1 text-sm text-gray-900">my-schema</dd>
+                  </div>
+                </div>
+                
+
+                
+
+                
+
+                
+
+                
+
+              </li>
+              
+
+            </ul>
+
+          </section>
+          
+
+
+          
+          <section>
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900" id="terms">Terms</h1>
+              <p class="text-sm text-gray-500">Terms and conditions of the data contract</p>
+            </div>
+            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+
+              <div class="px-4 py-5 sm:px-6">
+
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Usage</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">This data contract serves to demo datacontract CLI export.</span>
+                    </dd>
+                  </div>
+
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Limitations</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">Not intended to use in production</span>
+                    </dd>
+                  </div>
+
+                  
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Billing</dt>
+                    <dd class="mt-1 text-sm text-gray-900" >
+                      <span class="whitespace-pre-wrap">free</span>
+                    </dd>
+                  </div>
+                  
+
+                  
+                    <div class="sm:col-span-1">
+                      <dt class="text-sm font-medium text-gray-500">Notice Period</dt>
+                      <dd class="mt-1 text-sm text-gray-900 flex" >
+                        <span class="whitespace-pre-wrap">P3M</span>
+                      </dd>
+                    </div>
+                  
+
+                </dl>
+              </div>
+            </div>
+          </section>
+          
+
+
+          <section id="models">
+            <div class="flex justify-between">
+              <div class="px-4 sm:px-0">
+                <h1 class="text-base font-semibold leading-6 text-gray-900">
+                  Data Model
+                </h1>
+                <p class="text-sm text-gray-500">The logical data model</p>
+              </div>
+            </div>
+
+            
+
+            <div class="mt-3 flow-root">
+              <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                  <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+
+                    <table class="min-w-full divide-y divide-gray-300">
+                      <thead class="bg-gray-50">
+                      <tr>
+                        <th scope="colgroup" colspan="4" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+                          <span>orders</span>
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">table</span>
+                          <div class="text-sm font-medium text-gray-500">The orders model</div>
+                        </th>
+
+                      </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-200 bg-white">
+
+                      
+
+                      <tr>
+                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
+                          <div class="py-2 text-sm">
+                            order_id
+                            
+                          </div>
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
+                          
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
+                          
+                          
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="unique">U</span>
+                          
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+                          
+                          varchar
+                          
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+                          <div class="text-gray-400">No description</div>
+                          
+                        </td>
+
+                      </tr>
+                      
+
+                      <tr>
+                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
+                          <div class="py-2 text-sm">
+                            order_total
+                            
+                          </div>
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
+                          
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
+                          
+                          
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+                          
+                          bigint
+                          
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+                          <div class="text-gray-400">The order_total field</div>
+                          
+                        </td>
+
+                      </tr>
+                      
+
+                      <tr>
+                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
+                          <div class="py-2 text-sm">
+                            order_status
+                            
+                          </div>
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
+                          
+                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
+                          
+                          
+                        </td>
+                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+                          
+                          text
+                          
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+                          <div class="text-gray-400">No description</div>
+                          
+                        </td>
+
+                      </tr>
+                      
+
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+
+          </section>
+
+          
+
+          
+
+          
+
+        </div>
+
+      </div>
+
+      <div class="mt-6 text-sm text-gray-400">
+        Created at 25 Apr 2024 14:38:16 UTC with <a href="https://cli.datacontract.com" class="text-gray-400 hover:text-gray-500">Data Contract CLI</a> v0.10.1
+      </div>
+
+    </div>
+  </main>
+
+  <dialog  id="dialog-datacontract-yaml" class="relative z-10" aria-labelledby="modal-title" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div class="relative transform rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-4/5 sm:p-6">
+          <div class="absolute right-0 top-0 pr-4 pt-4">
+            <button type="button" onclick="document.getElementById('dialog-datacontract-yaml').close()" class="rounded-md bg-white text-gray-400 hover:text-gray-500">
+              <span class="sr-only">Close</span>
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div>
+            <div class="mt-3 mb-3 text-center sm:mt-5">
+
+              <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Data Contract YAML</h3>
+            </div>
+            <pre class="overflow-x-auto text-sm bg-gray-50 p-4"><code>dataContractSpecification: 0.9.2
+id: orders-unit-test
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+  description: The orders data contract
+  owner: checkout
+  contact:
+    url: https://wiki.example.com/teams/checkout
+    email: team-orders@example.com
+servers:
+  production:
+    type: snowflake
+    account: my-account
+    database: my-database
+    schema_: my-schema
+terms:
+  usage: This data contract serves to demo datacontract CLI export.
+  limitations: Not intended to use in production
+  billing: free
+  noticePeriod: P3M
+models:
+  orders:
+    description: The orders model
+    type: table
+    fields:
+      order_id:
+        type: varchar
+        required: true
+        primary: false
+        unique: true
+        pii: true
+        classification: sensitive
+        pattern: ^B[0-9]+$
+        minLength: 8
+        maxLength: 10
+        tags:
+        - order_id
+      order_total:
+        type: bigint
+        required: true
+        primary: false
+        unique: false
+        description: The order_total field
+        minimum: 0
+        maximum: 1000000
+      order_status:
+        type: text
+        required: true
+        primary: false
+        unique: false
+        enum:
+        - pending
+        - shipped
+        - delivered
+</code></pre>
+          </div>
+          <div class="mt-5 sm:mt-6">
+            <button type="button" onclick="document.getElementById('dialog-datacontract-yaml').close()"
+                    class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+
+  <footer class="bg-white mt-auto text-sm text-gray-400">
+    <div class="mx-auto max-w-7xl py-5 px-6 md:flex md:items-center md:justify-between lg:px-8">
+      <div class="flex justify-center space-x-6 md:order-2">
+        <div>
+          <a href="https://cli.datacontract.com" class="text-gray-400 hover:text-gray-500 px-2">Data Contract CLI</a>
+
+          <a href="https://datacontract.com" class="text-gray-400 hover:text-gray-500 px-2">Data Contract Specification</a>
+        </div>
+
+
+      </div>
+      <div class="mt-8 md:order-1 md:mt-0">
+        <p class="text-center leading-5 text-gray-400">
+          Supported with ❤️ by <a href="https://datamesh-manager.com" class="text-gray-400 hover:text-gray-500">Data Mesh Manager</a>
+        </p>
+      </div>
+    </div>
+
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -183,6 +183,7 @@ Commands
 - [breaking](#breaking)
 - [changelog](#changelog)
 - [diff](#diff)
+- [catalog](#catalog)
 
 ### init
 
@@ -553,7 +554,7 @@ models:
 ```
  Usage: datacontract export [OPTIONS] [LOCATION]                                                                                                                           
                                                                                                                                                                            
- Convert data contract to a specific format. console.prints to stdout.                                                                                                     
+ Convert data contract to a specific format. Prints to stdout or to the specified output file.                                                                                                     
                                                                                                                                                                            
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                                                          │
@@ -723,6 +724,21 @@ Available import options:
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                                               │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+### catalog
+
+```
+
+ Usage: datacontract catalog [OPTIONS]
+
+ Create an html catalog of data contracts.
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --files         TEXT  Glob pattern for the data contract files to include in the catalog. [default: *.yaml]              │
+│ --output        TEXT  Output directory for the catalog html files. [default: catalog/]                                   │
+│ --help                Show this message and exit.                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 
@@ -942,6 +958,11 @@ This command runs the container momentarily to check the version of the `datacon
 ## Contribution
 
 We are happy to receive your contributions. Propose your change in an issue or directly create a pull request with your improvements.
+
+## Companies using this tool
+
+- [INNOQ](https://innoq.com)
+- And many more. To add your company, please create a pull request.
 
 ## License
 
