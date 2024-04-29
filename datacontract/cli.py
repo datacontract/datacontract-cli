@@ -232,7 +232,10 @@ def catalog(
 
     contracts = []
     for file in Path().glob(files):
-        create_data_contract_html(contracts, file, path)
+        try:
+            create_data_contract_html(contracts, file, path)
+        except Exception as e:
+            console.print(f"Skipped {file} due to error: {e}")
 
     create_index_html(contracts, path)
 

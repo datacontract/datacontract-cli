@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from jinja2 import PackageLoader, Environment, select_autoescape
 import pytz
@@ -9,19 +10,18 @@ from datacontract.data_contract import DataContract
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 
-def create_data_contract_html(contracts, file, path):
+def create_data_contract_html(contracts, file: Path, path: Path):
     data_contract = DataContract(data_contract_file=f"{file.absolute()}", inline_definitions=True)
     html = data_contract.export(export_format="html")
     spec = data_contract.get_data_contract_specification()
-    # html_filename = f"dc-{spec.id}-{spec.info.version}.html"
-    file_without_suffix = file.name.removesuffix(".yaml").removesuffix(".yml")
-    html_filename = f"{file_without_suffix}.html"
-    html_filepath = path / html_filename
+    file_without_suffix = file.with_suffix(".html")
+    html_filepath = path / file_without_suffix
+    html_filepath.parent.mkdir(parents=True, exist_ok=True)
     with open(html_filepath, "w") as f:
         f.write(html)
     contracts.append(DataContractView(
         html_filepath=html_filepath,
-        html_filename=html_filename,
+        html_link=file_without_suffix,
         spec=spec,
     ))
     print(f"Created {html_filepath}")
@@ -30,8 +30,8 @@ def create_data_contract_html(contracts, file, path):
 @dataclass
 class DataContractView:
     """Class for keeping track of an item in inventory."""
-    html_filepath: str
-    html_filename: str
+    html_filepath: Path
+    html_link: Path
     spec: DataContractSpecification
 
 
