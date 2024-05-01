@@ -27,6 +27,7 @@ from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.sql_importer import import_sql
+from datacontract.imports.glue_importer import import_glue
 from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
@@ -476,6 +477,8 @@ class DataContract:
             data_contract_specification = import_sql(data_contract_specification, format, source)
         elif format == "avro":
             data_contract_specification = import_avro(data_contract_specification, source)
+        elif format == "glue":
+            data_contract_specification = import_glue(data_contract_specification, source)
         else:
             print(f"Import format {format} not supported.")
 

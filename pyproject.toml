@@ -38,7 +38,9 @@ dependencies = [
   "avro==1.11.3",
   "opentelemetry-exporter-otlp-proto-grpc~=1.16.0",
   "opentelemetry-exporter-otlp-proto-http~=1.16.0",
-  "deltalake~=0.17.0"
+  "deltalake~=0.17.0",
+  "boto3<1.34.70,>=1.34.41",
+  "botocore<1.34.70,>=1.34.41"
 ]
 
 [project.optional-dependencies]
@@ -47,6 +49,7 @@ dev = [
   "ruff",
   "pytest",
   "pytest-xdist",
+  "moto",
   # testcontainers 4.x have issues with Kafka on arm
   # https://github.com/testcontainers/testcontainers-python/issues/450
   "testcontainers<4.0.0",
