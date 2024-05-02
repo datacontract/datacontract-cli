@@ -3,7 +3,6 @@ from typer.testing import CliRunner
 import logging
 import yaml
 from moto import mock_aws
-import os
 import pytest
 
 from datacontract.cli import app
