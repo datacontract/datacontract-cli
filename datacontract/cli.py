@@ -204,15 +204,16 @@ def export(
 class ImportFormat(str, Enum):
     sql = "sql"
     avro = "avro"
+    glue = "glue"
 
 
 @app.command(name="import")
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
-    source: Annotated[str, typer.Option(help="The path to the file that should be imported.")],
+    source: Annotated[str, typer.Option(help="The path to the file or Glue Database that should be imported.")],
 ):
     """
-    Create a data contract from the given source file. Prints to stdout.
+    Create a data contract from the given source location. Prints to stdout.
     """
     result = DataContract().import_from_source(format, source)
     console.print(result.to_yaml())

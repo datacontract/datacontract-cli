@@ -647,15 +647,15 @@ data products, find the true domain owner of a field attribute)
 ### import
 
 ```
- Usage: datacontract import [OPTIONS]                                                                              
-                                                                                                                   
- Create a data contract from the given source file. Prints to stdout.                                              
-                                                                                                                   
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format        [sql|avro]  The format of the source file. [default: None] [required]                        │
-│ *  --source        TEXT        The path to the file that should be imported. [default: None] [required]         │
-│    --help                      Show this message and exit.                                                      │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Usage: datacontract import [OPTIONS]
+
+ Create a data contract from the given source location. Prints to stdout.
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format        [sql|avro|glue]  The format of the source file. [default: None] [required]                                    │
+│ *  --source        TEXT             The path to the file or Glue Database that should be imported. [default: None] [required]    │
+│    --help                           Show this message and exit.                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Example: 
@@ -670,6 +670,7 @@ Available import options:
 |--------------------|------------------------------------------------|---------|
 | `sql`              | Import from SQL DDL                            | ✅       | 
 | `avro`             | Import from AVRO schemas                       | ✅     |
+| `glue`             | Import from AWS Glue DataCatalog               | ✅     |
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `jsonschema`       | Import from JSON Schemas                       | TBD     |
 | `bigquery`         | Import from BigQuery Schemas                   | TBD     |
