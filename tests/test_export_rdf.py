@@ -8,7 +8,8 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.rdf_converter import to_rdf
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -44,7 +45,7 @@ def test_to_rdf():
                 dcx:email "team-orders@example.com" ;
                 dc1:url "https://wiki.example.com/teams/checkout" ] ;
             dc1:description "None" ;
-            dc1:owner <urn:acme:checkout> ;
+            dc1:owner "checkout" ;
             dc1:title "Orders Unit Test" ;
             dc1:version "1.0.0" ] ;
     dc1:model <https://example.com/orders> ;
@@ -140,7 +141,7 @@ def test_to_rdf_complex():
                 dc1:url "https://teams.microsoft.com/l/channel/acme/checkout" ] ;
             dc1:description \"\"\"Successful customer orders in the webshop. All orders since 2020-01-01. Orders with their line items are in their current state (no history included).
 \"\"\" ;
-            dc1:owner <urn:acme:CheckoutTeam> ;
+            dc1:owner "urn:acme:CheckoutTeam" ;
             dc1:title "Orders Latest" ;
             dc1:version "1.0.0" ] ;
     dc1:model <line_items>,
