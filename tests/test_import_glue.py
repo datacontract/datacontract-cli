@@ -33,6 +33,7 @@ def setup_mock_glue(aws_credentials):
         client.create_database(
             DatabaseInput={
                 "Name": db_name,
+                "LocationUri": "s3://test_bucket/testdb",
             },
         )
 

@@ -647,7 +647,7 @@ data products, find the true domain owner of a field attribute)
 ### import
 
 ```
- Usage: cli.py import [OPTIONS]
+ Usage: datacontract import [OPTIONS]
 
  Create a data contract from the given source location. Prints to stdout.
 

@@ -5,7 +5,32 @@ from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Model,
     Field,
+    Server,
 )
+
+
+def get_glue_database(datebase_name: str):
+    """Get the details Glue database.
+
+    Args:
+        database_name (str): glue database to request.
+
+    Returns:
+        set: catalogid and locationUri
+    """
+
+    glue = boto3.client("glue")
+    try:
+        response = glue.get_database(Name=datebase_name)
+    except glue.exceptions.EntityNotFoundException:
+        print(f"Database not found {datebase_name}.")
+        return (None, None)
+    except Exception as e:
+        # todo catch all
+        print(f"Error: {e}")
+        return (None, None)
+
+    return (response["Database"]["CatalogId"], response["Database"].get("LocationUri", "None"))
 
 
 def get_glue_tables(database_name: str) -> List[str]:
@@ -83,7 +108,19 @@ def get_glue_table_schema(database_name: str, table_name: str):
 
 
 def import_glue(data_contract_specification: DataContractSpecification, source: str):
+    """Import the schema of a Glue database."""
+
+    catalogid, location_uri = get_glue_database(source)
+
+    # something went wrong
+    if catalogid is None:
+        return data_contract_specification
+
     tables = get_glue_tables(source)
+
+    data_contract_specification.servers = {
+        "production": Server(type="glue", account=catalogid, database=source, location=location_uri),
+    }
 
     for table_name in tables:
         if data_contract_specification.models is None:
