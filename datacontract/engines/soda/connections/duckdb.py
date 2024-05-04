@@ -1,10 +1,9 @@
 import os
 
-import duckdb
-from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
-
 from deltalake import DeltaTable
 
+import duckdb
+from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 from datacontract.model.run import Run
 
 
@@ -81,21 +80,43 @@ def setup_s3_connection(con, server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
-    # con.install_extension("httpfs")
-    # con.load_extension("httpfs")
+    s3_endpoint = "s3.amazonaws.com"
+    use_ssl = "true"
+    url_style = "vhost"
     if server.endpointUrl is not None:
         s3_endpoint = server.endpointUrl.removeprefix("http://").removeprefix("https://")
         if server.endpointUrl.startswith("http://"):
-            con.sql("SET s3_use_ssl = 0; SET s3_url_style = 'path';")
-        con.sql(f"""
-                SET s3_endpoint = '{s3_endpoint}';
-                """)
+            use_ssl = "false"
+            url_style = 'path'
+
+
     if s3_access_key_id is not None:
         con.sql(f"""
-                    SET s3_region = '{s3_region}';
-                    SET s3_access_key_id = '{s3_access_key_id}';
-                    SET s3_secret_access_key = '{s3_secret_access_key}';
-                    """)
+            CREATE OR REPLACE SECRET s3_secret (
+                TYPE S3,
+                PROVIDER CREDENTIAL_CHAIN,
+                REGION '{s3_region}',
+                KEY_ID '{s3_access_key_id}',
+                SECRET '{s3_secret_access_key}',
+                ENDPOINT '{s3_endpoint}',
+                USE_SSL '{use_ssl}',
+                URL_STYLE '{url_style}'
+            );
+        """)
+
+    #     con.sql(f"""
+    #                 SET s3_region = '{s3_region}';
+    #                 SET s3_access_key_id = '{s3_access_key_id}';
+    #                 SET s3_secret_access_key = '{s3_secret_access_key}';
+    #                 """)
+    # else:
+    #     con.sql("""
+    #                 RESET s3_region;
+    #                 RESET s3_access_key_id;
+    #                 RESET s3_secret_access_key;
+    #     """)
+    # con.sql("RESET s3_session_token")
+    # print(con.sql("SELECT * FROM duckdb_settings() WHERE name like 's3%'"))
 
 
 def setup_azure_connection(con, server):
