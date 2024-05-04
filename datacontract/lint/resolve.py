@@ -8,7 +8,8 @@ from fastjsonschema import JsonSchemaValueException
 from datacontract.lint.files import read_file
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
-from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Quality
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification, Definition, Quality
 from datacontract.model.exceptions import DataContractException
 
 
@@ -21,7 +22,9 @@ def resolve_data_contract(
     inline_quality: bool = False,
 ) -> DataContractSpecification:
     if data_contract_location is not None:
-        return resolve_data_contract_from_location(data_contract_location, schema_location, inline_definitions, inline_quality)
+        return resolve_data_contract_from_location(
+            data_contract_location, schema_location, inline_definitions, inline_quality
+        )
     elif data_contract_str is not None:
         return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
     elif data_contract is not None:

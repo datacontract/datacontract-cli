@@ -221,7 +221,9 @@ def import_(
 
 @app.command(name="catalog")
 def catalog(
-    files: Annotated[Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")] = "*.yaml",
+    files: Annotated[
+        Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")
+    ] = "*.yaml",
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
 ):
     """

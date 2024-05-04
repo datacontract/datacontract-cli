@@ -909,7 +909,7 @@ source venv/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -e '.[dev]'
 ruff check --fix
-ruff format --check
+ruff format
 pytest
 ```
 
