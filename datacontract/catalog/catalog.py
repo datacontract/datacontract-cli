@@ -53,8 +53,10 @@ def create_index_html(contracts, path):
         )
 
         # Load the required template
+        # needs to be included in /MANIFEST.in
         template = env.get_template("index.html")
 
+        # needs to be included in /MANIFEST.in
         style_content, _, _ = package_loader.get_source(env, "style/output.css")
 
         tz = pytz.timezone("UTC")

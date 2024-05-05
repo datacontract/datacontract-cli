@@ -6,7 +6,8 @@ import pytz
 import yaml
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification
 
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:
@@ -21,6 +22,7 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     )
 
     # Load the required template
+    # needs to be included in /MANIFEST.in
     template = env.get_template("datacontract.html")
 
     if data_contract_spec.quality is not None and isinstance(data_contract_spec.quality.specification, str):
