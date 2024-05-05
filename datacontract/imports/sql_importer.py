@@ -44,19 +44,31 @@ def map_type_from_sql(sql_type: str):
     if sql_type is None:
         return None
 
-    if sql_type.lower().startswith("varchar"):
+    sql_type_normed = sql_type.lower().strip()
+    
+    if sql_type_normed.startswith("varchar"):
         return "varchar"
-    if sql_type.lower().startswith("string"):
+    elif sql_type_normed.startswith("string"):
         return "string"
-    if sql_type.lower().startswith("text"):
+    elif sql_type_normed.startswith("text"):
         return "text"
-    elif sql_type.lower().startswith("int"):
+    elif sql_type_normed.startswith("int"):
         return "integer"
-    elif sql_type.lower().startswith("float"):
+    elif sql_type_normed.startswith("float"):
         return "float"
-    elif sql_type.lower().startswith("bool"):
+    elif sql_type_normed.startswith("bool"):
         return "boolean"
-    elif sql_type.lower().startswith("timestamp"):
+    elif sql_type_normed.startswith("timestamp"):
         return "timestamp"
+    elif sql_type_normed == "date":
+        return "date"
+    elif sql_type_normed == "smalldatetime":
+        return "timestamp_ntz"
+    elif sql_type_normed == "datetime":
+        return "timestamp_ntz"
+    elif sql_type_normed == "datetime2":
+        return "timestamp_ntz"
+    elif sql_type_normed == "datetimeoffset":
+        return "timestamp_tz"        
     else:
         return "variant"
