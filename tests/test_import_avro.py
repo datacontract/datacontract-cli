@@ -155,3 +155,58 @@ models:
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+
+def test_import_avro_nested_records_with_arrays():
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/nested_with_arrays.avsc")
+
+    expected = """
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  MarketingLoyaltyAggregation:
+    namespace: domain.schemas
+    fields:
+      Entries:
+        type: array
+        required: true
+        items:
+          type: object
+          fields:
+            Identifier:
+              type: string
+              required: true
+            BranchPromo:
+              type: record
+              required: false
+              fields:
+                CodePrefix:
+                  type: int
+                  required: true
+                Criteria:
+                  type: object
+                  required: true
+                  fields:
+                    MinimumSpendThreshold:
+                      type: double
+                      required: false
+                    ApplicableBranchIDs:
+                      type: array
+                      required: false
+                    ProductGroupDetails:
+                      type: record
+                      required: false
+                      fields:
+                        IncludesAlcohol:
+                          type: boolean
+                          required: true
+                        ItemList:
+                          type: array
+                          required: false
+"""
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()

@@ -120,6 +120,8 @@ def map_type_from_avro(avro_type_str: str):
         return "boolean"
     elif avro_type_str == "record":
         return "record"
+    elif avro_type_str == "array":
+        return "array"
     else:
         raise DataContractException(
             type="schema",
