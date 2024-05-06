@@ -3,6 +3,7 @@ id: orders-unit-test
 info:
   title: Orders Unit Test
   version: 1.0.0
+  status: active
   owner: checkout
   description: The orders data contract
   contact:

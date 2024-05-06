@@ -1,8 +1,7 @@
 import yaml
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 def to_sodacl_yaml(

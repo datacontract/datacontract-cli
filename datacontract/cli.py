@@ -1,5 +1,6 @@
 from enum import Enum
 from importlib import metadata
+from pathlib import Path
 from typing import Iterable, Optional
 
 import typer
@@ -10,6 +11,8 @@ from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
+from datacontract.catalog.catalog import create_index_html, \
+    create_data_contract_html
 from datacontract.data_contract import DataContract
 from datacontract.init.download_datacontract_file import \
     download_datacontract_file, FileExistsException
@@ -160,6 +163,7 @@ class ExportFormat(str, Enum):
 @app.command()
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
+    output: Annotated[Path, typer.Option(help="Specify the file path where the exported data will be saved. If no path is provided, the output will be printed to stdout.")] = None,
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     model: Annotated[
         str,
@@ -169,10 +173,12 @@ def export(
             "models (default)."
         ),
     ] = "all",
+    # TODO: this should be a subcommand
     rdf_base: Annotated[
         Optional[str],
         typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options"),
     ] = None,
+    # TODO: this should be a subcommand
     sql_server_type: Annotated[
         Optional[str],
         typer.Option(
@@ -195,24 +201,54 @@ def export(
         sql_server_type=sql_server_type,
     )
     # Don't interpret console markup in output.
-    console.print(result, markup=False)
+    if output is None:
+        console.print(result, markup=False)
+    else:
+        with output.open('w') as f:
+            f.write(result)
+        console.print(f"Written result to {output}")
 
 
 class ImportFormat(str, Enum):
     sql = "sql"
     avro = "avro"
+    glue = "glue"
 
 
 @app.command(name="import")
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
-    source: Annotated[str, typer.Option(help="The path to the file that should be imported.")],
+    source: Annotated[str, typer.Option(help="The path to the file or Glue Database that should be imported.")],
 ):
     """
-    Create a data contract from the given source file. Prints to stdout.
+    Create a data contract from the given source location. Prints to stdout.
     """
     result = DataContract().import_from_source(format, source)
     console.print(result.to_yaml())
+
+
+@app.command(name="catalog")
+def catalog(
+    files: Annotated[
+        Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")
+    ] = "*.yaml",
+    output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
+):
+    """
+    Create an html catalog of data contracts.
+    """
+    path = Path(output)
+    path.mkdir(parents=True, exist_ok=True)
+    console.print(f"Created {output}")
+
+    contracts = []
+    for file in Path().glob(files):
+        try:
+            create_data_contract_html(contracts, file, path)
+        except Exception as e:
+            console.print(f"Skipped {file} due to error: {e}")
+
+    create_index_html(contracts, path)
 
 
 @app.command()

@@ -22,6 +22,7 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     )
 
     # Load the required template
+    # needs to be included in /MANIFEST.in
     template = env.get_template("datacontract.html")
 
     if data_contract_spec.quality is not None and isinstance(data_contract_spec.quality.specification, str):
@@ -40,9 +41,9 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
 
     datacontract_yaml = data_contract_spec.to_yaml()
 
-    tz = pytz.timezone('UTC')
+    tz = pytz.timezone("UTC")
     now = datetime.datetime.now(tz)
-    formatted_date = now.strftime('%d %b %Y %H:%M:%S UTC')
+    formatted_date = now.strftime("%d %b %Y %H:%M:%S UTC")
     datacontract_cli_version = get_version()
 
     # Render the template with necessary data

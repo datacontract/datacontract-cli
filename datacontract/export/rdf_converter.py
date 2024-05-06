@@ -141,7 +141,7 @@ def add_info(contract, info, graph, dc, dcx):
     graph.add((bnode_info, dc.version, Literal(info.version)))
 
     # add owner
-    owner = URIRef(info.owner)
+    owner = Literal(info.owner)
     graph.add((bnode_info, dc.owner, owner))
 
     # add contact

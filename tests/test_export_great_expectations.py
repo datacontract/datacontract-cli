@@ -6,11 +6,9 @@ import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.great_expectations_converter import \
-    to_great_expectations
+from datacontract.export.great_expectations_converter import to_great_expectations
 from datacontract.lint import resolve
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.exceptions import DataContractException
 
 logging.basicConfig(level=logging.DEBUG, force=True)
@@ -65,14 +63,14 @@ def data_contract_complex() -> DataContractSpecification:
 @pytest.fixture
 def data_contract_great_expectations() -> DataContractSpecification:
     return resolve.resolve_data_contract_from_location(
-        "./fixtures/great-expectations/datacontract.yaml", include_quality=True
+        "./fixtures/great-expectations/datacontract.yaml", inline_quality=True
     )
 
 
 @pytest.fixture
 def data_contract_great_expectations_quality_file() -> DataContractSpecification:
     return resolve.resolve_data_contract_from_location(
-        "./fixtures/great-expectations/datacontract_quality_file.yaml", include_quality=True
+        "./fixtures/great-expectations/datacontract_quality_file.yaml", inline_quality=True
     )
 
 
@@ -265,7 +263,7 @@ def test_to_great_expectation_missing_quality_json_file():
     """
     try:
         resolve.resolve_data_contract_from_location(
-            "./fixtures/great-expectations/datacontract_missing_quality_file.yaml", include_quality=True
+            "./fixtures/great-expectations/datacontract_missing_quality_file.yaml", inline_quality=True
         )
         assert False
     except DataContractException as dataContractException:

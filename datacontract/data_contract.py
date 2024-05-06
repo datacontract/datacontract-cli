@@ -30,6 +30,7 @@ from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.avro_importer import import_avro
+from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
@@ -66,6 +67,7 @@ class DataContract:
         publish_to_opentelemetry: bool = False,
         spark: SparkSession = None,
         inline_definitions: bool = False,
+        inline_quality: bool = False,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -77,6 +79,7 @@ class DataContract:
         self._publish_to_opentelemetry = publish_to_opentelemetry
         self._spark = spark
         self._inline_definitions = inline_definitions
+        self._inline_quality = inline_quality
         self.all_linters = {
             ExampleModelLinter(),
             QualityUsesSchemaLinter(),
@@ -105,6 +108,7 @@ class DataContract:
                 self._data_contract,
                 self._schema_location,
                 inline_definitions=True,
+                inline_quality=True,
             )
             run.checks.append(
                 Check(type="lint", result="passed", name="Data contract is syntactically valid", engine="datacontract")
@@ -273,11 +277,16 @@ class DataContract:
             data_contract=self._data_contract,
             schema_location=self._schema_location,
             inline_definitions=self._inline_definitions,
+            inline_quality=self._inline_quality,
         )
 
     def export(self, export_format, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto") -> str:
         data_contract = resolve.resolve_data_contract(
-            self._data_contract_file, self._data_contract_str, self._data_contract, inline_definitions=True
+            self._data_contract_file,
+            self._data_contract_str,
+            self._data_contract,
+            inline_definitions=True,
+            inline_quality=True,
         )
         if export_format == "jsonschema":
             if data_contract.models is None:
@@ -482,6 +491,8 @@ class DataContract:
             data_contract_specification = import_sql(data_contract_specification, format, source)
         elif format == "avro":
             data_contract_specification = import_avro(data_contract_specification, source)
+        elif format == "glue":
+            data_contract_specification = import_glue(data_contract_specification, source)
         else:
             print(f"Import format {format} not supported.")
 

@@ -4,8 +4,7 @@ from enum import Enum
 from io import StringIO
 
 from datacontract.lint.resolve import inline_definitions_into_data_contract
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Field
 from datacontract.model.exceptions import DataContractException
 
 

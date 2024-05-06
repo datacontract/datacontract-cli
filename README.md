@@ -207,6 +207,7 @@ Commands
 - [breaking](#breaking)
 - [changelog](#changelog)
 - [diff](#diff)
+- [catalog](#catalog)
 
 ### init
 
@@ -279,46 +280,49 @@ Commands
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-Data Contract CLI can connect to data sources and run schema and quality tests to verify that the data contract is valid.
+Data Contract CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid.
 
 ```bash
 $ datacontract test --server production datacontract.yaml
 ```
 
-To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection. In addition, credentials, such as username and passwords, may be defined with environment variables.
+To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection. 
+In addition, credentials, such as username and passwords, may be defined with environment variables.
 
 The application uses different engines, based on the server `type`.
-Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with soda-core and fastjsonschema. 
-Credentials are read from the environment variables.
+Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_. 
+
+Credentials are provided with environment variables.
 
 Supported server types:
 
-| Type         | Format     | Status                                                                          |
-|--------------|------------|---------------------------------------------------------------------------------|
-| `s3`         | `parquet`  | ✅                                                                               |
-| `s3`         | `json`     | ✅                                                                               |
-| `s3`         | `csv`      | ✅                                                                               |
-| `s3`         | `delta`    | Coming soon ([#24](https://github.com/datacontract/datacontract-cli/issues/24)) |
-| `s3`         | `iceberg`  | Coming soon                                                                     |
-| `postgres`   | n/a        | ✅                                                                               |
-| `snowflake`  | n/a        | ✅                                                                               |
-| `bigquery`   | n/a        | ✅                                                                               |
-| `redshift`   | n/a        | Coming soon                                                                     |
-| `databricks` | n/a        | ✅                                                                               |
-| `kafka`      | `json`     | ✅                                                                               |
-| `kafka`      | `avro`     | Coming soon                                                                     |
-| `kafka`      | `protobuf` | Coming soon                                                                     |
-| `local`      | `parquet`  | ✅                                                                               |
-| `local`      | `json`     | ✅                                                                               |
-| `local`      | `csv`      | ✅                                                                               |
+- [s3](#S3)
+- [bigquery](#bigquery)
+- [azure](#azure)
+- [databricks](#databricks)
+- [databricks (programmatic)](#databricks-programmatic)
+- [snowflake](#snowflake)
+- [kafka](#kafka)
+- [postgres](#postgres)
+- [local](#local)
 
-Feel free to create an issue, if you need support for an additional type.
+Supported formats:
+
+- parquet
+- json
+- csv
+- delta
+- iceberg (coming soon)
+
+Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for an additional type and formats.
 
 ### S3
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
-#### Example
+#### Examples
+
+##### JSON
 
 datacontract.yaml
 ```yaml
@@ -331,6 +335,18 @@ servers:
     delimiter: new_line # new_line, array, or none
 ```
 
+##### Delta Tables
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: s3
+    endpointUrl: https://minio.example.com # not needed with AWS S3
+    location: s3://bucket-name/path/table.delta # path to the Delta table folder containing parquet data files and the _delta_log
+    format: delta
+```
+
 #### Environment Variables
 
 | Environment Variable              | Example                       | Description           |
@@ -339,69 +355,6 @@ servers:
 | `DATACONTRACT_S3_ACCESS_KEY_ID`     | `AKIAXV5Q5QABCDEFGH`            | AWS Access Key ID     |
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key |
 
-
-### Postgres
-
-Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
-
-#### Example
-
-datacontract.yaml
-```yaml
-servers:
-  postgres:
-    type: postgres
-    host: localhost
-    port: 5432
-    database: postgres
-    schema: public
-models:
-  my_table_1: # corresponds to a table
-    type: table
-    fields: 
-      my_column_1: # corresponds to a column
-        type: varchar
-```
-
-#### Environment Variables
-
-| Environment Variable             | Example            | Description |
-|----------------------------------|--------------------|-------------|
-| `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
-| `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
-
-
-### Snowflake
-
-Data Contract CLI can test data in Snowflake.
-
-#### Example
-
-datacontract.yaml
-```yaml
-
-servers:
-  snowflake:
-    type: snowflake
-    account: abcdefg-xn12345
-    database: ORDER_DB
-    schema: ORDERS_PII_V2
-models:
-  my_table_1: # corresponds to a table
-    type: table
-    fields: 
-      my_column_1: # corresponds to a column
-        type: varchar
-```
-
-#### Environment Variables
-
-| Environment Variable               | Example            | Description                                         |
-|------------------------------------|--------------------|-----------------------------------------------------|
-| `DATACONTRACT_SNOWFLAKE_USERNAME`  | `datacontract`     | Username                                            |
-| `DATACONTRACT_SNOWFLAKE_PASSWORD`  | `mysecretpassword` | Password                                            |
-| `DATACONTRACT_SNOWFLAKE_ROLE`      | `DATAVALIDATION`   | The snowflake role to use.                          |
-| `DATACONTRACT_SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH`       | The Snowflake Warehouse to use executing the tests. |
 
 
 ### BigQuery
@@ -431,6 +384,34 @@ models:
 | Environment Variable                         | Example                   | Description                                             |
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery |
+
+
+
+### Azure
+
+Data Contract CLI can test data that is stored in Azure Blob storage or Azure Data Lake Storage (Gen2) (ADLS) in various formats.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: azure
+    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/dataproducts/inventory_events/*.parquet
+    format: parquet
+```
+
+#### Environment Variables
+
+Authentication works with an Azure Service Principal (SPN) aka App Registration with a secret.
+
+| Environment Variable              | Example                       | Description                                          |
+|-----------------------------------|-------------------------------|------------------------------------------------------|
+| `DATACONTRACT_AZURE_TENANT_ID`            | `79f5b80f-10ff-40b9-9d1f-774b42d605fc`                  | The Azure Tenant ID                                  |
+| `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622`            | The ApplicationID / ClientID of the app registration |
+| `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX` | The Client Secret value                              |
+
 
 
 ### Databricks
@@ -501,6 +482,41 @@ run = data_contract.test()
 run.result
 ```
 
+
+### Snowflake
+
+Data Contract CLI can test data in Snowflake.
+
+#### Example
+
+datacontract.yaml
+```yaml
+
+servers:
+  snowflake:
+    type: snowflake
+    account: abcdefg-xn12345
+    database: ORDER_DB
+    schema: ORDERS_PII_V2
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields: 
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable               | Example            | Description                                         |
+|------------------------------------|--------------------|-----------------------------------------------------|
+| `DATACONTRACT_SNOWFLAKE_USERNAME`  | `datacontract`     | Username                                            |
+| `DATACONTRACT_SNOWFLAKE_PASSWORD`  | `mysecretpassword` | Password                                            |
+| `DATACONTRACT_SNOWFLAKE_ROLE`      | `DATAVALIDATION`   | The snowflake role to use.                          |
+| `DATACONTRACT_SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH`       | The Snowflake Warehouse to use executing the tests. |
+
+
+
 ### Kafka
 
 Kafka support is currently considered experimental.
@@ -525,13 +541,44 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_PASSWORD` | `xxx`   | The SASL password (secret). |
 
 
+### Postgres
+
+Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  postgres:
+    type: postgres
+    host: localhost
+    port: 5432
+    database: postgres
+    schema: public
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields: 
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable             | Example            | Description |
+|----------------------------------|--------------------|-------------|
+| `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
+| `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
+
+
 
 ### export
 
 ```
  Usage: datacontract export [OPTIONS] [LOCATION]                                                                                                                           
                                                                                                                                                                            
- Convert data contract to a specific format. console.prints to stdout.                                                                                                     
+ Convert data contract to a specific format. Prints to stdout or to the specified output file.                                                                                                     
                                                                                                                                                                            
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                                                          │
@@ -624,15 +671,15 @@ data products, find the true domain owner of a field attribute)
 ### import
 
 ```
- Usage: datacontract import [OPTIONS]                                                                              
-                                                                                                                   
- Create a data contract from the given source file. Prints to stdout.                                              
-                                                                                                                   
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format        [sql|avro]  The format of the source file. [default: None] [required]                        │
-│ *  --source        TEXT        The path to the file that should be imported. [default: None] [required]         │
-│    --help                      Show this message and exit.                                                      │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Usage: datacontract import [OPTIONS]
+
+ Create a data contract from the given source location. Prints to stdout.
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format        [sql|avro|glue]  The format of the source file. [default: None] [required]                                    │
+│ *  --source        TEXT             The path to the file or Glue Database that should be imported. [default: None] [required]    │
+│    --help                           Show this message and exit.                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Example: 
@@ -647,6 +694,7 @@ Available import options:
 |--------------------|------------------------------------------------|---------|
 | `sql`              | Import from SQL DDL                            | ✅       | 
 | `avro`             | Import from AVRO schemas                       | ✅     |
+| `glue`             | Import from AWS Glue DataCatalog               | ✅     |
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `jsonschema`       | Import from JSON Schemas                       | TBD     |
 | `bigquery`         | Import from BigQuery Schemas                   | TBD     |
@@ -701,6 +749,21 @@ Available import options:
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                                               │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+### catalog
+
+```
+
+ Usage: datacontract catalog [OPTIONS]
+
+ Create an html catalog of data contracts.
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --files         TEXT  Glob pattern for the data contract files to include in the catalog. [default: *.yaml]              │
+│ --output        TEXT  Output directory for the catalog html files. [default: catalog/]                                   │
+│ --help                Show this message and exit.                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 
@@ -870,7 +933,7 @@ source venv/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -e '.[dev]'
 ruff check --fix
-ruff format --check
+ruff format
 pytest
 ```
 
@@ -920,6 +983,11 @@ This command runs the container momentarily to check the version of the `datacon
 ## Contribution
 
 We are happy to receive your contributions. Propose your change in an issue or directly create a pull request with your improvements.
+
+## Companies using this tool
+
+- [INNOQ](https://innoq.com)
+- And many more. To add your company, please create a pull request.
 
 ## License
 

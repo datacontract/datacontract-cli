@@ -63,6 +63,7 @@ class Definition(pyd.BaseModel):
 class Field(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
     ref_obj: Definition = pyd.Field(default=None, exclude=True)
+    title: str = None
     type: str = None
     format: str = None
     required: bool = None
@@ -95,6 +96,7 @@ class Model(pyd.BaseModel):
 class Info(pyd.BaseModel):
     title: str = None
     version: str = None
+    status: str = None
     description: str = None
     owner: str = None
     contact: Contact = None
