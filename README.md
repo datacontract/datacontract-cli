@@ -936,6 +936,22 @@ ruff check --fix
 ruff format
 pytest
 ```
+### Conda development setup
+
+If you use conda
+
+```bash
+# Create env + install requirements
+conda env create -f conda_environment.yml
+# Activate the environment
+conda activate datacontract-cli
+
+ruff check --fix
+ruff format
+pytest
+```
+
+If you upgrade the code, you can just upgrade the environment with `conda env update -f conda_environment.yml`
 
 
 ### Docker Build
