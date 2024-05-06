@@ -1,0 +1,8 @@
+{
+    // Enable the VSCode pytest extension to enhance the GUI integration for easier test execution and debugging in a TDD environment.
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}
