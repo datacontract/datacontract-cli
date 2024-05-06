@@ -171,30 +171,6 @@ Or via an alias that automatically uses the latest version:
 alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/cli:latest'
 ```
 
-#### Docker compose integration
-
-We've included a [docker-compose.yml](./docker-compose.yml) configuration to simplify the build, test, and deployment of the image.
-
-##### Building the Image with Docker Compose
-
-To build the Docker image using Docker Compose, run the following command:
-
-```bash
-docker compose build
-```
-
-This command utilizes the `docker-compose.yml` to build the image, leveraging predefined settings such as the build context and Dockerfile location. This approach streamlines the image creation process, avoiding the need for manual build specifications each time.
-
-#### Testing the Image
-
-After building the image, you can test it directly with Docker Compose:
-
-```bash
-docker compose run --rm datacontract --version
-```
-
-This command runs the container momentarily to check the version of the `datacontract` CLI. The `--rm` flag ensures that the container is automatically removed after the command executes, keeping your environment clean.
-
 ## Documentation
 
 Commands
@@ -936,22 +912,6 @@ ruff check --fix
 ruff format
 pytest
 ```
-### Conda development setup
-
-If you use conda
-
-```bash
-# Create env + install requirements
-conda env create -f conda_environment.yml
-# Activate the environment
-conda activate datacontract-cli
-
-ruff check --fix
-ruff format
-pytest
-```
-
-If you upgrade the code, you can just upgrade the environment with `conda env update -f conda_environment.yml`
 
 
 ### Docker Build
