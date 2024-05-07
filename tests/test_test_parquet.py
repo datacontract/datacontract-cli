@@ -27,3 +27,15 @@ def test_valid():
     assert run.result == "passed"
     assert len(run.checks) == 4
     assert all(check.result == "passed" for check in run.checks)
+
+
+def test_invalid():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_invalid.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "failed"
+    assert len(run.checks) == 6
+    assert any(check.result == "failed" for check in run.checks)
+    assert any(check.reason == "Type Mismatch, Expected Type: date; Actual Type: varchar" for check in run.checks)

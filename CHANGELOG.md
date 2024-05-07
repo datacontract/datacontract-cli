@@ -9,10 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [0.10.3] - 2024-05-05
+
+### Fixed
+- datacontract catalog: Add index.html to manifest
+
+## [0.10.2] - 2024-05-05
+
+### Added
+
+- Added import glue (#166)
 - Added test support for `azure` (#146)
 - Added support for `delta` tables on S3 (#24)
 - Added new command `datacontract catalog` that generates a data contract catalog with an `index.html` file.
-
+- Added field format information to HTML export
+ 
 ### Fixed
 - RDF Export: Fix error if owner is not a URI/URN
 

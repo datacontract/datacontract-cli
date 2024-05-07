@@ -1,0 +1,121 @@
+{
+  "fields": [
+    {
+      "name": "Entries",
+      "type": {
+        "items": {
+          "fields": [
+            {
+              "name": "Identifier",
+              "type": {
+                "logicalType": "uuid",
+                "type": "string"
+              }
+            },
+            {
+              "default": null,
+              "name": "BranchPromo",
+              "type": [
+                "null",
+                {
+                  "fields": [
+                    {
+                      "name": "CodePrefix",
+                      "type": "int"
+                    },
+                    {
+                      "name": "Criteria",
+                      "type": {
+                        "fields": [
+                          {
+                            "default": null,
+                            "name": "MinimumSpendThreshold",
+                            "type": [
+                              "null",
+                              "double"
+                            ]
+                          },
+                          {
+                            "default": null,
+                            "name": "ApplicableBranchIDs",
+                            "type": [
+                              "null",
+                              {
+                                "items": "string",
+                                "type": "array"
+                              }
+                            ]
+                          },
+                          {
+                            "default": null,
+                            "name": "ProductGroupDetails",
+                            "type": [
+                              "null",
+                              {
+                                "fields": [
+                                  {
+                                    "name": "IncludesAlcohol",
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "default": null,
+                                    "name": "ItemList",
+                                    "type": [
+                                      "null",
+                                      {
+                                        "items": {
+                                          "fields": [
+                                            {
+                                              "name": "ProductID",
+                                              "type": "string"
+                                            },
+                                            {
+                                              "default": null,
+                                              "name": "IsPromoItem",
+                                              "type": [
+                                                "null",
+                                                "boolean"
+                                              ]
+                                            }
+                                          ],
+                                          "name": "ItemRecord",
+                                          "namespace": "domain.DemoNamespace.DemoEvent.DemoRecord.CriteriaRecord.ProductGroupDetailsRecord",
+                                          "type": "record"
+                                        },
+                                        "type": "array"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "name": "ProductGroupDetailsRecord",
+                                "namespace": "domain.DemoNamespace.DemoEvent.DemoRecord.CriteriaRecord",
+                                "type": "record"
+                              }
+                            ]
+                          }
+                        ],
+                        "name": "CriteriaRecord",
+                        "namespace": "domain.DemoNamespace.DemoEvent.DemoRecord",
+                        "type": "record"
+                      }
+                    }
+                  ],
+                  "name": "DemoRecord",
+                  "namespace": "domain.DemoNamespace.DemoEvent",
+                  "type": "record"
+                }
+              ]
+            }
+          ],
+          "name": "DemoEvent",
+          "namespace": "domain.DemoNamespace",
+          "type": "record"
+        },
+        "type": "array"
+      }
+    }
+  ],
+  "name": "MarketingLoyaltyAggregation",
+  "namespace": "domain.schemas",
+  "type": "record"
+}

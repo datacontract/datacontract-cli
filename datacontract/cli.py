@@ -163,6 +163,7 @@ class ExportFormat(str, Enum):
 @app.command()
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
+    output: Annotated[Path, typer.Option(help="Specify the file path where the exported data will be saved. If no path is provided, the output will be printed to stdout.")] = None,
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     model: Annotated[
         str,
@@ -172,10 +173,12 @@ def export(
             "models (default)."
         ),
     ] = "all",
+    # TODO: this should be a subcommand
     rdf_base: Annotated[
         Optional[str],
         typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options"),
     ] = None,
+    # TODO: this should be a subcommand
     sql_server_type: Annotated[
         Optional[str],
         typer.Option(
@@ -198,7 +201,12 @@ def export(
         sql_server_type=sql_server_type,
     )
     # Don't interpret console markup in output.
-    console.print(result, markup=False)
+    if output is None:
+        console.print(result, markup=False)
+    else:
+        with output.open('w') as f:
+            f.write(result)
+        console.print(f"Written result to {output}")
 
 
 class ImportFormat(str, Enum):
@@ -221,7 +229,9 @@ def import_(
 
 @app.command(name="catalog")
 def catalog(
-    files: Annotated[Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")] = "*.yaml",
+    files: Annotated[
+        Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")
+    ] = "*.yaml",
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
 ):
     """

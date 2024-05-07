@@ -1,13 +1,14 @@
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
-from jinja2 import PackageLoader, Environment, select_autoescape
 import pytz
-from datetime import datetime
+from jinja2 import PackageLoader, Environment, select_autoescape
 
-from datacontract.export.html_export import get_version
 from datacontract.data_contract import DataContract
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.html_export import get_version
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification
 
 
 def create_data_contract_html(contracts, file: Path, path: Path):
@@ -19,17 +20,20 @@ def create_data_contract_html(contracts, file: Path, path: Path):
     html_filepath.parent.mkdir(parents=True, exist_ok=True)
     with open(html_filepath, "w") as f:
         f.write(html)
-    contracts.append(DataContractView(
-        html_filepath=html_filepath,
-        html_link=file_without_suffix,
-        spec=spec,
-    ))
+    contracts.append(
+        DataContractView(
+            html_filepath=html_filepath,
+            html_link=file_without_suffix,
+            spec=spec,
+        )
+    )
     print(f"Created {html_filepath}")
 
 
 @dataclass
 class DataContractView:
     """Class for keeping track of an item in inventory."""
+
     html_filepath: Path
     html_link: Path
     spec: DataContractSpecification
@@ -49,13 +53,15 @@ def create_index_html(contracts, path):
         )
 
         # Load the required template
+        # needs to be included in /MANIFEST.in
         template = env.get_template("index.html")
 
+        # needs to be included in /MANIFEST.in
         style_content, _, _ = package_loader.get_source(env, "style/output.css")
 
-        tz = pytz.timezone('UTC')
+        tz = pytz.timezone("UTC")
         now = datetime.now(tz)
-        formatted_date = now.strftime('%d %b %Y %H:%M:%S UTC')
+        formatted_date = now.strftime("%d %b %Y %H:%M:%S UTC")
         datacontract_cli_version = get_version()
 
         # Render the template with necessary data

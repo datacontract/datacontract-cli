@@ -20,6 +20,10 @@ class BreakingRules:
     field_ref_removed = Severity.WARNING
     field_ref_updated = Severity.WARNING
 
+    field_title_added = Severity.INFO
+    field_title_removed = Severity.INFO
+    field_title_updated = Severity.INFO
+
     field_type_added = Severity.WARNING
     field_type_removed = Severity.WARNING
     field_type_updated = Severity.ERROR

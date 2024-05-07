@@ -599,7 +599,7 @@ def test_definition_added():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "15 changes: 0 error, 13 warning, 2 info\n" in output
+    assert "16 changes: 0 error, 13 warning, 3 info\n" in output
     assert (
         r"""warning [field_ref_added] at 
 ./fixtures/breaking/datacontract-definitions-v2.yaml
@@ -719,7 +719,7 @@ def test_definition_removed():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "15 changes: 3 error, 9 warning, 3 info\n" in output
+    assert "16 changes: 3 error, 9 warning, 4 info\n" in output
     assert (
         r"""warning [field_ref_removed] at 
 ./fixtures/breaking/datacontract-definitions-v1.yaml
@@ -839,7 +839,7 @@ def test_definition_updated():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "15 changes: 12 error, 1 warning, 2 info\n" in output
+    assert "16 changes: 12 error, 1 warning, 3 info\n" in output
     assert (
         r"""warning [field_ref_updated] at 
 ./fixtures/breaking/datacontract-definitions-v3.yaml

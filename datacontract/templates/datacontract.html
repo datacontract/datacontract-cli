@@ -78,6 +78,13 @@
                     <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.version }}</dd>
                   </div>
 
+                  {% if datacontract.info.status %}
+                  <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Status</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.status }}</dd>
+                  </div>
+                  {% endif %}
+
                   {% if datacontract.info.description %}
                   <div class="sm:col-span-2">
                     <dt class="text-sm font-medium text-gray-500">Description</dt>
@@ -353,7 +360,7 @@
                     <table class="min-w-full divide-y divide-gray-300">
                       <thead class="bg-gray-50">
                       <tr>
-                        <th scope="colgroup" colspan="4" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+                        <th scope="colgroup" colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
                           <span>{{ model_name }}</span>
                           <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ model.type }}</span>
                           <div class="text-sm font-medium text-gray-500">{{ model.description }}</div>
@@ -366,19 +373,14 @@
                       {% for field_name, field in model.fields.items() %}
 
                       <tr>
-                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
+                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
                           <div class="py-2 text-sm">
-                            {{ field_name }}
+                            {% if field.title %}
+                            <div>{{ field.title }}</div>
+                            {% endif %}
+                            <div class="font-mono">{{ field_name }}</div>
                             {# TODO nested fields #}
                           </div>
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
-                          {% if field.required %}
-                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
-                          {% endif %}
-                          {% if field.unique %}
-                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="unique">U</span>
-                          {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
                           {% if field.type %}
@@ -386,8 +388,66 @@
                           {% endif %}
                         </td>
                         <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
-                          <div class="text-gray-400">{{ field.description or "No description" }}</div>
-                          {# TODO add format information #}
+                          {% if field.description %}
+                          <div class="text-gray-500">{{ field.description }}</div>
+                          {% else %}
+                          <div class="text-gray-400">No description</div>
+                          {% endif %}
+
+                          {% if field.example %}
+                          <div class="mt-1 italic">
+                            Example: {{ field.example }}
+                          </div>
+                          {% endif %}
+
+                          <div>
+                            {% if field.primary %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">primary</span>
+                            {% endif %}
+                            {% if field.required %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
+                            {% endif %}
+                            {% if field.unique %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">unique</span>
+                            {% endif %}
+                            {% if field.format %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">format:{{ field.format }}</span>
+                            {% endif %}
+                            {% if field.minLength %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minLength:{{ field.minLength }}</span>
+                            {% endif %}
+                            {% if field.maxLength %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maxLength:{{ field.maxLength }}</span>
+                            {% endif %}
+                            {% if field.pattern %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">pattern:{{ field.pattern }}</span>
+                            {% endif %}
+                            {% if field.precision %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">precision:{{ field.precision }}</span>
+                            {% endif %}
+                            {% if field.scale %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">scale:{{ field.scale }}</span>
+                            {% endif %}
+                            {% if field.minimum %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minimum:{{ field.minimum }}</span>
+                            {% endif %}
+                            {% if field.exclusiveMinimum %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMinimum:{{ field.exclusiveMinimum }}</span>
+                            {% endif %}
+                            {% if field.maximum %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maximum:{{ field.maximum }}</span>
+                            {% endif %}
+                            {% if field.exclusiveMaximum %}
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMaximum:{{ field.exclusiveMaximum }}</span>
+                            {% endif %}
+                            {% if field.classification %}
+                            <span class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{ field.classification }}</span>
+                            {% endif %}
+                            {% if field.pii %}
+                            <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
+                            {% endif %}
+                          </div>
+
                         </td>
 
                       </tr>
