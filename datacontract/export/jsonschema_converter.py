@@ -46,9 +46,22 @@ def to_property(field: Field) -> dict:
     if field.unique:
         property["unique"] = True
     if json_type == "object":
-        property["properties"] = to_properties(field.fields)
+        # TODO: any better idea to distinguish between properties and patternProperties?
+        if next(iter(field.fields.keys())).startswith("^"):
+            property["patternProperties"] = to_properties(field.fields)
+        else:
+            property["properties"] = to_properties(field.fields)
         property["required"] = to_required(field.fields)
 
+    if field.pattern:
+        property["pattern"] = field.pattern
+    if field.enum:
+        property["enum"] = field.enum
+    if field.minLength:
+        property["minLength"] = field.minLength
+    if field.maxLength:
+        property["maxLength"] = field.maxLength
+    
     # TODO: all constraints
     return property
 
