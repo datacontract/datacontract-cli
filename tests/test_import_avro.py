@@ -210,3 +210,47 @@ models:
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+
+def test_import_avro_logicalTypes():
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/logicalTypes.avsc")
+
+    expected = """
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  Test:
+    namespace: mynamespace.com
+    fields:
+      test_id:
+        type: string
+        required: true
+        description: id documentation test
+      device_id:
+        type: int
+        required: true
+      test_value:
+        type: double
+        required: true
+      num_items:
+        type: int
+        required: true
+      processed_timestamp:
+        type: long
+        required: true
+        description: 'The date the event was processed: for more info 
+https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29'
+        logicalType: local-timestamp-micros
+      description:
+        type: string
+        required: true
+      is_processed:
+        type: boolean
+        required: true
+"""
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
