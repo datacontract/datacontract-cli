@@ -122,6 +122,11 @@ models:
           type: array
           items:
             type: int
+      nationalities:
+        type: array
+        required: false
+        items:
+          type: string
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
@@ -196,6 +201,8 @@ models:
                     ApplicableBranchIDs:
                       type: array
                       required: false
+                      items: 
+                        type: string
                     ProductGroupDetails:
                       type: record
                       required: false
@@ -206,6 +213,15 @@ models:
                         ItemList:
                           type: array
                           required: false
+                          items:
+                            type: object
+                            fields:
+                              ProductID:
+                                type: string
+                                required: true
+                              IsPromoItem:
+                                type: boolean
+                                required: false
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

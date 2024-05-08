@@ -1,6 +1,7 @@
 import avro.schema
 
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
 
 
@@ -56,6 +57,9 @@ def import_record_fields(record_fields):
             imported_fields[field.name].type = type
             if type == "record":
                 imported_fields[field.name].fields = import_record_fields(get_record_from_union_field(field).fields)
+            elif type == "array":
+                imported_fields[field.name].type = "array"
+                imported_fields[field.name].items = import_avro_array_items(get_array_from_union_field(field))
         elif field.type.type == "array":
             imported_fields[field.name].type = "array"
             imported_fields[field.name].items = import_avro_array_items(field.type)
@@ -98,6 +102,13 @@ def import_type_of_optional_field(field):
 def get_record_from_union_field(field):
     for field_type in field.type.schemas:
         if field_type.type == "record":
+            return field_type
+    return None
+
+
+def get_array_from_union_field(field):
+    for field_type in field.type.schemas:
+        if field_type.type == "array":
             return field_type
     return None
 

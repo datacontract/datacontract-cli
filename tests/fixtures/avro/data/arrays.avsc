@@ -39,6 +39,23 @@
             "items": "int"
           }
         }
+      },
+      {
+        "name": "nationalities",
+        "type": [
+          "null",
+          {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "connect.parameters": {
+                "avro.java.string": "String"
+              },
+              "avro.java.string": "String"
+            }
+          }
+        ],
+        "default": null
       }
     ],
     "name": "orders",
