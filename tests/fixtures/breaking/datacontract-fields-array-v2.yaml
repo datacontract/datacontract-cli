@@ -1,0 +1,26 @@
+dataContractSpecification: 0.9.3
+id: demo-contract-id
+info:
+  title: Test for changes in datacontracts that includes arrays
+  version: 0.0.1
+  description: my desc
+models:
+  DataType:
+    namespace: dp.schemas
+    description: Description 
+    type: table
+    fields:
+      Records:
+        type: array
+        required: true
+        description: Array that will change 
+        items:
+          type: object
+          fields:          
+            Field1:
+              type: string
+              required: false              
+              description: Field1 desc changed but THIS WILL NOT THROW ANY ERROR
+              sample: 1
+              pii: false
+              classification: Unclassified
