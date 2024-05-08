@@ -71,3 +71,52 @@ def test_to_avro_schema():
     result = to_avro_schema_json(model_name, model)
 
     assert json.loads(result) == json.loads(expected_avro_schema)
+
+
+def test_to_avro_schema_with_logicalTypes():
+    data_contract = DataContractSpecification.from_file("fixtures/kafka-avro-remote/datacontract_logicalType.yaml")
+    expected_avro_schema = """
+  {
+  "type": "record",
+  "name": "Test",
+  "namespace": "mynamespace.com",
+  "fields": [
+    {
+      "name": "test_id",
+      "doc": "id documentation test",
+      "type": "string"
+    },
+    {
+      "name": "device_id",
+      "type": "int"
+    },
+    {
+      "name": "test_value",
+      "type": "double"
+    },
+    {
+      "name": "num_items",
+      "type": "int"
+    },
+    {
+      "name": "processed_timestamp",
+      "doc": "The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29",
+      "logicalType": "local-timestamp-micros",
+      "type": "long"
+    },
+    {
+      "name": "description",
+      "type": "string"
+    },
+    {
+      "name": "is_processed",
+      "type": "boolean"
+    }
+  ]
+}
+"""
+
+    model_name, model = next(iter(data_contract.models.items()))
+    result = to_avro_schema_json(model_name, model)
+
+    assert json.loads(result) == json.loads(expected_avro_schema)
