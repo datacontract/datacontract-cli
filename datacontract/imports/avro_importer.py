@@ -43,8 +43,11 @@ def import_record_fields(record_fields):
         imported_fields[field.name] = Field()
         imported_fields[field.name].required = True
         imported_fields[field.name].description = field.doc
+        if 'default' in field.props:
+            imported_fields[field.name].default = field.props['default']
+
         for prop in field.other_props:
-            imported_fields[field.name].__setattr__(prop, field.other_props[prop])
+            imported_fields[field.name].__setattr__(prop, field.other_props[prop])                
 
         if field.type.type == "record":
             imported_fields[field.name].type = "object"

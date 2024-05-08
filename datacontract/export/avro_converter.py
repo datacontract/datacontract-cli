@@ -35,6 +35,8 @@ def to_avro_field(field, field_name):
         avro_field["doc"] = field.description
     if field.logicalType is not None:
         avro_field["logicalType"] = field.logicalType
+    if field.default is not None:
+        avro_field["default"] = field.default
     avro_field["type"] = to_avro_type(field, field_name)
     return avro_field
 

@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 import pydantic as pyd
 import yaml
@@ -81,6 +81,7 @@ class Field(pyd.BaseModel):
     maximum: int = None
     exclusiveMaximum: int = None
     logicalType: Optional[str] = None
+    default: Optional[Any] = None
     enum: List[str] = []
     tags: List[str] = []
     fields: Dict[str, "Field"] = {}

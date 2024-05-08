@@ -23,7 +23,7 @@ models:
       processed_timestamp:
         type: long
         required: true
-        description: "The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29"
+        description: 'The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29'
         logicalType: local-timestamp-micros
       description:
         type: string
@@ -31,3 +31,4 @@ models:
       is_processed:
         type: boolean
         required: true
+        default: false

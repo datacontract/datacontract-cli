@@ -241,8 +241,7 @@ models:
       processed_timestamp:
         type: long
         required: true
-        description: 'The date the event was processed: for more info 
-https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29'
+        description: 'The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29'
         logicalType: local-timestamp-micros
       description:
         type: string
@@ -250,6 +249,7 @@ https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+pr
       is_processed:
         type: boolean
         required: true
+        default: false
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

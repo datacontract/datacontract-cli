@@ -110,7 +110,8 @@ def test_to_avro_schema_with_logicalTypes():
     },
     {
       "name": "is_processed",
-      "type": "boolean"
+      "type": "boolean",
+      "default": false
     }
   ]
 }
