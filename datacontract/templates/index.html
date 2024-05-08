@@ -50,13 +50,44 @@
 
           <section id="catalog">
 
-            {# TODO search and filter form #}
+            {% if contracts_size > 0 %}
+
+            <form aria-labelledby="filter-heading" class="pb-4" >
+              <h2 id="filter-heading" class="sr-only">Filters</h2>
+              <div class="flex items-center justify-between">
+                <div class="hidden sm:flex sm:items-baseline sm:space-x-8">
+                  <div>
+                    <div class="relative rounded-md shadow-sm">
+                      <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg class="pointer-events-none absolute h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                      <input type="text" name="q" id="search" class="block w-72 rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Search">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+            {% endif %}
+
 
             <ul role="list" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 ">
 
               {% for contract in contracts %}
 
-              <li class="col-span-1 rounded-lg bg-white shadow hover:bg-gray-50">
+              <li class="col-span-1 rounded-lg bg-white shadow hover:bg-gray-50"
+                  data-search="{{
+    contract.spec.info.title|lower }} {{
+    contract.spec.info.owner|lower if contract.spec.info.owner else '' }} {{
+    contract.spec.info.description|lower }} {%
+    for model_name, model in contract.spec.models.items() %}
+      {{ model.description|lower }} {%
+      for field_name, field in model.fields.items() %}
+        {{ field_name|lower }} {{ field.description|lower if field.description else '' }} {%
+      endfor %}
+    {% endfor %}
+  ">
                 <a href="{{contract.html_link}}" >
                   <div class="flex w-full justify-between space-x-1 p-6 pb-4">
                     <div class="flex-1 truncate">
@@ -97,6 +128,10 @@
             </p>
             {% endif %}
 
+
+            <div id="no-results" class="hidden text-sm text-gray-500">
+              No results found.
+            </div>
 
           </section>
 
@@ -163,6 +198,36 @@
   </footer>
 
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const contractsList = document.querySelectorAll('#catalog li');
+    const noResults = document.getElementById('no-results');
+
+    searchInput.addEventListener('keyup', function() {
+      let visibleCount = 0;  // Counter to track the number of visible items
+      const searchText = searchInput.value.toLowerCase();
+
+      contractsList.forEach(contract => {
+        const searchData = contract.getAttribute('data-search');
+        if (searchData && searchData.includes(searchText)) {
+          contract.style.display = '';
+          visibleCount++;
+        } else {
+          contract.style.display = 'none';
+        }
+      });
+
+      // Manage the visibility of the no results message
+      if (visibleCount === 0) {
+        noResults.classList.remove('hidden');  // Show the message if no items are visible
+      } else {
+        noResults.classList.add('hidden');     // Hide the message if there are visible items
+      }
+    });
+  });
+</script>
 
 </body>
 </html>

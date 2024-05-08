@@ -71,6 +71,7 @@ def create_index_html(contracts, path):
             datacontract_cli_version=datacontract_cli_version,
             contracts=contracts,
             contracts_size=len(contracts),
+            owners=sorted(set(dc.spec.info.owner for dc in contracts if dc.spec.info.owner)),
         )
         f.write(html_string)
     print(f"Created {index_filepath}")
