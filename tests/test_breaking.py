@@ -236,15 +236,17 @@ def test_array_fields_updated():
     output = result.stdout
 
     assert result.exit_code == 1
-    assert "2 breaking changes: 2 error, 0 warning\n" in output
-    assert "field_type_updated" in output
-    assert "in models.DataType.fields.Records.items.fields.Field1.type" in output
-    assert "changed from `int` to `string`" in output
+    assert "3 breaking changes: 3 error, 0 warning\n" in output
+    assert "field_pii_updated" in output
+    assert "in models.DataType.fields.Records.items.fields.Field1.pii" in output
+    assert "changed from `false` to `true`" in output
 
-    assert "field_classification_updated" in output
-    assert "in models.DataType.fields.Records.items.fields.Field1.classification" in output
-    assert "changed from `classified` to `Unclassified`" in output    
+    assert "field_classification_updated" in output    
+    assert "changed from `Unclassified` to `classified`" in output    
     
+    assert "field_type_updated" in output    
+    assert "changed from `string` to `int`" in output    
+
     assert "field_description_removed" not in output
     assert "field_tags_removed" not in output
     assert "field_enum_removed" not in output

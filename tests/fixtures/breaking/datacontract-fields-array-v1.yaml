@@ -4,6 +4,10 @@ info:
   title: Test for changes in datacontracts that includes arrays
   version: 0.0.1
   description: my desc
+  owner: owner
+  contact:
+    name: john doe
+    email: john.doe@example.com
 models:
   DataType:
     namespace: dp.schemas
@@ -13,14 +17,48 @@ models:
       Records:
         type: array
         required: true
-        description: Array that will change 
+        description: Some fields on this complex array structure will change
         items:
           type: object
           fields:          
             Field1:
               type: int
-              required: false              
+              required: false
               description: Field1 desc
               sample: 1
               pii: false
-              classification: classified
+              classification: Unclassified
+            Discount:
+              type: record
+              required: false
+              fields:
+                IsAutomatic:
+                  type: boolean
+                  required: true
+                  description: Indicates if the application is automatic
+                  sample: true
+                  pii: false
+                  classification: Unclassified
+                Conditions:
+                  type: object
+                  required: true
+                  fields:
+                    Min1:
+                      type: double
+                      required: false
+                      description: Minimum test1
+                      sample: 50.0
+                      pii: false
+                      classification: Unclassified                  
+                    Hierarchy:
+                      type: record
+                      required: false
+                      fields:
+                        HasArticles:
+                          type: string
+                          required: true
+                          description: Indicates if articles are included 
+                          sample: false
+                          pii: false
+                          classification: Unclassified
+                        
