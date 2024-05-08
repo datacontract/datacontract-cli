@@ -1,0 +1,64 @@
+dataContractSpecification: 0.9.3
+id: demo-contract-id
+info:
+  title: Test for changes in datacontracts that includes arrays
+  version: 0.0.1
+  description: my desc
+  owner: owner
+  contact:
+    name: john doe
+    email: john.doe@example.com
+models:
+  DataType:
+    namespace: dp.schemas
+    description: Description 
+    type: table
+    fields:
+      Records:
+        type: array
+        required: true
+        description: Some fields on this complex array structure will change
+        items:
+          type: object
+          fields:          
+            Field1:
+              type: int
+              required: false
+              description: CHANGING PII (THIS DESCRIPTION THROWS 0 ERRORS)
+              sample: 1
+              pii: true
+              classification: Unclassified
+            Discount:
+              type: record
+              required: false
+              fields:
+                IsAutomatic:
+                  type: boolean
+                  required: true
+                  description: Changed classification
+                  sample: true
+                  pii: false
+                  classification: classified
+                Conditions:
+                  type: object
+                  required: true
+                  fields:
+                    Min1:
+                      type: double
+                      required: false
+                      description: Minimum test1
+                      sample: 50.0
+                      pii: false
+                      classification: Unclassified                  
+                    Hierarchy:
+                      type: record
+                      required: false
+                      fields:
+                        HasArticles:
+                          type: int
+                          required: true
+                          description: changing type from string to int
+                          sample: false
+                          pii: false
+                          classification: Unclassified
+                        
