@@ -1,0 +1,33 @@
+dataContractSpecification: 0.9.3
+id: iceberg-ingestion
+info:
+  title: ingestion to s3/iceberg
+  version: 0.0.1
+  description: The ingestion of parquet files from s3 into iceberg table format
+servers:
+  test:
+    type: local
+    path: "./fixtures/parquet/data/timestamp.parquet"
+    format: parquet
+models:
+  complaintcost_c:
+    description: complaintcost_c
+    type: table
+    fields:
+      id:
+        type: varchar
+        required: true
+        primary: true
+        description: ID
+      isdeleted:
+        type: boolean
+        description: ISDELETED
+        required: true
+      name:
+        type: varchar
+        description: NAME_C
+        required: true
+      createddate:
+        type: timestamp_tz
+        description: CREATEDDATE
+        required: true
