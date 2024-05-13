@@ -652,9 +652,10 @@ data products, find the true domain owner of a field attribute)
  Create a data contract from the given source location. Prints to stdout.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format        [sql|avro|glue]  The format of the source file. [default: None] [required]                                    │
-│ *  --source        TEXT             The path to the file or Glue Database that should be imported. [default: None] [required]    │
-│    --help                           Show this message and exit.                                                                  │
+│ *  --format        [sql|avro|glue|bigquery]  The format of the source file.                                                     │
+│                    [default: None] [required]                                                                                   │
+│ *  --source        TEXT             The path to the file or Glue Database that should be imported. [default: None] [required]   │
+│    --help                           Show this message and exit.                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
