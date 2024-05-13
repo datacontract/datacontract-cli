@@ -113,6 +113,14 @@ class Quality(pyd.BaseModel):
     type: str = None
     specification: str | object = None
 
+class Servicelevels(pyd.BaseModel):
+    availability: object = None
+    retention: object = None
+    latency: object = None
+    freshness: object = None
+    frequency: object = None
+    support: object = None
+    backup: object = None
 
 class DataContractSpecification(pyd.BaseModel):
     dataContractSpecification: str = None
@@ -125,6 +133,7 @@ class DataContractSpecification(pyd.BaseModel):
     # schema: Dict[str, str]
     examples: List[Example] = []
     quality: Quality = None
+    servicelevels: Servicelevels = None
 
     @classmethod
     def from_file(cls, file):
