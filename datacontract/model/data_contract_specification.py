@@ -84,6 +84,8 @@ class Field(pyd.BaseModel):
     tags: List[str] = []
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
+    precision: int = None
+    scale: int = None
 
 
 class Model(pyd.BaseModel):
