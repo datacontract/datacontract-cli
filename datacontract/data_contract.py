@@ -30,6 +30,7 @@ from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.avro_importer import import_avro
+from datacontract.imports.bigquery_importer import import_bigquery
 from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
@@ -493,6 +494,8 @@ class DataContract:
             data_contract_specification = import_avro(data_contract_specification, source)
         elif format == "glue":
             data_contract_specification = import_glue(data_contract_specification, source)
+        elif format == "bigquery":
+            data_contract_specification = import_bigquery(data_contract_specification, source)
         else:
             print(f"Import format {format} not supported.")
 
