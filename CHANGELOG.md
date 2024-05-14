@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - datacontract catalog: Search form
 - `datacontract import --format bigquery`: Import from BigQuery format
+- `datacontract publish`: Publish the data contract to the Data Mesh Manager
 
 ## [0.10.3] - 2024-05-05
 
