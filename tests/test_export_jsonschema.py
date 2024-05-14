@@ -48,13 +48,16 @@ def test_to_jsonschemas():
       "type": "string"
     },
     "1_Auspraegung_Code": {
-      "type": "string"
+      "type": "string",
+      "enum": ["DG"]
     },
     "1_Auspraegung_Label": {
-      "type": "string"
+      "type": "string",
+      "enum": ["Deutschland"]
     },
     "2_Merkmal_Code": {
-      "type": "string"
+      "type": "string",
+      "enum": ["MONAT"]
     },
     "2_Merkmal_Label": {
       "type": "string"
@@ -107,7 +110,6 @@ def test_to_jsonschemas():
 """
 
     result = to_jsonschemas(data_contract)
-
     assert result["verbraucherpreisindex"] == json.loads(expected_json_schema)
 
 
@@ -163,6 +165,69 @@ def test_to_jsonschemas_complex():
     result = to_jsonschemas(data_contract)
 
     assert result["inventory"] == json.loads(expected_json_schema)
+
+
+def test_to_jsonschemas_complex_2():
+    data_contract_file = "fixtures/local-json-complex/datacontract.yaml"
+    file_content = read_file(data_contract_file=data_contract_file)
+    data_contract = DataContractSpecification.from_string(file_content)
+    expected_json_schema = """{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9]{8}$",
+      "minLength": 1,
+      "maxLength": 10
+    },
+    "sts_data": {
+      "type": "object",
+      "properties": {
+        "connection_test": {
+          "type": "string",
+          "enum": [
+            "SUCCESS",
+            "FAIL",
+            "NULL"
+          ]
+        },
+        "key_list": {
+          "type": "object",
+          "patternProperties": {
+            "^[0-5]$": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "pattern": "^[0-9]{8}$"
+                }
+              },
+              "required": [
+                "key"
+              ]
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "connection_test",
+        "key_list"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "sts_data"
+  ]
+}
+"""
+    result = to_jsonschemas(data_contract)
+    assert result["sts_data"] == json.loads(expected_json_schema)
 
 
 def read_file(data_contract_file):
