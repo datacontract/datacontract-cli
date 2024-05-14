@@ -221,14 +221,14 @@ class ImportFormat(str, Enum):
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
     source: Annotated[Optional[str], typer.Option(help="The path to the file or Glue Database that should be imported.")] = None,
-    table: Annotated[Optional[List[str]], typer.Option(help="List of table ids to import from the bigquery API (repeat for multiple table ids).")] = None,
-    bt_project_id: Annotated[Optional[str], typer.Option(help="The id of the project that we should query on bigtable.")] = None,
-    bt_dataset_id: Annotated[Optional[str], typer.Option(help="The id of the dataset that we should query on bigtable.")] = None,
+    bigquery_project: Annotated[Optional[str], typer.Option(help="The bigquery project id.")] = None,
+    bigquery_dataset: Annotated[Optional[str], typer.Option(help="The bigquery dataset id.")] = None,
+    bigquery_table: Annotated[Optional[List[str]], typer.Option(help="List of table ids to import from the bigquery API (repeat for multiple table ids, leave empty for all tables in the dataset).")] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
     """
-    result = DataContract().import_from_source(format, source, table, bt_project_id, bt_dataset_id)
+    result = DataContract().import_from_source(format, source, bigquery_table, bigquery_project, bigquery_dataset)
     console.print(result.to_yaml())
 
 

@@ -651,14 +651,16 @@ data products, find the true domain owner of a field attribute)
 
  Create a data contract from the given source location. Prints to stdout.
 
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format             [sql|avro|glue|bigquery]  The format of the source file. [default: None] [required]                                                                            │
-│ *  --table              TEXT                      List of table ids to import from the bigquery API (repeat for multiple table ids). [default: None] [required]                        │
-│ *  --bt-project-id        TEXT                      The id of the project that we should query on bigtable. [default: None] [required]                                                 │
-│ *  --bt-dataset-id        TEXT                      The id of the dataset that we should query on bigtable. [default: None] [required]                                                 │
-│    --source             TEXT                      The path to the file or Glue Database that should be imported. [default: None]                                                       │
-│    --help                                         Show this message and exit.                                                                                                          │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format                  [sql|avro|glue|bigquery]  The format of the source file. [default: None] [required]                                              │
+│    --source                  TEXT                      The path to the file or Glue Database that should be imported. [default: None]                         │
+│    --bigquery-project        TEXT                      The bigquery project id. [default: None]                                                               │
+│    --bigquery-dataset        TEXT                      The bigquery dataset id. [default: None]                                                               │
+│    --bigquery-table          TEXT                      List of table ids to import from the bigquery API (repeat for multiple table ids, leave empty for all  │
+│                                                        tables in the dataset).                                                                                │
+│                                                        [default: None]                                                                                        │
+│    --help                                              Show this message and exit.                                                                            │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 As shown, some options are only relevant in certain conditions: For `format` Bigtable we support to directly read off the Bigtable APIs.

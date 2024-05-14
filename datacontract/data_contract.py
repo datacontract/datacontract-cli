@@ -485,7 +485,7 @@ class DataContract:
         run.log_info(f"Using {server} for testing the examples")
         return server
 
-    def import_from_source(self, format: str, source: typing.Optional[str] = None, tables: typing.Optional[typing.List[str]] = None, bt_project_id: typing.Optional[str] = None, bt_dataset_id: typing.Optional[str] = None) -> DataContractSpecification:
+    def import_from_source(self, format: str, source: typing.Optional[str] = None, bigquery_tables: typing.Optional[typing.List[str]] = None, bigquery_project: typing.Optional[str] = None, bigquery_dataset: typing.Optional[str] = None) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
 
         if format == "sql":
@@ -498,7 +498,7 @@ class DataContract:
             if source is not None:
                 data_contract_specification = import_bigquery_from_json(data_contract_specification, source)
             else:
-                data_contract_specification = import_bigquery_from_api(data_contract_specification, tables, bt_project_id, bt_dataset_id)
+                data_contract_specification = import_bigquery_from_api(data_contract_specification, bigquery_tables, bigquery_project, bigquery_dataset)
         else:
             print(f"Import format {format} not supported.")
 

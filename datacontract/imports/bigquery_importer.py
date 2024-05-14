@@ -22,12 +22,15 @@ def import_bigquery_from_json(data_contract_specification: DataContractSpecifica
         )
     return convert_bigquery_schema(data_contract_specification, bigquery_schema)
 
-def import_bigquery_from_api(data_contract_specification: DataContractSpecification, tables: List[str], bt_project_id: str, bt_dataset_id: str) -> DataContractSpecification:
-    client = bigquery.Client(project=bt_project_id)
+def import_bigquery_from_api(data_contract_specification: DataContractSpecification, bigquery_tables: List[str], bigquery_project: str, bigquery_dataset: str) -> DataContractSpecification:
+    client = bigquery.Client(project=bigquery_project)
 
-    for table in tables:
+    if bigquery_tables is None:
+        bigquery_tables = fetch_table_names(client, bigquery_dataset)
+
+    for table in bigquery_tables:
         try:
-            api_table = client.get_table("{}.{}.{}".format(bt_project_id, bt_dataset_id, table))
+            api_table = client.get_table("{}.{}.{}".format(bigquery_project, bigquery_dataset, table))
 
         except ValueError as e:
              raise DataContractException(
@@ -44,13 +47,21 @@ def import_bigquery_from_api(data_contract_specification: DataContractSpecificat
                 type="request",
                 result="failed",
                 name="Query bigtable Schema from API",
-                reason=f"Table {table} bnot found on bigtable schema Project {bt_project_id}, dataset {bt_dataset_id}.",
+                reason=f"Table {table} bnot found on bigtable schema Project {bigquery_project}, dataset {bigquery_dataset}.",
                 engine="datacontract",
             )
 
         convert_bigquery_schema(data_contract_specification, api_table.to_api_repr())
 
     return data_contract_specification
+
+def fetch_table_names(client: bigquery.Client, dataset: str) -> List[str]:
+    table_names = []
+    api_tables = client.list_tables(dataset)
+    for api_table in api_tables:
+        table_names.append(api_table.table_id)
+
+    return table_names
 
 def convert_bigquery_schema(data_contract_specification: DataContractSpecification, bigquery_schema: dict) -> DataContractSpecification:
     if data_contract_specification.models is None:
