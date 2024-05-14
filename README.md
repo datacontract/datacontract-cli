@@ -556,26 +556,31 @@ models:
                                                                                                                                                                            
  Convert data contract to a specific format. Prints to stdout or to the specified output file.                                                                                                     
                                                                                                                                                                            
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                                                         │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format        [html|jsonschema|pydantic-model|sodacl|dbt|dbt-sources|dbt-staging-sql|odcs|rd  The export format. [default: None] [required]                       │
-│                    f|avro|protobuf|great-expectations|terraform|avro-idl|sql|sql-query]                                                                                │
-│    --server        TEXT                                                                       The server name to export. [default: None]                               │
-│    --model         TEXT                                                                       Use the key of the model in the data contract yaml file to refer to a    │
-│                                                                                               model, e.g., `orders`, or `all` for all models (default).                │
-│                                                                                               [default: all]                                                           │
-│    --help                                                                                     Show this message and exit.                                              │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ RDF Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --rdf-base        TEXT  [rdf] The base URI used to generate the RDF graph. [default: None]                                                                             │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ SQL Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --sql-server-type        TEXT  [sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified │
-│                                servers in the data contract.                                                                                                            │
-│                                [default: auto]                                                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|dbt-staging  The export format. [default: None] [required]                  │
+│                    -sql|odcs|rdf|avro|protobuf|great-expectations|terraform|avro                                                                 │
+│                    -idl|sql|sql-query|html|bigquery]                                                                                             │
+│    --output        PATH                                                           Specify the file path where the exported data will be saved.   │
+│                                                                                   If no path is provided, the output will be printed to stdout.  │
+│                                                                                   [default: None]                                                │
+│    --server        TEXT                                                           The server name to export. [default: None]                     │
+│    --model         TEXT                                                           Use the key of the model in the data contract yaml file to     │
+│                                                                                   refer to a model, e.g., `orders`, or `all` for all models      │
+│                                                                                   (default).                                                     │
+│                                                                                   [default: all]                                                 │
+│    --help                                                                         Show this message and exit.                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ RDF Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --rdf-base        TEXT  [rdf] The base URI used to generate the RDF graph. [default: None]                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ SQL Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --sql-server-type        TEXT  [sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql    │
+│                                dialect via the specified servers in the data contract.                                                           │
+│                                [default: auto]                                                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -588,21 +593,21 @@ Available export options:
 
 | Type                 | Description                                             | Status |
 |----------------------|---------------------------------------------------------|--------|
-| `html`               | Export to HTML                                          | ✅      | 
-| `jsonschema`         | Export to JSON Schema                                   | ✅      | 
-| `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅      | 
-| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
-| `dbt`                | Export to dbt models in YAML format                     | ✅      |
-| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅      |
-| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅      |
-| `rdf`                | Export data contract to RDF representation in N3 format | ✅      |
-| `avro`               | Export to AVRO models                                   | ✅      |
-| `protobuf`           | Export to Protobuf                                      | ✅      |
-| `terraform`          | Export to terraform resources                           | ✅      |
-| `sql`                | Export to SQL DDL                                       | ✅      |
-| `sql-query`          | Export to SQL Query                                     | ✅      |
-| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
-| `bigquery`           | Export to BigQuery Schemas                              | TBD    |
+| `html`               | Export to HTML                                          | ✅     | 
+| `jsonschema`         | Export to JSON Schema                                   | ✅     | 
+| `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅     | 
+| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅     |
+| `dbt`                | Export to dbt models in YAML format                     | ✅     |
+| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅     |
+| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅     |
+| `rdf`                | Export data contract to RDF representation in N3 format | ✅     |
+| `avro`               | Export to AVRO models                                   | ✅     |
+| `protobuf`           | Export to Protobuf                                      | ✅     |
+| `terraform`          | Export to terraform resources                           | ✅     |
+| `sql`                | Export to SQL DDL                                       | ✅     |
+| `sql-query`          | Export to SQL Query                                     | ✅     |
+| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅     |
+| `bigquery`           | Export to BigQuery Schemas                              | ✅     |
 | `pydantic`           | Export to pydantic models                               | TBD    |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
