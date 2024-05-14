@@ -30,7 +30,7 @@ from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.imports.avro_importer import import_avro
-from datacontract.imports.bigquery_importer import import_bigquery
+from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import \
@@ -485,7 +485,7 @@ class DataContract:
         run.log_info(f"Using {server} for testing the examples")
         return server
 
-    def import_from_source(self, format: str, source: str) -> DataContractSpecification:
+    def import_from_source(self, format: str, source: typing.Optional[str] = None, bigquery_tables: typing.Optional[typing.List[str]] = None, bigquery_project: typing.Optional[str] = None, bigquery_dataset: typing.Optional[str] = None) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
 
         if format == "sql":
@@ -495,7 +495,10 @@ class DataContract:
         elif format == "glue":
             data_contract_specification = import_glue(data_contract_specification, source)
         elif format == "bigquery":
-            data_contract_specification = import_bigquery(data_contract_specification, source)
+            if source is not None:
+                data_contract_specification = import_bigquery_from_json(data_contract_specification, source)
+            else:
+                data_contract_specification = import_bigquery_from_api(data_contract_specification, bigquery_tables, bigquery_project, bigquery_dataset)
         else:
             print(f"Import format {format} not supported.")
 
