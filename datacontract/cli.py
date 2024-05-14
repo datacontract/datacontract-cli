@@ -11,11 +11,9 @@ from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
-from datacontract.catalog.catalog import create_index_html, \
-    create_data_contract_html
+from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract
-from datacontract.init.download_datacontract_file import \
-    download_datacontract_file, FileExistsException
+from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
 
 console = Console()
 
@@ -158,12 +156,18 @@ class ExportFormat(str, Enum):
     sql = "sql"
     sql_query = "sql-query"
     html = "html"
+    go = "go"
 
 
 @app.command()
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
-    output: Annotated[Path, typer.Option(help="Specify the file path where the exported data will be saved. If no path is provided, the output will be printed to stdout.")] = None,
+    output: Annotated[
+        Path,
+        typer.Option(
+            help="Specify the file path where the exported data will be saved. If no path is provided, the output will be printed to stdout."
+        ),
+    ] = None,
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     model: Annotated[
         str,
@@ -204,7 +208,7 @@ def export(
     if output is None:
         console.print(result, markup=False)
     else:
-        with output.open('w') as f:
+        with output.open("w") as f:
             f.write(result)
         console.print(f"Written result to {output}")
 
