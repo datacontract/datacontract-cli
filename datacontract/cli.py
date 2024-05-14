@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
+from typing import List
 
 from datacontract.catalog.catalog import create_index_html, \
     create_data_contract_html
@@ -219,12 +220,15 @@ class ImportFormat(str, Enum):
 @app.command(name="import")
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
-    source: Annotated[str, typer.Option(help="The path to the file or Glue Database that should be imported.")],
+    source: Annotated[Optional[str], typer.Option(help="The path to the file or Glue Database that should be imported.")] = None,
+    table: Annotated[Optional[List[str]], typer.Option(help="List of table ids to import from the bigquery API (repeat for multiple table ids).")] = None,
+    bt_project_id: Annotated[Optional[str], typer.Option(help="The id of the project that we should query on bigtable.")] = None,
+    bt_dataset_id: Annotated[Optional[str], typer.Option(help="The id of the dataset that we should query on bigtable.")] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
     """
-    result = DataContract().import_from_source(format, source)
+    result = DataContract().import_from_source(format, source, table, bt_project_id, bt_dataset_id)
     console.print(result.to_yaml())
 
 
