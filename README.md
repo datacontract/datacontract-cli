@@ -184,6 +184,7 @@ Commands
 - [changelog](#changelog)
 - [diff](#diff)
 - [catalog](#catalog)
+- [publish](#publish)
 
 ### init
 
@@ -767,6 +768,21 @@ Available import options:
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+### Publish
+
+```
+
+ Usage: datacontract publish [OPTIONS] [LOCATION]
+
+ Publish the data contract to the Data Mesh Manager.
+
+╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]             │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
 
 ## Integrations
 

@@ -244,7 +244,7 @@ def publish(
     ] = "datacontract.yaml",
 ):
     """
-    Publish the data contract to the Data Mesh Manager
+    Publish the data contract to the Data Mesh Manager.
     """
     publish_to_datamesh_manager(
         data_contract=DataContract(data_contract_file=location),
