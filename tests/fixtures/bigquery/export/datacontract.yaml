@@ -1,0 +1,183 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+servers:
+  bigquery:
+    type: bigquery
+    project: datameshexample-product
+    dataset: datacontract_cli_test_dataset
+    dataProductId: my-dataproduct
+    outputPortId: bigquery
+models:
+  BQ_Example:
+    description: This is a test contract containing all Datacontracts data types to check conversion to Bigquery
+    type: table
+    fields:
+      string_field:
+        type: string
+        required: false
+        description: a simple nullable string field
+      required_string_field:
+        type: string
+        required: true
+        description: a simple non-nullable string field
+      maxlength_string_field:
+        type: string
+        required: false
+        description: a string field with a maximum length
+        maxLength: 42
+      maxlength_required_string_field:
+        type: string
+        required: true
+        description: a required string field with a maximum length
+        maxLength: 42
+      varchar_field:
+        type: varchar
+        required: false
+        description: This is declared as varchar but should map to STRING
+      text_field:
+        type: text
+        required: false
+        description: This is declared as text but should map to STRING and allow a maximum length
+        maxLength: 42
+      bytes_field:
+        type: bytes
+        required: true
+        description: a required bytes field
+        maxLength: 42
+      int_field:
+        type: int
+        required: false
+        description: a simple int field
+      integer_field:
+        type: integer
+        required: false
+        description: a simple integer field
+      long_field:
+        type: long
+        required: false
+        description: a simple long field
+      bigint_field:
+        type: bigint
+        required: false
+        description: a simple bigint field
+      float_field:
+        type: float
+        required: false
+        description: a simple float field
+      boolean_field:
+        type: boolean
+        required: false
+        description: a simple boolean field
+      timestamp_field:
+        type: timestamp
+        required: false
+        description: a simple timestamp field
+      timestamp_tz_field:
+        type: timestamp_tz
+        required: false
+        description: a simple timestamp_tz field
+      timestamp_ntz_field:
+        type: timestamp_ntz
+        required: false
+        description: a simple timestamp_ntz field
+      date_field:
+        type: date
+        required: false
+        description: a simple date field
+      number_field:
+        type: number
+        required: false
+        description: a simple number field with precision 5 and scale 3
+        precision: 5
+        scale: 3
+      decimal_field:
+        type: decimal
+        required: false
+        description: a simple decimal field with precision 5 and scale 3
+        precision: 5
+        scale: 3
+      numeric_field:
+        type: numeric
+        required: false
+        description: a simple numeric field with precision 5 and scale 3
+        precision: 5
+        scale: 3
+      double_field:
+        type: double
+        required: false
+        description: a simple double field with precision 5 and scale 3
+        precision: 5
+        scale: 3
+      null_field:
+        type: "null"
+        required: false
+        description: a null field that should get mapped to STRING
+      object_field:
+        type: object
+        required: false
+        description: an object field with two subfields
+        fields:
+          subfield_1:
+            type: string
+            required: true
+            description: a required string field
+          subfield_2:
+            type: string
+            required: false
+            description: a non required string field
+      record_field:
+        type: record
+        required: false
+        description: an record field with two subfields
+        fields:
+          subfield_1:
+            type: boolean
+            required: true
+            description: a required boolean field
+          subfield_2:
+            type: date
+            required: false
+            description: a non required date field
+      struct_field:
+        type: struct
+        required: false
+        description: an struct field with two subfields
+        fields:
+          subfield_1:
+            type: bytes
+            required: true
+            description: a required bytes field
+          subfield_2:
+            type: int
+            required: false
+            description: a non required int field
+      string_array_field:
+        type: array
+        required: false
+        description: a string array
+        items:
+          type: string
+      int_array_field:
+        type: array
+        required: false
+        description: an int array
+        items:
+          type: int
+      complex_array_field:
+        type: array
+        required: false
+        description: an array of objects that has  multiple fields that should carry through
+        items:
+          type: object
+          fields:          
+            Field1:
+              type: boolean
+              required: false
+              description: a boolean field
+            Field2:
+              type: double
+              required: true
+              description: a double field

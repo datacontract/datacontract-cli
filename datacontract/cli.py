@@ -158,6 +158,7 @@ class ExportFormat(str, Enum):
     sql = "sql"
     sql_query = "sql-query"
     html = "html"
+    bigquery = "bigquery"
 
 
 @app.command()

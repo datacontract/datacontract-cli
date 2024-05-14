@@ -1,0 +1,273 @@
+{
+  "kind": "bigquery#table",
+  "tableReference": {
+    "datasetId": "datacontract_cli_test_dataset",
+    "projectId": "datameshexample-product",
+    "tableId": "BQ_Example"
+  },
+  "description": "This is a test contract containing all Datacontracts data types to check conversion to Bigquery",
+  "schema": {
+    "fields": [
+      {
+        "name": "string_field",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "a simple nullable string field",
+        "maxLength": null
+      },
+      {
+        "name": "required_string_field",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "a simple non-nullable string field",
+        "maxLength": null
+      },
+      {
+        "name": "maxlength_string_field",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "a string field with a maximum length",
+        "maxLength": 42
+      },
+      {
+        "name": "maxlength_required_string_field",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "description": "a required string field with a maximum length",
+        "maxLength": 42
+      },
+      {
+        "name": "varchar_field",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "This is declared as varchar but should map to STRING",
+        "maxLength": null
+      },
+      {
+        "name": "text_field",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "This is declared as text but should map to STRING and allow a maximum length",
+        "maxLength": 42
+      },
+      {
+        "name": "bytes_field",
+        "type": "BYTES",
+        "mode": "REQUIRED",
+        "description": "a required bytes field"
+      },
+      {
+        "name": "int_field",
+        "type": "INTEGER",
+        "mode": "NULLABLE",
+        "description": "a simple int field"
+      },
+      {
+        "name": "integer_field",
+        "type": "INTEGER",
+        "mode": "NULLABLE",
+        "description": "a simple integer field"
+      },
+      {
+        "name": "long_field",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "a simple long field"
+      },
+      {
+        "name": "bigint_field",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "a simple bigint field"
+      },
+      {
+        "name": "float_field",
+        "type": "FLOAT",
+        "mode": "NULLABLE",
+        "description": "a simple float field"
+      },
+      {
+        "name": "boolean_field",
+        "type": "BOOLEAN",
+        "mode": "NULLABLE",
+        "description": "a simple boolean field"
+      },
+      {
+        "name": "timestamp_field",
+        "type": "TIMESTAMP",
+        "mode": "NULLABLE",
+        "description": "a simple timestamp field"
+      },
+      {
+        "name": "timestamp_tz_field",
+        "type": "TIMESTAMP",
+        "mode": "NULLABLE",
+        "description": "a simple timestamp_tz field"
+      },
+      {
+        "name": "timestamp_ntz_field",
+        "type": "TIME",
+        "mode": "NULLABLE",
+        "description": "a simple timestamp_ntz field"
+      },
+      {
+        "name": "date_field",
+        "type": "DATE",
+        "mode": "NULLABLE",
+        "description": "a simple date field"
+      },
+      {
+        "name": "number_field",
+        "type": "NUMERIC",
+        "mode": "NULLABLE",
+        "description": "a simple number field with precision 5 and scale 3",
+        "precision": 5,
+        "scale": 3
+      },
+      {
+        "name": "decimal_field",
+        "type": "NUMERIC",
+        "mode": "NULLABLE",
+        "description": "a simple decimal field with precision 5 and scale 3",
+        "precision": 5,
+        "scale": 3
+      },
+      {
+        "name": "numeric_field",
+        "type": "NUMERIC",
+        "mode": "NULLABLE",
+        "description": "a simple numeric field with precision 5 and scale 3",
+        "precision": 5,
+        "scale": 3
+      },
+      {
+        "name": "double_field",
+        "type": "BIGNUMERIC",
+        "mode": "NULLABLE",
+        "description": "a simple double field with precision 5 and scale 3",
+        "precision": 5,
+        "scale": 3
+      },
+      {
+        "name": "null_field",
+        "type": "STRING",
+        "mode": "NULLABLE",
+        "description": "a null field that should get mapped to STRING",
+        "maxLength": null
+      },
+      {
+        "name": "object_field",
+        "type": "RECORD",
+        "mode": "NULLABLE",
+        "description": "an object field with two subfields",
+        "fields": [
+          {
+            "name": "subfield_1",
+            "type": "STRING",
+            "mode": "REQUIRED",
+            "description": "a required string field",
+            "maxLength": null
+          },
+          {
+            "name": "subfield_2",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": "a non required string field",
+            "maxLength": null
+          }
+        ]
+      },
+      {
+        "name": "record_field",
+        "type": "RECORD",
+        "mode": "NULLABLE",
+        "description": "an record field with two subfields",
+        "fields": [
+          {
+            "name": "subfield_1",
+            "type": "BOOLEAN",
+            "mode": "REQUIRED",
+            "description": "a required boolean field"
+          },
+          {
+            "name": "subfield_2",
+            "type": "DATE",
+            "mode": "NULLABLE",
+            "description": "a non required date field"
+          }
+        ]
+      },
+      {
+        "name": "struct_field",
+        "type": "STRUCT",
+        "mode": "NULLABLE",
+        "description": "an struct field with two subfields",
+        "fields": [
+          {
+            "name": "subfield_1",
+            "type": "BYTES",
+            "mode": "REQUIRED",
+            "description": "a required bytes field"
+          },
+          {
+            "name": "subfield_2",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": "a non required int field"
+          }
+        ]
+      },
+      {
+        "name": "string_array_field",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "description": "a string array",
+        "fields": [
+          {
+            "name": "string_array_field_1",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": "",
+            "maxLength": null
+          }
+        ]
+      },
+      {
+        "name": "int_array_field",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "description": "an int array",
+        "fields": [
+          {
+            "name": "int_array_field_1",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": ""
+          }
+        ]
+      },
+      {
+        "name": "complex_array_field",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "description": "an array of objects that has  multiple fields that should carry through",
+        "fields": [
+          {
+            "name": "Field1",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": "a boolean field"
+          },
+          {
+            "name": "Field2",
+            "type": "BIGNUMERIC",
+            "mode": "REQUIRED",
+            "description": "a double field",
+            "precision": null,
+            "scale": null
+          }
+        ]
+      }
+    ]
+  }
+}

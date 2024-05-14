@@ -16,6 +16,7 @@ from datacontract.engines.fastjsonschema.check_jsonschema import \
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.export.avro_idl_converter import to_avro_idl
+from datacontract.export.bigquery_converter import to_bigquery_json
 from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.great_expectations_converter import \
@@ -290,28 +291,8 @@ class DataContract:
             inline_quality=True,
         )
         if export_format == "jsonschema":
-            if data_contract.models is None:
-                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
-
-            model_names = list(data_contract.models.keys())
-
-            if model == "all":
-                if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(
-                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
-                    )
-
-                model_name, model_value = next(iter(data_contract.models.items()))
-                return to_jsonschema_json(model_name, model_value)
-            else:
-                model_name = model
-                model_value = data_contract.models.get(model_name)
-                if model_value is None:
-                    raise RuntimeError(
-                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
-                    )
-
-                return to_jsonschema_json(model_name, model_value)
+            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
+            return to_jsonschema_json(model_name, model_value)
         if export_format == "sodacl":
             return to_sodacl_yaml(data_contract)
         if export_format == "dbt":
@@ -319,28 +300,8 @@ class DataContract:
         if export_format == "dbt-sources":
             return to_dbt_sources_yaml(data_contract, self._server)
         if export_format == "dbt-staging-sql":
-            if data_contract.models is None:
-                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
-
-            model_names = list(data_contract.models.keys())
-
-            if model == "all":
-                if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(
-                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
-                    )
-
-                model_name, model_value = next(iter(data_contract.models.items()))
-                return to_dbt_staging_sql(data_contract, model_name, model_value)
-            else:
-                model_name = model
-                model_value = data_contract.models.get(model_name)
-                if model_value is None:
-                    raise RuntimeError(
-                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
-                    )
-
-                return to_dbt_staging_sql(data_contract, model_name, model_value)
+            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
+            return to_dbt_staging_sql(data_contract, model_name, model_value)
         if export_format == "odcs":
             return to_odcs_yaml(data_contract)
         if export_format == "rdf":
@@ -348,28 +309,8 @@ class DataContract:
         if export_format == "protobuf":
             return to_protobuf(data_contract)
         if export_format == "avro":
-            if data_contract.models is None:
-                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
-
-            model_names = list(data_contract.models.keys())
-
-            if model == "all":
-                if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(
-                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
-                    )
-
-                model_name, model_value = next(iter(data_contract.models.items()))
-                return to_avro_schema_json(model_name, model_value)
-            else:
-                model_name = model
-                model_value = data_contract.models.get(model_name)
-                if model_value is None:
-                    raise RuntimeError(
-                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
-                    )
-
-                return to_avro_schema_json(model_name, model_value)
+            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
+            return to_avro_schema_json(model_name, model_value)
         if export_format == "avro-idl":
             return to_avro_idl(data_contract)
         if export_format == "terraform":
@@ -378,59 +319,24 @@ class DataContract:
             server_type = self._determine_sql_server_type(data_contract, sql_server_type)
             return to_sql_ddl(data_contract, server_type=server_type)
         if export_format == "sql-query":
-            if data_contract.models is None:
-                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
-
+            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
             server_type = self._determine_sql_server_type(data_contract, sql_server_type)
-
-            model_names = list(data_contract.models.keys())
-
-            if model == "all":
-                if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(
-                        f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
-                    )
-
-                model_name, model_value = next(iter(data_contract.models.items()))
-                return to_sql_query(data_contract, model_name, model_value, server_type)
-            else:
-                model_name = model
-                model_value = data_contract.models.get(model_name)
-                if model_value is None:
-                    raise RuntimeError(
-                        f"Model {model_name} not found in the data contract. Available models: {model_names}"
-                    )
-
-                return to_sql_query(data_contract, model_name, model_value, server_type)
-
+            return to_sql_query(data_contract, model_name, model_value, server_type)
         if export_format == "great-expectations":
-            if data_contract.models is None:
-                raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
-
-            model_names = list(data_contract.models.keys())
-
-            if model == "all":
-                if len(data_contract.models.items()) != 1:
-                    raise RuntimeError(
-                        f"Export to {export_format} is model specific. Specify the model via --model "
-                        f"$MODEL_NAME. Available models: {model_names}"
-                    )
-
-                model_name, model_value = next(iter(data_contract.models.items()))
-                return to_great_expectations(data_contract, model_name)
-            else:
-                model_name = model
-                model_value = data_contract.models.get(model_name)
-                if model_value is None:
-                    raise RuntimeError(
-                        f"Model {model_name} not found in the data contract. " f"Available models: {model_names}"
-                    )
-
-                return to_great_expectations(data_contract, model_name)
+            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
+            return to_great_expectations(data_contract, model_name)
         if export_format == "pydantic-model":
             return to_pydantic_model_str(data_contract)
         if export_format == "html":
             return to_html(data_contract)
+        if export_format == "bigquery":
+            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
+            found_server = data_contract.servers.get(self._server)
+            if found_server is None:
+                raise RuntimeError(f"Export to {export_format} requires selecting a bigquery server from the data contract.")
+            if found_server.type != 'bigquery':
+                raise RuntimeError(f"Export to {export_format} requires selecting a bigquery server from the data contract.")
+            return to_bigquery_json(model_name, model_value, found_server)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
@@ -484,6 +390,29 @@ class DataContract:
         )
         run.log_info(f"Using {server} for testing the examples")
         return server
+    
+    def _check_models_for_export(self, data_contract: DataContractSpecification, model: str, export_format: str) -> typing.Tuple[str, str]:
+        if data_contract.models is None:
+            raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
+
+        model_names = list(data_contract.models.keys())
+
+        if model == "all":
+            if len(data_contract.models.items()) != 1:
+                raise RuntimeError(
+                    f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
+                )
+
+            model_name, model_value = next(iter(data_contract.models.items()))
+        else:
+            model_name = model
+            model_value = data_contract.models.get(model_name)
+            if model_value is None:
+                raise RuntimeError(
+                    f"Model {model_name} not found in the data contract. Available models: {model_names}"
+                )
+            
+        return model_name, model_value
 
     def import_from_source(self, format: str, source: typing.Optional[str] = None, bigquery_tables: typing.Optional[typing.List[str]] = None, bigquery_project: typing.Optional[str] = None, bigquery_dataset: typing.Optional[str] = None) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
