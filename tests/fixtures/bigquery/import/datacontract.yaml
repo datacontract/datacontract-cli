@@ -1,0 +1,99 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  BQ_Example_Table:
+    description: This is a test table that contains all the possible field types for
+      testing
+    type: table
+    fields:
+      String_field:
+        type: string
+        required: false
+        description: A simple String field
+      Nonnullable_String_field:
+        type: string
+        required: true
+        description: A required String field
+      Maxlength_string_field:
+        type: string
+        required: true
+        description: A required String field with a maximum length
+        maxLength: 42
+      Bytes field:
+        type: bytes
+        required: false
+        description: A_nullable_bytes_field
+      Bytes_field_with_maxlength:
+        type: bytes
+        required: false
+        description: An bytes field with maxlength (which doesn't translate into datacontracts)
+      Int_field:
+        type: int
+        required: false
+        description: An Integer field
+      Float_field:
+        type: float
+        required: false
+        description: A float field
+      Boolean_field:
+        type: boolean
+        required: false
+        description: A boolean field
+      Timestamp_field:
+        type: timestamp
+        required: false
+        description: A Timestamp field
+      Date_field:
+        type: date
+        required: false
+        description: A Date field
+      Time_Field:
+        type: timestamp_ntz
+        required: false
+        description: A time field
+      Datetime_Field:
+        type: timestamp
+        required: false
+        description: A Datetime field
+      Numeric_Field:
+        type: numeric
+        required: false
+        description: A Numeric field with precision 5 and scale 3
+        precision: 5
+        scale: 3
+      Bignumeric_field:
+        type: double
+        required: false
+        description: A bignumeric field with precision 8 and sclae 4
+        precision: 8
+        scale: 4
+      Record_field:
+        type: object
+        required: false
+        description: A record field with two subfields
+        fields:
+          subfield_1:
+            type: string
+            required: false
+            description: subfield 1 of type string
+          subfield_2:
+            type: int
+            required: false
+            description: Subfield 2 of type integer
+      Range_field:
+        type: array
+        required: false
+        description: a datetime range
+        items:
+          type: timestamp
+      Geography_Field:
+        type: object
+        required: false
+        description: a geography field
+      JSON_Field:
+        type: object
+        required: false
+        description: a json field

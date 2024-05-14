@@ -115,7 +115,7 @@ $ datacontract test --examples datacontract.yaml
 # export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
 $ datacontract export --format html datacontract.yaml > datacontract.html
 
-# import avro (other formats: sql, ...)
+# import avro (other formats: sql, glue, bigquery...)
 $ datacontract import --format avro --source avro_schema.avsc
 
 # find differences between to data contracts
@@ -652,9 +652,10 @@ data products, find the true domain owner of a field attribute)
  Create a data contract from the given source location. Prints to stdout.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format        [sql|avro|glue]  The format of the source file. [default: None] [required]                                    │
-│ *  --source        TEXT             The path to the file or Glue Database that should be imported. [default: None] [required]    │
-│    --help                           Show this message and exit.                                                                  │
+│ *  --format        [sql|avro|glue|bigquery]  The format of the source file.                                                     │
+│                    [default: None] [required]                                                                                   │
+│ *  --source        TEXT             The path to the file or Glue Database that should be imported. [default: None] [required]   │
+│    --help                           Show this message and exit.                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -662,6 +663,10 @@ Example:
 ```bash
 # Example import from SQL DDL
 datacontract import --format sql --source my_ddl.sql
+```
+```bash
+# Example import from Bigquery JSON
+datacontract import --format bigquery --source my_bigquery_table.json
 ```
 
 Available import options:
@@ -673,7 +678,7 @@ Available import options:
 | `glue`             | Import from AWS Glue DataCatalog               | ✅     |
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `jsonschema`       | Import from JSON Schemas                       | TBD     |
-| `bigquery`         | Import from BigQuery Schemas                   | TBD     |
+| `bigquery`         | Import from BigQuery Schemas                   | ✅     |
 | `dbt`              | Import from dbt models                         | TBD     |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
 | Missing something? | Please create an issue on GitHub               | TBD     |
