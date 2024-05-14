@@ -7,116 +7,116 @@
   },
   "description": "This is a test contract containing all Datacontracts data types to check conversion to Bigquery",
   "schema": {
-    "fields": {
-      "string_field": {
+    "fields": [
+      {
         "name": "string_field",
         "type": "STRING",
         "mode": "NULLABLE",
         "description": "a simple nullable string field",
         "maxLength": null
       },
-      "required_string_field": {
+      {
         "name": "required_string_field",
         "type": "STRING",
         "mode": "REQUIRED",
         "description": "a simple non-nullable string field",
         "maxLength": null
       },
-      "maxlength_string_field": {
+      {
         "name": "maxlength_string_field",
         "type": "STRING",
         "mode": "NULLABLE",
         "description": "a string field with a maximum length",
         "maxLength": 42
       },
-      "maxlength_required_string_field": {
+      {
         "name": "maxlength_required_string_field",
         "type": "STRING",
         "mode": "REQUIRED",
         "description": "a required string field with a maximum length",
         "maxLength": 42
       },
-      "varchar_field": {
+      {
         "name": "varchar_field",
         "type": "STRING",
         "mode": "NULLABLE",
         "description": "This is declared as varchar but should map to STRING",
         "maxLength": null
       },
-      "text_field": {
+      {
         "name": "text_field",
         "type": "STRING",
         "mode": "NULLABLE",
         "description": "This is declared as text but should map to STRING and allow a maximum length",
         "maxLength": 42
       },
-      "bytes_field": {
+      {
         "name": "bytes_field",
         "type": "BYTES",
         "mode": "REQUIRED",
         "description": "a required bytes field"
       },
-      "int_field": {
+      {
         "name": "int_field",
         "type": "INTEGER",
         "mode": "NULLABLE",
         "description": "a simple int field"
       },
-      "integer_field": {
+      {
         "name": "integer_field",
         "type": "INTEGER",
         "mode": "NULLABLE",
         "description": "a simple integer field"
       },
-      "long_field": {
+      {
         "name": "long_field",
         "type": "INT64",
         "mode": "NULLABLE",
         "description": "a simple long field"
       },
-      "bigint_field": {
+      {
         "name": "bigint_field",
         "type": "INT64",
         "mode": "NULLABLE",
         "description": "a simple bigint field"
       },
-      "float_field": {
+      {
         "name": "float_field",
         "type": "FLOAT",
         "mode": "NULLABLE",
         "description": "a simple float field"
       },
-      "boolean_field": {
+      {
         "name": "boolean_field",
         "type": "BOOLEAN",
         "mode": "NULLABLE",
         "description": "a simple boolean field"
       },
-      "timestamp_field": {
+      {
         "name": "timestamp_field",
         "type": "TIMESTAMP",
         "mode": "NULLABLE",
         "description": "a simple timestamp field"
       },
-      "timestamp_tz_field": {
+      {
         "name": "timestamp_tz_field",
         "type": "TIMESTAMP",
         "mode": "NULLABLE",
         "description": "a simple timestamp_tz field"
       },
-      "timestamp_ntz_field": {
+      {
         "name": "timestamp_ntz_field",
         "type": "TIME",
         "mode": "NULLABLE",
         "description": "a simple timestamp_ntz field"
       },
-      "date_field": {
+      {
         "name": "date_field",
         "type": "DATE",
         "mode": "NULLABLE",
         "description": "a simple date field"
       },
-      "number_field": {
+      {
         "name": "number_field",
         "type": "NUMERIC",
         "mode": "NULLABLE",
@@ -124,7 +124,7 @@
         "precision": 5,
         "scale": 3
       },
-      "decimal_field": {
+      {
         "name": "decimal_field",
         "type": "NUMERIC",
         "mode": "NULLABLE",
@@ -132,7 +132,7 @@
         "precision": 5,
         "scale": 3
       },
-      "numeric_field": {
+      {
         "name": "numeric_field",
         "type": "NUMERIC",
         "mode": "NULLABLE",
@@ -140,7 +140,7 @@
         "precision": 5,
         "scale": 3
       },
-      "double_field": {
+      {
         "name": "double_field",
         "type": "BIGNUMERIC",
         "mode": "NULLABLE",
@@ -148,14 +148,14 @@
         "precision": 5,
         "scale": 3
       },
-      "null_field": {
+      {
         "name": "null_field",
         "type": "STRING",
         "mode": "NULLABLE",
         "description": "a null field that should get mapped to STRING",
         "maxLength": null
       },
-      "object_field": {
+      {
         "name": "object_field",
         "type": "RECORD",
         "mode": "NULLABLE",
@@ -177,7 +177,7 @@
           }
         ]
       },
-      "record_field": {
+      {
         "name": "record_field",
         "type": "RECORD",
         "mode": "NULLABLE",
@@ -197,7 +197,7 @@
           }
         ]
       },
-      "struct_field": {
+      {
         "name": "struct_field",
         "type": "STRUCT",
         "mode": "NULLABLE",
@@ -217,7 +217,7 @@
           }
         ]
       },
-      "string_array_field": {
+      {
         "name": "string_array_field",
         "type": "RECORD",
         "mode": "REPEATED",
@@ -232,7 +232,7 @@
           }
         ]
       },
-      "int_array_field": {
+      {
         "name": "int_array_field",
         "type": "RECORD",
         "mode": "REPEATED",
@@ -246,7 +246,7 @@
           }
         ]
       },
-      "complex_array_field": {
+      {
         "name": "complex_array_field",
         "type": "RECORD",
         "mode": "REPEATED",
@@ -268,6 +268,6 @@
           }
         ]
       }
-    }
+    ]
   }
 }

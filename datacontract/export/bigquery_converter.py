@@ -11,7 +11,6 @@ def to_bigquery_json(model_name: str, model_value: Model, server: Server) -> str
     bigquery_table = to_bigquery_schema(model_name, model_value, server)
     return json.dumps(bigquery_table, indent=2)
 
-
 def to_bigquery_schema(model_name: str, model_value: Model, server: Server) -> dict:
     return {
         "kind": "bigquery#table",
@@ -22,17 +21,9 @@ def to_bigquery_schema(model_name: str, model_value: Model, server: Server) -> d
         },
         "description": model_value.description,
         "schema": {
-            "fields": to_fields(model_value.fields)
+            "fields": to_fields_array(model_value.fields)
             }
     }
-
-
-def to_fields(fields: Dict[str, Field]) -> dict:
-    bq_fields = {}
-    for field_name, field in fields.items():
-        bq_fields[field_name] = to_field(field_name, field)
-
-    return bq_fields
 
 def to_fields_array(fields: Dict[str, Field]) -> List[Dict[str, Field]]:
     bq_fields = []
