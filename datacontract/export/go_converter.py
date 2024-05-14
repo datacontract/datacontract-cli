@@ -4,15 +4,14 @@ import re
 
 
 def to_go_structs(contract: spec.DataContractSpecification) -> str:
-
-    result = 'package main\n\n'
+    result = "package main\n\n"
 
     for key in contract.models.keys():
         go_structs = generate_go_struct(contract.models[key], key)
         for go_struct in go_structs:
             # print(go_struct + "\n\n")
             result += f"\n{go_struct}\n"
-    
+
     return result
 
 
@@ -35,7 +34,7 @@ def python_type_to_go_type(py_type) -> str:
 
 
 def to_camel_case(snake_str) -> str:
-    return ''.join(word.capitalize() for word in re.split(r'_|(?<!^)(?=[A-Z])', snake_str))
+    return "".join(word.capitalize() for word in re.split(r"_|(?<!^)(?=[A-Z])", snake_str))
 
 
 def get_subtype(field_info, nested_structs, struct_name, camel_case_name) -> str:
@@ -44,7 +43,7 @@ def get_subtype(field_info, nested_structs, struct_name, camel_case_name) -> str
         nested_struct_name = to_camel_case(f"{struct_name}_{camel_case_name}")
         nested_structs[nested_struct_name] = field_info.fields
         go_type = nested_struct_name
-    
+
     match field_info.type:
         case "array":
             if field_info.items:

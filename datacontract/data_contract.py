@@ -21,7 +21,7 @@ from datacontract.export.jsonschema_converter import to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.export.pydantic_converter import to_pydantic_model_str
-from datacontract.export.go_converter import to_go_structs
+from datacontract.export.go_converter import to_go_types
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
@@ -422,7 +422,7 @@ class DataContract:
         if export_format == "html":
             return to_html(data_contract)
         if export_format == "go":
-            return to_go_structs(data_contract)
+            return to_go_types(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
