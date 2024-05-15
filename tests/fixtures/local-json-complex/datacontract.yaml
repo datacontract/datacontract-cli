@@ -1,0 +1,83 @@
+dataContractSpecification: 0.9.3
+id: jsonschema-complex-data
+info:
+  title: sts data
+  version: 1.0.0
+  owner: Checkout Team
+models:
+  sts_data:
+    type: table
+    fields:
+      array_test_string:
+        type: array
+        required: true
+        items:
+          type: string
+          required: true
+      array_test_object:
+        type: array
+        required: true
+        items:
+          type: object
+          required: true
+          fields:
+            key:
+              type: string
+              required: true
+            value:
+              type: string
+              required: true
+      id:
+        type: string
+        minLength: 1
+        maxLength: 10
+        pattern: "^[0-9]{8}$"
+        required: true
+      sts_data:
+        type: object
+        required: true
+        fields:
+          connection_test:
+            type: string
+            enum: ["SUCCESS", "FAIL", "NULL"]
+            required: true
+          key_list:
+            type: object
+            required: true
+            fields:
+              ^[0-5]$:
+                type: object
+                fields:
+                  key:
+                    type: string
+                    pattern: "^[0-9]{8}$"
+                    required: true
+examples:
+  - type: json # csv, json, yaml, custom
+    model: sts_data
+    data: | # expressed as string or inline yaml or via "$ref: data.csv"
+      {
+        "array_test_string": ["test1", "test2"],
+        "array_test_object": [
+            {
+                "key": "key1",
+                "value": "value1"
+            },
+            {
+                "key": "key2",
+                "value": "value2"
+            }
+        ],
+        "id": "11111111",
+        "sts_data": {
+            "connection_test": "SUCCESS",
+            "key_list": {
+                "0": {
+                    "key": "12345678"
+                },
+                "1": {
+                    "key": "23456789"
+                }
+            }
+        }
+      }

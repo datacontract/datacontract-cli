@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import pydantic as pyd
 import yaml
@@ -84,12 +84,15 @@ class Field(pyd.BaseModel):
     tags: List[str] = []
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
+    precision: int = None
+    scale: int = None
 
 
 class Model(pyd.BaseModel):
     description: str = None
     type: str = None
     namespace: str = None
+    title: str = None
     fields: Dict[str, Field] = {}
 
 
@@ -113,6 +116,53 @@ class Quality(pyd.BaseModel):
     type: str = None
     specification: str | object = None
 
+class Availability(pyd.BaseModel):
+    description: Optional[str] = None
+    percentage: Optional[str] = None
+
+class Retention(pyd.BaseModel):
+    description: Optional[str] = None
+    period: Optional[str] = None
+    unlimited: Optional[bool] = None
+    timestampField: Optional[str] = None
+
+class Latency(pyd.BaseModel):
+    description: Optional[str] = None
+    threshold: Optional[str] = None
+    sourceTimestampField: Optional[str] = None
+    processedTimestampField: Optional[str] = None
+
+class Freshness(pyd.BaseModel):
+    description: Optional[str] = None
+    threshold: Optional[str] = None
+    timestampField: Optional[str] = None
+
+class Frequency(pyd.BaseModel):
+    description: Optional[str] = None
+    type: Optional[str] = None
+    interval: Optional[str] = None
+    cron: Optional[str] = None
+
+class Support(pyd.BaseModel):
+    description: Optional[str] = None
+    time: Optional[str] = None
+    responseTime: Optional[str] = None
+
+class Backup(pyd.BaseModel):
+    description: Optional[str] = None
+    interval: Optional[str] = None
+    cron: Optional[str] = None
+    recoveryTime: Optional[str] = None
+    recoveryPoint: Optional[str] = None
+
+class ServiceLevel(pyd.BaseModel):
+    availability: Optional[Availability] = None
+    retention: Optional[Retention] = None
+    latency: Optional[Latency] = None
+    freshness: Optional[Freshness] = None
+    frequency: Optional[Frequency] = None
+    support: Optional[Support] = None
+    backup: Optional[Backup] = None
 
 class DataContractSpecification(pyd.BaseModel):
     dataContractSpecification: str = None
@@ -125,6 +175,7 @@ class DataContractSpecification(pyd.BaseModel):
     # schema: Dict[str, str]
     examples: List[Example] = []
     quality: Quality = None
+    servicelevels: Optional[ServiceLevel] = None
 
     @classmethod
     def from_file(cls, file):

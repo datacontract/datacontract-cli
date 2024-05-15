@@ -1,0 +1,58 @@
+dataContractSpecification: 0.9.2
+id: "61111-0002"
+info:
+  title: "Verbraucherpreisindex: Deutschland, Monate"
+  description: A data contract for the distribution and use of the German Consumer Price Index data.
+  version: 1.0.0
+  owner: my-domain-team
+models:
+  verbraucherpreisindex:
+    description: Model representing the Consumer Price Index for Germany
+    fields:
+      wert:
+          description: Value of the Consumer Price Index
+          type: integer
+          required: true
+      jahrMonat:
+          description: Year and month of the data
+          type: string
+          required: true
+      qualitaet:
+          description: Quality of the data
+          type: string
+          enum:
+          - "vorlaeufig"
+          - "endgueltig"
+      verarbeitet:
+        description: Time when this dataset was processed, year and month
+        type: string
+
+examples:
+  - type: json
+    description: Example entry for CPI data
+    model: verbraucherpreisindex
+    data: |-
+      [{ "wert": 99, "jahrMonat": "2022-00", "verarbeitet": "2022-01" },
+      { "wert": 100, "jahrMonat": "2022-01", "verarbeitet": "2022-02" },
+      { "wert": 101, "jahrMonat": "2022-02", "qualitaet": "vorlaeufig", "verarbeitet": "2022-03" }]
+
+servicelevels:
+  availability:
+    percentage: "99.9%"
+  retention:
+    period: P5Y
+    timestampField: jahrMonat
+  latency:
+    threshold: P1M
+    sourceTimestampField: verarbeitet
+  freshness:
+    threshold: P1M
+    timestampField: verarbeitet
+  frequency:
+    type: streaming
+  support:
+    time: 24/7
+    responseTime: P1h
+  backup:
+    interval: daily
+    recoveryTime: 2 hours
