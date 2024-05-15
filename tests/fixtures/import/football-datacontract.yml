@@ -1,0 +1,18 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  FootballSchema:
+    description: Schema for football team and person details
+    type: object
+    title: FootballSchema
+definitions:
+  person:
+    name: person
+    type: object
+  football_team:
+    name: football_team
+    type: object
+

@@ -223,6 +223,7 @@ class ImportFormat(str, Enum):
     avro = "avro"
     glue = "glue"
     bigquery = "bigquery"
+    jsonschema = "jsonschema"
 
 
 @app.command(name="import")
