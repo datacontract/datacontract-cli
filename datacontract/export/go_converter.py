@@ -7,10 +7,10 @@ def to_go_types(contract: spec.DataContractSpecification) -> str:
     result = "package main\n\n"
 
     for key in contract.models.keys():
-        go_types = generate_go_struct(contract.models[key], key)
-        for go_struct in go_types:
-            # print(go_struct + "\n\n")
-            result += f"\n{go_struct}\n"
+        go_types = generate_go_type(contract.models[key], key)
+        for go_type in go_types:
+            # print(go_type + "\n\n")
+            result += f"\n{go_type}\n"
 
     return result
 
@@ -37,25 +37,25 @@ def to_camel_case(snake_str) -> str:
     return "".join(word.capitalize() for word in re.split(r"_|(?<!^)(?=[A-Z])", snake_str))
 
 
-def get_subtype(field_info, nested_structs, struct_name, camel_case_name) -> str:
+def get_subtype(field_info, nested_types, type_name, camel_case_name) -> str:
     go_type = "interface{}"
     if field_info.fields:
-        nested_struct_name = to_camel_case(f"{struct_name}_{camel_case_name}")
-        nested_structs[nested_struct_name] = field_info.fields
-        go_type = nested_struct_name
+        nested_type_name = to_camel_case(f"{type_name}_{camel_case_name}")
+        nested_types[nested_type_name] = field_info.fields
+        go_type = nested_type_name
 
     match field_info.type:
         case "array":
             if field_info.items:
-                item_type = get_subtype(field_info.items, nested_structs, struct_name, camel_case_name + "Item")
+                item_type = get_subtype(field_info.items, nested_types, type_name, camel_case_name + "Item")
                 go_type = f"[]{item_type}"
             else:
                 go_type = "[]interface{}"
         case "record":
             if field_info.fields:
-                nested_struct_name = to_camel_case(f"{struct_name}_{camel_case_name}")
-                nested_structs[nested_struct_name] = field_info.fields
-                go_type = nested_struct_name
+                nested_type_name = to_camel_case(f"{type_name}_{camel_case_name}")
+                nested_types[nested_type_name] = field_info.fields
+                go_type = nested_type_name
             else:
                 go_type = "interface{}"
         case "object":
@@ -66,12 +66,12 @@ def get_subtype(field_info, nested_structs, struct_name, camel_case_name) -> str
     return go_type
 
 
-def generate_go_struct(model, model_name) -> List[str]:
+def generate_go_type(model, model_name) -> List[str]:
     go_types = []
-    struct_name = to_camel_case(model_name)
-    lines = [f"type {struct_name} struct {{"]
+    type_name = to_camel_case(model_name)
+    lines = [f"type {type_name} struct {{"]
 
-    nested_structs = {}
+    nested_types = {}
 
     for field_name, field_info in model.fields.items():
         go_type = python_type_to_go_type(field_info.type)
@@ -80,9 +80,7 @@ def generate_go_struct(model, model_name) -> List[str]:
         avro_tag = field_name
 
         if go_type == "interface{}":
-            go_type = get_subtype(field_info, nested_structs, struct_name, camel_case_name)
-        # else:
-        #     go_type = field_info, go_type)
+            go_type = get_subtype(field_info, nested_types, type_name, camel_case_name)
 
         go_type = go_type if field_info.required else f"*{go_type}"
 
@@ -92,9 +90,9 @@ def generate_go_struct(model, model_name) -> List[str]:
     lines.append("}")
     go_types.append("\n".join(lines))
 
-    for nested_struct_name, nested_fields in nested_structs.items():
+    for nested_type_name, nested_fields in nested_types.items():
         nested_model = spec.Model(fields=nested_fields)
-        nested_go_types = generate_go_struct(nested_model, nested_struct_name)
+        nested_go_types = generate_go_type(nested_model, nested_type_name)
         go_types.extend(nested_go_types)
 
     return go_types
