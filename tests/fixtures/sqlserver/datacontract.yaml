@@ -20,7 +20,7 @@ models:
         type: varchar
         required: true
         unique: true
-        regex: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+        pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
       field_two:
         type: integer
         minimum: 10
