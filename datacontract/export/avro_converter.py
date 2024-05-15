@@ -34,6 +34,10 @@ def to_avro_field(field, field_name):
     if field.description is not None:
         avro_field["doc"] = field.description
     avro_field["type"] = to_avro_type(field, field_name)
+    # add logical type definitions for any of the date type fields
+    if field.type in ["timestamp", "timestamp_tz", "timestamp_ntz", "date"]:
+        avro_field["logicalType"] = to_avro_logical_type(field.type)
+
     return avro_field
 
 
@@ -54,9 +58,9 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
     elif field.type in ["boolean"]:
         return "boolean"
     elif field.type in ["timestamp", "timestamp_tz"]:
-        return "string"
+        return "long"
     elif field.type in ["timestamp_ntz"]:
-        return "string"
+        return "long"
     elif field.type in ["date"]:
         return "int"
     elif field.type in ["time"]:
@@ -72,3 +76,13 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
         return "null"
     else:
         return "bytes"
+
+def to_avro_logical_type(type: str) -> str:
+    if type in ["timestamp", "timestamp_tz"]:
+        return "timestamp-millis"
+    elif type in ["timestamp_ntz"]:
+        return "local-timestamp-millis"
+    elif type in ["date"]:
+        return "date"
+    else:
+        return ""
