@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+- `datacontract export --format go`: Export to go types format
 - datacontract catalog: Search form
 - `datacontract import --format bigquery`: Import from BigQuery format
 - `datacontract export --format bigquery`: Export to BigQuery format
