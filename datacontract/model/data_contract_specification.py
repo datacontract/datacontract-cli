@@ -31,6 +31,10 @@ class Server(pyd.BaseModel):
     token: str = None  # Use ENV variable
     dataProductId: str = None
     outputPortId: str = None
+    trusted_connection: str = None
+    trust_server_certificate: str = None
+    encrypt_connection: str = None
+    driver: str = None # Use ENV variable
 
 
 class Terms(pyd.BaseModel):

@@ -390,7 +390,7 @@ class DataContract:
         )
         run.log_info(f"Using {server} for testing the examples")
         return server
-    
+
     def _check_models_for_export(self, data_contract: DataContractSpecification, model: str, export_format: str) -> typing.Tuple[str, str]:
         if data_contract.models is None:
             raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
@@ -411,7 +411,7 @@ class DataContract:
                 raise RuntimeError(
                     f"Model {model_name} not found in the data contract. Available models: {model_names}"
                 )
-            
+
         return model_name, model_value
 
     def import_from_source(self, format: str, source: typing.Optional[str] = None, bigquery_tables: typing.Optional[typing.List[str]] = None, bigquery_project: typing.Optional[str] = None, bigquery_dataset: typing.Optional[str] = None) -> DataContractSpecification:

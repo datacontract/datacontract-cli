@@ -69,6 +69,10 @@ def check_soda_execute(
         read_kafka_topic(spark, data_contract, server, tmp_dir)
         scan.add_spark_session(spark, data_source_name=server.type)
         scan.set_data_source_name(server.type)
+    elif server.type == "sqlserver":
+        soda_configuration_str = to_postgres_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        scan.set_data_source_name(server.type)
 
     else:
         run.checks.append(
