@@ -3,12 +3,12 @@ from typing import List
 import re
 
 
-def to_go_structs(contract: spec.DataContractSpecification) -> str:
+def to_go_types(contract: spec.DataContractSpecification) -> str:
     result = "package main\n\n"
 
     for key in contract.models.keys():
-        go_structs = generate_go_struct(contract.models[key], key)
-        for go_struct in go_structs:
+        go_types = generate_go_struct(contract.models[key], key)
+        for go_struct in go_types:
             # print(go_struct + "\n\n")
             result += f"\n{go_struct}\n"
 
@@ -67,7 +67,7 @@ def get_subtype(field_info, nested_structs, struct_name, camel_case_name) -> str
 
 
 def generate_go_struct(model, model_name) -> List[str]:
-    go_structs = []
+    go_types = []
     struct_name = to_camel_case(model_name)
     lines = [f"type {struct_name} struct {{"]
 
@@ -90,11 +90,11 @@ def generate_go_struct(model, model_name) -> List[str]:
             f'    {camel_case_name} {go_type} `json:"{json_tag}" avro:"{avro_tag}"`  // {field_info.description}'
         )
     lines.append("}")
-    go_structs.append("\n".join(lines))
+    go_types.append("\n".join(lines))
 
     for nested_struct_name, nested_fields in nested_structs.items():
         nested_model = spec.Model(fields=nested_fields)
-        nested_go_structs = generate_go_struct(nested_model, nested_struct_name)
-        go_structs.extend(nested_go_structs)
+        nested_go_types = generate_go_struct(nested_model, nested_struct_name)
+        go_types.extend(nested_go_types)
 
-    return go_structs
+    return go_types
