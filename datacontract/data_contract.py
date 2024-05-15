@@ -34,6 +34,7 @@ from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.sql_importer import import_sql
+from datacontract.imports.jsonschema_importer import import_jsonschema
 from datacontract.integration.publish_datamesh_manager import \
     publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
@@ -423,6 +424,8 @@ class DataContract:
             data_contract_specification = import_avro(data_contract_specification, source)
         elif format == "glue":
             data_contract_specification = import_glue(data_contract_specification, source)
+        elif format == "jsonschema":
+            data_contract_specification = import_jsonschema(data_contract_specification, source)
         elif format == "bigquery":
             if source is not None:
                 data_contract_specification = import_bigquery_from_json(data_contract_specification, source)

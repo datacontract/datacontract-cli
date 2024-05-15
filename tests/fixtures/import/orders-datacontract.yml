@@ -1,0 +1,47 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  OrderSchema:
+    description: Schema for order details
+    type: object
+    title: OrderSchema
+    fields:
+      order_id:
+        title: Order ID
+        type: string
+        format: uuid
+        required: true
+        description: Unique identifier for the order
+      order_timestamp:
+        title: Order Timestamp
+        type: string
+        format: date-time
+        required: true
+        description: Timestamp when the order was placed
+      order_total:
+        title: Order Total
+        type: integer
+        required: true
+        description: Total amount of the order
+      customer_id:
+        title: Customer ID
+        type: string
+        required: false
+        description: Unique identifier for the customer
+        minLength: 10
+        maxLength: 20
+      customer_email_address:
+        title: Customer Email Address
+        type: string
+        format: email
+        required: true
+        description: Email address of the customer
+      processed_timestamp:
+        title: Processed Timestamp
+        type: string
+        format: date-time
+        required: true
+        description: Timestamp when the order was processed
