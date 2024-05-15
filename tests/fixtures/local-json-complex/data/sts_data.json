@@ -1,4 +1,15 @@
 {
+    "array_test_string": ["test1", "test2"],
+    "array_test_object": [
+        {
+            "key": "key1",
+            "value": "value1"
+        },
+        {
+            "key": "key2",
+            "value": "value2"
+        }
+    ],
     "id": "11111111",
     "sts_data": {
         "connection_test": "SUCCESS",
@@ -11,5 +22,4 @@
             }
         }
     }
-
-}
+  }

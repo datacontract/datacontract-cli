@@ -52,6 +52,8 @@ def to_property(field: Field) -> dict:
         else:
             property["properties"] = to_properties(field.fields)
         property["required"] = to_required(field.fields)
+    if json_type == "array":
+        property["items"] = to_property(field.items)
 
     if field.pattern:
         property["pattern"] = field.pattern
