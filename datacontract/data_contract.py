@@ -6,13 +6,11 @@ import typing
 import yaml
 from pyspark.sql import SparkSession
 
-from datacontract.breaking.breaking import models_breaking_changes, \
-    quality_breaking_changes
+from datacontract.breaking.breaking import models_breaking_changes, quality_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
 )
-from datacontract.engines.fastjsonschema.check_jsonschema import \
-    check_jsonschema
+from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.export.avro_idl_converter import to_avro_idl
@@ -26,6 +24,7 @@ from datacontract.export.jsonschema_converter import to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.export.protobuf_converter import to_protobuf
 from datacontract.export.pydantic_converter import to_pydantic_model_str
+from datacontract.export.go_converter import to_go_types
 from datacontract.export.rdf_converter import to_rdf_n3
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
@@ -34,24 +33,18 @@ from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.sql_importer import import_sql
-from datacontract.integration.publish_datamesh_manager import \
-    publish_datamesh_manager
+from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
-from datacontract.lint.linters.field_reference_linter import \
-    FieldReferenceLinter
+from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
-from datacontract.lint.linters.quality_schema_linter import \
-    QualityUsesSchemaLinter
-from datacontract.lint.linters.valid_constraints_linter import \
-    ValidFieldConstraintsLinter
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange, \
-    Severity
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Server
+from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
+from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
+from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Severity
+from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
 
@@ -329,6 +322,8 @@ class DataContract:
             return to_pydantic_model_str(data_contract)
         if export_format == "html":
             return to_html(data_contract)
+        if export_format == "go":
+            return to_go_types(data_contract)
         if export_format == "bigquery":
             model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
             found_server = data_contract.servers.get(self._server)
