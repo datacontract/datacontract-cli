@@ -8,9 +8,7 @@ def to_jsonschemas(data_contract_spec: DataContractSpecification):
     jsonschmemas = {}
     for model_key, model_value in data_contract_spec.models.items():
         jsonschema = to_jsonschema(model_key, model_value)
-        jsondefinitions = to_definitions(data_contract_spec.definitions)
         jsonschmemas[model_key] = jsonschema
-        jsonschmemas["definitions"] = jsondefinitions
     return jsonschmemas
 
 
@@ -20,7 +18,6 @@ def to_jsonschema_json(model_key, model_value: Model) -> str:
 
 
 def to_jsonschema(model_key, model_value: Model) -> dict:
-    print("here")
     return {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": model_value.title,
@@ -88,32 +85,6 @@ def to_property(field: Field) -> dict:
     
     # TODO: all constraints
     return property
-
-def to_definitions(definitions: Dict[str, Definition]) -> dict:
-    defs = {}
-    for def_name, def_value in definitions.items():
-        defs[def_name] = to_definition(def_value)
-    return defs
-
-
-def to_definition(definition: Definition) -> dict:
-    return {
-        "type": definition.type,
-        "title": definition.title,
-        "description": definition.description,
-        "enum": definition.enum,
-        "format": definition.format,
-        "minLength": definition.minLength,
-        "maxLength": definition.maxLength,
-        "pattern": definition.pattern,
-        "minimum": definition.minimum,
-        "exclusiveMinimum": definition.exclusiveMinimum,
-        "maximum": definition.maximum,
-        "exclusiveMaximum": definition.exclusiveMaximum,
-        "properties": to_properties(definition.fields) if definition.fields else None,
-        "required": to_required(definition.fields) if definition.fields else None,
-    }
-
 
 def to_required(fields: Dict[str, Field]):
     required = []

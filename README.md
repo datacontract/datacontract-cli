@@ -563,7 +563,7 @@ models:
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|dbt-staging  The export format. [default: None] [required]                  │
 │                    -sql|odcs|rdf|avro|protobuf|great-expectations|terraform|avro                                                                 │
-│                    -idl|sql|sql-query|html|bigquery]                                                                                             │
+│                    -idl|sql|sql-query|html|bigquery|go]                                                                                             │
 │    --output        PATH                                                           Specify the file path where the exported data will be saved.   │
 │                                                                                   If no path is provided, the output will be printed to stdout.  │
 │                                                                                   [default: None]                                                │
@@ -609,7 +609,8 @@ Available export options:
 | `sql-query`          | Export to SQL Query                                     | ✅     |
 | `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅     |
 | `bigquery`           | Export to BigQuery Schemas                              | ✅     |
-| `pydantic`           | Export to pydantic models                               | TBD    |
+| `go`                 | Export to Go types                                      | ✅     |
+| `pydantic-model`     | Export to pydantic models                               | ✅     |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations

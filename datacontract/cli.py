@@ -15,7 +15,9 @@ from typing import List
 from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
+
 from datacontract.publish.publish import publish_to_datamesh_manager
+
 
 console = Console()
 
@@ -158,6 +160,7 @@ class ExportFormat(str, Enum):
     sql = "sql"
     sql_query = "sql-query"
     html = "html"
+    go = "go"
     bigquery = "bigquery"
 
 
