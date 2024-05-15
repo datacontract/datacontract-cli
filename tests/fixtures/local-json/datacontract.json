@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Model representing the Consumer Price Index for Germany",
+  "type": "object",
+  "properties": {
+    "Statistik_Code": {
+      "type": "integer",
+      "description": "Statistical code for the data set"
+    },
+    "Statistik_Label": {
+      "type": "string",
+      "description": "Label for the statistical code"
+    },
+    "Zeit_Code": {
+      "type": "string",
+      "description": "Code for the time dimension"
+    },
+    "Zeit_Label": {
+      "type": "string",
+      "description": "Label for the time dimension"
+    },
+    "Zeit": {
+      "type": "integer",
+      "description": "Year of the data"
+    },
+    "1_Merkmal_Code": {
+      "type": "string",
+      "description": "Feature code 1"
+    },
+    "1_Merkmal_Label": {
+      "type": "string",
+      "description": "Label for feature 1"
+    },
+    "1_Auspraegung_Code": {
+      "type": "string",
+      "enum": [
+        "DG"
+      ],
+      "description": "Expression code for feature 1"
+    },
+    "1_Auspraegung_Label": {
+      "type": "string",
+      "enum": [
+        "Deutschland"
+      ],
+      "description": "Label for the expression of feature 1"
+    },
+    "2_Merkmal_Code": {
+      "type": "string",
+      "enum": [
+        "MONAT"
+      ],
+      "description": "Feature code 2"
+    },
+    "2_Merkmal_Label": {
+      "type": "string",
+      "description": "Label for feature 2"
+    },
+    "2_Auspraegung_Code": {
+      "type": "string",
+      "description": "The Month"
+    },
+    "2_Auspraegung_Label": {
+      "type": "string",
+      "description": "The German name of the month"
+    },
+    "PREIS1__Verbraucherpreisindex__2020=100": {
+      "type": "string",
+      "description": "Consumer price index value"
+    },
+    "PREIS1__Verbraucherpreisindex__q": {
+      "type": "string"
+    },
+    "Verbraucherpreisindex__CH0004": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Ver\u00e4nderung zum Vorjahresmonat"
+    },
+    "Verbraucherpreisindex__CH0004__q": {
+      "type": "string"
+    },
+    "PREIS1__CH0005": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Ver\u00e4nderung zum Vormonat"
+    },
+    "PREIS1__CH0005__q": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "Statistik_Code",
+    "Statistik_Label",
+    "Zeit_Code",
+    "Zeit_Label",
+    "Zeit",
+    "1_Merkmal_Code",
+    "1_Merkmal_Label",
+    "1_Auspraegung_Code",
+    "1_Auspraegung_Label",
+    "2_Merkmal_Code",
+    "2_Merkmal_Label",
+    "2_Auspraegung_Code",
+    "2_Auspraegung_Label",
+    "PREIS1__Verbraucherpreisindex__2020=100",
+    "PREIS1__Verbraucherpreisindex__q",
+    "Verbraucherpreisindex__CH0004__q",
+    "PREIS1__CH0005__q"
+  ]
+}
