@@ -175,6 +175,30 @@ def test_to_jsonschemas_complex_2():
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "array_test_string": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "array_test_object": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      }
+    },
     "id": {
       "type": "string",
       "pattern": "^[0-9]{8}$",
@@ -221,6 +245,8 @@ def test_to_jsonschemas_complex_2():
     }
   },
   "required": [
+    "array_test_string",
+    "array_test_object",
     "id",
     "sts_data"
   ]
