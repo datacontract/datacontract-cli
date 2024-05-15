@@ -86,6 +86,7 @@ class Field(pyd.BaseModel):
     items: "Field" = None
     precision: int = None
     scale: int = None
+    example: str = None
 
 
 class Model(pyd.BaseModel):

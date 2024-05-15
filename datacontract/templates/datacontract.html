@@ -371,7 +371,6 @@
                       <tbody class="divide-y divide-gray-200 bg-white">
 
                       {% for field_name, field in model.fields.items() %}
-
                       <tr>
                         <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
                           <div class="py-2 text-sm">
@@ -396,7 +395,7 @@
 
                           {% if field.example %}
                           <div class="mt-1 italic">
-                            Example: {{ field.example }}
+                            Example: <span class="font-mono">{{ field.example }}</span>
                           </div>
                           {% endif %}
 
