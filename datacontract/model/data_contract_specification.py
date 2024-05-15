@@ -58,6 +58,7 @@ class Definition(pyd.BaseModel):
     pii: bool = None
     classification: str = None
     tags: List[str] = []
+    example: str = None
 
 
 class Field(pyd.BaseModel):
