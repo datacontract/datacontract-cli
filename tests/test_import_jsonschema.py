@@ -34,6 +34,7 @@ def test_import_json_schema_orders():
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
 
+
 def test_import_json_schema_football():
     result = DataContract().import_from_source("jsonschema", "fixtures/import/football.json")
 

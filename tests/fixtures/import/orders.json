@@ -1,12 +1,11 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema",
   "title": "OrderSchema",
   "description": "Schema for order details",
   "type": "object",
   "properties": {
     "order_id": {
       "type": "string",
-      "format": "uuid",
       "title": "Order ID",
       "description": "Unique identifier for the order"
     },

@@ -12,7 +12,6 @@ models:
       order_id:
         title: Order ID
         type: string
-        format: uuid
         required: true
         description: Unique identifier for the order
       order_timestamp:
