@@ -88,16 +88,10 @@
 </tr>
 
 {% if field.fields %}
-<!-- Output nested fields -->
-<tr class="bg-gray-50">
-  <td colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-500 sm:pl-6 text-sm font-medium">
-    Fields contained in {{ field_name }}
-  </td>
-</tr>
 {% for field_name, field in field.fields.items() %}
   {{ render_partial('partials/model_field.html', nested = True, field_name=field_name, field = field, level = level + 1) }}
 {% endfor %}
 <!-- Mark the end of the contained fields -->
-<tr style="--tw-divide-y-reverse: 3">
+<tr style="--tw-divide-y-reverse: 2">
 </tr>
 {% endif %}
