@@ -15,7 +15,10 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
 
 # snowflake data types:
 # https://docs.snowflake.com/en/sql-reference/data-types.html
-def convert_to_snowflake(field) -> None | str:
+def convert_to_snowflake(field: Field) -> None | str:
+    if field.config and field.config["snowflakeType"] is not None:
+        return field.config["snowflakeType"]
+
     type = field.type
     # currently optimized for snowflake
     # LEARNING: data contract has no direct support for CHAR,CHARACTER
