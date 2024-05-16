@@ -757,6 +757,10 @@ video {
   width: 2.5rem;
 }
 
+.w-2 {
+  width: 0.5rem;
+}
+
 .w-2\/12 {
   width: 16.666667%;
 }
@@ -779,6 +783,10 @@ video {
 
 .w-72 {
   width: 18rem;
+}
+
+.w-9\/12 {
+  width: 75%;
 }
 
 .w-full {
@@ -856,11 +864,6 @@ video {
 .gap-x-4 {
   -moz-column-gap: 1rem;
        column-gap: 1rem;
-}
-
-.gap-x-6 {
-  -moz-column-gap: 1.5rem;
-       column-gap: 1.5rem;
 }
 
 .gap-y-6 {
@@ -1379,10 +1382,6 @@ video {
 
   .sm\:flex-row {
     flex-direction: row;
-  }
-
-  .sm\:flex-col {
-    flex-direction: column;
   }
 
   .sm\:flex-wrap {

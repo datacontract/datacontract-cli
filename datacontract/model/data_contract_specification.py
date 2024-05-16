@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 import pydantic as pyd
 import yaml
@@ -62,6 +62,7 @@ class Definition(pyd.BaseModel):
     pii: bool = None
     classification: str = None
     tags: List[str] = []
+    example: str = None
 
 
 class Field(pyd.BaseModel):
@@ -90,6 +91,8 @@ class Field(pyd.BaseModel):
     items: "Field" = None
     precision: int = None
     scale: int = None
+    example: str = None
+    config: Dict[str, Any] = None
 
 
 class Model(pyd.BaseModel):

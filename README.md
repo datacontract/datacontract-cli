@@ -563,7 +563,7 @@ models:
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|dbt-staging  The export format. [default: None] [required]                  │
 │                    -sql|odcs|rdf|avro|protobuf|great-expectations|terraform|avro                                                                 │
-│                    -idl|sql|sql-query|html|bigquery]                                                                                             │
+│                    -idl|sql|sql-query|html|bigquery|go]                                                                                             │
 │    --output        PATH                                                           Specify the file path where the exported data will be saved.   │
 │                                                                                   If no path is provided, the output will be printed to stdout.  │
 │                                                                                   [default: None]                                                │
@@ -609,7 +609,8 @@ Available export options:
 | `sql-query`          | Export to SQL Query                                     | ✅     |
 | `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅     |
 | `bigquery`           | Export to BigQuery Schemas                              | ✅     |
-| `pydantic`           | Export to pydantic models                               | TBD    |
+| `go`                 | Export to Go types                                      | ✅     |
+| `pydantic-model`     | Export to pydantic models                               | ✅     |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
@@ -658,7 +659,7 @@ data products, find the true domain owner of a field attribute)
  Create a data contract from the given source location. Prints to stdout.
 
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                  [sql|avro|glue|bigquery]  The format of the source file. [default: None] [required]                                              │
+│ *  --format                  [sql|avro|glue|bigquery|jsonschema]  The format of the source file. [default: None] [required]                                   │
 │    --source                  TEXT                      The path to the file or Glue Database that should be imported. [default: None]                         │
 │    --bigquery-project        TEXT                      The bigquery project id. [default: None]                                                               │
 │    --bigquery-dataset        TEXT                      The bigquery dataset id. [default: None]                                                               │
@@ -694,12 +695,12 @@ Available import options:
 
 | Type               | Description                                    | Status  |
 |--------------------|------------------------------------------------|---------|
-| `sql`              | Import from SQL DDL                            | ✅       | 
-| `avro`             | Import from AVRO schemas                       | ✅     |
-| `glue`             | Import from AWS Glue DataCatalog               | ✅     |
+| `sql`              | Import from SQL DDL                            | ✅      |
+| `avro`             | Import from AVRO schemas                       | ✅      |
+| `glue`             | Import from AWS Glue DataCatalog               | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
-| `jsonschema`       | Import from JSON Schemas                       | TBD     |
-| `bigquery`         | Import from BigQuery Schemas                   | ✅     |
+| `jsonschema`       | Import from JSON Schemas                       | ✅      |
+| `bigquery`         | Import from BigQuery Schemas                   | ✅      |
 | `dbt`              | Import from dbt models                         | TBD     |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
 | Missing something? | Please create an issue on GitHub               | TBD     |

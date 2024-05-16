@@ -63,6 +63,7 @@ def to_sql_ddl(data_contract_spec: DataContractSpecification, server_type: str =
     result = ""
     result += f"-- Data Contract: {data_contract_spec.id}\n"
     result += f"-- SQL Dialect: {server_type}\n"
+
     for model_name, model in iter(data_contract_spec.models.items()):
         result += _to_sql_table(table_prefix + model_name, model, server_type)
 

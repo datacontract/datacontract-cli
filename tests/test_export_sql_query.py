@@ -14,7 +14,7 @@ def test_cli():
     assert result.exit_code == 0
 
 
-def test_to_sql_ddl_postgres():
+def test_to_sql_query_postgres():
     actual = DataContract(data_contract_file="fixtures/postgres-export/datacontract.yaml").export("sql-query")
     expected = """
 -- Data Contract: postgres
@@ -28,7 +28,7 @@ from my_table
     assert actual.strip() == expected.strip()
 
 
-def test_to_sql_ddl_snowflake():
+def test_to_sql_query_snowflake():
     actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export("sql-query", model="orders")
     expected = """
 -- Data Contract: urn:datacontract:checkout:snowflake_orders_pii_v2
@@ -38,7 +38,8 @@ select
     ORDER_TIMESTAMP,
     ORDER_TOTAL,
     CUSTOMER_ID,
-    CUSTOMER_EMAIL_ADDRESS
+    CUSTOMER_EMAIL_ADDRESS,
+    PROCESSING_TIMESTAMP
 from orders
 """
     assert actual.strip() == expected.strip()

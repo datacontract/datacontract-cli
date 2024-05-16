@@ -22,92 +22,8 @@ def test_to_jsonschemas():
     data_contract_file = "fixtures/local-json/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
-    expected_json_schema = """{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "Statistik_Code": {
-      "type": "integer"
-    },
-    "Statistik_Label": {
-      "type": "string"
-    },
-    "Zeit_Code": {
-      "type": "string"
-    },
-    "Zeit_Label": {
-      "type": "string"
-    },
-    "Zeit": {
-      "type": "integer"
-    },
-    "1_Merkmal_Code": {
-      "type": "string"
-    },
-    "1_Merkmal_Label": {
-      "type": "string"
-    },
-    "1_Auspraegung_Code": {
-      "type": "string",
-      "enum": ["DG"]
-    },
-    "1_Auspraegung_Label": {
-      "type": "string",
-      "enum": ["Deutschland"]
-    },
-    "2_Merkmal_Code": {
-      "type": "string",
-      "enum": ["MONAT"]
-    },
-    "2_Merkmal_Label": {
-      "type": "string"
-    },
-    "2_Auspraegung_Code": {
-      "type": "string"
-    },
-    "2_Auspraegung_Label": {
-      "type": "string"
-    },
-    "PREIS1__Verbraucherpreisindex__2020=100": {
-      "type": "string"
-    },
-    "PREIS1__Verbraucherpreisindex__q": {
-      "type": "string"
-    },
-    "Verbraucherpreisindex__CH0004": {
-      "type": ["string", "null"]
-    },
-    "Verbraucherpreisindex__CH0004__q": {
-      "type": "string"
-    },
-    "PREIS1__CH0005": {
-      "type": ["string", "null"]
-    },
-    "PREIS1__CH0005__q": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "Statistik_Code",
-    "Statistik_Label",
-    "Zeit_Code",
-    "Zeit_Label",
-    "Zeit",
-    "1_Merkmal_Code",
-    "1_Merkmal_Label",
-    "1_Auspraegung_Code",
-    "1_Auspraegung_Label",
-    "2_Merkmal_Code",
-    "2_Merkmal_Label",
-    "2_Auspraegung_Code",
-    "2_Auspraegung_Label",
-    "PREIS1__Verbraucherpreisindex__2020=100",
-    "PREIS1__Verbraucherpreisindex__q",
-    "Verbraucherpreisindex__CH0004__q",
-    "PREIS1__CH0005__q"
-  ]
-}
-"""
+    with open("fixtures/local-json/datacontract.json") as file:
+        expected_json_schema = file.read()
 
     result = to_jsonschemas(data_contract)
     assert result["verbraucherpreisindex"] == json.loads(expected_json_schema)
@@ -175,6 +91,30 @@ def test_to_jsonschemas_complex_2():
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "array_test_string": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "array_test_object": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      }
+    },
     "id": {
       "type": "string",
       "pattern": "^[0-9]{8}$",
@@ -221,6 +161,8 @@ def test_to_jsonschemas_complex_2():
     }
   },
   "required": [
+    "array_test_string",
+    "array_test_object",
     "id",
     "sts_data"
   ]

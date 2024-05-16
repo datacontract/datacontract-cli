@@ -1,3 +1,2 @@
-include datacontract/templates/index.html
-include datacontract/templates/datacontract.html
 include datacontract/templates/style/output.css
+recursive-include datacontract/templates/ **/*.html

@@ -18,12 +18,19 @@ def to_jsonschema_json(model_key, model_value: Model) -> str:
 
 
 def to_jsonschema(model_key, model_value: Model) -> dict:
-    return {
+
+    model =  {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
         "properties": to_properties(model_value.fields),
-        "required": to_required(model_value.fields),
+        "required": to_required(model_value.fields)
     }
+    if model_value.title:
+        model["title"] = model_value.title
+    if model_value.description:
+        model["description"] = model_value.description
+
+    return model
 
 
 def to_properties(fields: Dict[str, Field]) -> dict:
@@ -52,6 +59,8 @@ def to_property(field: Field) -> dict:
         else:
             property["properties"] = to_properties(field.fields)
         property["required"] = to_required(field.fields)
+    if json_type == "array":
+        property["items"] = to_property(field.items)
 
     if field.pattern:
         property["pattern"] = field.pattern
@@ -61,10 +70,28 @@ def to_property(field: Field) -> dict:
         property["minLength"] = field.minLength
     if field.maxLength:
         property["maxLength"] = field.maxLength
+    if field.title:
+        property["title"] = field.title
+    if field.description:
+        property["description"] = field.description
+    if field.exclusiveMinimum:
+        property["exclusiveMinimum"] = field.exclusiveMinimum
+    if field.exclusiveMaximum:
+        property["exclusiveMaximum"] = field.exclusiveMaximum
+    if field.minimum:
+        property["minimum"] = field.minimum
+    if field.maximum:
+        property["maximum"] = field.maximum
+    if field.tags:
+        property["tags"] = field.tags
+    if field.pii:
+        property["pii"] = field.pii
+    if field.classification:
+        property["classification"] = field.classification
+
     
     # TODO: all constraints
     return property
-
 
 def to_required(fields: Dict[str, Field]):
     required = []
