@@ -599,7 +599,7 @@ def test_definition_added():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "16 changes: 0 error, 13 warning, 3 info\n" in output
+    assert "17 changes: 0 error, 13 warning, 4 info\n" in output
     assert (
         r"""warning [field_ref_added] at 
 ./fixtures/breaking/datacontract-definitions-v2.yaml
@@ -705,6 +705,13 @@ def test_definition_added():
             added with value: `['my_enum']`"""
         in output
     )
+    assert (
+        """info    [field_example_added] at 
+./fixtures/breaking/datacontract-definitions-v2.yaml
+        in models.my_table.fields.my_field.example
+            added with value: `my_example`"""
+        in output
+    )
 
 
 def test_definition_removed():
@@ -719,7 +726,7 @@ def test_definition_removed():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "16 changes: 3 error, 9 warning, 4 info\n" in output
+    assert "17 changes: 3 error, 9 warning, 5 info\n" in output
     assert (
         r"""warning [field_ref_removed] at 
 ./fixtures/breaking/datacontract-definitions-v1.yaml
@@ -825,6 +832,13 @@ def test_definition_removed():
             removed field property"""
         in output
     )
+    assert (
+        """info    [field_example_removed] at 
+./fixtures/breaking/datacontract-definitions-v1.yaml
+        in models.my_table.fields.my_field.example
+            removed field property"""
+        in output
+    )
 
 
 def test_definition_updated():
@@ -839,7 +853,7 @@ def test_definition_updated():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "16 changes: 12 error, 1 warning, 3 info\n" in output
+    assert "17 changes: 12 error, 1 warning, 4 info\n" in output
     assert (
         r"""warning [field_ref_updated] at 
 ./fixtures/breaking/datacontract-definitions-v3.yaml
@@ -944,5 +958,12 @@ def test_definition_updated():
 ./fixtures/breaking/datacontract-definitions-v3.yaml
         in models.my_table.fields.my_field.enum
             changed from `['my_enum']` to `['my_enum_2']`"""
+        in output
+    )
+    assert (
+        """info    [field_example_updated] at 
+./fixtures/breaking/datacontract-definitions-v3.yaml
+        in models.my_table.fields.my_field.example
+            changed from `my_example` to `my_example_2`"""
         in output
     )

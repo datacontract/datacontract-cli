@@ -4,6 +4,7 @@ from importlib.metadata import version
 
 import pytz
 import yaml
+import jinja_partials
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from datacontract.model.data_contract_specification import \
@@ -20,6 +21,8 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
             default_for_string=True,
         ),
     )
+    # Set up for partials
+    jinja_partials.register_environment(env)
 
     # Load the required template
     # needs to be included in /MANIFEST.in

@@ -28,6 +28,7 @@ def mssql_container(request):
 def test_test_sqlserver(mssql_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_USERNAME", sql_server.SQLSERVER_USER)
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_PASSWORD", sql_server.SQLSERVER_PASSWORD)
+    monkeypatch.setenv("DATACONTRACT_TRUST_SERVER_CERTIFICATE", "True")
 
     _init_sql()
 

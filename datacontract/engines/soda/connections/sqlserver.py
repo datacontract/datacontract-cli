@@ -26,13 +26,13 @@ def to_sqlserver_soda_configuration(server: Server) -> str:
             "type": "sqlserver",
             "host": server.host,
             "port": str(server.port),
-            "username": os.getenv("DATACONTRACT_SQLSERVER_USERNAME"),
-            "password": os.getenv("DATACONTRACT_SQLSERVER_PASSWORD"),
+            "username": os.getenv("DATACONTRACT_SQLSERVER_USERNAME", ''),
+            "password": os.getenv("DATACONTRACT_SQLSERVER_PASSWORD", ''),
             "database": server.database,
             "schema": server.schema_,
-            "trusted_connection": server.trusted_connection,
-            "trust_server_certificate": server.trust_server_certificate,
-            "encrypt": server.encrypt_connection,
+            "trusted_connection": os.getenv("DATACONTRACT_TRUSTED_CONNECTION", False),
+            "trust_server_certificate": os.getenv("DATACONTRACT_TRUST_SERVER_CERTIFICATE", False),
+            "encrypt":  os.getenv("DATACONTRACT_ENCRYPTED_CONNECTION", True),
             "driver": server.driver
         }
     }

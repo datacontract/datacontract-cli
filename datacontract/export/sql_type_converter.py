@@ -1,15 +1,18 @@
+import enum
 from datacontract.model.data_contract_specification import Field
 
 
 def convert_to_sql_type(field: Field, server_type: str) -> str:
     if server_type == "snowflake":
         return convert_to_snowflake(field)
-    if server_type == "postgres":
+    elif server_type == "postgres":
         return convert_type_to_postgres(field)
-    if server_type == "databricks":
+    elif server_type == "databricks":
         return convert_to_databricks(field)
-    if server_type == "local" or server_type == "s3":
+    elif server_type == "local" or server_type == "s3":
         return convert_to_duckdb(field)
+    elif server_type == "sqlserver":
+        return convert_type_to_sqlserver(field)
     return field.type
 
 
@@ -100,7 +103,7 @@ def convert_type_to_postgres(field: Field) -> None | str:
 
 # databricks data types:
 # https://docs.databricks.com/en/sql/language-manual/sql-ref-datatypes.html
-def convert_to_databricks(field) -> None | str:
+def convert_to_databricks(field: Field) -> None | str:
     type = field.type
     if type is None:
         return None
@@ -136,7 +139,7 @@ def convert_to_databricks(field) -> None | str:
     return None
 
 
-def convert_to_duckdb(field) -> None | str:
+def convert_to_duckdb(field: Field) -> None | str:
     type = field.type
     if type is None:
         return None
@@ -170,3 +173,58 @@ def convert_to_duckdb(field) -> None | str:
     if type.lower() in ["array"]:
         return "ARRAY"
     return None
+
+
+def convert_type_to_sqlserver(field: Field) -> None | str:
+    """Convert from supported datacontract types to equivalent sqlserver types"""
+    field_type = field.type
+    if not field_type:
+        return None
+
+    # If provided sql-server config type, prefer it over default mapping
+    if sqlserver_type := get_type_config(field, 'sqlserverType'):
+        return sqlserver_type
+
+    field_type = field_type.lower()
+    if field_type in ["string", "varchar", "text"]:
+        if field.format == 'uuid':
+            return "uniqueidentifier"
+        return "varchar"
+    if field_type in ["timestamp", "timestamp_tz"]:
+        return "datetimeoffset"
+    if field_type in ["timestamp_ntz"]:
+        if field.format == "datetime":
+            return "datetime"
+        return "datetime2"
+    if field_type in ["date"]:
+        return "date"
+    if field_type in ["time"]:
+        return "time"
+    if field_type in ["number", "decimal", "numeric"]:
+        # precision and scale not supported by data contract
+        if field_type == "number":
+            return "numeric"
+        return field_type
+    if field_type in ["float"]:
+        return "float"
+    if field_type in ["double"]:
+        return "double precision"
+    if field_type in ["integer", "int", "bigint"]:
+        return field_type
+    if field_type in ["long"]:
+        return "bigint"
+    if field_type in ["boolean"]:
+        return "bit"
+    if field_type in ["object", "record", "struct"]:
+        return "jsonb"
+    if field_type in ["bytes"]:
+        return "binary"
+    if field_type in ["array"]:
+        raise NotImplementedError('SQLServer does not support array types.')
+    return None
+
+def get_type_config(field: Field, config_attr: str) -> dict[str, str] | None:
+    """Retrieve type configuration if provided in datacontract."""
+    if not field.config:
+        return None
+    return field.config.get(config_attr, None)

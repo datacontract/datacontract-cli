@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {# <script src="https://cdn.tailwindcss.com"></script> #}
   <style>
-    {{style | safe }}
+    {{ style | safe }}
   </style>
 </head>
 <body class="h-full">
@@ -58,78 +58,13 @@
 
       <div>
         <div class="space-y-6 mt-6">
-          <section>
-            <div class=" px-4 sm:px-0">
-              <h1 class="text-base font-semibold leading-6 text-gray-900" id="info">Info</h1>
-              <p class="text-sm text-gray-500">Information about the data contract</p>
-            </div>
-            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
-
-              <div class="px-4 py-5 sm:px-6">
-
-                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Title</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.title }}</dd>
-                  </div>
-
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Version</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.version }}</dd>
-                  </div>
-
-                  {% if datacontract.info.status %}
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Status</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.status }}</dd>
-                  </div>
-                  {% endif %}
-
-                  {% if datacontract.info.description %}
-                  <div class="sm:col-span-2">
-                    <dt class="text-sm font-medium text-gray-500">Description</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">{{ datacontract.info.description }}</span>
-                    </dd>
-                  </div>
-                  {% endif %}
-
-                  {% if datacontract.info.owner %}
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Owner</dt>
-                    <dd class="mt-1 text-sm text-gray-900">
-                      <span>{{ datacontract.info.owner }}</span>
-                    </dd>
-                  </div>
-                  {% endif %}
-
-                  {% if datacontract.info.contact %}
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Contact</dt>
-                    <dd class="mt-1 text-sm text-gray-900">
-                      {% if datacontract.info.contact.name %}
-                        {{ datacontract.info.contact.name }}
-                      {% endif %}
-                      {% if datacontract.info.contact.email %}
-                        <a href="mailto:{{ datacontract.info.contact.email }}" class="text-sky-500 hover:text-gray-700">{{ datacontract.info.contact.email }}</a>
-                      {% endif %}
-                      {% if datacontract.info.contact.url %}
-                        <div>
-                          <a href="{{ datacontract.info.contact.url }}" class="text-sky-500 hover:text-gray-700">{{ datacontract.info.contact.url }}</a>
-                        </div>
-                      {% endif %}
-                    </dd>
-                  </div>
-                  {% endif %}
-
-                </dl>
-              </div>
-            </div>
+          <section id="information">
+            {{ render_partial('partials/datacontract_information.html', datacontract = datacontract) }}
           </section>
 
 
           {% if datacontract.servers %}
-          <section>
+          <section id="servers">
             <div class="px-4 sm:px-0">
               <h1 class="text-base font-semibold leading-6 text-gray-900" id="servers">Servers</h1>
               <p class="text-sm text-gray-500">Servers of the data contract</p>
@@ -138,150 +73,7 @@
             <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
 
               {% for server_name, server in datacontract.servers.items() %}
-              <li class="relative flex gap-x-6 px-4 py-5 sm:px-6">
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Server</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server_name}}</dd>
-                  </div>
-                </div>
-
-                {% if server.type %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Type</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.type}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.project %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Project</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.project}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.dataset %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Dataset</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.dataset}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.location %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Location</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.location}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.endpointUrl %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Endpoint URL</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.endpointUrl}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.account %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Account</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.account}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.host %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Host</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.host}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.port %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Port</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.port}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.catalog %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Catalog</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.catalog}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.database %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Database</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.database}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.schema_ %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Schema</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.schema_}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.topic %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Topic</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.topic}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.path %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Path</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.path}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.format %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Format</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.format}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-                {% if server.delimiter %}
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Delimiter</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{server.delimiter}}</dd>
-                  </div>
-                </div>
-                {% endif %}
-
-              </li>
+                {{ render_partial('partials/server.html', server_name = server_name, server = server) }}
               {% endfor %}
 
             </ul>
@@ -291,51 +83,8 @@
 
 
           {% if datacontract.terms %}
-          <section>
-            <div class="px-4 sm:px-0">
-              <h1 class="text-base font-semibold leading-6 text-gray-900" id="terms">Terms</h1>
-              <p class="text-sm text-gray-500">Terms and conditions of the data contract</p>
-            </div>
-            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
-
-              <div class="px-4 py-5 sm:px-6">
-
-                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Usage</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">{{ datacontract.terms.usage }}</span>
-                    </dd>
-                  </div>
-
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Limitations</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">{{ datacontract.terms.limitations }}</span>
-                    </dd>
-                  </div>
-
-                  {% if datacontract.terms.billing %}
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Billing</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">{{ datacontract.terms.billing }}</span>
-                    </dd>
-                  </div>
-                  {% endif %}
-
-                  {% if datacontract.terms.noticePeriod %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Notice Period</dt>
-                      <dd class="mt-1 text-sm text-gray-900 flex" >
-                        <span class="whitespace-pre-wrap">{{ datacontract.terms.noticePeriod }}</span>
-                      </dd>
-                    </div>
-                  {% endif %}
-
-                </dl>
-              </div>
-            </div>
+          <section id="terms">
+            {{ render_partial('partials/datacontract_terms.html', datacontract = datacontract) }}
           </section>
           {% endif %}
 
@@ -369,90 +118,9 @@
                       </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-200 bg-white">
-
                       {% for field_name, field in model.fields.items() %}
-
-                      <tr>
-                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
-                          <div class="py-2 text-sm">
-                            {% if field.title %}
-                            <div>{{ field.title }}</div>
-                            {% endif %}
-                            <div class="font-mono">{{ field_name }}</div>
-                            {# TODO nested fields #}
-                          </div>
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
-                          {% if field.type %}
-                          {{ field.type }}
-                          {% endif %}
-                        </td>
-                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
-                          {% if field.description %}
-                          <div class="text-gray-500">{{ field.description }}</div>
-                          {% else %}
-                          <div class="text-gray-400">No description</div>
-                          {% endif %}
-
-                          {% if field.example %}
-                          <div class="mt-1 italic">
-                            Example: {{ field.example }}
-                          </div>
-                          {% endif %}
-
-                          <div>
-                            {% if field.primary %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">primary</span>
-                            {% endif %}
-                            {% if field.required %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
-                            {% endif %}
-                            {% if field.unique %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">unique</span>
-                            {% endif %}
-                            {% if field.format %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">format:{{ field.format }}</span>
-                            {% endif %}
-                            {% if field.minLength %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minLength:{{ field.minLength }}</span>
-                            {% endif %}
-                            {% if field.maxLength %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maxLength:{{ field.maxLength }}</span>
-                            {% endif %}
-                            {% if field.pattern %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">pattern:{{ field.pattern }}</span>
-                            {% endif %}
-                            {% if field.precision %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">precision:{{ field.precision }}</span>
-                            {% endif %}
-                            {% if field.scale %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">scale:{{ field.scale }}</span>
-                            {% endif %}
-                            {% if field.minimum %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minimum:{{ field.minimum }}</span>
-                            {% endif %}
-                            {% if field.exclusiveMinimum %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMinimum:{{ field.exclusiveMinimum }}</span>
-                            {% endif %}
-                            {% if field.maximum %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maximum:{{ field.maximum }}</span>
-                            {% endif %}
-                            {% if field.exclusiveMaximum %}
-                            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMaximum:{{ field.exclusiveMaximum }}</span>
-                            {% endif %}
-                            {% if field.classification %}
-                            <span class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{ field.classification }}</span>
-                            {% endif %}
-                            {% if field.pii %}
-                            <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
-                            {% endif %}
-                          </div>
-
-                        </td>
-
-                      </tr>
+                        {{ render_partial('partials/model_field.html', nested = False, field_name=field_name, field = field, level = 0) }}
                       {% endfor %}
-
                       </tbody>
                     </table>
                   </div>
@@ -460,266 +128,36 @@
               </div>
             </div>
             {% endfor %}
-
           </section>
+          
+          {% if datacontract.definitions %}
+          <section id="definitions">
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900">Definitions</h1>
+              <p class="text-sm text-gray-500">Domain specific definitions in the data contract</p>
+            </div>
+            
+            {% for definition_name, definition in datacontract.definitions.items() %}
+            {{ render_partial('partials/definition.html', definition_name = definition_name, definition = definition)}}
+            {% endfor %}
+          </section>
+          {% endif %}
 
-          {# TODO add definitions #}
+          {% if datacontract.examples %}
+          <section id="examples">
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900">Examples</h1>
+              <p class="text-sm text-gray-500">Examples for models in the data contract</p>
+            </div>
+            {% for example in datacontract.examples %}
+              {{ render_partial('partials/example.html', example = example) }}
+            {% endfor %}
+          </section>
+          {% endif %}
 
           {% if datacontract.servicelevels %}
           <section id="servicelevels">
-            <div class="px-4 sm:px-0">
-              <h1 class="text-base font-semibold leading-6 text-gray-900">Service Levels</h1>
-              <p class="text-sm text-gray-500">Service levels of the data contract</p>
-            </div>
-            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
-              <div class="px-4 py-5 sm:px-6">
-                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 divide-y">
-                  {% if datacontract.servicelevels.availability %}
-                  <div class="grid sm:grid-cols-2" >
-                    <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="availability">
-                      Availability
-                    </h2>
-                    {% if datacontract.servicelevels.availability.description %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Description</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.availability.description }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.availability.percentage %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Percentage</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.availability.percentage }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endif %}
-                  {% if datacontract.servicelevels.retention %}
-                  <div class="grid sm:grid-cols-2" >
-                    <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="retention">
-                      Retention
-                    </h2>
-                    {% if datacontract.servicelevels.retention.description %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Description</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.retention.description }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.retention.period %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Period</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.retention.period }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.retention.unlimited %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Unlimited</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.retention.unlimited }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endif %}
-                  {% if datacontract.servicelevels.latency %}
-                  <div class="grid sm:grid-cols-2" >
-                    <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="latency">
-                      Latency
-                    </h2>
-                    {% if datacontract.servicelevels.latency.description %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Description</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.latency.description }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.latency.threshold %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Threshold</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.latency.threshold }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.latency.sourceTimestampField %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Source Timestamp field</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.latency.sourceTimestampField
-                          }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.latency.processedTimestampField %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Processed Timestamp field</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.latency.processedTimestampField
-                          }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endif %}
-                  {% if datacontract.servicelevels.freshness %}
-                  <div class="grid sm:grid-cols-2" >
-                    <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="freshness">
-                      Freshness
-                    </h2>
-                    {% if datacontract.servicelevels.freshness.description %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Description</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.freshness.description }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.freshness.threshold %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Threshold</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.freshness.threshold }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.freshness.timestampField %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Timestamp field</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.freshness.timestampField }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endif %}
-                  {% if datacontract.servicelevels.frequency %}
-                  <div class="grid sm:grid-cols-2" >
-                    <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="frequency">
-                      Frequency
-                    </h2>
-                    {% if datacontract.servicelevels.frequency.description %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Description</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.frequency.description }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.frequency.type %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Type</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.frequency.type }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.frequency.interval %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Interval</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.frequency.interval }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.frequency.cron %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Cron</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.frequency.cron }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endif %}
-                  {% if datacontract.servicelevels.support %}
-                  <div class="grid sm:grid-cols-2" >
-                    <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="support">
-                      Support
-                    </h2>
-                    {% if datacontract.servicelevels.support.description %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Description</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.support.description }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.support.time %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Time</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.support.time }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.support.responseTime %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Response Time</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.support.responseTime }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endif %}
-                  {% if datacontract.servicelevels.backup %}
-                  <div class="grid sm:grid-cols-2" >
-                    <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="backup">
-                      Backup
-                    </h2>
-                    {% if datacontract.servicelevels.backup.description %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Description</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.description }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.backup.internal %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Interval</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.interval }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.backup.cron %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Cron</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.backup.cron }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.backup.recoveryTime %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Recovery Time</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.recoveryTime }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                    {% if datacontract.servicelevels.backup.recoveryPoint %}
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Recovery Point</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.recoveryPoint }}</span>
-                      </dd>
-                    </div>
-                    {% endif %}
-                  </div>
-                  {% endif %}
-                </dl>
-              </div>
-            </div>
+            {{ render_partial('partials/datacontract_servicelevels.html', datacontract = datacontract ) }}
           </section>
           {% endif %}
 
@@ -732,8 +170,6 @@
                 <p class="text-sm text-gray-500">
                   <span>{{ datacontract.quality.type }}</span>
                 </p>
-
-
               </div>
               <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
                 <div class="px-4 py-5 sm:px-6">
@@ -746,7 +182,6 @@
           {% endif %}
 
         </div>
-
       </div>
 
       <div class="mt-6 text-sm text-gray-400">

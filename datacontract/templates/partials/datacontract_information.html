@@ -1,0 +1,66 @@
+<div class=" px-4 sm:px-0">
+  <h1 class="text-base font-semibold leading-6 text-gray-900" id="info">Info</h1>
+  <p class="text-sm text-gray-500">Information about the data contract</p>
+</div>
+<div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+
+  <div class="px-4 py-5 sm:px-6">
+
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Title</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.title }}</dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Version</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.version }}</dd>
+      </div>
+
+      {% if datacontract.info.status %}
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Status</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{ datacontract.info.status }}</dd>
+      </div>
+      {% endif %}
+
+      {% if datacontract.info.description %}
+      <div class="sm:col-span-2">
+        <dt class="text-sm font-medium text-gray-500">Description</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">{{ datacontract.info.description }}</span>
+        </dd>
+      </div>
+      {% endif %}
+
+      {% if datacontract.info.owner %}
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Owner</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          <span>{{ datacontract.info.owner }}</span>
+        </dd>
+      </div>
+      {% endif %}
+
+      {% if datacontract.info.contact %}
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Contact</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          {% if datacontract.info.contact.name %}
+            {{ datacontract.info.contact.name }}
+          {% endif %}
+          {% if datacontract.info.contact.email %}
+            <a href="mailto:{{ datacontract.info.contact.email }}" class="text-sky-500 hover:text-gray-700">{{ datacontract.info.contact.email }}</a>
+          {% endif %}
+          {% if datacontract.info.contact.url %}
+            <div>
+              <a href="{{ datacontract.info.contact.url }}" class="text-sky-500 hover:text-gray-700">{{ datacontract.info.contact.url }}</a>
+            </div>
+          {% endif %}
+        </dd>
+      </div>
+      {% endif %}
+
+    </dl>
+  </div>
+</div>

@@ -31,10 +31,7 @@ class Server(pyd.BaseModel):
     token: str = None  # Use ENV variable
     dataProductId: str = None
     outputPortId: str = None
-    trusted_connection: str = None
-    trust_server_certificate: str = None
-    encrypt_connection: str = None
-    driver: str = None # Use ENV variable
+    driver: str = None
 
 
 class Terms(pyd.BaseModel):
@@ -62,6 +59,7 @@ class Definition(pyd.BaseModel):
     pii: bool = None
     classification: str = None
     tags: List[str] = []
+    example: str = None
 
 
 class Field(pyd.BaseModel):
@@ -90,6 +88,7 @@ class Field(pyd.BaseModel):
     items: "Field" = None
     precision: int = None
     scale: int = None
+    example: str = None
     config: Dict[str, Any] = None
 
 
