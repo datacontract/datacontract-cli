@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 import pydantic as pyd
 import yaml
@@ -88,6 +88,7 @@ class Field(pyd.BaseModel):
     precision: int = None
     scale: int = None
     example: str = None
+    config: Dict[str, Any] = None
 
 
 class Model(pyd.BaseModel):
