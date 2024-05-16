@@ -1,0 +1,253 @@
+<div class="px-4 sm:px-0">
+  <h1 class="text-base font-semibold leading-6 text-gray-900">Service Levels</h1>
+  <p class="text-sm text-gray-500">Service levels of the data contract</p>
+</div>
+<div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+  <div class="px-4 py-5 sm:px-6">
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 divide-y">
+      {% if datacontract.servicelevels.availability %}
+      <div class="grid sm:grid-cols-2" >
+        <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="availability">
+          Availability
+        </h2>
+        {% if datacontract.servicelevels.availability.description %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.availability.description }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.availability.percentage %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Percentage</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.availability.percentage }}</span>
+          </dd>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if datacontract.servicelevels.retention %}
+      <div class="grid sm:grid-cols-2" >
+        <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="retention">
+          Retention
+        </h2>
+        {% if datacontract.servicelevels.retention.description %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.retention.description }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.retention.period %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Period</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.retention.period }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.retention.unlimited %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Unlimited</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.retention.unlimited }}</span>
+          </dd>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if datacontract.servicelevels.latency %}
+      <div class="grid sm:grid-cols-2" >
+        <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="latency">
+          Latency
+        </h2>
+        {% if datacontract.servicelevels.latency.description %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.latency.description }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.latency.threshold %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Threshold</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.latency.threshold }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.latency.sourceTimestampField %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Source Timestamp field</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.latency.sourceTimestampField
+              }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.latency.processedTimestampField %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Processed Timestamp field</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.latency.processedTimestampField
+              }}</span>
+          </dd>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if datacontract.servicelevels.freshness %}
+      <div class="grid sm:grid-cols-2" >
+        <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="freshness">
+          Freshness
+        </h2>
+        {% if datacontract.servicelevels.freshness.description %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.freshness.description }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.freshness.threshold %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Threshold</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.freshness.threshold }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.freshness.timestampField %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Timestamp field</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.freshness.timestampField }}</span>
+          </dd>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if datacontract.servicelevels.frequency %}
+      <div class="grid sm:grid-cols-2" >
+        <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="frequency">
+          Frequency
+        </h2>
+        {% if datacontract.servicelevels.frequency.description %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.frequency.description }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.frequency.type %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Type</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.frequency.type }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.frequency.interval %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Interval</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.frequency.interval }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.frequency.cron %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Cron</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.frequency.cron }}</span>
+          </dd>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if datacontract.servicelevels.support %}
+      <div class="grid sm:grid-cols-2" >
+        <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="support">
+          Support
+        </h2>
+        {% if datacontract.servicelevels.support.description %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.support.description }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.support.time %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Time</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.support.time }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.support.responseTime %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Response Time</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.support.responseTime }}</span>
+          </dd>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if datacontract.servicelevels.backup %}
+      <div class="grid sm:grid-cols-2" >
+        <h2 class="sm:col-span-2 mt-2 text-base font-semibold leading-6 text-gray-900" id="backup">
+          Backup
+        </h2>
+        {% if datacontract.servicelevels.backup.description %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.description }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.backup.internal %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Interval</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.interval }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.backup.cron %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Cron</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap font-mono">{{ datacontract.servicelevels.backup.cron }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.backup.recoveryTime %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Recovery Time</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.recoveryTime }}</span>
+          </dd>
+        </div>
+        {% endif %}
+        {% if datacontract.servicelevels.backup.recoveryPoint %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Recovery Point</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <span class="whitespace-pre-wrap">{{ datacontract.servicelevels.backup.recoveryPoint }}</span>
+          </dd>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </dl>
+  </div>
+</div>
