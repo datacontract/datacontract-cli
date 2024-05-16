@@ -1,0 +1,99 @@
+<div class="mt-3 flow-root">
+  <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+      <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+
+        <table class="min-w-full divide-y divide-gray-300">
+          <thead class="bg-gray-50">
+          <tr>
+            <th scope="colgroup" colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+              <span>{{ definition_name }}</span>
+              <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ definition.domain }}</span>
+              <div class="text-sm font-medium text-gray-500">{{ definition.description }}</div>
+            </th>
+          </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <tr>
+              <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
+                <div class="py-2 text-sm">
+                  {% if definition.title %}
+                  <div>{{ definition.title }}</div>
+                  {% endif %}
+                  <div class="font-mono">{{ definition.name }}</div>
+                </div>
+              </td>
+              <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+                <div class="py-2 text-sm">
+                  {{ definition.type }}
+                  {% if definition.format %}
+                    <span class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{ definition.format }}</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-3 py-2 text-sm text-gray-500 w-9/12">
+                {% if definition.example %}
+                <div class="mt-1">
+                  <span class="text-gray-600 font-medium">Example:</span> <span class="font-mono">{{ definition.example }}</span>
+                </div>
+                {% endif %}
+                {% if definition.tags %}
+                <div>
+                  <span class="text-gray-600 font-medium">Tags:</span>
+                  {% for tag in definition.tags %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{ tag }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                {% if definition.enum %}
+                <div class="py-2 text-sm">
+                  <span class="text-gray-600 font-medium">Enum:</span>
+                  {% for value in definition.enum %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{ value }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                <div>
+                  {% if definition.minLength %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minLength:{{ definition.minLength }}</span>
+                  {% endif %}
+                  {% if definition.maxLength %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maxLength:{{ definition.maxLength }}</span>
+                  {% endif %}
+                  {% if definition.pattern %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">pattern:{{ definition.pattern }}</span>
+                  {% endif %}
+                  {% if definition.precision %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">precision:{{ definition.precision }}</span>
+                  {% endif %}
+                  {% if definition.scale %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">scale:{{ definition.scale }}</span>
+                  {% endif %}
+                  {% if definition.minimum %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minimum:{{ definition.minimum }}</span>
+                  {% endif %}
+                  {% if definition.exclusiveMinimum %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMinimum:{{ definition.exclusiveMinimum }}</span>
+                  {% endif %}
+                  {% if definition.maximum %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maximum:{{ definition.maximum }}</span>
+                  {% endif %}
+                  {% if definition.exclusiveMaximum %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMaximum:{{ definition.exclusiveMaximum }}</span>
+                  {% endif %}
+                  {% if definition.classification %}
+                  <span class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{ definition.classification }}</span>
+                  {% endif %}
+                  {% if definition.pii %}
+                  <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
+                  {% endif %}
+                </div>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

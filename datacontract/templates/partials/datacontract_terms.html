@@ -1,0 +1,44 @@
+<div class="px-4 sm:px-0">
+  <h1 class="text-base font-semibold leading-6 text-gray-900" id="terms">Terms</h1>
+  <p class="text-sm text-gray-500">Terms and conditions of the data contract</p>
+</div>
+<div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+
+  <div class="px-4 py-5 sm:px-6">
+
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Usage</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">{{ datacontract.terms.usage }}</span>
+        </dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Limitations</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">{{ datacontract.terms.limitations }}</span>
+        </dd>
+      </div>
+
+      {% if datacontract.terms.billing %}
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Billing</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">{{ datacontract.terms.billing }}</span>
+        </dd>
+      </div>
+      {% endif %}
+
+      {% if datacontract.terms.noticePeriod %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Notice Period</dt>
+          <dd class="mt-1 text-sm text-gray-900 flex" >
+            <span class="whitespace-pre-wrap">{{ datacontract.terms.noticePeriod }}</span>
+          </dd>
+        </div>
+      {% endif %}
+
+    </dl>
+  </div>
+</div>

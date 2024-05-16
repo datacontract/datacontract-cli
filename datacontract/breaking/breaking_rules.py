@@ -90,6 +90,10 @@ class BreakingRules:
     field_tags_removed = Severity.INFO
     field_tags_updated = Severity.INFO
 
+    field_example_added = Severity.INFO
+    field_example_updated = Severity.INFO
+    field_example_removed = Severity.INFO
+
     # quality Rules
     quality_added = Severity.INFO
     quality_removed = Severity.WARNING

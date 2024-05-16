@@ -1,0 +1,97 @@
+{% if nested %}
+<tr class="bg-gray-50">
+  <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12 flex items-center gap-x-4">
+    {# poor mans approach to indenting things a bit #}
+    {% for i in range(0,level)%}
+    <div class="w-2">&nbsp;</div>
+    {% endfor %}
+    <div>
+      &#x21b3;
+    </div>
+{% else %}
+<tr>
+  <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
+{% endif %}
+    <div class="py-2 text-sm">
+      {% if field.title %}
+      <div>{{ field.title }}</div>
+      {% endif %}
+      <div class="font-mono">{{ field_name }}</div>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+    {% if field.type %}
+    {{ field.type }}
+    {% endif %}
+  </td>
+  <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+    {% if field.description %}
+    <div class="text-gray-500">{{ field.description }}</div>
+    {% else %}
+    <div class="text-gray-400">No description</div>
+    {% endif %}
+
+    {% if field.example %}
+    <div class="mt-1 italic">
+      Example: <span class="font-mono">{{ field.example }}</span>
+    </div>
+    {% endif %}
+
+    <div>
+      {% if field.primary %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">primary</span>
+      {% endif %}
+      {% if field.required %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
+      {% endif %}
+      {% if field.unique %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">unique</span>
+      {% endif %}
+      {% if field.format %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">format:{{ field.format }}</span>
+      {% endif %}
+      {% if field.minLength %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minLength:{{ field.minLength }}</span>
+      {% endif %}
+      {% if field.maxLength %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maxLength:{{ field.maxLength }}</span>
+      {% endif %}
+      {% if field.pattern %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">pattern:{{ field.pattern }}</span>
+      {% endif %}
+      {% if field.precision %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">precision:{{ field.precision }}</span>
+      {% endif %}
+      {% if field.scale %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">scale:{{ field.scale }}</span>
+      {% endif %}
+      {% if field.minimum %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minimum:{{ field.minimum }}</span>
+      {% endif %}
+      {% if field.exclusiveMinimum %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMinimum:{{ field.exclusiveMinimum }}</span>
+      {% endif %}
+      {% if field.maximum %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maximum:{{ field.maximum }}</span>
+      {% endif %}
+      {% if field.exclusiveMaximum %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMaximum:{{ field.exclusiveMaximum }}</span>
+      {% endif %}
+      {% if field.classification %}
+      <span class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{ field.classification }}</span>
+      {% endif %}
+      {% if field.pii %}
+      <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
+      {% endif %}
+    </div>
+  </td>
+</tr>
+
+{% if field.fields %}
+{% for field_name, field in field.fields.items() %}
+  {{ render_partial('partials/model_field.html', nested = True, field_name=field_name, field = field, level = level + 1) }}
+{% endfor %}
+<!-- Mark the end of the contained fields -->
+<tr style="--tw-divide-y-reverse: 2">
+</tr>
+{% endif %}
