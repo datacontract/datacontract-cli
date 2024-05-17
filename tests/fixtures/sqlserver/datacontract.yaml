@@ -9,7 +9,7 @@ servers:
     type: sqlserver
     host: localhost
     port: __PORT__
-    database: test
+    database: tempdb
     schema: dbo
     driver: ODBC Driver 18 for SQL Server
 models:
@@ -22,7 +22,9 @@ models:
         unique: true
         pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
       field_two:
-        type: integer
+        type: int
         minimum: 10
       field_three:
-        type: datetimeoffset
+        type: timestamp
+        config:
+          sqlserverType: DATETIME2
