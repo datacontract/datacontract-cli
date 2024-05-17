@@ -9,15 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `datacontract export --format go`: Export to go types format
-- datacontract catalog: Search form
+
+## [0.10.4] - 2024-05-17
+
+### Added
+
+- `datacibtract catalog` Search
+- `datacontract publish`: Publish the data contract to the Data Mesh Manager
 - `datacontract import --format bigquery`: Import from BigQuery format (#110)
 - `datacontract export --format bigquery`: Export to BigQuery format (#111)
 - `datacontract export --format avro`: Now supports [Avro logical types](https://avro.apache.org/docs/1.11.1/specification/#logical-types) to better model date types. `date`, `timestamp`/`timestamp-tz` and `timestamp-ntz` are now mapped to the appropriate logical types. (#141)
 - `datacontract import --format jsonschema`: Import from JSON schema (#91)
 - `datacontract export --format jsonschema`: Improved export by exporting more additional information
-- `datacontract publish`: Publish the data contract to the Data Mesh Manager
-- HTML Export: Added support for Service Levels, Definitions, Examples and nested Fields (one level deep)
+- `datacontract export --format html`: Added support for Service Levels, Definitions, Examples and nested Fields (one level deep)
+- `datacontract export --format go`: Export to go types format
 
 ## [0.10.3] - 2024-05-05
 
