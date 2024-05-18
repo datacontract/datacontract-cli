@@ -20,7 +20,7 @@ def to_bigquery_schema(model_name: str, model_value: Model, server: Server) -> d
         "description": model_value.description,
         "schema": {
             "fields": to_fields_array(model_value.fields)
-            }
+        }
     }
 
 def to_fields_array(fields: Dict[str, Field]) -> List[Dict[str, Field]]:
