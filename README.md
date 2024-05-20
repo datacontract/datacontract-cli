@@ -16,7 +16,7 @@ It uses data contract YAML files to lint the data contract, connect to data sour
 
 ## Getting started
 
-Let's look at this data contract:  
+Let's look at this data contract:
 [https://datacontract.com/examples/orders-latest/datacontract.yaml](https://datacontract.com/examples/orders-latest/datacontract.yaml)
 
 We have a _servers_ section with endpoint details to the S3 bucket, _models_ for the structure of the data, _servicelevels_ and _quality_ attributes that describe the expected freshness and number of rows.
@@ -188,11 +188,11 @@ Commands
 
 ### init
 
-```                                                                                                
- Usage: datacontract init [OPTIONS] [LOCATION]                                                  
-                                                                                                
- Download a datacontract.yaml template and write it to file.                                    
-                                                                                                
+```
+ Usage: datacontract init [OPTIONS] [LOCATION]
+
+ Download a datacontract.yaml template and write it to file.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml to create. │
 │                             [default: datacontract.yaml]                                    │
@@ -210,10 +210,10 @@ Commands
 ### lint
 
 ```
- Usage: datacontract lint [OPTIONS] [LOCATION]                                                                                     
-                                                                                                                                   
- Validate that the datacontract.yaml is correctly formatted.                                                                       
-                                                                                                                                   
+ Usage: datacontract lint [OPTIONS] [LOCATION]
+
+ Validate that the datacontract.yaml is correctly formatted.
+
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -227,10 +227,10 @@ Commands
 ### test
 
 ```
- Usage: datacontract test [OPTIONS] [LOCATION]                                                                                     
-                                                                                                                                   
- Run schema and quality tests on configured servers.                                                                               
-                                                                                                                                   
+ Usage: datacontract test [OPTIONS] [LOCATION]
+
+ Run schema and quality tests on configured servers.
+
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -263,11 +263,11 @@ Data Contract CLI connects to a data source and runs schema and quality tests to
 $ datacontract test --server production datacontract.yaml
 ```
 
-To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection. 
+To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection.
 In addition, credentials, such as username and passwords, may be defined with environment variables.
 
 The application uses different engines, based on the server `type`.
-Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_. 
+Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_.
 
 Credentials are provided with environment variables.
 
@@ -453,7 +453,7 @@ dbutils.library.restartPython()
 from datacontract.data_contract import DataContract
 
 data_contract = DataContract(
-  data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml", 
+  data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml",
   spark=spark)
 run = data_contract.test()
 run.result
@@ -478,7 +478,7 @@ servers:
 models:
   my_table_1: # corresponds to a table
     type: table
-    fields: 
+    fields:
       my_column_1: # corresponds to a column
         type: varchar
 ```
@@ -536,7 +536,7 @@ servers:
 models:
   my_table_1: # corresponds to a table
     type: table
-    fields: 
+    fields:
       my_column_1: # corresponds to a column
         type: varchar
 ```
@@ -550,13 +550,50 @@ models:
 
 
 
+
+### Postgres
+
+Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  postgres:
+    type: sqlserver
+    host: localhost
+    port: 5432
+    database: tempdb
+    schema: dbo
+    driver: ODBC Driver 18 for SQL Server
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable             | Example            | Description |
+|----------------------------------|--------------------|-------------|
+| `DATACONTRACT_SQLSERVER_USERNAME` | `root`         | Username    |
+| `DATACONTRACT_SQLSERVER_PASSWORD` | `toor` | Password    |
+| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` | `True` | Use windows authentication, instead of login    |
+| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate    |
+| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `True` | Use SSL    |
+
+
+
 ### export
 
 ```
- Usage: datacontract export [OPTIONS] [LOCATION]                                                                                                                           
-                                                                                                                                                                           
- Convert data contract to a specific format. Prints to stdout or to the specified output file.                                                                                                     
-                                                                                                                                                                           
+ Usage: datacontract export [OPTIONS] [LOCATION]
+
+ Convert data contract to a specific format. Prints to stdout or to the specified output file.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -594,9 +631,9 @@ Available export options:
 
 | Type                 | Description                                             | Status |
 |----------------------|---------------------------------------------------------|--------|
-| `html`               | Export to HTML                                          | ✅     | 
-| `jsonschema`         | Export to JSON Schema                                   | ✅     | 
-| `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅     | 
+| `html`               | Export to HTML                                          | ✅     |
+| `jsonschema`         | Export to JSON Schema                                   | ✅     |
+| `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅     |
 | `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅     |
 | `dbt`                | Export to dbt models in YAML format                     | ✅     |
 | `dbt-sources`        | Export to dbt sources in YAML format                    | ✅     |
@@ -615,11 +652,11 @@ Available export options:
 
 #### Great Expectations
 
-The export function transforms a specified data contract into a comprehensive Great Expectations JSON suite. 
+The export function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
 If the contract includes multiple models, you need to specify the names of the model you wish to export.
 
 ```shell
-datacontract  export datacontract.yaml --format great-expectations --model orders 
+datacontract  export datacontract.yaml --format great-expectations --model orders
 ```
 
 The export creates a list of expectations by utilizing:
@@ -629,7 +666,7 @@ The export creates a list of expectations by utilizing:
 
 #### RDF
 
-The export function converts a given data contract into a RDF representation. You have the option to 
+The export function converts a given data contract into a RDF representation. You have the option to
 add a base_url which will be used as the default prefix to resolve relative IRIs inside the document.
 
 ```shell
@@ -675,7 +712,7 @@ In this case there's no need to specify `source` but instead `bt-project-id`, `b
 
 For providing authentication to the Client, please see [the google documentation](https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to) or the one [about authorizing client libraries](https://cloud.google.com/bigquery/docs/authentication#client-libs).
 
-Example: 
+Example:
 ```bash
 # Example import from SQL DDL
 datacontract import --format sql --source my_ddl.sql
@@ -709,10 +746,10 @@ Available import options:
 ### breaking
 
 ```
- Usage: datacontract breaking [OPTIONS] LOCATION_OLD LOCATION_NEW                                                            
-                                                                                                                             
- Identifies breaking changes between data contracts. Prints to stdout.                                                       
-                                                                                                                             
+ Usage: datacontract breaking [OPTIONS] LOCATION_OLD LOCATION_NEW
+
+ Identifies breaking changes between data contracts. Prints to stdout.
+
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]        │
 │ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]        │
@@ -725,10 +762,10 @@ Available import options:
 ### changelog
 
 ```
- Usage: datacontract changelog [OPTIONS] LOCATION_OLD LOCATION_NEW                                                           
-                                                                                                                             
- Generate a changelog between data contracts. Prints to stdout.                                                              
-                                                                                                                             
+ Usage: datacontract changelog [OPTIONS] LOCATION_OLD LOCATION_NEW
+
+ Generate a changelog between data contracts. Prints to stdout.
+
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]        │
 │ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]        │
@@ -741,10 +778,10 @@ Available import options:
 ### diff
 
 ```
- Usage: datacontract diff [OPTIONS] LOCATION_OLD LOCATION_NEW                                                                
-                                                                                                                             
- PLACEHOLDER. Currently works as 'changelog' does.                                                                           
-                                                                                                                             
+ Usage: datacontract diff [OPTIONS] LOCATION_OLD LOCATION_NEW
+
+ PLACEHOLDER. Currently works as 'changelog' does.
+
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]        │
 │ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]        │
@@ -876,14 +913,14 @@ Create a data contract based on the requirements from use cases.
    ```bash
    $ datacontract init
    ```
-   
+
 2. Add examples to the `datacontract.yaml`. Do not start with the data model, although you are probably tempted to do that. Examples are the fastest way to get feedback from everybody and not loose someone in the discussion.
 
 3. Create the model based on the examples. Test the model against the examples to double-check whether the model matches the examples.
     ```bash
     $ datacontract test --examples
     ```
-   
+
 4. Add quality checks and additional type constraints one by one to the contract and make sure the examples and the actual data still adheres to the contract. Check against examples for a very fast feedback loop.
     ```bash
     $ datacontract test --examples
