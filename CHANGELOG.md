@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+ - Added support for `sqlserver` (#196)
 
 
 ## [0.10.4] - 2024-05-17
@@ -38,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for `delta` tables on S3 (#24)
 - Added new command `datacontract catalog` that generates a data contract catalog with an `index.html` file.
 - Added field format information to HTML export
- 
+
 ### Fixed
 - RDF Export: Fix error if owner is not a URI/URN
 
@@ -65,13 +66,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added export format **html** (#15)
 - Added descriptions as comments to `datacontract export --format sql` for Databricks dialects
-- Added import of arrays in Avro import 
+- Added import of arrays in Avro import
 
 ## [0.9.8] - 2024-04-01
 
 ### Added
- 
-- Added export format **great-expectations**: `datacontract export --format great-expectations`  
+
+- Added export format **great-expectations**: `datacontract export --format great-expectations`
 - Added gRPC support to OpenTelemetry integration for publishing test results
 - Added AVRO import support for namespace (#121)
 - Added handling for optional fields in avro import (#112)
@@ -153,7 +154,7 @@ We start with JSON messages and avro, and Protobuf will follow.
 ## [0.9.0] - 2024-01-26 - BREAKING
 
 This is a breaking change (we are still on a 0.x.x version).
-The project migrated from Golang to Python. 
+The project migrated from Golang to Python.
 The Golang version can be found at [cli-go](https://github.com/datacontract/cli-go)
 
 ### Added
