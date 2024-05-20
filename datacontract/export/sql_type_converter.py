@@ -1,4 +1,3 @@
-import enum
 from datacontract.model.data_contract_specification import Field
 
 
