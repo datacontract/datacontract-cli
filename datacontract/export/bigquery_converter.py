@@ -5,8 +5,6 @@ from typing import Dict, List
 from datacontract.model.data_contract_specification import Model, Field, Server
 from datacontract.model.exceptions import DataContractException
 
-logging.basicConfig(level=logging.INFO, force=True)
-
 def to_bigquery_json(model_name: str, model_value: Model, server: Server) -> str:
     bigquery_table = to_bigquery_schema(model_name, model_value, server)
     return json.dumps(bigquery_table, indent=2)
@@ -22,14 +20,14 @@ def to_bigquery_schema(model_name: str, model_value: Model, server: Server) -> d
         "description": model_value.description,
         "schema": {
             "fields": to_fields_array(model_value.fields)
-            }
+        }
     }
 
 def to_fields_array(fields: Dict[str, Field]) -> List[Dict[str, Field]]:
     bq_fields = []
     for field_name, field in fields.items():
         bq_fields.append(to_field(field_name, field))
-    
+
     return bq_fields
 
 
@@ -106,4 +104,3 @@ def map_type_to_bigquery(type_str: str, field_name: str) -> str:
             reason=f"Unsupported type {type_str} in data contract definition.",
             engine="datacontract",
         )
-    

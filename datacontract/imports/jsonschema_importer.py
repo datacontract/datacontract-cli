@@ -1,8 +1,10 @@
+import json
+
+import fastjsonschema
+
 from datacontract.model.data_contract_specification import \
     DataContractSpecification, Model, Field, Definition
 from datacontract.model.exceptions import DataContractException
-import json
-import jsonschema
 
 
 def convert_json_schema_properties(properties, is_definition=False):
@@ -72,8 +74,8 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
     try:
         with open(source, "r") as file:
             json_schema = json.loads(file.read())
-            validator = jsonschema.Draft7Validator({})
-            validator.check_schema(json_schema)
+            validator = fastjsonschema.compile({})
+            validator(json_schema)
 
             model = Model(
                 description=json_schema.get('description'),
@@ -126,6 +128,14 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
 
                     definition = Definition(name=def_name, **definition_kwargs)
                     data_contract_specification.definitions[def_name] = definition
+
+    except fastjsonschema.JsonSchemaException as e:
+        raise DataContractException(
+            type="schema",
+            name="Parse json schema",
+            reason=f"Failed to parse json schema from {source}: {e}",
+            engine="datacontract"
+        )
 
     except Exception as e:
         raise DataContractException(
