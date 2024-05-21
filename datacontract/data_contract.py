@@ -15,6 +15,7 @@ from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.export.avro_idl_converter import to_avro_idl
 from datacontract.export.bigquery_converter import to_bigquery_json
+from datacontract.export.dbml_converter import to_dbml_diagram
 from datacontract.export.dbt_converter import to_dbt_models_yaml, \
     to_dbt_sources_yaml, to_dbt_staging_sql
 from datacontract.export.great_expectations_converter import \
@@ -334,6 +335,8 @@ class DataContract:
             if found_server.type != 'bigquery':
                 raise RuntimeError(f"Export to {export_format} requires selecting a bigquery server from the data contract.")
             return to_bigquery_json(model_name, model_value, found_server)
+        if export_format == "dbml":
+            return to_dbml_diagram(data_contract)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
