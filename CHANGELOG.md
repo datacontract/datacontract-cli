@@ -9,12 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `datacontract export --format dbml`: Export to [Database Markup Language (DBML)](https://dbml.dbdiagram.io/home/) (#135)
 
 ## [0.10.4] - 2024-05-17
 
 ### Added
 
-- `datacibtract catalog` Search
+- `datacontract catalog` Search
 - `datacontract publish`: Publish the data contract to the Data Mesh Manager
 - `datacontract import --format bigquery`: Import from BigQuery format (#110)
 - `datacontract export --format bigquery`: Export to BigQuery format (#111)
