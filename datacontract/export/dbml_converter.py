@@ -1,89 +1,90 @@
 from datetime import datetime
 from importlib.metadata import version
 import pytz
+from datacontract.export.sql_type_converter import convert_to_sql_type
 import datacontract.model.data_contract_specification as spec
 from typing import Tuple
 
 
-def to_dbml_diagram(contract: spec.DataContractSpecification) -> str:
+def to_dbml_diagram(contract: spec.DataContractSpecification, server: spec.Server) -> str:
+    
     result = ''
-    result += add_generated_info(contract) + "\n"
+    result += add_generated_info(contract, server) + "\n"
     result += generate_project_info(contract) + "\n"
 
     for model_name, model in contract.models.items():
-        table_description = generate_table(model_name, model)
+        table_description = generate_table(model_name, model, server)
         result += f"\n{table_description}\n"
 
     return result
 
-def add_generated_info(contract: spec.DataContractSpecification) -> str:
+def add_generated_info(contract: spec.DataContractSpecification, server: spec.Server) -> str:
     tz = pytz.timezone("UTC")
     now = datetime.now(tz)
-    formatted_date = now.strftime("%d %b %Y %H:%M:%S UTC")
+    formatted_date = now.strftime("%b %d %Y")
     datacontract_cli_version = get_version()
+    dialect = 'Logical Datacontract' if server is None else server.type
 
-    generated_info = (
-        f'Generated at {formatted_date} by datacontract-cli version {datacontract_cli_version}\n'
-        f'for datacontract {contract.info.title} ({contract.id}) version {contract.info.version} \n'
-    )
+    generated_info = """
+Generated at {0} by datacontract-cli version {1}
+for datacontract {2} ({3}) version {4} 
+Using {5} Types for the field types
+    """.format(formatted_date, datacontract_cli_version, contract.info.title, contract.id, contract.info.version, dialect)
 
-    comment = (
-        f'/*\n'
-        f'{generated_info}\n'
-        f'*/\n'
-    )
+    comment = """/*
+{0}
+*/
+    """.format(generated_info)
 
-    note = (
-        "Note project_info {\n"
-        "'''\n"
-        f'{generated_info}\n'
-        "'''\n"
-        "}\n"
-    )
+    note = """Note project_info {{
+'''
+{0}
+'''
+}}
+    """.format(generated_info)
 
-    return (
-        f"{comment}\n"
-        f"{note}"
-    )
+    return """{0}
+{1}
+    """.format(comment, note)
 
 def get_version() -> str:
     try:
         return version("datacontract_cli")
-    except Exception as e:
+    except Exception:
         return ""
 
 def generate_project_info(contract: spec.DataContractSpecification) -> str:
-    return (f'Project "{contract.info.title}" {{ \n'
-        f'Note: "{' '.join(contract.info.description.splitlines())}"\n'
-    "} \n")
+    return """Project "{0}" {{
+    Note: "{1}"
+}}\n
+    """.format(contract.info.title, ' '.join(contract.info.description.splitlines()))
 
-def generate_table(model_name: str, model: spec.Model) -> str:
-    result = (
-        f'Table "{model_name}" {{ \n'
-        f'Note: "{' '.join(model.description.splitlines())}"\n'
-    )
+def generate_table(model_name: str, model: spec.Model, server: spec.Server) -> str:
+    result = """Table "{0}" {{ 
+Note: "{1}"
+    """.format(model_name, ' '.join(model.description.splitlines()))
 
     references = []
 
     # Add all the fields
     for field_name, field in model.fields.items():
-        ref, field_string = generate_field(field_name, field, model_name)
+        ref, field_string = generate_field(field_name, field, model_name, server)
         if ref is not None:
             references.append(ref)
-        result += f"{field_string}\n"
+        result += "{0}\n".format(field_string)
 
     result += "}\n"
 
     # and if any: add the references
     if len(references) > 0:
         for ref in references:
-            result += f"Ref: {ref}\n"
+            result += "Ref: {0}\n".format(ref)
         
         result += "\n"
 
     return result
 
-def generate_field(field_name: str, field: spec.Field, model_name: str) -> Tuple[str, str]:
+def generate_field(field_name: str, field: spec.Field, model_name: str, server: spec.Server) -> Tuple[str, str]:
 
     field_attrs = []
     if field.primary:
@@ -98,11 +99,13 @@ def generate_field(field_name: str, field: spec.Field, model_name: str) -> Tuple
         field_attrs.append('null')
 
     if field.description:
-        field_attrs.append(f'Note: "{' '.join(field.description.splitlines())}"')
+        field_attrs.append('Note: "{0}"'.format(' '.join(field.description.splitlines())))
 
-    field_str = f'"{field_name}" {field.type} [{','.join(field_attrs)}]'
+    field_type = field.type if server is None else convert_to_sql_type(field, server.type)
+
+    field_str = '"{0}" "{1}" [{2}]'.format(field_name, field_type, ','.join(field_attrs))
     ref_str = None
     if (field.references) is not None:
         # we always assume many to one, as datacontract doesn't really give us more info
-        ref_str = f"{model_name}.{field_name} > {field.references}"
+        ref_str = "{0}.{1} > {2}".format(model_name, field_name, field.references)
     return (ref_str, field_str)

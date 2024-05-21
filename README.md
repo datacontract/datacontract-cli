@@ -654,6 +654,13 @@ Having the data contract inside an RDF Graph gives us access the following use c
 - Apply graph algorithms on multiple data contracts (Find similar data contracts, find "gatekeeper"
 data products, find the true domain owner of a field attribute)
 
+#### DBML
+
+The export function converts the logical data types of the datacontract into the specific ones of a concrete Database
+if a server is selected via the `--server` option (based on the `type` of that server). If no server is selected, the 
+logical data types are exported.
+
+
 ### import
 
 ```

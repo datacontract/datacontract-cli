@@ -336,7 +336,8 @@ class DataContract:
                 raise RuntimeError(f"Export to {export_format} requires selecting a bigquery server from the data contract.")
             return to_bigquery_json(model_name, model_value, found_server)
         if export_format == "dbml":
-            return to_dbml_diagram(data_contract)
+            found_server = data_contract.servers.get(self._server)
+            return to_dbml_diagram(data_contract, found_server)
         else:
             print(f"Export format {export_format} not supported.")
             return ""
