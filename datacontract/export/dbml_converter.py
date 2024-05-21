@@ -1,15 +1,56 @@
+from datetime import datetime
+from importlib.metadata import version
+import pytz
 import datacontract.model.data_contract_specification as spec
 from typing import Tuple
 
 
 def to_dbml_diagram(contract: spec.DataContractSpecification) -> str:
-    result = generate_project_info(contract) + "\n"
+    result = ''
+    result += add_generated_info(contract) + "\n"
+    result += generate_project_info(contract) + "\n"
 
     for model_name, model in contract.models.items():
         table_description = generate_table(model_name, model)
         result += f"\n{table_description}\n"
 
     return result
+
+def add_generated_info(contract: spec.DataContractSpecification) -> str:
+    tz = pytz.timezone("UTC")
+    now = datetime.now(tz)
+    formatted_date = now.strftime("%d %b %Y %H:%M:%S UTC")
+    datacontract_cli_version = get_version()
+
+    generated_info = (
+        f'Generated at {formatted_date} by datacontract-cli version {datacontract_cli_version}\n'
+        f'for datacontract {contract.info.title} ({contract.id}) version {contract.info.version} \n'
+    )
+
+    comment = (
+        f'/*\n'
+        f'{generated_info}\n'
+        f'*/\n'
+    )
+
+    note = (
+        "Note project_info {\n"
+        "'''\n"
+        f'{generated_info}\n'
+        "'''\n"
+        "}\n"
+    )
+
+    return (
+        f"{comment}\n"
+        f"{note}"
+    )
+
+def get_version() -> str:
+    try:
+        return version("datacontract_cli")
+    except Exception as e:
+        return ""
 
 def generate_project_info(contract: spec.DataContractSpecification) -> str:
     return (f'Project "{contract.info.title}" {{ \n'
