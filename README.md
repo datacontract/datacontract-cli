@@ -557,31 +557,33 @@ models:
                                                                                                                                                                            
  Convert data contract to a specific format. Prints to stdout or to the specified output file.                                                                                                     
                                                                                                                                                                            
-╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                                   │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|dbt-staging  The export format. [default: None] [required]                  │
-│                    -sql|odcs|rdf|avro|protobuf|great-expectations|terraform|avro                                                                 │
-│                    -idl|sql|sql-query|html|bigquery|go]                                                                                             │
-│    --output        PATH                                                           Specify the file path where the exported data will be saved.   │
-│                                                                                   If no path is provided, the output will be printed to stdout.  │
-│                                                                                   [default: None]                                                │
-│    --server        TEXT                                                           The server name to export. [default: None]                     │
-│    --model         TEXT                                                           Use the key of the model in the data contract yaml file to     │
-│                                                                                   refer to a model, e.g., `orders`, or `all` for all models      │
-│                                                                                   (default).                                                     │
-│                                                                                   [default: all]                                                 │
-│    --help                                                                         Show this message and exit.                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ RDF Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --rdf-base        TEXT  [rdf] The base URI used to generate the RDF graph. [default: None]                                                       │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ SQL Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --sql-server-type        TEXT  [sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql    │
-│                                dialect via the specified servers in the data contract.                                                           │
-│                                [default: auto]                                                                                                   │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
+│                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
+│                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
+│                    y|dbml]                                                                                                     │
+│    --output        PATH                                                  Specify the file path where the exported data will be │
+│                                                                          saved. If no path is provided, the output will be     │
+│                                                                          printed to stdout.                                    │
+│                                                                          [default: None]                                       │
+│    --server        TEXT                                                  The server name to export. [default: None]            │
+│    --model         TEXT                                                  Use the key of the model in the data contract yaml    │
+│                                                                          file to refer to a model, e.g., `orders`, or `all`    │
+│                                                                          for all models (default).                             │
+│                                                                          [default: all]                                        │
+│    --help                                                                Show this message and exit.                           │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ RDF Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --rdf-base        TEXT  [rdf] The base URI used to generate the RDF graph. [default: None]                                     │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ SQL Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --sql-server-type        TEXT  [sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically │
+│                                detect the sql dialect via the specified servers in the data contract.                          │
+│                                [default: auto]                                                                                 │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -611,6 +613,7 @@ Available export options:
 | `bigquery`           | Export to BigQuery Schemas                              | ✅     |
 | `go`                 | Export to Go types                                      | ✅     |
 | `pydantic-model`     | Export to pydantic models                               | ✅     |
+| `DBML`               | Export to a DBML Diagram description                    | ✅     |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
@@ -650,6 +653,13 @@ Having the data contract inside an RDF Graph gives us access the following use c
 - Using full power of OWL to reason about the graph structure of data contracts
 - Apply graph algorithms on multiple data contracts (Find similar data contracts, find "gatekeeper"
 data products, find the true domain owner of a field attribute)
+
+#### DBML
+
+The export function converts the logical data types of the datacontract into the specific ones of a concrete Database
+if a server is selected via the `--server` option (based on the `type` of that server). If no server is selected, the 
+logical data types are exported.
+
 
 ### import
 
