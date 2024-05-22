@@ -162,6 +162,7 @@ class ExportFormat(str, Enum):
     html = "html"
     go = "go"
     bigquery = "bigquery"
+    dbml = "dbml"
 
 
 @app.command()
