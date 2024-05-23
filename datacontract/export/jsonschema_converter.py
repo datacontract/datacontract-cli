@@ -54,7 +54,7 @@ def to_property(field: Field) -> dict:
         property["unique"] = True
     if json_type == "object":
         # TODO: any better idea to distinguish between properties and patternProperties?
-        if next(iter(field.fields.keys())).startswith("^"):
+        if field.fields.keys() and next(iter(field.fields.keys())).startswith("^"):
             property["patternProperties"] = to_properties(field.fields)
         else:
             property["properties"] = to_properties(field.fields)
