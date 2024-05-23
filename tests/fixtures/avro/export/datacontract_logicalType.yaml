@@ -25,7 +25,6 @@ models:
         required: true
         description: 'The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29'        
         config:
-          avroType: long
           avroLogicalType: local-timestamp-micros
       description:
         type: string
