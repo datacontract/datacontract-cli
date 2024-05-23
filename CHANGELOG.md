@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `datacontract export --format dbml`: Export to [Database Markup Language (DBML)](https://dbml.dbdiagram.io/home/) (#135)
 
+### Fixed
+
+- Fixed jsonschema export for models with empty object-typed fields (#218)
+
 ## [0.10.4] - 2024-05-17
 
 ### Added

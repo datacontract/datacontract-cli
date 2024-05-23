@@ -52,6 +52,8 @@ models:
                     type: string
                     pattern: "^[0-9]{8}$"
                     required: true
+      empty_object:
+        type: object
 examples:
   - type: json # csv, json, yaml, custom
     model: sts_data
