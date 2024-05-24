@@ -158,6 +158,14 @@ def test_to_jsonschemas_complex_2():
         "connection_test",
         "key_list"
       ]
+    },
+    "empty_object": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {},
+      "required": []
     }
   },
   "required": [
