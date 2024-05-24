@@ -256,13 +256,13 @@ def field_breaking_changes(
                 )
             )
             continue
-        
-        if field_definition_field == "items" and old_field.type == 'array' and new_field.type == 'array':
+
+        if field_definition_field == "items" and old_field.type == "array" and new_field.type == "array":
             results.extend(
                 field_breaking_changes(
                     old_field=old_value,
                     new_field=new_value,
-                    composition=composition + ['items'],
+                    composition=composition + ["items"],
                     new_path=new_path,
                     include_severities=include_severities,
                 )

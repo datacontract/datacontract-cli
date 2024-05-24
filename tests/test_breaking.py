@@ -223,6 +223,7 @@ def test_definition_updated():
     assert "field_description_updated" not in output
     assert "field_tags_updated" not in output
 
+
 def test_array_fields_updated():
     result = runner.invoke(
         app,
@@ -241,11 +242,11 @@ def test_array_fields_updated():
     assert "in models.DataType.fields.Records.items.fields.Field1.pii" in output
     assert "changed from `false` to `true`" in output
 
-    assert "field_classification_updated" in output    
-    assert "changed from `Unclassified` to `classified`" in output    
-    
-    assert "field_type_updated" in output    
-    assert "changed from `string` to `int`" in output    
+    assert "field_classification_updated" in output
+    assert "changed from `Unclassified` to `classified`" in output
+
+    assert "field_type_updated" in output
+    assert "changed from `string` to `int`" in output
 
     assert "field_description_removed" not in output
     assert "field_tags_removed" not in output

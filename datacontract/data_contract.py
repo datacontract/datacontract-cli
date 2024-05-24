@@ -2,6 +2,7 @@ import json
 import logging
 import tempfile
 import typing
+from enum import Enum
 
 import yaml
 from pyspark.sql import SparkSession
@@ -16,10 +17,8 @@ from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.export.avro_idl_converter import to_avro_idl
 from datacontract.export.bigquery_converter import to_bigquery_json
 from datacontract.export.dbml_converter import to_dbml_diagram
-from datacontract.export.dbt_converter import to_dbt_models_yaml, \
-    to_dbt_sources_yaml, to_dbt_staging_sql
-from datacontract.export.great_expectations_converter import \
-    to_great_expectations
+from datacontract.export.dbt_converter import to_dbt_models_yaml, to_dbt_sources_yaml, to_dbt_staging_sql
+from datacontract.export.great_expectations_converter import to_great_expectations
 from datacontract.export.html_export import to_html
 from datacontract.export.jsonschema_converter import to_jsonschema_json
 from datacontract.export.odcs_converter import to_odcs_yaml
@@ -35,8 +34,7 @@ from datacontract.imports.bigquery_importer import import_bigquery_from_api, imp
 from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.sql_importer import import_sql
 from datacontract.imports.jsonschema_importer import import_jsonschema
-from datacontract.integration.publish_datamesh_manager import \
-    publish_datamesh_manager
+from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
@@ -50,6 +48,28 @@ from datacontract.model.breaking_change import BreakingChanges, BreakingChange, 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
+
+
+class ExportFormat(str, Enum):
+    jsonschema = "jsonschema"
+    pydantic_model = "pydantic-model"
+    sodacl = "sodacl"
+    dbt = "dbt"
+    dbt_sources = "dbt-sources"
+    dbt_staging_sql = "dbt-staging-sql"
+    odcs = "odcs"
+    rdf = "rdf"
+    avro = "avro"
+    protobuf = "protobuf"
+    great_expectations = "great-expectations"
+    terraform = "terraform"
+    avro_idl = "avro-idl"
+    sql = "sql"
+    sql_query = "sql-query"
+    html = "html"
+    go = "go"
+    bigquery = "bigquery"
+    dbml = "dbml"
 
 
 class DataContract:
@@ -278,7 +298,9 @@ class DataContract:
             inline_quality=self._inline_quality,
         )
 
-    def export(self, export_format, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto") -> str:
+    def export(
+        self, export_format: ExportFormat, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto"
+    ) -> str:
         data_contract = resolve.resolve_data_contract(
             self._data_contract_file,
             self._data_contract_str,
@@ -331,9 +353,13 @@ class DataContract:
             model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
             found_server = data_contract.servers.get(self._server)
             if found_server is None:
-                raise RuntimeError(f"Export to {export_format} requires selecting a bigquery server from the data contract.")
-            if found_server.type != 'bigquery':
-                raise RuntimeError(f"Export to {export_format} requires selecting a bigquery server from the data contract.")
+                raise RuntimeError(
+                    f"Export to {export_format} requires selecting a bigquery server from the data contract."
+                )
+            if found_server.type != "bigquery":
+                raise RuntimeError(
+                    f"Export to {export_format} requires selecting a bigquery server from the data contract."
+                )
             return to_bigquery_json(model_name, model_value, found_server)
         if export_format == "dbml":
             found_server = data_contract.servers.get(self._server)
@@ -392,7 +418,9 @@ class DataContract:
         run.log_info(f"Using {server} for testing the examples")
         return server
 
-    def _check_models_for_export(self, data_contract: DataContractSpecification, model: str, export_format: str) -> typing.Tuple[str, str]:
+    def _check_models_for_export(
+        self, data_contract: DataContractSpecification, model: str, export_format: str
+    ) -> typing.Tuple[str, str]:
         if data_contract.models is None:
             raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
 
@@ -415,7 +443,14 @@ class DataContract:
 
         return model_name, model_value
 
-    def import_from_source(self, format: str, source: typing.Optional[str] = None, bigquery_tables: typing.Optional[typing.List[str]] = None, bigquery_project: typing.Optional[str] = None, bigquery_dataset: typing.Optional[str] = None) -> DataContractSpecification:
+    def import_from_source(
+        self,
+        format: str,
+        source: typing.Optional[str] = None,
+        bigquery_tables: typing.Optional[typing.List[str]] = None,
+        bigquery_project: typing.Optional[str] = None,
+        bigquery_dataset: typing.Optional[str] = None,
+    ) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
 
         if format == "sql":
@@ -430,7 +465,9 @@ class DataContract:
             if source is not None:
                 data_contract_specification = import_bigquery_from_json(data_contract_specification, source)
             else:
-                data_contract_specification = import_bigquery_from_api(data_contract_specification, bigquery_tables, bigquery_project, bigquery_dataset)
+                data_contract_specification = import_bigquery_from_api(
+                    data_contract_specification, bigquery_tables, bigquery_project, bigquery_dataset
+                )
         else:
             print(f"Import format {format} not supported.")
 

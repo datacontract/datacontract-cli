@@ -2,13 +2,15 @@ import json
 
 from typing import List
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
 
 from google.cloud import bigquery
 
-def import_bigquery_from_json(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
+
+def import_bigquery_from_json(
+    data_contract_specification: DataContractSpecification, source: str
+) -> DataContractSpecification:
     try:
         with open(source, "r") as file:
             bigquery_schema = json.loads(file.read())
@@ -22,7 +24,13 @@ def import_bigquery_from_json(data_contract_specification: DataContractSpecifica
         )
     return convert_bigquery_schema(data_contract_specification, bigquery_schema)
 
-def import_bigquery_from_api(data_contract_specification: DataContractSpecification, bigquery_tables: List[str], bigquery_project: str, bigquery_dataset: str) -> DataContractSpecification:
+
+def import_bigquery_from_api(
+    data_contract_specification: DataContractSpecification,
+    bigquery_tables: List[str],
+    bigquery_project: str,
+    bigquery_dataset: str,
+) -> DataContractSpecification:
     client = bigquery.Client(project=bigquery_project)
 
     if bigquery_tables is None:
@@ -33,14 +41,14 @@ def import_bigquery_from_api(data_contract_specification: DataContractSpecificat
             api_table = client.get_table("{}.{}.{}".format(bigquery_project, bigquery_dataset, table))
 
         except ValueError as e:
-             raise DataContractException(
+            raise DataContractException(
                 type="schema",
                 result="failed",
                 name="Invalid table name for bigquery API",
                 reason=f"Tablename {table} is invalid for the bigquery API",
                 original_exception=e,
                 engine="datacontract",
-             )
+            )
 
         if api_table is None:
             raise DataContractException(
@@ -55,6 +63,7 @@ def import_bigquery_from_api(data_contract_specification: DataContractSpecificat
 
     return data_contract_specification
 
+
 def fetch_table_names(client: bigquery.Client, dataset: str) -> List[str]:
     table_names = []
     api_tables = client.list_tables(dataset)
@@ -63,7 +72,10 @@ def fetch_table_names(client: bigquery.Client, dataset: str) -> List[str]:
 
     return table_names
 
-def convert_bigquery_schema(data_contract_specification: DataContractSpecification, bigquery_schema: dict) -> DataContractSpecification:
+
+def convert_bigquery_schema(
+    data_contract_specification: DataContractSpecification, bigquery_schema: dict
+) -> DataContractSpecification:
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
 
@@ -73,10 +85,7 @@ def convert_bigquery_schema(data_contract_specification: DataContractSpecificati
     # what exactly leads to friendlyName being set
     table_id = bigquery_schema.get("tableReference").get("tableId")
 
-    data_contract_specification.models[table_id] = Model(
-        fields=fields,
-        type='table'
-    )
+    data_contract_specification.models[table_id] = Model(fields=fields, type="table")
 
     # Copy the description, if it exists
     if bigquery_schema.get("description") is not None:
@@ -88,6 +97,7 @@ def convert_bigquery_schema(data_contract_specification: DataContractSpecificati
 
     return data_contract_specification
 
+
 def import_table_fields(table_fields):
     imported_fields = {}
     for field in table_fields:
@@ -95,7 +105,7 @@ def import_table_fields(table_fields):
         imported_fields[field_name] = Field()
         imported_fields[field_name].required = field.get("mode") == "REQUIRED"
         imported_fields[field_name].description = field.get("description")
-        
+
         if field.get("type") == "RECORD":
             imported_fields[field_name].type = "object"
             imported_fields[field_name].fields = import_table_fields(field.get("fields"))
@@ -106,7 +116,9 @@ def import_table_fields(table_fields):
             # This is a range of date/datetime/timestamp but multiple values
             # So we map it to an array
             imported_fields[field_name].type = "array"
-            imported_fields[field_name].items = Field(type = map_type_from_bigquery(field["rangeElementType"].get("type")))
+            imported_fields[field_name].items = Field(
+                type=map_type_from_bigquery(field["rangeElementType"].get("type"))
+            )
         else:  # primitive type
             imported_fields[field_name].type = map_type_from_bigquery(field.get("type"))
 
@@ -115,7 +127,7 @@ def import_table_fields(table_fields):
             # spec it is only valid for strings
             if field.get("maxLength") is not None:
                 imported_fields[field_name].maxLength = int(field.get("maxLength"))
-        
+
         if field.get("type") == "NUMERIC" or field.get("type") == "BIGNUMERIC":
             if field.get("precision") is not None:
                 imported_fields[field_name].precision = int(field.get("precision"))
@@ -124,6 +136,7 @@ def import_table_fields(table_fields):
                 imported_fields[field_name].scale = int(field.get("scale"))
 
     return imported_fields
+
 
 def map_type_from_bigquery(bigquery_type_str: str):
     if bigquery_type_str == "STRING":

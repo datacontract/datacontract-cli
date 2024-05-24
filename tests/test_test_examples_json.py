@@ -22,6 +22,7 @@ def test_json():
     print(run.result)
     assert run.result == "passed"
 
+
 def test_with_service_level():
     data_contract = DataContract(data_contract_file="fixtures/examples/datacontract_servicelevels.yaml", examples=True)
     run = data_contract.test()

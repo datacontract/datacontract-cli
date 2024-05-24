@@ -8,8 +8,7 @@ from fastjsonschema import JsonSchemaValueException
 from datacontract.lint.files import read_file
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Definition, Quality
+from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Quality
 from datacontract.model.exceptions import DataContractException
 
 

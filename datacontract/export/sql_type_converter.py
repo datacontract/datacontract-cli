@@ -148,15 +148,15 @@ def convert_to_duckdb(field: Field) -> None | str:
     if type is None:
         return None
     if type.lower() in ["string", "varchar", "text"]:
-        return "VARCHAR" # aliases: VARCHAR, CHAR, BPCHAR, STRING, TEXT, VARCHAR(n)	STRING(n), TEXT(n)
+        return "VARCHAR"  # aliases: VARCHAR, CHAR, BPCHAR, STRING, TEXT, VARCHAR(n)	STRING(n), TEXT(n)
     if type.lower() in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP WITH TIME ZONE" # aliases: TIMESTAMPTZ
+        return "TIMESTAMP WITH TIME ZONE"  # aliases: TIMESTAMPTZ
     if type.lower() in ["timestamp_ntz"]:
         return "DATETIME"  # timestamp with microsecond precision (ignores time zone), aliases: TIMESTAMP
     if type.lower() in ["date"]:
         return "DATE"
     if type.lower() in ["time"]:
-        return "TIME" # TIME WITHOUT TIME ZONE
+        return "TIME"  # TIME WITHOUT TIME ZONE
     if type.lower() in ["number", "decimal", "numeric"]:
         # precision and scale not supported by data contract
         return "DECIMAL"
@@ -186,12 +186,12 @@ def convert_type_to_sqlserver(field: Field) -> None | str:
         return None
 
     # If provided sql-server config type, prefer it over default mapping
-    if sqlserver_type := get_type_config(field, 'sqlserverType'):
+    if sqlserver_type := get_type_config(field, "sqlserverType"):
         return sqlserver_type
 
     field_type = field_type.lower()
     if field_type in ["string", "varchar", "text"]:
-        if field.format == 'uuid':
+        if field.format == "uuid":
             return "uniqueidentifier"
         return "varchar"
     if field_type in ["timestamp", "timestamp_tz"]:
@@ -224,8 +224,9 @@ def convert_type_to_sqlserver(field: Field) -> None | str:
     if field_type in ["bytes"]:
         return "binary"
     if field_type in ["array"]:
-        raise NotImplementedError('SQLServer does not support array types.')
+        raise NotImplementedError("SQLServer does not support array types.")
     return None
+
 
 def get_type_config(field: Field, config_attr: str) -> dict[str, str] | None:
     """Retrieve type configuration if provided in datacontract."""

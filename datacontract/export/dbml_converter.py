@@ -7,8 +7,7 @@ from typing import Tuple
 
 
 def to_dbml_diagram(contract: spec.DataContractSpecification, server: spec.Server) -> str:
-    
-    result = ''
+    result = ""
     result += add_generated_info(contract, server) + "\n"
     result += generate_project_info(contract) + "\n"
 
@@ -18,18 +17,21 @@ def to_dbml_diagram(contract: spec.DataContractSpecification, server: spec.Serve
 
     return result
 
+
 def add_generated_info(contract: spec.DataContractSpecification, server: spec.Server) -> str:
     tz = pytz.timezone("UTC")
     now = datetime.now(tz)
     formatted_date = now.strftime("%b %d %Y")
     datacontract_cli_version = get_version()
-    dialect = 'Logical Datacontract' if server is None else server.type
+    dialect = "Logical Datacontract" if server is None else server.type
 
     generated_info = """
 Generated at {0} by datacontract-cli version {1}
 for datacontract {2} ({3}) version {4} 
 Using {5} Types for the field types
-    """.format(formatted_date, datacontract_cli_version, contract.info.title, contract.id, contract.info.version, dialect)
+    """.format(
+        formatted_date, datacontract_cli_version, contract.info.title, contract.id, contract.info.version, dialect
+    )
 
     comment = """/*
 {0}
@@ -47,22 +49,25 @@ Using {5} Types for the field types
 {1}
     """.format(comment, note)
 
+
 def get_version() -> str:
     try:
         return version("datacontract_cli")
     except Exception:
         return ""
 
+
 def generate_project_info(contract: spec.DataContractSpecification) -> str:
     return """Project "{0}" {{
     Note: "{1}"
 }}\n
-    """.format(contract.info.title, ' '.join(contract.info.description.splitlines()))
+    """.format(contract.info.title, " ".join(contract.info.description.splitlines()))
+
 
 def generate_table(model_name: str, model: spec.Model, server: spec.Server) -> str:
     result = """Table "{0}" {{ 
 Note: "{1}"
-    """.format(model_name, ' '.join(model.description.splitlines()))
+    """.format(model_name, " ".join(model.description.splitlines()))
 
     references = []
 
@@ -79,31 +84,31 @@ Note: "{1}"
     if len(references) > 0:
         for ref in references:
             result += "Ref: {0}\n".format(ref)
-        
+
         result += "\n"
 
     return result
 
-def generate_field(field_name: str, field: spec.Field, model_name: str, server: spec.Server) -> Tuple[str, str]:
 
+def generate_field(field_name: str, field: spec.Field, model_name: str, server: spec.Server) -> Tuple[str, str]:
     field_attrs = []
     if field.primary:
-        field_attrs.append('pk')
+        field_attrs.append("pk")
 
     if field.unique:
-        field_attrs.append('unique')
-    
+        field_attrs.append("unique")
+
     if field.required:
-        field_attrs.append('not null')
+        field_attrs.append("not null")
     else:
-        field_attrs.append('null')
+        field_attrs.append("null")
 
     if field.description:
-        field_attrs.append('Note: "{0}"'.format(' '.join(field.description.splitlines())))
+        field_attrs.append('Note: "{0}"'.format(" ".join(field.description.splitlines())))
 
     field_type = field.type if server is None else convert_to_sql_type(field, server.type)
 
-    field_str = '"{0}" "{1}" [{2}]'.format(field_name, field_type, ','.join(field_attrs))
+    field_str = '"{0}" "{1}" [{2}]'.format(field_name, field_type, ",".join(field_attrs))
     ref_str = None
     if (field.references) is not None:
         # we always assume many to one, as datacontract doesn't really give us more info

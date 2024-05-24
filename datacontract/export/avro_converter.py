@@ -77,6 +77,7 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
     else:
         return "bytes"
 
+
 def to_avro_logical_type(type: str) -> str:
     if type in ["timestamp", "timestamp_tz"]:
         return "timestamp-millis"

@@ -45,7 +45,7 @@ def map_type_from_sql(sql_type: str):
         return None
 
     sql_type_normed = sql_type.lower().strip()
-    
+
     if sql_type_normed.startswith("varchar"):
         return "varchar"
     elif sql_type_normed.startswith("string"):
@@ -69,6 +69,6 @@ def map_type_from_sql(sql_type: str):
     elif sql_type_normed == "datetime2":
         return "timestamp_ntz"
     elif sql_type_normed == "datetimeoffset":
-        return "timestamp_tz"        
+        return "timestamp_tz"
     else:
         return "variant"
