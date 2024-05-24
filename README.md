@@ -661,6 +661,47 @@ if a server is selected via the `--server` option (based on the `type` of that s
 logical data types are exported.
 
 
+#### Avro
+
+The export function converts the data contract specification into an avro schema. It supports specifying custom avro properties for logicalTypes and default values. 
+
+##### Custom Avro Properties
+
+We support a **config map on model and field level**. A config map may include any additional key-value pairs and support multiple server type bindings.
+
+To specify custom Avro properties in your data contract, you can define them within the `config` section of your field definition. Below is an example of how to structure your YAML configuration to include custom Avro properties, such as `avroLogicalType` and `avroDefault`.
+
+>NOTE: At this moment, we just support [logicalType](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and [default](https://avro.apache.org/docs/1.11.0/spec.htm)
+
+#### Example Configuration
+
+```yaml
+models:
+  orders:
+    fields:
+      my_field_1:
+        description: Example for AVRO with Timestamp (microsecond precision) https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29
+        type: long
+        example: 1672534861000000  # Equivalent to 2023-01-01 01:01:01 in microseconds
+        config:          
+          avroLogicalType: local-timestamp-micros
+          avroDefault: 1672534861000000
+```
+
+#### Explanation
+
+- **models**: The top-level key that contains different models (tables or objects) in your data contract.
+- **orders**: A specific model name. Replace this with the name of your model.
+- **fields**: The fields within the model. Each field can have various properties defined.
+- **my_field_1**: The name of a specific field. Replace this with your field name.
+  - **description**: A textual description of the field.
+  - **type**: The data type of the field. In this example, it is `long`.
+  - **example**: An example value for the field.
+  - **config**: Section to specify custom Avro properties.
+    - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
+    - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
+
+
 ### import
 
 ```
