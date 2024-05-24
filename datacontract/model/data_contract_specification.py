@@ -31,6 +31,7 @@ class Server(pyd.BaseModel):
     token: str = None  # Use ENV variable
     dataProductId: str = None
     outputPortId: str = None
+    driver: str = None
 
 
 class Terms(pyd.BaseModel):

@@ -25,6 +25,7 @@ dependencies = [
   "simple-ddl-parser==1.3.0",
   "soda-core-bigquery>=3.3.1,<3.4.0",
   "soda-core-duckdb>=3.3.1,<3.4.0",
+  "soda-core-sqlserver>=3.3.1,<3.4.0",
   "soda-core-postgres>=3.3.1,<3.4.0",
   "soda-core-snowflake>=3.3.1,<3.4.0",
   "soda-core-spark[databricks]>=3.3.1,<3.4.0",
@@ -51,12 +52,14 @@ dev = [
   "pytest",
   "pytest-xdist",
   "moto",
+  "pymssql==2.3.0",
   # testcontainers 4.x have issues with Kafka on arm
   # https://github.com/testcontainers/testcontainers-python/issues/450
   "testcontainers<4.0.0",
   "testcontainers-minio",
   "testcontainers-postgres",
   "testcontainers-kafka",
+  "testcontainers[mssql]",
 #  https://github.com/testcontainers/testcontainers-python/issues/554
 #  "testcontainers~=4.4.0",
 #  "testcontainers[minio]",

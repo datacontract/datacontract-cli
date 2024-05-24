@@ -1,16 +1,17 @@
 dataContractSpecification: 0.9.2
-id: postgres
+id: sqlserver
 info:
-  title: postgres
+  title: sqlserver
   version: 0.0.1
   owner: my-domain-team
 servers:
-  my-dataproduct/postgres:
-    type: postgres
+  my-dataproduct/sqlserver:
+    type: sqlserver
     host: localhost
-    port: 4567
-    database: test
-    schema: public
+    port: __PORT__
+    database: tempdb
+    schema: dbo
+    driver: ODBC Driver 18 for SQL Server
 models:
   my_table:
     type: table
@@ -19,9 +20,10 @@ models:
         type: varchar
         required: true
         unique: true
-        pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
       field_two:
-        type: integer
+        type: int
         minimum: 10
       field_three:
         type: timestamp
+        config:
+          sqlserverType: DATETIME2
