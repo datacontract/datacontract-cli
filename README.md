@@ -667,7 +667,7 @@ The export function converts the data contract specification into an avro schema
 
 ##### Custom Avro Properties
 
-We support a **config map on model and field level**. A config map may include any additional key-value pairs and support multiple server type bindings.
+We support a **config map on field level**. A config map may include any additional key-value pairs and support multiple server type bindings.
 
 To specify custom Avro properties in your data contract, you can define them within the `config` section of your field definition. Below is an example of how to structure your YAML configuration to include custom Avro properties, such as `avroLogicalType` and `avroDefault`.
 
