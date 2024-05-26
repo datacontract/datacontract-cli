@@ -88,7 +88,7 @@
       },
       {
         "name": "boolean_field",
-        "type": "BOOLEAN",
+        "type": "BOOL",
         "mode": "NULLABLE",
         "description": "a simple boolean field"
       },
