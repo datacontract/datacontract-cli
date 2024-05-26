@@ -87,8 +87,7 @@ def setup_s3_connection(con, server):
         s3_endpoint = server.endpointUrl.removeprefix("http://").removeprefix("https://")
         if server.endpointUrl.startswith("http://"):
             use_ssl = "false"
-            url_style = 'path'
-
+            url_style = "path"
 
     if s3_access_key_id is not None:
         con.sql(f"""

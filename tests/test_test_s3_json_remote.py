@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "fixtures/s3-json-remote/datacontract.yaml"
 
+
 # Disabled, as this test fails when another local s3 test runs, not clear why.
 # Maybe with env variables or the DuckDB connection...
 def _test_test_s3_json():

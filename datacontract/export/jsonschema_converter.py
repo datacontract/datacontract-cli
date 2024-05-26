@@ -1,7 +1,8 @@
 import json
 from typing import Dict
 
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import \
+    DataContractSpecification, Model, Field
 
 
 def to_jsonschemas(data_contract_spec: DataContractSpecification):
@@ -18,12 +19,11 @@ def to_jsonschema_json(model_key, model_value: Model) -> str:
 
 
 def to_jsonschema(model_key, model_value: Model) -> dict:
-
-    model =  {
+    model = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
         "properties": to_properties(model_value.fields),
-        "required": to_required(model_value.fields)
+        "required": to_required(model_value.fields),
     }
     if model_value.title:
         model["title"] = model_value.title
@@ -89,9 +89,9 @@ def to_property(field: Field) -> dict:
     if field.classification:
         property["classification"] = field.classification
 
-    
     # TODO: all constraints
     return property
+
 
 def to_required(fields: Dict[str, Field]):
     required = []

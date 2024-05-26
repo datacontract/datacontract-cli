@@ -1,6 +1,6 @@
+import logging
 from datetime import datetime
 from importlib.metadata import version
-import logging
 
 import pytz
 from typer.testing import CliRunner
@@ -16,10 +16,14 @@ def test_cli():
     result = runner.invoke(app, ["export", "./fixtures/dbml/datacontract.yaml", "--format", "dbml"])
     assert result.exit_code == 0
 
+
 def test_cli_with_server():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/dbml/datacontract.yaml", "--format", "dbml", "--server", "production"])
+    result = runner.invoke(
+        app, ["export", "./fixtures/dbml/datacontract.yaml", "--format", "dbml", "--server", "production"]
+    )
     assert result.exit_code == 0
+
 
 def test_dbml_export():
     data_contract = DataContract(data_contract_file="fixtures/dbml/datacontract.yaml")
@@ -80,13 +84,14 @@ Note: "A single article that is part of an order."
 }}
 Ref: line_items.order_id > orders.order_id
     """.format(formatted_date, datacontract_cli_version)
-    
+
     assert result.strip() == expected.strip()
 
+
 def test_dbml_export_with_server():
-    data_contract = DataContract(data_contract_file="fixtures/dbml/datacontract.yaml", server='production')
+    data_contract = DataContract(data_contract_file="fixtures/dbml/datacontract.yaml", server="production")
     assert data_contract.lint(enabled_linters="none").has_passed()
-        
+
     result = data_contract.export("dbml")
 
     tz = pytz.timezone("UTC")
@@ -142,5 +147,5 @@ Note: "A single article that is part of an order."
 }}
 Ref: line_items.order_id > orders.order_id
     """.format(formatted_date, datacontract_cli_version)
-    
+
     assert result.strip() == expected.strip()

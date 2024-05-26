@@ -15,6 +15,7 @@ sql_file_path = "fixtures/sqlserver/data/data.sql"
 sql_server = SqlServerContainer()
 SQL_SERVER_PORT: int = 1433
 
+
 @pytest.fixture(scope="module", autouse=True)
 def mssql_container(request):
     sql_server.start()
@@ -24,7 +25,8 @@ def mssql_container(request):
 
     request.addfinalizer(remove_container)
 
-@pytest.mark.skipif(not os.getenv('CI'), reason="Skipping test outside CI/CD environment")
+
+@pytest.mark.skipif(not os.getenv("CI"), reason="Skipping test outside CI/CD environment")
 def test_test_sqlserver(mssql_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_USERNAME", sql_server.SQLSERVER_USER)
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_PASSWORD", sql_server.SQLSERVER_PASSWORD)

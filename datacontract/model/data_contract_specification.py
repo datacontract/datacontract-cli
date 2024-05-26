@@ -120,9 +120,11 @@ class Quality(pyd.BaseModel):
     type: str = None
     specification: str | object = None
 
+
 class Availability(pyd.BaseModel):
     description: Optional[str] = None
     percentage: Optional[str] = None
+
 
 class Retention(pyd.BaseModel):
     description: Optional[str] = None
@@ -130,16 +132,19 @@ class Retention(pyd.BaseModel):
     unlimited: Optional[bool] = None
     timestampField: Optional[str] = None
 
+
 class Latency(pyd.BaseModel):
     description: Optional[str] = None
     threshold: Optional[str] = None
     sourceTimestampField: Optional[str] = None
     processedTimestampField: Optional[str] = None
 
+
 class Freshness(pyd.BaseModel):
     description: Optional[str] = None
     threshold: Optional[str] = None
     timestampField: Optional[str] = None
+
 
 class Frequency(pyd.BaseModel):
     description: Optional[str] = None
@@ -147,10 +152,12 @@ class Frequency(pyd.BaseModel):
     interval: Optional[str] = None
     cron: Optional[str] = None
 
+
 class Support(pyd.BaseModel):
     description: Optional[str] = None
     time: Optional[str] = None
     responseTime: Optional[str] = None
+
 
 class Backup(pyd.BaseModel):
     description: Optional[str] = None
@@ -158,6 +165,7 @@ class Backup(pyd.BaseModel):
     cron: Optional[str] = None
     recoveryTime: Optional[str] = None
     recoveryPoint: Optional[str] = None
+
 
 class ServiceLevel(pyd.BaseModel):
     availability: Optional[Availability] = None
@@ -167,6 +175,7 @@ class ServiceLevel(pyd.BaseModel):
     frequency: Optional[Frequency] = None
     support: Optional[Support] = None
     backup: Optional[Backup] = None
+
 
 class DataContractSpecification(pyd.BaseModel):
     dataContractSpecification: str = None

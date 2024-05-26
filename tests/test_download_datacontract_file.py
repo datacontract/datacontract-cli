@@ -34,8 +34,9 @@ def test_download_datacontract_file_file_exists(tmp_path):
 def test_download_datacontract_file_overwrite_file(tmp_path):
     datacontract_test_path = tmp_path / "datacontract.yaml"
     runner.invoke(app, ["init", str(datacontract_test_path)])
-    result = runner.invoke(app,
-                           ["init", str(datacontract_test_path), "--template", _custom_template_url, "--overwrite"])
+    result = runner.invoke(
+        app, ["init", str(datacontract_test_path), "--template", _custom_template_url, "--overwrite"]
+    )
 
     assert result.exit_code == 0
     _compare_test_datacontract_with(str(datacontract_test_path), _custom_template_url)

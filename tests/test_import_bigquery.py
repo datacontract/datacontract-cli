@@ -1,8 +1,8 @@
 import logging
-import yaml
-
-from typer.testing import CliRunner
 from unittest.mock import patch
+
+import yaml
+from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
@@ -34,7 +34,8 @@ def test_import_bigquery_schema():
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
 
-@patch('google.cloud.bigquery.Client.get_table')
+
+@patch("google.cloud.bigquery.Client.get_table")
 def test_import_from_api(mock_client):
     # Set up mocks
     # mock_table = Mock()
@@ -70,12 +71,12 @@ def test_import_from_api(mock_client):
     #     'numTotalLogicalBytes': '0',
     #     'numActiveLogicalBytes': '0',
     #     'numLongTermLogicalBytes': '0'}
-    
+
     # mock_client.response_value = mock_table
 
-    # Call the API Import    
+    # Call the API Import
     # result = DataContract().import_from_source(format="bigquery", source=None, tables=["Test_One"], bt_project_id=
-                                            #    "project_id", bt_dataset_id="dataset_id")
+    #    "project_id", bt_dataset_id="dataset_id")
     # print("Result:\n", result)
     # TODO: This really should have a proper test, but I've not been able to set the mocks up
     # correctly – maybe there's some help to be had?

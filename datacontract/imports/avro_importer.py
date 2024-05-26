@@ -37,16 +37,18 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
 
     return data_contract_specification
 
+
 def handle_config_avro_custom_properties(field, imported_field):
-    if field.get_prop('logicalType') is not None:
+    if field.get_prop("logicalType") is not None:
         if imported_field.config is None:
             imported_field.config = {}
-        imported_field.config["avroLogicalType"] = field.get_prop('logicalType')
-    
+        imported_field.config["avroLogicalType"] = field.get_prop("logicalType")
+
     if field.default is not None:
         if imported_field.config is None:
             imported_field.config = {}
         imported_field.config["avroDefault"] = field.default
+
 
 def import_record_fields(record_fields):
     imported_fields = {}
@@ -54,9 +56,9 @@ def import_record_fields(record_fields):
         imported_field = Field()
         imported_field.required = True
         imported_field.description = field.doc
-        
+
         handle_config_avro_custom_properties(field, imported_field)
-            
+
         # Determine field type and handle nested structures
         if field.type.type == "record":
             imported_field.type = "object"
