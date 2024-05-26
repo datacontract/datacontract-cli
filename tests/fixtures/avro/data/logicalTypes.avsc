@@ -1,0 +1,18 @@
+{
+    "type": "record",
+    "name": "Test",
+    "namespace": "mynamespace.com",
+    "fields": [
+        {"name": "test_id", "type": "string", "doc": "id documentation test"},
+        {"name": "device_id", "type": "int"},
+        {"name": "test_value", "type": "double"},
+        {"name": "num_items", "type": "int"},
+        {"name": "processed_timestamp", 
+                 "type": "long",
+                 "doc": "The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29",
+                 "logicalType": "local-timestamp-micros"},
+        {"name": "description", "type": "string"},
+        {"name": "is_processed", "type": "boolean",
+                  "default": false}  
+    ]    
+}
