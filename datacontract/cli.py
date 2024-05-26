@@ -12,11 +12,9 @@ from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
-from datacontract.catalog.catalog import create_index_html, \
-    create_data_contract_html
+from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.init.download_datacontract_file import \
-    download_datacontract_file, FileExistsException
+from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
 from datacontract.publish.publish import publish_to_datamesh_manager
 
 console = Console()

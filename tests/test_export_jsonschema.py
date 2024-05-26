@@ -21,8 +21,7 @@ def test_cli():
 
 def test_to_jsonschemas():
     data_contract = DataContract(
-        data_contract_file="fixtures/local-json/datacontract.yaml",
-        inline_definitions=True
+        data_contract_file="fixtures/local-json/datacontract.yaml", inline_definitions=True
     ).get_data_contract_specification()
 
     with open("fixtures/local-json/datacontract.json") as file:

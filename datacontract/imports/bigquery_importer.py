@@ -7,7 +7,6 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.exceptions import DataContractException
 
 
-
 def import_bigquery_from_json(
     data_contract_specification: DataContractSpecification, source: str
 ) -> DataContractSpecification:
