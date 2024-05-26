@@ -1,9 +1,11 @@
 from datetime import datetime
 from importlib.metadata import version
-import pytz
-from datacontract.export.sql_type_converter import convert_to_sql_type
-import datacontract.model.data_contract_specification as spec
 from typing import Tuple
+
+import pytz
+
+import datacontract.model.data_contract_specification as spec
+from datacontract.export.sql_type_converter import convert_to_sql_type
 
 
 def to_dbml_diagram(contract: spec.DataContractSpecification, server: spec.Server) -> str:

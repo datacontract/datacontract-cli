@@ -38,6 +38,12 @@ def to_avro_field(field, field_name):
     if field.type in ["timestamp", "timestamp_tz", "timestamp_ntz", "date"]:
         avro_field["logicalType"] = to_avro_logical_type(field.type)
 
+    if field.config:
+        if "avroLogicalType" in field.config:
+            avro_field["logicalType"] = field.config["avroLogicalType"]
+        if "avroDefault" in field.config:
+            avro_field["default"] = field.config["avroDefault"]
+
     return avro_field
 
 

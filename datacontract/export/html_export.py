@@ -2,9 +2,9 @@ import datetime
 import logging
 from importlib.metadata import version
 
+import jinja_partials
 import pytz
 import yaml
-import jinja_partials
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from datacontract.model.data_contract_specification import DataContractSpecification

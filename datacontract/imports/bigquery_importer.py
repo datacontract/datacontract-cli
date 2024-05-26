@@ -1,11 +1,11 @@
 import json
-
 from typing import List
+
+from google.cloud import bigquery
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
 
-from google.cloud import bigquery
 
 
 def import_bigquery_from_json(

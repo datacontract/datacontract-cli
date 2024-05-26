@@ -1,6 +1,6 @@
+import logging
 from datetime import datetime
 from importlib.metadata import version
-import logging
 
 import pytz
 from typer.testing import CliRunner

@@ -1,3 +1,4 @@
+from datacontract.export.bigquery_converter import map_type_to_bigquery
 from datacontract.model.data_contract_specification import Field
 
 
@@ -12,6 +13,8 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_to_duckdb(field)
     elif server_type == "sqlserver":
         return convert_type_to_sqlserver(field)
+    elif server_type == "bigquery":
+        return convert_type_to_bigquery(field)
     return field.type
 
 
@@ -226,6 +229,20 @@ def convert_type_to_sqlserver(field: Field) -> None | str:
     if field_type in ["array"]:
         raise NotImplementedError("SQLServer does not support array types.")
     return None
+
+
+def convert_type_to_bigquery(field: Field) -> None | str:
+    """Convert from supported datacontract types to equivalent bigquery types"""
+    field_type = field.type
+    if not field_type:
+        return None
+
+    # If provided sql-server config type, prefer it over default mapping
+    if bigquery_type := get_type_config(field, "bigqueryType"):
+        return bigquery_type
+
+    field_type = field_type.lower()
+    return map_type_to_bigquery(field_type, field.title)
 
 
 def get_type_config(field: Field, config_attr: str) -> dict[str, str] | None:

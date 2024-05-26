@@ -88,7 +88,7 @@
       },
       {
         "name": "boolean_field",
-        "type": "BOOLEAN",
+        "type": "BOOL",
         "mode": "NULLABLE",
         "description": "a simple boolean field"
       },
@@ -185,7 +185,7 @@
         "fields": [
           {
             "name": "subfield_1",
-            "type": "BOOLEAN",
+            "type": "BOOL",
             "mode": "REQUIRED",
             "description": "a required boolean field"
           },
@@ -254,7 +254,7 @@
         "fields": [
           {
             "name": "Field1",
-            "type": "BOOLEAN",
+            "type": "BOOL",
             "mode": "NULLABLE",
             "description": "a boolean field"
           },

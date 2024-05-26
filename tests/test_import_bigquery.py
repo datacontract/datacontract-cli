@@ -1,8 +1,8 @@
 import logging
-import yaml
-
-from typer.testing import CliRunner
 from unittest.mock import patch
+
+import yaml
+from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract

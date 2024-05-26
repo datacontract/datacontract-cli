@@ -1,6 +1,7 @@
 import os
 
 import yaml
+
 from datacontract.model.data_contract_specification import Server
 
 

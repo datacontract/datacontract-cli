@@ -37,33 +37,48 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
     return data_contract_specification
 
 
+def handle_config_avro_custom_properties(field, imported_field):
+    if field.get_prop("logicalType") is not None:
+        if imported_field.config is None:
+            imported_field.config = {}
+        imported_field.config["avroLogicalType"] = field.get_prop("logicalType")
+
+    if field.default is not None:
+        if imported_field.config is None:
+            imported_field.config = {}
+        imported_field.config["avroDefault"] = field.default
+
+
 def import_record_fields(record_fields):
     imported_fields = {}
     for field in record_fields:
-        imported_fields[field.name] = Field()
-        imported_fields[field.name].required = True
-        imported_fields[field.name].description = field.doc
-        for prop in field.other_props:
-            imported_fields[field.name].__setattr__(prop, field.other_props[prop])
+        imported_field = Field()
+        imported_field.required = True
+        imported_field.description = field.doc
 
+        handle_config_avro_custom_properties(field, imported_field)
+
+        # Determine field type and handle nested structures
         if field.type.type == "record":
-            imported_fields[field.name].type = "object"
-            imported_fields[field.name].description = field.type.doc
-            imported_fields[field.name].fields = import_record_fields(field.type.fields)
+            imported_field.type = "object"
+            imported_field.description = field.type.doc
+            imported_field.fields = import_record_fields(field.type.fields)
         elif field.type.type == "union":
-            imported_fields[field.name].required = False
+            imported_field.required = False
             type = import_type_of_optional_field(field)
-            imported_fields[field.name].type = type
+            imported_field.type = type
             if type == "record":
-                imported_fields[field.name].fields = import_record_fields(get_record_from_union_field(field).fields)
+                imported_field.fields = import_record_fields(get_record_from_union_field(field).fields)
             elif type == "array":
-                imported_fields[field.name].type = "array"
-                imported_fields[field.name].items = import_avro_array_items(get_array_from_union_field(field))
+                imported_field.type = "array"
+                imported_field.items = import_avro_array_items(get_array_from_union_field(field))
         elif field.type.type == "array":
-            imported_fields[field.name].type = "array"
-            imported_fields[field.name].items = import_avro_array_items(field.type)
+            imported_field.type = "array"
+            imported_field.items = import_avro_array_items(field.type)
         else:  # primitive type
-            imported_fields[field.name].type = map_type_from_avro(field.type.type)
+            imported_field.type = map_type_from_avro(field.type.type)
+
+        imported_fields[field.name] = imported_field
 
     return imported_fields
 

@@ -77,7 +77,7 @@ def map_type_to_bigquery(type_str: str, field_name: str) -> str:
     elif type_str == "float":
         return "FLOAT"
     elif type_str == "boolean":
-        return "BOOLEAN"
+        return "BOOL"
     elif type_str.lower() in ["timestamp", "timestamp_tz"]:
         return "TIMESTAMP"
     elif type_str == "date":
