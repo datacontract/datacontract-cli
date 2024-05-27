@@ -33,7 +33,7 @@ dependencies = [
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "snowflake-connector-python[pandas]>=3.6,<3.11",
-  "duckdb==0.10.2",
+  "duckdb==0.10.3",
   "fastjsonschema~=2.19.1",
   "python-dotenv~=1.0.0",
   "s3fs==2024.5.0",
