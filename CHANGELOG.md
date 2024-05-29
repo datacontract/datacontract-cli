@@ -12,12 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export --format dbml`: Export to [Database Markup Language (DBML)](https://dbml.dbdiagram.io/home/) (#135)
 - `datacontract export --format avro`: Now supports config map on field level for logicalTypes and default values [Custom Avro Properties](./README.md#custom-avro-properties)
 - `datacontract import --format avro`: Now supports importing logicalType and default definition on avro files [Custom Avro Properties](./README.md#custom-avro-properties)
-- Support `bigqueryType` for testing BigQuery types
+- Support `config.bigqueryType` for testing BigQuery types
 
 ### Fixed
 
 - Fixed jsonschema export for models with empty object-typed fields (#218)
 - Fixed testing BigQuery tables with BOOL fields
+- `datacontract catalog` Show search bar also on mobile
 
 ## [0.10.4] - 2024-05-17
 
