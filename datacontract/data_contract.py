@@ -447,6 +447,7 @@ class DataContract:
         self,
         format: str,
         source: typing.Optional[str] = None,
+        glue_tables: typing.Optional[typing.List[str]] = None,
         bigquery_tables: typing.Optional[typing.List[str]] = None,
         bigquery_project: typing.Optional[str] = None,
         bigquery_dataset: typing.Optional[str] = None,
@@ -458,7 +459,7 @@ class DataContract:
         elif format == "avro":
             data_contract_specification = import_avro(data_contract_specification, source)
         elif format == "glue":
-            data_contract_specification = import_glue(data_contract_specification, source)
+            data_contract_specification = import_glue(data_contract_specification, source, glue_tables)
         elif format == "jsonschema":
             data_contract_specification = import_jsonschema(data_contract_specification, source)
         elif format == "bigquery":

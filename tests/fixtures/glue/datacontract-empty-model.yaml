@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+    title: My Data Contract
+    version: 0.0.1
+servers:
+    production:
+        account: '123456789012'
+        database: test_database
+        location: s3://test_bucket/testdb
+        type: glue
+models:
+    table_1:
+        type: table
+        

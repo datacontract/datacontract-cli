@@ -209,6 +209,12 @@ def import_(
     source: Annotated[
         Optional[str], typer.Option(help="The path to the file or Glue Database that should be imported.")
     ] = None,
+    glue_table: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of table ids to import from the Glue Database (repeat for multiple table ids, leave empty for all tables in the dataset)."
+        ),
+    ] = None,
     bigquery_project: Annotated[Optional[str], typer.Option(help="The bigquery project id.")] = None,
     bigquery_dataset: Annotated[Optional[str], typer.Option(help="The bigquery dataset id.")] = None,
     bigquery_table: Annotated[
@@ -221,7 +227,7 @@ def import_(
     """
     Create a data contract from the given source location. Prints to stdout.
     """
-    result = DataContract().import_from_source(format, source, bigquery_table, bigquery_project, bigquery_dataset)
+    result = DataContract().import_from_source(format, source, glue_table, bigquery_table, bigquery_project, bigquery_dataset)
     console.print(result.to_yaml())
 
 

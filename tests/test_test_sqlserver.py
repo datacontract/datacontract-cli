@@ -1,7 +1,6 @@
 import logging
 import os
 
-import pymssql
 import pytest
 from testcontainers.mssql import SqlServerContainer
 
@@ -53,6 +52,9 @@ def _setup_datacontract():
 
 
 def _init_sql():
+    # import locally as a top level import of pymssql fails on ARM macs
+    import pymssql
+
     connection = pymssql.connect(
         database=sql_server.SQLSERVER_DBNAME,
         user=sql_server.SQLSERVER_USER,

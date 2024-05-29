@@ -22,8 +22,10 @@ RUN python -c "import duckdb; duckdb.connect().sql(\"INSTALL httpfs\");"
 
 FROM ubuntu:22.04 AS runner-image
 
-RUN apt-get update && apt-get install --no-install-recommends -y  python3.11 python3.11-venv msodbcsql18 && \
-   apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y python3.11 python3.11-venv \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder-image /opt/venv /opt/venv
 
