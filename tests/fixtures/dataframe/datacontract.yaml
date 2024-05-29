@@ -1,0 +1,23 @@
+dataContractSpecification: 0.9.3
+id: dataframetest
+info:
+  title: dataframetest
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  unittest:
+    type: dataframe
+models:
+  my_table:
+    type: table
+    fields:
+      field_one:
+        type: varchar
+        required: true
+        unique: true
+        pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+      field_two:
+        type: int
+        minimum: 10
+      field_three:
+        type: timestamp

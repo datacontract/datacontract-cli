@@ -218,10 +218,13 @@ class DataContract:
                 run.outputPortId = server.outputPortId
                 run.server = server_name
 
-                # 5. check server is supported type
-                # 6. check server credentials are complete
+                # TODO check server is supported type for nicer error messages
+
+                # TODO check server credentials are complete for nicer error messages
+
                 if server.format == "json" and server.type != "kafka":
                     check_jsonschema(run, data_contract, server)
+
                 check_soda_execute(run, data_contract, server, self._spark, tmp_dir)
 
         except DataContractException as e:

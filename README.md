@@ -278,6 +278,7 @@ Supported server types:
 - [azure](#azure)
 - [databricks](#databricks)
 - [databricks (programmatic)](#databricks-programmatic)
+- [dataframr (programmatic)](#dataframe-programmatic)
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
@@ -457,6 +458,41 @@ data_contract = DataContract(
   spark=spark)
 run = data_contract.test()
 run.result
+```
+
+### Dataframe (programmatic)
+
+Works with Spark DataFrames.
+DataFrames need to be created as named temporary views.
+Multiple temporary views are suppored if your data contract contains multiple models.
+
+Testing DataFrames is useful to test your datasets in a pipeline before writing them to a data source.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: dataframe
+models:
+  my_table: # corresponds to a temporary view
+    type: table
+    fields: ...
+```
+
+Example code
+```python
+from datacontract.data_contract import DataContract
+
+df.createOrReplaceTempView("my_table")
+
+data_contract = DataContract(
+  data_contract_file="datacontract.yaml",
+  spark=spark,
+)
+run = data_contract.test()
+assert run.result == "passed"
 ```
 
 

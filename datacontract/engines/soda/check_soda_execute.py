@@ -64,6 +64,15 @@ def check_soda_execute(
             soda_configuration_str = to_databricks_soda_configuration(server)
             scan.add_configuration_yaml_str(soda_configuration_str)
             scan.set_data_source_name(server.type)
+    elif server.type == "dataframe":
+        if spark is None:
+            run.log_warn("Server type dataframe only works with the Python library and requires a Spark session, "
+                         "please provide one with the DataContract class")
+            return
+        else:
+            logging.info("Use Spark to connect to data source")
+            scan.add_spark_session(spark, data_source_name="datacontract-cli")
+            scan.set_data_source_name("datacontract-cli")
     elif server.type == "kafka":
         if spark is None:
             spark = create_spark_session(tmp_dir)
