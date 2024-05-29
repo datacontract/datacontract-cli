@@ -13,7 +13,7 @@ from typer.core import TyperGroup
 from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_index_html, create_data_contract_html
-from datacontract.data_contract import DataContract
+from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
 from datacontract.publish.publish import publish_to_datamesh_manager
 
@@ -139,28 +139,6 @@ def test(
     if logs:
         _print_logs(run)
     _handle_result(run)
-
-
-class ExportFormat(str, Enum):
-    jsonschema = "jsonschema"
-    pydantic_model = "pydantic-model"
-    sodacl = "sodacl"
-    dbt = "dbt"
-    dbt_sources = "dbt-sources"
-    dbt_staging_sql = "dbt-staging-sql"
-    odcs = "odcs"
-    rdf = "rdf"
-    avro = "avro"
-    protobuf = "protobuf"
-    great_expectations = "great-expectations"
-    terraform = "terraform"
-    avro_idl = "avro-idl"
-    sql = "sql"
-    sql_query = "sql-query"
-    html = "html"
-    go = "go"
-    bigquery = "bigquery"
-    dbml = "dbml"
 
 
 @app.command()

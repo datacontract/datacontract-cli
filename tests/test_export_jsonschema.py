@@ -6,6 +6,7 @@ import sys
 from typer.testing import CliRunner
 
 from datacontract.cli import app
+from datacontract.data_contract import DataContract
 from datacontract.export.jsonschema_converter import to_jsonschemas
 from datacontract.model.data_contract_specification import DataContractSpecification
 
@@ -19,9 +20,10 @@ def test_cli():
 
 
 def test_to_jsonschemas():
-    data_contract_file = "fixtures/local-json/datacontract.yaml"
-    file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+    data_contract = DataContract(
+        data_contract_file="fixtures/local-json/datacontract.yaml", inline_definitions=True
+    ).get_data_contract_specification()
+
     with open("fixtures/local-json/datacontract.json") as file:
         expected_json_schema = file.read()
 

@@ -2,6 +2,7 @@ import json
 import logging
 import tempfile
 import typing
+from enum import Enum
 
 import yaml
 from pyspark.sql import SparkSession
@@ -47,6 +48,28 @@ from datacontract.model.breaking_change import BreakingChanges, BreakingChange, 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
+
+
+class ExportFormat(str, Enum):
+    jsonschema = "jsonschema"
+    pydantic_model = "pydantic-model"
+    sodacl = "sodacl"
+    dbt = "dbt"
+    dbt_sources = "dbt-sources"
+    dbt_staging_sql = "dbt-staging-sql"
+    odcs = "odcs"
+    rdf = "rdf"
+    avro = "avro"
+    protobuf = "protobuf"
+    great_expectations = "great-expectations"
+    terraform = "terraform"
+    avro_idl = "avro-idl"
+    sql = "sql"
+    sql_query = "sql-query"
+    html = "html"
+    go = "go"
+    bigquery = "bigquery"
+    dbml = "dbml"
 
 
 class DataContract:
@@ -275,7 +298,9 @@ class DataContract:
             inline_quality=self._inline_quality,
         )
 
-    def export(self, export_format, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto") -> str:
+    def export(
+        self, export_format: ExportFormat, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto"
+    ) -> str:
         data_contract = resolve.resolve_data_contract(
             self._data_contract_file,
             self._data_contract_str,

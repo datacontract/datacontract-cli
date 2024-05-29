@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "description": "Model representing the Consumer Price Index for Germany",
   "type": "object",
   "properties": {
     "Statistik_Code": {
@@ -69,7 +68,8 @@
       "description": "Consumer price index value"
     },
     "PREIS1__Verbraucherpreisindex__q": {
-      "type": "string"
+      "type": "string",
+      "description": "e\nendg\u00fcltiger Wert\n0\nweniger als die H\u00e4lfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts\n-\nnichts vorhanden\n...\nAngabe f\u00e4llt sp\u00e4ter an\n/\nkeine Angaben, da Zahlenwert nicht sicher genug\n.\nZahlenwert unbekannt oder geheimzuhalten\nx\nTabellenfach gesperrt, weil Aussage nicht sinnvoll\n()\nAussagewert eingeschr\u00e4nkt, da der Zahlenwert statistisch relativ unsicher ist\np\nvorl\u00e4ufige Zahl\nr\nberichtigte Zahl\ns\ngesch\u00e4tzte Zahl\n"
     },
     "Verbraucherpreisindex__CH0004": {
       "type": [
@@ -79,7 +79,8 @@
       "description": "Ver\u00e4nderung zum Vorjahresmonat"
     },
     "Verbraucherpreisindex__CH0004__q": {
-      "type": "string"
+      "type": "string",
+      "description": "e\nendg\u00fcltiger Wert\n0\nweniger als die H\u00e4lfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts\n-\nnichts vorhanden\n...\nAngabe f\u00e4llt sp\u00e4ter an\n/\nkeine Angaben, da Zahlenwert nicht sicher genug\n.\nZahlenwert unbekannt oder geheimzuhalten\nx\nTabellenfach gesperrt, weil Aussage nicht sinnvoll\n()\nAussagewert eingeschr\u00e4nkt, da der Zahlenwert statistisch relativ unsicher ist\np\nvorl\u00e4ufige Zahl\nr\nberichtigte Zahl\ns\ngesch\u00e4tzte Zahl\n"
     },
     "PREIS1__CH0005": {
       "type": [
@@ -89,7 +90,8 @@
       "description": "Ver\u00e4nderung zum Vormonat"
     },
     "PREIS1__CH0005__q": {
-      "type": "string"
+      "type": "string",
+      "description": "e\nendg\u00fcltiger Wert\n0\nweniger als die H\u00e4lfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts\n-\nnichts vorhanden\n...\nAngabe f\u00e4llt sp\u00e4ter an\n/\nkeine Angaben, da Zahlenwert nicht sicher genug\n.\nZahlenwert unbekannt oder geheimzuhalten\nx\nTabellenfach gesperrt, weil Aussage nicht sinnvoll\n()\nAussagewert eingeschr\u00e4nkt, da der Zahlenwert statistisch relativ unsicher ist\np\nvorl\u00e4ufige Zahl\nr\nberichtigte Zahl\ns\ngesch\u00e4tzte Zahl\n"
     }
   },
   "required": [
@@ -110,5 +112,6 @@
     "PREIS1__Verbraucherpreisindex__q",
     "Verbraucherpreisindex__CH0004__q",
     "PREIS1__CH0005__q"
-  ]
+  ],
+  "description": "Model representing the Consumer Price Index for Germany"
 }
