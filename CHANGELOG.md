@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.6] - 2024-05-29
+
+### Fixed
+
+- Fixed Docker build by removing msodbcsql18 dependency (temporary workaround)
+
+## [0.10.5] - 2024-05-29
+
 ### Added
 - Added support for `sqlserver` (#196)
 - `datacontract export --format dbml`: Export to [Database Markup Language (DBML)](https://dbml.dbdiagram.io/home/) (#135)
