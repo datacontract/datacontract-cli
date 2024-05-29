@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export --format avro`: Now supports config map on field level for logicalTypes and default values [Custom Avro Properties](./README.md#custom-avro-properties)
 - `datacontract import --format avro`: Now supports importing logicalType and default definition on avro files [Custom Avro Properties](./README.md#custom-avro-properties)
 - Support `config.bigqueryType` for testing BigQuery types
+- Added support for selecting specific tables in an AWS Glue `import` through the `glue-table` parameter (#122)
 
 ### Fixed
 
