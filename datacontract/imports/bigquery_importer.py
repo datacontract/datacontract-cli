@@ -3,8 +3,7 @@ from typing import List
 
 from google.cloud import bigquery
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
 
 

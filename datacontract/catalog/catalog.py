@@ -7,8 +7,7 @@ from jinja2 import PackageLoader, Environment, select_autoescape
 
 from datacontract.data_contract import DataContract
 from datacontract.export.html_export import get_version
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 def create_data_contract_html(contracts, file: Path, path: Path):

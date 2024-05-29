@@ -1,8 +1,7 @@
 import json
 from typing import Dict
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
 
 def to_jsonschemas(data_contract_spec: DataContractSpecification):

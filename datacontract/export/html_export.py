@@ -7,8 +7,7 @@ import pytz
 import yaml
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from datacontract.model.data_contract_specification import \
-    DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:
