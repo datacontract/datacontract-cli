@@ -745,39 +745,28 @@ models:
 ```
  Usage: datacontract import [OPTIONS]
 
- Create a data contract from the given source location. Prints to stdout.
-
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                  [sql|avro|glue|bigquery|jsonschema]  The format of the source file. [default: None] [required]                                   │
-│    --source                  TEXT                      The path to the file or Glue Database that should be imported. [default: None]                         │
-│    --bigquery-project        TEXT                      The bigquery project id. [default: None]                                                               │
-│    --bigquery-dataset        TEXT                      The bigquery dataset id. [default: None]                                                               │
-│    --bigquery-table          TEXT                      List of table ids to import from the bigquery API (repeat for multiple table ids, leave empty for all  │
-│                                                        tables in the dataset).                                                                                │
-│                                                        [default: None]                                                                                        │
-│    --help                                              Show this message and exit.                                                                            │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Create a data contract from the given source location. Prints to stdout.                                                              
+                                                                                                                                       
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format                  [sql|avro|glue|bigquery|jsonschema]  The format of the source file. [default: None] [required]         │
+│    --source                  TEXT                                 The path to the file or Glue Database that should be imported.    │
+│                                                                   [default: None]                                                   │
+│    --glue-table              TEXT                                 List of table ids to import from the Glue Database (repeat for    │
+│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
+│                                                                   [default: None]                                                   │
+│    --bigquery-project        TEXT                                 The bigquery project id. [default: None]                          │
+│    --bigquery-dataset        TEXT                                 The bigquery dataset id. [default: None]                          │
+│    --bigquery-table          TEXT                                 List of table ids to import from the bigquery API (repeat for     │
+│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
+│                                                                   [default: None]                                                   │
+│    --help                                                         Show this message and exit.                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-
-As shown, some options are only relevant in certain conditions: For `format` Bigtable we support to directly read off the Bigtable APIs.
-In this case there's no need to specify `source` but instead `bt-project-id`, `bt-dataset-id` and `table` must be specified.
-
-For providing authentication to the Client, please see [the google documentation](https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to) or the one [about authorizing client libraries](https://cloud.google.com/bigquery/docs/authentication#client-libs).
 
 Example:
 ```bash
 # Example import from SQL DDL
 datacontract import --format sql --source my_ddl.sql
-```
-
-```bash
-# Example import from Bigquery JSON
-datacontract import --format bigquery --source my_bigquery_table.json
-```
-
-```bash
-# Example import from Bigquery API
-datacontract import --format bigquery --btProjectId <project_id> --btDatasetId <dataset_id> --table <tableid_1> --table <tableid_2> --table <tableid_3>
 ```
 
 Available import options:
@@ -793,6 +782,49 @@ Available import options:
 | `dbt`              | Import from dbt models                         | TBD     |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
 | Missing something? | Please create an issue on GitHub               | TBD     |
+
+
+#### BigQuery
+
+Bigquery data can either be imported off of JSON Files generated from the table descriptions or directly from the Bigquery API. In case you want to use JSON Files, specify the `source` parameter with a path to the JSON File.
+
+To import from the Bigquery API, you have to _omit_ `source` and instead need to provide `bigquery-project` and `bigquery-dataset`. Additionally you may specify `bigquery-table` to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the dataset will be imported.
+
+For providing authentication to the Client, please see [the google documentation](https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to) or the one [about authorizing client libraries](https://cloud.google.com/bigquery/docs/authentication#client-libs).
+
+Examples: 
+
+```bash
+# Example import from Bigquery JSON
+datacontract import --format bigquery --source my_bigquery_table.json
+```
+
+```bash
+# Example import from Bigquery API with specifying the tables to import
+datacontract import --format bigquery --bigquery-project <project_id> --bigquery-dataset <dataset_id> --bigquery-table <tableid_1> --bigquery-table <tableid_2> --bigquery-table <tableid_3>
+```
+
+```bash
+# Example import from Bigquery API importing all tables in the dataset
+datacontract import --format bigquery --bigquery-project <project_id> --bigquery-dataset <dataset_id>
+```
+
+### Glue
+
+Importing from Glue reads the necessary Data directly off of the AWS API.
+You may give the `glue-table` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
+
+Examples: 
+
+```bash
+# Example import from AWS Glue with specifying the tables to import
+datacontract import --format glue --source <database_name> --glue-table <table_name_1> --glue-table <table_name_2> --glue-table <table_name_3>
+```
+
+```bash
+# Example import from AWS Glue importing all tables in the database
+datacontract import --format glue --source <database_name>
+```
 
 
 ### breaking

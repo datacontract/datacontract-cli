@@ -107,7 +107,7 @@ def get_glue_table_schema(database_name: str, table_name: str):
     return table_schema
 
 
-def import_glue(data_contract_specification: DataContractSpecification, source: str):
+def import_glue(data_contract_specification: DataContractSpecification, source: str, table_names: List[str]):
     """Import the schema of a Glue database."""
 
     catalogid, location_uri = get_glue_database(source)
@@ -116,13 +116,14 @@ def import_glue(data_contract_specification: DataContractSpecification, source: 
     if catalogid is None:
         return data_contract_specification
 
-    tables = get_glue_tables(source)
+    if table_names is None:
+        table_names = get_glue_tables(source)
 
     data_contract_specification.servers = {
         "production": Server(type="glue", account=catalogid, database=source, location=location_uri),
     }
 
-    for table_name in tables:
+    for table_name in table_names:
         if data_contract_specification.models is None:
             data_contract_specification.models = {}
 
