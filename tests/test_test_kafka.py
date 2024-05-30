@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "fixtures/kafka/datacontract.yaml"
 
-kafka = KafkaContainer("confluentinc/cp-kafka:7.6.0")
+kafka = KafkaContainer("confluentinc/cp-kafka:7.6.1")
 
 
 @pytest.fixture(scope="module", autouse=True)
