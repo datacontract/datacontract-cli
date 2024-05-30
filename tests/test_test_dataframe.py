@@ -14,7 +14,7 @@ datacontract = "fixtures/dataframe/datacontract.yaml"
 load_dotenv(override=True)
 
 
-def _test_test_dataframe(tmp_path: Path):
+def test_test_dataframe(tmp_path: Path):
     spark = _create_spark_session(tmp_dir=str(tmp_path))
     _prepare_dataframe(spark)
     data_contract = DataContract(
@@ -27,6 +27,7 @@ def _test_test_dataframe(tmp_path: Path):
     print(run.pretty())
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
+    spark.stop()
 
 
 def _prepare_dataframe(spark):
