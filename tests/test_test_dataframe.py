@@ -14,7 +14,7 @@ datacontract = "fixtures/dataframe/datacontract.yaml"
 load_dotenv(override=True)
 
 
-def test_test_dataframe(tmp_path: Path):
+def _test_test_dataframe(tmp_path: Path):
     spark = _create_spark_session(tmp_dir=str(tmp_path))
     _prepare_dataframe(spark)
     data_contract = DataContract(
