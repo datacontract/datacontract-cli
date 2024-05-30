@@ -1,3 +1,4 @@
+import logging
 import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, expr, from_json
@@ -44,6 +45,8 @@ def create_spark_session(tmp_dir: str) -> SparkSession:
 
 def read_kafka_topic(spark: SparkSession, data_contract: DataContractSpecification, server: Server, tmp_dir):
     """Read and process data from a Kafka topic based on the server configuration."""
+
+    logging.info("Reading data from Kafka server %s topic %s", server.host, server.topic)
     df = (
         spark.read.format("kafka")
         .options(**get_auth_options())
