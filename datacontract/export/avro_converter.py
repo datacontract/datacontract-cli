@@ -34,13 +34,8 @@ def to_avro_field(field, field_name):
     if field.description is not None:
         avro_field["doc"] = field.description
     avro_field["type"] = to_avro_type(field, field_name)
-    # add logical type definitions for any of the date type fields
-    if field.type in ["timestamp", "timestamp_tz", "timestamp_ntz", "date"]:
-        avro_field["logicalType"] = to_avro_logical_type(field.type)
 
     if field.config:
-        if "avroLogicalType" in field.config:
-            avro_field["logicalType"] = field.config["avroLogicalType"]
         if "avroDefault" in field.config:
             avro_field["default"] = field.config["avroDefault"]
 
@@ -48,6 +43,17 @@ def to_avro_field(field, field_name):
 
 
 def to_avro_type(field: Field, field_name: str) -> str | dict:
+    if field.config:
+        if "avroLogicalType" in field.config and "avroType" in field.config:
+            return {"type": field.config["avroType"], "logicalType": field.config["avroLogicalType"]}
+        if "avroLogicalType" in field.config:
+            if field.config["avroLogicalType"] in ["timestamp-millis", "timestamp-micros", "local-timestamp-millis", "local-timestamp-micros", "time-micros"]:
+                return {"type": "long", "logicalType": field.config["avroLogicalType"]}
+            if field.config["avroLogicalType"] in ["time-millis", "date"]:
+                return {"type": "int", "logicalType": field.config["avroLogicalType"]}
+        if "avroType" in field.config:
+            return field.config["avroLogicalType"]
+
     if field.type is None:
         return "null"
     if field.type in ["string", "varchar", "text"]:
@@ -64,11 +70,11 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
     elif field.type in ["boolean"]:
         return "boolean"
     elif field.type in ["timestamp", "timestamp_tz"]:
-        return "long"
+        return {"type": "long", "logicalType": "timestamp-millis"}
     elif field.type in ["timestamp_ntz"]:
-        return "long"
+        return {"type": "long", "logicalType": "local-timestamp-millis"}
     elif field.type in ["date"]:
-        return "int"
+        return {"type": "int", "logicalType": "date"}
     elif field.type in ["time"]:
         return "long"
     elif field.type in ["object", "record", "struct"]:
@@ -82,14 +88,3 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
         return "null"
     else:
         return "bytes"
-
-
-def to_avro_logical_type(type: str) -> str:
-    if type in ["timestamp", "timestamp_tz"]:
-        return "timestamp-millis"
-    elif type in ["timestamp_ntz"]:
-        return "local-timestamp-millis"
-    elif type in ["date"]:
-        return "date"
-    else:
-        return ""

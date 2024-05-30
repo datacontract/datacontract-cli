@@ -7,18 +7,24 @@
     {
       "name": "orderdate",
       "doc": "My Field",
-      "type": "int",
-      "logicalType": "date"
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      }
     },
     {
       "name": "order_timestamp",
-      "type": "long",
-      "logicalType": "timestamp-millis"
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
     },
     {
       "name": "delivery_timestamp",
-      "type": "long",
-      "logicalType": "local-timestamp-millis"
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-millis"
+      }
     },
     {
       "name": "orderid",
