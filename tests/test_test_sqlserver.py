@@ -27,8 +27,8 @@ def mssql_container(request):
 
 @pytest.mark.skipif(not os.getenv("CI"), reason="Skipping test outside CI/CD environment")
 def test_test_sqlserver(mssql_container, monkeypatch):
-    monkeypatch.setenv("DATACONTRACT_SQLSERVER_USERNAME", sql_server.SQLSERVER_USER)
-    monkeypatch.setenv("DATACONTRACT_SQLSERVER_PASSWORD", sql_server.SQLSERVER_PASSWORD)
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_USERNAME", sql_server.username)
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_PASSWORD", sql_server.password)
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE", "True")
 
     _init_sql()
@@ -56,9 +56,9 @@ def _init_sql():
     import pymssql
 
     connection = pymssql.connect(
-        database=sql_server.SQLSERVER_DBNAME,
-        user=sql_server.SQLSERVER_USER,
-        password=sql_server.SQLSERVER_PASSWORD,
+        database=sql_server.dbname,
+        user=sql_server.username,
+        password=sql_server.password,
         host=sql_server.get_container_host_ip(),
         port=sql_server.get_exposed_port(SQL_SERVER_PORT),
     )
