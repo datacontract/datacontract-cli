@@ -52,7 +52,7 @@ def _prepare_dataframe(spark):
 def _create_spark_session(tmp_dir: str) -> SparkSession:
     """Create and configure a Spark session."""
     spark = (
-        SparkSession.builder.appName("datacontract")
+        SparkSession.builder.appName("datacontract-dataframe-unittest")
         .config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
         .getOrCreate()
