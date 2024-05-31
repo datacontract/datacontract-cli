@@ -201,6 +201,7 @@ class ImportFormat(str, Enum):
     glue = "glue"
     bigquery = "bigquery"
     jsonschema = "jsonschema"
+    odcs="odcs"
 
 
 @app.command(name="import")
