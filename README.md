@@ -276,6 +276,7 @@ Supported server types:
 - [s3](#S3)
 - [bigquery](#bigquery)
 - [azure](#azure)
+- [sqlserver](#sqlserver)
 - [databricks](#databricks)
 - [databricks (programmatic)](#databricks-programmatic)
 - [dataframr (programmatic)](#dataframe-programmatic)
@@ -389,6 +390,43 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 | `DATACONTRACT_AZURE_TENANT_ID`            | `79f5b80f-10ff-40b9-9d1f-774b42d605fc`                  | The Azure Tenant ID                                  |
 | `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622`            | The ApplicationID / ClientID of the app registration |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX` | The Client Secret value                              |
+
+
+
+### Sqlserver
+
+Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool).
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: sqlserver
+    host: localhost
+    port: 5432
+    database: tempdb
+    schema: dbo
+    driver: ODBC Driver 18 for SQL Server
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable             | Example            | Description |
+|----------------------------------|--------------------|-------------|
+| `DATACONTRACT_SQLSERVER_USERNAME` | `root`         | Username    |
+| `DATACONTRACT_SQLSERVER_PASSWORD` | `toor` | Password    |
+| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` | `True` | Use windows authentication, instead of login    |
+| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate    |
+| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `True` | Use SSL    |
+
 
 
 
@@ -585,41 +623,6 @@ models:
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
 
 
-
-
-### Postgres
-
-Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
-
-#### Example
-
-datacontract.yaml
-```yaml
-servers:
-  postgres:
-    type: sqlserver
-    host: localhost
-    port: 5432
-    database: tempdb
-    schema: dbo
-    driver: ODBC Driver 18 for SQL Server
-models:
-  my_table_1: # corresponds to a table
-    type: table
-    fields:
-      my_column_1: # corresponds to a column
-        type: varchar
-```
-
-#### Environment Variables
-
-| Environment Variable             | Example            | Description |
-|----------------------------------|--------------------|-------------|
-| `DATACONTRACT_SQLSERVER_USERNAME` | `root`         | Username    |
-| `DATACONTRACT_SQLSERVER_PASSWORD` | `toor` | Password    |
-| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` | `True` | Use windows authentication, instead of login    |
-| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate    |
-| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `True` | Use SSL    |
 
 
 
