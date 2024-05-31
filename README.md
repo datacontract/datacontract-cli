@@ -28,6 +28,7 @@ Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the C
 $ python3 -m pip install datacontract-cli
 ```
 
+
 We run the tests:
 
 ```bash
@@ -96,6 +97,32 @@ $ datacontract export --format html https://datacontract.com/examples/orders-lat
 ```
 
 which will create this [HTML export](https://datacontract.com/examples/orders-latest/datacontract.html).
+
+## Extra Dependencies and Installation
+
+### Optional Dependencies
+
+[Datacontract-cli](https://github.com/datacontract/datacontract-cli) offers optional dependencies to extend its functionality for specific use cases. You can install these dependencies individually as per your requirements.
+
+
+| Dependency              | Installation Command                                        |
+|-------------------------|-------------------------------------------------------------|
+| Avro Support            | `pip install datacontract-cli[avro]`                        |
+| Google BigQuery         | `pip install datacontract-cli[bigquery]`                    |
+| Databricks Integration  | `pip install datacontract-cli[databricks]`                  |
+| Kafka Integration       | `pip install datacontract-cli[kafka]`                       |
+| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`                    |
+| S3 Integration          | `pip install datacontract-cli[s3]`                          |
+| Snowflake Integration   | `pip install datacontract-cli[snowflake]`                   |
+| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`                   |
+
+### All Dependencies
+
+If you want to install all optional dependencies for comprehensive functionality, you can use:
+
+```bash
+pip install datacontract-cli[all]
+```
 
 ## Usage
 
@@ -630,10 +657,10 @@ models:
 
 ```
 
- Usage: datacontract export [OPTIONS] [LOCATION]                                                                                                                           
-                                                                                                                                                                           
- Convert data contract to a specific format. Prints to stdout or to the specified output file.                                                                                                     
-                                                                                                                                                                           
+ Usage: datacontract export [OPTIONS] [LOCATION]
+
+ Convert data contract to a specific format. Prints to stdout or to the specified output file.
+
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -734,13 +761,13 @@ data products, find the true domain owner of a field attribute)
 #### DBML
 
 The export function converts the logical data types of the datacontract into the specific ones of a concrete Database
-if a server is selected via the `--server` option (based on the `type` of that server). If no server is selected, the 
+if a server is selected via the `--server` option (based on the `type` of that server). If no server is selected, the
 logical data types are exported.
 
 
 #### Avro
 
-The export function converts the data contract specification into an avro schema. It supports specifying custom avro properties for logicalTypes and default values. 
+The export function converts the data contract specification into an avro schema. It supports specifying custom avro properties for logicalTypes and default values.
 
 ##### Custom Avro Properties
 
@@ -760,7 +787,7 @@ models:
         description: Example for AVRO with Timestamp (microsecond precision) https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29
         type: long
         example: 1672534861000000  # Equivalent to 2023-01-01 01:01:01 in microseconds
-        config:          
+        config:
           avroLogicalType: local-timestamp-micros
           avroDefault: 1672534861000000
 ```
@@ -784,8 +811,8 @@ models:
 ```
  Usage: datacontract import [OPTIONS]
 
- Create a data contract from the given source location. Prints to stdout.                                                              
-                                                                                                                                       
+ Create a data contract from the given source location. Prints to stdout.
+
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                  [sql|avro|glue|bigquery|jsonschema]  The format of the source file. [default: None] [required]         │
 │    --source                  TEXT                                 The path to the file or Glue Database that should be imported.    │
@@ -831,7 +858,7 @@ To import from the Bigquery API, you have to _omit_ `source` and instead need to
 
 For providing authentication to the Client, please see [the google documentation](https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to) or the one [about authorizing client libraries](https://cloud.google.com/bigquery/docs/authentication#client-libs).
 
-Examples: 
+Examples:
 
 ```bash
 # Example import from Bigquery JSON
@@ -853,7 +880,7 @@ datacontract import --format bigquery --bigquery-project <project_id> --bigquery
 Importing from Glue reads the necessary Data directly off of the AWS API.
 You may give the `glue-table` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
 
-Examples: 
+Examples:
 
 ```bash
 # Example import from AWS Glue with specifying the tables to import
