@@ -1,10 +1,10 @@
 import logging
 
-import psycopg2
 import pytest
 from testcontainers.postgres import PostgresContainer
 
 from datacontract.data_contract import DataContract
+from datacontract.model.exceptions import DataContractException
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -50,6 +50,18 @@ def _setup_datacontract():
 
 
 def _init_sql():
+    try:
+        import psycopg2
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="postgres extra missing",
+            reason="Install the extra datacontract-cli[postgres] to use postgres",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     connection = psycopg2.connect(
         database=postgres.dbname,
         user=postgres.username,

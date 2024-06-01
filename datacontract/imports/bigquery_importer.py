@@ -1,8 +1,6 @@
 import json
 from typing import List
 
-from google.cloud import bigquery
-
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
 
@@ -30,6 +28,18 @@ def import_bigquery_from_api(
     bigquery_project: str,
     bigquery_dataset: str,
 ) -> DataContractSpecification:
+    try:
+        from google.cloud import bigquery
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="bigquery extra missing",
+            reason="Install the extra datacontract-cli[bigquery] to use bigquery",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     client = bigquery.Client(project=bigquery_project)
 
     if bigquery_tables is None:
@@ -63,7 +73,7 @@ def import_bigquery_from_api(
     return data_contract_specification
 
 
-def fetch_table_names(client: bigquery.Client, dataset: str) -> List[str]:
+def fetch_table_names(client, dataset: str) -> List[str]:
     table_names = []
     api_tables = client.list_tables(dataset)
     for api_table in api_tables:

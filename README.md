@@ -25,7 +25,7 @@ This data contract contains all information to connect to S3 and check that the 
 
 Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker), if you prefer).
 ```bash
-$ python3 -m pip install datacontract-cli
+$ python3 -m pip install datacontract-cli[all]
 ```
 
 
@@ -98,31 +98,6 @@ $ datacontract export --format html https://datacontract.com/examples/orders-lat
 
 which will create this [HTML export](https://datacontract.com/examples/orders-latest/datacontract.html).
 
-## Extra Dependencies and Installation
-
-### Optional Dependencies
-
-[Datacontract-cli](https://github.com/datacontract/datacontract-cli) offers optional dependencies to extend its functionality for specific use cases. You can install these dependencies individually as per your requirements.
-
-
-| Dependency              | Installation Command                                        |
-|-------------------------|-------------------------------------------------------------|
-| Avro Support            | `pip install datacontract-cli[avro]`                        |
-| Google BigQuery         | `pip install datacontract-cli[bigquery]`                    |
-| Databricks Integration  | `pip install datacontract-cli[databricks]`                  |
-| Kafka Integration       | `pip install datacontract-cli[kafka]`                       |
-| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`                    |
-| S3 Integration          | `pip install datacontract-cli[s3]`                          |
-| Snowflake Integration   | `pip install datacontract-cli[snowflake]`                   |
-| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`                   |
-
-### All Dependencies
-
-If you want to install all optional dependencies for comprehensive functionality, you can use:
-
-```bash
-pip install datacontract-cli[all]
-```
 
 ## Usage
 
@@ -176,13 +151,13 @@ Python 3.11 recommended.
 Python 3.12 available as pre-release release candidate for 0.9.3
 
 ```bash
-python3 -m pip install datacontract-cli
+python3 -m pip install datacontract-cli[all]
 ```
 
 ### pipx
 pipx installs into an isolated environment.
 ```bash
-pipx install datacontract-cli
+pipx install datacontract-cli[all]
 ```
 
 ### Docker
@@ -197,6 +172,31 @@ Or via an alias that automatically uses the latest version:
 ```bash
 alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/cli:latest'
 ```
+
+
+## Optional Dependencies
+
+The CLI tool defines several optional dependencies (also known as extras) that can be installed for using with specific servers types.
+With _all_, all server dependencies are included.
+
+```bash
+pip install datacontract-cli[all]
+```
+
+A list of available extras:
+
+| Dependency              | Installation Command                                        |
+|-------------------------|-------------------------------------------------------------|
+| Avro Support            | `pip install datacontract-cli[avro]`                        |
+| Google BigQuery         | `pip install datacontract-cli[bigquery]`                    |
+| Databricks Integration  | `pip install datacontract-cli[databricks]`                  |
+| Kafka Integration       | `pip install datacontract-cli[kafka]`                       |
+| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`                    |
+| S3 Integration          | `pip install datacontract-cli[s3]`                          |
+| Snowflake Integration   | `pip install datacontract-cli[snowflake]`                   |
+| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`                   |
+
+
 
 ## Documentation
 
@@ -513,7 +513,7 @@ models:
 
 Notebook
 ```python
-%pip install datacontract-cli
+%pip install datacontract-cli[databricks]
 dbutils.library.restartPython()
 
 from datacontract.data_contract import DataContract
