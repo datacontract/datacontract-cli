@@ -24,12 +24,22 @@ def to_odcs_yaml(data_contract_spec: DataContractSpecification):
 
     if data_contract_spec.terms is not None:
         odcs["description"] = {
-            "purpose": None,
+            "purpose": data_contract_spec.terms.description.strip() if data_contract_spec.terms.description is not None else None,
             "usage": data_contract_spec.terms.usage.strip() if data_contract_spec.terms.usage is not None else None,
             "limitations": data_contract_spec.terms.limitations.strip()
             if data_contract_spec.terms.limitations is not None
             else None,
         }
+
+    if data_contract_spec.servicelevels is not None:
+        slas = []
+        if data_contract_spec.servicelevels.availability is not None:
+            slas.append({ 'property': 'generalAvailability', 'value': data_contract_spec.servicelevels.availability.description })
+        if data_contract_spec.servicelevels.retention is not None:
+            slas.append({ 'property': 'retention', 'value': data_contract_spec.servicelevels.retention.period })
+
+        if len(slas) > 0:
+            odcs["slaProperties"] = slas
 
     odcs["type"] = "tables"  # required, TODO read from models.type?
     odcs["dataset"] = []

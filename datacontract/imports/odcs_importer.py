@@ -62,7 +62,7 @@ def import_info(odcs_contract: Dict[str, Any]) -> Info:
         title = odcs_contract["quantumName"],
         version = odcs_contract["version"],
         description = odcs_contract["description"]["purpose"],
-        owner = odcs_contract["tenant"],
+        owner = odcs_contract["datasetDomain"],
         contact = Contact(name=odcs_contract["productDl"], url= odcs_contract["productFeedbackUrl"])
     )
 
