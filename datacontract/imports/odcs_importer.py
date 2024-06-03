@@ -1,9 +1,8 @@
 import datetime
 import logging
-import pprint
 from typing import Any, Dict, List
 import yaml
-from datacontract.model.data_contract_specification import Availability, Contact, DataContractSpecification, Info, Model, Field, Retention, Server, ServiceLevel, Terms
+from datacontract.model.data_contract_specification import Availability, Contact, DataContractSpecification, Info, Model, Field, Retention, ServiceLevel, Terms
 from datacontract.model.exceptions import DataContractException
 
 DATACONTRACT_TYPES = [

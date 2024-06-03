@@ -1,0 +1,3658 @@
+dataContractSpecification: 0.9.3
+id: 6aeafdc1-ed62-4c8f-bf0a-da1061c98cdb
+info:
+  title: test
+  version: 1.0.0
+models:
+  department:
+    description: Lookup table containing the departments within the Adventure Works
+      Cycles company.
+    type: table
+    fields:
+      departmentid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Department records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Name of the department.
+        classification: ''
+      groupname:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Name of the group to which the department belongs.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  employee:
+    description: Employee information such as salary, department, and title.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Employee records.  Foreign key to BusinessEntity.BusinessEntityID.
+        classification: ''
+      nationalidnumber:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Unique national identification number such as a social security
+          number.
+        classification: ''
+      loginid:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Network login.
+        classification: ''
+      jobtitle:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Work title such as Buyer or Sales Representative.
+        classification: ''
+      birthdate:
+        title: ''
+        type: date
+        required: false
+        primary: false
+        unique: false
+        description: Date of birth.
+        classification: ''
+      maritalstatus:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: M = Married, S = Single
+        classification: ''
+      gender:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: M = Male, F = Female
+        classification: ''
+      hiredate:
+        title: ''
+        type: date
+        required: false
+        primary: false
+        unique: false
+        description: Employee hired on this date.
+        classification: ''
+      salariedflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Job classification. 0 = Hourly, not exempt from collective bargaining.
+          1 = Salaried, exempt from collective bargaining.
+        classification: ''
+      vacationhours:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Number of available vacation hours.
+        classification: ''
+      sickleavehours:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Number of available sick leave hours.
+        classification: ''
+      currentflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Inactive, 1 = Active
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+      organizationnode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Where the employee is located in corporate hierarchy.
+        classification: ''
+  employeedepartmenthistory:
+    description: Employee department transfers.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Employee identification number. Foreign key to Employee.BusinessEntityID.
+        classification: ''
+      departmentid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Department in which the employee worked including currently.
+          Foreign key to Department.DepartmentID.
+        classification: ''
+      shiftid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Identifies which 8-hour shift the employee works. Foreign key
+          to Shift.Shift.ID.
+        classification: ''
+      startdate:
+        title: ''
+        type: date
+        required: false
+        primary: false
+        unique: false
+        description: Date the employee started work in the department.
+        classification: ''
+      enddate:
+        title: ''
+        type: date
+        required: false
+        primary: false
+        unique: false
+        description: Date the employee left the department. NULL = Current department.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  employeepayhistory:
+    description: Employee pay history.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Employee identification number. Foreign key to Employee.BusinessEntityID.
+        classification: ''
+      ratechangedate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the change in pay is effective
+        classification: ''
+      rate:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Salary hourly rate.
+        classification: ''
+      payfrequency:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: 1 = Salary received monthly, 2 = Salary received biweekly
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  jobcandidate:
+    description: Résumés submitted to Human Resources by job applicants.
+    type: table
+    fields:
+      jobcandidateid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for JobCandidate records.
+        classification: ''
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Employee identification number if applicant was hired. Foreign
+          key to Employee.BusinessEntityID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  shift:
+    description: Work shift lookup table.
+    type: table
+    fields:
+      shiftid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Shift records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Shift description.
+        classification: ''
+      starttime:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Shift start time.
+        classification: ''
+      endtime:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Shift end time.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  address:
+    description: Street address information for customers, employees, and vendors.
+    type: table
+    fields:
+      addressid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Address records.
+        classification: ''
+      addressline1:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: First street address line.
+        classification: ''
+      addressline2:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Second street address line.
+        classification: ''
+      city:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Name of the city.
+        classification: ''
+      stateprovinceid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Unique identification number for the state or province. Foreign
+          key to StateProvince table.
+        classification: ''
+      postalcode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Postal code for the street address.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  addresstype:
+    description: Types of addresses stored in the Address table.
+    type: table
+    fields:
+      addresstypeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for AddressType records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Address type description. For example, Billing, Home, or Shipping.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  businessentity:
+    description: Source of the ID that connects vendors, customers, and employees
+      with address and contact information.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for all customers, vendors, and employees.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  businessentityaddress:
+    description: Cross-reference table mapping customers, vendors, and employees to
+      their addresses.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
+        classification: ''
+      addressid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to Address.AddressID.
+        classification: ''
+      addresstypeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to AddressType.AddressTypeID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  businessentitycontact:
+    description: Cross-reference table mapping stores, vendors, and employees to people
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
+        classification: ''
+      personid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to Person.BusinessEntityID.
+        classification: ''
+      contacttypeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key.  Foreign key to ContactType.ContactTypeID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  contacttype:
+    description: Lookup table containing the types of business entity contacts.
+    type: table
+    fields:
+      contacttypeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ContactType records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Contact type description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  countryregion:
+    description: Lookup table containing the ISO standard codes for countries and
+      regions.
+    type: table
+    fields:
+      countryregioncode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: ISO standard code for countries and regions.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Country or region name.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  emailaddress:
+    description: Where to send a person email.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Person associated with this email address.  Foreign
+          key to Person.BusinessEntityID
+        classification: ''
+      emailaddressid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. ID of this email address.
+        classification: ''
+      emailaddress:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: E-mail address for the person.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  password:
+    description: One way hashed authentication information
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+      passwordhash:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Password for the e-mail account.
+        classification: ''
+      passwordsalt:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Random value concatenated with the password string before the
+          password is hashed.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  person:
+    description: 'Human beings involved with AdventureWorks: employees, customer contacts,
+      and vendor contacts.'
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Person records.
+        classification: ''
+      persontype:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: 'Primary type of person: SC = Store Contact, IN = Individual
+          (retail) customer, SP = Sales person, EM = Employee (non-sales), VC = Vendor
+          contact, GC = General contact'
+        classification: ''
+      namestyle:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = The data in FirstName and LastName are stored in western
+          style (first name, last name) order.  1 = Eastern style (last name, first
+          name) order.
+        classification: ''
+      title:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: A courtesy title. For example, Mr. or Ms.
+        classification: ''
+      firstname:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: First name of the person.
+        classification: ''
+      middlename:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Middle name or middle initial of the person.
+        classification: ''
+      lastname:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Last name of the person.
+        classification: ''
+      suffix:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Surname suffix. For example, Sr. or Jr.
+        classification: ''
+      emailpromotion:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Contact does not wish to receive e-mail promotions, 1 = Contact
+          does wish to receive e-mail promotions from AdventureWorks, 2 = Contact
+          does wish to receive e-mail promotions from AdventureWorks and selected
+          partners.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  personphone:
+    description: Telephone number and type of a person.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Business entity identification number. Foreign key to Person.BusinessEntityID.
+        classification: ''
+      phonenumber:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Telephone number identification number.
+        classification: ''
+      phonenumbertypeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Kind of phone number. Foreign key to PhoneNumberType.PhoneNumberTypeID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  phonenumbertype:
+    description: Type of phone number of a person.
+    type: table
+    fields:
+      phonenumbertypeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for telephone number type records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Name of the telephone number type
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  stateprovince:
+    description: State and province lookup table.
+    type: table
+    fields:
+      stateprovinceid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for StateProvince records.
+        classification: ''
+      stateprovincecode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: ISO standard state or province code.
+        classification: ''
+      countryregioncode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
+        classification: ''
+      isonlystateprovinceflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = StateProvinceCode exists. 1 = StateProvinceCode unavailable,
+          using CountryRegionCode.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: State or province description.
+        classification: ''
+      territoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: ID of the territory in which the state or province is located.
+          Foreign key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  billofmaterials:
+    description: Items required to make bicycles and bicycle subassemblies. It identifies
+      the heirarchical relationship between a parent product and its components.
+    type: table
+    fields:
+      billofmaterialsid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for BillOfMaterials records.
+        classification: ''
+      productassemblyid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Parent product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      componentid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Component identification number. Foreign key to Product.ProductID.
+        classification: ''
+      startdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the component started being used in the assembly item.
+        classification: ''
+      enddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the component stopped being used in the assembly item.
+        classification: ''
+      unitmeasurecode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Standard code identifying the unit of measure for the quantity.
+        classification: ''
+      bomlevel:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Indicates the depth the component is from its parent (AssemblyID).
+        classification: ''
+      perassemblyqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Quantity of the component needed to create the assembly.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  culture:
+    description: Lookup table containing the languages in which some AdventureWorks
+      data is stored.
+    type: table
+    fields:
+      cultureid:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Culture records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Culture description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  document:
+    description: Product maintenance documents.
+    type: table
+    fields:
+      title:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Title of the document.
+        classification: ''
+      owner:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Employee who controls the document.  Foreign key to Employee.BusinessEntityID
+        classification: ''
+      folderflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = This is a folder, 1 = This is a document.
+        classification: ''
+      filename:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: File name of the document
+        classification: ''
+      fileextension:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: File extension indicating the document type. For example, .doc
+          or .txt.
+        classification: ''
+      revision:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Revision number of the document.
+        classification: ''
+      changenumber:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Engineering change approval number.
+        classification: ''
+      status:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: 1 = Pending approval, 2 = Approved, 3 = Obsolete
+        classification: ''
+      documentsummary:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Document abstract.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+      documentnode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Document records.
+        classification: ''
+  illustration:
+    description: Bicycle assembly diagrams.
+    type: table
+    fields:
+      illustrationid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Illustration records.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  location:
+    description: Product inventory and manufacturing locations.
+    type: table
+    fields:
+      locationid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Location records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Location description.
+        classification: ''
+      costrate:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Standard hourly cost of the manufacturing location.
+        classification: ''
+      availability:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Work capacity (in hours) of the manufacturing location.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  product:
+    description: Products sold or used in the manfacturing of sold products.
+    type: table
+    fields:
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Product records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Name of the product.
+        classification: ''
+      productnumber:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Unique product identification number.
+        classification: ''
+      makeflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Product is purchased, 1 = Product is manufactured in-house.
+        classification: ''
+      finishedgoodsflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Product is not a salable item. 1 = Product is salable.
+        classification: ''
+      color:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Product color.
+        classification: ''
+      safetystocklevel:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Minimum inventory quantity.
+        classification: ''
+      reorderpoint:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Inventory level that triggers a purchase order or work order.
+        classification: ''
+      standardcost:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Standard cost of the product.
+        classification: ''
+      listprice:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Selling price.
+        classification: ''
+      size:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Product size.
+        classification: ''
+      sizeunitmeasurecode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Unit of measure for Size column.
+        classification: ''
+      weightunitmeasurecode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Unit of measure for Weight column.
+        classification: ''
+      weight:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product weight.
+        classification: ''
+      daystomanufacture:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Number of days required to manufacture the product.
+        classification: ''
+      productline:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: R = Road, M = Mountain, T = Touring, S = Standard
+        classification: ''
+      class:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: H = High, M = Medium, L = Low
+        classification: ''
+      style:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: W = Womens, M = Mens, U = Universal
+        classification: ''
+      productsubcategoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product is a member of this product subcategory. Foreign key
+          to ProductSubCategory.ProductSubCategoryID.
+        classification: ''
+      productmodelid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product is a member of this product model. Foreign key to ProductModel.ProductModelID.
+        classification: ''
+      sellstartdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the product was available for sale.
+        classification: ''
+      sellenddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the product was no longer available for sale.
+        classification: ''
+      discontinueddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the product was discontinued.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productcategory:
+    description: High-level product categorization.
+    type: table
+    fields:
+      productcategoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ProductCategory records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Category description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productcosthistory:
+    description: Changes in the cost of a product over time.
+    type: table
+    fields:
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID
+        classification: ''
+      startdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Product cost start date.
+        classification: ''
+      enddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Product cost end date.
+        classification: ''
+      standardcost:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Standard cost of the product.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productdescription:
+    description: Product descriptions in several languages.
+    type: table
+    fields:
+      productdescriptionid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ProductDescription records.
+        classification: ''
+      description:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Description of the product.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productdocument:
+    description: Cross-reference table mapping products to related product documents.
+    type: table
+    fields:
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+      documentnode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Document identification number. Foreign key to Document.DocumentNode.
+        classification: ''
+  productinventory:
+    description: Product inventory information.
+    type: table
+    fields:
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      locationid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Inventory location identification number. Foreign key to Location.LocationID.
+        classification: ''
+      shelf:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Storage compartment within an inventory location.
+        classification: ''
+      bin:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Storage container on a shelf in an inventory location.
+        classification: ''
+      quantity:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Quantity of products in the inventory location.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productlistpricehistory:
+    description: Changes in the list price of a product over time.
+    type: table
+    fields:
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID
+        classification: ''
+      startdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: List price start date.
+        classification: ''
+      enddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: List price end date
+        classification: ''
+      listprice:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product list price.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productmodel:
+    description: Product model classification.
+    type: table
+    fields:
+      productmodelid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ProductModel records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Product model description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productmodelillustration:
+    description: Cross-reference table mapping product models and illustrations.
+    type: table
+    fields:
+      productmodelid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to ProductModel.ProductModelID.
+        classification: ''
+      illustrationid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to Illustration.IllustrationID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productmodelproductdescriptionculture:
+    description: Cross-reference table mapping product descriptions and the language
+      the description is written in.
+    type: table
+    fields:
+      productmodelid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to ProductModel.ProductModelID.
+        classification: ''
+      productdescriptionid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to ProductDescription.ProductDescriptionID.
+        classification: ''
+      cultureid:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Culture identification number. Foreign key to Culture.CultureID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productphoto:
+    description: Product images.
+    type: table
+    fields:
+      productphotoid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ProductPhoto records.
+        classification: ''
+      thumbnailphotofilename:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Small image file name.
+        classification: ''
+      largephotofilename:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Large image file name.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productproductphoto:
+    description: Cross-reference table mapping products and product photos.
+    type: table
+    fields:
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      productphotoid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product photo identification number. Foreign key to ProductPhoto.ProductPhotoID.
+        classification: ''
+      primary:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Photo is not the principal image. 1 = Photo is the principal
+          image.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productreview:
+    description: Customer reviews of products they have purchased.
+    type: table
+    fields:
+      productreviewid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ProductReview records.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      reviewername:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Name of the reviewer.
+        classification: ''
+      reviewdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date review was submitted.
+        classification: ''
+      emailaddress:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Reviewer's e-mail address.
+        classification: ''
+      rating:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product rating given by the reviewer. Scale is 1 to 5 with 5
+          as the highest rating.
+        classification: ''
+      comments:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Reviewer's comments
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productsubcategory:
+    description: Product subcategories. See ProductCategory table.
+    type: table
+    fields:
+      productsubcategoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ProductSubcategory records.
+        classification: ''
+      productcategoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product category identification number. Foreign key to ProductCategory.ProductCategoryID.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Subcategory description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  scrapreason:
+    description: Manufacturing failure reasons lookup table.
+    type: table
+    fields:
+      scrapreasonid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ScrapReason records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Failure description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  transactionhistory:
+    description: Record of each purchase order, sales order, or work order transaction
+      year to date.
+    type: table
+    fields:
+      transactionid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for TransactionHistory records.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      referenceorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Purchase order, sales order, or work order identification number.
+        classification: ''
+      referenceorderlineid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Line number associated with the purchase order, sales order,
+          or work order.
+        classification: ''
+      transactiondate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date and time of the transaction.
+        classification: ''
+      transactiontype:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: W = WorkOrder, S = SalesOrder, P = PurchaseOrder
+        classification: ''
+      quantity:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product quantity.
+        classification: ''
+      actualcost:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product cost.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  transactionhistoryarchive:
+    description: Transactions for previous years.
+    type: table
+    fields:
+      transactionid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for TransactionHistoryArchive records.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      referenceorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Purchase order, sales order, or work order identification number.
+        classification: ''
+      referenceorderlineid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Line number associated with the purchase order, sales order,
+          or work order.
+        classification: ''
+      transactiondate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date and time of the transaction.
+        classification: ''
+      transactiontype:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: W = Work Order, S = Sales Order, P = Purchase Order
+        classification: ''
+      quantity:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product quantity.
+        classification: ''
+      actualcost:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product cost.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  unitmeasure:
+    description: Unit of measure lookup table.
+    type: table
+    fields:
+      unitmeasurecode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Primary key.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Unit of measure description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  workorder:
+    description: Manufacturing work orders.
+    type: table
+    fields:
+      workorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for WorkOrder records.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      orderqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product quantity to build.
+        classification: ''
+      scrappedqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Quantity that failed inspection.
+        classification: ''
+      startdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Work order start date.
+        classification: ''
+      enddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Work order end date.
+        classification: ''
+      duedate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Work order due date.
+        classification: ''
+      scrapreasonid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Reason for inspection failure.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  workorderrouting:
+    description: Work order details.
+    type: table
+    fields:
+      workorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to WorkOrder.WorkOrderID.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to Product.ProductID.
+        classification: ''
+      operationsequence:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Indicates the manufacturing process sequence.
+        classification: ''
+      locationid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Manufacturing location where the part is processed. Foreign key
+          to Location.LocationID.
+        classification: ''
+      scheduledstartdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Planned manufacturing start date.
+        classification: ''
+      scheduledenddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Planned manufacturing end date.
+        classification: ''
+      actualstartdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Actual start date.
+        classification: ''
+      actualenddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Actual end date.
+        classification: ''
+      actualresourcehrs:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Number of manufacturing hours used.
+        classification: ''
+      plannedcost:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Estimated manufacturing cost.
+        classification: ''
+      actualcost:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Actual manufacturing cost.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  productvendor:
+    description: Cross-reference table mapping vendors with the products they supply.
+    type: table
+    fields:
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to Product.ProductID.
+        classification: ''
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to Vendor.BusinessEntityID.
+        classification: ''
+      averageleadtime:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: The average span of time (in days) between placing an order with
+          the vendor and receiving the purchased product.
+        classification: ''
+      standardprice:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: The vendor's usual selling price.
+        classification: ''
+      lastreceiptcost:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: The selling price when last purchased.
+        classification: ''
+      lastreceiptdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the product was last received by the vendor.
+        classification: ''
+      minorderqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: The maximum quantity that should be ordered.
+        classification: ''
+      maxorderqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: The minimum quantity that should be ordered.
+        classification: ''
+      onorderqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: The quantity currently on order.
+        classification: ''
+      unitmeasurecode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: The product's unit of measure.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  purchaseorderdetail:
+    description: Individual products associated with a specific purchase order. See
+      PurchaseOrderHeader.
+    type: table
+    fields:
+      purchaseorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to PurchaseOrderHeader.PurchaseOrderID.
+        classification: ''
+      purchaseorderdetailid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. One line number per purchased product.
+        classification: ''
+      duedate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the product is expected to be received.
+        classification: ''
+      orderqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Quantity ordered.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      unitprice:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Vendor's selling price of a single product.
+        classification: ''
+      receivedqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Quantity actually received from the vendor.
+        classification: ''
+      rejectedqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Quantity rejected during inspection.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  purchaseorderheader:
+    description: General purchase order information. See PurchaseOrderDetail.
+    type: table
+    fields:
+      purchaseorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key.
+        classification: ''
+      revisionnumber:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Incremental number to track changes to the purchase order over
+          time.
+        classification: ''
+      status:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Order current status. 1 = Pending; 2 = Approved; 3 = Rejected;
+          4 = Complete
+        classification: ''
+      employeeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Employee who created the purchase order. Foreign key to Employee.BusinessEntityID.
+        classification: ''
+      vendorid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Vendor with whom the purchase order is placed. Foreign key to
+          Vendor.BusinessEntityID.
+        classification: ''
+      shipmethodid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
+        classification: ''
+      orderdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Purchase order creation date.
+        classification: ''
+      shipdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Estimated shipment date from the vendor.
+        classification: ''
+      subtotal:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Purchase order subtotal. Computed as SUM(PurchaseOrderDetail.LineTotal)for
+          the appropriate PurchaseOrderID.
+        classification: ''
+      taxamt:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Tax amount.
+        classification: ''
+      freight:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Shipping cost.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  shipmethod:
+    description: Shipping company lookup table.
+    type: table
+    fields:
+      shipmethodid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ShipMethod records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Shipping company name.
+        classification: ''
+      shipbase:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Minimum shipping charge.
+        classification: ''
+      shiprate:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Shipping charge per pound.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  vendor:
+    description: Companies from whom Adventure Works Cycles purchases parts or other
+      goods.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for Vendor records.  Foreign key to BusinessEntity.BusinessEntityID
+        classification: ''
+      accountnumber:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Vendor account (identification) number.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Company name.
+        classification: ''
+      creditrating:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: 1 = Superior, 2 = Excellent, 3 = Above average, 4 = Average,
+          5 = Below average
+        classification: ''
+      preferredvendorstatus:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Do not use if another vendor is available. 1 = Preferred
+          over other vendors supplying the same product.
+        classification: ''
+      activeflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Vendor no longer used. 1 = Vendor is actively used.
+        classification: ''
+      purchasingwebserviceurl:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Vendor URL.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  countryregioncurrency:
+    description: Cross-reference table mapping ISO currency codes to a country or
+      region.
+    type: table
+    fields:
+      countryregioncode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: ISO code for countries and regions. Foreign key to CountryRegion.CountryRegionCode.
+        classification: ''
+      currencycode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: ISO standard currency code. Foreign key to Currency.CurrencyCode.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  creditcard:
+    description: Customer credit card information.
+    type: table
+    fields:
+      creditcardid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for CreditCard records.
+        classification: ''
+      cardtype:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Credit card name.
+        classification: ''
+      cardnumber:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Credit card number.
+        classification: ''
+      expmonth:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Credit card expiration month.
+        classification: ''
+      expyear:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Credit card expiration year.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  currency:
+    description: Lookup table containing standard ISO currencies.
+    type: table
+    fields:
+      currencycode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: The ISO code for the Currency.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Currency name.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  currencyrate:
+    description: Currency exchange rates.
+    type: table
+    fields:
+      currencyrateid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for CurrencyRate records.
+        classification: ''
+      currencyratedate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date and time the exchange rate was obtained.
+        classification: ''
+      fromcurrencycode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Exchange rate was converted from this currency code.
+        classification: ''
+      tocurrencycode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Exchange rate was converted to this currency code.
+        classification: ''
+      averagerate:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Average exchange rate for the day.
+        classification: ''
+      endofdayrate:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Final exchange rate for the day.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  customer:
+    description: Current customer information. Also see the Person and Store tables.
+    type: table
+    fields:
+      customerid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key.
+        classification: ''
+      personid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Foreign key to Person.BusinessEntityID
+        classification: ''
+      storeid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Foreign key to Store.BusinessEntityID
+        classification: ''
+      territoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: ID of the territory in which the customer is located. Foreign
+          key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  personcreditcard:
+    description: Cross-reference table mapping people to their credit card information
+      in the CreditCard table.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Business entity identification number. Foreign key to Person.BusinessEntityID.
+        classification: ''
+      creditcardid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salesorderdetail:
+    description: Individual products associated with a specific sales order. See SalesOrderHeader.
+    type: table
+    fields:
+      salesorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
+        classification: ''
+      salesorderdetailid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. One incremental unique number per product sold.
+        classification: ''
+      carriertrackingnumber:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Shipment tracking number supplied by the shipper.
+        classification: ''
+      orderqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Quantity ordered per product.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product sold to customer. Foreign key to Product.ProductID.
+        classification: ''
+      specialofferid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Promotional code. Foreign key to SpecialOffer.SpecialOfferID.
+        classification: ''
+      unitprice:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Selling price of a single product.
+        classification: ''
+      unitpricediscount:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Discount amount.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salesorderheader:
+    description: General sales order information.
+    type: table
+    fields:
+      salesorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key.
+        classification: ''
+      revisionnumber:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Incremental number to track changes to the sales order over time.
+        classification: ''
+      orderdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Dates the sales order was created.
+        classification: ''
+      duedate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the order is due to the customer.
+        classification: ''
+      shipdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the order was shipped to the customer.
+        classification: ''
+      status:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Order current status. 1 = In process; 2 = Approved; 3 = Backordered;
+          4 = Rejected; 5 = Shipped; 6 = Cancelled
+        classification: ''
+      onlineorderflag:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: 0 = Order placed by sales person. 1 = Order placed online by
+          customer.
+        classification: ''
+      purchaseordernumber:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Customer purchase order number reference.
+        classification: ''
+      accountnumber:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Financial accounting number reference.
+        classification: ''
+      customerid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Customer identification number. Foreign key to Customer.BusinessEntityID.
+        classification: ''
+      salespersonid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales person who created the sales order. Foreign key to SalesPerson.BusinessEntityID.
+        classification: ''
+      territoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Territory in which the sale was made. Foreign key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+      billtoaddressid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Customer billing address. Foreign key to Address.AddressID.
+        classification: ''
+      shiptoaddressid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Customer shipping address. Foreign key to Address.AddressID.
+        classification: ''
+      shipmethodid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
+        classification: ''
+      creditcardid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
+        classification: ''
+      creditcardapprovalcode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Approval code provided by the credit card company.
+        classification: ''
+      currencyrateid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Currency exchange rate used. Foreign key to CurrencyRate.CurrencyRateID.
+        classification: ''
+      subtotal:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales subtotal. Computed as SUM(SalesOrderDetail.LineTotal)for
+          the appropriate SalesOrderID.
+        classification: ''
+      taxamt:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Tax amount.
+        classification: ''
+      freight:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Shipping cost.
+        classification: ''
+      totaldue:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Total due from customer. Computed as Subtotal + TaxAmt + Freight.
+        classification: ''
+      comment:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Sales representative comments.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salesorderheadersalesreason:
+    description: Cross-reference table mapping sales orders to sales reason codes.
+    type: table
+    fields:
+      salesorderid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
+        classification: ''
+      salesreasonid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to SalesReason.SalesReasonID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salesperson:
+    description: Sales representative current information.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for SalesPerson records. Foreign key to Employee.BusinessEntityID
+        classification: ''
+      territoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Territory currently assigned to. Foreign key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+      salesquota:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Projected yearly sales.
+        classification: ''
+      bonus:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Bonus due if quota is met.
+        classification: ''
+      commissionpct:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Commision percent received per sale.
+        classification: ''
+      salesytd:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales total year to date.
+        classification: ''
+      saleslastyear:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales total of previous year.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salespersonquotahistory:
+    description: Sales performance tracking.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales person identification number. Foreign key to SalesPerson.BusinessEntityID.
+        classification: ''
+      quotadate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Sales quota date.
+        classification: ''
+      salesquota:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales quota amount.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salesreason:
+    description: Lookup table of customer purchase reasons.
+    type: table
+    fields:
+      salesreasonid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for SalesReason records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Sales reason description.
+        classification: ''
+      reasontype:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Category the sales reason belongs to.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salestaxrate:
+    description: Tax rate lookup table.
+    type: table
+    fields:
+      salestaxrateid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for SalesTaxRate records.
+        classification: ''
+      stateprovinceid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: State, province, or country/region the sales tax applies to.
+        classification: ''
+      taxtype:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: 1 = Tax applied to retail transactions, 2 = Tax applied to wholesale
+          transactions, 3 = Tax applied to all sales (retail and wholesale) transactions.
+        classification: ''
+      taxrate:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Tax rate amount.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Tax rate description.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salesterritory:
+    description: Sales territory lookup table.
+    type: table
+    fields:
+      territoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for SalesTerritory records.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Sales territory description
+        classification: ''
+      countryregioncode:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
+        classification: ''
+      group:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Geographic area to which the sales territory belong.
+        classification: ''
+      salesytd:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales in the territory year to date.
+        classification: ''
+      saleslastyear:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Sales in the territory the previous year.
+        classification: ''
+      costytd:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Business costs in the territory year to date.
+        classification: ''
+      costlastyear:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Business costs in the territory the previous year.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  salesterritoryhistory:
+    description: Sales representative transfers to other sales territories.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. The sales rep.  Foreign key to SalesPerson.BusinessEntityID.
+        classification: ''
+      territoryid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Territory identification number. Foreign key to
+          SalesTerritory.SalesTerritoryID.
+        classification: ''
+      startdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Date the sales representive started work in the
+          territory.
+        classification: ''
+      enddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the sales representative left work in the territory.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  shoppingcartitem:
+    description: Contains online customer orders until the order is submitted or cancelled.
+    type: table
+    fields:
+      shoppingcartitemid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for ShoppingCartItem records.
+        classification: ''
+      shoppingcartid:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Shopping cart identification number.
+        classification: ''
+      quantity:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product quantity ordered.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product ordered. Foreign key to Product.ProductID.
+        classification: ''
+      datecreated:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Date the time the record was created.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  specialoffer:
+    description: Sale discounts lookup table.
+    type: table
+    fields:
+      specialofferid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for SpecialOffer records.
+        classification: ''
+      description:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Discount description.
+        classification: ''
+      discountpct:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Discount precentage.
+        classification: ''
+      type:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Discount type category.
+        classification: ''
+      category:
+        title: ''
+        type: string
+        required: false
+        primary: false
+        unique: false
+        description: Group the discount applies to such as Reseller or Customer.
+        classification: ''
+      startdate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Discount start date.
+        classification: ''
+      enddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: Discount end date.
+        classification: ''
+      minqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Minimum discount percent allowed.
+        classification: ''
+      maxqty:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Maximum discount percent allowed.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  specialofferproduct:
+    description: Cross-reference table mapping products to special offer discounts.
+    type: table
+    fields:
+      specialofferid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key for SpecialOfferProduct records.
+        classification: ''
+      productid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
+  store:
+    description: Customers (resellers) of Adventure Works products.
+    type: table
+    fields:
+      businessentityid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: Primary key. Foreign key to Customer.BusinessEntityID.
+        classification: ''
+      name:
+        title: ''
+        type: object
+        required: false
+        primary: false
+        unique: false
+        description: Name of the store.
+        classification: ''
+      salespersonid:
+        title: ''
+        type: numeric
+        required: false
+        primary: false
+        unique: false
+        description: ID of the sales person assigned to the customer. Foreign key
+          to SalesPerson.BusinessEntityID.
+        classification: ''
+      modifieddate:
+        title: ''
+        type: timestamp
+        required: false
+        primary: false
+        unique: false
+        description: ''
+        classification: ''
