@@ -42,7 +42,12 @@ def import_unity_from_api(
     response = requests.get(api_url, headers=headers)
 
     if response.status_code != 200:
-        raise RuntimeError(f"Could not retrieve information from databricks instance: {response.status_code} {response.text}")
+        raise DataContractException(
+            type="schema",
+            name="Retrieve unity catalog schema",
+            reason=f"Failed to retrieve unity catalog schema from databricks instance: {response.status_code} {response.text}",
+            engine="datacontract"
+        )
 
     convert_unity_schema(data_contract_specification, response.json())
 
@@ -79,7 +84,13 @@ def import_table_fields(table_fields):
         # | BINARY | DECIMAL | INTERVAL | ARRAY | STRUCT | MAP | CHAR | NULL | USER_DEFINED_TYPE | TABLE_TYPE
         if field.get("type_name") in ["INTERVAL", "ARRAY", "STRUCT", "MAP", "USER_DEFINED_TYPE", "TABLE_TYPE"]:
             # complex types are not supported, yet
-            raise RuntimeError(f"type ${field.get('type_name')} is not supported yet for unity import")
+            raise DataContractException(
+                type="schema",
+                result="failed",
+                name="Map unity type to data contract type",
+                reason=f"type ${field.get('type_name')} is not supported yet for unity import",
+                engine="datacontract",
+            )
 
         imported_fields[field_name].type = map_type_from_unity(field.get("type_name"))
 
