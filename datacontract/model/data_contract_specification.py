@@ -39,6 +39,7 @@ class Terms(pyd.BaseModel):
     limitations: str = None
     billing: str = None
     noticePeriod: str = None
+    description: str = None
 
 
 class Definition(pyd.BaseModel):
@@ -98,6 +99,7 @@ class Model(pyd.BaseModel):
     namespace: str = None
     title: str = None
     fields: Dict[str, Field] = {}
+    config: Dict[str, Any] = None
 
 
 class Info(pyd.BaseModel):

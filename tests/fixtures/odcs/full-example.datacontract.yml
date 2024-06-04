@@ -1,0 +1,48 @@
+dataContractSpecification: 0.9.3
+id: 53581432-6c55-4ba2-a65f-72344a91553a
+info:
+  title: my quantum
+  version: 1.1.0
+  description: Views built on top of the seller tables.
+  owner: seller
+  contact:
+    name: product-dl@ClimateQuantum.org
+    url: https://product-feedback.com/sellers
+terms:
+  usage: Predict sales over time
+  limitations: Data based on seller perspective, no buyer information
+  billing: 9.95 USD / megabyte
+models:
+  tbl:
+    description: Provides core payment metrics
+    type: table
+    fields:
+      txn_ref_dt:
+        title: transaction reference date
+        type: date
+        required: true
+        primary: false
+        unique: false
+        description: Reference date for transaction
+        classification: public
+      rcvr_id:
+        title: receiver id
+        type: string
+        required: true
+        primary: true
+        unique: false
+        description: A description for column rcvr_id.
+        classification: restricted
+      rcvr_cntry_code:
+        title: receiver country code
+        type: string
+        required: true
+        primary: false
+        unique: false
+        description: Country code
+        classification: public
+servicelevels:
+  availability:
+    description: '2022-05-12T09:30:10-08:00'
+  retention:
+    period: 3y
