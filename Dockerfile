@@ -17,7 +17,7 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY MANIFEST.in .
 COPY datacontract/ datacontract/
-RUN pip3 install --upgrade pip &&  pip3 --no-cache-dir install .
+RUN pip3 install --upgrade pip &&  pip3 --no-cache-dir install ".[all]"
 RUN python -c "import duckdb; duckdb.connect().sql(\"INSTALL httpfs\");"
 
 FROM ubuntu:22.04 AS runner-image

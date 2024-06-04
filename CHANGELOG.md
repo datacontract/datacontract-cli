@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Introduced optional dependencies/extras for significantly faster installation times. (#213)
+
+
 ## [0.10.7] - 2024-05-31
 
 ### Added

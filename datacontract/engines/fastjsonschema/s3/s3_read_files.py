@@ -1,7 +1,7 @@
 import logging
 import os
 
-import s3fs
+from datacontract.model.exceptions import DataContractException
 
 
 def yield_s3_files(s3_endpoint_url, s3_location):
@@ -14,6 +14,18 @@ def yield_s3_files(s3_endpoint_url, s3_location):
 
 
 def s3_fs(s3_endpoint_url):
+    try:
+        import s3fs
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="s3 extra missing",
+            reason="Install the extra datacontract-cli\[s3] to use s3",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     aws_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     aws_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
     return s3fs.S3FileSystem(
