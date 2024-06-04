@@ -35,6 +35,7 @@ from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.jsonschema_importer import import_jsonschema
 from datacontract.imports.odcs_importer import import_odcs
 from datacontract.imports.sql_importer import import_sql
+from datacontract.imports.unity_importer import import_unity_from_json, import_unity_from_api
 from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
@@ -455,6 +456,7 @@ class DataContract:
         bigquery_tables: typing.Optional[typing.List[str]] = None,
         bigquery_project: typing.Optional[str] = None,
         bigquery_dataset: typing.Optional[str] = None,
+        unity_table_full_name: typing.Optional[str] = None
     ) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
 
@@ -475,6 +477,13 @@ class DataContract:
                 )
         elif format == "odcs":
             data_contract_specification = import_odcs(data_contract_specification, source)
+        elif format == "unity":
+            if source is not None:
+                data_contract_specification = import_unity_from_json(data_contract_specification, source)
+            else:
+                data_contract_specification = import_unity_from_api(
+                    data_contract_specification, unity_table_full_name
+                )
         else:
             print(f"Import format {format} not supported.")
 
