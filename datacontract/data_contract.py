@@ -33,6 +33,7 @@ from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
 from datacontract.imports.jsonschema_importer import import_jsonschema
+from datacontract.imports.odcs_importer import import_odcs
 from datacontract.imports.sql_importer import import_sql
 from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
@@ -472,6 +473,8 @@ class DataContract:
                 data_contract_specification = import_bigquery_from_api(
                     data_contract_specification, bigquery_tables, bigquery_project, bigquery_dataset
                 )
+        elif format == "odcs":
+            data_contract_specification = import_odcs(data_contract_specification, source)
         else:
             print(f"Import format {format} not supported.")
 
