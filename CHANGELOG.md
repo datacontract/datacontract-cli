@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Introduced optional dependencies/extras for significantly faster installation times. (#213)
-
+- Added delta-lake as an additional optional dependency
 
 ## [0.10.7] - 2024-05-31
 
