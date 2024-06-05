@@ -1138,8 +1138,8 @@ source venv/bin/activate
 # Install Requirements
 pip install --upgrade pip setuptools wheel
 pip install -e '.[dev]'
-ruff check --fix
-ruff format
+pre-commit install
+pre-commit run --all-files
 pytest
 ```
 

@@ -47,7 +47,13 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
         if "avroLogicalType" in field.config and "avroType" in field.config:
             return {"type": field.config["avroType"], "logicalType": field.config["avroLogicalType"]}
         if "avroLogicalType" in field.config:
-            if field.config["avroLogicalType"] in ["timestamp-millis", "timestamp-micros", "local-timestamp-millis", "local-timestamp-micros", "time-micros"]:
+            if field.config["avroLogicalType"] in [
+                "timestamp-millis",
+                "timestamp-micros",
+                "local-timestamp-millis",
+                "local-timestamp-micros",
+                "time-micros",
+            ]:
                 return {"type": "long", "logicalType": field.config["avroLogicalType"]}
             if field.config["avroLogicalType"] in ["time-millis", "date"]:
                 return {"type": "int", "logicalType": field.config["avroLogicalType"]}

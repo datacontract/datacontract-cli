@@ -89,6 +89,7 @@ dev = [
   "datacontract-cli[all]",
   "httpx==0.27.0",
   "ruff",
+  "pre-commit~=3.7.1",
   "pytest",
   "pytest-xdist",
   "moto",

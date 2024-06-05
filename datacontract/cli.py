@@ -201,7 +201,7 @@ class ImportFormat(str, Enum):
     glue = "glue"
     bigquery = "bigquery"
     jsonschema = "jsonschema"
-    odcs="odcs"
+    odcs = "odcs"
 
 
 @app.command(name="import")
@@ -228,7 +228,9 @@ def import_(
     """
     Create a data contract from the given source location. Prints to stdout.
     """
-    result = DataContract().import_from_source(format, source, glue_table, bigquery_table, bigquery_project, bigquery_dataset)
+    result = DataContract().import_from_source(
+        format, source, glue_table, bigquery_table, bigquery_project, bigquery_dataset
+    )
     console.print(result.to_yaml())
 
 

@@ -32,16 +32,24 @@ def _test_test_dataframe(tmp_path: Path):
 
 
 def _prepare_dataframe(spark):
-    schema = StructType([
-        StructField("field_one", StringType(), nullable=False),
-        StructField("field_two", IntegerType(), nullable=True),
-        StructField("field_three", TimestampType(), nullable=True)
-    ])
+    schema = StructType(
+        [
+            StructField("field_one", StringType(), nullable=False),
+            StructField("field_two", IntegerType(), nullable=True),
+            StructField("field_three", TimestampType(), nullable=True),
+        ]
+    )
     data = [
-        Row(field_one="AB-123-CD", field_two=15,
-            field_three=datetime.strptime("2024-01-01 12:00:00", "%Y-%m-%d %H:%M:%S")),
-        Row(field_one="XY-456-ZZ", field_two=20,
-            field_three=datetime.strptime("2024-02-01 12:00:00", "%Y-%m-%d %H:%M:%S"))
+        Row(
+            field_one="AB-123-CD",
+            field_two=15,
+            field_three=datetime.strptime("2024-01-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
+        ),
+        Row(
+            field_one="XY-456-ZZ",
+            field_two=20,
+            field_three=datetime.strptime("2024-02-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
+        ),
     ]
     # Create DataFrame
     df = spark.createDataFrame(data, schema=schema)
