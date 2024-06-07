@@ -88,8 +88,7 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
     elif field.type in ["binary"]:
         return "bytes"
     elif field.type in ["array"]:
-        # TODO support array structs
-        return "array"
+        return {"type": "array", "items": to_avro_type(field.items, field_name)}
     elif field.type in ["null"]:
         return "null"
     else:

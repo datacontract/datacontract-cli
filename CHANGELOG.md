@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introduced optional dependencies/extras for significantly faster installation times. (#213)
 - Added delta-lake as an additional optional dependency
 
+### Fixed
+- `datacontract export --format avro` fixed array structure (#243)
+
 ## [0.10.7] - 2024-05-31
 
 ### Added

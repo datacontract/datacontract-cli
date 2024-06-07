@@ -29,6 +29,10 @@ models:
         type: string
       orderunits:
         type: double
+      tags:
+        type: array
+        items:
+          type: string
       address:
         type: object
         fields:
