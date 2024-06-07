@@ -847,7 +847,7 @@ Available import options:
 | `jsonschema`       | Import from JSON Schemas                       | ✅      |
 | `bigquery`         | Import from BigQuery Schemas                   | ✅      |
 | `dbt`              | Import from dbt models                         | TBD     |
-| `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
+| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD     |
 
 

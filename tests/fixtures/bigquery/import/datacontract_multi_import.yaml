@@ -1,0 +1,46 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  BQ_Table:
+    description: This is a test table
+    type: table
+    fields:
+      String_field:
+        type: string
+        required: false
+        description: A simple String field
+  BQ_External_Table:
+    description: This is a test table
+    type: table
+    fields:
+      String_field:
+        type: string
+        required: false
+        description: A simple String field
+  BQ_Snapshot:
+    description: This is a test table
+    type: table
+    fields:
+      String_field:
+        type: string
+        required: false
+        description: A simple String field
+  BQ_View:
+    description: This is a test table
+    type: view
+    fields:
+      String_field:
+        type: string
+        required: false
+        description: A simple String field
+  BQ_Materialized_View:
+    description: This is a test table
+    type: view
+    fields:
+      String_field:
+        type: string
+        required: false
+        description: A simple String field
