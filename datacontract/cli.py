@@ -5,6 +5,7 @@ from typing import Iterable, Optional
 from typing import List
 
 import typer
+import uvicorn
 from click import Context
 from rich import box
 from rich.console import Console
@@ -12,6 +13,7 @@ from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
+from datacontract import web
 from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
@@ -105,9 +107,9 @@ def test(
         str,
         typer.Option(
             help="The server configuration to run the schema and quality tests. "
-            "Use the key of the server object in the data contract yaml file "
-            "to refer to a server, e.g., `production`, or `all` for all "
-            "servers (default)."
+                 "Use the key of the server object in the data contract yaml file "
+                 "to refer to a server, e.g., `production`, or `all` for all "
+                 "servers (default)."
         ),
     ] = "all",
     examples: Annotated[
@@ -155,8 +157,8 @@ def export(
         str,
         typer.Option(
             help="Use the key of the model in the data contract yaml file "
-            "to refer to a model, e.g., `orders`, or `all` for all "
-            "models (default)."
+                 "to refer to a model, e.g., `orders`, or `all` for all "
+                 "models (default)."
         ),
     ] = "all",
     # TODO: this should be a subcommand
@@ -229,7 +231,8 @@ def import_(
     Create a data contract from the given source location. Prints to stdout.
     """
     result = DataContract().import_from_source(
-        format, source, glue_table, bigquery_table, bigquery_project, bigquery_dataset
+        format, source, glue_table, bigquery_table, bigquery_project,
+                                               bigquery_dataset
     )
     console.print(result.to_yaml())
 
@@ -324,6 +327,18 @@ def diff(
     )
 
     console.print(result.changelog_str())
+
+
+@app.command()
+def api(
+    port: Annotated[int, typer.Option(help="The port to run the API on.")] = 8080,
+    host: Annotated[str, typer.Option(help="The host to run the API on.")] = "127.0.0.1",
+):
+    """
+    Start the datacontract API.
+    """
+
+    uvicorn.run(web.app, port=port, host=host)
 
 
 def _handle_result(run):
