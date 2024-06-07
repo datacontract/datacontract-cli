@@ -1,0 +1,33 @@
+{
+  "creationTime": "1715608399201",
+  "description": "This is a test table",
+  "etag": "vv0Ksh3XakMcCTFmhM0FOA==",
+  "expirationTime": "1720792399201",
+  "id": "bigquery-test-423213:test_dataset.BQ Example Table",
+  "kind": "bigquery#table",
+  "lastModifiedTime": "1715610311747",
+  "location": "europe-west3",
+  "numActiveLogicalBytes": "0",
+  "numBytes": "0",
+  "numLongTermBytes": "0",
+  "numLongTermLogicalBytes": "0",
+  "numRows": "0",
+  "numTotalLogicalBytes": "0",
+  "schema": {
+    "fields": [
+      {
+        "description": "A simple String field",
+        "mode": "NULLABLE",
+        "name": "String_field",
+        "type": "STRING"
+      }
+    ]
+  },
+  "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/bigquery-test-423213/datasets/test_dataset/tables/BQ Example Table",
+  "tableReference": {
+    "datasetId": "test_dataset",
+    "projectId": "bigquery-test-423213",
+    "tableId": "BQ_View"
+  },
+  "type": "VIEW"
+}

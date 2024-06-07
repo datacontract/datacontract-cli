@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import List
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
@@ -94,7 +95,7 @@ def convert_bigquery_schema(
     # what exactly leads to friendlyName being set
     table_id = bigquery_schema.get("tableReference").get("tableId")
 
-    data_contract_specification.models[table_id] = Model(fields=fields, type="table")
+    data_contract_specification.models[table_id] = Model(fields=fields, type=map_bigquery_type(bigquery_schema.get("type")))
 
     # Copy the description, if it exists
     if bigquery_schema.get("description") is not None:
@@ -186,3 +187,16 @@ def map_type_from_bigquery(bigquery_type_str: str):
             reason=f"Unsupported type {bigquery_type_str} in bigquery json definition.",
             engine="datacontract",
         )
+
+def map_bigquery_type(bigquery_type: str) -> str:
+    if bigquery_type == "TABLE" or bigquery_type == "EXTERNAL" or bigquery_type == "SNAPSHOT":
+        return "table"
+    elif bigquery_type == "VIEW" or bigquery_type == "MATERIALIZED_VIEW":
+        return "view"
+    else:
+        logger = logging.getLogger(__name__)
+        logger.info(
+            f"Can't properly map bigquery table type '{bigquery_type}' to datacontracts model types. Mapping it to table."
+        )
+        return "table"
+        
