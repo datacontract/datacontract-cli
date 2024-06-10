@@ -56,7 +56,7 @@ databricks = [
 ]
 
 deltalake = [
-    "deltalake~=0.17.0"
+    "deltalake>=0.17,<0.19"
 ]
 
 kafka = [
