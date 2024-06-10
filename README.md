@@ -1195,6 +1195,12 @@ We are happy to receive your contributions. Propose your change in an issue or d
 - [INNOQ](https://innoq.com)
 - And many more. To add your company, please create a pull request.
 
+## Related Tools
+
+- [Data Mesh Manager](https://www.datamesh-manager.com/) is a commercial tool to manage data products and data contracts. It supports the data contract specification and allows the user to import or export data contracts using this specification.
+- [Data Contract GPT](https://gpt.datacontract.com) is a custom GPT that can help you write data contracts.
+- [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
+
 ## License
 
 [MIT License](LICENSE)
