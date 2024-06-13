@@ -13,22 +13,23 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-from datacontract.export.avro_converter import to_avro_schema_json
-from datacontract.export.avro_idl_converter import to_avro_idl
-from datacontract.export.bigquery_converter import to_bigquery_json
-from datacontract.export.dbml_converter import to_dbml_diagram
-from datacontract.export.dbt_converter import to_dbt_models_yaml, to_dbt_sources_yaml, to_dbt_staging_sql
-from datacontract.export.go_converter import to_go_types
-from datacontract.export.great_expectations_converter import to_great_expectations
-from datacontract.export.html_export import to_html
-from datacontract.export.jsonschema_converter import to_jsonschema_json
-from datacontract.export.odcs_converter import to_odcs_yaml
-from datacontract.export.protobuf_converter import to_protobuf
-from datacontract.export.pydantic_converter import to_pydantic_model_str
-from datacontract.export.rdf_converter import to_rdf_n3
-from datacontract.export.sodacl_converter import to_sodacl_yaml
-from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
-from datacontract.export.terraform_converter import to_terraform
+# from datacontract.export.avro_converter import to_avro_schema_json
+# from datacontract.export.avro_idl_converter import to_avro_idl
+# from datacontract.export.bigquery_converter import to_bigquery_json
+# from datacontract.export.dbml_converter import to_dbml_diagram
+# from datacontract.export.dbt_converter import to_dbt_models_yaml, to_dbt_sources_yaml, to_dbt_staging_sql
+# from datacontract.export.go_converter import to_go_types
+# from datacontract.export.great_expectations_converter import to_great_expectations
+# from datacontract.export.html_export import to_html
+# from datacontract.export.jsonschema_converter import to_jsonschema_json
+# from datacontract.export.odcs_converter import to_odcs_yaml
+# from datacontract.export.protobuf_converter import to_protobuf
+# from datacontract.export.pydantic_converter import to_pydantic_model_str
+# from datacontract.export.rdf_converter import to_rdf_n3
+# from datacontract.export.sodacl_converter import to_sodacl_yaml
+# from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
+# from datacontract.export.terraform_converter import to_terraform  
+from datacontract.export import *  
 from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
@@ -50,27 +51,6 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
 
-
-class ExportFormat(str, Enum):
-    jsonschema = "jsonschema"
-    pydantic_model = "pydantic-model"
-    sodacl = "sodacl"
-    dbt = "dbt"
-    dbt_sources = "dbt-sources"
-    dbt_staging_sql = "dbt-staging-sql"
-    odcs = "odcs"
-    rdf = "rdf"
-    avro = "avro"
-    protobuf = "protobuf"
-    great_expectations = "great-expectations"
-    terraform = "terraform"
-    avro_idl = "avro-idl"
-    sql = "sql"
-    sql_query = "sql-query"
-    html = "html"
-    go = "go"
-    bigquery = "bigquery"
-    dbml = "dbml"
 
 
 class DataContract:
@@ -312,65 +292,73 @@ class DataContract:
             inline_definitions=True,
             inline_quality=True,
         )
-        if export_format == "jsonschema":
+        
+        try:
+            exporter = factory_exporter.get_exporter(export_format)
             model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
-            return to_jsonschema_json(model_name, model_value)
-        if export_format == "sodacl":
-            return to_sodacl_yaml(data_contract)
-        if export_format == "dbt":
-            return to_dbt_models_yaml(data_contract)
-        if export_format == "dbt-sources":
-            return to_dbt_sources_yaml(data_contract, self._server)
-        if export_format == "dbt-staging-sql":
-            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
-            return to_dbt_staging_sql(data_contract, model_name, model_value)
-        if export_format == "odcs":
-            return to_odcs_yaml(data_contract)
-        if export_format == "rdf":
-            return to_rdf_n3(data_contract, rdf_base)
-        if export_format == "protobuf":
-            return to_protobuf(data_contract)
-        if export_format == "avro":
-            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
-            return to_avro_schema_json(model_name, model_value)
-        if export_format == "avro-idl":
-            return to_avro_idl(data_contract)
-        if export_format == "terraform":
-            return to_terraform(data_contract)
-        if export_format == "sql":
-            server_type = self._determine_sql_server_type(data_contract, sql_server_type)
-            return to_sql_ddl(data_contract, server_type=server_type)
-        if export_format == "sql-query":
-            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
-            server_type = self._determine_sql_server_type(data_contract, sql_server_type)
-            return to_sql_query(data_contract, model_name, model_value, server_type)
-        if export_format == "great-expectations":
-            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
-            return to_great_expectations(data_contract, model_name)
-        if export_format == "pydantic-model":
-            return to_pydantic_model_str(data_contract)
-        if export_format == "html":
-            return to_html(data_contract)
-        if export_format == "go":
-            return to_go_types(data_contract)
-        if export_format == "bigquery":
-            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
-            found_server = data_contract.servers.get(self._server)
-            if found_server is None:
-                raise RuntimeError(
-                    f"Export to {export_format} requires selecting a bigquery server from the data contract."
-                )
-            if found_server.type != "bigquery":
-                raise RuntimeError(
-                    f"Export to {export_format} requires selecting a bigquery server from the data contract."
-                )
-            return to_bigquery_json(model_name, model_value, found_server)
-        if export_format == "dbml":
-            found_server = data_contract.servers.get(self._server)
-            return to_dbml_diagram(data_contract, found_server)
-        else:
-            print(f"Export format {export_format} not supported.")
-            return ""
+            return exporter.export(data_contract, model_name, model_value)
+        except Exception as e:
+             print(f"Error: {e}")
+         
+        # if export_format == "jsonschema":
+        #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
+        #     return to_jsonschema_json(model_name, model_value)
+        # if export_format == "sodacl":
+        #     return to_sodacl_yaml(data_contract)
+        # if export_format == "dbt":
+        #     return to_dbt_models_yaml(data_contract)
+        # if export_format == "dbt-sources":
+        #     return to_dbt_sources_yaml(data_contract, self._server)
+        # if export_format == "dbt-staging-sql":
+        #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
+        #     return to_dbt_staging_sql(data_contract, model_name, model_value)
+        # if export_format == "odcs":
+        #     return to_odcs_yaml(data_contract)
+        # if export_format == "rdf":
+        #     return to_rdf_n3(data_contract, rdf_base)
+        # if export_format == "protobuf":
+        #     return to_protobuf(data_contract)
+        # if export_format == "avro": 
+        #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format) 
+        #     return to_avro_schema_json(model_name, model_value) 
+        # if export_format == "avro-idl":
+        #     return to_avro_idl(data_contract)
+        # if export_format == "terraform":
+        #     return to_terraform(data_contract)
+        # if export_format == "sql":
+        #     server_type = self._determine_sql_server_type(data_contract, sql_server_type)
+        #     return to_sql_ddl(data_contract, server_type=server_type)
+        # if export_format == "sql-query":
+        #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
+        #     server_type = self._determine_sql_server_type(data_contract, sql_server_type)
+        #     return to_sql_query(data_contract, model_name, model_value, server_type)
+        # if export_format == "great-expectations":
+        #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
+        #     return to_great_expectations(data_contract, model_name)
+        # if export_format == "pydantic-model":
+        #     return to_pydantic_model_str(data_contract)
+        # if export_format == "html":
+        #     return to_html(data_contract)
+        # if export_format == "go":
+        #     return to_go_types(data_contract)
+        # if export_format == "bigquery":
+        #     model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
+        #     found_server = data_contract.servers.get(self._server)
+        #     if found_server is None:
+        #         raise RuntimeError(
+        #             f"Export to {export_format} requires selecting a bigquery server from the data contract."
+        #         )
+        #     if found_server.type != "bigquery":
+        #         raise RuntimeError(
+        #             f"Export to {export_format} requires selecting a bigquery server from the data contract."
+        #         )
+        #     return to_bigquery_json(model_name, model_value, found_server)
+        # if export_format == "dbml":
+        #     found_server = data_contract.servers.get(self._server)
+        #     return to_dbml_diagram(data_contract, found_server)
+        # else:
+        #     print(f"Export format {export_format} not supported.")
+        #     return ""
 
     def _determine_sql_server_type(self, data_contract: DataContractSpecification, sql_server_type: str):
         if sql_server_type == "auto":
@@ -479,3 +467,13 @@ class DataContract:
             print(f"Import format {format} not supported.")
 
         return data_contract_specification
+
+
+if __name__== '__main__':
+    dc = DataContract(
+                    data_contract_file= "/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml")
+    result = dc.export(
+        export_format=ExportFormat.bigquery,
+        model='orders',  
+    )
+    print(result)
