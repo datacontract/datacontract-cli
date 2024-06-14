@@ -283,7 +283,8 @@ class DataContract:
         )
 
     def export(
-        self, export_format: ExportFormat, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto"
+        self, export_format: ExportFormat,   model: str = "all", **kwargs
+        #rdf_base: str = None, sql_server_type: str = "auto"
     ) -> str:
         data_contract = resolve.resolve_data_contract(
             self._data_contract_file,
@@ -292,14 +293,18 @@ class DataContract:
             inline_definitions=True,
             inline_quality=True,
         )
+        print(kwargs)
         
-        try:
-            exporter = factory_exporter.get_exporter(export_format)
-            model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
-            return exporter.export(data_contract, model_name, model_value)
-        except Exception as e:
-             print(f"Error: {e}")
-         
+        exporter = factory_exporter.get_exporter(export_format)
+        model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
+        export_args = {
+            'data_contract': data_contract,
+            'model_name': model_name,
+            'model_value': model_value 
+        }
+        export_args.update(kwargs)
+        return exporter.export(export_args)
+        
         # if export_format == "jsonschema":
         #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
         #     return to_jsonschema_json(model_name, model_value)
@@ -470,10 +475,14 @@ class DataContract:
 
 
 if __name__== '__main__':
-    dc = DataContract(
-                    data_contract_file= "/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml")
-    result = dc.export(
-        export_format=ExportFormat.bigquery,
-        model='orders',  
-    )
+    result = DataContract(
+                    data_contract_file= "/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml"
+                    ).export(
+                        export_format=ExportFormat.rdf,
+                        model='orders',  
+                        rdf_base='teoria',
+                        rdf_n3='rdf_config_aditional_n3',
+                        teste=True,
+                        teste2=False
+                    )
     print(result)

@@ -3,9 +3,20 @@ import json
 from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import Field
 
+
+
+class RDFExporter(Exporter):
+    def export(self, export_args) -> dict:
+        self.dict_args = export_args     
+        return f"RDF {self.dict_args.get('rdf_n3')} works !! " 
+
 class AvroExporter(Exporter):
-    def export(self, data_contract, model_name, model) -> dict:
-        return self.to_avro_schema_json(model_name, model)
+    def export(self, export_args) -> dict:
+        self.dict_args = export_args  
+        return self.to_avro_schema_json(
+            self.dict_args.get('model_name'), 
+            self.dict_args.get('model_value')
+            )
 
 
     def to_avro_schema(self, model_name, model) -> dict:

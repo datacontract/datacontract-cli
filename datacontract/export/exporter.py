@@ -7,7 +7,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 class Exporter(ABC):
     @abstractmethod
-    def export(self, data_contract, model_name, model) -> dict:
+    def export(self, export_args) -> dict:
         pass
     
     
