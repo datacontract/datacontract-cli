@@ -27,7 +27,7 @@ def test_to_avro_schema():
     assert json.loads(result) == json.loads(expected_avro_schema)
 
 
-def test_to_avro_schema_with_logicalTypes():
+def test_to_avro_schema_with_logical_types():
     data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_logicalType.yaml")
     with open("fixtures/avro/export/datacontract_logicalType.avsc") as file:
         expected_avro_schema = file.read()

@@ -190,6 +190,7 @@ A list of available extras:
 | Avro Support            | `pip install datacontract-cli[avro]`                        |
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`                    |
 | Databricks Integration  | `pip install datacontract-cli[databricks]`                  |
+| Deltalake Integration   | `pip install datacontract-cli[deltalake]`                  |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`                       |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`                    |
 | S3 Integration          | `pip install datacontract-cli[s3]`                          |
@@ -389,7 +390,7 @@ models:
 
 | Environment Variable                         | Example                   | Description                                             |
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
-| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery |
+| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery. If this environment variable isn't set, the cli tries to use `GOOGLE_APPLICATION_CREDENTIALS` as a fallback, so if you have that set for using their Python library anyway, it should work seamlessly. |
 
 
 
@@ -846,7 +847,7 @@ Available import options:
 | `jsonschema`       | Import from JSON Schemas                       | ✅      |
 | `bigquery`         | Import from BigQuery Schemas                   | ✅      |
 | `dbt`              | Import from dbt models                         | TBD     |
-| `odcs`             | Import from Open Data Contract Standard (ODCS) | TBD     |
+| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD     |
 
 
@@ -1137,8 +1138,8 @@ source venv/bin/activate
 # Install Requirements
 pip install --upgrade pip setuptools wheel
 pip install -e '.[dev]'
-ruff check --fix
-ruff format
+pre-commit install
+pre-commit run --all-files
 pytest
 ```
 
@@ -1193,6 +1194,12 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 - [INNOQ](https://innoq.com)
 - And many more. To add your company, please create a pull request.
+
+## Related Tools
+
+- [Data Mesh Manager](https://www.datamesh-manager.com/) is a commercial tool to manage data products and data contracts. It supports the data contract specification and allows the user to import or export data contracts using this specification.
+- [Data Contract GPT](https://gpt.datacontract.com) is a custom GPT that can help you write data contracts.
+- [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
 
 ## License
 

@@ -5,6 +5,7 @@ from typing import Iterable, Optional
 from typing import List
 
 import typer
+import uvicorn
 from click import Context
 from rich import box
 from rich.console import Console
@@ -12,6 +13,7 @@ from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
+from datacontract import web
 from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
@@ -324,6 +326,18 @@ def diff(
     )
 
     console.print(result.changelog_str())
+
+
+@app.command()
+def serve(
+    port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
+    host: Annotated[str, typer.Option(help="Bind socket to this host.")] = "127.0.0.1",
+):
+    """
+    Start the datacontract web server.
+    """
+
+    uvicorn.run(web.app, port=port, host=host)
 
 
 def _handle_result(run):

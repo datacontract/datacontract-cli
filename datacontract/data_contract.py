@@ -209,6 +209,9 @@ class DataContract:
                 if self._examples:
                     server_name = "examples"
                     server = self._get_examples_server(data_contract, run, tmp_dir)
+                elif self._server:
+                    server_name = self._server
+                    server = data_contract.servers.get(server_name)
                 else:
                     server_name = list(data_contract.servers.keys())[0]
                     server = data_contract.servers.get(server_name)

@@ -84,6 +84,7 @@ def test_cli(setup_mock_glue):
     )
     assert result.exit_code == 0
 
+
 @mock_aws
 def test_cli_with_table_filters(setup_mock_glue):
     runner = CliRunner()
@@ -115,6 +116,7 @@ def test_import_glue_schema(setup_mock_glue):
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings
     assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+
 
 @mock_aws
 def test_import_glue_schema_with_table_filters(setup_mock_glue):

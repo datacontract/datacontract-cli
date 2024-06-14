@@ -39,6 +39,13 @@
       "type": "double"
     },
     {
+      "name": "tags",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
       "name": "address",
       "type": {
         "type": "record",

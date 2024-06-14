@@ -66,8 +66,10 @@ def check_soda_execute(
             scan.set_data_source_name(server.type)
     elif server.type == "dataframe":
         if spark is None:
-            run.log_warn("Server type dataframe only works with the Python library and requires a Spark session, "
-                         "please provide one with the DataContract class")
+            run.log_warn(
+                "Server type dataframe only works with the Python library and requires a Spark session, "
+                "please provide one with the DataContract class"
+            )
             return
         else:
             logging.info("Use Spark to connect to data source")

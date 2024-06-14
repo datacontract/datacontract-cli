@@ -2,11 +2,28 @@ from typing import Annotated, Union, Optional
 
 import typer
 from fastapi import FastAPI, File
+from fastapi.responses import HTMLResponse
 
 from datacontract.data_contract import DataContract, ExportFormat
 from fastapi.responses import PlainTextResponse
 
 app = FastAPI()
+
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    # TODO OpenAPI spec
+    return """
+    <html>
+    <body>
+    <h1>datacontract web server</h1>
+    <ul>
+    <li>POST /lint</li>
+    <li>POST /export</li>
+    </ul>
+    </body>
+    </html>
+    """
 
 
 @app.post("/lint")

@@ -1,16 +1,20 @@
 <li class="relative flex gap-x-6 px-4 py-5 sm:px-6">
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Server</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server_name}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Server</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server_name}}</dd>
+      </div>
     </div>
   </div>
 
   {% if server.type %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Type</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.type}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Type</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.type}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -18,8 +22,10 @@
   {% if server.project %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Project</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.project}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Project</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.project}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -27,8 +33,10 @@
   {% if server.dataset %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Dataset</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.dataset}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Dataset</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.dataset}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -36,8 +44,10 @@
   {% if server.location %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Location</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.location}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Location</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.location}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -45,8 +55,10 @@
   {% if server.endpointUrl %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Endpoint URL</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.endpointUrl}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Endpoint URL</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.endpointUrl}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -54,8 +66,10 @@
   {% if server.account %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Account</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.account}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Account</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.account}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -63,8 +77,10 @@
   {% if server.host %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Host</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.host}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Host</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.host}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -72,8 +88,10 @@
   {% if server.port %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Port</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.port}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Port</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.port}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -81,8 +99,10 @@
   {% if server.catalog %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Catalog</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.catalog}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Catalog</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.catalog}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -90,8 +110,10 @@
   {% if server.database %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Database</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.database}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Database</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.database}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -99,8 +121,10 @@
   {% if server.schema_ %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Schema</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.schema_}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Schema</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.schema_}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -108,8 +132,10 @@
   {% if server.topic %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Topic</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.topic}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Topic</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.topic}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -117,8 +143,10 @@
   {% if server.path %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Path</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.path}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Path</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.path}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -126,8 +154,10 @@
   {% if server.format %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Format</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.format}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Format</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.format}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -135,8 +165,10 @@
   {% if server.delimiter %}
   <div class="flex items-center gap-x-4">
     <div class="hidden sm:flex sm:flex-col">
-      <dt class="text-sm font-medium text-gray-500">Delimiter</dt>
-      <dd class="mt-1 text-sm text-gray-900">{{server.delimiter}}</dd>
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Delimiter</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{server.delimiter}}</dd>
+      </div>
     </div>
   </div>
   {% endif %}
