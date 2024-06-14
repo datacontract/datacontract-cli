@@ -34,6 +34,7 @@ def test_import_bigquery_schema():
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
 
+
 def test_import_multiple_bigquery_schemas_with_different_types():
     result = DataContract().import_from_source("bigquery", "fixtures/bigquery/import/multi_import_table.json")
 
