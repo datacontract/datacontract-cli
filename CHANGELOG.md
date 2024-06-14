@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract serve` start a local web server to provide a REST-API for the commands
+
 ### Changed
 - Introduced optional dependencies/extras for significantly faster installation times. (#213)
 - Added delta-lake as an additional optional dependency

@@ -1,0 +1,29 @@
+dataContractSpecification: 0.9.2
+id: orders-unit-test
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: azure
+    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/topics/inventory/year=2022/month=07/day=13/*/inventory+0+000000*.json
+    format: json
+    delimiter: new_line
+models:
+  orders:
+    fields:
+      updated_at:
+        type: varchar
+      available:
+        type: integer
+      location:
+        type: varchar
+        minLength: 2
+        maxLength: 2
+      sku:
+        type: varchar
+quality:
+  type: SodaCL
+  specification:
+    checks for orders:
+      - row_count >= 5000
