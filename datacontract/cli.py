@@ -330,12 +330,12 @@ def diff(
 
 
 @app.command()
-def api(
-    port: Annotated[int, typer.Option(help="The port to run the API on.")] = 8080,
-    host: Annotated[str, typer.Option(help="The host to run the API on.")] = "127.0.0.1",
+def serve(
+    port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
+    host: Annotated[str, typer.Option(help="Bind socket to this host.")] = "127.0.0.1",
 ):
     """
-    Start the datacontract API.
+    Start the datacontract web server.
     """
 
     uvicorn.run(web.app, port=port, host=host)
