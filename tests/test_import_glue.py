@@ -55,6 +55,8 @@ def setup_mock_glue(aws_credentials):
                             "Name": "field_three",
                             "Type": "timestamp",
                         },
+                        {   "Name": "field_four",
+                            "Type": "decimal(6,2)"}
                     ]
                 },
                 "PartitionKeys": [
