@@ -144,7 +144,7 @@ def import_glue(data_contract_specification: DataContractSpecification, source: 
 
             if "decimal" in column["Type"]:
                 # Extract precision and scale from the string
-                perc_scale = column["Type"][8:-1].split(',')
+                perc_scale = column["Type"][8:-1].split(",")
                 print(perc_scale)
                 field.precision = int(perc_scale[0])
                 field.scale = int(perc_scale[1])

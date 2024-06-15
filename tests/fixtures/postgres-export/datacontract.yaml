@@ -5,7 +5,13 @@ info:
   version: 0.0.1
   owner: my-domain-team
 servers:
-  my-dataproduct/postgres:
+  production:
+    type: postgres
+    host: localhost
+    port: 4567
+    database: test
+    schema: public
+  staging:
     type: postgres
     host: localhost
     port: 4567

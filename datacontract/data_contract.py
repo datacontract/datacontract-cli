@@ -306,7 +306,12 @@ class DataContract:
         )
 
     def export(
-        self, export_format: ExportFormat, model: str = "all", rdf_base: str = None, sql_server_type: str = "auto"
+        self,
+        export_format: ExportFormat,
+        model: str = "all",
+        server: str = None,
+        rdf_base: str = None,
+        sql_server_type: str = "auto",
     ) -> str:
         data_contract = resolve.resolve_data_contract(
             self._data_contract_file,
@@ -341,8 +346,8 @@ class DataContract:
         if export_format == "terraform":
             return to_terraform(data_contract)
         if export_format == "sql":
-            server_type = self._determine_sql_server_type(data_contract, sql_server_type)
-            return to_sql_ddl(data_contract, server_type=server_type)
+            server_type = self._determine_sql_server_type(data_contract, sql_server_type, server)
+            return to_sql_ddl(data_contract, server_type=server_type, server=server)
         if export_format == "sql-query":
             model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
             server_type = self._determine_sql_server_type(data_contract, sql_server_type)
@@ -375,12 +380,18 @@ class DataContract:
             print(f"Export format {export_format} not supported.")
             return ""
 
-    def _determine_sql_server_type(self, data_contract: DataContractSpecification, sql_server_type: str):
+    def _determine_sql_server_type(
+        self, data_contract: DataContractSpecification, sql_server_type: str, server: str = None
+    ):
         if sql_server_type == "auto":
             if data_contract.servers is None or len(data_contract.servers) == 0:
                 raise RuntimeError("Export with server_type='auto' requires servers in the data contract.")
 
-            server_types = set([server.type for server in data_contract.servers.values()])
+            if server is None:
+                server_types = set([server.type for server in data_contract.servers.values()])
+            else:
+                server_types = {data_contract.servers[server].type}
+
             if "snowflake" in server_types:
                 return "snowflake"
             elif "postgres" in server_types:
