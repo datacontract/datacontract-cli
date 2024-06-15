@@ -161,8 +161,7 @@ def convert_to_duckdb(field: Field) -> None | str:
     if type.lower() in ["time"]:
         return "TIME"  # TIME WITHOUT TIME ZONE
     if type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "DECIMAL"
+        return f"DECIMAL({field.precision},{field.scale})"
     if type.lower() in ["float"]:
         return "FLOAT"
     if type.lower() in ["double"]:

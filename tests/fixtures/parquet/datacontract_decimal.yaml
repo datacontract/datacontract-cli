@@ -1,0 +1,22 @@
+dataContractSpecification: 0.9.2
+id: orders-unit-test
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/decimal.parquet
+    format: parquet
+    dataProductId: orders
+    outputPortId: parquet
+models:
+  orders:
+    fields:
+      id:
+        type: varchar
+      price:
+        type: decimal
+        precision: 6
+        scale: 2
+        description: price
