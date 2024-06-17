@@ -35,9 +35,14 @@ def test_avro_exporter():
     with open("fixtures/avro/export/orders_with_datefields.avsc") as file:
         expected_avro_schema = file.read()
 
-    model_name, model = next(iter(data_contract.models.items()))
+    model_name, model_value = next(iter(data_contract.models.items()))
     exporter = factory_exporter.get_exporter(ExportFormat.avro)
-    result = exporter.export(data_contract, model_name, model)
+    export_args = {
+            "model_name": model_name,
+            "model_value": model_value, 
+        }
+  
+    result = exporter.export(export_args)
     assert json.loads(result) == json.loads(expected_avro_schema)
 
 
@@ -46,8 +51,7 @@ def test_to_avro_schema_with_logical_types():
     with open("fixtures/avro/export/datacontract_logicalType.avsc") as file:
         expected_avro_schema = file.read()
 
-    model_name, model = next(iter(data_contract.models.items()))
-    # result = to_avro_schema_json(model_name, model)
-    exporter = factory_exporter.get_exporter(ExportFormat.avro)
-    result = exporter.export(data_contract, model_name, model)
+    model_name, model_value = next(iter(data_contract.models.items()))
+    result = to_avro_schema_json(model_name, model_value)
+     
     assert json.loads(result) == json.loads(expected_avro_schema)

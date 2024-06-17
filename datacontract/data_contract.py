@@ -431,7 +431,7 @@ class DataContract:
 
 
 if __name__ == "__main__":
-    format_output = ExportFormat.dbt
+    format_output = ExportFormat.avro_idl
     print(f">>>>> {format_output}")
     result = DataContract(
         data_contract_file="/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml"
