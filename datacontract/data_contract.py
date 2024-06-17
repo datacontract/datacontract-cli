@@ -13,9 +13,8 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-
-
-from datacontract.export.exporter import exporter_factory, ExportFormat
+from datacontract.export.exporter import ExportFormat
+from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
