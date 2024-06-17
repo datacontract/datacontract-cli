@@ -396,9 +396,4 @@ def with_markup(result):
 
 
 if __name__ == "__main__":
-    from pyfiglet import Figlet
-
-    f = Figlet(font="slant")
-    print(f.renderText("data contracts\n"))
-
     app()
