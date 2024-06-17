@@ -86,7 +86,7 @@ avro_primitive_types = set(
 )
 
 
-class AvroIDLExporter(Exporter):
+class AvroIdlExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
         data_contract = self.dict_args.get("data_contract")

@@ -11,7 +11,7 @@ from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.export.exporter import Exporter
 
 
-class DBMLExporter(Exporter):
+class DbmlExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
         data_contract = self.dict_args.get("data_contract")

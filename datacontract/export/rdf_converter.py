@@ -8,7 +8,7 @@ from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import Field
 
 
-class RDFExporter(Exporter):
+class RdfExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
         data_contract = self.dict_args.get("data_contract")

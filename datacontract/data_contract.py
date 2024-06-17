@@ -15,7 +15,7 @@ from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschem
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 
 
-from datacontract.export import factory_exporter, ExportFormat
+from datacontract.export.exporter import exporter_factory, ExportFormat
 from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
@@ -298,7 +298,7 @@ class DataContract:
 
         export_args.update(kwargs)
 
-        exporter = factory_exporter.get_exporter(export_format)
+        exporter = exporter_factory.create(export_format)
         return exporter.export(export_args)
 
     def import_from_source(

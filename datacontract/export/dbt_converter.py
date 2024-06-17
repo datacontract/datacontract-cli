@@ -9,14 +9,14 @@ from datacontract.export.exporter import Exporter
 from datacontract.utils import _check_models_for_export
 
 
-class DBTExporter(Exporter):
+class DbtExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
 
         return to_dbt_models_yaml(self.dict_args.get("data_contract"))
 
 
-class DBTSourceExporter(Exporter):
+class DbtSourceExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
         data_contract = self.dict_args.get("data_contract")
@@ -24,7 +24,7 @@ class DBTSourceExporter(Exporter):
         return to_dbt_sources_yaml(data_contract, server)
 
 
-class DBTStageExporter(Exporter):
+class DbtStageExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
         data_contract = self.dict_args.get("data_contract")
