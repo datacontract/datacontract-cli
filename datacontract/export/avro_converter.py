@@ -2,98 +2,17 @@ import json
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import Field
+from datacontract.utils import _check_models_for_export
 
 
 class AvroExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
-        return to_avro_schema_json(self.dict_args.get("model_name"), self.dict_args.get("model_value"))
-
-    # def to_avro_schema(self, model_name, model) -> dict:
-    #     return self.to_avro_record(model_name, model.fields, model.description, model.namespace)
-
-    # def to_avro_schema_json(self, model_name, model) -> str:
-    #     schema = self.to_avro_schema(model_name, model)
-    #     return json.dumps(schema, indent=2, sort_keys=False)
-
-    # def to_avro_record(self, name, fields, description, namespace) -> dict:
-    #     schema = {"type": "record", "name": name}
-    #     if description is not None:
-    #         schema["doc"] = description
-    #     if namespace is not None:
-    #         schema["namespace"] = namespace
-    #     schema["fields"] = self.to_avro_fields(fields)
-    #     return schema
-
-    # def to_avro_fields(self, fields):
-    #     result = []
-    #     for field_name, field in fields.items():
-    #         result.append(self.to_avro_field(field, field_name))
-    #     return result
-
-    # def to_avro_field(self, field, field_name):
-    #     avro_field = {"name": field_name}
-    #     if field.description is not None:
-    #         avro_field["doc"] = field.description
-    #     avro_field["type"] = self.to_avro_type(field, field_name)
-
-    #     if field.config:
-    #         if "avroDefault" in field.config:
-    #             avro_field["default"] = field.config["avroDefault"]
-
-    #     return avro_field
-
-    # def to_avro_type(self, field: Field, field_name: str) -> str | dict:
-    #     if field.config:
-    #         if "avroLogicalType" in field.config and "avroType" in field.config:
-    #             return {"type": field.config["avroType"], "logicalType": field.config["avroLogicalType"]}
-    #         if "avroLogicalType" in field.config:
-    #             if field.config["avroLogicalType"] in [
-    #                 "timestamp-millis",
-    #                 "timestamp-micros",
-    #                 "local-timestamp-millis",
-    #                 "local-timestamp-micros",
-    #                 "time-micros",
-    #             ]:
-    #                 return {"type": "long", "logicalType": field.config["avroLogicalType"]}
-    #             if field.config["avroLogicalType"] in ["time-millis", "date"]:
-    #                 return {"type": "int", "logicalType": field.config["avroLogicalType"]}
-    #         if "avroType" in field.config:
-    #             return field.config["avroLogicalType"]
-
-    #     if field.type is None:
-    #         return "null"
-    #     if field.type in ["string", "varchar", "text"]:
-    #         return "string"
-    #     elif field.type in ["number", "decimal", "numeric"]:
-    #         # https://avro.apache.org/docs/1.11.1/specification/#decimal
-    #         return "bytes"
-    #     elif field.type in ["float", "double"]:
-    #         return "double"
-    #     elif field.type in ["integer", "int"]:
-    #         return "int"
-    #     elif field.type in ["long", "bigint"]:
-    #         return "long"
-    #     elif field.type in ["boolean"]:
-    #         return "boolean"
-    #     elif field.type in ["timestamp", "timestamp_tz"]:
-    #         return {"type": "long", "logicalType": "timestamp-millis"}
-    #     elif field.type in ["timestamp_ntz"]:
-    #         return {"type": "long", "logicalType": "local-timestamp-millis"}
-    #     elif field.type in ["date"]:
-    #         return {"type": "int", "logicalType": "date"}
-    #     elif field.type in ["time"]:
-    #         return "long"
-    #     elif field.type in ["object", "record", "struct"]:
-    #         return self.to_avro_record(field_name, field.fields, field.description, None)
-    #     elif field.type in ["binary"]:
-    #         return "bytes"
-    #     elif field.type in ["array"]:
-    #         return {"type": "array", "items": self.to_avro_type(field.items, field_name)}
-    #     elif field.type in ["null"]:
-    #         return "null"
-    #     else:
-    #         return "bytes"
+        data_contract = self.dict_args.get("data_contract")
+        model_name, model_value = _check_models_for_export(
+            data_contract, self.dict_args.get("model"), self.dict_args.get("export_format")
+        )
+        return to_avro_schema_json(model_name, model_value)
 
 
 def to_avro_schema(model_name, model) -> dict:

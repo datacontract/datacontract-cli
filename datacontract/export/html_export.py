@@ -14,7 +14,9 @@ from datacontract.export.exporter import Exporter
 class HtmlExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
-        return to_html(self.dict_args.get("data_contract"))
+        data_contract = self.dict_args.get("data_contract")
+        return to_html(data_contract)
+
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:
     # Load templates from templates folder
@@ -65,6 +67,7 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     )
 
     return html_string
+
 
 def get_version() -> str:
     try:

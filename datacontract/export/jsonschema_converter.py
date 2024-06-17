@@ -4,26 +4,30 @@ from typing import Dict
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
 from datacontract.export.exporter import Exporter
+from datacontract.utils import _check_models_for_export
 
 
 class JsonSchemaExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
-        return self.to_jsonschema_json(
-            self.dict_args.get("model_name"),
-            self.dict_args.get("model_value"),
+        data_contract = self.dict_args.get("data_contract")
+        model_name, model_value = _check_models_for_export(
+            data_contract, self.dict_args.get("model"), self.dict_args.get("export_format")
         )
+        return to_jsonschema_json(model_name, model_value)
 
-    def to_jsonschemas(self, data_contract_spec: DataContractSpecification):
-        jsonschmemas = {}
-        for model_key, model_value in data_contract_spec.models.items():
-            jsonschema = self.to_jsonschema(model_key, model_value)
-            jsonschmemas[model_key] = jsonschema
-        return jsonschmemas
 
-    def to_jsonschema_json(self, model_key, model_value: Model) -> str:
+def to_jsonschemas(data_contract_spec: DataContractSpecification):
+    jsonschmemas = {}
+    for model_key, model_value in data_contract_spec.models.items():
         jsonschema = to_jsonschema(model_key, model_value)
-        return json.dumps(jsonschema, indent=2)
+        jsonschmemas[model_key] = jsonschema
+    return jsonschmemas
+
+
+def to_jsonschema_json(model_key, model_value: Model) -> str:
+    jsonschema = to_jsonschema(model_key, model_value)
+    return json.dumps(jsonschema, indent=2)
 
 
 def to_properties(fields: Dict[str, Field]) -> dict:

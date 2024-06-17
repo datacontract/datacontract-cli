@@ -6,6 +6,7 @@ from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
 from datacontract.export.exporter import Exporter
+from datacontract.utils import _check_models_for_export
 
 
 class DBTExporter(Exporter):
@@ -15,19 +16,25 @@ class DBTExporter(Exporter):
         return to_dbt_models_yaml(self.dict_args.get("data_contract"))
 
 
-class DBTSourceExporter(DBTExporter):
+class DBTSourceExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
-        return to_dbt_sources_yaml(self.dict_args.get("data_contract"), self.dict_args.get("server"))
+        data_contract = self.dict_args.get("data_contract")
+        server = self.dict_args.get("server")
+        return to_dbt_sources_yaml(data_contract, server)
 
 
-class DBTStageExporter(DBTExporter):
+class DBTStageExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
+        data_contract = self.dict_args.get("data_contract")
+        model_name, model_value = _check_models_for_export(
+            data_contract, self.dict_args.get("model"), self.dict_args.get("export_format")
+        )
         return to_dbt_staging_sql(
-            self.dict_args.get("data_contract"),
-            self.dict_args.get("model_name"),
-            self.dict_args.get("model_value"),
+            data_contract,
+            model_name,
+            model_value,
         )
 
 

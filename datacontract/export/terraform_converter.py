@@ -7,9 +7,8 @@ from datacontract.export.exporter import Exporter
 class TerraformExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
-        return to_terraform(
-            self.dict_args.get("data_contract"),
-        )
+        data_contract = self.dict_args.get("data_contract")
+        return to_terraform(data_contract)
 
 
 def to_terraform(data_contract_spec: DataContractSpecification, server_id: str = None) -> str:

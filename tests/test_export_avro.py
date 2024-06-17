@@ -4,9 +4,6 @@ import logging
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-
-# from datacontract.data_contract import ExportFormat
-from datacontract.export import *
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import DataContractSpecification
 
@@ -30,28 +27,12 @@ def test_to_avro_schema():
     assert json.loads(result) == json.loads(expected_avro_schema)
 
 
-def test_avro_exporter():
-    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract.yaml")
-    with open("fixtures/avro/export/orders_with_datefields.avsc") as file:
-        expected_avro_schema = file.read()
-
-    model_name, model_value = next(iter(data_contract.models.items()))
-    exporter = factory_exporter.get_exporter(ExportFormat.avro)
-    export_args = {
-            "model_name": model_name,
-            "model_value": model_value, 
-        }
-  
-    result = exporter.export(export_args)
-    assert json.loads(result) == json.loads(expected_avro_schema)
-
-
 def test_to_avro_schema_with_logical_types():
     data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_logicalType.yaml")
     with open("fixtures/avro/export/datacontract_logicalType.avsc") as file:
         expected_avro_schema = file.read()
 
-    model_name, model_value = next(iter(data_contract.models.items()))
-    result = to_avro_schema_json(model_name, model_value)
-     
+    model_name, model = next(iter(data_contract.models.items()))
+    result = to_avro_schema_json(model_name, model)
+
     assert json.loads(result) == json.loads(expected_avro_schema)

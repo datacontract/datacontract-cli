@@ -7,18 +7,20 @@ from datacontract.export.exporter import Exporter
 class GOExporter(Exporter):
     def export(self, export_args) -> dict:
         self.dict_args = export_args
-        return self.to_go_types(self.dict_args.get("data_contract"))
+        data_contract = self.dict_args.get("data_contract")
+        return to_go_types(data_contract)
 
-    def to_go_types(self, contract: spec.DataContractSpecification) -> str:
-        result = "package main\n\n"
 
-        for key in contract.models.keys():
-            go_types = generate_go_type(contract.models[key], key)
-            for go_type in go_types:
-                # print(go_type + "\n\n")
-                result += f"\n{go_type}\n"
+def to_go_types(contract: spec.DataContractSpecification) -> str:
+    result = "package main\n\n"
 
-        return result
+    for key in contract.models.keys():
+        go_types = generate_go_type(contract.models[key], key)
+        for go_type in go_types:
+            # print(go_type + "\n\n")
+            result += f"\n{go_type}\n"
+
+    return result
 
 
 def python_type_to_go_type(py_type) -> str:
