@@ -283,50 +283,54 @@ class DataContract:
         )
 
     def export(
-        self, export_format: ExportFormat,   model: str = "all", **kwargs
+        self, export_format: ExportFormat,   model: str = "all", server: str = None, **kwargs
         #rdf_base: str = None, sql_server_type: str = "auto"
     ) -> str:
+        
         data_contract = resolve.resolve_data_contract(
             self._data_contract_file,
             self._data_contract_str,
             self._data_contract,
             inline_definitions=True,
-            inline_quality=True,
+            inline_quality=True
         )
-        print(kwargs)
         
+        sql_server_type = kwargs.get('sql_server_type','auto')
         exporter = factory_exporter.get_exporter(export_format)
         model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
         export_args = {
             'data_contract': data_contract,
             'model_name': model_name,
-            'model_value': model_value 
+            'model_value': model_value,
+            'server': self._server, 
+            'server_type': self._determine_sql_server_type(data_contract, sql_server_type, server)
         }
+        
         export_args.update(kwargs)
         return exporter.export(export_args)
         
-        # if export_format == "jsonschema":
+#        # if export_format == "jsonschema":
         #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
         #     return to_jsonschema_json(model_name, model_value)
-        # if export_format == "sodacl":
+#        # if export_format == "sodacl":
         #     return to_sodacl_yaml(data_contract)
-        # if export_format == "dbt":
+#        # if export_format == "dbt":
         #     return to_dbt_models_yaml(data_contract)
-        # if export_format == "dbt-sources":
+#        # if export_format == "dbt-sources":
         #     return to_dbt_sources_yaml(data_contract, self._server)
-        # if export_format == "dbt-staging-sql":
+#        # if export_format == "dbt-staging-sql":
         #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
         #     return to_dbt_staging_sql(data_contract, model_name, model_value)
-        # if export_format == "odcs":
+#        # if export_format == "odcs":
         #     return to_odcs_yaml(data_contract)
-        # if export_format == "rdf":
+#        # if export_format == "rdf":
         #     return to_rdf_n3(data_contract, rdf_base)
-        # if export_format == "protobuf":
+#        # if export_format == "protobuf":
         #     return to_protobuf(data_contract)
-        # if export_format == "avro": 
+#        # if export_format == "avro": 
         #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format) 
         #     return to_avro_schema_json(model_name, model_value) 
-        # if export_format == "avro-idl":
+#        # if export_format == "avro-idl":
         #     return to_avro_idl(data_contract)
         # if export_format == "terraform":
         #     return to_terraform(data_contract)
@@ -337,16 +341,16 @@ class DataContract:
         #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
         #     server_type = self._determine_sql_server_type(data_contract, sql_server_type)
         #     return to_sql_query(data_contract, model_name, model_value, server_type)
-        # if export_format == "great-expectations":
+#        # if export_format == "great-expectations":
         #     model_name, model_value = exporter._check_models_for_export(data_contract, model, export_format)
         #     return to_great_expectations(data_contract, model_name)
-        # if export_format == "pydantic-model":
+#        # if export_format == "pydantic-model":
         #     return to_pydantic_model_str(data_contract)
-        # if export_format == "html":
+#        # if export_format == "html":
         #     return to_html(data_contract)
-        # if export_format == "go":
+#        # if export_format == "go":
         #     return to_go_types(data_contract)
-        # if export_format == "bigquery":
+#        # if export_format == "bigquery":
         #     model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
         #     found_server = data_contract.servers.get(self._server)
         #     if found_server is None:
@@ -358,19 +362,25 @@ class DataContract:
         #             f"Export to {export_format} requires selecting a bigquery server from the data contract."
         #         )
         #     return to_bigquery_json(model_name, model_value, found_server)
-        # if export_format == "dbml":
+#        # if export_format == "dbml":
         #     found_server = data_contract.servers.get(self._server)
         #     return to_dbml_diagram(data_contract, found_server)
         # else:
-        #     print(f"Export format {export_format} not supported.")
+#        #     print(f"Export format {export_format} not supported.")
         #     return ""
 
-    def _determine_sql_server_type(self, data_contract: DataContractSpecification, sql_server_type: str):
+    def _determine_sql_server_type(
+        self, data_contract: DataContractSpecification, sql_server_type: str, server: str = None
+    ):
         if sql_server_type == "auto":
             if data_contract.servers is None or len(data_contract.servers) == 0:
                 raise RuntimeError("Export with server_type='auto' requires servers in the data contract.")
 
-            server_types = set([server.type for server in data_contract.servers.values()])
+            if server is None:
+                server_types = set([server.type for server in data_contract.servers.values()])
+            else:
+                server_types = {data_contract.servers[server].type}
+
             if "snowflake" in server_types:
                 return "snowflake"
             elif "postgres" in server_types:
@@ -473,16 +483,20 @@ class DataContract:
 
         return data_contract_specification
 
-
 if __name__== '__main__':
+    format_output = ExportFormat.dbt_sources
+    print(f">>>>> {format_output}")
     result = DataContract(
-                    data_contract_file= "/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml"
+                        data_contract_file= "/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml" 
                     ).export(
-                        export_format=ExportFormat.rdf,
+                        export_format=format_output,
                         model='orders',  
-                        rdf_base='teoria',
+                        rdf_base='base',
                         rdf_n3='rdf_config_aditional_n3',
                         teste=True,
-                        teste2=False
+                        teste2=False,
+                        sql_server_type= "auto"
+                        
                     )
+
     print(result)
