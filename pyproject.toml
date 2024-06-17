@@ -27,7 +27,7 @@ dependencies = [
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "duckdb==1.0.0",
-  "fastjsonschema~=2.19.1",
+  "fastjsonschema>=2.19.1,<2.21.0",
   "python-dotenv~=1.0.0",
   "rdflib==7.0.0",
   "opentelemetry-exporter-otlp-proto-grpc~=1.16",
