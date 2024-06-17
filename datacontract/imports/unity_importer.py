@@ -26,12 +26,12 @@ def import_unity_from_api(
     data_contract_specification: DataContractSpecification,
     unity_table_full_name: typing.Optional[str] = None
 ) -> DataContractSpecification:
-    databricks_instance = os.getenv('DATABRICKS_INSTANCE')
-    access_token = os.getenv('DATABRICKS_ACCESS_TOKEN')
+    databricks_instance = os.getenv('DATABRICKS_IMPORT_INSTANCE')
+    access_token = os.getenv('DATABRICKS_IMPORT_ACCESS_TOKEN')
 
     if not databricks_instance or not access_token:
         print("Missing environment variables for Databricks instance or access token.")
-        print("Both, $DATABRICKS_INSTANCE and $DATABRICKS_ACCESS_TOKEN must be set.")
+        print("Both, $DATABRICKS_IMPORT_INSTANCE and $DATABRICKS_IMPORT_ACCESS_TOKEN must be set.")
         exit(1)  # Exit if variables are not set
 
     api_url = f'{databricks_instance}/api/2.1/unity-catalog/tables/{unity_table_full_name}'
