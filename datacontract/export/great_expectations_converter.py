@@ -4,23 +4,32 @@ from typing import Dict, List, Any
 import yaml
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Quality
+from datacontract.export.exporter import Exporter 
 
 
-def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str) -> str:
-    """
-    Convert each model in the contract to a Great Expectation suite
-    @param data_contract_spec: data contract to export to great expectations
-    @param model_key: model to great expectations to
-    @return: a dictionary of great expectation suites
-    """
-    expectations = []
-    model_value = data_contract_spec.models.get(model_key)
-    quality_checks = get_quality_checks(data_contract_spec.quality)
-    expectations.extend(model_to_expectations(model_value.fields))
-    expectations.extend(checks_to_expectations(quality_checks, model_key))
-    model_expectation_suite = to_suite(model_key, data_contract_spec.info.version, expectations)
+class GreateExpectationsExporter(Exporter):
+    def export(self, export_args) -> dict:
+        self.dict_args = export_args  
+        return self.to_great_expectations( 
+            self.dict_args.get('data_contract'), 
+            self.dict_args.get('model_name'), 
+            )
 
-    return model_expectation_suite
+    def to_great_expectations(self, data_contract_spec: DataContractSpecification, model_key: str) -> str:
+        """
+        Convert each model in the contract to a Great Expectation suite
+        @param data_contract_spec: data contract to export to great expectations
+        @param model_key: model to great expectations to
+        @return: a dictionary of great expectation suites
+        """
+        expectations = []
+        model_value = data_contract_spec.models.get(model_key)
+        quality_checks = get_quality_checks(data_contract_spec.quality)
+        expectations.extend(model_to_expectations(model_value.fields))
+        expectations.extend(checks_to_expectations(quality_checks, model_key))
+        model_expectation_suite = to_suite(model_key, data_contract_spec.info.version, expectations)
+
+        return model_expectation_suite
 
 
 def to_suite(
