@@ -95,7 +95,9 @@ def convert_bigquery_schema(
     # what exactly leads to friendlyName being set
     table_id = bigquery_schema.get("tableReference").get("tableId")
 
-    data_contract_specification.models[table_id] = Model(fields=fields, type=map_bigquery_type(bigquery_schema.get("type")))
+    data_contract_specification.models[table_id] = Model(
+        fields=fields, type=map_bigquery_type(bigquery_schema.get("type"))
+    )
 
     # Copy the description, if it exists
     if bigquery_schema.get("description") is not None:
@@ -188,6 +190,7 @@ def map_type_from_bigquery(bigquery_type_str: str):
             engine="datacontract",
         )
 
+
 def map_bigquery_type(bigquery_type: str) -> str:
     if bigquery_type == "TABLE" or bigquery_type == "EXTERNAL" or bigquery_type == "SNAPSHOT":
         return "table"
@@ -199,4 +202,3 @@ def map_bigquery_type(bigquery_type: str) -> str:
             f"Can't properly map bigquery table type '{bigquery_type}' to datacontracts model types. Mapping it to table."
         )
         return "table"
-        

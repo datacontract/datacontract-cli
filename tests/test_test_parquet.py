@@ -48,3 +48,12 @@ def test_timestamp():
     run = data_contract.test()
     print(run.pretty())
     assert run.result == "passed"
+
+
+def test_decimal():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_decimal.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"

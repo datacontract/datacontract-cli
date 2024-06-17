@@ -56,8 +56,9 @@ def _to_sql_query(model_name, model_value, server_type) -> str:
     return result
 
 
-def to_sql_ddl(data_contract_spec: DataContractSpecification, server_type: str = "snowflake", server: str = None) -> str:
-    
+def to_sql_ddl(
+    data_contract_spec: DataContractSpecification, server_type: str = "snowflake", server: str = None
+) -> str:
     if data_contract_spec is None:
         return ""
     if data_contract_spec.models is None or len(data_contract_spec.models) == 0:
