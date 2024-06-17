@@ -3,33 +3,28 @@ from typing import Dict
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
+from datacontract.export.exporter import Exporter 
 
-def to_jsonschemas(data_contract_spec: DataContractSpecification):
-    jsonschmemas = {}
-    for model_key, model_value in data_contract_spec.models.items():
+
+class JsonSchemaExporter(Exporter):
+    def export(self, export_args) -> dict:
+        self.dict_args = export_args  
+        return self.to_jsonschema_json( 
+            self.dict_args.get('model_name'),
+            self.dict_args.get('model_value'), 
+            )
+
+    def to_jsonschemas(self, data_contract_spec: DataContractSpecification):
+        jsonschmemas = {}
+        for model_key, model_value in data_contract_spec.models.items():
+            jsonschema = self.to_jsonschema(model_key, model_value)
+            jsonschmemas[model_key] = jsonschema
+        return jsonschmemas
+
+
+    def to_jsonschema_json(self, model_key, model_value: Model) -> str:
         jsonschema = to_jsonschema(model_key, model_value)
-        jsonschmemas[model_key] = jsonschema
-    return jsonschmemas
-
-
-def to_jsonschema_json(model_key, model_value: Model) -> str:
-    jsonschema = to_jsonschema(model_key, model_value)
-    return json.dumps(jsonschema, indent=2)
-
-
-def to_jsonschema(model_key, model_value: Model) -> dict:
-    model = {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "type": "object",
-        "properties": to_properties(model_value.fields),
-        "required": to_required(model_value.fields),
-    }
-    if model_value.title:
-        model["title"] = model_value.title
-    if model_value.description:
-        model["description"] = model_value.description
-
-    return model
+        return json.dumps(jsonschema, indent=2)
 
 
 def to_properties(fields: Dict[str, Field]) -> dict:
@@ -126,7 +121,7 @@ def convert_type_format(type, format) -> (str, str):
     return None, None
 
 
-def convert_format(format):
+def convert_format(self, format):
     if format is None:
         return None
     if format.lower() in ["uri"]:
@@ -138,3 +133,17 @@ def convert_format(format):
     if format.lower() in ["boolean"]:
         return "boolean"
     return None
+
+def to_jsonschema(model_key, model_value: Model) -> dict:
+        model = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": to_properties(model_value.fields),
+            "required": to_required(model_value.fields),
+        }
+        if model_value.title:
+            model["title"] = model_value.title
+        if model_value.description:
+            model["description"] = model_value.description
+
+        return model
