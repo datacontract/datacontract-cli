@@ -1,15 +1,16 @@
 import re
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class TerraformExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return to_terraform( 
-            self.dict_args.get('data_contract'), 
-            )
+        self.dict_args = export_args
+        return to_terraform(
+            self.dict_args.get("data_contract"),
+        )
+
 
 def to_terraform(data_contract_spec: DataContractSpecification, server_id: str = None) -> str:
     if data_contract_spec is None:

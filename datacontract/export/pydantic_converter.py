@@ -2,16 +2,13 @@ import ast
 import typing
 
 import datacontract.model.data_contract_specification as spec
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class PydanticExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_pydantic_model_str( 
-            self.dict_args.get('data_contract')
-            )
-
+        self.dict_args = export_args
+        return self.to_pydantic_model_str(self.dict_args.get("data_contract"))
 
     def to_pydantic_model_str(self, contract: spec.DataContractSpecification) -> str:
         classdefs = [generate_model_class(model_name, model) for (model_name, model) in contract.models.items()]

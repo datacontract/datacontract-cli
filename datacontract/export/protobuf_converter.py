@@ -1,13 +1,11 @@
 from datacontract.model.data_contract_specification import DataContractSpecification
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class ProtoBufExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_protobuf( 
-            self.dict_args.get('data_contract')
-            )
+        self.dict_args = export_args
+        return self.to_protobuf(self.dict_args.get("data_contract"))
 
     def to_protobuf(self, data_contract_spec: DataContractSpecification):
         messages = ""

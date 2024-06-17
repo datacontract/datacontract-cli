@@ -8,18 +8,16 @@ import datacontract.model.data_contract_specification as spec
 from datacontract.export.sql_type_converter import convert_to_sql_type
 
 
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
+
 
 class DBMLExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        
-        found_server = self.dict_args.get('data_contract').servers.get(self.dict_args.get('server')) 
-        return self.to_dbml_diagram(
-            self.dict_args.get('data_contract'), 
-            found_server
-            )
-        
+        self.dict_args = export_args
+
+        found_server = self.dict_args.get("data_contract").servers.get(self.dict_args.get("server"))
+        return self.to_dbml_diagram(self.dict_args.get("data_contract"), found_server)
+
     def to_dbml_diagram(self, contract: spec.DataContractSpecification, server: spec.Server) -> str:
         result = ""
         result += self.add_generated_info(contract, server) + "\n"
@@ -30,7 +28,6 @@ class DBMLExporter(Exporter):
             result += f"\n{table_description}\n"
 
         return result
-
 
     def add_generated_info(self, contract: spec.DataContractSpecification, server: spec.Server) -> str:
         tz = pytz.timezone("UTC")
@@ -63,20 +60,17 @@ class DBMLExporter(Exporter):
     {1}
         """.format(comment, note)
 
-
     def get_version(self) -> str:
         try:
             return version("datacontract_cli")
         except Exception:
             return ""
 
-
     def generate_project_info(self, contract: spec.DataContractSpecification) -> str:
         return """Project "{0}" {{
         Note: "{1}"
     }}\n
         """.format(contract.info.title, " ".join(contract.info.description.splitlines()))
-
 
     def generate_table(self, model_name: str, model: spec.Model, server: spec.Server) -> str:
         result = """Table "{0}" {{ 
@@ -103,8 +97,9 @@ class DBMLExporter(Exporter):
 
         return result
 
-
-    def generate_field(self, field_name: str, field: spec.Field, model_name: str, server: spec.Server) -> Tuple[str, str]:
+    def generate_field(
+        self, field_name: str, field: spec.Field, model_name: str, server: spec.Server
+    ) -> Tuple[str, str]:
         field_attrs = []
         if field.primary:
             field_attrs.append("pk")

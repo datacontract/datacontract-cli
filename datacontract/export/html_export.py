@@ -8,15 +8,13 @@ import yaml
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from datacontract.model.data_contract_specification import DataContractSpecification
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class HtmlExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_html( 
-            self.dict_args.get('data_contract')
-            )
+        self.dict_args = export_args
+        return self.to_html(self.dict_args.get("data_contract"))
 
     def to_html(self, data_contract_spec: DataContractSpecification) -> str:
         # Load templates from templates folder
@@ -67,7 +65,6 @@ class HtmlExporter(Exporter):
         )
 
         return html_string
-
 
     def get_version(self) -> str:
         try:

@@ -3,15 +3,13 @@ from typing import Dict
 import yaml
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class ODCSExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_odcs_yaml( 
-            self.dict_args.get('data_contract') 
-            )
+        self.dict_args = export_args
+        return self.to_odcs_yaml(self.dict_args.get("data_contract"))
 
     def to_odcs_yaml(self, data_contract_spec: DataContractSpecification):
         odcs = {
@@ -45,7 +43,10 @@ class ODCSExporter(Exporter):
             slas = []
             if data_contract_spec.servicelevels.availability is not None:
                 slas.append(
-                    {"property": "generalAvailability", "value": data_contract_spec.servicelevels.availability.description}
+                    {
+                        "property": "generalAvailability",
+                        "value": data_contract_spec.servicelevels.availability.description,
+                    }
                 )
             if data_contract_spec.servicelevels.retention is not None:
                 slas.append({"property": "retention", "value": data_contract_spec.servicelevels.retention.period})
@@ -61,7 +62,6 @@ class ODCSExporter(Exporter):
             odcs["dataset"].append(odcs_table)
         return yaml.dump(odcs, indent=2, sort_keys=False, allow_unicode=True)
 
-
     def to_odcs_table(self, model_key, model_value: Model) -> dict:
         odcs_table = {
             "table": model_key,
@@ -75,14 +75,12 @@ class ODCSExporter(Exporter):
             odcs_table["columns"] = columns
         return odcs_table
 
-
     def to_columns(self, fields: Dict[str, Field]) -> list:
         columns = []
         for field_name, field in fields.items():
             column = self.to_column(field_name, field)
             columns.append(column)
         return columns
-
 
     def to_column(self, field_name: str, field: Field) -> dict:
         column = {"column": field_name}

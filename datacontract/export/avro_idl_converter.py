@@ -5,9 +5,9 @@ from io import StringIO
 
 from datacontract.lint.resolve import inline_definitions_into_data_contract
 from datacontract.model.data_contract_specification import DataContractSpecification, Field
-from datacontract.model.exceptions import DataContractException 
+from datacontract.model.exceptions import DataContractException
 
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class AvroPrimitiveType(Enum):
@@ -86,14 +86,10 @@ avro_primitive_types = set(
 )
 
 
-
- 
 class AvroIDLExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_avro_idl(
-            self.dict_args.get('data_contract') 
-            )
+        self.dict_args = export_args
+        return self.to_avro_idl(self.dict_args.get("data_contract"))
 
     def to_avro_idl(self, contract: DataContractSpecification) -> str:
         """Serialize the provided data contract specification into an Avro IDL string.
@@ -106,7 +102,6 @@ class AvroIDLExporter(Exporter):
         self.to_avro_idl_stream(contract, stream)
         return stream.getvalue()
 
-
     def to_avro_idl_stream(self, contract: DataContractSpecification, stream: typing.TextIO):
         """Serialize the provided data contract specification into Avro IDL."""
         ir = self._contract_to_avro_idl_ir(contract)
@@ -116,8 +111,8 @@ class AvroIDLExporter(Exporter):
         for model_type in ir.model_types:
             self._write_model_type(model_type, stream)
         stream.write("}\n")
-        
-    def _to_avro_primitive_logical_type(self,field_name: str, field: Field) -> AvroPrimitiveField:
+
+    def _to_avro_primitive_logical_type(self, field_name: str, field: Field) -> AvroPrimitiveField:
         result = AvroPrimitiveField(field_name, field.required, field.description, AvroPrimitiveType.string)
         match field.type:
             case "string" | "text" | "varchar":
@@ -153,8 +148,7 @@ class AvroIDLExporter(Exporter):
                 )
         return result
 
-
-    def _to_avro_idl_type(self,field_name: str, field: Field) -> AvroField:
+    def _to_avro_idl_type(self, field_name: str, field: Field) -> AvroField:
         if field.type in avro_primitive_types:
             return self._to_avro_primitive_logical_type(field_name, field)
         else:
@@ -180,7 +174,6 @@ class AvroIDLExporter(Exporter):
                         message="Avro IDL type conversion failed.",
                     )
 
-
     def _generate_field_types(self, contract: DataContractSpecification) -> list[AvroField]:
         result = []
         for _, model in contract.models.items():
@@ -188,19 +181,18 @@ class AvroIDLExporter(Exporter):
                 result.append(self._to_avro_idl_type(field_name, field))
         return result
 
-
     def generate_model_types(self, contract: DataContractSpecification) -> list[AvroModelType]:
         result = []
         for model_name, model in contract.models.items():
             result.append(
-                AvroModelType(name=model_name, description=model.description, fields=self._generate_field_types(contract))
+                AvroModelType(
+                    name=model_name, description=model.description, fields=self._generate_field_types(contract)
+                )
             )
         return result
 
-
     def _model_name_to_identifier(self, model_name: str):
         return "".join([word.title() for word in model_name.split()])
-
 
     def _contract_to_avro_idl_ir(self, contract: DataContractSpecification) -> AvroIDLProtocol:
         """Convert models into an intermediate representation for later serialization into Avro IDL.
@@ -209,22 +201,21 @@ class AvroIDLExporter(Exporter):
         """
         inlined_contract = contract.model_copy()
         inline_definitions_into_data_contract(inlined_contract)
-        protocol_name = self._model_name_to_identifier(contract.info.title) if contract.info and contract.info.title else None
+        protocol_name = (
+            self._model_name_to_identifier(contract.info.title) if contract.info and contract.info.title else None
+        )
         description = contract.info.description if contract.info and contract.info.description else None
         return AvroIDLProtocol(
             name=protocol_name, description=description, model_types=self.generate_model_types(inlined_contract)
         )
 
-
     def _write_indent(self, indent: int, stream: typing.TextIO):
         stream.write("    " * indent)
-
 
     def _write_field_description(self, field: AvroField, indent: int, stream: typing.TextIO):
         if field.description:
             self._write_indent(indent, stream)
             stream.write(f"/** {field.description} */\n")
-
 
     def _write_field_type_definition(self, field: AvroField, indent: int, stream: typing.TextIO) -> str:
         # Write any extra information (such as record type definition) and return
@@ -266,14 +257,12 @@ class AvroIDLExporter(Exporter):
             case _:
                 raise RuntimeError("Unknown Avro field type {field}")
 
-
     def _write_field(self, field: AvroField, indent, stream: typing.TextIO):
         # Start of recursion.
         typename = self._write_field_type_definition(field, indent, stream)
         self._write_field_description(field, indent, stream)
         self._write_indent(indent, stream)
         stream.write(f"{typename} {field.name};\n")
-
 
     def _write_model_type(self, model: AvroModelType, stream: typing.TextIO):
         # Called once for each model
@@ -287,5 +276,3 @@ class AvroIDLExporter(Exporter):
             self._write_field(field, 2, stream)
         self._write_indent(1, stream)
         stream.write("}\n")
-
-

@@ -8,12 +8,10 @@ from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import Field
 
 
-
 class RDFExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args      
-        return self.to_rdf_n3(data_contract_spec=self.dict_args.get('data_contract'),
-                              base=self.dict_args.get('rdf_n3')) 
+        self.dict_args = export_args
+        return self.to_rdf_n3(data_contract_spec=self.dict_args.get("data_contract"), base=self.dict_args.get("rdf_n3"))
 
     def is_literal(self, property_name):
         return property_name in [
@@ -45,14 +43,11 @@ class RDFExporter(Exporter):
             "patterns",
         ]
 
-
     def is_uriref(self, property_name):
         return property_name in ["model", "domain", "owner"]
 
-
     def to_rdf_n3(self, data_contract_spec: DataContractSpecification, base) -> str:
         return self.to_rdf(data_contract_spec, base).serialize(format="n3")
-
 
     def to_rdf(self, data_contract_spec: DataContractSpecification, base) -> Graph:
         if base is not None:
@@ -91,14 +86,12 @@ class RDFExporter(Exporter):
 
         return g
 
-
     def add_example(self, contract, example, graph, dc, dcx):
         an_example = BNode()
         graph.add((contract, dc["example"], an_example))
         graph.add((an_example, RDF.type, URIRef(dc + "Example")))
         for example_property in example.model_fields:
             self.add_triple(sub=an_example, pred=example_property, obj=example, graph=graph, dc=dc, dcx=dcx)
-
 
     def add_triple(self, sub, pred, obj, graph, dc, dcx):
         if pred == "ref":
@@ -110,7 +103,6 @@ class RDFExporter(Exporter):
             pass
         else:
             self.add_predicate(sub=sub, pred=pred, obj=obj, graph=graph, dc=dc, dcx=dcx)
-
 
     def add_model(self, contract, model, model_name, graph, dc, dcx):
         a_model = URIRef(model_name)
@@ -125,7 +117,6 @@ class RDFExporter(Exporter):
             for field_property in field.model_fields:
                 self.add_triple(sub=a_field, pred=field_property, obj=field, graph=graph, dc=dc, dcx=dcx)
 
-
     def add_server(self, contract, server, server_name, graph, dc, dcx):
         a_server = URIRef(server_name)
         graph.add((contract, dc.server, a_server))
@@ -133,14 +124,12 @@ class RDFExporter(Exporter):
         for server_property_name in server.model_fields:
             self.add_triple(sub=a_server, pred=server_property_name, obj=server, graph=graph, dc=dc, dcx=dcx)
 
-
     def add_terms(self, contract, terms, graph, dc, dcx):
         bnode_terms = BNode()
         graph.add((contract, dc.terms, bnode_terms))
         graph.add((bnode_terms, RDF.type, URIRef(dc + "Terms")))
         for term_name in terms.model_fields:
             self.add_triple(sub=bnode_terms, pred=term_name, obj=terms, graph=graph, dc=dc, dcx=dcx)
-
 
     def add_info(self, contract, info, graph, dc, dcx):
         bnode_info = BNode()
@@ -160,7 +149,6 @@ class RDFExporter(Exporter):
         graph.add((contact, RDF.type, URIRef(dc + "Contact")))
         for contact_property in info.contact.model_fields:
             self.add_triple(sub=contact, pred=contact_property, obj=info.contact, graph=graph, dc=dc, dcx=dcx)
-
 
     def add_predicate(self, sub, pred, obj, graph, dc, dcx):
         if isinstance(obj, BaseModel):

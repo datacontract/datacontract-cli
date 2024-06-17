@@ -3,16 +3,16 @@ from typing import Dict
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class JsonSchemaExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_jsonschema_json( 
-            self.dict_args.get('model_name'),
-            self.dict_args.get('model_value'), 
-            )
+        self.dict_args = export_args
+        return self.to_jsonschema_json(
+            self.dict_args.get("model_name"),
+            self.dict_args.get("model_value"),
+        )
 
     def to_jsonschemas(self, data_contract_spec: DataContractSpecification):
         jsonschmemas = {}
@@ -20,7 +20,6 @@ class JsonSchemaExporter(Exporter):
             jsonschema = self.to_jsonschema(model_key, model_value)
             jsonschmemas[model_key] = jsonschema
         return jsonschmemas
-
 
     def to_jsonschema_json(self, model_key, model_value: Model) -> str:
         jsonschema = to_jsonschema(model_key, model_value)
@@ -134,16 +133,17 @@ def convert_format(self, format):
         return "boolean"
     return None
 
-def to_jsonschema(model_key, model_value: Model) -> dict:
-        model = {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "type": "object",
-            "properties": to_properties(model_value.fields),
-            "required": to_required(model_value.fields),
-        }
-        if model_value.title:
-            model["title"] = model_value.title
-        if model_value.description:
-            model["description"] = model_value.description
 
-        return model
+def to_jsonschema(model_key, model_value: Model) -> dict:
+    model = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": to_properties(model_value.fields),
+        "required": to_required(model_value.fields),
+    }
+    if model_value.title:
+        model["title"] = model_value.title
+    if model_value.description:
+        model["description"] = model_value.description
+
+    return model

@@ -394,11 +394,11 @@ def with_markup(result):
         return "[red]error[/red]"
     return result
 
- 
 
 if __name__ == "__main__":
     from pyfiglet import Figlet
-    f = Figlet(font="slant") 
-    print(f.renderText("data contracts\n"))   
+
+    f = Figlet(font="slant")
+    print(f.renderText("data contracts\n"))
 
     app()

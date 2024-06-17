@@ -1,25 +1,28 @@
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import DataContractSpecification, Model
 
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class SqlExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return to_sql_ddl( 
-            self.dict_args.get('data_contract'),
-            self.dict_args.get('server_type'),
-            )
+        self.dict_args = export_args
+        return to_sql_ddl(
+            self.dict_args.get("data_contract"),
+            self.dict_args.get("server_type"),
+        )
+
+
 class SqlQueryExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return to_sql_query( 
-            self.dict_args.get('data_contract'),
-            self.dict_args.get('model_name'),
-            self.dict_args.get('model_value'),
-            self.dict_args.get('server_type'),
-            )
+        self.dict_args = export_args
+        return to_sql_query(
+            self.dict_args.get("data_contract"),
+            self.dict_args.get("model_name"),
+            self.dict_args.get("model_value"),
+            self.dict_args.get("server_type"),
+        )
+
 
 def to_sql_query(
     data_contract_spec: DataContractSpecification, model_name: str, model_value: Model, server_type: str = "snowflake"

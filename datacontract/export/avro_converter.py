@@ -3,24 +3,18 @@ import json
 from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import Field
 
- 
+
 class AvroExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_avro_schema_json(
-            self.dict_args.get('model_name'), 
-            self.dict_args.get('model_value')
-            )
-
+        self.dict_args = export_args
+        return self.to_avro_schema_json(self.dict_args.get("model_name"), self.dict_args.get("model_value"))
 
     def to_avro_schema(self, model_name, model) -> dict:
         return self.to_avro_record(model_name, model.fields, model.description, model.namespace)
 
-
     def to_avro_schema_json(self, model_name, model) -> str:
         schema = self.to_avro_schema(model_name, model)
         return json.dumps(schema, indent=2, sort_keys=False)
-
 
     def to_avro_record(self, name, fields, description, namespace) -> dict:
         schema = {"type": "record", "name": name}
@@ -31,13 +25,11 @@ class AvroExporter(Exporter):
         schema["fields"] = self.to_avro_fields(fields)
         return schema
 
-
     def to_avro_fields(self, fields):
         result = []
         for field_name, field in fields.items():
             result.append(self.to_avro_field(field, field_name))
         return result
-
 
     def to_avro_field(self, field, field_name):
         avro_field = {"name": field_name}
@@ -50,7 +42,6 @@ class AvroExporter(Exporter):
                 avro_field["default"] = field.config["avroDefault"]
 
         return avro_field
-
 
     def to_avro_type(self, field: Field, field_name: str) -> str | dict:
         if field.config:
@@ -103,14 +94,6 @@ class AvroExporter(Exporter):
             return "null"
         else:
             return "bytes"
-
-
-
-
-
-
-
-
 
 
 def to_avro_schema(model_name, model) -> dict:

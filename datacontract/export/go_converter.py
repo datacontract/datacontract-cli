@@ -1,16 +1,13 @@
 import datacontract.model.data_contract_specification as spec
 from typing import List
 import re
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class GOExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_go_types( 
-            self.dict_args.get('data_contract') 
-            )
-
+        self.dict_args = export_args
+        return self.to_go_types(self.dict_args.get("data_contract"))
 
     def to_go_types(self, contract: spec.DataContractSpecification) -> str:
         result = "package main\n\n"

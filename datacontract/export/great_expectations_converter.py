@@ -4,16 +4,16 @@ from typing import Dict, List, Any
 import yaml
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Quality
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class GreateExpectationsExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_great_expectations( 
-            self.dict_args.get('data_contract'), 
-            self.dict_args.get('model_name'), 
-            )
+        self.dict_args = export_args
+        return self.to_great_expectations(
+            self.dict_args.get("data_contract"),
+            self.dict_args.get("model_name"),
+        )
 
     def to_great_expectations(self, data_contract_spec: DataContractSpecification, model_key: str) -> str:
         """

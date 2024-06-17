@@ -13,6 +13,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
+
 # from datacontract.export.avro_converter import to_avro_schema_json
 # from datacontract.export.avro_idl_converter import to_avro_idl
 # from datacontract.export.bigquery_converter import to_bigquery_json
@@ -28,8 +29,8 @@ from datacontract.engines.soda.check_soda_execute import check_soda_execute
 # from datacontract.export.rdf_converter import to_rdf_n3
 # from datacontract.export.sodacl_converter import to_sodacl_yaml
 # from datacontract.export.sql_converter import to_sql_ddl, to_sql_query
-# from datacontract.export.terraform_converter import to_terraform  
-from datacontract.export import *  
+# from datacontract.export.terraform_converter import to_terraform
+from datacontract.export import *
 from datacontract.imports.avro_importer import import_avro
 from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
 from datacontract.imports.glue_importer import import_glue
@@ -50,7 +51,6 @@ from datacontract.model.breaking_change import BreakingChanges, BreakingChange, 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
-
 
 
 class DataContract:
@@ -286,32 +286,34 @@ class DataContract:
         )
 
     def export(
-        self, export_format: ExportFormat,   model: str = "all", server: str = None, **kwargs
-        #rdf_base: str = None, sql_server_type: str = "auto"
+        self,
+        export_format: ExportFormat,
+        model: str = "all",
+        server: str = None,
+        **kwargs,
+        # rdf_base: str = None, sql_server_type: str = "auto"
     ) -> str:
-        
         data_contract = resolve.resolve_data_contract(
             self._data_contract_file,
             self._data_contract_str,
             self._data_contract,
             inline_definitions=True,
-            inline_quality=True
+            inline_quality=True,
         )
-        
-        sql_server_type = kwargs.get('sql_server_type','auto')
+
+        sql_server_type = kwargs.get("sql_server_type", "auto")
         exporter = factory_exporter.get_exporter(export_format)
         model_name, model_value = self._check_models_for_export(data_contract, model, export_format)
         export_args = {
-            'data_contract': data_contract,
-            'model_name': model_name,
-            'model_value': model_value,
-            'server': self._server, 
-            'server_type': self._determine_sql_server_type(data_contract, sql_server_type, server)
+            "data_contract": data_contract,
+            "model_name": model_name,
+            "model_value": model_value,
+            "server": self._server,
+            "server_type": self._determine_sql_server_type(data_contract, sql_server_type, server),
         }
-        
+
         export_args.update(kwargs)
         return exporter.export(export_args)
-         
 
     def _determine_sql_server_type(
         self, data_contract: DataContractSpecification, sql_server_type: str, server: str = None
@@ -427,20 +429,20 @@ class DataContract:
 
         return data_contract_specification
 
-if __name__== '__main__':
+
+if __name__ == "__main__":
     format_output = ExportFormat.dbt
     print(f">>>>> {format_output}")
     result = DataContract(
-                        data_contract_file= "/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml" 
-                    ).export(
-                        export_format=format_output,
-                        model='orders',  
-                        rdf_base='base',
-                        rdf_n3='rdf_config_aditional_n3',
-                        teste=True,
-                        teste2=False,
-                        sql_server_type= "auto"
-                        
-                    )
+        data_contract_file="/Users/C10017Q/estudos/datacontract-cli/datacontract/datacontract.yaml"
+    ).export(
+        export_format=format_output,
+        model="orders",
+        rdf_base="base",
+        rdf_n3="rdf_config_aditional_n3",
+        teste=True,
+        teste2=False,
+        sql_server_type="auto",
+    )
 
     print(result)

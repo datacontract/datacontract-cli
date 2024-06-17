@@ -5,33 +5,31 @@ import yaml
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
-from datacontract.export.exporter import Exporter 
-  
+from datacontract.export.exporter import Exporter
+
+
 class DBTExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-    
-        return to_dbt_models_yaml(
-            self.dict_args.get('data_contract') 
-            )
- 
+        self.dict_args = export_args
+
+        return to_dbt_models_yaml(self.dict_args.get("data_contract"))
+
+
 class DBTSourceExporter(DBTExporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return to_dbt_sources_yaml(
-            self.dict_args.get('data_contract'),
-            self.dict_args.get('server')
-            )
- 
+        self.dict_args = export_args
+        return to_dbt_sources_yaml(self.dict_args.get("data_contract"), self.dict_args.get("server"))
+
+
 class DBTStageExporter(DBTExporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
+        self.dict_args = export_args
         return to_dbt_staging_sql(
-            self.dict_args.get('data_contract'),
-            self.dict_args.get('model_name'),
-            self.dict_args.get('model_value'), 
-            )
- 
+            self.dict_args.get("data_contract"),
+            self.dict_args.get("model_name"),
+            self.dict_args.get("model_value"),
+        )
+
 
 def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
     dbt = {

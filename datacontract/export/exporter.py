@@ -9,8 +9,7 @@ class Exporter(ABC):
     @abstractmethod
     def export(self, export_args) -> dict:
         pass
-    
-    
+
 
 class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
@@ -34,17 +33,15 @@ class ExportFormat(str, Enum):
     dbml = "dbml"
 
 
-class FactoryExporter(): 
-    def __init__(self): 
+class FactoryExporter:
+    def __init__(self):
         self.dict_exporters = {}
-        
+
     def add_exporter(self, name, exporter):
         self.dict_exporters.update({name: exporter})
-        
-    def get_exporter(self, name)-> Exporter:
+
+    def get_exporter(self, name) -> Exporter:
         try:
             return self.dict_exporters[name]()
-        except: 
-            raise Exception(f"Export format {name} not supported.") 
-        
-    
+        except:
+            raise Exception(f"Export format {name} not supported.")

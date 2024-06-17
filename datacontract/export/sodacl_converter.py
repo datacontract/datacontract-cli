@@ -2,16 +2,13 @@ import yaml
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import DataContractSpecification
-from datacontract.export.exporter import Exporter 
+from datacontract.export.exporter import Exporter
 
 
 class SodaExporter(Exporter):
     def export(self, export_args) -> dict:
-        self.dict_args = export_args  
-        return self.to_sodacl_yaml( 
-            self.dict_args.get('data_contract')
-            )
-
+        self.dict_args = export_args
+        return self.to_sodacl_yaml(self.dict_args.get("data_contract"))
 
     def to_sodacl_yaml(
         self, data_contract_spec: DataContractSpecification, server_type: str = None, check_types: bool = True
@@ -26,20 +23,21 @@ class SodaExporter(Exporter):
             return sodacl_yaml_str
         except Exception as e:
             return f"Error: {e}"
-        
+
+
 def to_sodacl_yaml(
-        data_contract_spec: DataContractSpecification, server_type: str = None, check_types: bool = True
-    ) -> str:
-        try:
-            sodacl = {}
-            for model_key, model_value in data_contract_spec.models.items():
-                k, v = to_checks(model_key, model_value, server_type, check_types)
-                sodacl[k] = v
-            add_quality_checks(sodacl, data_contract_spec)
-            sodacl_yaml_str = yaml.dump(sodacl, default_flow_style=False, sort_keys=False)
-            return sodacl_yaml_str
-        except Exception as e:
-            return f"Error: {e}"
+    data_contract_spec: DataContractSpecification, server_type: str = None, check_types: bool = True
+) -> str:
+    try:
+        sodacl = {}
+        for model_key, model_value in data_contract_spec.models.items():
+            k, v = to_checks(model_key, model_value, server_type, check_types)
+            sodacl[k] = v
+        add_quality_checks(sodacl, data_contract_spec)
+        sodacl_yaml_str = yaml.dump(sodacl, default_flow_style=False, sort_keys=False)
+        return sodacl_yaml_str
+    except Exception as e:
+        return f"Error: {e}"
 
 
 def to_checks(model_key, model_value, server_type: str, check_types: bool):
