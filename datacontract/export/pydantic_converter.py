@@ -2,28 +2,37 @@ import ast
 import typing
 
 import datacontract.model.data_contract_specification as spec
+from datacontract.export.exporter import Exporter 
 
 
-def to_pydantic_model_str(contract: spec.DataContractSpecification) -> str:
-    classdefs = [generate_model_class(model_name, model) for (model_name, model) in contract.models.items()]
-    documentation = (
-        [ast.Expr(ast.Constant(contract.info.description))] if (contract.info and contract.info.description) else []
-    )
-    result = ast.Module(
-        body=[
-            ast.Import(
-                names=[
-                    ast.Name("datetime", ctx=ast.Load()),
-                    ast.Name("typing", ctx=ast.Load()),
-                    ast.Name("pydantic", ctx=ast.Load()),
-                ]
-            ),
-            *documentation,
-            *classdefs,
-        ],
-        type_ignores=[],
-    )
-    return ast.unparse(result)
+class PydanticExporter(Exporter):
+    def export(self, export_args) -> dict:
+        self.dict_args = export_args  
+        return self.to_pydantic_model_str( 
+            self.dict_args.get('data_contract')
+            )
+
+
+    def to_pydantic_model_str(self, contract: spec.DataContractSpecification) -> str:
+        classdefs = [generate_model_class(model_name, model) for (model_name, model) in contract.models.items()]
+        documentation = (
+            [ast.Expr(ast.Constant(contract.info.description))] if (contract.info and contract.info.description) else []
+        )
+        result = ast.Module(
+            body=[
+                ast.Import(
+                    names=[
+                        ast.Name("datetime", ctx=ast.Load()),
+                        ast.Name("typing", ctx=ast.Load()),
+                        ast.Name("pydantic", ctx=ast.Load()),
+                    ]
+                ),
+                *documentation,
+                *classdefs,
+            ],
+            type_ignores=[],
+        )
+        return ast.unparse(result)
 
 
 def optional_of(node) -> ast.Subscript:
