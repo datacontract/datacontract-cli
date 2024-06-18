@@ -3,17 +3,12 @@ from typing import Dict
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
-from datacontract.export.exporter import Exporter
-from datacontract.utils import _check_models_for_export
+from datacontract.export.exporter import Exporter, _check_models_for_export
 
 
 class JsonSchemaExporter(Exporter):
-    def export(self, export_args) -> dict:
-        self.dict_args = export_args
-        data_contract = self.dict_args.get("data_contract")
-        model_name, model_value = _check_models_for_export(
-            data_contract, self.dict_args.get("model"), self.dict_args.get("export_format")
-        )
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
         return to_jsonschema_json(model_name, model_value)
 
 

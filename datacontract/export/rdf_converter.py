@@ -9,9 +9,8 @@ from datacontract.model.data_contract_specification import Field
 
 
 class RdfExporter(Exporter):
-    def export(self, export_args) -> dict:
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         self.dict_args = export_args
-        data_contract = self.dict_args.get("data_contract")
         rdf_base = self.dict_args.get("rdf_base")
         return to_rdf_n3(data_contract_spec=data_contract, base=rdf_base)
 

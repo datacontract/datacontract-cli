@@ -35,7 +35,6 @@ from datacontract.model.breaking_change import BreakingChanges, BreakingChange, 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run, Check
-from datacontract.utils import _get_examples_server
 
 
 class DataContract:
@@ -172,7 +171,7 @@ class DataContract:
             with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
                 if self._examples:
                     server_name = "examples"
-                    server = _get_examples_server(data_contract, run, tmp_dir)
+                    server = self._get_examples_server(data_contract, run, tmp_dir)
                 elif self._server:
                     server_name = self._server
                     server = data_contract.servers.get(server_name)
@@ -229,6 +228,38 @@ class DataContract:
 
         return run
 
+    def _get_examples_server(data_contract, run, tmp_dir):
+        run.log_info(f"Copying examples to files in temporary directory {tmp_dir}")
+        format = "json"
+        for example in data_contract.examples:
+            format = example.type
+            p = f"{tmp_dir}/{example.model}.{format}"
+            run.log_info(f"Creating example file {p}")
+            with open(p, "w") as f:
+                content = ""
+                if format == "json" and isinstance(example.data, list):
+                    content = json.dumps(example.data)
+                elif format == "json" and isinstance(example.data, str):
+                    content = example.data
+                elif format == "yaml" and isinstance(example.data, list):
+                    content = yaml.dump(example.data, allow_unicode=True)
+                elif format == "yaml" and isinstance(example.data, str):
+                    content = example.data
+                elif format == "csv":
+                    content = example.data
+                logging.debug(f"Content of example file {p}: {content}")
+                f.write(content)
+        path = f"{tmp_dir}" + "/{model}." + format
+        delimiter = "array"
+        server = Server(
+            type="local",
+            path=path,
+            format=format,
+            delimiter=delimiter,
+        )
+        run.log_info(f"Using {server} for testing the examples")
+        return server
+
     def breaking(self, other: "DataContract") -> BreakingChanges:
         return self.changelog(other, include_severities=[Severity.ERROR, Severity.WARNING])
 
@@ -274,7 +305,6 @@ class DataContract:
         self,
         export_format: ExportFormat,
         model: str = "all",
-        rdf_base: str = None,
         sql_server_type: str = "auto",
         **kwargs,
     ) -> str:
@@ -286,19 +316,13 @@ class DataContract:
             inline_quality=True,
         )
 
-        export_args = {
-            "data_contract": data_contract,
-            "model": model,
-            "export_format": export_format,
-            "server": self._server,
-            "rdf_base": rdf_base,
-            "sql_server_type": sql_server_type,
-        }
-
-        export_args.update(kwargs)
-
-        exporter = exporter_factory.create(export_format)
-        return exporter.export(export_args)
+        return exporter_factory.create(export_format).export(
+            data_contract=data_contract,
+            model=model,
+            server=self._server,
+            sql_server_type=sql_server_type,
+            export_args=kwargs,
+        )
 
     def import_from_source(
         self,

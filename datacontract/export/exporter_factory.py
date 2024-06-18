@@ -27,7 +27,7 @@ class ExporterFactory:
     def create(self, name) -> Exporter:
         if name not in self.dict_exporter.keys():
             raise Exception(f"Export format {name} not supported.")
-        return self.dict_exporter[name]()
+        return self.dict_exporter[name](name)
 
 
 exporter_factory = ExporterFactory()

@@ -3,9 +3,7 @@ from datacontract.export.exporter import Exporter
 
 
 class ProtoBufExporter(Exporter):
-    def export(self, export_args) -> dict:
-        self.dict_args = export_args
-        data_contract = self.dict_args.get("data_contract")
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
         return to_protobuf(data_contract)
 
 

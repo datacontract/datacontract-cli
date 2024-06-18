@@ -12,10 +12,8 @@ from datacontract.export.exporter import Exporter
 
 
 class DbmlExporter(Exporter):
-    def export(self, export_args) -> dict:
-        self.dict_args = export_args
-        data_contract = self.dict_args.get("data_contract")
-        found_server = data_contract.servers.get(self.dict_args.get("server"))
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+        found_server = data_contract.servers.get(server)
         return to_dbml_diagram(data_contract, found_server)
 
 

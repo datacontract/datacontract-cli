@@ -1,32 +1,22 @@
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import DataContractSpecification, Model
 
-from datacontract.export.exporter import Exporter
-from datacontract.utils import _check_models_for_export, _determine_sql_server_type
+from datacontract.export.exporter import Exporter, _check_models_for_export, _determine_sql_server_type
 
 
 class SqlExporter(Exporter):
-    def export(self, export_args) -> dict:
-        self.dict_args = export_args
-        data_contract = self.dict_args.get("data_contract")
-        server = self.dict_args.get("server")
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         server_type = _determine_sql_server_type(
             data_contract,
-            self.dict_args.get("sql_server_type"),
+            sql_server_type,
         )
         return to_sql_ddl(data_contract, server_type, server)
 
 
 class SqlQueryExporter(Exporter):
-    def export(self, export_args) -> dict:
-        self.dict_args = export_args
-        data_contract = self.dict_args.get("data_contract")
-        model_name, model_value = _check_models_for_export(
-            data_contract, self.dict_args.get("model"), self.dict_args.get("export_format")
-        )
-        server_type = _determine_sql_server_type(
-            data_contract, self.dict_args.get("sql_server_type"), self.dict_args.get("server")
-        )
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+        server_type = _determine_sql_server_type(data_contract, sql_server_type, server)
         return to_sql_query(
             data_contract,
             model_name,
