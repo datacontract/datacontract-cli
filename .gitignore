@@ -8,6 +8,8 @@ tmp
 /quality/
 db.duckdb
 .soda/
+.vscode/
+.duckdb/
 
 
 ### JetBrains template

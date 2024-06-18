@@ -107,9 +107,9 @@ def test(
         str,
         typer.Option(
             help="The server configuration to run the schema and quality tests. "
-                 "Use the key of the server object in the data contract yaml file "
-                 "to refer to a server, e.g., `production`, or `all` for all "
-                 "servers (default)."
+            "Use the key of the server object in the data contract yaml file "
+            "to refer to a server, e.g., `production`, or `all` for all "
+            "servers (default)."
         ),
     ] = "all",
     examples: Annotated[
@@ -157,8 +157,8 @@ def export(
         str,
         typer.Option(
             help="Use the key of the model in the data contract yaml file "
-                 "to refer to a model, e.g., `orders`, or `all` for all "
-                 "models (default)."
+            "to refer to a model, e.g., `orders`, or `all` for all "
+            "models (default)."
         ),
     ] = "all",
     # TODO: this should be a subcommand
@@ -185,6 +185,7 @@ def export(
     result = DataContract(data_contract_file=location, server=server).export(
         export_format=format,
         model=model,
+        server=server,
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,
     )

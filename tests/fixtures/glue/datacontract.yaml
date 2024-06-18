@@ -19,6 +19,10 @@ models:
                 type: integer
             field_three:
                 type: timestamp
+            field_four:
+                type: decimal
+                precision: 6
+                scale: 2
             part_one:
                 description: Partition Key
                 required: True

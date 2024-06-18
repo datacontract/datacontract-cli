@@ -17,6 +17,11 @@ servers:
     host: dbc-5829e67d-6e9e.cloud.databricks.com
     catalog: datacontract_test_2
     schema: orders_latest
+  staging:
+    type: databricks
+    host: dbc-5829e67d-1111.cloud.databricks.com
+    catalog: datacontract_staging
+    schema: orders_latest
 terms:
   usage: >
     Data can be used for reports, analytics and machine learning use cases.
