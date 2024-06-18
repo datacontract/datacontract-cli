@@ -5,7 +5,7 @@ from datacontract.model.data_contract_specification import Field
 
 
 class AvroExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
         return to_avro_schema_json(model_name, model_value)
 

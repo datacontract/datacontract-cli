@@ -7,7 +7,7 @@ from datacontract.export.exporter import Exporter, _check_models_for_export
 
 
 class JsonSchemaExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
         return to_jsonschema_json(model_name, model_value)
 

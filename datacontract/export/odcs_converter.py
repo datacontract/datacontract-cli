@@ -7,7 +7,7 @@ from datacontract.export.exporter import Exporter
 
 
 class OdcsExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         return to_odcs_yaml(data_contract)
 
 

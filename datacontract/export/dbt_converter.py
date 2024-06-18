@@ -9,17 +9,17 @@ from datacontract.export.exporter import Exporter, _check_models_for_export
 
 
 class DbtExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         return to_dbt_models_yaml(data_contract)
 
 
 class DbtSourceExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         return to_dbt_sources_yaml(data_contract, server)
 
 
 class DbtStageExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
         return to_dbt_staging_sql(
             data_contract,

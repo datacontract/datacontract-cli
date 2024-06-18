@@ -12,7 +12,7 @@ from datacontract.export.exporter import Exporter
 
 
 class HtmlExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         return to_html(data_contract)
 
 

@@ -10,13 +10,13 @@ class SqlExporter(Exporter):
             data_contract,
             sql_server_type,
         )
-        return to_sql_ddl(data_contract, server_type, export_args.get('server'))
+        return to_sql_ddl(data_contract, server_type, export_args.get("server"))
 
 
 class SqlQueryExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict: 
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
-        server_type = _determine_sql_server_type(data_contract, sql_server_type, export_args.get('server'))
+        server_type = _determine_sql_server_type(data_contract, sql_server_type, export_args.get("server"))
         return to_sql_query(
             data_contract,
             model_name,

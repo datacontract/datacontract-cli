@@ -34,10 +34,11 @@ class ExportFormat(str, Enum):
     go = "go"
     bigquery = "bigquery"
     dbml = "dbml"
-    
+
     @classmethod
     def get_formats(cls):
         return cls.__dict__
+
 
 def _check_models_for_export(
     data_contract: DataContractSpecification, model: str, export_format: str
