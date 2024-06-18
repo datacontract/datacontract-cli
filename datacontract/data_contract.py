@@ -228,7 +228,7 @@ class DataContract:
 
         return run
 
-    def _get_examples_server(data_contract, run, tmp_dir):
+    def _get_examples_server(self, data_contract, run, tmp_dir):
         run.log_info(f"Copying examples to files in temporary directory {tmp_dir}")
         format = "json"
         for example in data_contract.examples:
