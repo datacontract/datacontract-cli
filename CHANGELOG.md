@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added delta-lake as an additional optional dependency
 - support `GOOGLE_APPLICATION_CREDENTIALS` as variable for connecting to bigquery in `datacontract test`
 - better support bigqueries `type` attribute, don't assume all imported models are tables
+- added initial implementation of an importer from unity catalog (not all data types supported, yet)
 
 ### Fixed
 - `datacontract export --format avro` fixed array structure (#243)

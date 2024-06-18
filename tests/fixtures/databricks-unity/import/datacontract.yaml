@@ -1,0 +1,32 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  test_table:
+    type: table
+    title: string
+    fields:
+      id:
+        type: int
+        required: false
+      name:
+        type: string
+        required: false
+      age:
+        type: int
+        required: false
+      salary:
+        type: decimal
+        required: false
+      join_date:
+        type: date
+        required: false
+      updated_at:
+        type: timestamp
+        required: false
+      is_active:
+        type: boolean
+        required: false
+

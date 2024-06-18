@@ -815,18 +815,18 @@ models:
  Create a data contract from the given source location. Prints to stdout.
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                  [sql|avro|glue|bigquery|jsonschema]  The format of the source file. [default: None] [required]         │
-│    --source                  TEXT                                 The path to the file or Glue Database that should be imported.    │
-│                                                                   [default: None]                                                   │
-│    --glue-table              TEXT                                 List of table ids to import from the Glue Database (repeat for    │
-│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                   [default: None]                                                   │
-│    --bigquery-project        TEXT                                 The bigquery project id. [default: None]                          │
-│    --bigquery-dataset        TEXT                                 The bigquery dataset id. [default: None]                          │
-│    --bigquery-table          TEXT                                 List of table ids to import from the bigquery API (repeat for     │
-│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                   [default: None]                                                   │
-│    --help                                                         Show this message and exit.                                       │
+│ *  --format                  [sql|avro|glue|bigquery|jsonschema|unity]  The format of the source file. [default: None] [required]         │
+│    --source                  TEXT                                       The path to the file or Glue Database that should be imported.    │
+│                                                                         [default: None]                                                   │
+│    --glue-table              TEXT                                       List of table ids to import from the Glue Database (repeat for    │
+│                                                                         multiple table ids, leave empty for all tables in the dataset).   │
+│                                                                         [default: None]                                                   │
+│    --bigquery-project        TEXT                                       The bigquery project id. [default: None]                          │
+│    --bigquery-dataset        TEXT                                       The bigquery dataset id. [default: None]                          │
+│    --bigquery-table          TEXT                                       List of table ids to import from the bigquery API (repeat for     │
+│                                                                         multiple table ids, leave empty for all tables in the dataset).   │
+│                                                                         [default: None]                                                   │
+│    --help                                                               Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -844,10 +844,11 @@ Available import options:
 | `avro`             | Import from AVRO schemas                       | ✅      |
 | `glue`             | Import from AWS Glue DataCatalog               | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
-| `jsonschema`       | Import from JSON Schemas                       | ✅      |
-| `bigquery`         | Import from BigQuery Schemas                   | ✅      |
+| `jsonschema`       | Import from JSON Schemas                       | ✅       |
+| `bigquery`         | Import from BigQuery Schemas                   | ✅       |
+| `unity`            | Import from Databricks Unity Catalog           | partial |
 | `dbt`              | Import from dbt models                         | TBD     |
-| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
+| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅       |
 | Missing something? | Please create an issue on GitHub               | TBD     |
 
 
@@ -874,6 +875,20 @@ datacontract import --format bigquery --bigquery-project <project_id> --bigquery
 ```bash
 # Example import from Bigquery API importing all tables in the dataset
 datacontract import --format bigquery --bigquery-project <project_id> --bigquery-dataset <dataset_id>
+```
+
+#### Unity Catalog
+
+```bash
+# Example import from a Unity Catalog JSON file
+datacontract import --format unity --source my_unity_table.json
+```
+
+```bash
+# Example import single table from Unity Catalog via HTTP endpoint
+export DATABRICKS_IMPORT_INSTANCE="https://xyz.cloud.databricks.com"
+export DATABRICKS_IMPORT_ACCESS_TOKEN=<token>
+datacontract import --format unity --unity-table-full-name <table_full_name>
 ```
 
 ### Glue

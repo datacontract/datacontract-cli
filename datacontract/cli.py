@@ -204,7 +204,8 @@ class ImportFormat(str, Enum):
     glue = "glue"
     bigquery = "bigquery"
     jsonschema = "jsonschema"
-    odcs = "odcs"
+    odcs="odcs"
+    unity = "unity"
 
 
 @app.command(name="import")
@@ -227,13 +228,12 @@ def import_(
             help="List of table ids to import from the bigquery API (repeat for multiple table ids, leave empty for all tables in the dataset)."
         ),
     ] = None,
+    unity_table_full_name: Annotated[Optional[str], typer.Option(help="Full name of a table in the unity catalog")] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
     """
-    result = DataContract().import_from_source(
-        format, source, glue_table, bigquery_table, bigquery_project, bigquery_dataset
-    )
+    result = DataContract().import_from_source(format, source, glue_table, bigquery_table, bigquery_project, bigquery_dataset, unity_table_full_name)
     console.print(result.to_yaml())
 
 

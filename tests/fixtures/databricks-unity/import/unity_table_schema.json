@@ -1,0 +1,153 @@
+{
+  "name": "string",
+  "catalog_name": "string",
+  "schema_name": "string",
+  "table_type": "MANAGED",
+  "data_source_format": "DELTA",
+  "columns": [
+    {
+      "name": "id",
+      "type_text": "int",
+      "type_name": "INT",
+      "position": 0,
+      "type_precision": 0,
+      "type_scale": 0,
+      "type_json": "{\"name\":\"id\",\"type\":\"integer\",\"nullable\":false,\"metadata\":{}}",
+      "nullable": false
+    },
+    {
+      "name": "name",
+      "type_text": "varchar(255)",
+      "type_name": "STRING",
+      "position": 1,
+      "type_precision": 0,
+      "type_scale": 0,
+      "type_json": "{\"name\":\"name\",\"type\":\"varchar(255)\",\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "age",
+      "type_text": "smallint",
+      "type_name": "SHORT",
+      "position": 2,
+      "type_precision": 0,
+      "type_scale": 0,
+      "type_json": "{\"name\":\"age\",\"type\":\"short\",\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "salary",
+      "type_text": "decimal(10,2)",
+      "type_name": "DECIMAL",
+      "position": 3,
+      "type_precision": 0,
+      "type_scale": 0,
+      "type_json": "{\"name\":\"salary\",\"type\":\"decimal(10,2)\",\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "join_date",
+      "type_text": "date",
+      "type_name": "DATE",
+      "position": 4,
+      "type_precision": 0,
+      "type_scale": 0,
+      "type_json": "{\"name\":\"join_date\",\"type\":\"date\",\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type_text": "timestamp",
+      "type_name": "TIMESTAMP",
+      "position": 5,
+      "type_precision": 0,
+      "type_scale": 0,
+      "type_json": "{\"name\":\"updated_at\",\"type\":\"timestamp\",\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "is_active",
+      "type_text": "boolean",
+      "type_name": "BOOLEAN",
+      "position": 6,
+      "type_precision": 0,
+      "type_scale": 0,
+      "type_json": "{\"name\":\"is_active\",\"type\":\"boolean\",\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    }
+  ],
+  "storage_location": "string",
+  "view_definition": "string",
+  "view_dependencies": {
+    "dependencies": [
+      {
+        "table": {
+          "table_full_name": "string"
+        },
+        "function": {
+          "function_full_name": "string"
+        }
+      }
+    ]
+  },
+  "sql_path": "string",
+  "owner": "string",
+  "comment": "string",
+  "properties": {
+    "property1": "string",
+    "property2": "string"
+  },
+  "storage_credential_name": "string",
+  "table_constraints": [
+    {
+      "primary_key_constraint": {
+        "name": "string",
+        "child_columns": [
+          "string"
+        ]
+      },
+      "foreign_key_constraint": {
+        "name": "string",
+        "child_columns": [
+          "string"
+        ],
+        "parent_table": "string",
+        "parent_columns": [
+          "string"
+        ]
+      },
+      "named_table_constraint": {
+        "name": "string"
+      }
+    }
+  ],
+  "row_filter": {
+    "function_name": "string",
+    "input_column_names": [
+      "string"
+    ]
+  },
+  "enable_predictive_optimization": "DISABLE",
+  "metastore_id": "string",
+  "full_name": "string",
+  "data_access_configuration_id": "string",
+  "created_at": 0,
+  "created_by": "string",
+  "updated_at": 0,
+  "updated_by": "string",
+  "deleted_at": 0,
+  "table_id": "test_table",
+  "delta_runtime_properties_kvpairs": {
+    "delta_runtime_properties": {
+      "property1": "string",
+      "property2": "string"
+    }
+  },
+  "effective_predictive_optimization_flag": {
+    "value": "DISABLE",
+    "inherited_from_type": "CATALOG",
+    "inherited_from_name": "string"
+  },
+  "pipeline_id": "string",
+  "browse_only": true
+}
