@@ -2,10 +2,8 @@ from pydantic import BaseModel
 from rdflib import Graph, Literal, BNode, RDF, URIRef, Namespace
 
 from datacontract.model.data_contract_specification import DataContractSpecification
-import json
 
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import Field
 
 
 class RdfExporter(Exporter):

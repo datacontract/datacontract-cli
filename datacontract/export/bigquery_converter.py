@@ -14,9 +14,9 @@ class BigQueryExporter(Exporter):
         model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
         found_server = data_contract.servers.get(server)
         if found_server is None:
-            raise RuntimeError(f"Export to bigquery requires selecting a bigquery server from the data contract.")
+            raise RuntimeError("Export to bigquery requires selecting a bigquery server from the data contract.")
         if found_server.type != "bigquery":
-            raise RuntimeError(f"Export to bigquery requires selecting a bigquery server from the data contract.")
+            raise RuntimeError("Export to bigquery requires selecting a bigquery server from the data contract.")
 
         return to_bigquery_json(model_name, model_value, found_server)
 

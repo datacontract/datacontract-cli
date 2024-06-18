@@ -2,7 +2,6 @@ import json
 import logging
 import tempfile
 import typing
-from enum import Enum
 
 import yaml
 from pyspark.sql import SparkSession
