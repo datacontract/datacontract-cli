@@ -1,0 +1,3 @@
+- [ ] Tests pass
+- [ ] README.md updated
+- [ ] CHANGELOG.md entry added
