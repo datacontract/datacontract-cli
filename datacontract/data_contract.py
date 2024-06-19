@@ -332,7 +332,7 @@ class DataContract:
         bigquery_tables: typing.Optional[typing.List[str]] = None,
         bigquery_project: typing.Optional[str] = None,
         bigquery_dataset: typing.Optional[str] = None,
-        unity_table_full_name: typing.Optional[str] = None
+        unity_table_full_name: typing.Optional[str] = None,
     ) -> DataContractSpecification:
         data_contract_specification = DataContract.init()
 
@@ -357,9 +357,7 @@ class DataContract:
             if source is not None:
                 data_contract_specification = import_unity_from_json(data_contract_specification, source)
             else:
-                data_contract_specification = import_unity_from_api(
-                    data_contract_specification, unity_table_full_name
-                )
+                data_contract_specification = import_unity_from_api(data_contract_specification, unity_table_full_name)
         else:
             print(f"Import format {format} not supported.")
 

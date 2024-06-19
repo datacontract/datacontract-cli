@@ -53,13 +53,9 @@ def get_glue_tables(database_name: str) -> List[str]:
     table_names = []
     try:
         # Paginate through the tables
-        for page in paginator.paginate(
-            DatabaseName=database_name, PaginationConfig={"PageSize": 100}
-        ):
+        for page in paginator.paginate(DatabaseName=database_name, PaginationConfig={"PageSize": 100}):
             # Add the tables from the current page to the list
-            table_names.extend(
-                [table["Name"] for table in page["TableList"] if "Name" in table]
-            )
+            table_names.extend([table["Name"] for table in page["TableList"] if "Name" in table])
     except glue.exceptions.EntityNotFoundException:
         print(f"Database {database_name} not found.")
         return []
@@ -137,9 +133,7 @@ def import_glue(
         table_names = get_glue_tables(source)
 
     data_contract_specification.servers = {
-        "production": Server(
-            type="glue", account=catalogid, database=source, location=location_uri
-        ),
+        "production": Server(type="glue", account=catalogid, database=source, location=location_uri),
     }
 
     for table_name in table_names:
@@ -192,9 +186,7 @@ def create_typed_field(dtype: str) -> Field:
         elif dtype.startswith("struct"):
             field.type = "struct"
             for f in split_struct(orig_dtype[7:-1]):
-                field.fields[f.split(":", 1)[0].strip()] = create_typed_field(
-                    f.split(":", 1)[1]
-                )
+                field.fields[f.split(":", 1)[0].strip()] = create_typed_field(f.split(":", 1)[1])
     else:
         field.type = map_type_from_sql(dtype)
     return field
