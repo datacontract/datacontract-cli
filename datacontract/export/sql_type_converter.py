@@ -21,7 +21,7 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
 # snowflake data types:
 # https://docs.snowflake.com/en/sql-reference/data-types.html
 def convert_to_snowflake(field: Field) -> None | str:
-    if field.config and field.config["snowflakeType"] is not None:
+    if field.config and "snowflakeType" in field.config:
         return field.config["snowflakeType"]
 
     type = field.type
@@ -64,7 +64,7 @@ def convert_to_snowflake(field: Field) -> None | str:
 # https://www.postgresql.org/docs/current/datatype.html
 # Using the name whenever possible
 def convert_type_to_postgres(field: Field) -> None | str:
-    if field.config and field.config["postgresType"] is not None:
+    if field.config and "postgresType" in field.config["postgresType"]:
         return field.config["postgresType"]
 
     type = field.type
@@ -109,7 +109,7 @@ def convert_type_to_postgres(field: Field) -> None | str:
 # databricks data types:
 # https://docs.databricks.com/en/sql/language-manual/sql-ref-datatypes.html
 def convert_to_databricks(field: Field) -> None | str:
-    if field.config and field.config["databricksType"] is not None:
+    if field.config and "databricksType" in field.config["databricksType"]:
         return field.config["databricksType"]
     type = field.type
     if type is None:
