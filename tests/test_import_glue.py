@@ -56,6 +56,15 @@ def setup_mock_glue(aws_credentials):
                             "Type": "timestamp",
                         },
                         {"Name": "field_four", "Type": "decimal(6,2)"},
+                        {
+                            "Name": "field_five",
+                            "Type": "struct<sub_field_one:string, sub_field_two: boolean>",
+                        },
+                        {"Name": "field_six", "Type": "array<item_field_one:string>"},
+                        {
+                            "Name": "field_seven",
+                            "Type": "array<struct<sub_field_three:string, sub_field_four:int>>",
+                        },
                     ]
                 },
                 "PartitionKeys": [
@@ -116,7 +125,11 @@ def test_import_glue_schema(setup_mock_glue):
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+    assert (
+        DataContract(data_contract_str=expected)
+        .lint(enabled_linters=set())
+        .has_passed()
+    )
 
 
 @mock_aws
@@ -130,4 +143,8 @@ def test_import_glue_schema_with_table_filters(setup_mock_glue):
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+    assert (
+        DataContract(data_contract_str=expected)
+        .lint(enabled_linters=set())
+        .has_passed()
+    )
