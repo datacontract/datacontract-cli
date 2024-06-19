@@ -33,8 +33,7 @@ models:
             field_six:
                 type: array
                 items:
-                    item_field_one:
-                        type: string
+                    type: string
             field_seven:
                 type: array
                 items:
