@@ -2,6 +2,12 @@ import yaml
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.exporter import Exporter
+
+
+class SodaExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        return to_sodacl_yaml(data_contract)
 
 
 def to_sodacl_yaml(

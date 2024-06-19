@@ -8,6 +8,15 @@ import datacontract.model.data_contract_specification as spec
 from datacontract.export.sql_type_converter import convert_to_sql_type
 
 
+from datacontract.export.exporter import Exporter
+
+
+class DbmlExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        found_server = data_contract.servers.get(server)
+        return to_dbml_diagram(data_contract, found_server)
+
+
 def to_dbml_diagram(contract: spec.DataContractSpecification, server: spec.Server) -> str:
     result = ""
     result += add_generated_info(contract, server) + "\n"

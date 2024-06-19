@@ -3,6 +3,12 @@ from typing import Dict
 import yaml
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
+from datacontract.export.exporter import Exporter
+
+
+class OdcsExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        return to_odcs_yaml(data_contract)
 
 
 def to_odcs_yaml(data_contract_spec: DataContractSpecification):
@@ -37,7 +43,10 @@ def to_odcs_yaml(data_contract_spec: DataContractSpecification):
         slas = []
         if data_contract_spec.servicelevels.availability is not None:
             slas.append(
-                {"property": "generalAvailability", "value": data_contract_spec.servicelevels.availability.description}
+                {
+                    "property": "generalAvailability",
+                    "value": data_contract_spec.servicelevels.availability.description,
+                }
             )
         if data_contract_spec.servicelevels.retention is not None:
             slas.append({"property": "retention", "value": data_contract_spec.servicelevels.retention.period})

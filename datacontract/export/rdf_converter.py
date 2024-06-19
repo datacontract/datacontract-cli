@@ -3,6 +3,15 @@ from rdflib import Graph, Literal, BNode, RDF, URIRef, Namespace
 
 from datacontract.model.data_contract_specification import DataContractSpecification
 
+from datacontract.export.exporter import Exporter
+
+
+class RdfExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        self.dict_args = export_args
+        rdf_base = self.dict_args.get("rdf_base")
+        return to_rdf_n3(data_contract_spec=data_contract, base=rdf_base)
+
 
 def is_literal(property_name):
     return property_name in [

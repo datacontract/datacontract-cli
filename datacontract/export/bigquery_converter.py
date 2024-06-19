@@ -5,6 +5,21 @@ from typing import Dict, List
 from datacontract.model.data_contract_specification import Model, Field, Server
 from datacontract.model.exceptions import DataContractException
 
+from datacontract.export.exporter import Exporter, _check_models_for_export
+
+
+class BigQueryExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        self.dict_args = export_args
+        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+        found_server = data_contract.servers.get(server)
+        if found_server is None:
+            raise RuntimeError("Export to bigquery requires selecting a bigquery server from the data contract.")
+        if found_server.type != "bigquery":
+            raise RuntimeError("Export to bigquery requires selecting a bigquery server from the data contract.")
+
+        return to_bigquery_json(model_name, model_value, found_server)
+
 
 def to_bigquery_json(model_name: str, model_value: Model, server: Server) -> str:
     bigquery_table = to_bigquery_schema(model_name, model_value, server)

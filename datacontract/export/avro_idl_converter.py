@@ -7,28 +7,7 @@ from datacontract.lint.resolve import inline_definitions_into_data_contract
 from datacontract.model.data_contract_specification import DataContractSpecification, Field
 from datacontract.model.exceptions import DataContractException
 
-
-def to_avro_idl(contract: DataContractSpecification) -> str:
-    """Serialize the provided data contract specification into an Avro IDL string.
-
-    The data contract will be serialized as a protocol, with one record type
-    for each contained model. Model fields are mapped one-to-one to Avro IDL
-    record fields.
-    """
-    stream = StringIO()
-    to_avro_idl_stream(contract, stream)
-    return stream.getvalue()
-
-
-def to_avro_idl_stream(contract: DataContractSpecification, stream: typing.TextIO):
-    """Serialize the provided data contract specification into Avro IDL."""
-    ir = _contract_to_avro_idl_ir(contract)
-    if ir.description:
-        stream.write(f"/** {contract.info.description} */\n")
-    stream.write(f"protocol {ir.name or 'Unnamed'} {{\n")
-    for model_type in ir.model_types:
-        _write_model_type(model_type, stream)
-    stream.write("}\n")
+from datacontract.export.exporter import Exporter
 
 
 class AvroPrimitiveType(Enum):
@@ -105,6 +84,34 @@ avro_primitive_types = set(
         "null",
     ]
 )
+
+
+class AvroIdlExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        return to_avro_idl(data_contract)
+
+
+def to_avro_idl(contract: DataContractSpecification) -> str:
+    """Serialize the provided data contract specification into an Avro IDL string.
+
+    The data contract will be serialized as a protocol, with one record type
+    for each contained model. Model fields are mapped one-to-one to Avro IDL
+    record fields.
+    """
+    stream = StringIO()
+    to_avro_idl_stream(contract, stream)
+    return stream.getvalue()
+
+
+def to_avro_idl_stream(contract: DataContractSpecification, stream: typing.TextIO):
+    """Serialize the provided data contract specification into Avro IDL."""
+    ir = _contract_to_avro_idl_ir(contract)
+    if ir.description:
+        stream.write(f"/** {contract.info.description} */\n")
+    stream.write(f"protocol {ir.name or 'Unnamed'} {{\n")
+    for model_type in ir.model_types:
+        _write_model_type(model_type, stream)
+    stream.write("}\n")
 
 
 def _to_avro_primitive_logical_type(field_name: str, field: Field) -> AvroPrimitiveField:

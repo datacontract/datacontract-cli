@@ -1,6 +1,12 @@
 import re
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
+from datacontract.export.exporter import Exporter
+
+
+class TerraformExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        return to_terraform(data_contract)
 
 
 def to_terraform(data_contract_spec: DataContractSpecification, server_id: str = None) -> str:
