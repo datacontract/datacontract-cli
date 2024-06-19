@@ -56,6 +56,15 @@ def setup_mock_glue(aws_credentials):
                             "Type": "timestamp",
                         },
                         {"Name": "field_four", "Type": "decimal(6,2)"},
+                        {
+                            "Name": "field_five",
+                            "Type": "struct<sub_field_one:string, sub_field_two: boolean>",
+                        },
+                        {"Name": "field_six", "Type": "array<string>"},
+                        {
+                            "Name": "field_seven",
+                            "Type": "array<struct<sub_field_three:string, sub_field_four:int>>",
+                        },
                     ]
                 },
                 "PartitionKeys": [

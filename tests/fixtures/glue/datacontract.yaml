@@ -23,6 +23,26 @@ models:
                 type: decimal
                 precision: 6
                 scale: 2
+            field_five:
+                type: struct
+                fields:
+                    sub_field_one:
+                        type: string
+                    sub_field_two:
+                        type: boolean
+            field_six:
+                type: array
+                items:
+                    type: string
+            field_seven:
+                type: array
+                items:
+                    type: struct
+                    fields:
+                        sub_field_three:
+                            type: string
+                        sub_field_four:
+                            type: integer
             part_one:
                 description: Partition Key
                 required: True
