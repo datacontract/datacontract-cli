@@ -1,6 +1,12 @@
 import datacontract.model.data_contract_specification as spec
 from typing import List
 import re
+from datacontract.export.exporter import Exporter
+
+
+class GoExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        return to_go_types(data_contract)
 
 
 def to_go_types(contract: spec.DataContractSpecification) -> str:

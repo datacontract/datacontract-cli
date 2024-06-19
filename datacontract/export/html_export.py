@@ -8,6 +8,12 @@ import yaml
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.exporter import Exporter
+
+
+class HtmlExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        return to_html(data_contract)
 
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:

@@ -2,6 +2,12 @@ import ast
 import typing
 
 import datacontract.model.data_contract_specification as spec
+from datacontract.export.exporter import Exporter
+
+
+class PydanticExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        return to_pydantic_model_str(data_contract)
 
 
 def to_pydantic_model_str(contract: spec.DataContractSpecification) -> str:
