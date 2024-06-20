@@ -130,7 +130,7 @@ def test_import_glue_schema(setup_mock_glue):
 
 @mock_aws
 def test_import_glue_schema_with_table_filters(setup_mock_glue):
-    result = DataContract().import_from_source("glue", "test_database", ["table_1"])
+    result = DataContract().import_from_source(format="glue", source="test_database", glue_tables=["test_table"])
 
     # we specify a table that the Mock doesn't have and thus expect an empty result
     with open("fixtures/glue/datacontract-empty-model.yaml") as file:
