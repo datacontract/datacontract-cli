@@ -25,5 +25,5 @@ class ImportFormat(str, Enum):
     unity = "unity"
 
     @classmethod
-    def get_formats(cls):
-        return cls.__dict__
+    def get_suported_formats(cls):
+        return list(map(lambda c: c.value, cls))
