@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract serve` start a local web server to provide a REST-API for the commands
 - Provide server for sql export for the appropriate schema (#153)
+- Add struct and array management to Glue export (#271)
 
 ### Changed
 - Introduced optional dependencies/extras for significantly faster installation times. (#213)
