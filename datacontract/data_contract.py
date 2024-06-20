@@ -14,13 +14,8 @@ from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschem
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
-from datacontract.imports.avro_importer import import_avro
-from datacontract.imports.bigquery_importer import import_bigquery_from_api, import_bigquery_from_json
-from datacontract.imports.glue_importer import import_glue
-from datacontract.imports.jsonschema_importer import import_jsonschema
-from datacontract.imports.odcs_importer import import_odcs
-from datacontract.imports.sql_importer import import_sql
-from datacontract.imports.unity_importer import import_unity_from_json, import_unity_from_api
+from datacontract.imports.importer_factory import importer_factory
+
 from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
 from datacontract.integration.publish_opentelemetry import publish_opentelemetry
 from datacontract.lint import resolve
@@ -325,42 +320,10 @@ class DataContract:
         )
 
     def import_from_source(
-        self,
-        format: str,
-        source: typing.Optional[str] = None,
-        glue_tables: typing.Optional[typing.List[str]] = None,
-        bigquery_tables: typing.Optional[typing.List[str]] = None,
-        bigquery_project: typing.Optional[str] = None,
-        bigquery_dataset: typing.Optional[str] = None,
-        unity_table_full_name: typing.Optional[str] = None
+        self, format: str, source: typing.Optional[str] = None, **kwargs
     ) -> DataContractSpecification:
-        data_contract_specification = DataContract.init()
-
-        if format == "sql":
-            data_contract_specification = import_sql(data_contract_specification, format, source)
-        elif format == "avro":
-            data_contract_specification = import_avro(data_contract_specification, source)
-        elif format == "glue":
-            data_contract_specification = import_glue(data_contract_specification, source, glue_tables)
-        elif format == "jsonschema":
-            data_contract_specification = import_jsonschema(data_contract_specification, source)
-        elif format == "bigquery":
-            if source is not None:
-                data_contract_specification = import_bigquery_from_json(data_contract_specification, source)
-            else:
-                data_contract_specification = import_bigquery_from_api(
-                    data_contract_specification, bigquery_tables, bigquery_project, bigquery_dataset
-                )
-        elif format == "odcs":
-            data_contract_specification = import_odcs(data_contract_specification, source)
-        elif format == "unity":
-            if source is not None:
-                data_contract_specification = import_unity_from_json(data_contract_specification, source)
-            else:
-                data_contract_specification = import_unity_from_api(
-                    data_contract_specification, unity_table_full_name
-                )
-        else:
-            print(f"Import format {format} not supported.")
-
+        data_contract_specification_initial = DataContract.init()
+        data_contract_specification = importer_factory.create(format).import_source(
+            data_contract_specification_initial, source, kwargs
+        )
         return data_contract_specification

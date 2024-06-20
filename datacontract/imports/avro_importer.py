@@ -1,7 +1,15 @@
 import avro.schema
 
+from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
+
+
+class AvroImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        return import_avro(data_contract_specification, source)
 
 
 def import_avro(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:

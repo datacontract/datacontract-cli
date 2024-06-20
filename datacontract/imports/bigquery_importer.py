@@ -2,8 +2,25 @@ import json
 import logging
 from typing import List
 
+from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
+
+
+class BigQueryImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        if source is not None:
+            data_contract_specification = import_bigquery_from_json(data_contract_specification, source)
+        else:
+            data_contract_specification = import_bigquery_from_api(
+                data_contract_specification,
+                import_args.get("bigquery_tables"),
+                import_args.get("bigquery_project"),
+                import_args.get("bigquery_dataset"),
+            )
+        return data_contract_specification
 
 
 def import_bigquery_from_json(
