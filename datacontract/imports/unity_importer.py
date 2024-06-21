@@ -6,6 +6,7 @@ import typing
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
 
+
 def import_unity_from_json(
     data_contract_specification: DataContractSpecification, source: str
 ) -> DataContractSpecification:
@@ -22,23 +23,21 @@ def import_unity_from_json(
         )
     return convert_unity_schema(data_contract_specification, unity_schema)
 
+
 def import_unity_from_api(
-    data_contract_specification: DataContractSpecification,
-    unity_table_full_name: typing.Optional[str] = None
+    data_contract_specification: DataContractSpecification, unity_table_full_name: typing.Optional[str] = None
 ) -> DataContractSpecification:
-    databricks_instance = os.getenv('DATABRICKS_IMPORT_INSTANCE')
-    access_token = os.getenv('DATABRICKS_IMPORT_ACCESS_TOKEN')
+    databricks_instance = os.getenv("DATABRICKS_IMPORT_INSTANCE")
+    access_token = os.getenv("DATABRICKS_IMPORT_ACCESS_TOKEN")
 
     if not databricks_instance or not access_token:
         print("Missing environment variables for Databricks instance or access token.")
         print("Both, $DATABRICKS_IMPORT_INSTANCE and $DATABRICKS_IMPORT_ACCESS_TOKEN must be set.")
         exit(1)  # Exit if variables are not set
 
-    api_url = f'{databricks_instance}/api/2.1/unity-catalog/tables/{unity_table_full_name}'
+    api_url = f"{databricks_instance}/api/2.1/unity-catalog/tables/{unity_table_full_name}"
 
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
+    headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(api_url, headers=headers)
 
     if response.status_code != 200:
@@ -46,12 +45,13 @@ def import_unity_from_api(
             type="schema",
             name="Retrieve unity catalog schema",
             reason=f"Failed to retrieve unity catalog schema from databricks instance: {response.status_code} {response.text}",
-            engine="datacontract"
+            engine="datacontract",
         )
 
     convert_unity_schema(data_contract_specification, response.json())
 
     return data_contract_specification
+
 
 def convert_unity_schema(
     data_contract_specification: DataContractSpecification, unity_schema: dict

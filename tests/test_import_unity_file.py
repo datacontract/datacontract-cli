@@ -8,6 +8,7 @@ from datacontract.data_contract import DataContract
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
+
 def test_cli():
     print("running test_cli")
     runner = CliRunner()
