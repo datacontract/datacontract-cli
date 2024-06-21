@@ -15,6 +15,8 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_sqlserver(field)
     elif server_type == "bigquery":
         return convert_type_to_bigquery(field)
+    elif server_type == "trino":
+        return convert_type_to_trino(field)
     return field.type
 
 
@@ -249,3 +251,29 @@ def get_type_config(field: Field, config_attr: str) -> dict[str, str] | None:
     if not field.config:
         return None
     return field.config.get(config_attr, None)
+
+
+def convert_type_to_trino(field: Field) -> None | str:
+    """Convert from supported datacontract types to equivalent trino types"""
+    field_type = field.type
+
+    if field_type.lower() in ["string", "text", "varchar"]:
+        return "varchar"
+    # tinyint, smallint not supported by data contract
+    if field_type.lower() in ["number", "decimal", "numeric"]:
+        # precision and scale not supported by data contract
+        return "decimal"
+    if field_type.lower() in ["int", "integer"]:
+        return "integer"
+    if field_type.lower() in ["long", "bigint"]:
+        return "bigint"
+    if field_type.lower() in ["float"]:
+        return "real"
+    if field_type.lower() in ["timestamp", "timestamp_tz"]:
+        return "timestamp(3) with time zone"
+    if field_type.lower() in ["timestamp_ntz"]:
+        return "timestamp(3)"
+    if field_type.lower() in ["bytes"]:
+        return "varbinary"
+    if field_type.lower() in ["object", "record", "struct"]:
+        return "json"
