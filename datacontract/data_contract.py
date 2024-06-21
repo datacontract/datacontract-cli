@@ -301,6 +301,7 @@ class DataContract:
             self._data_contract_file,
             self._data_contract_str,
             self._data_contract,
+            schema_location=self._schema_location,
             inline_definitions=True,
             inline_quality=True,
         )
