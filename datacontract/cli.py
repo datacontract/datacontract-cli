@@ -206,6 +206,7 @@ class ImportFormat(str, Enum):
     jsonschema = "jsonschema"
     odcs = "odcs"
     unity = "unity"
+    spark = "spark"
 
 
 @app.command(name="import")
