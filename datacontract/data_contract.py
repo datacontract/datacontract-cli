@@ -296,13 +296,7 @@ class DataContract:
             inline_quality=self._inline_quality,
         )
 
-    def export(
-        self,
-        export_format: ExportFormat,
-        model: str = "all",
-        sql_server_type: str = "auto",
-        **kwargs,
-    ) -> str:
+    def export(self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs) -> str:
         data_contract = resolve.resolve_data_contract(
             self._data_contract_file,
             self._data_contract_str,
@@ -323,7 +317,7 @@ class DataContract:
         self, format: str, source: typing.Optional[str] = None, **kwargs
     ) -> DataContractSpecification:
         data_contract_specification_initial = DataContract.init()
-        data_contract_specification = importer_factory.create(format).import_source(
-            data_contract_specification_initial, source, kwargs
+
+        return importer_factory.create(format).import_source(
+            data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
         )
-        return data_contract_specification
