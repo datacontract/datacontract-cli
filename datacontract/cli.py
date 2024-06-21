@@ -19,6 +19,8 @@ from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
 from datacontract.publish.publish import publish_to_datamesh_manager
 
+DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
+
 console = Console()
 
 
@@ -86,7 +88,7 @@ def lint(
     ] = "datacontract.yaml",
     schema: Annotated[
         str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
-    ] = "https://datacontract.com/datacontract.schema.json",
+    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -102,7 +104,7 @@ def test(
     ] = "datacontract.yaml",
     schema: Annotated[
         str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
-    ] = "https://datacontract.com/datacontract.schema.json",
+    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
     server: Annotated[
         str,
         typer.Option(
@@ -177,12 +179,15 @@ def export(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")
     ] = "datacontract.yaml",
+    schema: Annotated[
+        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
     Convert data contract to a specific format. console.prints to stdout.
     """
     # TODO exception handling
-    result = DataContract(data_contract_file=location, server=server).export(
+    result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=format,
         model=model,
         server=server,
@@ -246,12 +251,15 @@ def publish(
     location: Annotated[
         str, typer.Argument(help="The location (url or path) of the data contract yaml.")
     ] = "datacontract.yaml",
+    schema: Annotated[
+        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
     Publish the data contract to the Data Mesh Manager.
     """
     publish_to_datamesh_manager(
-        data_contract=DataContract(data_contract_file=location),
+        data_contract=DataContract(data_contract_file=location, schema_location=schema),
     )
 
 
@@ -261,6 +269,9 @@ def catalog(
         Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")
     ] = "*.yaml",
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
+    schema: Annotated[
+        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
     Create an html catalog of data contracts.
@@ -272,7 +283,7 @@ def catalog(
     contracts = []
     for file in Path().glob(files):
         try:
-            create_data_contract_html(contracts, file, path)
+            create_data_contract_html(contracts, file, path, schema)
         except Exception as e:
             console.print(f"Skipped {file} due to error: {e}")
 

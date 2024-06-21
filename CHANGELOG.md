@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- add `--schema` option for the `catalog` and `export` command to provide the schema also locally
 
 ### Changed
 
