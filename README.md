@@ -768,7 +768,8 @@ logical data types are exported.
 
 #### Spark
 
-The export function converts the data contract specification into a StructType Spark schema. 
+The export function converts the data contract specification into a StructType Spark schema.  
+Spark DataFrame schema is defined as StructType. For more details about Spark Data Types please see [the spark documentation](https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to) 
 
 #### Avro
 
