@@ -4,7 +4,7 @@ from typer.testing import CliRunner
 from pyspark.sql import types
 from pyspark.testing import assertSchemaEqual
 from datacontract.cli import app
-from datacontract.export.spark_converter import to_spark
+from datacontract.export.spark_converter import to_spark_dict
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 logging.basicConfig(level=logging.DEBUG, force=True)
@@ -17,19 +17,88 @@ def test_cli():
         ["export", "./fixtures/spark/export/datacontract.yaml", "--format", "spark"],
     )
     assert result.exit_code == 0
+    assert result.output == expected_str
 
 
 def test_to_spark_schema():
     data_contract = DataContractSpecification.from_file("fixtures/spark/export/datacontract.yaml")
-    result = to_spark(data_contract)
+    result = to_spark_dict(data_contract)
 
     assert len(result) == 2
+    assertSchemaEqual(result.get("orders"), expected_dict.get("orders"))
+    assertSchemaEqual(result.get("customers"), expected_dict.get("customers"))
 
-    assertSchemaEqual(result.get("orders"), expected.get("orders"))
-    assertSchemaEqual(result.get("customers"), expected.get("customers"))
 
+expected_str = """orders = StructType([
+    StructField("orderdate",
+        DateType(),
+        True
+    ),
+    StructField("order_timestamp",
+        TimestampType(),
+        True
+    ),
+    StructField("delivery_timestamp",
+        TimestampNTZType(),
+        True
+    ),
+    StructField("orderid",
+        IntegerType(),
+        True
+    ),
+    StructField("item_list",
+        ArrayType(StructType([
+            StructField("itemid",
+                StringType(),
+                True
+            ),
+            StructField("quantity",
+                IntegerType(),
+                True
+            )
+        ])),
+        True
+    ),
+    StructField("orderunits",
+        DoubleType(),
+        True
+    ),
+    StructField("tags",
+        ArrayType(StringType()),
+        True
+    ),
+    StructField("address",
+        StructType([
+            StructField("city",
+                StringType(),
+                False
+            ),
+            StructField("state",
+                StringType(),
+                True
+            ),
+            StructField("zipcode",
+                LongType(),
+                True
+            )
+        ]),
+        True
+    )
+])
 
-expected = {
+customers = StructType([
+    StructField("id",
+        IntegerType(),
+        True
+    ),
+    StructField("name",
+        StringType(),
+        True
+    )
+])
+"""
+
+expected_dict = {
     "orders": types.StructType(
         [
             types.StructField("orderdate", types.DateType(), True),
