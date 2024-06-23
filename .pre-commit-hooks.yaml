@@ -1,0 +1,17 @@
+- id: datacontract-lint
+  name: Data Contract Linter
+  description: This hook lint the data contract.
+  entry: datacontract lint
+  files: "datacontract*.yaml"
+  language: python
+  additional_dependencies: ['.[all]']
+  types: [yaml]
+
+- id: datacontract-test
+  name: Data Contract Tester
+  description: This hook test the data contract.
+  entry: datacontract test
+  files: "datacontract*.yaml"
+  language: python
+  additional_dependencies: ['.[all]']
+  types: [yaml]

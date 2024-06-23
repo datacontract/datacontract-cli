@@ -1190,7 +1190,26 @@ docker compose run --rm datacontract --version
 
 This command runs the container momentarily to check the version of the `datacontract` CLI. The `--rm` flag ensures that the container is automatically removed after the command executes, keeping your environment clean.
 
+## Use with pre-commit
 
+To run `datacontract-cli` as part of a [pre-commit](https://pre-commit.com/) workflow, add something like the below to the `repos` list in the project's `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/datacontract/datacontract-cli
+    rev: "v0.10.9"
+    hooks:
+      - id: datacontract-lint
+      - id: datacontract-test
+        args: ["--server", "production"]
+```
+
+### Available Hook IDs
+
+| Hook ID           | Description              | Dependency |
+| ----------------- | ------------------------ | ---------- |
+| datacontract-lint | Runs the lint subcommand. | Python3    |
+| datacontract-test | Runs the test subcommand. Please look at [test](#test) section for all available arguments. | Python3 |
 
 ## Release Steps
 
