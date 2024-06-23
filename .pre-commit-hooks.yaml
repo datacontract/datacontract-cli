@@ -4,6 +4,7 @@
   entry: datacontract lint
   files: "datacontract*.yaml"
   language: python
+  additional_dependencies: ['.[all]']
   types: [yaml]
 
 - id: datacontract-test
@@ -12,4 +13,5 @@
   entry: datacontract test
   files: "datacontract*.yaml"
   language: python
+  additional_dependencies: ['.[all]']
   types: [yaml]
