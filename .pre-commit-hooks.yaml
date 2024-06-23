@@ -1,4 +1,4 @@
-- id: datacontract-linting
+- id: datacontract-lint
   name: Data Contract Linter
   description: This hook lint the data contract.
   entry: datacontract lint
@@ -6,7 +6,7 @@
   language: python
   types: [yaml]
 
-- id: datacontract-testing
+- id: datacontract-test
   name: Data Contract Tester
   description: This hook test the data contract.
   entry: datacontract test
