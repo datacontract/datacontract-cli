@@ -3,8 +3,22 @@ import requests
 import os
 import typing
 
+from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.model.exceptions import DataContractException
+
+
+class UnityImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        if source is not None:
+            data_contract_specification = import_unity_from_json(data_contract_specification, source)
+        else:
+            data_contract_specification = import_unity_from_api(
+                data_contract_specification, import_args.get("unity_table_full_name")
+            )
+        return data_contract_specification
 
 
 def import_unity_from_json(

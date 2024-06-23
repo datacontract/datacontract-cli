@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support `GOOGLE_APPLICATION_CREDENTIALS` as variable for connecting to bigquery in `datacontract test`
 - better support bigqueries `type` attribute, don't assume all imported models are tables
 - added initial implementation of an importer from unity catalog (not all data types supported, yet)
+- added the importer factory. This refactoring aims to make it easier to create new importers and consequently the growth and maintainability of the project. (#273)
 
 ### Fixed
 - `datacontract export --format avro` fixed array structure (#243)
