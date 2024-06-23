@@ -1204,6 +1204,12 @@ repos:
         args: ["--server", "production"]
 ```
 
+### Available Hook IDs
+
+| Hook ID           | Description              | Dependency |
+| ----------------- | ------------------------ | ---------- |
+| datacontract-lint | Runs the lint subcommand. | Python3    |
+| datacontract-test | Runs the test subcommand. Please look at [test](#test) section for all available arguments. | Python3 |
 
 ## Release Steps
 
