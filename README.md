@@ -1146,6 +1146,115 @@ Examples: Removing or renaming models and fields.
   $ datacontract changelog datacontract-from-pr.yaml datacontract-from-main.yaml
   ```
 
+## Customizing Exporters and Importers
+### Custom Exporter
+Using the exporter factory to add a new custom exporter
+```python
+
+from datacontract.data_contract import DataContract
+from datacontract.export.exporter import Exporter
+from datacontract.export.exporter_factory import exporter_factory
+ 
+# Create a custom class that implements export method
+class CustomExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        # Create a custom output 
+        result = {
+            "my_custom_format_name": 'custom',
+            "data_contract_servers": data_contract.servers,
+            "model": model, 
+            "export_args": export_args,
+            "custom_args": export_args.get("custom_arg", ""),
+        }
+        return result
+
+# Register the new custom class into factory
+exporter_factory.register_exporter("custom", CustomExporter)
+
+
+
+if __name__ == "__main__":
+    # Create a DataContract instance
+    data_contract = DataContract(
+        data_contract_file="/PATH/datacontract.yaml" 
+    )
+    # call export 
+    result = data_contract.export(export_format="custom", model="orders", server="production", custom_arg="my_custom_arg")
+    print( result )
+
+```
+Output
+```python
+{
+ 'title': 'Orders Unit Test', 
+ 'version': '1.0.0', 
+ 'description': 'The orders data contract', 
+ 'email': 'team-orders@example.com', 
+ 'url': 'https://wiki.example.com/teams/checkout', 
+ 'model': 'orders', 
+ 'model_columns': 'order_id, order_total, order_status', 
+ 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 
+ 'custom_args': 'my_custom_arg'
+}
+```
+### Custom Importer
+Using the importer factory to add a new custom importer
+```python
+
+from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.data_contract import DataContract
+from datacontract.imports.importer import Importer
+from datacontract.imports.importer_factory import importer_factory
+import json
+
+# Create a custom class that implements import_source method
+
+
+class CustomImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        source_dict = json.loads(source)
+        data_contract_specification.id = source_dict.get("id_custom")
+        data_contract_specification.info.title = source_dict.get("title")
+        data_contract_specification.info.description = source_dict.get("description_from_app")
+
+        return data_contract_specification
+
+
+# Register the new custom class into factory
+importer_factory.register_importer("custom_company_importer", CustomImporter)
+
+
+if __name__ == "__main__":
+    # get a custom da
+    json_from_custom_app = '{"id_custom":"uuid-custom","version":"0.0.2", "title":"my_custom_imported_data", "description_from_app": "Custom contract description"}'
+    # Create a DataContract instance
+    data_contract = DataContract()
+
+    # call import_from
+    result = data_contract.import_from_source(
+        format="custom_company_importer", data_contract_specification=DataContract.init(), source=json_from_custom_app
+    )
+    print(dict(result))
+
+```
+Output
+
+```python
+{
+  'dataContractSpecification': '0.9.3', 
+  'id': 'uuid-custom', 
+  'info': Info(title='my_custom_imported_data', version='0.0.1', status=None, description='Custom contract description', owner=None, contact=None), 
+  'servers': {}, 
+  'terms': None, 
+  'models': {}, 
+  'definitions': {}, 
+  'examples': [], 
+  'quality': None, 
+  'servicelevels': None
+}
+```
 ## Development Setup
 
 Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).
