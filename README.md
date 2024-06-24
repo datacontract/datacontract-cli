@@ -1154,33 +1154,39 @@ Using the exporter factory to add a new custom exporter
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import Exporter
 from datacontract.export.exporter_factory import exporter_factory
- 
+
+
 # Create a custom class that implements export method
 class CustomExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        # Create a custom output 
         result = {
-            "my_custom_format_name": 'custom',
-            "data_contract_servers": data_contract.servers,
-            "model": model, 
+            "title": data_contract.info.title,
+            "version": data_contract.info.version,
+            "description": data_contract.info.description,
+            "email": data_contract.info.contact.email,
+            "url": data_contract.info.contact.url,
+            "model": model,
+            "model_columns": ", ".join(list(data_contract.models.get(model).fields.keys())),
             "export_args": export_args,
             "custom_args": export_args.get("custom_arg", ""),
         }
         return result
 
+
 # Register the new custom class into factory
 exporter_factory.register_exporter("custom", CustomExporter)
-
 
 
 if __name__ == "__main__":
     # Create a DataContract instance
     data_contract = DataContract(
-        data_contract_file="/PATH/datacontract.yaml" 
+        data_contract_file="/Users/C10017Q/estudos/datacontract-cli/tests/fixtures/export/datacontract.yaml"
     )
-    # call export 
-    result = data_contract.export(export_format="custom", model="orders", server="production", custom_arg="my_custom_arg")
-    print( result )
+    # call export
+    result = data_contract.export(
+        export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
+    )
+    print(result)
 
 ```
 Output
