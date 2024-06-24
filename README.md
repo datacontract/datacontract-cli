@@ -1180,7 +1180,7 @@ exporter_factory.register_exporter("custom", CustomExporter)
 if __name__ == "__main__":
     # Create a DataContract instance
     data_contract = DataContract(
-        data_contract_file="/Users/C10017Q/estudos/datacontract-cli/tests/fixtures/export/datacontract.yaml"
+        data_contract_file="/path/datacontract.yaml"
     )
     # call export
     result = data_contract.export(
