@@ -1147,56 +1147,6 @@ Examples: Removing or renaming models and fields.
   ```
 
 ## Customizing Exporters and Importers
-### Custom Exporter
-Using the exporter factory to add a new custom exporter
-```python
-
-from datacontract.data_contract import DataContract
-from datacontract.export.exporter import Exporter
-from datacontract.export.exporter_factory import exporter_factory
- 
-# Create a custom class that implements export method
-class CustomExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        # Create a custom output 
-        result = {
-            "my_custom_format_name": 'custom',
-            "data_contract_servers": data_contract.servers,
-            "model": model, 
-            "export_args": export_args,
-            "custom_args": export_args.get("custom_arg", ""),
-        }
-        return result
-
-# Register the new custom class into factory
-exporter_factory.register_exporter("custom", CustomExporter)
-
-
-
-if __name__ == "__main__":
-    # Create a DataContract instance
-    data_contract = DataContract(
-        data_contract_file="/PATH/datacontract.yaml" 
-    )
-    # call export 
-    result = data_contract.export(export_format="custom", model="orders", server="production", custom_arg="my_custom_arg")
-    print( result )
-
-```
-Output
-```python
-{
- 'title': 'Orders Unit Test', 
- 'version': '1.0.0', 
- 'description': 'The orders data contract', 
- 'email': 'team-orders@example.com', 
- 'url': 'https://wiki.example.com/teams/checkout', 
- 'model': 'orders', 
- 'model_columns': 'order_id, order_total, order_status', 
- 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 
- 'custom_args': 'my_custom_arg'
-}
-```
 ### Custom Importer
 Using the importer factory to add a new custom importer
 ```python
@@ -1208,8 +1158,6 @@ from datacontract.imports.importer_factory import importer_factory
 import json
 
 # Create a custom class that implements import_source method
-
-
 class CustomImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
