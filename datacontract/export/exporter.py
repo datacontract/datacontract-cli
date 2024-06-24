@@ -34,6 +34,7 @@ class ExportFormat(str, Enum):
     go = "go"
     bigquery = "bigquery"
     dbml = "dbml"
+    spark = "spark"
 
     @classmethod
     def get_suported_formats(cls):

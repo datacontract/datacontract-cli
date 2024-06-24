@@ -13,6 +13,7 @@ from datacontract.export.protobuf_converter import ProtoBufExporter
 from datacontract.export.pydantic_converter import PydanticExporter
 from datacontract.export.rdf_converter import RdfExporter
 from datacontract.export.sodacl_converter import SodaExporter
+from datacontract.export.spark_converter import SparkExporter
 from datacontract.export.sql_converter import SqlExporter, SqlQueryExporter
 from datacontract.export.terraform_converter import TerraformExporter
 
@@ -50,3 +51,4 @@ exporter_factory.register_exporter(ExportFormat.sodacl, SodaExporter)
 exporter_factory.register_exporter(ExportFormat.sql, SqlExporter)
 exporter_factory.register_exporter(ExportFormat.sql_query, SqlQueryExporter)
 exporter_factory.register_exporter(ExportFormat.terraform, TerraformExporter)
+exporter_factory.register_exporter(ExportFormat.spark, SparkExporter)

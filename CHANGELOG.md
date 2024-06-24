@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Spark export: add Spark SructType exporter (#277)
 - add `--schema` option for the `catalog` and `export` command to provide the schema also locally
 - Integrate support into the pre-commit workflow. For further details, please refer to the information provided [here](./README.md#use-with-pre-commit).
 
