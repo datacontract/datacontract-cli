@@ -2,8 +2,16 @@ import json
 
 import fastjsonschema
 
+from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field, Definition
 from datacontract.model.exceptions import DataContractException
+
+
+class JsonSchemaImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        return import_jsonschema(data_contract_specification, source)
 
 
 def convert_json_schema_properties(properties, is_definition=False):

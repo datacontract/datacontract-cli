@@ -1,6 +1,14 @@
 from simple_ddl_parser import parse_from_file
 
+from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
+
+
+class SqlImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        return import_sql(data_contract_specification, self.import_format, source)
 
 
 def import_sql(data_contract_specification: DataContractSpecification, format: str, source: str):

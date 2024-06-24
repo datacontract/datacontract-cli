@@ -37,8 +37,8 @@ class ExportFormat(str, Enum):
     spark = "spark"
 
     @classmethod
-    def get_formats(cls):
-        return cls.__dict__
+    def get_suported_formats(cls):
+        return list(map(lambda c: c.value, cls))
 
 
 def _check_models_for_export(

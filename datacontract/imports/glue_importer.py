@@ -1,12 +1,20 @@
 import boto3
 from typing import List
 
+from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Model,
     Field,
     Server,
 )
+
+
+class GlueImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        return import_glue(data_contract_specification, source, import_args.get("glue_tables"))
 
 
 def get_glue_database(database_name: str):

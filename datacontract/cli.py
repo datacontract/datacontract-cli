@@ -1,4 +1,3 @@
-from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
@@ -16,6 +15,7 @@ from typing_extensions import Annotated
 from datacontract import web
 from datacontract.catalog.catalog import create_index_html, create_data_contract_html
 from datacontract.data_contract import DataContract, ExportFormat
+from datacontract.imports.importer import ImportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
 from datacontract.publish.publish import publish_to_datamesh_manager
 
@@ -203,17 +203,6 @@ def export(
         console.print(f"Written result to {output}")
 
 
-class ImportFormat(str, Enum):
-    sql = "sql"
-    avro = "avro"
-    glue = "glue"
-    bigquery = "bigquery"
-    jsonschema = "jsonschema"
-    odcs = "odcs"
-    unity = "unity"
-    spark = "spark"
-
-
 @app.command(name="import")
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
@@ -242,7 +231,13 @@ def import_(
     Create a data contract from the given source location. Prints to stdout.
     """
     result = DataContract().import_from_source(
-        format, source, glue_table, bigquery_table, bigquery_project, bigquery_dataset, unity_table_full_name
+        format=format,
+        source=source,
+        glue_table=glue_table,
+        bigquery_table=bigquery_table,
+        bigquery_project=bigquery_project,
+        bigquery_dataset=bigquery_dataset,
+        unity_table_full_name=unity_table_full_name,
     )
     console.print(result.to_yaml())
 

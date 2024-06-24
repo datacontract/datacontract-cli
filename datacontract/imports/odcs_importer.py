@@ -2,6 +2,7 @@ import datetime
 import logging
 from typing import Any, Dict, List
 import yaml
+from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import (
     Availability,
     Contact,
@@ -40,6 +41,13 @@ DATACONTRACT_TYPES = [
     "struct",
     "null",
 ]
+
+
+class OdcsImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        return import_odcs(data_contract_specification, source)
 
 
 def import_odcs(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
