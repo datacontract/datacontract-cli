@@ -71,7 +71,7 @@ s3 = [
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<3.11",
+  "snowflake-connector-python[pandas]>=3.6,<3.12",
   "soda-core-snowflake>=3.3.1,<3.4.0"
 ]
 
