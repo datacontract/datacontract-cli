@@ -12,18 +12,17 @@ class ImporterFactory:
 
     def create(self, name) -> Importer:
         if name not in self.dict_importer.keys():
-            raise ValueError(f"Import format {name} not supported.")
+            raise ValueError(f"The '{name}' formart is not suportted.")
         return self.dict_importer[name](name)
 
 
 def lazy_module_import(module_path):
-    spec = importlib.util.find_spec(module_path)
-    if spec is not None:
-        loader = importlib.util.LazyLoader(spec.loader)
-        spec.loader = loader
-        module = importlib.util.module_from_spec(spec)
+    if importlib.util.find_spec(module_path) is not None:
+        try:
+            module = importlib.import_module(module_path)
+        except ModuleNotFoundError:
+            return None
         sys.modules[module_path] = module
-        loader.exec_module(module)
         return module
 
 
