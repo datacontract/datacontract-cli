@@ -110,6 +110,10 @@ class Info(pyd.BaseModel):
     owner: str = None
     contact: Contact = None
 
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
 
 class Example(pyd.BaseModel):
     type: str = None
