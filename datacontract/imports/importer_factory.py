@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from datacontract.imports.importer import ImportFormat, Importer
 
 
@@ -15,41 +16,46 @@ class ImporterFactory:
         return self.dict_importer[name](name)
 
 
+def lazy_module_import(module_path):
+    spec = importlib.util.find_spec(module_path)
+    if spec is not None:
+        loader = importlib.util.LazyLoader(spec.loader)
+        spec.loader = loader
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_path] = module
+        loader.exec_module(module)
+        return module
+
+
+def load_importer(import_format, module_path, class_name):
+    module = lazy_module_import(module_path)
+    if module:
+        importer_class = getattr(module, class_name)
+        importer_factory.register_importer(import_format, importer_class)
+
+
 importer_factory = ImporterFactory()
 
-if importlib.util.find_spec("datacontract.imports.avro_importer"):
-    from datacontract.imports.avro_importer import AvroImporter
-
-    importer_factory.register_importer(ImportFormat.avro, AvroImporter)
-
-if importlib.util.find_spec("datacontract.imports.bigquery_importer"):
-    from datacontract.imports.bigquery_importer import BigQueryImporter
-
-    importer_factory.register_importer(ImportFormat.bigquery, BigQueryImporter)
-
-if importlib.util.find_spec("datacontract.imports.glue_importer"):
-    from datacontract.imports.glue_importer import GlueImporter
-
-    importer_factory.register_importer(ImportFormat.glue, GlueImporter)
-
-if importlib.util.find_spec("datacontract.imports.jsonschema_importer"):
-    from datacontract.imports.jsonschema_importer import JsonSchemaImporter
-
-    importer_factory.register_importer(ImportFormat.jsonschema, JsonSchemaImporter)
-
-if importlib.util.find_spec("datacontract.imports.odcs_importer"):
-    from datacontract.imports.odcs_importer import OdcsImporter
-
-    importer_factory.register_importer(ImportFormat.odcs, OdcsImporter)
-
-
-if importlib.util.find_spec("datacontract.imports.sql_importer"):
-    from datacontract.imports.sql_importer import SqlImporter
-
-    importer_factory.register_importer(ImportFormat.sql, SqlImporter)
-
-
-if importlib.util.find_spec("datacontract.imports.sql_importer"):
-    from datacontract.imports.unity_importer import UnityImporter
-
-    importer_factory.register_importer(ImportFormat.unity, UnityImporter)
+load_importer(
+    import_format=ImportFormat.avro, module_path="datacontract.imports.avro_importer", class_name="AvroImporter"
+)
+load_importer(
+    import_format=ImportFormat.bigquery,
+    module_path="datacontract.imports.bigquery_importer",
+    class_name="BigQueryImporter",
+)
+load_importer(
+    import_format=ImportFormat.glue, module_path="datacontract.imports.glue_importer", class_name="GlueImporter"
+)
+load_importer(
+    import_format=ImportFormat.jsonschema,
+    module_path="datacontract.imports.jsonschema_importer",
+    class_name="JsonSchemaImporter",
+)
+load_importer(
+    import_format=ImportFormat.odcs, module_path="datacontract.imports.odcs_importer", class_name="OdcsImporter"
+)
+load_importer(import_format=ImportFormat.sql, module_path="datacontract.imports.sql_importer", class_name="SqlImporter")
+load_importer(
+    import_format=ImportFormat.unity, module_path="datacontract.imports.unity_importer", class_name="UnityImporter"
+)
