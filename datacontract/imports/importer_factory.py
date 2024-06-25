@@ -12,7 +12,7 @@ class ImporterFactory:
 
     def create(self, name) -> Importer:
         if name not in self.dict_importer.keys():
-            raise ValueError(f"The '{name}' formart is not suportted.")
+            raise ValueError(f"The '{name}' format is not suportted.")
         return self.dict_importer[name](name)
 
 
