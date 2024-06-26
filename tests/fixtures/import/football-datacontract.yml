@@ -12,7 +12,27 @@ definitions:
   person:
     name: person
     type: object
+    fields:
+      first_name:
+        type: string
+        required: true
+      last_name:
+        type: string
+        required: true
+      age:
+        type: integer
+        required: true
   football_team:
     name: football_team
     type: object
+    fields:
+      name:
+        type: string
+        required: true
+      league:
+        type: string
+        required: true
+      year_founded:
+        type: integer
+        required: true
 
