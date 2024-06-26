@@ -10,9 +10,15 @@ class Contact(pyd.BaseModel):
     url: str = None
     email: str = None
 
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
 
 class Server(pyd.BaseModel):
     type: str = None
+    description: str = None
+    environment: str = None
     format: str = None
     project: str = None
     dataset: str = None
@@ -33,6 +39,10 @@ class Server(pyd.BaseModel):
     outputPortId: str = None
     driver: str = None
 
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
 
 class Terms(pyd.BaseModel):
     usage: str = None
@@ -40,6 +50,10 @@ class Terms(pyd.BaseModel):
     billing: str = None
     noticePeriod: str = None
     description: str = None
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
 
 
 class Definition(pyd.BaseModel):
@@ -61,6 +75,10 @@ class Definition(pyd.BaseModel):
     classification: str = None
     tags: List[str] = []
     example: str = None
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
 
 
 class Field(pyd.BaseModel):
@@ -91,6 +109,10 @@ class Field(pyd.BaseModel):
     scale: int = None
     example: str = None
     config: Dict[str, Any] = None
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
 
 
 class Model(pyd.BaseModel):

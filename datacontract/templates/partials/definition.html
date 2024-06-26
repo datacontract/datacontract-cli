@@ -87,6 +87,9 @@
                   {% if definition.pii %}
                   <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
                   {% endif %}
+                  {% for key, value in definition.model_extra.items()  %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{ key }}:{{ value }}</span>
+                  {% endfor %}
                 </div>
               </td>
 

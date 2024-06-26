@@ -39,6 +39,13 @@
         </div>
       {% endif %}
 
+      {% for key, value in datacontract.terms.model_extra.items()  %}
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">{{ key }}</dt>
+        <dd class="mt-1 text-sm text-gray-900">{{ value }}</dd>
+      </div>
+      {% endfor %}
+
     </dl>
   </div>
 </div>

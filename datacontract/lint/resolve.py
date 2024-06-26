@@ -61,6 +61,10 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
             for field_name in field.model_fields.keys():
                 if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
                     setattr(field, field_name, getattr(definition, field_name))
+            # extras
+            for extra_field_name, extra_field_value in definition.model_extra.items():
+                if extra_field_name not in field.model_extra.keys():
+                    setattr(field, extra_field_name, extra_field_value)
 
 
 def resolve_definition_ref(ref, definitions) -> Definition:
