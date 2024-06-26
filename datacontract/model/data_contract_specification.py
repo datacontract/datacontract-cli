@@ -195,6 +195,8 @@ class DataContractSpecification(pyd.BaseModel):
     examples: List[Example] = []
     quality: Quality = None
     servicelevels: Optional[ServiceLevel] = None
+    links: Dict[str, str] = {}
+    tags: List[str] = []
 
     @classmethod
     def from_file(cls, file):

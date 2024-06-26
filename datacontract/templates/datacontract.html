@@ -41,6 +41,21 @@
             <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
               {{ datacontract.id }}
             </div>
+            <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+              {% if datacontract.tags %}
+              <div class="mt-2 flex items-center text-sm text-gray-500 whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                </svg>
+                {% for tag in datacontract.tags %}
+                <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 mr-1">
+                  <span>{{ tag }}</span>
+                </span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
           </div>
           <div class="mt-5 flex lg:mt-0 lg:ml-4 gap-3 items-center">
             <button
@@ -129,14 +144,14 @@
             </div>
             {% endfor %}
           </section>
-          
+
           {% if datacontract.definitions %}
           <section id="definitions">
             <div class="px-4 sm:px-0">
               <h1 class="text-base font-semibold leading-6 text-gray-900">Definitions</h1>
               <p class="text-sm text-gray-500">Domain specific definitions in the data contract</p>
             </div>
-            
+
             {% for definition_name, definition in datacontract.definitions.items() %}
             {{ render_partial('partials/definition.html', definition_name = definition_name, definition = definition)}}
             {% endfor %}
