@@ -72,7 +72,11 @@ def resolve_definition_ref(ref, definitions) -> Definition:
         definition_str = fetch_resource(ref)
         definition_dict = to_yaml(definition_str)
         return Definition(**definition_dict)
-
+    elif ref.startswith("file://"):
+        path = ref.replace("file://", "")
+        definition_str = fetch_file(path)
+        definition_dict = to_yaml(definition_str)
+        return Definition(**definition_dict)
     elif ref.startswith("#/definitions/"):
         definition_name = ref.split("#/definitions/")[1]
         return definitions[definition_name]
@@ -84,6 +88,19 @@ def resolve_definition_ref(ref, definitions) -> Definition:
             reason=f"Cannot resolve reference {ref}",
             engine="datacontract",
         )
+
+
+def fetch_file(path) -> str:
+    if not os.path.exists(path):
+        raise DataContractException(
+            type="export",
+            result="failed",
+            name="Check that data contract definition is valid",
+            reason=f"Cannot resolve reference {path}",
+            engine="datacontract",
+        )
+    with open(path, "r") as file:
+        return file.read()
 
 
 def resolve_quality_ref(quality: Quality):
