@@ -1,55 +1,72 @@
 import importlib.util
+import sys
 from datacontract.imports.importer import ImportFormat, Importer
 
 
 class ImporterFactory:
     def __init__(self):
         self.dict_importer = {}
+        self.dict_lazy_importer = {}
 
-    def register_importer(self, name, exporter):
-        self.dict_importer.update({name: exporter})
+    def register_importer(self, name, importer: Importer):
+        self.dict_importer.update({name: importer})
+
+    def register_lazy_importer(self, name: str, module_path: str, class_name: str):
+        self.dict_lazy_importer.update({name: (module_path, class_name)})
 
     def create(self, name) -> Importer:
-        if name not in self.dict_importer.keys():
-            raise ValueError(f"Import format {name} not supported.")
-        return self.dict_importer[name](name)
+        importers = self.dict_importer.copy()
+        importers.update(self.dict_lazy_importer.copy())
+        if name not in importers.keys():
+            raise ValueError(f"The '{name}' format is not suportted.")
+        importer_class = importers[name]
+        if type(importers[name]) == tuple:
+            importer_class = load_module_class(module_path=importers[name][0], class_name=importers[name][1])
+        if not importer_class:
+            raise ValueError(f"Module {name} could not be loaded.")
+        return importer_class(name)
+
+
+def import_module(module_path):
+    if importlib.util.find_spec(module_path) is not None:
+        try:
+            module = importlib.import_module(module_path)
+        except ModuleNotFoundError:
+            return None
+        sys.modules[module_path] = module
+        return module
+
+
+def load_module_class(module_path, class_name):
+    module = import_module(module_path)
+    if not module:
+        return None
+    return getattr(module, class_name)
 
 
 importer_factory = ImporterFactory()
-
-if importlib.util.find_spec("datacontract.imports.avro_importer"):
-    from datacontract.imports.avro_importer import AvroImporter
-
-    importer_factory.register_importer(ImportFormat.avro, AvroImporter)
-
-if importlib.util.find_spec("datacontract.imports.bigquery_importer"):
-    from datacontract.imports.bigquery_importer import BigQueryImporter
-
-    importer_factory.register_importer(ImportFormat.bigquery, BigQueryImporter)
-
-if importlib.util.find_spec("datacontract.imports.glue_importer"):
-    from datacontract.imports.glue_importer import GlueImporter
-
-    importer_factory.register_importer(ImportFormat.glue, GlueImporter)
-
-if importlib.util.find_spec("datacontract.imports.jsonschema_importer"):
-    from datacontract.imports.jsonschema_importer import JsonSchemaImporter
-
-    importer_factory.register_importer(ImportFormat.jsonschema, JsonSchemaImporter)
-
-if importlib.util.find_spec("datacontract.imports.odcs_importer"):
-    from datacontract.imports.odcs_importer import OdcsImporter
-
-    importer_factory.register_importer(ImportFormat.odcs, OdcsImporter)
-
-
-if importlib.util.find_spec("datacontract.imports.sql_importer"):
-    from datacontract.imports.sql_importer import SqlImporter
-
-    importer_factory.register_importer(ImportFormat.sql, SqlImporter)
-
-
-if importlib.util.find_spec("datacontract.imports.sql_importer"):
-    from datacontract.imports.unity_importer import UnityImporter
-
-    importer_factory.register_importer(ImportFormat.unity, UnityImporter)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.avro, module_path="datacontract.imports.avro_importer", class_name="AvroImporter"
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.bigquery,
+    module_path="datacontract.imports.bigquery_importer",
+    class_name="BigQueryImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.glue, module_path="datacontract.imports.glue_importer", class_name="GlueImporter"
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.jsonschema,
+    module_path="datacontract.imports.jsonschema_importer",
+    class_name="JsonSchemaImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.odcs, module_path="datacontract.imports.odcs_importer", class_name="OdcsImporter"
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.sql, module_path="datacontract.imports.sql_importer", class_name="SqlImporter"
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.unity, module_path="datacontract.imports.unity_importer", class_name="UnityImporter"
+)
