@@ -4,7 +4,8 @@
   "properties": {
     "Statistik_Code": {
       "type": "integer",
-      "description": "Statistical code for the data set"
+      "description": "Statistical code for the data set",
+      "minimum": 0
     },
     "Statistik_Label": {
       "type": "string",
