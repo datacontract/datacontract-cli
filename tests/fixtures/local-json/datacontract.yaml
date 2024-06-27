@@ -27,6 +27,7 @@ models:
         description: Statistical code for the data set
         type: integer
         required: true
+        minimum: 0
       Statistik_Label:
         description: Label for the statistical code
         type: string
