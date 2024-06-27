@@ -74,6 +74,7 @@ class Definition(pyd.BaseModel):
     pii: bool = None
     classification: str = None
     tags: List[str] = []
+    links: Dict[str, str] = {}
     example: str = None
 
     model_config = pyd.ConfigDict(
@@ -103,6 +104,7 @@ class Field(pyd.BaseModel):
     exclusiveMaximum: int = None
     enum: List[str] = []
     tags: List[str] = []
+    links: Dict[str, str] = {}
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
     precision: int = None
