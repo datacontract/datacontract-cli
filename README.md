@@ -185,17 +185,18 @@ pip install datacontract-cli[all]
 
 A list of available extras:
 
-| Dependency              | Installation Command                                        |
-|-------------------------|-------------------------------------------------------------|
-| Avro Support            | `pip install datacontract-cli[avro]`                        |
-| Google BigQuery         | `pip install datacontract-cli[bigquery]`                    |
-| Databricks Integration  | `pip install datacontract-cli[databricks]`                  |
-| Deltalake Integration   | `pip install datacontract-cli[deltalake]`                  |
-| Kafka Integration       | `pip install datacontract-cli[kafka]`                       |
-| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`                    |
-| S3 Integration          | `pip install datacontract-cli[s3]`                          |
-| Snowflake Integration   | `pip install datacontract-cli[snowflake]`                   |
-| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`                   |
+| Dependency             | Installation Command                       |
+|------------------------|--------------------------------------------|
+| Avro Support           | `pip install datacontract-cli[avro]`       |
+| Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
+| Databricks Integration | `pip install datacontract-cli[databricks]` |
+| Deltalake Integration  | `pip install datacontract-cli[deltalake]`  |
+| Kafka Integration      | `pip install datacontract-cli[kafka]`      |
+| PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
+| S3 Integration         | `pip install datacontract-cli[s3]`         |
+| Snowflake Integration  | `pip install datacontract-cli[snowflake]`  |
+| Microsoft SQL Server   | `pip install datacontract-cli[sqlserver]`  |
+| Trino                  | `pip install datacontract-cli[trino]`      |
 
 
 
@@ -311,6 +312,7 @@ Supported server types:
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
+- [trino](#trino)
 - [local](#local)
 
 Supported formats:
@@ -651,6 +653,35 @@ models:
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
 
 
+### Trino
+
+Data Contract CLI can test data in Trino.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  trino:
+    type: trino
+    host: localhost
+    port: 8080
+    catalog: my_catalog
+    schema: my_schema
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable          | Example            | Description |
+|-------------------------------|--------------------|-------------|
+| `DATACONTRACT_TRINO_USERNAME` | `trino`            | Username    |
+| `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
 
 
 
@@ -1147,6 +1178,64 @@ Examples: Removing or renaming models and fields.
   ```
 
 ## Customizing Exporters and Importers
+ 
+### Custom Exporter
+Using the exporter factory to add a new custom exporter
+```python
+
+from datacontract.data_contract import DataContract
+from datacontract.export.exporter import Exporter
+from datacontract.export.exporter_factory import exporter_factory
+
+
+# Create a custom class that implements export method
+class CustomExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        result = {
+            "title": data_contract.info.title,
+            "version": data_contract.info.version,
+            "description": data_contract.info.description,
+            "email": data_contract.info.contact.email,
+            "url": data_contract.info.contact.url,
+            "model": model,
+            "model_columns": ", ".join(list(data_contract.models.get(model).fields.keys())),
+            "export_args": export_args,
+            "custom_args": export_args.get("custom_arg", ""),
+        }
+        return result
+
+
+# Register the new custom class into factory
+exporter_factory.register_exporter("custom", CustomExporter)
+
+
+if __name__ == "__main__":
+    # Create a DataContract instance
+    data_contract = DataContract(
+        data_contract_file="/path/datacontract.yaml"
+    )
+    # call export
+    result = data_contract.export(
+        export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
+    )
+    print(result)
+
+```
+Output
+```python
+{
+ 'title': 'Orders Unit Test', 
+ 'version': '1.0.0', 
+ 'description': 'The orders data contract', 
+ 'email': 'team-orders@example.com', 
+ 'url': 'https://wiki.example.com/teams/checkout', 
+ 'model': 'orders', 
+ 'model_columns': 'order_id, order_total, order_status', 
+ 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 
+ 'custom_args': 'my_custom_arg'
+}
+```
+  
 ### Custom Importer
 Using the importer factory to add a new custom importer
 ```python

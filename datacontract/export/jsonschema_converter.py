@@ -58,27 +58,27 @@ def to_property(field: Field) -> dict:
         property["pattern"] = field.pattern
     if field.enum:
         property["enum"] = field.enum
-    if field.minLength:
+    if field.minLength is not None:
         property["minLength"] = field.minLength
-    if field.maxLength:
+    if field.maxLength is not None:
         property["maxLength"] = field.maxLength
     if field.title:
         property["title"] = field.title
     if field.description:
         property["description"] = field.description
-    if field.exclusiveMinimum:
+    if field.exclusiveMinimum is not None:
         property["exclusiveMinimum"] = field.exclusiveMinimum
-    if field.exclusiveMaximum:
+    if field.exclusiveMaximum is not None:
         property["exclusiveMaximum"] = field.exclusiveMaximum
-    if field.minimum:
+    if field.minimum is not None:
         property["minimum"] = field.minimum
-    if field.maximum:
+    if field.maximum is not None:
         property["maximum"] = field.maximum
     if field.tags:
         property["tags"] = field.tags
     if field.pii:
         property["pii"] = field.pii
-    if field.classification:
+    if field.classification is not None:
         property["classification"] = field.classification
 
     # TODO: all constraints

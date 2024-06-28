@@ -14,7 +14,7 @@
           </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 bg-white">
-            <tr>
+            <tr id="/definitions/{{ definition_name }}">
               <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
                 <div class="py-2 text-sm">
                   {% if definition.title %}
@@ -86,6 +86,14 @@
                   {% endif %}
                   {% if definition.pii %}
                   <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
+                  {% endif %}
+                  {% for key, value in definition.model_extra.items()  %}
+                  <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{ key }}:{{ value }}</span>
+                  {% endfor %}
+                  {% if definition.links %}
+                    {% for name,href in definition.links.items() %}
+                    <a href="{{ href }}" class="inline-flex items-center px-1 py-1 mr-1 mt-1 text-sky-500 hover:text-gray-700 text-xs font-semibold">{{ name }}</a>
+                    {% endfor %}
                   {% endif %}
                 </div>
               </td>

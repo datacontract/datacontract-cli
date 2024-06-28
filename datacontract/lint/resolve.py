@@ -61,6 +61,10 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
             for field_name in field.model_fields.keys():
                 if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
                     setattr(field, field_name, getattr(definition, field_name))
+            # extras
+            for extra_field_name, extra_field_value in definition.model_extra.items():
+                if extra_field_name not in field.model_extra.keys():
+                    setattr(field, extra_field_name, extra_field_value)
 
 
 def resolve_definition_ref(ref, definitions) -> Definition:
@@ -68,7 +72,11 @@ def resolve_definition_ref(ref, definitions) -> Definition:
         definition_str = fetch_resource(ref)
         definition_dict = to_yaml(definition_str)
         return Definition(**definition_dict)
-
+    elif ref.startswith("file://"):
+        path = ref.replace("file://", "")
+        definition_str = fetch_file(path)
+        definition_dict = to_yaml(definition_str)
+        return Definition(**definition_dict)
     elif ref.startswith("#/definitions/"):
         definition_name = ref.split("#/definitions/")[1]
         return definitions[definition_name]
@@ -80,6 +88,19 @@ def resolve_definition_ref(ref, definitions) -> Definition:
             reason=f"Cannot resolve reference {ref}",
             engine="datacontract",
         )
+
+
+def fetch_file(path) -> str:
+    if not os.path.exists(path):
+        raise DataContractException(
+            type="export",
+            result="failed",
+            name="Check that data contract definition is valid",
+            reason=f"Cannot resolve reference {path}",
+            engine="datacontract",
+        )
+    with open(path, "r") as file:
+        return file.read()
 
 
 def resolve_quality_ref(quality: Quality):
