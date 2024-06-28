@@ -1,4 +1,5 @@
 import logging
+import os
 
 import pytest
 from testcontainers.core.container import DockerContainer
@@ -13,9 +14,10 @@ datacontract = "fixtures/trino/datacontract.yaml"
 
 
 class TrinoContainer(DockerContainer):
-    def __init__(self, image: str = "trinodb/trino:450", **kwargs) -> None:  # noqa: ANN003
+    def __init__(self, image: str = "trinodb/trino:450", **kwargs) -> None:
         super().__init__(image, **kwargs)
         self.with_exposed_ports(8080)
+        self.with_volume_mapping(os.getcwd() + "/fixtures/trino/etc", "/etc/trino trinodb/trino")
 
     def start(self, timeout: int = 30) -> "TrinoContainer":
         """Start the docker container and wait for it to be ready."""
