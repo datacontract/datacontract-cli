@@ -1176,6 +1176,65 @@ Examples: Removing or renaming models and fields.
   $ datacontract changelog datacontract-from-pr.yaml datacontract-from-main.yaml
   ```
 
+## Customizing Exporters and Importers
+### Custom Exporter
+Using the exporter factory to add a new custom exporter
+```python
+
+from datacontract.data_contract import DataContract
+from datacontract.export.exporter import Exporter
+from datacontract.export.exporter_factory import exporter_factory
+
+
+# Create a custom class that implements export method
+class CustomExporter(Exporter):
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        result = {
+            "title": data_contract.info.title,
+            "version": data_contract.info.version,
+            "description": data_contract.info.description,
+            "email": data_contract.info.contact.email,
+            "url": data_contract.info.contact.url,
+            "model": model,
+            "model_columns": ", ".join(list(data_contract.models.get(model).fields.keys())),
+            "export_args": export_args,
+            "custom_args": export_args.get("custom_arg", ""),
+        }
+        return result
+
+
+# Register the new custom class into factory
+exporter_factory.register_exporter("custom", CustomExporter)
+
+
+if __name__ == "__main__":
+    # Create a DataContract instance
+    data_contract = DataContract(
+        data_contract_file="/path/datacontract.yaml"
+    )
+    # call export
+    result = data_contract.export(
+        export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
+    )
+    print(result)
+
+```
+Output
+```python
+{
+ 'title': 'Orders Unit Test', 
+ 'version': '1.0.0', 
+ 'description': 'The orders data contract', 
+ 'email': 'team-orders@example.com', 
+ 'url': 'https://wiki.example.com/teams/checkout', 
+ 'model': 'orders', 
+ 'model_columns': 'order_id, order_total, order_status', 
+ 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 
+ 'custom_args': 'my_custom_arg'
+}
+```
+  
+
 ## Development Setup
 
 Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).
