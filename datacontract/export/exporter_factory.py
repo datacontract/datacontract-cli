@@ -20,7 +20,7 @@ class ExporterFactory:
         if name not in exporters.keys():
             raise ValueError(f"The '{name}' format is not supported.")
         exporter_class = exporters[name]
-        if type(exporters[name]) == tuple:
+        if type(exporters[name]) is tuple:
             exporter_class = load_module_class(module_path=exporters[name][0], class_name=exporters[name][1])
         if not exporter_class:
             raise ValueError(f"Module {name} could not be loaded.")
