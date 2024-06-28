@@ -185,17 +185,18 @@ pip install datacontract-cli[all]
 
 A list of available extras:
 
-| Dependency              | Installation Command                                        |
-|-------------------------|-------------------------------------------------------------|
-| Avro Support            | `pip install datacontract-cli[avro]`                        |
-| Google BigQuery         | `pip install datacontract-cli[bigquery]`                    |
-| Databricks Integration  | `pip install datacontract-cli[databricks]`                  |
-| Deltalake Integration   | `pip install datacontract-cli[deltalake]`                  |
-| Kafka Integration       | `pip install datacontract-cli[kafka]`                       |
-| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`                    |
-| S3 Integration          | `pip install datacontract-cli[s3]`                          |
-| Snowflake Integration   | `pip install datacontract-cli[snowflake]`                   |
-| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`                   |
+| Dependency             | Installation Command                       |
+|------------------------|--------------------------------------------|
+| Avro Support           | `pip install datacontract-cli[avro]`       |
+| Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
+| Databricks Integration | `pip install datacontract-cli[databricks]` |
+| Deltalake Integration  | `pip install datacontract-cli[deltalake]`  |
+| Kafka Integration      | `pip install datacontract-cli[kafka]`      |
+| PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
+| S3 Integration         | `pip install datacontract-cli[s3]`         |
+| Snowflake Integration  | `pip install datacontract-cli[snowflake]`  |
+| Microsoft SQL Server   | `pip install datacontract-cli[sqlserver]`  |
+| Trino                  | `pip install datacontract-cli[trino]`      |
 
 
 
@@ -651,6 +652,35 @@ models:
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
 
 
+### Trino
+
+Data Contract CLI can test data in Trino.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  trino:
+    type: trino
+    host: localhost
+    port: 8080
+    catalog: my_catalog
+    schema: my_schema
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+#### Environment Variables
+
+| Environment Variable          | Example            | Description |
+|-------------------------------|--------------------|-------------|
+| `DATACONTRACT_TRINO_USERNAME` | `trino`            | Username    |
+| `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
 
 
 
