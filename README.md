@@ -312,6 +312,7 @@ Supported server types:
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
+- [trino](#trino)
 - [local](#local)
 
 Supported formats:
