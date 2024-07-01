@@ -22,22 +22,7 @@
     </div>
   </td>
   <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
-    {% if field.type %}
-    {{ field.type }}
-    {% endif %}
-  </td>
-  <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
-    {% if field.description %}
-    <div class="text-gray-500">{{ field.description }}</div>
-    {% else %}
-    <div class="text-gray-400">No description</div>
-    {% endif %}
-
-    {% if field.example %}
-    <div class="mt-1 italic">
-      Example: <span class="font-mono">{{ field.example }}</span>
-    </div>
-    {% endif %}
+	@@ -41,67 +55,97 @@
 
     <div>
       {% if field.primary %}
