@@ -1,3 +1,4 @@
 - [ ] Tests pass
-- [ ] README.md updated
+- [ ] ruff format
+- [ ] README.md updated (if relevant)
 - [ ] CHANGELOG.md entry added
