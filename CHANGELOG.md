@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for trino (#278)
 
 ### Changed
+- Added array management on HTML export (#299)
 
 ## [0.10.8] - 2024-06-19
 
