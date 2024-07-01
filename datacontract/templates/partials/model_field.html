@@ -97,11 +97,18 @@
   </td>
 </tr>
 
+{% macro render_nested_partial(field_name, field, level) %}
+{{ render_partial('partials/model_field.html', nested=True, field_name=field_name, field=field, level=level + 1) }}
+<!-- Mark the end of the contained fields -->
+<tr style="--tw-divide-y-reverse: 2"></tr>
+{% endmacro %}
+
 {% if field.fields %}
 {% for field_name, field in field.fields.items() %}
-  {{ render_partial('partials/model_field.html', nested = True, field_name=field_name, field = field, level = level + 1) }}
+{{ render_nested_partial(field_name, field, level) }}
 {% endfor %}
-<!-- Mark the end of the contained fields -->
-<tr style="--tw-divide-y-reverse: 2">
-</tr>
+{% endif %}
+
+{% if field.items %}
+{{ render_nested_partial("item", field.items, level) }}
 {% endif %}
