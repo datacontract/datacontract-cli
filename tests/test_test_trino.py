@@ -16,7 +16,6 @@ class TrinoContainer(DockerContainer):
     def __init__(self, image: str = "trinodb/trino:450", **kwargs) -> None:
         super().__init__(image, **kwargs)
         self.with_exposed_ports(8080)
-        # self.with_volume_mapping(os.getcwd() + "/fixtures/trino/etc", "/etc/trino trinodb/trino")
 
     def start(self, timeout: int = 60) -> "TrinoContainer":
         """Start the docker container and wait for it to be ready."""
