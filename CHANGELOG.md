@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved HTML export, supporting links, tags, and more
 - Add support for trino (#278)
 
-### Changed
+### Fixed
+- Fix `datacontract import --format jsonschema` when description is missing (#300)
 
 ## [0.10.8] - 2024-06-19
 
