@@ -11,6 +11,8 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 datacontract = "fixtures/trino/datacontract.yaml"
 
+log = logging.getLogger(__name__)
+
 
 class TrinoContainer(DockerContainer):
     def __init__(self, image: str = "trinodb/trino:450", **kwargs) -> None:
@@ -20,7 +22,6 @@ class TrinoContainer(DockerContainer):
     def start(self, timeout: int = 60) -> "TrinoContainer":
         """Start the docker container and wait for it to be ready."""
         super().start()
-        # we wait if we can actually retrieve data from the catalog, just waiting for logs seems not sufficient
         self.wait_for_nodes(timeout)
         return self
 
@@ -28,26 +29,27 @@ class TrinoContainer(DockerContainer):
         interval = 1
         start = time.time()
 
+        # we wait if we can actually retrieve data from the catalog, just waiting for logs seems not sufficient
         while True:
             duration = time.time() - start
 
             try:
-                conn = connect(host="localhost", port=trino.get_exposed_port(8080), user="my_user", catalog="memory")
+                conn = connect(host="localhost", port=self.get_exposed_port(8080), user="my_user", catalog="memory")
                 cursor = conn.cursor()
                 cursor.execute("CREATE SCHEMA IF NOT EXISTS __testcontainers__")
                 cursor.execute("CREATE TABLE IF NOT EXISTS __testcontainers__.my_table (my_field VARCHAR)")
                 cursor.execute("INSERT INTO __testcontainers__.my_table (my_field) values ('test')")
-                cursor.execute("SELECT * from __testcontainers__.my_table")
 
+                # a SELECT errors with NO_NODES_AVAILABLE when trino is not ready yet
+                cursor.execute("SELECT * from __testcontainers__.my_table")
                 cursor.fetchall()
 
                 return duration
             except Exception as e:
-                print(e)
-                pass
+                log.debug(e)
 
             if timeout and duration > timeout:
-                raise TimeoutError("container did not return startup TEST data in %.3f seconds" % timeout)
+                raise TimeoutError("container did not return startup test data in %.3f seconds" % timeout)
             time.sleep(interval)
 
 
@@ -64,7 +66,6 @@ def trino_container(request):
     request.addfinalizer(remove_container)
 
 
-@pytest.mark.skip("Flaky. https://github.com/datacontract/datacontract-cli/issues/306")
 def test_test_trino(trino_container, monkeypatch):
     _prepare_table()
 
