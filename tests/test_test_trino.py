@@ -39,6 +39,7 @@ def trino_container(request):
     request.addfinalizer(remove_container)
 
 
+@pytest.mark.skip("Flaky. https://github.com/datacontract/datacontract-cli/issues/306")
 def test_test_trino(trino_container, monkeypatch):
     _prepare_table()
 
