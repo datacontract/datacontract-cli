@@ -1,9 +1,8 @@
 import logging
-import os
+import time
 
 import pytest
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
 from trino.dbapi import connect
 
 from datacontract.data_contract import DataContract
@@ -17,13 +16,40 @@ class TrinoContainer(DockerContainer):
     def __init__(self, image: str = "trinodb/trino:450", **kwargs) -> None:
         super().__init__(image, **kwargs)
         self.with_exposed_ports(8080)
-        self.with_volume_mapping(os.getcwd() + "/fixtures/trino/etc", "/etc/trino trinodb/trino")
+        # self.with_volume_mapping(os.getcwd() + "/fixtures/trino/etc", "/etc/trino trinodb/trino")
 
-    def start(self, timeout: int = 30) -> "TrinoContainer":
+    def start(self, timeout: int = 60) -> "TrinoContainer":
         """Start the docker container and wait for it to be ready."""
         super().start()
-        wait_for_logs(self, predicate="======== SERVER STARTED ========", timeout=timeout)
+        # we wait if we can actually retrieve data from the catalog, just waiting for logs seems not sufficient
+        self.wait_for_nodes(timeout)
         return self
+
+    def wait_for_nodes(self, timeout: int):
+        interval = 1
+        start = time.time()
+
+        while True:
+            duration = time.time() - start
+
+            try:
+                conn = connect(host="localhost", port=trino.get_exposed_port(8080), user="my_user", catalog="memory")
+                cursor = conn.cursor()
+                cursor.execute("CREATE SCHEMA IF NOT EXISTS __testcontainers__")
+                cursor.execute("CREATE TABLE IF NOT EXISTS __testcontainers__.my_table (my_field VARCHAR)")
+                cursor.execute("INSERT INTO __testcontainers__.my_table (my_field) values ('test')")
+                cursor.execute("SELECT * from __testcontainers__.my_table")
+
+                cursor.fetchall()
+
+                return duration
+            except Exception as e:
+                print(e)
+                pass
+
+            if timeout and duration > timeout:
+                raise TimeoutError("container did not return startup TEST data in %.3f seconds" % timeout)
+            time.sleep(interval)
 
 
 trino = TrinoContainer()
