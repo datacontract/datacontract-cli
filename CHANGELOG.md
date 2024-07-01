@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added array management on HTML export (#299)
 
+### Fixed
+- Fix `datacontract import --format jsonschema` when description is missing (#300)
+
 ## [0.10.8] - 2024-06-19
 
 ### Added
