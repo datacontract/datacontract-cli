@@ -1,7 +1,6 @@
 {% if nested %}
 <tr class="bg-gray-50">
-  <td
-    class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12 flex items-center gap-x-4">
+  <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12 flex items-center gap-x-4">
     {# poor mans approach to indenting things a bit #}
     {% for i in range(0,level)%}
     <div class="w-2">&nbsp;</div>
@@ -9,127 +8,76 @@
     <div>
       &#x21b3;
     </div>
-    {% else %}
+{% else %}
 <tr>
   <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
-    {% endif %}
+{% endif %}
     <div class="py-2 text-sm">
       {% if field.title %}
       <span>{{ field.title }}</span><br>
       {% endif %}
       <span class="font-mono flex">{{ field_name }}{% if field.ref %} <a href="{{ field.ref }}">
-          <svg title="Definition" class="mr-1.5 h-5 w-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg"
-            viewBox="-0.75 -0.75 24 24">
-            <defs></defs>
-            <path
-              d="M3.046875 5.15625h16.40625s0.9375 0 0.9375 0.9375v10.3125s0 0.9375 -0.9375 0.9375H3.046875s-0.9375 0 -0.9375 -0.9375v-10.3125s0 -0.9375 0.9375 -0.9375"
-              fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-            </path>
-            <path d="m12.568125 10.3125 4.6875 0" fill="none" stroke="currentColor" stroke-linecap="round"
-              stroke-linejoin="round" stroke-width="1.5"></path>
-            <path d="m12.568125 13.125 4.6875 0" fill="none" stroke="currentColor" stroke-linecap="round"
-              stroke-linejoin="round" stroke-width="1.5"></path>
-            <path d="M5.068124999999999 8.4375h4.6875v4.6875h-4.6875Z" fill="none" stroke="currentColor"
-              stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
-          </svg>
-        </a>{% endif %}</span>
+        <svg title="Definition" class="mr-1.5 h-5 w-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="-0.75 -0.75 24 24"><defs></defs><path d="M3.046875 5.15625h16.40625s0.9375 0 0.9375 0.9375v10.3125s0 0.9375 -0.9375 0.9375H3.046875s-0.9375 0 -0.9375 -0.9375v-10.3125s0 -0.9375 0.9375 -0.9375" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path><path d="m12.568125 10.3125 4.6875 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path><path d="m12.568125 13.125 4.6875 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path><path d="M5.068124999999999 8.4375h4.6875v4.6875h-4.6875Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path></svg>
+      </a>{% endif %}</span>
     </div>
   </td>
   <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
-    {% if field.type %}
-    {{ field.type }}
-    {% endif %}
-  </td>
-  <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
-    {% if field.description %}
-    <div class="text-gray-500">{{ field.description }}</div>
-    {% else %}
-    <div class="text-gray-400">No description</div>
-    {% endif %}
-
-    {% if field.example %}
-    <div class="mt-1 italic">
-      Example: <span class="font-mono">{{ field.example }}</span>
-    </div>
-    {% endif %}
+	@@ -41,67 +55,97 @@
 
     <div>
       {% if field.primary %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">primary</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">primary</span>
       {% endif %}
       {% if field.required %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
       {% endif %}
       {% if field.unique %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">unique</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">unique</span>
       {% endif %}
       {% if field.format %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">format:{{
-        field.format }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">format:{{ field.format }}</span>
       {% endif %}
       {% if field.minLength %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minLength:{{
-        field.minLength }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minLength:{{ field.minLength }}</span>
       {% endif %}
       {% if field.maxLength %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maxLength:{{
-        field.maxLength }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maxLength:{{ field.maxLength }}</span>
       {% endif %}
       {% if field.pattern %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">pattern:{{
-        field.pattern }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">pattern:{{ field.pattern }}</span>
       {% endif %}
       {% if field.precision %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">precision:{{
-        field.precision }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">precision:{{ field.precision }}</span>
       {% endif %}
       {% if field.scale %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">scale:{{
-        field.scale }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">scale:{{ field.scale }}</span>
       {% endif %}
       {% if field.minimum %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minimum:{{
-        field.minimum }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minimum:{{ field.minimum }}</span>
       {% endif %}
       {% if field.exclusiveMinimum %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMinimum:{{
-        field.exclusiveMinimum }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMinimum:{{ field.exclusiveMinimum }}</span>
       {% endif %}
       {% if field.maximum %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maximum:{{
-        field.maximum }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maximum:{{ field.maximum }}</span>
       {% endif %}
       {% if field.exclusiveMaximum %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMaximum:{{
-        field.exclusiveMaximum }}</span>
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">exclusiveMaximum:{{ field.exclusiveMaximum }}</span>
       {% endif %}
       {% if field.classification %}
-      <span
-        class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{
-        field.classification }}</span>
+      <span class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{ field.classification }}</span>
       {% endif %}
       {% if field.pii %}
-      <span
-        class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
+      <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
       {% endif %}
-      {% for key, value in field.model_extra.items() %}
-      <span
-        class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{
-        key }}:{{ value }}</span>
+      {% for key, value in field.model_extra.items()  %}
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{ key }}:{{ value }}</span>
       {% endfor %}
+      {% if field.links %}
+      {% for name,href in field.links.items() %}
+      <a href="{{ href }}" class="inline-flex items-center px-1 py-1 mr-1 mt-1 text-sky-500 hover:text-gray-700 text-xs font-semibold">{{ name }}</a>
+      {% endfor %}
+      {% endif %}
     </div>
   </td>
 </tr>
