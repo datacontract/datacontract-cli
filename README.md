@@ -1178,6 +1178,7 @@ Examples: Removing or renaming models and fields.
   ```
 
 ## Customizing Exporters and Importers
+ 
 ### Custom Exporter
 Using the exporter factory to add a new custom exporter
 ```python
@@ -1235,7 +1236,62 @@ Output
 }
 ```
   
+### Custom Importer
+Using the importer factory to add a new custom importer
+```python
 
+from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.data_contract import DataContract
+from datacontract.imports.importer import Importer
+from datacontract.imports.importer_factory import importer_factory
+import json
+
+# Create a custom class that implements import_source method
+class CustomImporter(Importer):
+    def import_source(
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+    ) -> dict:
+        source_dict = json.loads(source)
+        data_contract_specification.id = source_dict.get("id_custom")
+        data_contract_specification.info.title = source_dict.get("title")
+        data_contract_specification.info.description = source_dict.get("description_from_app")
+
+        return data_contract_specification
+
+
+# Register the new custom class into factory
+importer_factory.register_importer("custom_company_importer", CustomImporter)
+
+
+if __name__ == "__main__":
+    # get a custom da
+    json_from_custom_app = '{"id_custom":"uuid-custom","version":"0.0.2", "title":"my_custom_imported_data", "description_from_app": "Custom contract description"}'
+    # Create a DataContract instance
+    data_contract = DataContract()
+
+    # call import_from
+    result = data_contract.import_from_source(
+        format="custom_company_importer", data_contract_specification=DataContract.init(), source=json_from_custom_app
+    )
+    print(dict(result))
+
+```
+Output
+
+```python
+{
+  'dataContractSpecification': '0.9.3', 
+  'id': 'uuid-custom', 
+  'info': Info(title='my_custom_imported_data', version='0.0.1', status=None, description='Custom contract description', owner=None, contact=None), 
+  'servers': {}, 
+  'terms': None, 
+  'models': {}, 
+  'definitions': {}, 
+  'examples': [], 
+  'quality': None, 
+  'servicelevels': None
+}
+```
 ## Development Setup
 
 Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).
