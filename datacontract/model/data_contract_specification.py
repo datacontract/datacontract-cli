@@ -118,10 +118,10 @@ class Field(pyd.BaseModel):
 
 
 class Model(pyd.BaseModel):
-    description: str = None
-    type: str = None
-    namespace: str = None
-    title: str = None
+    description: Optional[str] = None
+    type: Optional[str] = None
+    namespace: Optional[str] = None
+    title: Optional[str] = None
     fields: Dict[str, Field] = {}
     config: Dict[str, Any] = None
 
