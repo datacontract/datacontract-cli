@@ -80,6 +80,7 @@ def setup_s3_connection(con, server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
+    s3_session_token = os.getenv("DATACONTRACT_S3_SESSION_TOKEN")
     s3_endpoint = "s3.amazonaws.com"
     use_ssl = "true"
     url_style = "vhost"
@@ -90,18 +91,33 @@ def setup_s3_connection(con, server):
             url_style = "path"
 
     if s3_access_key_id is not None:
-        con.sql(f"""
-            CREATE OR REPLACE SECRET s3_secret (
-                TYPE S3,
-                PROVIDER CREDENTIAL_CHAIN,
-                REGION '{s3_region}',
-                KEY_ID '{s3_access_key_id}',
-                SECRET '{s3_secret_access_key}',
-                ENDPOINT '{s3_endpoint}',
-                USE_SSL '{use_ssl}',
-                URL_STYLE '{url_style}'
-            );
-        """)
+        if s3_session_token is not None:
+            con.sql(f"""
+                CREATE OR REPLACE SECRET s3_secret (
+                    TYPE S3,
+                    PROVIDER CREDENTIAL_CHAIN,
+                    REGION '{s3_region}',
+                    KEY_ID '{s3_access_key_id}',
+                    SECRET '{s3_secret_access_key}',
+                    SESSION_TOKEN '{s3_session_token}',
+                    ENDPOINT '{s3_endpoint}',
+                    USE_SSL '{use_ssl}',
+                    URL_STYLE '{url_style}'
+                );
+            """)
+        else:
+            con.sql(f"""
+                CREATE OR REPLACE SECRET s3_secret (
+                    TYPE S3,
+                    PROVIDER CREDENTIAL_CHAIN,
+                    REGION '{s3_region}',
+                    KEY_ID '{s3_access_key_id}',
+                    SECRET '{s3_secret_access_key}',
+                    ENDPOINT '{s3_endpoint}',
+                    USE_SSL '{use_ssl}',
+                    URL_STYLE '{url_style}'
+                );
+            """)
 
     #     con.sql(f"""
     #                 SET s3_region = '{s3_region}';
