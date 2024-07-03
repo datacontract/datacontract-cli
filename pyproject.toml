@@ -1,11 +1,12 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.8"
-description = "Test data contracts"
+version = "0.10.9"
+description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 readme = "README.md"
 authors = [
   { name = "Jochen Christ", email = "jochen.christ@innoq.com" },
   { name = "Stefan Negele", email = "stefan.negele@innoq.com" },
+  { name = "Simon Harrer", email = "simon.harrer@innoq.com" },
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -54,7 +55,7 @@ databricks = [
 ]
 
 deltalake = [
-    "deltalake>=0.17,<0.19"
+  "deltalake>=0.17,<0.19"
 ]
 
 kafka = [
@@ -76,7 +77,7 @@ snowflake = [
 ]
 
 sqlserver = [
-    "soda-core-sqlserver>=3.3.1,<3.4.0"
+  "soda-core-sqlserver>=3.3.1,<3.4.0"
 ]
 
 trino = [
@@ -108,7 +109,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://cli.datacontract.com"
-Issues = "https://github.com/datacontract/cli/issues"
+Issues = "https://github.com/datacontract/datacontract-cli/issues"
 
 [project.scripts]
 datacontract = "datacontract.cli:app"
@@ -118,7 +119,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts="-n 8"
+addopts = "-n 8"
 
 [tool.ruff]
 line-length = 120
