@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Integrate support into the pre-commit workflow. For further details, please refer to the information provided [here](./README.md#use-with-pre-commit).
 - Improved HTML export, supporting links, tags, and more
 - Add support for trino (#278)
+- Add support for AWS SESSION_TOKEN (#309)
 
 ### Changed
 - Added array management on HTML export (#299)
