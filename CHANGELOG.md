@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.10.9] - 2024-07-03
+
 ### Added
 - Add support for Trino (#278)
 - Spark export: add Spark StructType exporter (#277)
