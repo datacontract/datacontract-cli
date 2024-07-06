@@ -1,11 +1,12 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.8"
-description = "Test data contracts"
+version = "0.10.9"
+description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 readme = "README.md"
 authors = [
   { name = "Jochen Christ", email = "jochen.christ@innoq.com" },
   { name = "Stefan Negele", email = "stefan.negele@innoq.com" },
+  { name = "Simon Harrer", email = "simon.harrer@innoq.com" },
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -32,8 +33,8 @@ dependencies = [
   "rdflib==7.0.0",
   "opentelemetry-exporter-otlp-proto-grpc~=1.16",
   "opentelemetry-exporter-otlp-proto-http~=1.16",
-  "boto3>=1.34.41,<1.34.130",
-  "botocore>=1.34.41,<1.34.128",
+  "boto3>=1.34.41,<1.34.137",
+  "botocore>=1.34.41,<1.34.137",
   "jinja_partials >= 0.2.1"
 ]
 
@@ -54,7 +55,7 @@ databricks = [
 ]
 
 deltalake = [
-    "deltalake>=0.17,<0.19"
+  "deltalake>=0.17,<0.19"
 ]
 
 kafka = [
@@ -67,16 +68,16 @@ postgres = [
 ]
 
 s3 = [
-  "s3fs==2024.6.0"
+  "s3fs==2024.6.1"
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<3.11",
+  "snowflake-connector-python[pandas]>=3.6,<3.12",
   "soda-core-snowflake>=3.3.1,<3.4.0"
 ]
 
 sqlserver = [
-    "soda-core-sqlserver>=3.3.1,<3.4.0"
+  "soda-core-sqlserver>=3.3.1,<3.4.0"
 ]
 
 trino = [
@@ -98,7 +99,7 @@ dev = [
   "pymssql==2.3.0",
   "kafka-python",
   "trino==0.328.0",
-  "testcontainers~=4.5.0",
+  "testcontainers>=4.5,<4.8",
   "testcontainers[core]",
   "testcontainers[minio]",
   "testcontainers[postgres]",
@@ -108,7 +109,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://cli.datacontract.com"
-Issues = "https://github.com/datacontract/cli/issues"
+Issues = "https://github.com/datacontract/datacontract-cli/issues"
 
 [project.scripts]
 datacontract = "datacontract.cli:app"
@@ -118,7 +119,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts="-n 8"
+addopts = "-n 8"
 
 [tool.ruff]
 line-length = 120

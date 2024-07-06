@@ -10,6 +10,7 @@ name: Release
 jobs:
   test:
     uses: ./.github/workflows/ci.yaml
+    secrets: inherit
 
   check_version:
     runs-on: ubuntu-latest
