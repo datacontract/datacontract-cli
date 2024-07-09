@@ -12,6 +12,11 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 dbt_manifest = "fixtures/dbt/import/manifest_jaffle_duckdb.json"
 
 
+def test_read_dbt_manifest_():
+    result = read_dbt_manifest(dbt_manifest)
+    assert len(result.get("models")) == 5
+
+
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(
@@ -25,11 +30,6 @@ def test_cli():
         ],
     )
     assert result.exit_code == 0
-
-
-def test_read_dbt_manifest_():
-    result = read_dbt_manifest(dbt_manifest)
-    assert len(result.get("models")) == 5
 
 
 def test_cli_with_filter():
