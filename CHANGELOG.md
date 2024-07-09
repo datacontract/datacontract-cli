@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
 ### Added
 - Add support for dbt manifest file (#104)
+- Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)
+ 
 
 ## [0.10.9] - 2024-07-03
 

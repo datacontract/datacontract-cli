@@ -1,6 +1,9 @@
 import logging
+import typing
 
-from pyspark.sql import SparkSession
+if typing.TYPE_CHECKING:
+    from pyspark.sql import SparkSession
+
 from soda.scan import Scan
 
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
@@ -17,7 +20,7 @@ from datacontract.model.run import Run, Check, Log
 
 
 def check_soda_execute(
-    run: Run, data_contract: DataContractSpecification, server: Server, spark: SparkSession, tmp_dir
+    run: Run, data_contract: DataContractSpecification, server: Server, spark: 'SparkSession', tmp_dir
 ):
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
