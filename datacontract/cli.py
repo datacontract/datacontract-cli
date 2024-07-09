@@ -226,6 +226,12 @@ def import_(
     unity_table_full_name: Annotated[
         Optional[str], typer.Option(help="Full name of a table in the unity catalog")
     ] = None,
+    dbt_models: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of models names to import from the dbt manifest file (repeat for multiple models names, leave empty for all models in the dataset)."
+        ),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
@@ -238,6 +244,7 @@ def import_(
         bigquery_project=bigquery_project,
         bigquery_dataset=bigquery_dataset,
         unity_table_full_name=unity_table_full_name,
+        dbt_models=dbt_models,
     )
     console.print(result.to_yaml())
 
