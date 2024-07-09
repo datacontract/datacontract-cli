@@ -1,6 +1,9 @@
 import logging
+import typing
 
-from pyspark.sql import SparkSession
+if typing.TYPE_CHECKING:
+    from pyspark.sql import SparkSession
+
 from soda.scan import Scan
 
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
