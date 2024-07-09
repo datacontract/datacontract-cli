@@ -10,6 +10,7 @@ from datacontract.imports.dbt_importer import read_dbt_manifest
 logging.basicConfig(level=logging.DEBUG, force=True)
 
 dbt_manifest = "fixtures/dbt/import/manifest_jaffle_duckdb.json"
+dbt_manifest_empty_columns = "fixtures/dbt/import/manifest_empty_columns.json"
 
 
 def test_read_dbt_manifest_():
@@ -182,6 +183,26 @@ models:
       customer_lifetime_value:
         type: double
         description: ''
+    """
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+
+def test_import_dbt_manifest_with_filter_and_empty_columns():
+    result = DataContract().import_from_source("dbt", dbt_manifest_empty_columns, dbt_model=["customers"])
+
+    expected = """
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: jaffle_shop
+  version: 0.0.1
+  dbt_version: 1.8.0
+models:
+  customers:
+    description: This table has basic information about a customer, as well as some
+      derived facts based on a customer's orders
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

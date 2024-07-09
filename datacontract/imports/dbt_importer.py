@@ -3,7 +3,6 @@ import json
 # from __future__ import annotations
 from typing import (
     List,
-    Optional,
 )
 
 from datacontract.imports.importer import Importer
@@ -12,27 +11,31 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 class DbtManifestImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict = {}
+        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
     ) -> dict:
-        manifest_dict = read_dbt_manifest(manifest_path=source)
-        return import_dbt_manifest(data_contract_specification, manifest_dict, import_args.get("dbt_model"))
+        data = read_dbt_manifest(manifest_path=source)
+        return import_dbt_manifest(
+            data_contract_specification, manifest_dict=data, dbt_models=import_args.get("dbt_model")
+        )
 
 
-def import_dbt_manifest(data_contract_specification: DataContractSpecification, data: dict, dbt_models: List[str]):
-    data_contract_specification.info.title = data.get("info").get("project_name")
-    data_contract_specification.info.dbt_version = data.get("info").get("dbt_version")
+def import_dbt_manifest(
+    data_contract_specification: DataContractSpecification, manifest_dict: dict, dbt_models: List[str]
+):
+    data_contract_specification.info.title = manifest_dict.get("info").get("project_name")
+    data_contract_specification.info.dbt_version = manifest_dict.get("info").get("dbt_version")
 
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
 
-    for model in data.get("models", []):
+    for model in manifest_dict.get("models", []):
         if dbt_models and model.name not in dbt_models:
             continue
 
         dc_model = Model(
             description=model.description,
             tags=model.tags,
-            fields=convert_fields(model.columns),
+            fields=create_fields(model.columns),
         )
 
         data_contract_specification.models[model.name] = dc_model
@@ -40,7 +43,7 @@ def import_dbt_manifest(data_contract_specification: DataContractSpecification, 
     return data_contract_specification
 
 
-def convert_fields(columns):
+def create_fields(columns: List):
     fields = {}
     for column in columns:
         field = Field(
@@ -54,10 +57,10 @@ def convert_fields(columns):
 def read_dbt_manifest(manifest_path: str):
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
-        return {"info": manifest.get("metadata"), "models": get_models(manifest)}
+    return {"info": manifest.get("metadata"), "models": create_manifest_models(manifest)}
 
 
-def get_models(manifest):
+def create_manifest_models(manifest: dict) -> List:
     models = []
     nodes = manifest.get("nodes")
 
@@ -71,17 +74,15 @@ def get_models(manifest):
 
 class DbtColumn:
     name: str
-    description: Optional[str] = None
-    data_type: Optional[str] = None
-    meta: Optional[dict] = None
-    constraints: Optional[str] = None
-    quote: Optional[str] = None
-    tags: Optional[str] = None
+    description: str
+    data_type: str
+    meta: dict
+    tags: List
 
-    def __init__(self, node_column) -> None:
+    def __init__(self, node_column: dict):
         self.name = node_column.get("name", "")
         self.description = node_column.get("description", "")
-        self.data_type = node_column.get("data_type", None)
+        self.data_type = node_column.get("data_type")
         self.meta = node_column.get("meta", {})
         self.tags = node_column.get("tags", [])
 
@@ -93,11 +94,11 @@ class DbtModel:
     name: str
     database: str
     schema: str
-    description: Optional[str] = None
+    description: str
     unique_id: str
-    tags: Optional[str] = None
+    tags: List
 
-    def __init__(self, node) -> None:
+    def __init__(self, node: dict):
         self.name = node.get("name")
         self.database = node.get("database")
         self.schema = node.get("schema")
@@ -106,9 +107,9 @@ class DbtModel:
         self.unique_id = node.get("unique_id")
         self.columns = []
         self.tags = node.get("tags")
-        self.add_columns(node.get("columns").values())
+        self.add_columns(node.get("columns", {}).values())
 
-    def add_columns(self, model_columns) -> Optional[str]:
+    def add_columns(self, model_columns: List):
         for column in model_columns:
             self.columns.append(DbtColumn(column))
 
