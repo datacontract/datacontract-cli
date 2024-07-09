@@ -15,7 +15,7 @@ class DbtManifestImporter(Importer):
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict = {}
     ) -> dict:
         manifest_dict = read_dbt_manifest(manifest_path=source)
-        return import_dbt_manifest(data_contract_specification, manifest_dict, import_args.get("dbt_models"))
+        return import_dbt_manifest(data_contract_specification, manifest_dict, import_args.get("dbt_model"))
 
 
 def import_dbt_manifest(data_contract_specification: DataContractSpecification, data: dict, dbt_models: List[str]):

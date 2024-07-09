@@ -42,9 +42,9 @@ def test_cli_with_filter():
             "dbt",
             "--source",
             dbt_manifest,
-            "--dbt-models",
+            "--dbt-model",
             "customers",
-            "--dbt-models",
+            "--dbt-model",
             "orders",
         ],
     )
@@ -189,7 +189,7 @@ models:
 
 
 def test_import_dbt_manifest_with_filter():
-    result = DataContract().import_from_source("dbt", dbt_manifest, dbt_models=["customers"])
+    result = DataContract().import_from_source("dbt", dbt_manifest, dbt_model=["customers"])
 
     expected = """
 dataContractSpecification: 0.9.3
