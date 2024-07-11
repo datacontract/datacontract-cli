@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Adds support for referencing fields within a definition (#322) 
+
+### Fixed
 - Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)
 
 ## [0.10.9] - 2024-07-03
