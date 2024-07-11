@@ -95,7 +95,7 @@ dev = [
   "pre-commit~=3.7.1",
   "pytest",
   "pytest-xdist",
-  "moto",
+  "moto==5.0.9",
   "pymssql==2.3.0",
   "kafka-python",
   "trino==0.328.0",
