@@ -45,7 +45,7 @@ class DataContract:
         examples: bool = False,
         publish_url: str = None,
         publish_to_opentelemetry: bool = False,
-        spark: 'SparkSession' = None,
+        spark: "SparkSession" = None,
         inline_definitions: bool = False,
         inline_quality: bool = False,
     ):
