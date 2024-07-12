@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for dbt manifest file (#104)
 - Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)
- 
+- Add `map` and `enum` type for Avro schema import (#311)
 
 ## [0.10.9] - 2024-07-03
 

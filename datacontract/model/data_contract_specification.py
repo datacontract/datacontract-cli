@@ -103,10 +103,12 @@ class Field(pyd.BaseModel):
     maximum: int = None
     exclusiveMaximum: int = None
     enum: List[str] = []
+    symbols: List[str] = []
     tags: List[str] = []
     links: Dict[str, str] = {}
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
+    values: "Field" = None
     precision: int = None
     scale: int = None
     example: str = None

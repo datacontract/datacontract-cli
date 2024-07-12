@@ -31,6 +31,39 @@ models:
       order_total:
         type: integer
         description: Total amount of the order in the smallest monetary unit (e.g., cents).
+      status:
+        type: enum
+        required: true
+        description: order status
+        symbols:
+            - PLACED
+            - SHIPPED
+            - DELIVERED
+            - CANCELLED
+      metadata:
+        type: map
+        required: true
+        description: Additional metadata about the order
+        values:
+          type: object
+          fields:
+            value:
+              type: string
+              required: true
+            type:
+              type: enum
+              required: true
+              symbols:
+              - STRING
+              - LONG
+              - DOUBLE
+            timestamp:
+              type: long
+              required: true
+            source:
+              type: string
+              required: true
+          default: {}
   line_items:
     type: object
     fields:

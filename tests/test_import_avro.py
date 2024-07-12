@@ -57,7 +57,7 @@ models:
         required: true
       emailadresses:
         type: array
-        description: Different email adresses of a customer
+        description: Different email addresses of a customer
         items:
            type: string
            format: email
@@ -76,6 +76,39 @@ models:
           zipcode:
             type: long
             required: true
+      status:
+        type: enum
+        required: true
+        description: order status
+        symbols:
+            - PLACED
+            - SHIPPED
+            - DELIVERED
+            - CANCELLED
+      metadata:
+        type: map
+        required: true
+        description: Additional metadata about the order
+        values:
+          type: object
+          fields:
+            value:
+              type: string
+              required: true
+            type:
+              type: enum
+              required: true
+              symbols:
+              - STRING
+              - LONG
+              - DOUBLE
+            timestamp:
+              type: long
+              required: true
+            source:
+              type: string
+              required: true
+          default: {}
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
