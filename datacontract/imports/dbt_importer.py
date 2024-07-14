@@ -1,6 +1,5 @@
 import json
 
-# from __future__ import annotations
 from typing import (
     List,
 )
@@ -80,8 +79,8 @@ class DbtColumn:
     tags: List
 
     def __init__(self, node_column: dict):
-        self.name = node_column.get("name", "")
-        self.description = node_column.get("description", "")
+        self.name = node_column.get("name")
+        self.description = node_column.get("description")
         self.data_type = node_column.get("data_type")
         self.meta = node_column.get("meta", {})
         self.tags = node_column.get("tags", [])
@@ -107,7 +106,8 @@ class DbtModel:
         self.unique_id = node.get("unique_id")
         self.columns = []
         self.tags = node.get("tags")
-        self.add_columns(node.get("columns", {}).values())
+        if node.get("columns"):
+            self.add_columns(node.get("columns").values())
 
     def add_columns(self, model_columns: List):
         for column in model_columns:
