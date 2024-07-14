@@ -12,7 +12,7 @@ runner = CliRunner()
 #     load_dotenv(override=True)
 #     data_contract = DataContract(
 #         data_contract_file="https://innoq.datamesh-manager.com/checker/datacontracts/6b49c320-aaa2-4d26-bfaf-9f356a711175",
-#         publish_url="https://api.datamesh-manager.com/api/runs"
+#         publish_url="https://api.datamesh-manager.com/api/test-results"
 #     )
 #
 #     run = data_contract.test()

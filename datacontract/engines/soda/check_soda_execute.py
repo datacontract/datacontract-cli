@@ -20,7 +20,7 @@ from datacontract.model.run import Run, Check, Log
 
 
 def check_soda_execute(
-    run: Run, data_contract: DataContractSpecification, server: Server, spark: 'SparkSession', tmp_dir
+    run: Run, data_contract: DataContractSpecification, server: Server, spark: "SparkSession", tmp_dir
 ):
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")

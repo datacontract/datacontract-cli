@@ -1027,19 +1027,22 @@ datacontract import --format glue --source <database_name>
 
 ## Integrations
 
-| Integration       | Option                       | Description                                                                                           |
-|-------------------|------------------------------|-------------------------------------------------------------------------------------------------------|
-| Data Mesh Manager | `--publish`                  | Push full results to the [Data Mesh Manager API](https://api.datamesh-manager.com/swagger/index.html) |
-| OpenTelemetry     | `--publish-to-opentelemetry` | Push result as gauge metrics                                                                          |
+| Integration           | Option                       | Description                                                                                                   |
+|-----------------------|------------------------------|---------------------------------------------------------------------------------------------------------------|
+| Data Mesh Manager     | `--publish`                  | Push full results to the [Data Mesh Manager API](https://api.datamesh-manager.com/swagger/index.html)         |
+| Data Contract Manager | `--publish`                  | Push full results to the [Data Contract Manager API](https://api.datacontract-manager.com/swagger/index.html) |
+| OpenTelemetry         | `--publish-to-opentelemetry` | Push result as gauge metrics                                                                                  |
 
 ### Integration with Data Mesh Manager
 
-If you use [Data Mesh Manager](https://datamesh-manager.com/), you can use the data contract URL and append the `--publish` option to send and display the test results. Set an environment variable for your API key.
+If you use [Data Mesh Manager](https://datamesh-manager.com/) or [Data Contract Manager](https://datacontract-manager.com/), you can use the data contract URL and append the `--publish` option to send and display the test results. Set an environment variable for your API key.
 
 ```bash
 # Fetch current data contract, execute tests on production, and publish result to data mesh manager
 $ EXPORT DATAMESH_MANAGER_API_KEY=xxx
-$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish
+$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml \ 
+ --server production \
+ --publish https://api.datamesh-manager.com/api/test-results
 ```
 
 ### Integration with OpenTelemetry
@@ -1105,7 +1108,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
 
 5. Set up a CI pipeline that executes daily and reports the results to the [Data Mesh Manager](https://datamesh-manager.com). Or to some place else. You can even publish to any opentelemetry compatible system.
    ```bash
-   $ datacontract test --publish https://api.datamesh-manager.com/api/runs
+   $ datacontract test --publish https://api.datamesh-manager.com/api/test-results
    ```
 
 ### Contract-First
@@ -1383,7 +1386,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 ## Related Tools
 
-- [Data Mesh Manager](https://www.datamesh-manager.com/) is a commercial tool to manage data products and data contracts. It supports the data contract specification and allows the user to import or export data contracts using this specification.
+- [Data Contract Manager](https://www.datacontract-manager.com/) is a commercial tool to manage data contracts. It contains a web UI, access management, and data governance for a full enterprise data marketplace.
 - [Data Contract GPT](https://gpt.datacontract.com) is a custom GPT that can help you write data contracts.
 - [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
 

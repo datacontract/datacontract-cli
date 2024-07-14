@@ -50,6 +50,10 @@ def get_duckdb_connection(data_contract, server, run: Run):
                 )
         elif server.format == "delta":
             if server.type == "azure":
+                # After switching to native delta table support
+                # in https://github.com/datacontract/datacontract-cli/issues/258,
+                # azure storage should also work
+                # https://github.com/duckdb/duckdb_delta/issues/21
                 raise NotImplementedError("Support for Delta Tables on Azure Storage is not implemented yet")
 
             storage_options = {
