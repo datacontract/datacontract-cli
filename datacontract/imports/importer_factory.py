@@ -70,3 +70,6 @@ importer_factory.register_lazy_importer(
 importer_factory.register_lazy_importer(
     name=ImportFormat.unity, module_path="datacontract.imports.unity_importer", class_name="UnityImporter"
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.dbt, module_path="datacontract.imports.dbt_importer", class_name="DbtManifestImporter"
+)
