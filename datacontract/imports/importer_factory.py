@@ -46,7 +46,9 @@ def load_module_class(module_path, class_name):
 
 importer_factory = ImporterFactory()
 importer_factory.register_lazy_importer(
-    name=ImportFormat.avro, module_path="datacontract.imports.avro_importer", class_name="AvroImporter"
+    name=ImportFormat.avro,
+    module_path="datacontract.imports.avro_importer",
+    class_name="AvroImporter",
 )
 importer_factory.register_lazy_importer(
     name=ImportFormat.bigquery,
@@ -54,7 +56,9 @@ importer_factory.register_lazy_importer(
     class_name="BigQueryImporter",
 )
 importer_factory.register_lazy_importer(
-    name=ImportFormat.glue, module_path="datacontract.imports.glue_importer", class_name="GlueImporter"
+    name=ImportFormat.glue,
+    module_path="datacontract.imports.glue_importer",
+    class_name="GlueImporter",
 )
 importer_factory.register_lazy_importer(
     name=ImportFormat.jsonschema,
@@ -62,13 +66,24 @@ importer_factory.register_lazy_importer(
     class_name="JsonSchemaImporter",
 )
 importer_factory.register_lazy_importer(
-    name=ImportFormat.odcs, module_path="datacontract.imports.odcs_importer", class_name="OdcsImporter"
+    name=ImportFormat.odcs,
+    module_path="datacontract.imports.odcs_importer",
+    class_name="OdcsImporter",
 )
 importer_factory.register_lazy_importer(
-    name=ImportFormat.sql, module_path="datacontract.imports.sql_importer", class_name="SqlImporter"
+    name=ImportFormat.sql,
+    module_path="datacontract.imports.sql_importer",
+    class_name="SqlImporter",
 )
 importer_factory.register_lazy_importer(
-    name=ImportFormat.unity, module_path="datacontract.imports.unity_importer", class_name="UnityImporter"
+    name=ImportFormat.unity,
+    module_path="datacontract.imports.unity_importer",
+    class_name="UnityImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.spark,
+    module_path="datacontract.imports.spark_importer",
+    class_name="SparkImporter",
 )
 importer_factory.register_lazy_importer(
     name=ImportFormat.dbt, module_path="datacontract.imports.dbt_importer", class_name="DbtManifestImporter"
