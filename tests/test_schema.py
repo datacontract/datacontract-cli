@@ -32,14 +32,16 @@ models:
         type: integer
         description: Total amount of the order in the smallest monetary unit (e.g., cents).
       status:
-        type: enum
+        type: string
         required: true
         description: order status
-        symbols:
+        enum:
             - PLACED
             - SHIPPED
             - DELIVERED
             - CANCELLED
+        config:
+          avroType: enum
       metadata:
         type: map
         required: true
@@ -51,12 +53,14 @@ models:
               type: string
               required: true
             type:
-              type: enum
+              type: string
               required: true
-              symbols:
+              enum:
               - STRING
               - LONG
               - DOUBLE
+              config:
+                avroType: enum
             timestamp:
               type: long
               required: true

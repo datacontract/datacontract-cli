@@ -45,12 +45,13 @@ def fetch_schema(location: str = None) -> Dict[str, Any]:
         with open(location, "r") as file:
             schema = json.load(file)
 
-    # Update the FieldType enum to include "enum" and "map" if it's not already there
-    # this piece of code can be removed if ADMINS modify the datacontract.schema.json
+    # Update the FieldType enum to include "map" if it's not already there
+    # this piece of code can be removed when #61 PR gets merged,
+    # https://github.com/datacontract/datacontract-specification/pull/61
     if "$defs" in schema and "FieldType" in schema["$defs"]:
         field_type_enum = schema["$defs"]["FieldType"].get("enum", [])
-        if "enum" not in field_type_enum or "map" not in field_type_enum:
-            field_type_enum.extend(["enum", "map"])
+        if "map" not in field_type_enum:
+            field_type_enum.append("map")
             schema["$defs"]["FieldType"]["enum"] = field_type_enum
 
     return schema

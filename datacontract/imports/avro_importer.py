@@ -131,8 +131,11 @@ def import_record_fields(record_fields: List[avro.schema.Field]) -> Dict[str, Fi
             imported_field.type = "map"
             imported_field.values = import_avro_map_values(field.type)
         elif field.type.type == "enum":
-            imported_field.type = "enum"
-            imported_field.symbols = field.type.symbols
+            imported_field.type = "string"
+            imported_field.enum = field.type.symbols
+            if not imported_field.config:
+                imported_field.config = {}
+            imported_field.config["avroType"] = "enum"
         else:  # primitive type
             imported_field.type = map_type_from_avro(field.type.type)
 
@@ -285,7 +288,7 @@ def map_type_from_avro(avro_type_str: str) -> str:
     elif avro_type_str == "map":
         return "map"
     elif avro_type_str == "enum":
-        return "enum"
+        return "string"
     else:
         raise DataContractException(
             type="schema",
