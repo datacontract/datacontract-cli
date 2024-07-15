@@ -4,7 +4,9 @@ import tempfile
 import typing
 
 import yaml
-from pyspark.sql import SparkSession
+
+if typing.TYPE_CHECKING:
+    from pyspark.sql import SparkSession
 
 from datacontract.breaking.breaking import models_breaking_changes, quality_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
@@ -43,7 +45,7 @@ class DataContract:
         examples: bool = False,
         publish_url: str = None,
         publish_to_opentelemetry: bool = False,
-        spark: SparkSession = None,
+        spark: "SparkSession" = None,
         inline_definitions: bool = False,
         inline_quality: bool = False,
     ):
