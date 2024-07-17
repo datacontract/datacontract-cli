@@ -148,7 +148,10 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
         schema = to_jsonschema(model_name, model)
         run.log_info(f"jsonschema: {schema}")
 
-        validate = fastjsonschema.compile(schema)
+        validate = fastjsonschema.compile(
+            schema,
+            formats={"uuid": r"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$"},
+        )
 
         # Process files based on server type
         if server.type == "local":
