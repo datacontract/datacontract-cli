@@ -223,16 +223,16 @@ Commands
  Download a datacontract.yaml template and write it to file.
 
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml to create. │
-│                             [default: datacontract.yaml]                                    │
+│   location      [LOCATION]  The location (url or path) of the data contract yaml to create.  │
+│                             [default: datacontract.yaml]                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────╮
-│ --template                       TEXT  URL of a template or data contract                   │
-│                                        [default:                                            │
-│                                        https://datacontract.com/datacontract.init.yaml]     │
-│ --overwrite    --no-overwrite          Replace the existing datacontract.yaml               │
-│                                        [default: no-overwrite]                              │
-│ --help                                 Show this message and exit.                          │
+│ --template                       TEXT  URL of a template or data contract                    │
+│                                        [default:                                             │
+│                                        https://datacontract.com/datacontract.init.yaml]      │
+│ --overwrite    --no-overwrite          Replace the existing datacontract.yaml                │
+│                                        [default: no-overwrite]                               │
+│ --help                                 Show this message and exit.                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -244,12 +244,12 @@ Commands
  Validate that the datacontract.yaml is correctly formatted.
 
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
+│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                  │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --schema        TEXT  The location (url or path) of the Data Contract Specification JSON Schema                                │
-│                       [default: https://datacontract.com/datacontract.schema.json]                                             │
-│ --help                Show this message and exit.                                                                              │
+│ --schema        TEXT  The location (url or path) of the Data Contract Specification JSON Schema                                 │
+│                       [default: https://datacontract.com/datacontract.schema.json]                                              │
+│ --help                Show this message and exit.                                                                               │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -261,28 +261,28 @@ Commands
  Run schema and quality tests on configured servers.
 
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
+│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                  │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --schema                                                       TEXT  The location (url or path) of the Data Contract           │
-│                                                                      Specification JSON Schema                                 │
-│                                                                      [default:                                                 │
-│                                                                      https://datacontract.com/datacontract.schema.json]        │
-│ --server                                                       TEXT  The server configuration to run the schema and quality    │
-│                                                                      tests. Use the key of the server object in the data       │
-│                                                                      contract yaml file to refer to a server, e.g.,            │
-│                                                                      `production`, or `all` for all servers (default).         │
-│                                                                      [default: all]                                            │
-│ --examples                    --no-examples                          Run the schema and quality tests on the example data      │
-│                                                                      within the data contract.                                 │
-│                                                                      [default: no-examples]                                    │
-│ --publish                                                      TEXT  The url to publish the results after the test             │
-│                                                                      [default: None]                                           │
-│ --publish-to-opentelemetry    --no-publish-to-opentelemetry          Publish the results to opentelemetry. Use environment     │
-│                                                                      variables to configure the OTLP endpoint, headers, etc.   │
-│                                                                      [default: no-publish-to-opentelemetry]                    │
-│ --logs                        --no-logs                              Print logs [default: no-logs]                             │
-│ --help                                                               Show this message and exit.                               │
+│ --schema                                                       TEXT  The location (url or path) of the Data Contract            │
+│                                                                      Specification JSON Schema                                  │
+│                                                                      [default:                                                  │
+│                                                                      https://datacontract.com/datacontract.schema.json]         │
+│ --server                                                       TEXT  The server configuration to run the schema and quality     │
+│                                                                      tests. Use the key of the server object in the data        │
+│                                                                      contract yaml file to refer to a server, e.g.,             │
+│                                                                      `production`, or `all` for all servers (default).          │
+│                                                                      [default: all]                                             │
+│ --examples                    --no-examples                          Run the schema and quality tests on the example data       │
+│                                                                      within the data contract.                                  │
+│                                                                      [default: no-examples]                                     │
+│ --publish                                                      TEXT  The url to publish the results after the test              │
+│                                                                      [default: None]                                            │
+│ --publish-to-opentelemetry    --no-publish-to-opentelemetry          Publish the results to opentelemetry. Use environment      │
+│                                                                      variables to configure the OTLP endpoint, headers, etc.    │
+│                                                                      [default: no-publish-to-opentelemetry]                     │
+│ --logs                        --no-logs                              Print logs [default: no-logs]                              │
+│ --help                                                               Show this message and exit.                                │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -396,7 +396,6 @@ models:
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery. If this environment variable isn't set, the cli tries to use `GOOGLE_APPLICATION_CREDENTIALS` as a fallback, so if you have that set for using their Python library anyway, it should work seamlessly. |
 
 
-
 ### Azure
 
 Data Contract CLI can test data that is stored in Azure Blob storage or Azure Data Lake Storage (Gen2) (ADLS) in various formats.
@@ -416,11 +415,11 @@ servers:
 
 Authentication works with an Azure Service Principal (SPN) aka App Registration with a secret.
 
-| Environment Variable              | Example                       | Description                                          |
-|-----------------------------------|-------------------------------|------------------------------------------------------|
-| `DATACONTRACT_AZURE_TENANT_ID`            | `79f5b80f-10ff-40b9-9d1f-774b42d605fc`                  | The Azure Tenant ID                                  |
-| `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622`            | The ApplicationID / ClientID of the app registration |
-| `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX` | The Client Secret value                              |
+| Environment Variable               | Example                                | Description                                          |
+|------------------------------------|----------------------------------------|------------------------------------------------------|
+| `DATACONTRACT_AZURE_TENANT_ID`     | `79f5b80f-10ff-40b9-9d1f-774b42d605fc` | The Azure Tenant ID                                  |
+| `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622` | The ApplicationID / ClientID of the app registration |
+| `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX`            | The Client Secret value                              |
 
 
 
@@ -450,13 +449,13 @@ models:
 
 #### Environment Variables
 
-| Environment Variable             | Example            | Description |
-|----------------------------------|--------------------|-------------|
-| `DATACONTRACT_SQLSERVER_USERNAME` | `root`         | Username    |
-| `DATACONTRACT_SQLSERVER_PASSWORD` | `toor` | Password    |
-| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` | `True` | Use windows authentication, instead of login    |
-| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate    |
-| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `True` | Use SSL    |
+| Environment Variable                              | Example| Description                                  |
+|---------------------------------------------------|--------|----------------------------------------------|
+| `DATACONTRACT_SQLSERVER_USERNAME`                 | `root` | Username                                     |
+| `DATACONTRACT_SQLSERVER_PASSWORD`                 | `toor` | Password                                     |
+| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True` | Use windows authentication, instead of login |
+| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate                |
+| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True` | Use SSL                                      |
 
 
 
@@ -487,8 +486,8 @@ models:
 
 | Environment Variable                         | Example                              | Description                                           |
 |----------------------------------------------|--------------------------------------|-------------------------------------------------------|
-| `DATACONTRACT_DATABRICKS_TOKEN` | `dapia00000000000000000000000000000` | The personal access token to authenticate             |
-| `DATACONTRACT_DATABRICKS_HTTP_PATH` | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster |
+| `DATACONTRACT_DATABRICKS_TOKEN`              | `dapia00000000000000000000000000000` | The personal access token to authenticate             |
+| `DATACONTRACT_DATABRICKS_HTTP_PATH`          | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster |
 
 
 ### Databricks (programmatic)
@@ -701,7 +700,7 @@ models:
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
 │                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
 │                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
-│                    y|dbml|spark]                                                                                                     │
+│                    y|dbml|spark]                                                                                               │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -852,18 +851,19 @@ models:
  Create a data contract from the given source location. Prints to stdout.
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                  [sql|avro|glue|bigquery|jsonschema|unity]  The format of the source file. [default: None] [required]         │
-│    --source                  TEXT                                       The path to the file or Glue Database that should be imported.    │
-│                                                                         [default: None]                                                   │
-│    --glue-table              TEXT                                       List of table ids to import from the Glue Database (repeat for    │
-│                                                                         multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                         [default: None]                                                   │
-│    --bigquery-project        TEXT                                       The bigquery project id. [default: None]                          │
-│    --bigquery-dataset        TEXT                                       The bigquery dataset id. [default: None]                          │
-│    --bigquery-table          TEXT                                       List of table ids to import from the bigquery API (repeat for     │
-│                                                                         multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                         [default: None]                                                   │
-│    --help                                                               Show this message and exit.                                       │
+│ *  --format                  [sql|avro|glue|bigquery|jsonschema|  The format of the source file. [default: None] [required]         |
+│                               unity|spark]                                                                                          |
+│    --source                  TEXT                                 The path to the file or Glue Database that should be imported.    │
+│                                                                   [default: None]                                                   │
+│    --glue-table              TEXT                                 List of table ids to import from the Glue Database (repeat for    │
+│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
+│                                                                   [default: None]                                                   │
+│    --bigquery-project        TEXT                                 The bigquery project id. [default: None]                          │
+│    --bigquery-dataset        TEXT                                 The bigquery dataset id. [default: None]                          │
+│    --bigquery-table          TEXT                                 List of table ids to import from the bigquery API (repeat for     │
+│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
+│                                                                   [default: None]                                                   │
+│    --help                                                         Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -881,11 +881,11 @@ Available import options:
 | `avro`             | Import from AVRO schemas                       | ✅      |
 | `glue`             | Import from AWS Glue DataCatalog               | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD     |
-| `jsonschema`       | Import from JSON Schemas                       | ✅       |
-| `bigquery`         | Import from BigQuery Schemas                   | ✅       |
+| `jsonschema`       | Import from JSON Schemas                       | ✅      |
+| `bigquery`         | Import from BigQuery Schemas                   | ✅      |
 | `unity`            | Import from Databricks Unity Catalog           | partial |
 | `dbt`              | Import from dbt models                         | TBD     |
-| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅       |
+| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD     |
 
 
@@ -928,7 +928,7 @@ export DATABRICKS_IMPORT_ACCESS_TOKEN=<token>
 datacontract import --format unity --unity-table-full-name <table_full_name>
 ```
 
-### Glue
+#### Glue
 
 Importing from Glue reads the necessary Data directly off of the AWS API.
 You may give the `glue-table` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
@@ -945,6 +945,15 @@ datacontract import --format glue --source <database_name> --glue-table <table_n
 datacontract import --format glue --source <database_name>
 ```
 
+#### Spark
+
+Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.
+
+Example:
+
+```bash
+datacontract import --format spark --source "users,orders"
+```
 
 ### breaking
 
@@ -954,11 +963,11 @@ datacontract import --format glue --source <database_name>
  Identifies breaking changes between data contracts. Prints to stdout.
 
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]        │
-│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]        │
+│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]         │
+│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]         │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                              │
+│ --help          Show this message and exit.                                                                               │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -970,11 +979,11 @@ datacontract import --format glue --source <database_name>
  Generate a changelog between data contracts. Prints to stdout.
 
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]        │
-│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]        │
+│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]         │
+│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]         │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                              │
+│ --help          Show this message and exit.                                                                               │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -986,8 +995,8 @@ datacontract import --format glue --source <database_name>
  PLACEHOLDER. Currently works as 'changelog' does.
 
 ╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]        │
-│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]        │
+│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]         │
+│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]         │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                                               │
@@ -1003,9 +1012,9 @@ datacontract import --format glue --source <database_name>
  Create an html catalog of data contracts.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --files         TEXT  Glob pattern for the data contract files to include in the catalog. [default: *.yaml]             │
-│ --output        TEXT  Output directory for the catalog html files. [default: catalog/]                                  │
-│ --help                Show this message and exit.                                                                       │
+│ --files         TEXT  Glob pattern for the data contract files to include in the catalog. [default: *.yaml]              │
+│ --output        TEXT  Output directory for the catalog html files. [default: catalog/]                                   │
+│ --help                Show this message and exit.                                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -1052,12 +1061,12 @@ If you use OpenTelemetry, you can use the data contract URL and append the `--pu
 The metric name is "datacontract.cli.test.result" and it uses the following encoding for the result:
 
 | datacontract.cli.test.result | Description                           |
-|-------|---------------------------------------|
-| 0     | test run passed, no warnings          |
-| 1     | test run has warnings                 |
-| 2     | test run failed                       |
-| 3     | test run not possible due to an error |
-| 4     | test status unknown                   |
+|------------------------------|---------------------------------------|
+| 0                            | test run passed, no warnings          |
+| 1                            | test run has warnings                 |
+| 2                            | test run failed                       |
+| 3                            | test run not possible due to an error |
+| 4                            | test status unknown                   |
 
 
 ```bash
@@ -1085,7 +1094,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
 
 1. Use an existing physical schema (e.g., SQL DDL) as a starting point to define your logical data model in the contract. Double check right after the import whether the actual data meets the imported logical data model. Just to be sure.
     ```bash
-    $ datacontract import --format sql ddl.sql
+    $ datacontract import --format sql --source ddl.sql
     $ datacontract test
     ```
 
@@ -1361,10 +1370,11 @@ repos:
 
 ### Available Hook IDs
 
-| Hook ID           | Description              | Dependency |
-| ----------------- | ------------------------ | ---------- |
-| datacontract-lint | Runs the lint subcommand. | Python3    |
-| datacontract-test | Runs the test subcommand. Please look at [test](#test) section for all available arguments. | Python3 |
+| Hook ID           | Description                                        | Dependency |
+| ----------------- | -------------------------------------------------- | ---------- |
+| datacontract-lint | Runs the lint subcommand.                          | Python3    |
+| datacontract-test | Runs the test subcommand. Please look at           | Python3    |
+|                   | [test](#test) section for all available arguments. |            |
 
 ## Release Steps
 

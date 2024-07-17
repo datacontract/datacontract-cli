@@ -6,11 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
+- Add support for dbt manifest file (#104)
 - Adds support for referencing fields within a definition (#322) 
 
 ### Fixed
-- Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)
+- Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)- `datacontract import --format spark`: Import from Spark tables (#326)
+- Fix an issue where specifying `glue_table` as parameter did not filter the tables and returned all tables instead from `source` instead (#333)
 
 ## [0.10.9] - 2024-07-03
 

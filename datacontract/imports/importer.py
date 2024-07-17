@@ -10,7 +10,10 @@ class Importer(ABC):
 
     @abstractmethod
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
+        self,
+        data_contract_specification: DataContractSpecification,
+        source: str,
+        import_args: dict,
     ) -> dict:
         pass
 
@@ -18,11 +21,13 @@ class Importer(ABC):
 class ImportFormat(str, Enum):
     sql = "sql"
     avro = "avro"
+    dbt = "dbt"
     glue = "glue"
     jsonschema = "jsonschema"
     bigquery = "bigquery"
     odcs = "odcs"
     unity = "unity"
+    spark = "spark"
 
     @classmethod
     def get_suported_formats(cls):
