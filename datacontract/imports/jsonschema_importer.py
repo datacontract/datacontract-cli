@@ -64,11 +64,14 @@ def convert_json_schema_properties(properties, is_definition=False):
                 case "tags":
                     field_kwargs["tags"] = value
                 case "properties":
-                    field_kwargs["fields"] = convert_json_schema_properties(value)
+                    field_kwargs["fields"] = convert_json_schema_properties(value, is_definition=is_definition)
                 case "items":
-                    field_kwargs["items"] = convert_json_schema_properties(value)
+                    field_kwargs["items"] = convert_json_schema_properties(value, is_definition=is_definition)
 
-        field = Field(**field_kwargs)
+        if is_definition:
+            field = Definition(**field_kwargs)
+        else:
+            field = Field(**field_kwargs)
         fields[field_name] = field
 
     return fields
