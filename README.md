@@ -1094,7 +1094,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
 
 1. Use an existing physical schema (e.g., SQL DDL) as a starting point to define your logical data model in the contract. Double check right after the import whether the actual data meets the imported logical data model. Just to be sure.
     ```bash
-    $ datacontract import --format sql -source ddl.sql
+    $ datacontract import --format sql --source ddl.sql
     $ datacontract test
     ```
 
