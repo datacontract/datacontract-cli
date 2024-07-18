@@ -1,8 +1,14 @@
-from pathlib import Path
+import pytest
 
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession, Row
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
+from pyspark.sql.types import (
+    StructType,
+    StructField,
+    StringType,
+    IntegerType,
+    TimestampType,
+)
 from datetime import datetime
 
 from datacontract.data_contract import DataContract
@@ -14,9 +20,29 @@ datacontract = "fixtures/dataframe/datacontract.yaml"
 load_dotenv(override=True)
 
 
+@pytest.fixture(scope="session")
+def spark(tmp_path_factory) -> SparkSession:
+    """Create and configure a Spark session."""
+    spark = (
+        SparkSession.builder.appName("datacontract-dataframe-unittest")
+        .config(
+            "spark.sql.warehouse.dir",
+            f"{tmp_path_factory.mktemp('spark')}/spark-warehouse",
+        )
+        .config("spark.streaming.stopGracefullyOnShutdown", "true")
+        .config(
+            "spark.jars.packages",
+            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0",
+        )
+        .getOrCreate()
+    )
+    spark.sparkContext.setLogLevel("WARN")
+    print(f"Using PySpark version {spark.version}")
+    return spark
+
+
 # TODO this test conflicts with the test_test_kafka.py test
-def _test_test_dataframe(tmp_path: Path):
-    spark = _create_spark_session(tmp_dir=str(tmp_path))
+def test_test_dataframe(spark: SparkSession):
     _prepare_dataframe(spark)
     data_contract = DataContract(
         data_contract_file=datacontract,
@@ -56,20 +82,3 @@ def _prepare_dataframe(spark):
     # Create temporary view
     # Name must match the model name in the data contract
     df.createOrReplaceTempView("my_table")
-
-
-def _create_spark_session(tmp_dir: str) -> SparkSession:
-    """Create and configure a Spark session."""
-    spark = (
-        SparkSession.builder.appName("datacontract-dataframe-unittest")
-        .config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
-        .config("spark.streaming.stopGracefullyOnShutdown", "true")
-        .config(
-            "spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0",
-        )
-        .getOrCreate()
-    )
-    spark.sparkContext.setLogLevel("WARN")
-    print(f"Using PySpark version {spark.version}")
-    return spark

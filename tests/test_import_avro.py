@@ -55,7 +55,7 @@ models:
       orderunits:
         type: double
         required: true
-      emailadresses:
+      emailaddresses:
         type: array
         description: Different email addresses of a customer
         items:
@@ -135,10 +135,10 @@ models:
       orderid:
         type: int
         required: true
-      adresses:
+      addresses:
         type: array
         required: true
-        description: Adresses of a customer
+        description: Addresses of a customer
         items:
           type: object
           fields:

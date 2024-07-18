@@ -29,7 +29,7 @@
         "type": "double"
       },
       {
-        "name": "emailadresses",
+        "name": "emailaddresses",
         "doc": "Different email addresses of a customer",
         "type": {
           "type": "array",

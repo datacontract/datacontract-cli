@@ -5,8 +5,8 @@
         "type": "int"
       },
       {
-        "name": "adresses",
-        "doc": "Adresses of a customer",
+        "name": "addresses",
+        "doc": "Addresses of a customer",
         "type": {
           "type": "array",
           "items": {

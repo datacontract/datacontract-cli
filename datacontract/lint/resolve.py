@@ -25,7 +25,7 @@ def resolve_data_contract(
             data_contract_location, schema_location, inline_definitions, inline_quality
         )
     elif data_contract_str is not None:
-        return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
+        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
     elif data_contract is not None:
         return data_contract
     else:
@@ -45,7 +45,7 @@ def resolve_data_contract_from_location(
         data_contract_str = fetch_resource(location)
     else:
         data_contract_str = read_file(location)
-    return resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
+    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
 
 
 def inline_definitions_into_data_contract(spec: DataContractSpecification):
@@ -55,7 +55,7 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
             if not field.ref and not field.ref_obj:
                 continue
 
-            definition = resolve_definition_ref(field.ref, spec.definitions)
+            definition = _resolve_definition_ref(field.ref, spec)
             field.ref_obj = definition
 
             for field_name in field.model_fields.keys():
@@ -67,19 +67,41 @@ def inline_definitions_into_data_contract(spec: DataContractSpecification):
                     setattr(field, extra_field_name, extra_field_value)
 
 
-def resolve_definition_ref(ref, definitions) -> Definition:
-    if ref.startswith("http://") or ref.startswith("https://"):
-        definition_str = fetch_resource(ref)
-        definition_dict = to_yaml(definition_str)
-        return Definition(**definition_dict)
-    elif ref.startswith("file://"):
-        path = ref.replace("file://", "")
-        definition_str = fetch_file(path)
-        definition_dict = to_yaml(definition_str)
-        return Definition(**definition_dict)
-    elif ref.startswith("#/definitions/"):
-        definition_name = ref.split("#/definitions/")[1]
-        return definitions[definition_name]
+def _resolve_definition_ref(ref, spec) -> Definition:
+    logging.info(f"Resolving definition ref {ref}")
+
+    if "#" in ref:
+        path, definition_path = ref.split("#")
+    else:
+        path, definition_path = ref, None
+
+    if path.startswith("http://") or path.startswith("https://"):
+        logging.info(f"Resolving definition url {path}")
+
+        definition_str = fetch_resource(path)
+        definition_dict = _to_yaml(definition_str)
+        definition = Definition(**definition_dict)
+        if definition_path is not None:
+            return _find_by_path_in_definition(definition_path, definition)
+        else:
+            return definition
+    elif path.startswith("file://"):
+        logging.info(f"Resolving definition file path {path}")
+
+        path = path.replace("file://", "")
+        definition_str = _fetch_file(path)
+        definition_dict = _to_yaml(definition_str)
+        definition = Definition(**definition_dict)
+        if definition_path is not None:
+            return _find_by_path_in_definition(definition_path, definition)
+        else:
+            return definition
+    elif ref.startswith("#"):
+        logging.info(f"Resolving definition local path {path}")
+
+        definition_path = ref[1:]
+
+        return _find_by_path_in_spec(definition_path, spec)
     else:
         raise DataContractException(
             type="lint",
@@ -90,7 +112,30 @@ def resolve_definition_ref(ref, definitions) -> Definition:
         )
 
 
-def fetch_file(path) -> str:
+def _find_by_path_in_spec(definition_path: str, spec: DataContractSpecification):
+    path_elements = definition_path.split("/")
+    definition = spec.definitions[path_elements[2]]
+    definition = _find_subfield_in_definition(definition, path_elements[3:])
+    return definition
+
+
+def _find_by_path_in_definition(definition_path: str, definition: Definition):
+    if definition_path == "" or definition_path == "/":
+        return definition
+
+    path_elements = definition_path.split("/")
+    return _find_subfield_in_definition(definition, path_elements[1:])
+
+
+def _find_subfield_in_definition(definition: Definition, path_elements):
+    while len(path_elements) > 0 and path_elements[0] == "fields":
+        definition = definition.fields[path_elements[1]]
+        path_elements = path_elements[2:]
+
+    return definition
+
+
+def _fetch_file(path) -> str:
     if not os.path.exists(path):
         raise DataContractException(
             type="export",
@@ -103,7 +148,7 @@ def fetch_file(path) -> str:
         return file.read()
 
 
-def resolve_quality_ref(quality: Quality):
+def _resolve_quality_ref(quality: Quality):
     """
     Return the content of a ref file path
     @param quality data contract quality specification
@@ -112,13 +157,13 @@ def resolve_quality_ref(quality: Quality):
         specification = quality.specification
         if quality.type == "great-expectations":
             for model, model_quality in specification.items():
-                specification[model] = get_quality_ref_file(model_quality)
+                specification[model] = _get_quality_ref_file(model_quality)
         else:
             if "$ref" in specification:
-                quality.specification = get_quality_ref_file(specification)
+                quality.specification = _get_quality_ref_file(specification)
 
 
-def get_quality_ref_file(quality_spec: str | object) -> str | object:
+def _get_quality_ref_file(quality_spec: str | object) -> str | object:
     """
     Get the file associated with a quality reference
     @param quality_spec quality specification
@@ -139,23 +184,23 @@ def get_quality_ref_file(quality_spec: str | object) -> str | object:
     return quality_spec
 
 
-def resolve_data_contract_from_str(
+def _resolve_data_contract_from_str(
     data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
-    data_contract_yaml_dict = to_yaml(data_contract_str)
-    validate(data_contract_yaml_dict, schema_location)
+    data_contract_yaml_dict = _to_yaml(data_contract_str)
+    _validate(data_contract_yaml_dict, schema_location)
 
     spec = DataContractSpecification(**data_contract_yaml_dict)
 
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
     if spec.quality and inline_quality:
-        resolve_quality_ref(spec.quality)
+        _resolve_quality_ref(spec.quality)
 
     return spec
 
 
-def to_yaml(data_contract_str):
+def _to_yaml(data_contract_str):
     try:
         yaml_dict = yaml.safe_load(data_contract_str)
         return yaml_dict
@@ -170,7 +215,7 @@ def to_yaml(data_contract_str):
         )
 
 
-def validate(data_contract_yaml, schema_location: str = None):
+def _validate(data_contract_yaml, schema_location: str = None):
     schema = fetch_schema(schema_location)
     try:
         fastjsonschema.validate(schema, data_contract_yaml)
