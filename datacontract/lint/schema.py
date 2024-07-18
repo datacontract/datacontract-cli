@@ -13,7 +13,6 @@ def fetch_schema(location: str = None) -> Dict[str, Any]:
 
     This function retrieves a JSON schema either from a URL or a local file path.
     If no location is provided, it defaults to the DataContract schema URL.
-    It also updates the FieldType enum in the schema to include "enum" and "map" if they're not already present.
 
     Args:
         location: The URL or file path of the schema.
@@ -44,14 +43,5 @@ def fetch_schema(location: str = None) -> Dict[str, Any]:
             )
         with open(location, "r") as file:
             schema = json.load(file)
-
-    # Update the FieldType enum to include "map" if it's not already there
-    # this piece of code can be removed when #61 PR gets merged,
-    # https://github.com/datacontract/datacontract-specification/pull/61
-    if "$defs" in schema and "FieldType" in schema["$defs"]:
-        field_type_enum = schema["$defs"]["FieldType"].get("enum", [])
-        if "map" not in field_type_enum:
-            field_type_enum.append("map")
-            schema["$defs"]["FieldType"]["enum"] = field_type_enum
 
     return schema

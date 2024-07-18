@@ -107,6 +107,7 @@ class Field(pyd.BaseModel):
     links: Dict[str, str] = {}
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
+    keys: "Field" = None
     values: "Field" = None
     precision: int = None
     scale: int = None
