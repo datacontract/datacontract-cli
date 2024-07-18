@@ -65,7 +65,7 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
             if field.config["avroLogicalType"] in ["time-millis", "date"]:
                 return {"type": "int", "logicalType": field.config["avroLogicalType"]}
         if "avroType" in field.config:
-            return field.config["avroLogicalType"]
+            return field.config["avroType"]
 
     if field.type is None:
         return "null"

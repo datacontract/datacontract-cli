@@ -76,6 +76,43 @@ models:
           zipcode:
             type: long
             required: true
+      status:
+        type: string
+        required: true
+        description: order status
+        enum:
+            - PLACED
+            - SHIPPED
+            - DELIVERED
+            - CANCELLED
+        config:
+            avroType: enum
+      metadata:
+        type: map
+        required: true
+        description: Additional metadata about the order
+        values:
+          type: object
+          fields:
+            value:
+              type: string
+              required: true
+            type:
+              type: string
+              required: true
+              enum:
+                  - STRING
+                  - LONG
+                  - DOUBLE
+              config:
+                avroType: enum
+            timestamp:
+              type: long
+              required: true
+            source:
+              type: string
+              required: true
+          default: {}
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
