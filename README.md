@@ -532,7 +532,7 @@ run.result
 
 Works with Spark DataFrames.
 DataFrames need to be created as named temporary views.
-Multiple temporary views are suppored if your data contract contains multiple models.
+Multiple temporary views are supported if your data contract contains multiple models.
 
 Testing DataFrames is useful to test your datasets in a pipeline before writing them to a data source.
 
@@ -1169,7 +1169,7 @@ Examples: adding models or fields
 - Add the models or fields in the datacontract.yaml
 - Increment the minor version of the datacontract.yaml on any change. Simply edit the datacontract.yaml for this.
 - You need a policy that these changes are non-breaking. That means that one cannot use the star expression in SQL to query a table under contract. Make the consequences known.
-- Fail the build in the Pull Request if a datacontract.yaml accidentially adds a breaking change even despite only a minor version change
+- Fail the build in the Pull Request if a datacontract.yaml accidentally adds a breaking change even despite only a minor version change
    ```bash
   $ datacontract breaking datacontract-from-pr.yaml datacontract-from-main.yaml
   ```

@@ -29,8 +29,8 @@
         "type": "double"
       },
       {
-        "name": "emailadresses",
-        "doc": "Different email adresses of a customer",
+        "name": "emailaddresses",
+        "doc": "Different email addresses of a customer",
         "type": {
           "type": "array",
           "items": "string",

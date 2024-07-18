@@ -18,7 +18,7 @@ class ImporterFactory:
         importers = self.dict_importer.copy()
         importers.update(self.dict_lazy_importer.copy())
         if name not in importers.keys():
-            raise ValueError(f"The '{name}' format is not suportted.")
+            raise ValueError(f"The '{name}' format is not supported.")
         importer_class = importers[name]
         if type(importers[name]) is tuple:
             importer_class = load_module_class(module_path=importers[name][0], class_name=importers[name][1])
