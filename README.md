@@ -875,18 +875,19 @@ datacontract import --format sql --source my_ddl.sql
 
 Available import options:
 
-| Type               | Description                                    | Status  |
-|--------------------|------------------------------------------------|---------|
+| Type               | Description                                    | Status |
+|--------------------|------------------------------------------------|--------|
 | `sql`              | Import from SQL DDL                            | ✅      |
 | `avro`             | Import from AVRO schemas                       | ✅      |
 | `glue`             | Import from AWS Glue DataCatalog               | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `jsonschema`       | Import from JSON Schemas                       | ✅      |
 | `bigquery`         | Import from BigQuery Schemas                   | ✅      |
 | `unity`            | Import from Databricks Unity Catalog           | partial |
-| `dbt`              | Import from dbt models                         | TBD     |
+| `dbt`              | Import from dbt models                         | ✅      |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
-| Missing something? | Please create an issue on GitHub               | TBD     |
+| `spark`            | Import from Spark StructTypes                  | ✅      |
+| `protobuf`         | Import from Protobuf schemas                   | TBD    |
+| Missing something? | Please create an issue on GitHub               | TBD    |
 
 
 #### BigQuery
