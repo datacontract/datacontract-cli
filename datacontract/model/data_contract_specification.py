@@ -73,6 +73,7 @@ class Definition(pyd.BaseModel):
     exclusiveMaximum: int = None
     pii: bool = None
     classification: str = None
+    fields: Dict[str, "Definition"] = {}
     tags: List[str] = []
     links: Dict[str, str] = {}
     example: str = None
@@ -107,6 +108,8 @@ class Field(pyd.BaseModel):
     links: Dict[str, str] = {}
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
+    keys: "Field" = None
+    values: "Field" = None
     precision: int = None
     scale: int = None
     example: str = None

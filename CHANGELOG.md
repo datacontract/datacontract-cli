@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.10] - 2024-07-18
 
 ### Added
 - Add support for dbt manifest file (#104)
 - Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)
- 
+- Adds support for referencing fields within a definition (#322)
+- Add `map` and `enum` type for Avro schema import (#311)
+
+### Fixed
+- Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)- `datacontract import --format spark`: Import from Spark tables (#326)
+- Fix an issue where specifying `glue_table` as parameter did not filter the tables and instead returned all tables from `source` database (#333)
+
 
 ## [0.10.9] - 2024-07-03
 

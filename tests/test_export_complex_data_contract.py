@@ -5,13 +5,13 @@ from datacontract.data_contract import DataContract
 logging.basicConfig(level=logging.INFO, force=True)
 
 
-def test_schema():
+def test_export_complex_data_contract():
     """
-    A schema in a data contract would not do anything, but should also raise no errors.
+    Use a complex data contract, and smoke test that it can be exported to various formats without exception.
     """
     data_contract = DataContract(
         data_contract_str="""
-dataContractSpecification: 0.9.2
+dataContractSpecification: 0.9.3
 id: urn:datacontract:checkout:orders-latest
 info:
   title: Orders Latest
@@ -31,6 +31,43 @@ models:
       order_total:
         type: integer
         description: Total amount of the order in the smallest monetary unit (e.g., cents).
+      status:
+        type: string
+        required: true
+        description: order status
+        enum:
+            - PLACED
+            - SHIPPED
+            - DELIVERED
+            - CANCELLED
+        config:
+          avroType: enum
+      metadata:
+        type: map
+        required: true
+        description: Additional metadata about the order
+        values:
+          type: object
+          fields:
+            value:
+              type: string
+              required: true
+            type:
+              type: string
+              required: true
+              enum:
+              - STRING
+              - LONG
+              - DOUBLE
+              config:
+                avroType: enum
+            timestamp:
+              type: long
+              required: true
+            source:
+              type: string
+              required: true
+          default: {}
   line_items:
     type: object
     fields:
@@ -47,6 +84,7 @@ models:
 
     data_contract.lint()
     data_contract.test()
+    data_contract.export(export_format="avro", model="orders")
     data_contract.export(export_format="odcs")
     data_contract.export(export_format="dbt")
     data_contract.export(export_format="dbt-sources")

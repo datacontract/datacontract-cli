@@ -29,8 +29,8 @@
         "type": "double"
       },
       {
-        "name": "emailadresses",
-        "doc": "Different email adresses of a customer",
+        "name": "emailaddresses",
+        "doc": "Different email addresses of a customer",
         "type": {
           "type": "array",
           "items": "string",
@@ -58,10 +58,38 @@
           "name": "address",
           "type": "record"
         }
+      },
+      {
+        "name": "status",
+        "doc": "order status",
+        "type": {
+          "type": "enum",
+          "name": "Status",
+          "symbols": ["PLACED", "SHIPPED", "DELIVERED", "CANCELLED"]
+        }
+      },
+      {
+        "name": "metadata",
+        "doc": "Additional metadata about the order",
+        "type": {
+          "type": "map",
+          "values": {
+            "type": "record",
+            "name": "MetadataValue",
+            "fields": [
+              {"name": "value", "type": "string"},
+              {"name": "type", "type": {"type": "enum", "name": "MetadataType", "symbols": ["STRING", "LONG", "DOUBLE"]}},
+              {"name": "timestamp", "type": "long"},
+              {"name": "source", "type": "string"}
+            ]
+          },
+          "default": {}
+        }
       }
+
     ],
     "name": "orders",
     "doc": "My Model",
     "type": "record",
     "namespace": "com.sample.schema"
-  }
+}

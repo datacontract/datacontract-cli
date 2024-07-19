@@ -40,7 +40,7 @@ def test_import_json_schema_football():
 
     with open("fixtures/import/football-datacontract.yml") as file:
         expected = file.read()
+        assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()

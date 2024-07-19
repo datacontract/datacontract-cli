@@ -14,7 +14,7 @@ class GlueImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
     ) -> dict:
-        return import_glue(data_contract_specification, source, import_args.get("glue_tables"))
+        return import_glue(data_contract_specification, source, import_args.get("glue_table"))
 
 
 def get_glue_database(database_name: str):
@@ -154,7 +154,7 @@ def import_glue(
         for column in table_schema:
             field = create_typed_field(column["Type"])
 
-            # hive partitons are required, but are not primary keys
+            # hive partitions are required, but are not primary keys
             if column.get("Hive"):
                 field.required = True
 
