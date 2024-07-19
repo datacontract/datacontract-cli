@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix an issue where the quality and definition `$ref` are not always resolved.
+- Fix an issue where the JSON schema validation fails for a field with type `string` and format `uuid`
+
 ## [0.10.10] - 2024-07-18
 
 ### Added
@@ -18,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)- `datacontract import --format spark`: Import from Spark tables (#326)
 - Fix an issue where specifying `glue_table` as parameter did not filter the tables and instead returned all tables from `source` database (#333)
-
 
 ## [0.10.9] - 2024-07-03
 

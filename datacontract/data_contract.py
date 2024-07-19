@@ -46,8 +46,8 @@ class DataContract:
         publish_url: str = None,
         publish_to_opentelemetry: bool = False,
         spark: "SparkSession" = None,
-        inline_definitions: bool = False,
-        inline_quality: bool = False,
+        inline_definitions: bool = True,
+        inline_quality: bool = True,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -87,8 +87,8 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=True,
-                inline_quality=True,
+                inline_definitions=self._inline_definitions,
+                inline_quality=self._inline_quality,
             )
             run.checks.append(
                 Check(type="lint", result="passed", name="Data contract is syntactically valid", engine="datacontract")
@@ -140,7 +140,12 @@ class DataContract:
         try:
             run.log_info("Testing data contract")
             data_contract = resolve.resolve_data_contract(
-                self._data_contract_file, self._data_contract_str, self._data_contract, self._schema_location
+                self._data_contract_file,
+                self._data_contract_str,
+                self._data_contract,
+                self._schema_location,
+                inline_definitions=self._inline_definitions,
+                inline_quality=self._inline_quality,
             )
 
             if data_contract.models is None or len(data_contract.models) == 0:
@@ -304,8 +309,8 @@ class DataContract:
             self._data_contract_str,
             self._data_contract,
             schema_location=self._schema_location,
-            inline_definitions=True,
-            inline_quality=True,
+            inline_definitions=self._inline_definitions,
+            inline_quality=self._inline_quality,
         )
 
         return exporter_factory.create(export_format).export(
