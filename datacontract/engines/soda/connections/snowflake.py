@@ -4,17 +4,20 @@ import yaml
 
 
 def to_snowflake_soda_configuration(server):
+    prefix = "DATACONTRACT_SNOWFLAKE_"
+    snowflake_soda_params = {k.replace(prefix, "").lower(): v for k, v in os.environ.items() if k.startswith(prefix)}
+
+    # backward compatibility
+    if "connection_timeout" not in snowflake_soda_params:
+        snowflake_soda_params["connection_timeout"] = "5"  # minutes
+
     soda_configuration = {
         f"data_source {server.type}": {
             "type": "snowflake",
-            "username": os.getenv("DATACONTRACT_SNOWFLAKE_USERNAME"),
-            "password": os.getenv("DATACONTRACT_SNOWFLAKE_PASSWORD"),
-            "role": os.getenv("DATACONTRACT_SNOWFLAKE_ROLE"),
             "account": server.account,
             "database": server.database,
             "schema": server.schema_,
-            "warehouse": os.getenv("DATACONTRACT_SNOWFLAKE_WAREHOUSE"),
-            "connection_timeout": 5,  # minutes
+            **snowflake_soda_params,
         }
     }
     soda_configuration_str = yaml.dump(soda_configuration)

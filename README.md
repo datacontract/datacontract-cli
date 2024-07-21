@@ -588,14 +588,31 @@ models:
 ```
 
 #### Environment Variables
+All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.  
+For example:
 
-| Environment Variable               | Example            | Description                                         |
-|------------------------------------|--------------------|-----------------------------------------------------|
-| `DATACONTRACT_SNOWFLAKE_USERNAME`  | `datacontract`     | Username                                            |
-| `DATACONTRACT_SNOWFLAKE_PASSWORD`  | `mysecretpassword` | Password                                            |
-| `DATACONTRACT_SNOWFLAKE_ROLE`      | `DATAVALIDATION`   | The snowflake role to use.                          |
-| `DATACONTRACT_SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH`       | The Snowflake Warehouse to use executing the tests. |
+| Soda parameter       | Environment Variable                        | 
+|----------------------|---------------------------------------------|
+| `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
+| `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
+| `warehouse`          | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`          |
+| `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
+| `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
 
+Beware, that parameters:
+* `account`
+* `database`
+* `schema`
+
+are obtained from the `servers` section of the YAML-file.  
+E.g. from the example above:
+```yaml
+servers:
+  snowflake:
+    account: abcdefg-xn12345
+    database: ORDER_DB
+    schema: ORDERS_PII_V2
+```
 
 
 ### Kafka
