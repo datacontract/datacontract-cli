@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Support data type map in Glue import. (#340)
+
 ### Fixed
 
 - Fix an issue where the quality and definition `$ref` are not always resolved.
