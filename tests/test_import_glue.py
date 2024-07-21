@@ -65,6 +65,10 @@ def setup_mock_glue(aws_credentials):
                             "Name": "field_seven",
                             "Type": "array<struct<sub_field_three:string, sub_field_four:int>>",
                         },
+                        {
+                            "Name": "field_eight",
+                            "Type": "map<string,int>",
+                        },
                     ]
                 },
                 "PartitionKeys": [
