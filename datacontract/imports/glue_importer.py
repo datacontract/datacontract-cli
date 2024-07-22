@@ -147,7 +147,7 @@ def import_glue(
     }
 
     if location_uri:
-        server_kwargs["location_uri"] = location_uri
+        server_kwargs["location"] = location_uri
 
     data_contract_specification.servers = {
         "production": Server(**server_kwargs),
