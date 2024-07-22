@@ -865,23 +865,34 @@ models:
 ```
  Usage: datacontract import [OPTIONS]
 
- Create a data contract from the given source location. Prints to stdout.
-
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                  [sql|avro|glue|bigquery|jsonschema|  The format of the source file. [default: None] [required]         |
-│                               unity|spark]                                                                                          |
-│    --source                  TEXT                                 The path to the file or Glue Database that should be imported.    │
-│                                                                   [default: None]                                                   │
-│    --glue-table              TEXT                                 List of table ids to import from the Glue Database (repeat for    │
-│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                   [default: None]                                                   │
-│    --bigquery-project        TEXT                                 The bigquery project id. [default: None]                          │
-│    --bigquery-dataset        TEXT                                 The bigquery dataset id. [default: None]                          │
-│    --bigquery-table          TEXT                                 List of table ids to import from the bigquery API (repeat for     │
-│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                   [default: None]                                                   │
-│    --help                                                         Show this message and exit.                                       │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Create a data contract from the given source location. Prints to stdout.                                                      
+                                                                                                                               
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format                       [sql|avro|dbt|glue|jsonschema|bigquery|odcs  The format of the source file.               │
+│                                   |unity|spark]                                [default: None]                              │
+│                                                                                [required]                                   │
+│    --source                       TEXT                                         The path to the file or Glue Database that   │
+│                                                                                should be imported.                          │
+│                                                                                [default: None]                              │
+│    --glue-table                   TEXT                                         List of table ids to import from the Glue    │
+│                                                                                Database (repeat for multiple table ids,     │
+│                                                                                leave empty for all tables in the dataset).  │
+│                                                                                [default: None]                              │
+│    --bigquery-project             TEXT                                         The bigquery project id. [default: None]     │
+│    --bigquery-dataset             TEXT                                         The bigquery dataset id. [default: None]     │
+│    --bigquery-table               TEXT                                         List of table ids to import from the         │
+│                                                                                bigquery API (repeat for multiple table ids, │
+│                                                                                leave empty for all tables in the dataset).  │
+│                                                                                [default: None]                              │
+│    --unity-table-full-name        TEXT                                         Full name of a table in the unity catalog    │
+│                                                                                [default: None]                              │
+│    --dbt-model                    TEXT                                         List of models names to import from the dbt  │
+│                                                                                manifest file (repeat for multiple models    │
+│                                                                                names, leave empty for all models in the     │
+│                                                                                dataset).                                    │
+│                                                                                [default: None]                              │
+│    --help                                                                      Show this message and exit.                  │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Example:
@@ -944,6 +955,23 @@ datacontract import --format unity --source my_unity_table.json
 export DATABRICKS_IMPORT_INSTANCE="https://xyz.cloud.databricks.com"
 export DATABRICKS_IMPORT_ACCESS_TOKEN=<token>
 datacontract import --format unity --unity-table-full-name <table_full_name>
+```
+
+#### dbt
+
+Importing from dbt manifest file.
+You may give the `dbt-model` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
+
+Examples:
+
+```bash
+# Example import from dbt manifest with specifying the tables to import
+datacontract import --format dbt --source <manifest_path> --dbt-model <model_name_1> --dbt-model <model_name_2> --dbt-model <model_name_3>
+```
+
+```bash
+# Example import from AWS Glue importing all tables in the database
+datacontract import --format dbt --source <manifest_path>
 ```
 
 #### Glue
@@ -1305,7 +1333,7 @@ if __name__ == "__main__":
         format="custom_company_importer", data_contract_specification=DataContract.init(), source=json_from_custom_app
     )
     print(dict(result))
-
+    print(result.to_yaml() )
 ```
 Output
 
@@ -1322,6 +1350,16 @@ Output
   'quality': None, 
   'servicelevels': None
 }
+```
+
+```yaml
+dataContractSpecification: 0.9.3
+id: uuid-custom
+info:
+  title: my_custom_imported_data
+  version: 0.0.1
+  description: Custom contract description
+
 ```
 ## Development Setup
 
