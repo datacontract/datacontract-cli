@@ -112,3 +112,11 @@
 {% if field.items %}
 {{ render_nested_partial("item", field.items, level) }}
 {% endif %}
+
+{% if field.keys %}
+{{ render_nested_partial("key", field.keys, level) }}
+{% endif %}
+
+{% if field.values %}
+{{ render_nested_partial("value", field.values, level) }}
+{% endif %}
