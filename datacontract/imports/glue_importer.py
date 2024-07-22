@@ -39,7 +39,7 @@ def get_glue_database(database_name: str):
 
     return (
         response["Database"]["CatalogId"],
-        response["Database"].get("LocationUri", "None"),
+        response["Database"].get("LocationUri"),
     )
 
 
@@ -140,8 +140,17 @@ def import_glue(
     if table_names is None:
         table_names = get_glue_tables(source)
 
+    server_kwargs = {
+        "type": "glue",
+        "account": catalogid,
+        "database": source
+    }
+
+    if location_uri:
+        server_kwargs["location_uri"] = location_uri
+
     data_contract_specification.servers = {
-        "production": Server(type="glue", account=catalogid, database=source, location=location_uri),
+        "production": Server(**server_kwargs),
     }
 
     for table_name in table_names:
