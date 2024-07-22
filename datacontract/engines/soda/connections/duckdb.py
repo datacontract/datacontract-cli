@@ -49,24 +49,28 @@ def get_duckdb_connection(data_contract, server, run: Run):
                     f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
                 )
         elif server.format == "delta":
+            if server.type=="local":
+                delta_table_arrow = DeltaTable(model_path).to_pyarrow_dataset()
+                con.register(model_name, delta_table_arrow)
+
             if server.type == "azure":
                 # After switching to native delta table support
                 # in https://github.com/datacontract/datacontract-cli/issues/258,
                 # azure storage should also work
                 # https://github.com/duckdb/duckdb_delta/issues/21
                 raise NotImplementedError("Support for Delta Tables on Azure Storage is not implemented yet")
+            if server.type=='s3':
+                storage_options = {
+                    "AWS_ENDPOINT_URL": server.endpointUrl,
+                    "AWS_ACCESS_KEY_ID": os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID"),
+                    "AWS_SECRET_ACCESS_KEY": os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"),
+                    "AWS_REGION": os.getenv("DATACONTRACT_S3_REGION", "us-east-1"),
+                    "AWS_ALLOW_HTTP": "True" if server.endpointUrl.startswith("http://") else "False",
+                }
 
-            storage_options = {
-                "AWS_ENDPOINT_URL": server.endpointUrl,
-                "AWS_ACCESS_KEY_ID": os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID"),
-                "AWS_SECRET_ACCESS_KEY": os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"),
-                "AWS_REGION": os.getenv("DATACONTRACT_S3_REGION", "us-east-1"),
-                "AWS_ALLOW_HTTP": "True" if server.endpointUrl.startswith("http://") else "False",
-            }
+                delta_table_arrow = DeltaTable(model_path, storage_options=storage_options).to_pyarrow_dataset()
 
-            delta_table_arrow = DeltaTable(model_path, storage_options=storage_options).to_pyarrow_dataset()
-
-            con.register(model_name, delta_table_arrow)
+                con.register(model_name, delta_table_arrow)
     return con
 
 
