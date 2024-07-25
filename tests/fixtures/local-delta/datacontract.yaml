@@ -13,10 +13,10 @@ models:
   orders:
     fields:
       order_id:
-        type: varchar # this is not true
+        type: varchar 
         unique: true
         required: true
-      order_timestamp: #does not exist
+      order_timestamp:
         required: true
       order_total:
         type: bigint
