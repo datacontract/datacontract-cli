@@ -1,0 +1,142 @@
+dataContractSpecification: 0.9.2
+id: "61111-0002"
+info:
+  title: "Verbraucherpreisindex: Deutschland, Monate"
+  description: A data contract for the distribution and use of the German Consumer Price Index data.
+  version: 1.0.0
+  owner: my-domain-team
+terms:
+  usage: This data is for research and analysis purposes only.
+  limitations: Data cannot be used for commercial purposes.
+  billing: Free access for academic research.
+  noticePeriod: P3M
+servers:
+  verbraucherpreisindex/s3:
+    dataProductId: verbraucherpreisindex
+    outputPortId: delta
+    type: local
+    path: ./fixtures/local-delta/data/delta1
+    location: ./fixtures/local-delta/data/delta1
+    format: json
+    delimiter: new_line
+models:
+  verbraucherpreisindex:
+    description: Model representing the Consumer Price Index for Germany
+    fields:
+      Statistik_Code:
+        description: Statistical code for the data set
+        type: integer
+        required: true
+        minimum: 0
+      Statistik_Label:
+        description: Label for the statistical code
+        type: string
+        required: true
+      Zeit_Code:
+        description: Code for the time dimension
+        type: string
+        required: true
+      Zeit_Label:
+        description: Label for the time dimension
+        type: string
+        required: true
+      Zeit:
+        description: Year of the data
+        type: integer
+        required: true
+        example: "2022"
+      1_Merkmal_Code:
+        description: Feature code 1
+        type: string
+        required: true
+      1_Merkmal_Label:
+        description: Label for feature 1
+        type: string
+        required: true
+      1_Auspraegung_Code:
+        description: Expression code for feature 1
+        type: string
+        required: true
+        enum:
+          - "DG"
+      1_Auspraegung_Label:
+        description: Label for the expression of feature 1
+        type: string
+        required: true
+        enum:
+          - "Deutschland"
+      2_Merkmal_Code:
+        description: Feature code 2
+        type: string
+        required: true
+        enum:
+          - "MONAT"
+      2_Merkmal_Label:
+        description: Label for feature 2
+        type: string
+        required: true
+      2_Auspraegung_Code:
+        description: The Month
+        type: string
+        required: true
+        example: "MONAT01"
+      2_Auspraegung_Label:
+        description: The German name of the month
+        type: string
+        required: true
+        example: "Januar"
+      PREIS1__Verbraucherpreisindex__2020=100:
+        description: Consumer price index value
+        type: string
+        required: true
+      PREIS1__Verbraucherpreisindex__q:
+        $ref: "#/definitions/qualitaetskennzeichen"
+        type: string
+        required: true
+      Verbraucherpreisindex__CH0004:
+        description: Veränderung zum Vorjahresmonat
+        type: string
+      Verbraucherpreisindex__CH0004__q:
+        $ref: "#/definitions/qualitaetskennzeichen"
+        type: string
+        required: true
+      PREIS1__CH0005:
+        description: Veränderung zum Vormonat
+        type: string
+        required: false
+      PREIS1__CH0005__q:
+        $ref: "#/definitions/qualitaetskennzeichen"
+        type: string
+        required: true
+definitions:
+  qualitaetskennzeichen:
+    name: qualitaetskennzeichen
+    type: string
+    description: |
+      e
+      endgültiger Wert
+      0
+      weniger als die Hälfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts
+      -
+      nichts vorhanden
+      ...
+      Angabe fällt später an
+      /
+      keine Angaben, da Zahlenwert nicht sicher genug
+      .
+      Zahlenwert unbekannt oder geheimzuhalten
+      x
+      Tabellenfach gesperrt, weil Aussage nicht sinnvoll
+      ()
+      Aussagewert eingeschränkt, da der Zahlenwert statistisch relativ unsicher ist
+      p
+      vorläufige Zahl
+      r
+      berichtigte Zahl
+      s
+      geschätzte Zahl
+examples:
+  - type: json
+    description: Example entry for CPI data
+    model: ConsumerPriceIndex
+    data: '{"Statistik_Code":61111,"Statistik_Label":"Verbraucherpreisindex für Deutschland","Zeit_Code":"JAHR","Zeit_Label":"Jahr","Zeit":2022,"1_Merkmal_Code":"DINSG","1_Merkmal_Label":"Deutschland insgesamt","1_Auspraegung_Code":"DG","1_Auspraegung_Label":"Deutschland","2_Merkmal_Code":"MONAT","2_Merkmal_Label":"Monate","2_Auspraegung_Code":"MONAT01","2_Auspraegung_Label":"Januar","PREIS1__Verbraucherpreisindex__2020=100":"105,2","PREIS1__Verbraucherpreisindex__q":"e","Verbraucherpreisindex__CH0004":"4,2","Verbraucherpreisindex__CH0004__q":"e","PREIS1__CH0005":"0,5","PREIS1__CH0005__q":"e"}'

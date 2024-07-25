@@ -49,7 +49,7 @@ def get_duckdb_connection(data_contract, server, run: Run):
                     f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
                 )
         elif server.format == "delta":
-            if server.type=="local":
+            if server.type == "local":
                 delta_table_arrow = DeltaTable(model_path).to_pyarrow_dataset()
                 con.register(model_name, delta_table_arrow)
 
@@ -59,7 +59,7 @@ def get_duckdb_connection(data_contract, server, run: Run):
                 # azure storage should also work
                 # https://github.com/duckdb/duckdb_delta/issues/21
                 raise NotImplementedError("Support for Delta Tables on Azure Storage is not implemented yet")
-            if server.type=='s3':
+            if server.type == "s3":
                 storage_options = {
                     "AWS_ENDPOINT_URL": server.endpointUrl,
                     "AWS_ACCESS_KEY_ID": os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID"),
