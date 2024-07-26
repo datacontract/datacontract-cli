@@ -21,33 +21,33 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
     try:
         with open(source, "r") as file:
             json_schema = json.loads(file.read())
-            validator = fastjsonschema.compile({})
-            validator(json_schema)
 
-            description = json_schema.get("description")
-            type_ = json_schema.get("type")
-            title = json_schema.get("title")
-            properties = json_schema.get("properties", {})
-            required_properties = json_schema.get("required", [])
+        validator = fastjsonschema.compile({})
+        validator(json_schema)
 
-            model = Model(
-                description=description,
-                type=type_,
-                title=title,
-                fields=jsonschema_properties_to_fields(properties, required_properties),
-            )
-            data_contract_specification.models[json_schema.get("title", "default_model")] = model
+        description = json_schema.get("description")
+        type_ = json_schema.get("type")
+        title = json_schema.get("title", "default_model")
+        properties = json_schema.get("properties", {})
+        required_properties = json_schema.get("required", [])
 
-            definitions = json_schema.get("definitions", {})
+        field_kwargs = {}
+        for property_name, property_schema in properties.items():
+            is_required = property_name in required_properties
+            field_kwargs[property_name] = dict_to_field_args(property_schema, is_required)
 
-            for definition_name, definition_schema in definitions.items():
-                definition_schema["name"] = definition_name
-                data_contract_specification.definitions[definition_name] = property_to_field(
-                    definition_schema, is_definition=True
-                )
-                print(definition_name)
-                print(definition_schema)
-            #         definition = Definition(name=def_name, **definition_kwargs)
+        data_contract_specification.models[title] = Model(
+            description=description,
+            type=type_,
+            title=title,
+            fields={field_name: Field(**kwargs) for field_name, kwargs in field_kwargs.items()},
+        )
+
+        definitions = json_schema.get("definitions", {})
+
+        for definition_name, definition_schema in definitions.items():
+            kwargs = dict_to_field_args(definition_schema)
+            data_contract_specification.definitions[definition_name] = Definition(name=definition_name, **kwargs)
 
     except fastjsonschema.JsonSchemaException as e:
         raise DataContractException(
@@ -69,17 +69,17 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
     return data_contract_specification
 
 
-def jsonschema_properties_to_fields(properties, required_properties, is_definition=False):
+def jsonschema_to_args(properties, required_properties):
     fields = {}
     for property, property_schema in properties.items():
         is_required = property in required_properties
-        field = property_to_field(property_schema, is_required, is_definition)
+        field = dict_to_field_args(property_schema, is_required)
         fields[property] = field
 
     return fields
 
 
-def property_to_field(property_schema, is_required: bool = None, is_definition=False) -> Definition | Field:
+def dict_to_field_args(property_schema, is_required: bool = None) -> dict:
     field_kwargs = {}
 
     property_type = determine_type(property_schema)
@@ -93,7 +93,6 @@ def property_to_field(property_schema, is_required: bool = None, is_definition=F
         "title",
         "description",
         "format",
-        "name",
         "pattern",
         "enum",
         "tags",
@@ -112,17 +111,15 @@ def property_to_field(property_schema, is_required: bool = None, is_definition=F
 
     nested_properties = property_schema.get("properties")
     if nested_properties is not None:
-        field_kwargs["fields"] = jsonschema_properties_to_fields(
-            nested_properties, property_schema["required"], is_definition=is_definition
-        )
+        field_kwargs["fields"] = jsonschema_to_args(nested_properties, property_schema["required"])
 
     if property_type == "array":
         nested_item_type, nested_items = determine_nested_item_type(property_schema)
 
         if nested_items is not None:
-            field_kwargs["items"] = property_to_field(nested_item_type, is_definition=is_definition)
+            field_kwargs["items"] = dict_to_field_args(nested_item_type)
 
-    return Definition(**field_kwargs) if is_definition else Field(**field_kwargs)
+    return field_kwargs
 
 
 def determine_nested_item_type(property_schema):
@@ -152,7 +149,3 @@ def determine_type(property_schema):
         else:
             property_type = None
     return property_type
-
-
-def is_required(property_name, required_properties):
-    return property_name in required_properties
