@@ -10,12 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support data type map in Glue import. (#340)
-- Basic html export for new `keys` and `values` fields. 
+- Basic html export for new `keys` and `values` fields.
+- Support for recognition of 1 to 1 relationships when exporting to DBML.
 
 ### Fixed
 
 - Fix an issue where the quality and definition `$ref` are not always resolved.
 - Fix an issue where the JSON schema validation fails for a field with type `string` and format `uuid`
+- Fix an issue where common DBML renderers may not be able to parse parts of an exported file.
 
 ## [0.10.10] - 2024-07-18
 
