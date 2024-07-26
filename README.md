@@ -588,14 +588,31 @@ models:
 ```
 
 #### Environment Variables
+All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.  
+For example:
 
-| Environment Variable               | Example            | Description                                         |
-|------------------------------------|--------------------|-----------------------------------------------------|
-| `DATACONTRACT_SNOWFLAKE_USERNAME`  | `datacontract`     | Username                                            |
-| `DATACONTRACT_SNOWFLAKE_PASSWORD`  | `mysecretpassword` | Password                                            |
-| `DATACONTRACT_SNOWFLAKE_ROLE`      | `DATAVALIDATION`   | The snowflake role to use.                          |
-| `DATACONTRACT_SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH`       | The Snowflake Warehouse to use executing the tests. |
+| Soda parameter       | Environment Variable                        | 
+|----------------------|---------------------------------------------|
+| `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
+| `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
+| `warehouse`          | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`          |
+| `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
+| `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
 
+Beware, that parameters:
+* `account`
+* `database`
+* `schema`
+
+are obtained from the `servers` section of the YAML-file.  
+E.g. from the example above:
+```yaml
+servers:
+  snowflake:
+    account: abcdefg-xn12345
+    database: ORDER_DB
+    schema: ORDERS_PII_V2
+```
 
 
 ### Kafka
@@ -848,23 +865,34 @@ models:
 ```
  Usage: datacontract import [OPTIONS]
 
- Create a data contract from the given source location. Prints to stdout.
-
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                  [sql|avro|glue|bigquery|jsonschema|  The format of the source file. [default: None] [required]         |
-│                               unity|spark]                                                                                          |
-│    --source                  TEXT                                 The path to the file or Glue Database that should be imported.    │
-│                                                                   [default: None]                                                   │
-│    --glue-table              TEXT                                 List of table ids to import from the Glue Database (repeat for    │
-│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                   [default: None]                                                   │
-│    --bigquery-project        TEXT                                 The bigquery project id. [default: None]                          │
-│    --bigquery-dataset        TEXT                                 The bigquery dataset id. [default: None]                          │
-│    --bigquery-table          TEXT                                 List of table ids to import from the bigquery API (repeat for     │
-│                                                                   multiple table ids, leave empty for all tables in the dataset).   │
-│                                                                   [default: None]                                                   │
-│    --help                                                         Show this message and exit.                                       │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Create a data contract from the given source location. Prints to stdout.                                                      
+                                                                                                                               
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format                       [sql|avro|dbt|glue|jsonschema|bigquery|odcs  The format of the source file.               │
+│                                   |unity|spark]                                [default: None]                              │
+│                                                                                [required]                                   │
+│    --source                       TEXT                                         The path to the file or Glue Database that   │
+│                                                                                should be imported.                          │
+│                                                                                [default: None]                              │
+│    --glue-table                   TEXT                                         List of table ids to import from the Glue    │
+│                                                                                Database (repeat for multiple table ids,     │
+│                                                                                leave empty for all tables in the dataset).  │
+│                                                                                [default: None]                              │
+│    --bigquery-project             TEXT                                         The bigquery project id. [default: None]     │
+│    --bigquery-dataset             TEXT                                         The bigquery dataset id. [default: None]     │
+│    --bigquery-table               TEXT                                         List of table ids to import from the         │
+│                                                                                bigquery API (repeat for multiple table ids, │
+│                                                                                leave empty for all tables in the dataset).  │
+│                                                                                [default: None]                              │
+│    --unity-table-full-name        TEXT                                         Full name of a table in the unity catalog    │
+│                                                                                [default: None]                              │
+│    --dbt-model                    TEXT                                         List of models names to import from the dbt  │
+│                                                                                manifest file (repeat for multiple models    │
+│                                                                                names, leave empty for all models in the     │
+│                                                                                dataset).                                    │
+│                                                                                [default: None]                              │
+│    --help                                                                      Show this message and exit.                  │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Example:
@@ -875,18 +903,19 @@ datacontract import --format sql --source my_ddl.sql
 
 Available import options:
 
-| Type               | Description                                    | Status  |
-|--------------------|------------------------------------------------|---------|
+| Type               | Description                                    | Status |
+|--------------------|------------------------------------------------|--------|
 | `sql`              | Import from SQL DDL                            | ✅      |
 | `avro`             | Import from AVRO schemas                       | ✅      |
 | `glue`             | Import from AWS Glue DataCatalog               | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | TBD     |
 | `jsonschema`       | Import from JSON Schemas                       | ✅      |
 | `bigquery`         | Import from BigQuery Schemas                   | ✅      |
 | `unity`            | Import from Databricks Unity Catalog           | partial |
-| `dbt`              | Import from dbt models                         | TBD     |
+| `dbt`              | Import from dbt models                         | ✅      |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
-| Missing something? | Please create an issue on GitHub               | TBD     |
+| `spark`            | Import from Spark StructTypes                  | ✅      |
+| `protobuf`         | Import from Protobuf schemas                   | TBD    |
+| Missing something? | Please create an issue on GitHub               | TBD    |
 
 
 #### BigQuery
@@ -926,6 +955,23 @@ datacontract import --format unity --source my_unity_table.json
 export DATABRICKS_IMPORT_INSTANCE="https://xyz.cloud.databricks.com"
 export DATABRICKS_IMPORT_ACCESS_TOKEN=<token>
 datacontract import --format unity --unity-table-full-name <table_full_name>
+```
+
+#### dbt
+
+Importing from dbt manifest file.
+You may give the `dbt-model` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
+
+Examples:
+
+```bash
+# Example import from dbt manifest with specifying the tables to import
+datacontract import --format dbt --source <manifest_path> --dbt-model <model_name_1> --dbt-model <model_name_2> --dbt-model <model_name_3>
+```
+
+```bash
+# Example import from dbt manifest importing all tables in the database
+datacontract import --format dbt --source <manifest_path>
 ```
 
 #### Glue
@@ -1253,10 +1299,11 @@ Output
 Using the importer factory to add a new custom importer
 ```python
 
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.data_contract import DataContract
 from datacontract.imports.importer import Importer
 from datacontract.imports.importer_factory import importer_factory
+
 import json
 
 # Create a custom class that implements import_source method
@@ -1267,43 +1314,89 @@ class CustomImporter(Importer):
         source_dict = json.loads(source)
         data_contract_specification.id = source_dict.get("id_custom")
         data_contract_specification.info.title = source_dict.get("title")
+        data_contract_specification.info.version = source_dict.get("version")
         data_contract_specification.info.description = source_dict.get("description_from_app")
+        
+        for model in source_dict.get("models", []):
+            fields = {}
+            for column in model.get('columns'):
+                field = Field(
+                    description=column.get('column_description'), 
+                    type=column.get('type') 
+                )
+                fields[column.get('name')] = field               
+                   
+            dc_model = Model(
+                description=model.get('description'), 
+                fields= fields
+            )
 
+            data_contract_specification.models[model.get('name')] = dc_model
         return data_contract_specification
-
+ 
 
 # Register the new custom class into factory
 importer_factory.register_importer("custom_company_importer", CustomImporter)
 
 
 if __name__ == "__main__":
-    # get a custom da
-    json_from_custom_app = '{"id_custom":"uuid-custom","version":"0.0.2", "title":"my_custom_imported_data", "description_from_app": "Custom contract description"}'
+    # get a custom data from other app 
+    json_from_custom_app = '''
+    {
+        "id_custom": "uuid-custom",
+        "version": "0.0.2",
+        "title": "my_custom_imported_data",
+        "description_from_app": "Custom contract description",
+        "models": [
+            {
+            "name": "model1",
+            "desctiption": "model description from app",
+            "columns": [
+                {
+                "name": "columnA",
+                "type": "varchar",
+                "column_description": "my_column description"
+                },
+                {
+                "name": "columnB",
+                "type": "varchar",
+                "column_description": "my_columnB description"
+                }
+            ]
+            }
+        ]
+        }
+    '''
     # Create a DataContract instance
     data_contract = DataContract()
 
     # call import_from
     result = data_contract.import_from_source(
-        format="custom_company_importer", data_contract_specification=DataContract.init(), source=json_from_custom_app
-    )
-    print(dict(result))
-
+        format="custom_company_importer", 
+        data_contract_specification=DataContract.init(), 
+        source=json_from_custom_app
+    ) 
+    print(result.to_yaml() )
 ```
 Output
+  
+```yaml
+dataContractSpecification: 0.9.3
+id: uuid-custom
+info:
+  title: my_custom_imported_data
+  version: 0.0.2
+  description: Custom contract description
+models:
+  model1:
+    fields:
+      columnA:
+        type: varchar
+        description: my_column description
+      columnB:
+        type: varchar
+        description: my_columnB description
 
-```python
-{
-  'dataContractSpecification': '0.9.3', 
-  'id': 'uuid-custom', 
-  'info': Info(title='my_custom_imported_data', version='0.0.1', status=None, description='Custom contract description', owner=None, contact=None), 
-  'servers': {}, 
-  'terms': None, 
-  'models': {}, 
-  'definitions': {}, 
-  'examples': [], 
-  'quality': None, 
-  'servicelevels': None
-}
 ```
 ## Development Setup
 

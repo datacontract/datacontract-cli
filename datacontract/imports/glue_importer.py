@@ -186,7 +186,7 @@ def create_typed_field(dtype: str) -> Field:
     """
     field = Field()
     dtype = dtype.strip().lower().replace(" ", "")
-    if dtype.startswith(("array", "struct")):
+    if dtype.startswith(("array", "struct", "map")):
         orig_dtype: str = dtype
         if dtype.startswith("array"):
             field.type = "array"
@@ -195,6 +195,12 @@ def create_typed_field(dtype: str) -> Field:
             field.type = "struct"
             for f in split_struct(orig_dtype[7:-1]):
                 field.fields[f.split(":", 1)[0].strip()] = create_typed_field(f.split(":", 1)[1])
+        elif dtype.startswith("map"):
+            field.type = "map"
+            key_type = orig_dtype[4:-1].split(",", 1)[0]
+            value_type = orig_dtype[4:-1].split(",", 1)[1]
+            field.keys = create_typed_field(key_type)
+            field.values = create_typed_field(value_type)
     else:
         field.type = map_type_from_sql(dtype)
     return field

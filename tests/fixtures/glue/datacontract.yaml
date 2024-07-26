@@ -43,6 +43,12 @@ models:
                             type: string
                         sub_field_four:
                             type: integer
+            field_eight:
+                type: map
+                keys:
+                    type: string
+                values:
+                    type: integer
             part_one:
                 description: Partition Key
                 required: True
