@@ -57,10 +57,10 @@ def test_to_jsonschemas_complex():
         "format": "date-time"
       },
       "subject": {
-        "type": ["string", "null"]
+        "type": "string"
       },
       "data": {
-        "type": ["object", "null"],
+        "type": "object",
         "properties": {
           "sku": {
             "type": "string"
@@ -138,10 +138,7 @@ def test_to_jsonschemas_complex_2():
           "type": "object",
           "patternProperties": {
             "^[0-5]$": {
-              "type": [
-                "object",
-                "null"
-              ],
+              "type": "object",
               "properties": {
                 "key": {
                   "type": "string",
@@ -162,10 +159,7 @@ def test_to_jsonschemas_complex_2():
       ]
     },
     "empty_object": {
-      "type": [
-        "object",
-        "null"
-      ],
+      "type": "object",
       "properties": {},
       "required": []
     }
