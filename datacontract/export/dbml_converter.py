@@ -68,8 +68,8 @@ def generate_project_info(contract: spec.DataContractSpecification) -> str:
 
 def generate_table(model_name: str, model: spec.Model, server: spec.Server) -> str:
     result = """Table "{0}" {{ 
-Note: '''{1}'''
-    """.format(model_name, model.description)
+Note: {1}
+    """.format(model_name, formatDescription(model.description))
 
     references = []
 
@@ -129,7 +129,7 @@ def generate_field(field_name: str, field: spec.Field, model_name: str, server: 
         field_attrs.append("null")
 
     if field.description:
-        field_attrs.append("Note: '''{0}'''".format(field.description))
+        field_attrs.append("""Note: {0}""".format(formatDescription(field.description)))
 
     field_type = field.type if server is None else convert_to_sql_type(field, server.type)
 
@@ -141,3 +141,9 @@ def generate_field(field_name: str, field: spec.Field, model_name: str, server: 
         else:
             ref_str = "{0}.{1} > {2}".format(model_name, field_name, field.references)
     return (ref_str, field_str)
+
+def formatDescription(input: str) -> str:
+    if '\n' in input or '\r' in input or '"' in input:
+        return "'''{0}'''".format(input)
+    else:
+        return '"{0}"'.format(input)
