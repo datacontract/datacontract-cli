@@ -14,81 +14,6 @@ class JsonSchemaImporter(Importer):
         return import_jsonschema(data_contract_specification, source)
 
 
-def convert_json_schema_properties(properties, required_properties, is_definition=False):
-    fields = {}
-    for field_name, field_schema in properties.items():
-        is_required = field_name in required_properties
-        field = to_field(field_schema, is_definition, is_required)
-        fields[field_name] = field
-
-    return fields
-
-
-def to_field(field_schema, is_definition, is_required: bool = None) -> Definition | Field:
-    field_kwargs = {}
-    field_type = field_schema.get("type")
-    # Determine if the field is required and set the type to the non-null option if applicable
-    if isinstance(field_type, list) and "null" in field_type:
-        field_kwargs["required"] = False
-        non_null_types = [t for t in field_type if t != "null"]
-        if non_null_types:
-            field_type = non_null_types[0]
-        else:
-            field_type = None
-    elif is_required is not None:
-        field_kwargs["required"] = is_required
-    # Set the non-null type
-    if field_type:
-        field_kwargs["type"] = field_type
-    for key, value in field_schema.items():
-        match key:
-            case "title":
-                field_kwargs["title"] = value
-            case "type":
-                pass  # type is already handled above
-            case "format":
-                field_kwargs["format"] = value
-            case "description":
-                field_kwargs["description"] = value
-            case "pattern":
-                field_kwargs["pattern"] = value
-            case "minLength":
-                field_kwargs["minLength"] = value
-            case "maxLength":
-                field_kwargs["maxLength"] = value
-            case "minimum":
-                field_kwargs["minimum"] = value
-            case "exclusiveMinimum":
-                field_kwargs["exclusiveMinimum"] = value
-            case "maximum":
-                field_kwargs["maximum"] = value
-            case "exclusiveMaximum":
-                field_kwargs["exclusiveMaximum"] = value
-            case "enum":
-                field_kwargs["enum"] = value
-            case "tags":
-                field_kwargs["tags"] = value
-            case "properties":
-                field_kwargs["fields"] = convert_json_schema_properties(value, is_definition=is_definition)
-            case "items":
-                if isinstance(value, list):
-                    if len(value) != 1:
-                        raise DataContractException(
-                            type="schema",
-                            name="Parse json schema",
-                            reason=f"Union types are currently not supported ({value})",
-                            engine="datacontract",
-                        )
-                    field_kwargs["items"] = to_field(value[0], is_definition=is_definition, is_required=None)
-                else:
-                    field_kwargs["items"] = to_field(value, is_definition=is_definition, is_required=None)
-    if is_definition:
-        field = Definition(**field_kwargs)
-    else:
-        field = Field(**field_kwargs)
-    return field
-
-
 def import_jsonschema(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
@@ -109,54 +34,20 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
                 description=description,
                 type=type_,
                 title=title,
-                fields=convert_json_schema_properties(properties, required_properties),
+                fields=jsonschema_properties_to_fields(properties, required_properties),
             )
             data_contract_specification.models[json_schema.get("title", "default_model")] = model
 
-            if "definitions" in json_schema:
-                for def_name, def_schema in json_schema["definitions"].items():
-                    definition_kwargs = {}
-                    for key, value in def_schema.items():
-                        match key:
-                            case "domain":
-                                definition_kwargs["domain"] = value
-                            case "title":
-                                definition_kwargs["title"] = value
-                            case "description":
-                                definition_kwargs["description"] = value
-                            case "type":
-                                definition_kwargs["type"] = value
-                            case "enum":
-                                definition_kwargs["enum"] = value
-                            case "format":
-                                definition_kwargs["format"] = value
-                            case "minLength":
-                                definition_kwargs["minLength"] = value
-                            case "maxLength":
-                                definition_kwargs["maxLength"] = value
-                            case "pattern":
-                                definition_kwargs["pattern"] = value
-                            case "minimum":
-                                definition_kwargs["minimum"] = value
-                            case "exclusiveMinimum":
-                                definition_kwargs["exclusiveMinimum"] = value
-                            case "maximum":
-                                definition_kwargs["maximum"] = value
-                            case "exclusiveMaximum":
-                                definition_kwargs["exclusiveMaximum"] = value
-                            case "pii":
-                                definition_kwargs["pii"] = value
-                            case "classification":
-                                definition_kwargs["classification"] = value
-                            case "tags":
-                                definition_kwargs["tags"] = value
-                            case "properties":
-                                definition_kwargs["fields"] = convert_json_schema_properties(
-                                    value, def_schema.get("required", []), is_definition=True
-                                )
+            definitions = json_schema.get("definitions", {})
 
-                    definition = Definition(name=def_name, **definition_kwargs)
-                    data_contract_specification.definitions[def_name] = definition
+            for definition_name, definition_schema in definitions.items():
+                definition_schema["name"] = definition_name
+                data_contract_specification.definitions[definition_name] = property_to_field(
+                    definition_schema, is_definition=True
+                )
+                print(definition_name)
+                print(definition_schema)
+            #         definition = Definition(name=def_name, **definition_kwargs)
 
     except fastjsonschema.JsonSchemaException as e:
         raise DataContractException(
@@ -176,3 +67,92 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
         )
 
     return data_contract_specification
+
+
+def jsonschema_properties_to_fields(properties, required_properties, is_definition=False):
+    fields = {}
+    for property, property_schema in properties.items():
+        is_required = property in required_properties
+        field = property_to_field(property_schema, is_required, is_definition)
+        fields[property] = field
+
+    return fields
+
+
+def property_to_field(property_schema, is_required: bool = None, is_definition=False) -> Definition | Field:
+    field_kwargs = {}
+
+    property_type = determine_type(property_schema)
+    if property_type is not None:
+        field_kwargs["type"] = property_type
+
+    if is_required is not None:
+        field_kwargs["required"] = is_required
+
+    direct_mappings = {
+        "title",
+        "description",
+        "format",
+        "name",
+        "pattern",
+        "enum",
+        "tags",
+        "pii",
+        "minLength",
+        "maxLength",
+        "minimum",
+        "exclusiveMinimum",
+        "maximum",
+        "exclusiveMaximum",
+    }
+
+    directly_mapped_properties = {key: value for key, value in property_schema.items() if key in direct_mappings}
+
+    field_kwargs = field_kwargs | directly_mapped_properties
+
+    nested_properties = property_schema.get("properties")
+    if nested_properties is not None:
+        field_kwargs["fields"] = jsonschema_properties_to_fields(
+            nested_properties, property_schema["required"], is_definition=is_definition
+        )
+
+    if property_type == "array":
+        nested_item_type, nested_items = determine_nested_item_type(property_schema)
+
+        if nested_items is not None:
+            field_kwargs["items"] = property_to_field(nested_item_type, is_definition=is_definition)
+
+    return Definition(**field_kwargs) if is_definition else Field(**field_kwargs)
+
+
+def determine_nested_item_type(property_schema):
+    nested_items = property_schema.get("items")
+    nested_items_is_list = isinstance(nested_items, list)
+    if nested_items_is_list and len(nested_items) != 1:
+        raise DataContractException(
+            type="schema",
+            name="Parse json schema",
+            reason=f"Union types are currently not supported ({nested_items})",
+            engine="datacontract",
+        )
+    if nested_items_is_list and len(nested_items) == 1:
+        nested_item_type = nested_items[0]
+    elif not nested_items_is_list and nested_items is not None:
+        nested_item_type = nested_items
+    return nested_item_type, nested_items
+
+
+def determine_type(property_schema):
+    property_type = property_schema.get("type")
+    type_is_list = isinstance(property_type, list)
+    if type_is_list:
+        non_null_types = [t for t in property_type if t != "null"]
+        if non_null_types:
+            property_type = non_null_types[0]
+        else:
+            property_type = None
+    return property_type
+
+
+def is_required(property_name, required_properties):
+    return property_name in required_properties
