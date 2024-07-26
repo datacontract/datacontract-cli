@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Support data type map in Glue import. (#340)
+- Basic html export for new `keys` and `values` fields. 
 
 ### Fixed
 
