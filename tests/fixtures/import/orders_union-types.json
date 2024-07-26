@@ -27,8 +27,20 @@
         "type" : "integer"
       }
     },
+    "vouchers": {
+      "type": "array",
+      "title": "List of used vouchers",
+      "items": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
     "customer_id": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "minLength": 10,
       "maxLength": 20,
       "title": "Customer ID",
@@ -51,7 +63,6 @@
     "order_id",
     "order_timestamp",
     "order_total",
-    "line_items",
     "customer_email_address",
     "processed_timestamp"
   ]

@@ -11,9 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support data type map in Glue import. (#340)
 - Basic html export for new `keys` and `values` fields. 
+- Added support for arrays in JSON schema import (#305) 
+
+### Changed
+
+- Aligned JSON schema import and export of required properties
 
 ### Fixed
 
+- Fix required field handling in JSON schema import
 - Fix an issue where the quality and definition `$ref` are not always resolved.
 - Fix an issue where the JSON schema validation fails for a field with type `string` and format `uuid`
 
