@@ -105,7 +105,11 @@ def setup_mock_glue(aws_credentials):
                     ]
                 },
                 "PartitionKeys": [
-                    {"Name": "part_one", "Type": "string", "Comment": "Comment 2"},
+                    {
+                        "Name": "part_one",
+                        "Type": "string",
+                        "Comment": "Comment 2",
+                    },
                     {
                         "Name": "part_two",
                         "Type": "date",
