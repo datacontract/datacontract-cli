@@ -46,7 +46,7 @@ DATACONTRACT_TYPES = [
 class OdcsImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> dict:
+    ) -> DataContractSpecification:
         return import_odcs(data_contract_specification, source)
 
 
