@@ -18,6 +18,29 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
 
+    json_schema = load_and_validate_json_schema(source)
+
+    title = json_schema.get("title", "default_model")
+    description = json_schema.get("description")
+    type_ = json_schema.get("type")
+    properties = json_schema.get("properties", {})
+    required_properties = json_schema.get("required", [])
+
+    fields_kwargs = jsonschema_to_args(properties, required_properties)
+    fields = {name: Field(**kwargs) for name, kwargs in fields_kwargs.items()}
+
+    model = Model(description=description, type=type_, title=title, fields=fields)
+    data_contract_specification.models[title] = model
+
+    definitions = json_schema.get("definitions", {})
+    for name, schema in definitions.items():
+        kwargs = schema_to_args(schema)
+        data_contract_specification.definitions[name] = Definition(name=name, **kwargs)
+
+    return data_contract_specification
+
+
+def load_and_validate_json_schema(source):
     try:
         with open(source, "r") as file:
             json_schema = json.loads(file.read())
@@ -25,33 +48,11 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
         validator = fastjsonschema.compile({})
         validator(json_schema)
 
-        title = json_schema.get("title", "default_model")
-        description = json_schema.get("description")
-        type_ = json_schema.get("type")
-        properties = json_schema.get("properties", {})
-        required_properties = json_schema.get("required", [])
-
-        fields_kwargs = jsonschema_to_args(properties, required_properties)
-        fields = {name: Field(**args) for name, args in fields_kwargs.items()}
-        data_contract_specification.models[title] = Model(
-            description=description, type=type_, title=title, fields=fields
-        )
-
-        definitions = json_schema.get("definitions", {})
-        definitions_kwargs = {name: schema_to_args(schema) for name, schema in definitions.items()}
-
-        for name, args in definitions_kwargs.items():
-            data_contract_specification.definitions[name] = Definition(name=name, **args)
-
-        # for definition_name, definition_schema in definitions.items():
-        #    kwargs = schema_to_args(definition_schema)
-        #    data_contract_specification.definitions[definition_name] = Definition(name=definition_name, **kwargs)
-
     except fastjsonschema.JsonSchemaException as e:
         raise DataContractException(
             type="schema",
             name="Parse json schema",
-            reason=f"Failed to parse json schema from {source}: {e}",
+            reason=f"Failed to validate json schema from {source}: {e}",
             engine="datacontract",
         )
 
@@ -63,8 +64,7 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
             engine="datacontract",
             original_exception=e,
         )
-
-    return data_contract_specification
+    return json_schema
 
 
 def jsonschema_to_args(properties, required_properties):
