@@ -93,11 +93,11 @@ def get_glue_table_schema(database_name: str, table_name: str) -> List[Dict]:
         response = glue.get_table(DatabaseName=database_name, Name=table_name)
     except glue.exceptions.EntityNotFoundException:
         print(f"Table {table_name} not found in database {database_name}.")
-        return {}
+        return []
     except Exception as e:
         # todo catch all
         print(f"Error: {e}")
-        return {}
+        return []
 
     table_schema = response["Table"]["StorageDescriptor"]["Columns"]
 
