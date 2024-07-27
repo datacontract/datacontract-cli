@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support data type map in Glue import. (#340)
+- Support of varchar max length in Glue import
 
 ### Fixed
 
 - Fix an issue where the quality and definition `$ref` are not always resolved.
 - Fix an issue where the JSON schema validation fails for a field with type `string` and format `uuid`
 - Fix an issue where Glue database without a location creates invalid data contract
+- Fix bigint -> long data type mapping
+- Fix an issue where column description for Glue partition key column is ignored
 
 ## [0.10.10] - 2024-07-18
 
