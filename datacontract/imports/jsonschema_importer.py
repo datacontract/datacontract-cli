@@ -32,17 +32,20 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
         required_properties = json_schema.get("required", [])
 
         fields_kwargs = jsonschema_to_args(properties, required_properties)
-        datacontract_fields = {field_name: Field(**kwargs) for field_name, kwargs in fields_kwargs.items()}
-
+        fields = {name: Field(**args) for name, args in fields_kwargs.items()}
         data_contract_specification.models[title] = Model(
-            description=description, type=type_, title=title, fields=datacontract_fields
+            description=description, type=type_, title=title, fields=fields
         )
 
-        schema_definitions = json_schema.get("definitions", {})
+        definitions = json_schema.get("definitions", {})
+        definitions_kwargs = {name: schema_to_args(schema) for name, schema in definitions.items()}
 
-        for definition_name, definition_schema in schema_definitions.items():
-            kwargs = schema_to_args(definition_schema)
-            data_contract_specification.definitions[definition_name] = Definition(name=definition_name, **kwargs)
+        for name, args in definitions_kwargs.items():
+            data_contract_specification.definitions[name] = Definition(name=name, **args)
+
+        # for definition_name, definition_schema in definitions.items():
+        #    kwargs = schema_to_args(definition_schema)
+        #    data_contract_specification.definitions[definition_name] = Definition(name=definition_name, **kwargs)
 
     except fastjsonschema.JsonSchemaException as e:
         raise DataContractException(
