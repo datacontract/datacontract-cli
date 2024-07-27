@@ -10,71 +10,83 @@ from datacontract.model.exceptions import DataContractException
 class JsonSchemaImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> dict:
+    ) -> DataContractSpecification:
         return import_jsonschema(data_contract_specification, source)
 
 
-def convert_json_schema_properties(properties, is_definition=False):
+def convert_json_schema_properties(properties, required_properties, is_definition=False):
     fields = {}
     for field_name, field_schema in properties.items():
-        field_kwargs = {}
-        field_type = field_schema.get("type")
-
-        # Determine if the field is required and set the type to the non-null option if applicable
-        if isinstance(field_type, list) and "null" in field_type:
-            field_kwargs["required"] = False
-            non_null_types = [t for t in field_type if t != "null"]
-            if non_null_types:
-                field_type = non_null_types[0]
-            else:
-                field_type = None
-        else:
-            field_kwargs["required"] = True
-
-        # Set the non-null type
-        if field_type:
-            field_kwargs["type"] = field_type
-
-        for key, value in field_schema.items():
-            match key:
-                case "title":
-                    field_kwargs["title"] = value
-                case "type":
-                    pass  # type is already handled above
-                case "format":
-                    field_kwargs["format"] = value
-                case "description":
-                    field_kwargs["description"] = value
-                case "pattern":
-                    field_kwargs["pattern"] = value
-                case "minLength":
-                    field_kwargs["minLength"] = value
-                case "maxLength":
-                    field_kwargs["maxLength"] = value
-                case "minimum":
-                    field_kwargs["minimum"] = value
-                case "exclusiveMinimum":
-                    field_kwargs["exclusiveMinimum"] = value
-                case "maximum":
-                    field_kwargs["maximum"] = value
-                case "exclusiveMaximum":
-                    field_kwargs["exclusiveMaximum"] = value
-                case "enum":
-                    field_kwargs["enum"] = value
-                case "tags":
-                    field_kwargs["tags"] = value
-                case "properties":
-                    field_kwargs["fields"] = convert_json_schema_properties(value, is_definition=is_definition)
-                case "items":
-                    field_kwargs["items"] = convert_json_schema_properties(value, is_definition=is_definition)
-
-        if is_definition:
-            field = Definition(**field_kwargs)
-        else:
-            field = Field(**field_kwargs)
+        is_required = field_name in required_properties
+        field = to_field(field_schema, is_definition, is_required)
         fields[field_name] = field
 
     return fields
+
+
+def to_field(field_schema, is_definition, is_required: bool = None) -> Definition | Field:
+    field_kwargs = {}
+    field_type = field_schema.get("type")
+    # Determine if the field is required and set the type to the non-null option if applicable
+    if isinstance(field_type, list) and "null" in field_type:
+        field_kwargs["required"] = False
+        non_null_types = [t for t in field_type if t != "null"]
+        if non_null_types:
+            field_type = non_null_types[0]
+        else:
+            field_type = None
+    elif is_required is not None:
+        field_kwargs["required"] = is_required
+    # Set the non-null type
+    if field_type:
+        field_kwargs["type"] = field_type
+    for key, value in field_schema.items():
+        match key:
+            case "title":
+                field_kwargs["title"] = value
+            case "type":
+                pass  # type is already handled above
+            case "format":
+                field_kwargs["format"] = value
+            case "description":
+                field_kwargs["description"] = value
+            case "pattern":
+                field_kwargs["pattern"] = value
+            case "minLength":
+                field_kwargs["minLength"] = value
+            case "maxLength":
+                field_kwargs["maxLength"] = value
+            case "minimum":
+                field_kwargs["minimum"] = value
+            case "exclusiveMinimum":
+                field_kwargs["exclusiveMinimum"] = value
+            case "maximum":
+                field_kwargs["maximum"] = value
+            case "exclusiveMaximum":
+                field_kwargs["exclusiveMaximum"] = value
+            case "enum":
+                field_kwargs["enum"] = value
+            case "tags":
+                field_kwargs["tags"] = value
+            case "properties":
+                field_kwargs["fields"] = convert_json_schema_properties(value, is_definition=is_definition)
+            case "items":
+                if isinstance(value, list):
+                    if len(value) != 1:
+                        raise DataContractException(
+                            type="schema",
+                            name="Parse json schema",
+                            reason=f"Union types are currently not supported ({value})",
+                            engine="datacontract",
+                        )
+                    field_kwargs["items"] = to_field(value[0], is_definition=is_definition, is_required=None)
+                else:
+                    field_kwargs["items"] = to_field(value, is_definition=is_definition, is_required=None)
+    if is_definition:
+        field = Definition(**field_kwargs)
+    else:
+        field = Field(**field_kwargs)
+    return field
 
 
 def import_jsonschema(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
@@ -87,18 +99,23 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
             validator = fastjsonschema.compile({})
             validator(json_schema)
 
+            description = json_schema.get("description")
+            type_ = json_schema.get("type")
+            title = json_schema.get("title")
+            properties = json_schema.get("properties", {})
+            required_properties = json_schema.get("required", [])
+
             model = Model(
-                description=json_schema.get("description"),
-                type=json_schema.get("type"),
-                title=json_schema.get("title"),
-                fields=convert_json_schema_properties(json_schema.get("properties", {})),
+                description=description,
+                type=type_,
+                title=title,
+                fields=convert_json_schema_properties(properties, required_properties),
             )
             data_contract_specification.models[json_schema.get("title", "default_model")] = model
 
             if "definitions" in json_schema:
                 for def_name, def_schema in json_schema["definitions"].items():
                     definition_kwargs = {}
-
                     for key, value in def_schema.items():
                         match key:
                             case "domain":
@@ -134,7 +151,9 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
                             case "tags":
                                 definition_kwargs["tags"] = value
                             case "properties":
-                                definition_kwargs["fields"] = convert_json_schema_properties(value, is_definition=True)
+                                definition_kwargs["fields"] = convert_json_schema_properties(
+                                    value, def_schema.get("required", []), is_definition=True
+                                )
 
                     definition = Definition(name=def_name, **definition_kwargs)
                     data_contract_specification.definitions[def_name] = definition
