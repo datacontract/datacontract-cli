@@ -25,28 +25,23 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
         validator = fastjsonschema.compile({})
         validator(json_schema)
 
+        title = json_schema.get("title", "default_model")
         description = json_schema.get("description")
         type_ = json_schema.get("type")
-        title = json_schema.get("title", "default_model")
         properties = json_schema.get("properties", {})
         required_properties = json_schema.get("required", [])
 
-        field_kwargs = {}
-        for property_name, property_schema in properties.items():
-            is_required = property_name in required_properties
-            field_kwargs[property_name] = dict_to_field_args(property_schema, is_required)
+        fields_kwargs = jsonschema_to_args(properties, required_properties)
+        datacontract_fields = {field_name: Field(**kwargs) for field_name, kwargs in fields_kwargs.items()}
 
         data_contract_specification.models[title] = Model(
-            description=description,
-            type=type_,
-            title=title,
-            fields={field_name: Field(**kwargs) for field_name, kwargs in field_kwargs.items()},
+            description=description, type=type_, title=title, fields=datacontract_fields
         )
 
-        definitions = json_schema.get("definitions", {})
+        schema_definitions = json_schema.get("definitions", {})
 
-        for definition_name, definition_schema in definitions.items():
-            kwargs = dict_to_field_args(definition_schema)
+        for definition_name, definition_schema in schema_definitions.items():
+            kwargs = schema_to_args(definition_schema)
             data_contract_specification.definitions[definition_name] = Definition(name=definition_name, **kwargs)
 
     except fastjsonschema.JsonSchemaException as e:
@@ -70,25 +65,15 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
 
 
 def jsonschema_to_args(properties, required_properties):
-    fields = {}
+    args = {}
     for property, property_schema in properties.items():
         is_required = property in required_properties
-        field = dict_to_field_args(property_schema, is_required)
-        fields[property] = field
+        args[property] = schema_to_args(property_schema, is_required)
 
-    return fields
+    return args
 
 
-def dict_to_field_args(property_schema, is_required: bool = None) -> dict:
-    field_kwargs = {}
-
-    property_type = determine_type(property_schema)
-    if property_type is not None:
-        field_kwargs["type"] = property_type
-
-    if is_required is not None:
-        field_kwargs["required"] = is_required
-
+def schema_to_args(property_schema, is_required: bool = None) -> dict:
     direct_mappings = {
         "title",
         "description",
@@ -105,19 +90,25 @@ def dict_to_field_args(property_schema, is_required: bool = None) -> dict:
         "exclusiveMaximum",
     }
 
-    directly_mapped_properties = {key: value for key, value in property_schema.items() if key in direct_mappings}
+    field_kwargs = {key: value for key, value in property_schema.items() if key in direct_mappings}
 
-    field_kwargs = field_kwargs | directly_mapped_properties
+    if is_required is not None:
+        field_kwargs["required"] = is_required
 
-    nested_properties = property_schema.get("properties")
-    if nested_properties is not None:
-        field_kwargs["fields"] = jsonschema_to_args(nested_properties, property_schema["required"])
+    property_type = determine_type(property_schema)
+    if property_type is not None:
+        field_kwargs["type"] = property_type
 
     if property_type == "array":
         nested_item_type, nested_items = determine_nested_item_type(property_schema)
 
         if nested_items is not None:
-            field_kwargs["items"] = dict_to_field_args(nested_item_type)
+            field_kwargs["items"] = schema_to_args(nested_item_type)
+
+    nested_properties = property_schema.get("properties")
+    if nested_properties is not None:
+        # recursive call for complex nested properties
+        field_kwargs["fields"] = jsonschema_to_args(nested_properties, property_schema["required"])
 
     return field_kwargs
 
@@ -129,7 +120,7 @@ def determine_nested_item_type(property_schema):
         raise DataContractException(
             type="schema",
             name="Parse json schema",
-            reason=f"Union types are currently not supported ({nested_items})",
+            reason=f"Union types for arrays are currently not supported ({nested_items})",
             engine="datacontract",
         )
     if nested_items_is_list and len(nested_items) == 1:
