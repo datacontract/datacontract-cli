@@ -1340,8 +1340,7 @@ importer_factory.register_importer("custom_company_importer", CustomImporter)
 
 
 if __name__ == "__main__":
-<<<<<<< Updated upstream
-    # get a custom data from other app 
+    # Get a custom data from other app 
     json_from_custom_app = '''
     {
         "id_custom": "uuid-custom",
@@ -1368,10 +1367,6 @@ if __name__ == "__main__":
         ]
         }
     '''
-=======
-    # Get a custom DataContract
-    json_from_custom_app = '{"id_custom":"uuid-custom","version":"0.0.2", "title":"my_custom_imported_data", "description_from_app": "Custom contract description"'
->>>>>>> Stashed changes
     # Create a DataContract instance
     data_contract = DataContract()
 
