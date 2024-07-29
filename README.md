@@ -120,10 +120,10 @@ $ datacontract export --format html datacontract.yaml > datacontract.html
 # import avro (other formats: sql, glue, bigquery...)
 $ datacontract import --format avro --source avro_schema.avsc
 
-# find differences between to data contracts
+# find differences between two data contracts
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 
-# find differences between to data contracts categorized into error, warning, and info.
+# find differences between two data contracts categorized into error, warning, and info.
 $ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 
 # fail pipeline on breaking changes. Uses changelog internally and showing only error and warning.
@@ -308,7 +308,7 @@ Supported server types:
 - [sqlserver](#sqlserver)
 - [databricks](#databricks)
 - [databricks (programmatic)](#databricks-programmatic)
-- [dataframr (programmatic)](#dataframe-programmatic)
+- [dataframe (programmatic)](#dataframe-programmatic)
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
@@ -1273,7 +1273,7 @@ if __name__ == "__main__":
     data_contract = DataContract(
         data_contract_file="/path/datacontract.yaml"
     )
-    # call export
+    # Call export
     result = data_contract.export(
         export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
     )
@@ -1340,7 +1340,7 @@ importer_factory.register_importer("custom_company_importer", CustomImporter)
 
 
 if __name__ == "__main__":
-    # get a custom data from other app 
+    # Get a custom data from other app 
     json_from_custom_app = '''
     {
         "id_custom": "uuid-custom",
@@ -1370,7 +1370,7 @@ if __name__ == "__main__":
     # Create a DataContract instance
     data_contract = DataContract()
 
-    # call import_from
+    # Call import_from_source
     result = data_contract.import_from_source(
         format="custom_company_importer", 
         data_contract_specification=DataContract.init(), 
