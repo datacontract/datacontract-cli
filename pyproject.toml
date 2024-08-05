@@ -23,7 +23,7 @@ dependencies = [
   "fastparquet==2024.5.0",
   "python-multipart==0.0.9",
   "rich~=13.7.0",
-  "simple-ddl-parser==1.5.2",
+  "simple-ddl-parser==1.5.3",
   "soda-core-duckdb>=3.3.1,<3.4.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
