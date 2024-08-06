@@ -85,7 +85,7 @@ trino = [
 ]
 
 dbt = [
-    "dbt-core ^1.8.4",
+  "dbt-core>=1.8.4"
 ]
 
 all = [
