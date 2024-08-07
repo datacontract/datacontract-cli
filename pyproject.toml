@@ -89,7 +89,7 @@ dbt = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,deltalake,trino, dbt]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,deltalake,trino,dbt]"
 ]
 
 dev = [
