@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.10"
+version = "0.10.11"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 readme = "README.md"
 authors = [
@@ -99,12 +99,12 @@ dev = [
   "pymssql==2.3.0",
   "kafka-python",
   "trino==0.329.0",
-  "testcontainers>=4.5,<4.8",
-  "testcontainers[core]",
-  "testcontainers[minio]",
-  "testcontainers[postgres]",
-  "testcontainers[kafka]",
-  "testcontainers[mssql]",
+  "testcontainers==4.7.2",
+  "testcontainers[core]==4.7.2",
+  "testcontainers[minio]==4.7.2",
+  "testcontainers[postgres]==4.7.2",
+  "testcontainers[kafka]==4.7.2",
+  "testcontainers[mssql]==4.7.2",
 ]
 
 [project.urls]
