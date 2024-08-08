@@ -1485,6 +1485,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 ## Companies using this tool
 
 - [INNOQ](https://innoq.com)
+- [Data Catering](https://data.catering/)
 - And many more. To add your company, please create a pull request.
 
 ## Related Tools
@@ -1492,6 +1493,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 - [Data Contract Manager](https://www.datacontract-manager.com/) is a commercial tool to manage data contracts. It contains a web UI, access management, and data governance for a full enterprise data marketplace.
 - [Data Contract GPT](https://gpt.datacontract.com) is a custom GPT that can help you write data contracts.
 - [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
+- [Data Contract Playground](https://data-catering.github.io/data-contract-playground/) allows you to validate and export your data contract to different formats within your browser.
 
 ## License
 
