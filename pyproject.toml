@@ -84,8 +84,12 @@ trino = [
   "soda-core-trino>=3.3.1,<3.4.0"
 ]
 
+dbt = [
+  "dbt-core>=1.8.0"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,deltalake,trino]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,deltalake,trino,dbt]"
 ]
 
 dev = [

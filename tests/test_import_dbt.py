@@ -15,8 +15,7 @@ dbt_manifest_empty_columns = "fixtures/dbt/import/manifest_empty_columns.json"
 
 def test_read_dbt_manifest_():
     result = read_dbt_manifest(dbt_manifest)
-    assert len(result.get("models")) == 5
-
+    assert len([node for node in result.nodes.values() if node.resource_type == 'model']) == 5
 
 def test_cli():
     runner = CliRunner()
@@ -190,7 +189,7 @@ models:
 
 
 def test_import_dbt_manifest_with_filter_and_empty_columns():
-    result = DataContract().import_from_source("dbt", dbt_manifest_empty_columns, dbt_model=["customers"])
+    result = DataContract().import_from_source("dbt", dbt_manifest_empty_columns, dbt_nodes=["customers"])
 
     expected = """
 dataContractSpecification: 0.9.3
@@ -210,7 +209,7 @@ models:
 
 
 def test_import_dbt_manifest_with_filter():
-    result = DataContract().import_from_source("dbt", dbt_manifest, dbt_model=["customers"])
+    result = DataContract().import_from_source("dbt", dbt_manifest, dbt_nodes=["customers"])
 
     expected = """
 dataContractSpecification: 0.9.3
