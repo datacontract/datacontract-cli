@@ -7,7 +7,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 class SqlImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> dict:
+    ) -> DataContractSpecification:
         return import_sql(data_contract_specification, self.import_format, source)
 
 

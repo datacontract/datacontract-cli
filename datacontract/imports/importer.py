@@ -14,7 +14,7 @@ class Importer(ABC):
         data_contract_specification: DataContractSpecification,
         source: str,
         import_args: dict,
-    ) -> dict:
+    ) -> DataContractSpecification:
         pass
 
 

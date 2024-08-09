@@ -1350,7 +1350,7 @@ if __name__ == "__main__":
         "models": [
             {
             "name": "model1",
-            "desctiption": "model description from app",
+            "description": "model description from app",
             "columns": [
                 {
                 "name": "columnA",

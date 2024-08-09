@@ -12,9 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support data type map in Glue import. (#340)
-- Basic html export for new `keys` and `values` fields.
-- Support for recognition of 1 to 1 relationships when exporting to DBML.
-- Added support for arrays in JSON schema import (#305) 
+- Basic html export for new `keys` and `values` fields
+- Support for recognition of 1 to 1 relationships when exporting to DBML
+- Added support for arrays in JSON schema import (#305)
+- Support of varchar max length in Glue import
 
 ### Changed
 
@@ -23,9 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix required field handling in JSON schema import
-- Fix an issue where the quality and definition `$ref` are not always resolved.
+- Fix an issue where the quality and definition `$ref` are not always resolved
 - Fix an issue where the JSON schema validation fails for a field with type `string` and format `uuid`
-- Fix an issue where common DBML renderers may not be able to parse parts of an exported file.
+- Fix an issue where common DBML renderers may not be able to parse parts of an exported file
+- Fix an issue where Glue database without a location creates invalid data contract
+- Fix bigint -> long data type mapping
+- Fix an issue where column description for Glue partition key column is ignored
 
 ## [0.10.10] - 2024-07-18
 

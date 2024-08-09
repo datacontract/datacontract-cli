@@ -15,8 +15,9 @@ models:
         fields:
             field_one:
                 type: string
+                description: Comment 1
             field_two:
-                type: integer
+                type: int
             field_three:
                 type: timestamp
             field_four:
@@ -42,14 +43,34 @@ models:
                         sub_field_three:
                             type: string
                         sub_field_four:
-                            type: integer
+                            type: int
             field_eight:
                 type: map
                 keys:
                     type: string
                 values:
-                    type: integer
+                    type: int
+            field_nine:
+                type: decimal
+            field_ten:
+                type: bigint
+            field_eleven:
+                type: float
+            field_twelve:
+                type: double
+            field_thirteen:
+                type: timestamp
+            field_fourteen:
+                type: date
+            field_fifteen:
+                type: varchar
+            field_sixteen:
+                type: varchar
+                maxLength: 255
             part_one:
-                description: Partition Key
+                description: Comment 2
                 required: True
                 type: string
+            part_two:
+                required: True
+                type: date
