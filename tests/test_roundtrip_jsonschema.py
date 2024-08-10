@@ -1,11 +1,10 @@
 import json
-import logging
 from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.export.jsonschema_converter import to_jsonschemas
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_import_cli():

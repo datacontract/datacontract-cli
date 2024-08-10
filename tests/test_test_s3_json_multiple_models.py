@@ -1,4 +1,3 @@
-import logging
 import os
 
 import pytest
@@ -12,7 +11,7 @@ bucket_name = "multiple-bucket"
 s3_access_key = "test-access"
 s3_secret_access_key = "test-secret"
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 
 @pytest.fixture(scope="session")

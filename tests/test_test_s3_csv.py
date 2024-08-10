@@ -1,4 +1,3 @@
-import logging
 import os
 
 import pytest
@@ -6,7 +5,7 @@ from testcontainers.minio import MinioContainer
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 datacontract = "fixtures/s3-csv/datacontract.yaml"
 file_name = "fixtures/s3-csv/data/sample_data.csv"

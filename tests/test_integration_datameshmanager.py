@@ -1,8 +1,6 @@
-import logging
-
 from typer.testing import CliRunner
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 runner = CliRunner()
 

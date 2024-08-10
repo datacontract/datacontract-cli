@@ -1,5 +1,3 @@
-import logging
-
 import yaml
 from typer.testing import CliRunner
 
@@ -7,7 +5,7 @@ from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.imports.bigquery_importer import import_bigquery_from_json
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():

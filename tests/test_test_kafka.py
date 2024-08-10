@@ -7,7 +7,6 @@ if sys.version_info >= (3, 12, 1):
     sys.modules["kafka.vendor.six.moves"] = six.moves
 
 import json
-import logging
 
 import pytest
 from kafka import KafkaProducer
@@ -15,7 +14,7 @@ from testcontainers.kafka import KafkaContainer
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "fixtures/kafka/datacontract.yaml"
 

@@ -1,12 +1,10 @@
-import logging
-
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.terraform_converter import to_terraform
 from datacontract.model.data_contract_specification import DataContractSpecification
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():

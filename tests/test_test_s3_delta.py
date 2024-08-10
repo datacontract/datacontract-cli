@@ -1,4 +1,3 @@
-import logging
 import os
 import glob
 
@@ -7,7 +6,7 @@ from testcontainers.minio import MinioContainer
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 datacontract = "fixtures/s3-delta/datacontract.yaml"
 file_name = "fixtures/s3-delta/data/orders.delta"

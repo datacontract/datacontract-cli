@@ -1,12 +1,10 @@
-import logging
-
 import pytest
 from testcontainers.postgres import PostgresContainer
 
 from datacontract.data_contract import DataContract
 from datacontract.model.exceptions import DataContractException
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 postgres = PostgresContainer("postgres:16")

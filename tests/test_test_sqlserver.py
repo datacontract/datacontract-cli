@@ -1,11 +1,9 @@
-import logging
-
 import pytest
 from testcontainers.mssql import SqlServerContainer
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 datacontract = "fixtures/sqlserver/datacontract.yaml"
 sql_file_path = "fixtures/sqlserver/data/data.sql"

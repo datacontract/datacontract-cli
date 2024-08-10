@@ -1,12 +1,10 @@
-import logging
-
 from typer.testing import CliRunner
 
 from datacontract.data_contract import DataContract
 
 runner = CliRunner()
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_formats():

@@ -1,6 +1,5 @@
 import boto3
 from typer.testing import CliRunner
-import logging
 import yaml
 from moto import mock_aws
 import pytest
@@ -8,7 +7,7 @@ import pytest
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 db_name = "test_database"
 table_name = "test_table"

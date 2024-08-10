@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import sys
 
@@ -10,7 +9,7 @@ from datacontract.data_contract import DataContract
 from datacontract.export.jsonschema_converter import to_jsonschemas
 from datacontract.model.data_contract_specification import DataContractSpecification
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():
