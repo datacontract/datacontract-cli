@@ -190,7 +190,6 @@ A list of available extras:
 | Avro Support           | `pip install datacontract-cli[avro]`       |
 | Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration | `pip install datacontract-cli[databricks]` |
-| Deltalake Integration  | `pip install datacontract-cli[deltalake]`  |
 | Kafka Integration      | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
 | S3 Integration         | `pip install datacontract-cli[s3]`         |

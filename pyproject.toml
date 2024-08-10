@@ -55,10 +55,6 @@ databricks = [
   "soda-core-spark[databricks]>=3.3.1,<3.4.0"
 ]
 
-deltalake = [
-  "deltalake>=0.17,<0.19"
-]
-
 kafka = [
   "datacontract-cli[avro]",
   "soda-core-spark-df>=3.3.1,<3.4.0"
@@ -86,7 +82,7 @@ trino = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,deltalake,trino]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino]"
 ]
 
 dev = [
