@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
+
+### Added
+- Support of varchar max length in Glue import (#351)
+
+### Fixed
+- Fix an issue where Glue database without a location creates invalid data contract (#351)
+- Fix bigint -> long data type mapping (#351)
+- Fix an issue where column description for Glue partition key column is ignored (#351)
+
 
 ## [0.10.11] - 2024-08-08
 
@@ -15,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic html export for new `keys` and `values` fields
 - Support for recognition of 1 to 1 relationships when exporting to DBML
 - Added support for arrays in JSON schema import (#305)
-- Support of varchar max length in Glue import
 
 ### Changed
 
@@ -27,9 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix an issue where the quality and definition `$ref` are not always resolved
 - Fix an issue where the JSON schema validation fails for a field with type `string` and format `uuid`
 - Fix an issue where common DBML renderers may not be able to parse parts of an exported file
-- Fix an issue where Glue database without a location creates invalid data contract
-- Fix bigint -> long data type mapping
-- Fix an issue where column description for Glue partition key column is ignored
+
 
 ## [0.10.10] - 2024-07-18
 
