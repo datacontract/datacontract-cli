@@ -158,6 +158,17 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
             process_local_file(run, server, model_name, validate)
         elif server.type == "s3":
             process_s3_file(server, model_name, validate)
+        elif server.type == "gcs":
+            run.checks.append(
+                Check(
+                    type="schema",
+                    name="Check that JSON has valid schema",
+                    model=model_name,
+                    result="info",
+                    reason="JSON Schema check skipped for GCS, as GCS is currently not supported",
+                    engine="jsonschema",
+                )
+            )
         else:
             run.checks.append(
                 Check(

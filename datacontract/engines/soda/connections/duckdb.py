@@ -13,6 +13,9 @@ def get_duckdb_connection(data_contract, server, run: Run):
     if server.type == "s3":
         path = server.location
         setup_s3_connection(con, server)
+    if server.type == "gcs":
+        path = server.location
+        setup_gcs_connection(con, server)
     if server.type == "azure":
         path = server.location
         setup_azure_connection(con, server)
@@ -118,6 +121,24 @@ def setup_s3_connection(con, server):
     #     """)
     # con.sql("RESET s3_session_token")
     # print(con.sql("SELECT * FROM duckdb_settings() WHERE name like 's3%'"))
+
+
+def setup_gcs_connection(con, server):
+    key_id = os.getenv("DATACONTRACT_GCS_KEY_ID")
+    secret = os.getenv("DATACONTRACT_GCS_SECRET")
+
+    if key_id is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_GCS_KEY_ID is not set")
+    if secret is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_GCS_SECRET is not set")
+
+    con.sql(f"""
+    CREATE SECRET gcs_secret (
+        TYPE GCS,
+        KEY_ID '{key_id}',
+        SECRET '{secret}'
+    );
+    """)
 
 
 def setup_azure_connection(con, server):

@@ -328,6 +328,12 @@ Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
+- CSV
+- JSON
+- Delta
+- Parquet
+- Iceberg (coming soon)
+
 #### Examples
 
 ##### JSON
@@ -364,6 +370,32 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+
+
+### Google Cloud Storage (GCS)
+
+The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
+Use `https://storage.googleapis.com` as the endpoint URL.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: s3
+    endpointUrl: https://storage.googleapis.com
+    location: s3://bucket-name/path/*/*.json # use s3:// schema instead of gs://
+    format: json
+    delimiter: new_line # new_line, array, or none
+```
+
+#### Environment Variables
+
+| Environment Variable                | Example        | Description                                                                              |
+|-------------------------------------|----------------|------------------------------------------------------------------------------------------|
+| `DATACONTRACT_S3_ACCESS_KEY_ID`     | `GOOG1EZZZ...` | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Key ID |
+| `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...`    | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Secret |
 
 
 ### BigQuery
