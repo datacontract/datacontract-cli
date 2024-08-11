@@ -19,8 +19,8 @@ dependencies = [
   "pydantic>=2.8.2,<2.9.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
-  "fastapi==0.112.0",  # move to extra?
-  "uvicorn==0.30.5",   # move to extra?
+  "fastapi==0.112.0", # move to extra?
+  "uvicorn==0.30.5", # move to extra?
   "fastjsonschema>=2.19.1,<2.21.0",
   "fastparquet==2024.5.0",
   "python-multipart==0.0.9",
@@ -31,11 +31,11 @@ dependencies = [
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "python-dotenv~=1.0.0",
-  "rdflib==7.0.0",                                # move to extra?
+  "rdflib==7.0.0", # move to extra?
   "opentelemetry-exporter-otlp-proto-grpc~=1.16", # move to extra?
   "opentelemetry-exporter-otlp-proto-http~=1.16", # move to extra?
   "boto3>=1.34.41,<1.34.137",
-  "botocore>=1.34.41,<1.34.137",
+  #  "botocore>=1.34.41,<1.34.137",
   "jinja_partials >= 0.2.1"
 ]
 
@@ -115,7 +115,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "-n 8"
+addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
 
 [tool.ruff]
 line-length = 120
