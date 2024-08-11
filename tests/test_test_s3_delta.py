@@ -26,7 +26,7 @@ def minio_container():
 
 
 @pytest.mark.skipif(
-    os.getenv("CI"),
+    os.getenv("CI") == "true",
     reason="""
 Runs locally on mac, but fails on CI with
 <Error><Code>InvalidTokenId</Code><Message>The security token included in the request is invalid</Message><Key>fixtures/s3-delta/data/orders.delta/_delta_log/_last_checkpoint</Key><BucketName>test-bucket</BucketName><Resource>/test-bucket/fixtures/s3-delta/data/orders.delta/_delta_log/_last_checkpoint</Resource></Error>)
