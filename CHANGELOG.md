@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Deltalake is now using DuckDB's native deltalake support (#258). Extra deltalake removed.
+- When dumping to YAML (import) the alias name is used instead of the pythonic name. (#373)
 
 ### Fixed
 - Fix an issue where Glue database without a location creates invalid data contract (#351)
