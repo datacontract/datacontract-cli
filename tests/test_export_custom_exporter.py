@@ -1,9 +1,8 @@
-import logging
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import Exporter
 from datacontract.export.exporter_factory import exporter_factory
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 class CustomExporter(Exporter):

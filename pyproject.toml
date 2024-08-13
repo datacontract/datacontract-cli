@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.10"
+version = "0.10.11"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 readme = "README.md"
 authors = [
@@ -15,26 +15,27 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "typer[all]>=0.9,<0.13",
+  "typer>=0.12,<0.13",
   "pydantic>=2.8.2,<2.9.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
-  "fastapi==0.111.1",
+  "fastapi==0.112.0", # move to extra?
+  "uvicorn==0.30.5", # move to extra?
+  "fastjsonschema>=2.19.1,<2.21.0",
   "fastparquet==2024.5.0",
   "python-multipart==0.0.9",
   "rich~=13.7.0",
-  "simple-ddl-parser==1.5.2",
+  "simple-ddl-parser==1.5.3",
+  "duckdb==1.0.0",
   "soda-core-duckdb>=3.3.1,<3.4.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
-  "duckdb==1.0.0",
-  "fastjsonschema>=2.19.1,<2.21.0",
   "python-dotenv~=1.0.0",
-  "rdflib==7.0.0",
-  "opentelemetry-exporter-otlp-proto-grpc~=1.16",
-  "opentelemetry-exporter-otlp-proto-http~=1.16",
+  "rdflib==7.0.0", # move to extra?
+  "opentelemetry-exporter-otlp-proto-grpc~=1.16", # move to extra?
+  "opentelemetry-exporter-otlp-proto-http~=1.16", # move to extra?
   "boto3>=1.34.41,<1.34.137",
-  "botocore>=1.34.41,<1.34.137",
+  #  "botocore>=1.34.41,<1.34.137",
   "jinja_partials >= 0.2.1"
 ]
 
@@ -52,10 +53,6 @@ databricks = [
   "soda-core-spark-df>=3.3.1,<3.4.0",
   "databricks-sql-connector>=3.1.2,<3.4.0",
   "soda-core-spark[databricks]>=3.3.1,<3.4.0"
-]
-
-deltalake = [
-  "deltalake>=0.17,<0.19"
 ]
 
 kafka = [
@@ -89,7 +86,7 @@ dbt = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,deltalake,trino,dbt]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt]"
 ]
 
 dev = [
@@ -103,12 +100,11 @@ dev = [
   "pymssql==2.3.0",
   "kafka-python",
   "trino==0.329.0",
-  "testcontainers>=4.5,<4.8",
-  "testcontainers[core]",
-  "testcontainers[minio]",
-  "testcontainers[postgres]",
-  "testcontainers[kafka]",
-  "testcontainers[mssql]",
+  "testcontainers==4.7.2",
+  "testcontainers[minio]==4.7.2",
+  "testcontainers[postgres]==4.7.2",
+  "testcontainers[kafka]==4.7.2",
+  "testcontainers[mssql]==4.7.2",
 ]
 
 [project.urls]
@@ -123,7 +119,10 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "-n 8"
+addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
+log_level = "INFO"
+#log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
+log_cli_level = "INFO"
 
 [tool.ruff]
 line-length = 120

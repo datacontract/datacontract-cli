@@ -1,5 +1,3 @@
-import logging
-
 import yaml
 from typer.testing import CliRunner
 
@@ -7,7 +5,7 @@ from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.imports.dbt_importer import read_dbt_manifest
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 dbt_manifest = "fixtures/dbt/import/manifest_jaffle_duckdb.json"
 dbt_manifest_empty_columns = "fixtures/dbt/import/manifest_empty_columns.json"

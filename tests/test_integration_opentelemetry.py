@@ -1,4 +1,3 @@
-import logging
 from uuid import uuid4
 
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter as OTLPgRPCMetricExporter
@@ -8,7 +7,7 @@ from opentelemetry.metrics import Observation
 from datacontract.integration.publish_opentelemetry import _to_observation, Telemetry
 from datacontract.model.run import Run
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_convert_to_observation():

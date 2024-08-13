@@ -190,7 +190,6 @@ A list of available extras:
 | Avro Support           | `pip install datacontract-cli[avro]`       |
 | Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration | `pip install datacontract-cli[databricks]` |
-| Deltalake Integration  | `pip install datacontract-cli[deltalake]`  |
 | Kafka Integration      | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
 | S3 Integration         | `pip install datacontract-cli[s3]`         |
@@ -330,6 +329,12 @@ Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
+- CSV
+- JSON
+- Delta
+- Parquet
+- Iceberg (coming soon)
+
 #### Examples
 
 ##### JSON
@@ -366,6 +371,32 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+
+
+### Google Cloud Storage (GCS)
+
+The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
+Use `https://storage.googleapis.com` as the endpoint URL.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: s3
+    endpointUrl: https://storage.googleapis.com
+    location: s3://bucket-name/path/*/*.json # use s3:// schema instead of gs://
+    format: json
+    delimiter: new_line # new_line, array, or none
+```
+
+#### Environment Variables
+
+| Environment Variable                | Example        | Description                                                                              |
+|-------------------------------------|----------------|------------------------------------------------------------------------------------------|
+| `DATACONTRACT_S3_ACCESS_KEY_ID`     | `GOOG1EZZZ...` | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Key ID |
+| `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...`    | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Secret |
 
 
 ### BigQuery
@@ -1351,7 +1382,7 @@ if __name__ == "__main__":
         "models": [
             {
             "name": "model1",
-            "desctiption": "model description from app",
+            "description": "model description from app",
             "columns": [
                 {
                 "name": "columnA",
@@ -1486,6 +1517,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 ## Companies using this tool
 
 - [INNOQ](https://innoq.com)
+- [Data Catering](https://data.catering/)
 - And many more. To add your company, please create a pull request.
 
 ## Related Tools
@@ -1493,6 +1525,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 - [Data Contract Manager](https://www.datacontract-manager.com/) is a commercial tool to manage data contracts. It contains a web UI, access management, and data governance for a full enterprise data marketplace.
 - [Data Contract GPT](https://gpt.datacontract.com) is a custom GPT that can help you write data contracts.
 - [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
+- [Data Contract Playground](https://data-catering.github.io/data-contract-playground/) allows you to validate and export your data contract to different formats within your browser.
 
 ## License
 

@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import PosixPath
 
@@ -6,7 +5,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli(tmp_path: PosixPath):

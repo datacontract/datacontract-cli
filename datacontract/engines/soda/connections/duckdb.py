@@ -1,7 +1,5 @@
 import os
 
-from deltalake import DeltaTable
-
 import duckdb
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 from datacontract.model.run import Run
@@ -15,6 +13,9 @@ def get_duckdb_connection(data_contract, server, run: Run):
     if server.type == "s3":
         path = server.location
         setup_s3_connection(con, server)
+    if server.type == "gcs":
+        path = server.location
+        setup_gcs_connection(con, server)
     if server.type == "azure":
         path = server.location
         setup_azure_connection(con, server)
@@ -49,28 +50,8 @@ def get_duckdb_connection(data_contract, server, run: Run):
                     f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
                 )
         elif server.format == "delta":
-            if server.type == "local":
-                delta_table_arrow = DeltaTable(model_path).to_pyarrow_dataset()
-                con.register(model_name, delta_table_arrow)
-
-            if server.type == "azure":
-                # After switching to native delta table support
-                # in https://github.com/datacontract/datacontract-cli/issues/258,
-                # azure storage should also work
-                # https://github.com/duckdb/duckdb_delta/issues/21
-                raise NotImplementedError("Support for Delta Tables on Azure Storage is not implemented yet")
-            if server.type == "s3":
-                storage_options = {
-                    "AWS_ENDPOINT_URL": server.endpointUrl,
-                    "AWS_ACCESS_KEY_ID": os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID"),
-                    "AWS_SECRET_ACCESS_KEY": os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"),
-                    "AWS_REGION": os.getenv("DATACONTRACT_S3_REGION", "us-east-1"),
-                    "AWS_ALLOW_HTTP": "True" if server.endpointUrl.startswith("http://") else "False",
-                }
-
-                delta_table_arrow = DeltaTable(model_path, storage_options=storage_options).to_pyarrow_dataset()
-
-                con.register(model_name, delta_table_arrow)
+            con.sql("update extensions;")  # Make sure we have the latest delta extension
+            con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
     return con
 
 
@@ -140,6 +121,24 @@ def setup_s3_connection(con, server):
     #     """)
     # con.sql("RESET s3_session_token")
     # print(con.sql("SELECT * FROM duckdb_settings() WHERE name like 's3%'"))
+
+
+def setup_gcs_connection(con, server):
+    key_id = os.getenv("DATACONTRACT_GCS_KEY_ID")
+    secret = os.getenv("DATACONTRACT_GCS_SECRET")
+
+    if key_id is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_GCS_KEY_ID is not set")
+    if secret is None:
+        raise ValueError("Error: Environment variable DATACONTRACT_GCS_SECRET is not set")
+
+    con.sql(f"""
+    CREATE SECRET gcs_secret (
+        TYPE GCS,
+        KEY_ID '{key_id}',
+        SECRET '{secret}'
+    );
+    """)
 
 
 def setup_azure_connection(con, server):
