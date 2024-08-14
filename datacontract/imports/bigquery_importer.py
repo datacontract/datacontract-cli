@@ -16,7 +16,7 @@ class BigQueryImporter(Importer):
         else:
             data_contract_specification = import_bigquery_from_api(
                 data_contract_specification,
-                import_args.get("bigquery_tables"),
+                import_args.get("bigquery_table"),
                 import_args.get("bigquery_project"),
                 import_args.get("bigquery_dataset"),
             )
