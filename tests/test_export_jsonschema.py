@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import sys
 
@@ -10,7 +9,7 @@ from datacontract.data_contract import DataContract
 from datacontract.export.jsonschema_converter import to_jsonschemas
 from datacontract.model.data_contract_specification import DataContractSpecification
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():
@@ -57,10 +56,10 @@ def test_to_jsonschemas_complex():
         "format": "date-time"
       },
       "subject": {
-        "type": ["string", "null"]
+        "type": "string"
       },
       "data": {
-        "type": ["object", "null"],
+        "type": "object",
         "properties": {
           "sku": {
             "type": "string"
@@ -138,10 +137,7 @@ def test_to_jsonschemas_complex_2():
           "type": "object",
           "patternProperties": {
             "^[0-5]$": {
-              "type": [
-                "object",
-                "null"
-              ],
+              "type": "object",
               "properties": {
                 "key": {
                   "type": "string",
@@ -162,10 +158,7 @@ def test_to_jsonschemas_complex_2():
       ]
     },
     "empty_object": {
-      "type": [
-        "object",
-        "null"
-      ],
+      "type": "object",
       "properties": {},
       "required": []
     }

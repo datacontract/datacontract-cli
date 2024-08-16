@@ -1,4 +1,3 @@
-import logging
 import os
 import sys
 
@@ -9,7 +8,7 @@ from datacontract.cli import app
 from datacontract.export.odcs_converter import to_odcs_yaml
 from datacontract.model.data_contract_specification import DataContractSpecification
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():

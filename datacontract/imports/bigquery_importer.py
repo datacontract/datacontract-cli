@@ -10,7 +10,7 @@ from datacontract.model.exceptions import DataContractException
 class BigQueryImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> dict:
+    ) -> DataContractSpecification:
         if source is not None:
             data_contract_specification = import_bigquery_from_json(data_contract_specification, source)
         else:

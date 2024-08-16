@@ -1,9 +1,8 @@
-import logging
 import tempfile
 
 from datacontract.lint.resolve import resolve_data_contract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 
 def test_resolve_data_contract_simple_definition():

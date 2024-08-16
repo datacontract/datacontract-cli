@@ -1,12 +1,10 @@
-import logging
-
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 
 runner = CliRunner()
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_no_changes():

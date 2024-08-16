@@ -25,6 +25,18 @@ models:
         type: integer
         required: true
         description: Total amount of the order
+      line_items:
+        title: Line Items
+        type: array
+        required: false
+        items:
+          type: integer
+      vouchers:
+        title: List of used vouchers
+        type: array
+        required: false
+        items:
+          type: integer
       customer_id:
         title: Customer ID
         type: string

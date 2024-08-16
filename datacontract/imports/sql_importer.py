@@ -7,7 +7,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 class SqlImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> dict:
+    ) -> DataContractSpecification:
         return import_sql(data_contract_specification, self.import_format, source)
 
 
@@ -64,6 +64,10 @@ def map_type_from_sql(sql_type: str):
         return "integer"
     elif sql_type_normed.startswith("float"):
         return "float"
+    elif sql_type_normed.startswith("decimal"):
+        return "decimal"
+    elif sql_type_normed.startswith("numeric"):
+        return "numeric"
     elif sql_type_normed.startswith("bool"):
         return "boolean"
     elif sql_type_normed.startswith("timestamp"):

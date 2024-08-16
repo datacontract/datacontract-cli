@@ -3,6 +3,7 @@ from importlib.metadata import version
 from typing import Tuple
 
 import pytz
+from datacontract.model.exceptions import DataContractException
 
 import datacontract.model.data_contract_specification as spec
 from datacontract.export.sql_type_converter import convert_to_sql_type
@@ -48,17 +49,7 @@ Using {5} Types for the field types
 {0}
 */
     """.format(generated_info)
-
-    note = """Note project_info {{
-'''
-{0}
-'''
-}}
-    """.format(generated_info)
-
-    return """{0}
-{1}
-    """.format(comment, note)
+    return comment
 
 
 def get_version() -> str:
@@ -70,19 +61,18 @@ def get_version() -> str:
 
 def generate_project_info(contract: spec.DataContractSpecification) -> str:
     return """Project "{0}" {{
-    Note: "{1}"
+    Note: '''{1}'''
 }}\n
-    """.format(contract.info.title, " ".join(contract.info.description.splitlines()))
+    """.format(contract.info.title, contract.info.description)
 
 
 def generate_table(model_name: str, model: spec.Model, server: spec.Server) -> str:
     result = """Table "{0}" {{ 
-Note: "{1}"
-    """.format(model_name, " ".join(model.description.splitlines()))
+Note: {1}
+    """.format(model_name, formatDescription(model.description))
 
     references = []
 
-    # Add all the fields
     for field_name, field in model.fields.items():
         ref, field_string = generate_field(field_name, field, model_name, server)
         if ref is not None:
@@ -102,6 +92,30 @@ Note: "{1}"
 
 
 def generate_field(field_name: str, field: spec.Field, model_name: str, server: spec.Server) -> Tuple[str, str]:
+    if field.primary:
+        if field.required is not None:
+            if not field.required:
+                raise DataContractException(
+                    type="lint",
+                    name="Primary key fields cannot have required == False.",
+                    result="error",
+                    reason="Primary key fields cannot have required == False.",
+                    engine="datacontract",
+                )
+        else:
+            field.required = True
+        if field.unique is not None:
+            if not field.unique:
+                raise DataContractException(
+                    type="lint",
+                    name="Primary key fields cannot have unique == False",
+                    result="error",
+                    reason="Primary key fields cannot have unique == False.",
+                    engine="datacontract",
+                )
+        else:
+            field.unique = True
+
     field_attrs = []
     if field.primary:
         field_attrs.append("pk")
@@ -115,13 +129,21 @@ def generate_field(field_name: str, field: spec.Field, model_name: str, server: 
         field_attrs.append("null")
 
     if field.description:
-        field_attrs.append('Note: "{0}"'.format(" ".join(field.description.splitlines())))
+        field_attrs.append("""Note: {0}""".format(formatDescription(field.description)))
 
     field_type = field.type if server is None else convert_to_sql_type(field, server.type)
 
     field_str = '"{0}" "{1}" [{2}]'.format(field_name, field_type, ",".join(field_attrs))
     ref_str = None
     if (field.references) is not None:
-        # we always assume many to one, as datacontract doesn't really give us more info
-        ref_str = "{0}.{1} > {2}".format(model_name, field_name, field.references)
+        if field.unique:
+            ref_str = "{0}.{1} - {2}".format(model_name, field_name, field.references)
+        else:
+            ref_str = "{0}.{1} > {2}".format(model_name, field_name, field.references)
     return (ref_str, field_str)
+
+def formatDescription(input: str) -> str:
+    if '\n' in input or '\r' in input or '"' in input:
+        return "'''{0}'''".format(input)
+    else:
+        return '"{0}"'.format(input)

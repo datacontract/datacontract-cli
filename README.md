@@ -120,10 +120,10 @@ $ datacontract export --format html datacontract.yaml > datacontract.html
 # import avro (other formats: sql, glue, bigquery...)
 $ datacontract import --format avro --source avro_schema.avsc
 
-# find differences between to data contracts
+# find differences between two data contracts
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
 
-# find differences between to data contracts categorized into error, warning, and info.
+# find differences between two data contracts categorized into error, warning, and info.
 $ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 
 # fail pipeline on breaking changes. Uses changelog internally and showing only error and warning.
@@ -190,7 +190,6 @@ A list of available extras:
 | Avro Support           | `pip install datacontract-cli[avro]`       |
 | Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration | `pip install datacontract-cli[databricks]` |
-| Deltalake Integration  | `pip install datacontract-cli[deltalake]`  |
 | Kafka Integration      | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
 | S3 Integration         | `pip install datacontract-cli[s3]`         |
@@ -308,7 +307,7 @@ Supported server types:
 - [sqlserver](#sqlserver)
 - [databricks](#databricks)
 - [databricks (programmatic)](#databricks-programmatic)
-- [dataframr (programmatic)](#dataframe-programmatic)
+- [dataframe (programmatic)](#dataframe-programmatic)
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
@@ -328,6 +327,12 @@ Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/
 ### S3
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
+
+- CSV
+- JSON
+- Delta
+- Parquet
+- Iceberg (coming soon)
 
 #### Examples
 
@@ -365,6 +370,32 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+
+
+### Google Cloud Storage (GCS)
+
+The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
+Use `https://storage.googleapis.com` as the endpoint URL.
+
+#### Example
+
+datacontract.yaml
+```yaml
+servers:
+  production:
+    type: s3
+    endpointUrl: https://storage.googleapis.com
+    location: s3://bucket-name/path/*/*.json # use s3:// schema instead of gs://
+    format: json
+    delimiter: new_line # new_line, array, or none
+```
+
+#### Environment Variables
+
+| Environment Variable                | Example        | Description                                                                              |
+|-------------------------------------|----------------|------------------------------------------------------------------------------------------|
+| `DATACONTRACT_S3_ACCESS_KEY_ID`     | `GOOG1EZZZ...` | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Key ID |
+| `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...`    | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Secret |
 
 
 ### BigQuery
@@ -1273,7 +1304,7 @@ if __name__ == "__main__":
     data_contract = DataContract(
         data_contract_file="/path/datacontract.yaml"
     )
-    # call export
+    # Call export
     result = data_contract.export(
         export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
     )
@@ -1340,7 +1371,7 @@ importer_factory.register_importer("custom_company_importer", CustomImporter)
 
 
 if __name__ == "__main__":
-    # get a custom data from other app 
+    # Get a custom data from other app 
     json_from_custom_app = '''
     {
         "id_custom": "uuid-custom",
@@ -1350,7 +1381,7 @@ if __name__ == "__main__":
         "models": [
             {
             "name": "model1",
-            "desctiption": "model description from app",
+            "description": "model description from app",
             "columns": [
                 {
                 "name": "columnA",
@@ -1370,7 +1401,7 @@ if __name__ == "__main__":
     # Create a DataContract instance
     data_contract = DataContract()
 
-    # call import_from
+    # Call import_from_source
     result = data_contract.import_from_source(
         format="custom_company_importer", 
         data_contract_specification=DataContract.init(), 
@@ -1485,6 +1516,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 ## Companies using this tool
 
 - [INNOQ](https://innoq.com)
+- [Data Catering](https://data.catering/)
 - And many more. To add your company, please create a pull request.
 
 ## Related Tools
@@ -1492,6 +1524,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 - [Data Contract Manager](https://www.datacontract-manager.com/) is a commercial tool to manage data contracts. It contains a web UI, access management, and data governance for a full enterprise data marketplace.
 - [Data Contract GPT](https://gpt.datacontract.com) is a custom GPT that can help you write data contracts.
 - [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
+- [Data Contract Playground](https://data-catering.github.io/data-contract-playground/) allows you to validate and export your data contract to different formats within your browser.
 
 ## License
 

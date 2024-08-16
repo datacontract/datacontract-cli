@@ -7,7 +7,7 @@ from trino.dbapi import connect
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 datacontract = "fixtures/trino/datacontract.yaml"
 

@@ -1,8 +1,6 @@
-import logging
-
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 
 def test_export_complex_data_contract():

@@ -8,13 +8,12 @@ import six
 if sys.version_info >= (3, 12, 1):
     sys.modules["kafka.vendor.six.moves"] = six.moves
 
-import logging
 
 from dotenv import load_dotenv
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 
 @pytest.mark.skipif(

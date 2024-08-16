@@ -1,11 +1,10 @@
-import logging
 import os
 
 import pytest
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "fixtures/s3-json-remote/datacontract.yaml"
 

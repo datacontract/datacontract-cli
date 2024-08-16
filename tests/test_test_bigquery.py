@@ -1,4 +1,3 @@
-import logging
 import os
 
 import pytest
@@ -6,7 +5,7 @@ from dotenv import load_dotenv
 
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "fixtures/bigquery/datacontract.yaml"
 

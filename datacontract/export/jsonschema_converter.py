@@ -36,10 +36,7 @@ def to_property(field: Field) -> dict:
     property = {}
     json_type, json_format = convert_type_format(field.type, field.format)
     if json_type is not None:
-        if field.required:
-            property["type"] = json_type
-        else:
-            property["type"] = [json_type, "null"]
+        property["type"] = json_type
     if json_format is not None:
         property["format"] = json_format
     if field.unique:

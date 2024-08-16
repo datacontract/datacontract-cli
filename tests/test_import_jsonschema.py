@@ -1,12 +1,10 @@
-import logging
-
 import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():
@@ -25,9 +23,9 @@ def test_cli():
 
 
 def test_import_json_schema_orders():
-    result = DataContract().import_from_source("jsonschema", "fixtures/import/orders.json")
+    result = DataContract().import_from_source("jsonschema", "fixtures/import/orders_union-types.json")
 
-    with open("fixtures/import/orders-datacontract.yml") as file:
+    with open("fixtures/import/orders_union-types_datacontract.yml") as file:
         expected = file.read()
 
     print("Result:\n", result.to_yaml())

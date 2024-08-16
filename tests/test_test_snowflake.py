@@ -1,6 +1,4 @@
-import logging
-
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "fixtures/snowflake/datacontract.yaml"
 

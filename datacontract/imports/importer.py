@@ -14,7 +14,7 @@ class Importer(ABC):
         data_contract_specification: DataContractSpecification,
         source: str,
         import_args: dict,
-    ) -> dict:
+    ) -> DataContractSpecification:
         pass
 
 
@@ -30,5 +30,5 @@ class ImportFormat(str, Enum):
     spark = "spark"
 
     @classmethod
-    def get_suported_formats(cls):
+    def get_supported_formats(cls):
         return list(map(lambda c: c.value, cls))

@@ -34,5 +34,5 @@ definitions:
         required: true
       year_founded:
         type: integer
-        required: true
+        required: false
 

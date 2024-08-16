@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OrderSchema",
+  "description": "Schema for order details",
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "string",
+      "title": "Order ID",
+      "description": "Unique identifier for the order"
+    },
+    "order_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Order Timestamp",
+      "description": "Timestamp when the order was placed"
+    },
+    "order_total": {
+      "type": "integer",
+      "title": "Order Total",
+      "description": "Total amount of the order"
+    },
+    "line_items": {
+      "type": "array",
+      "title": "Line Items",
+      "items": {
+        "type" : "integer"
+      }
+    },
+    "vouchers": {
+      "type": "array",
+      "title": "List of used vouchers",
+      "items": [
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "customer_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 10,
+      "maxLength": 20,
+      "title": "Customer ID",
+      "description": "Unique identifier for the customer"
+    },
+    "customer_email_address": {
+      "type": "string",
+      "format": "email",
+      "title": "Customer Email Address",
+      "description": "Email address of the customer"
+    },
+    "processed_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Processed Timestamp",
+      "description": "Timestamp when the order was processed"
+    }
+  },
+  "required": [
+    "order_id",
+    "order_timestamp",
+    "order_total",
+    "customer_email_address",
+    "processed_timestamp"
+  ]
+}

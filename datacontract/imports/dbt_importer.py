@@ -11,7 +11,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 class DbtManifestImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> dict:
+    ) -> DataContractSpecification:
         data = read_dbt_manifest(manifest_path=source)
         return import_dbt_manifest(
             data_contract_specification, manifest_dict=data, dbt_models=import_args.get("dbt_model")

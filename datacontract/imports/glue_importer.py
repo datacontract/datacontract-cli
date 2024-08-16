@@ -1,6 +1,6 @@
 import boto3
-from typing import List
-
+from typing import List, Dict, Generator
+import re
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
@@ -13,7 +13,7 @@ from datacontract.model.data_contract_specification import (
 class GlueImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> dict:
+    ) -> DataContractSpecification:
         return import_glue(data_contract_specification, source, import_args.get("glue_table"))
 
 
@@ -39,7 +39,7 @@ def get_glue_database(database_name: str):
 
     return (
         response["Database"]["CatalogId"],
-        response["Database"].get("LocationUri", "None"),
+        response["Database"].get("LocationUri"),
     )
 
 
@@ -75,7 +75,7 @@ def get_glue_tables(database_name: str) -> List[str]:
     return table_names
 
 
-def get_glue_table_schema(database_name: str, table_name: str):
+def get_glue_table_schema(database_name: str, table_name: str) -> List[Dict]:
     """Get the schema of a Glue table.
 
     Args:
@@ -93,11 +93,11 @@ def get_glue_table_schema(database_name: str, table_name: str):
         response = glue.get_table(DatabaseName=database_name, Name=table_name)
     except glue.exceptions.EntityNotFoundException:
         print(f"Table {table_name} not found in database {database_name}.")
-        return {}
+        return []
     except Exception as e:
         # todo catch all
         print(f"Error: {e}")
-        return {}
+        return []
 
     table_schema = response["Table"]["StorageDescriptor"]["Columns"]
 
@@ -109,10 +109,9 @@ def get_glue_table_schema(database_name: str, table_name: str):
                     "Name": pk["Name"],
                     "Type": pk["Type"],
                     "Hive": True,
-                    "Comment": "Partition Key",
+                    "Comment": pk.get("Comment"),
                 }
             )
-
     return table_schema
 
 
@@ -120,7 +119,7 @@ def import_glue(
     data_contract_specification: DataContractSpecification,
     source: str,
     table_names: List[str],
-):
+) -> DataContractSpecification:
     """Import the schema of a Glue database.
 
     Args:
@@ -140,8 +139,13 @@ def import_glue(
     if table_names is None:
         table_names = get_glue_tables(source)
 
+    server_kwargs = {"type": "glue", "account": catalogid, "database": source}
+
+    if location_uri:
+        server_kwargs["location"] = location_uri
+
     data_contract_specification.servers = {
-        "production": Server(type="glue", account=catalogid, database=source, location=location_uri),
+        "production": Server(**server_kwargs),
     }
 
     for table_name in table_names:
@@ -160,12 +164,6 @@ def import_glue(
 
             field.description = column.get("Comment")
             fields[column["Name"]] = field
-
-            if "decimal" in column["Type"]:
-                # Extract precision and scale from the string
-                perc_scale = column["Type"][8:-1].split(",")
-                field.precision = int(perc_scale[0])
-                field.scale = int(perc_scale[1])
 
         data_contract_specification.models[table_name] = Model(
             type="table",
@@ -186,27 +184,43 @@ def create_typed_field(dtype: str) -> Field:
     """
     field = Field()
     dtype = dtype.strip().lower().replace(" ", "")
-    if dtype.startswith(("array", "struct", "map")):
-        orig_dtype: str = dtype
-        if dtype.startswith("array"):
-            field.type = "array"
-            field.items = create_typed_field(orig_dtype[6:-1])
-        elif dtype.startswith("struct"):
-            field.type = "struct"
-            for f in split_struct(orig_dtype[7:-1]):
-                field.fields[f.split(":", 1)[0].strip()] = create_typed_field(f.split(":", 1)[1])
-        elif dtype.startswith("map"):
-            field.type = "map"
-            key_type = orig_dtype[4:-1].split(",", 1)[0]
-            value_type = orig_dtype[4:-1].split(",", 1)[1]
+    # Example: array<string>
+    if dtype.startswith("array"):
+        field.type = "array"
+        field.items = create_typed_field(dtype[6:-1])
+    # Example: struct<field1:float,field2:string>
+    elif dtype.startswith("struct"):
+        field.type = "struct"
+        for f in split_struct(dtype[7:-1]):
+            field_name, field_key = f.split(":", 1)
+            field.fields[field_name] = create_typed_field(field_key)
+    # Example: map<string,int>
+    elif dtype.startswith("map"):
+        field.type = "map"
+        map_match = re.match(r"map<(.+?),\s*(.+)>", dtype)
+        if map_match:
+            key_type = map_match.group(1)
+            value_type = map_match.group(2)
             field.keys = create_typed_field(key_type)
             field.values = create_typed_field(value_type)
+    # Example: decimal(38, 6) or decimal
+    elif dtype.startswith("decimal"):
+        field.type = "decimal"
+        decimal_match = re.match(r"decimal\((\d+),\s*(\d+)\)", dtype)
+        if decimal_match:  # if precision specified
+            field.precision = int(decimal_match.group(1))
+            field.scale = int(decimal_match.group(2))
+    # Example: varchar(255) or varchar
+    elif dtype.startswith("varchar"):
+        field.type = "varchar"
+        if len(dtype) > 7:
+            field.maxLength = int(dtype[8:-1])
     else:
         field.type = map_type_from_sql(dtype)
     return field
 
 
-def split_fields(s: str):
+def split_fields(s: str) -> Generator[str, None, None]:
     """Split a string of fields considering nested structures.
 
     Args:
@@ -253,30 +267,20 @@ def map_type_from_sql(sql_type: str) -> str:
         return None
 
     sql_type = sql_type.lower()
-    if sql_type.startswith("varchar"):
-        return "varchar"
-    if sql_type.startswith("string"):
-        return "string"
-    if sql_type.startswith("text"):
-        return "text"
-    if sql_type.startswith("byte"):
-        return "byte"
-    if sql_type.startswith("short"):
-        return "short"
-    if sql_type.startswith("integer") or sql_type.startswith("int"):
-        return "integer"
-    if sql_type.startswith("long") or sql_type.startswith("bigint"):
-        return "long"
-    if sql_type.startswith("float"):
-        return "float"
-    if sql_type.startswith("double"):
-        return "double"
-    if sql_type.startswith("boolean"):
-        return "boolean"
-    if sql_type.startswith("timestamp"):
-        return "timestamp"
-    if sql_type.startswith("date"):
-        return "date"
-    if sql_type.startswith("decimal"):
-        return "decimal"
-    return "variant"
+
+    type_mapping = {
+        "string": "string",
+        "int": "int",
+        "bigint": "bigint",
+        "float": "float",
+        "double": "double",
+        "boolean": "boolean",
+        "timestamp": "timestamp",
+        "date": "date",
+    }
+
+    for prefix, mapped_type in type_mapping.items():
+        if sql_type.startswith(prefix):
+            return mapped_type
+
+    return "unknown"

@@ -1,5 +1,3 @@
-import logging
-
 from typer.testing import CliRunner
 from pyspark.sql import types
 from pyspark.testing import assertSchemaEqual
@@ -7,7 +5,7 @@ from datacontract.cli import app
 from datacontract.export.spark_converter import to_spark_dict
 from datacontract.model.data_contract_specification import DataContractSpecification
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():

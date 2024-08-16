@@ -1,6 +1,5 @@
 import boto3
 from typer.testing import CliRunner
-import logging
 import yaml
 from moto import mock_aws
 import pytest
@@ -8,7 +7,7 @@ import pytest
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.INFO, force=True)
+# logging.basicConfig(level=logging.INFO, force=True)
 
 db_name = "test_database"
 table_name = "test_table"
@@ -46,10 +45,11 @@ def setup_mock_glue(aws_credentials):
                         {
                             "Name": "field_one",
                             "Type": "string",
+                            "Comment": "Comment 1",
                         },
                         {
                             "Name": "field_two",
-                            "Type": "integer",
+                            "Type": "int",
                         },
                         {
                             "Name": "field_three",
@@ -69,12 +69,49 @@ def setup_mock_glue(aws_credentials):
                             "Name": "field_eight",
                             "Type": "map<string,int>",
                         },
+                        {
+                            "Name": "field_nine",
+                            "Type": "decimal",
+                        },
+                        {
+                            "Name": "field_ten",
+                            "Type": "bigint",
+                        },
+                        {
+                            "Name": "field_eleven",
+                            "Type": "float",
+                        },
+                        {
+                            "Name": "field_twelve",
+                            "Type": "double",
+                        },
+                        {
+                            "Name": "field_thirteen",
+                            "Type": "timestamp",
+                        },
+                        {
+                            "Name": "field_fourteen",
+                            "Type": "date",
+                        },
+                        {
+                            "Name": "field_fifteen",
+                            "Type": "varchar",
+                        },
+                        {
+                            "Name": "field_sixteen",
+                            "Type": "varchar(255)",
+                        },
                     ]
                 },
                 "PartitionKeys": [
                     {
                         "Name": "part_one",
                         "Type": "string",
+                        "Comment": "Comment 2",
+                    },
+                    {
+                        "Name": "part_two",
+                        "Type": "date",
                     },
                 ],
             },
@@ -120,7 +157,7 @@ def test_cli_with_table_filters(setup_mock_glue):
 
 
 @mock_aws
-def test_import_glue_schema(setup_mock_glue):
+def test_import_glue_schema_without_glue_table_filter(setup_mock_glue):
     result = DataContract().import_from_source("glue", "test_database")
 
     with open("fixtures/glue/datacontract.yaml") as file:
@@ -133,7 +170,20 @@ def test_import_glue_schema(setup_mock_glue):
 
 
 @mock_aws
-def test_import_glue_schema_with_table_filters(setup_mock_glue):
+def test_import_glue_schema_with_glue_table_filter(setup_mock_glue):
+    result = DataContract().import_from_source(format="glue", source="test_database", glue_table=[table_name])
+
+    with open("fixtures/glue/datacontract.yaml") as file:
+        expected = file.read()
+
+    print("Result", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    # Disable linters so we don't get "missing description" warnings
+    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+
+
+@mock_aws
+def test_import_glue_schema_with_non_existent_glue_table_filter(setup_mock_glue):
     result = DataContract().import_from_source(format="glue", source="test_database", glue_table=["table_1"])
 
     # we specify a table that the Mock doesn't have and thus expect an empty result

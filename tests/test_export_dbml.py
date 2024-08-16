@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from importlib.metadata import version
 
@@ -8,7 +7,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():
@@ -48,19 +47,11 @@ Using Logical Datacontract Types for the field types
     
 */
     
-Note project_info {{
-'''
-
-Generated at {0} by datacontract-cli version {1}
-for datacontract Orders Latest (urn:datacontract:checkout:orders-latest) version 1.0.0 
-Using Logical Datacontract Types for the field types
-    
-'''
-}}
-    
-    
 Project "Orders Latest" {{
-    Note: "Successful customer orders in the webshop.  All orders since 2020-01-01.  Orders with their line items are in their current state (no history included)."
+    Note: '''Successful customer orders in the webshop. 
+All orders since 2020-01-01. 
+Orders with their line items are in their current state (no history included).
+'''
 }}
 
     
@@ -111,19 +102,11 @@ Using s3 Types for the field types
     
 */
     
-Note project_info {{
-'''
-
-Generated at {0} by datacontract-cli version {1}
-for datacontract Orders Latest (urn:datacontract:checkout:orders-latest) version 1.0.0 
-Using s3 Types for the field types
-    
-'''
-}}
-    
-    
 Project "Orders Latest" {{
-    Note: "Successful customer orders in the webshop.  All orders since 2020-01-01.  Orders with their line items are in their current state (no history included)."
+    Note: '''Successful customer orders in the webshop. 
+All orders since 2020-01-01. 
+Orders with their line items are in their current state (no history included).
+'''
 }}
 
     
