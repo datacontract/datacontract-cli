@@ -42,7 +42,7 @@ dependencies = [
 [project.optional-dependencies]
 
 avro = [
-  "avro==1.11.3"
+  "avro==1.12.0"
 ]
 
 bigquery = [
