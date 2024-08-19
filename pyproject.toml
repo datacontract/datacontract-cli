@@ -96,7 +96,7 @@ dev = [
   "pymssql==2.3.0",
   "kafka-python",
   "trino==0.329.0",
-  "testcontainers==4.7.2",
+  "testcontainers==4.8.0",
   "testcontainers[minio]==4.7.2",
   "testcontainers[postgres]==4.7.2",
   "testcontainers[kafka]==4.7.2",
