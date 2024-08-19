@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Aligned JSON schema import and export of required properties
+- Change dbt importer to be more robust and customizable
 
 ### Fixed
 
