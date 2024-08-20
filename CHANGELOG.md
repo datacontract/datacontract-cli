@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix bigint -> long data type mapping (#351)
 - Fix an issue where column description for Glue partition key column is ignored (#351)
 - Corrected name of table parameter for bigquery import (#377)
+- Fix an failed to connect to S3 Server (#384)
 
 
 ## [0.10.11] - 2024-08-08
