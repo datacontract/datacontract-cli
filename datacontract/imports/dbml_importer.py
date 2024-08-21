@@ -68,7 +68,7 @@ def convert_dbml(
         if import_tables and table_name not in import_tables:
             continue
 
-        fields = import_table_fields(table)
+        fields = import_table_fields(table, dbml_schema.refs)
 
         data_contract_specification.models[table_name] = Model(
             fields=fields, namespace=schema_name, description=table.note.text
@@ -77,7 +77,7 @@ def convert_dbml(
     return data_contract_specification
 
 
-def import_table_fields(table) -> dict[str, Field]:
+def import_table_fields(table, references) -> dict[str, Field]:
     imported_fields = {}
     for field in table.columns:
         field_name = field.name
@@ -90,4 +90,23 @@ def import_table_fields(table) -> dict[str, Field]:
         # DBML doesn't really enforce anything other than 'no spaces' in column types
         imported_fields[field_name].type = map_type_from_sql(field.type)
 
+        ref = get_reference(field, references)
+        if ref is not None:
+            imported_fields[field_name].references = ref
+
     return imported_fields
+
+
+def get_reference(field, references):
+    result = None
+    for ref in references:
+        ref_table_name = ref.col1[0].table.name
+        ref_col_name = ref.col1[0].name
+        field_table_name = field.table.name
+        field_name = field.name
+
+        if ref_table_name == field_table_name and ref_col_name == field_name:
+            result = f"{ref.col2[0].table.name}.{ref.col2[0].name}"
+            return result
+
+    return result

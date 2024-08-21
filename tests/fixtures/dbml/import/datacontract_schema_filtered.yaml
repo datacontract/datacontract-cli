@@ -19,6 +19,7 @@ models:
         required: false
         primary: false
         unique: false
+        references: orders.order_id
         description: An internal ID that identifies an order in the online shop.
       sku:
         type: text
