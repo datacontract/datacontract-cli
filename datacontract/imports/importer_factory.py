@@ -88,3 +88,8 @@ importer_factory.register_lazy_importer(
 importer_factory.register_lazy_importer(
     name=ImportFormat.dbt, module_path="datacontract.imports.dbt_importer", class_name="DbtManifestImporter"
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.dbml,
+    module_path="datacontract.imports.dbml_importer",
+    class_name="DBMLImporter",
+)
