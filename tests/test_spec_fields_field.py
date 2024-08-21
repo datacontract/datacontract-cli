@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
 from datacontract.data_contract import DataContract
-from datacontract.model.data_contract_specification import Field, Definition
+from datacontract.model.data_contract_specification import Field
 
 runner = CliRunner()
 
