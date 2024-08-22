@@ -51,10 +51,9 @@ def to_avro_field(field, field_name):
         }
 
     if field.config:
-        if "avroDefault" in field.config and "avroType" in field.config and field.config["avroType"] != "enum":
-            avro_field["default"] = field.config["avroDefault"]
-        elif "avroDefault" in field.config and "avroType" not in field.config:
-            avro_field["default"] = field.config["avroDefault"]
+        if "avroDefault" in field.config:
+            if field.config.get("avroType") != "enum":
+                avro_field["default"] = field.config["avroDefault"]
 
     return avro_field
 
