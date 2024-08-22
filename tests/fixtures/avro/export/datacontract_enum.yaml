@@ -1,0 +1,20 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  MySchema:
+    fields:
+      color:
+        type: string
+        name: Color
+        symbols:
+            - RED
+            - GREEN
+            - BLUE
+            - UNKNOWN
+        config:
+          avroType: enum
+          avroDefault: UNKNOWN
+        
