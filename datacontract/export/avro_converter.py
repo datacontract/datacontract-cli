@@ -43,7 +43,12 @@ def to_avro_field(field, field_name):
     avro_field["type"] = to_avro_type(field, field_name)
 
     if avro_field["type"] == "enum":
-        avro_field["type"] = {"type": "enum", "name": field.name, "symbols": field.symbols, "default": field.config["avroDefault"]}
+        avro_field["type"] = {
+            "type": "enum",
+            "name": field.name,
+            "symbols": field.symbols,
+            "default": field.config["avroDefault"],
+        }
 
     if field.config:
         if "avroDefault" in field.config and "avroType" in field.config and field.config["avroType"] != "enum":

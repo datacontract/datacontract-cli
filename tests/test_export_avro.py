@@ -16,8 +16,8 @@ def test_cli():
 
 
 def test_to_avro_schema():
-    data_contract = DataContractSpecification.from_file("tests/fixtures/avro/export/datacontract.yaml")
-    with open("tests/fixtures/avro/export/orders_with_datefields.avsc") as file:
+    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract.yaml")
+    with open("fixtures/avro/export/orders_with_datefields.avsc") as file:
         expected_avro_schema = file.read()
 
     model_name, model = next(iter(data_contract.models.items()))
@@ -27,22 +27,19 @@ def test_to_avro_schema():
 
 
 def test_to_avro_schema_with_logical_types():
-    data_contract = DataContractSpecification.from_file("tests/fixtures/avro/export/datacontract_logicalType.yaml")
-    with open("tests/fixtures/avro/export/datacontract_logicalType.avsc") as file:
+    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_logicalType.yaml")
+    with open("fixtures/avro/export/datacontract_logicalType.avsc") as file:
         expected_avro_schema = file.read()
 
     model_name, model = next(iter(data_contract.models.items()))
     result = to_avro_schema_json(model_name, model)
 
-    print(json.loads(result))
-    print(json.loads(expected_avro_schema))
-
     assert json.loads(result) == json.loads(expected_avro_schema)
 
 
 def test_to_avro_schema_enum():
-    data_contract = DataContractSpecification.from_file("tests/fixtures/avro/export/datacontract_enum.yaml")
-    with open("tests/fixtures/avro/export/datacontract_enum.avsc") as file:
+    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_enum.yaml")
+    with open("fixtures/avro/export/datacontract_enum.avsc") as file:
         expected_avro_schema = file.read()
 
     model_name, model = next(iter(data_contract.models.items()))
