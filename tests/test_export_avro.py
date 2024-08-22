@@ -45,5 +45,4 @@ def test_to_avro_schema_with_required():
     model_name, model = next(iter(data_contract.models.items()))
     result = to_avro_schema_json(model_name, model)
 
-
     assert json.loads(result) == json.loads(expected_avro_schema)
