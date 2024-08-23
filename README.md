@@ -655,10 +655,10 @@ models:
 ```
 
 ##### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.  
+All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
 For example:
 
-| Soda parameter       | Environment Variable                        | 
+| Soda parameter       | Environment Variable                        |
 |----------------------|---------------------------------------------|
 | `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
 | `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
@@ -671,7 +671,7 @@ Beware, that parameters:
 * `database`
 * `schema`
 
-are obtained from the `servers` section of the YAML-file.  
+are obtained from the `servers` section of the YAML-file.
 E.g. from the example above:
 ```yaml
 servers:
@@ -934,8 +934,8 @@ logical data types are exported.
 
 #### Spark
 
-The export function converts the data contract specification into a StructType Spark schema. The returned value is a Python code picture of the model schemas.  
-Spark DataFrame schema is defined as StructType. For more details about Spark Data Types please see [the spark documentation](https://spark.apache.org/docs/latest/sql-ref-datatypes.html) 
+The export function converts the data contract specification into a StructType Spark schema. The returned value is a Python code picture of the model schemas.
+Spark DataFrame schema is defined as StructType. For more details about Spark Data Types please see [the spark documentation](https://spark.apache.org/docs/latest/sql-ref-datatypes.html)
 
 #### Avro
 
@@ -1170,6 +1170,7 @@ Available import options:
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | `spark`            | Import from Spark StructTypes                  | ✅      |
 | `dbml`             | Import from DBML models                        | ✅      |
+| `csv`              | Import from CSV File                           | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD    |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
 | `parquet`          | Import from Parquet File Metadta               | ✅      |
@@ -1311,6 +1312,17 @@ Examples:
 ```bash
 datacontract import --format iceberg --source ./tests/fixtures/iceberg/simple_schema.json --iceberg-table test-table
 ```
+
+#### CSV
+
+Importing from CSV File. Specify file in `source` parameter. It does autodetection for encoding and csv dialect
+
+Example:
+
+```bash
+datacontract import --format csv --source "test.csv"
+```
+
 
 ### breaking
 ```
@@ -1472,7 +1484,7 @@ If you use [Data Mesh Manager](https://datamesh-manager.com/) or [Data Contract 
 ```bash
 # Fetch current data contract, execute tests on production, and publish result to data mesh manager
 $ EXPORT DATAMESH_MANAGER_API_KEY=xxx
-$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml \ 
+$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml \
  --server production \
  --publish https://api.datamesh-manager.com/api/test-results
 ```
@@ -1584,7 +1596,7 @@ Examples: Removing or renaming models and fields.
   ```
 
 ## Customizing Exporters and Importers
- 
+
 ### Custom Exporter
 Using the exporter factory to add a new custom exporter
 ```python
@@ -1630,18 +1642,18 @@ if __name__ == "__main__":
 Output
 ```python
 {
- 'title': 'Orders Unit Test', 
- 'version': '1.0.0', 
- 'description': 'The orders data contract', 
- 'email': 'team-orders@example.com', 
- 'url': 'https://wiki.example.com/teams/checkout', 
- 'model': 'orders', 
- 'model_columns': 'order_id, order_total, order_status', 
- 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 
+ 'title': 'Orders Unit Test',
+ 'version': '1.0.0',
+ 'description': 'The orders data contract',
+ 'email': 'team-orders@example.com',
+ 'url': 'https://wiki.example.com/teams/checkout',
+ 'model': 'orders',
+ 'model_columns': 'order_id, order_total, order_status',
+ 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'},
  'custom_args': 'my_custom_arg'
 }
 ```
-  
+
 ### Custom Importer
 Using the importer factory to add a new custom importer
 ```python
@@ -1663,31 +1675,31 @@ class CustomImporter(Importer):
         data_contract_specification.info.title = source_dict.get("title")
         data_contract_specification.info.version = source_dict.get("version")
         data_contract_specification.info.description = source_dict.get("description_from_app")
-        
+
         for model in source_dict.get("models", []):
             fields = {}
             for column in model.get('columns'):
                 field = Field(
-                    description=column.get('column_description'), 
-                    type=column.get('type') 
+                    description=column.get('column_description'),
+                    type=column.get('type')
                 )
-                fields[column.get('name')] = field               
-                   
+                fields[column.get('name')] = field
+
             dc_model = Model(
-                description=model.get('description'), 
+                description=model.get('description'),
                 fields= fields
             )
 
             data_contract_specification.models[model.get('name')] = dc_model
         return data_contract_specification
- 
+
 
 # Register the new custom class into factory
 importer_factory.register_importer("custom_company_importer", CustomImporter)
 
 
 if __name__ == "__main__":
-    # Get a custom data from other app 
+    # Get a custom data from other app
     json_from_custom_app = '''
     {
         "id_custom": "uuid-custom",
@@ -1719,14 +1731,14 @@ if __name__ == "__main__":
 
     # Call import_from_source
     result = data_contract.import_from_source(
-        format="custom_company_importer", 
-        data_contract_specification=DataContract.init(), 
+        format="custom_company_importer",
+        data_contract_specification=DataContract.init(),
         source=json_from_custom_app
-    ) 
+    )
     print(result.to_yaml() )
 ```
 Output
-  
+
 ```yaml
 dataContractSpecification: 1.1.0
 id: uuid-custom
