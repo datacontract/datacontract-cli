@@ -27,8 +27,7 @@ def test_cli():
 def test_import_sql():
     result = DataContract().import_from_source("csv", csv_file_path)
 
-    expected = """
-dataContractSpecification: 0.9.3
+    expected = """dataContractSpecification: 0.9.3
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -37,7 +36,7 @@ servers:
   production:
     type: local
     format: csv
-    path: ./tests/fixtures/csv/data/sample_data.csv
+    path: fixtures/csv/data/sample_data.csv
     delimiter: ','
 models:
   sample_data:
