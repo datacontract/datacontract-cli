@@ -40,10 +40,8 @@ def to_avro_field(field, field_name):
     avro_field = {"name": field_name}
     if field.description is not None:
         avro_field["doc"] = field.description
-    if field.required is None:
-        field.required = True
     avro_type = to_avro_type(field, field_name)
-    avro_field["type"] = avro_type if field.required else ["null", avro_type]
+    avro_field["type"] = ["null", avro_type] if field.required == False else avro_type
 
     if field.config:
         if "avroDefault" in field.config:
