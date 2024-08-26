@@ -142,8 +142,9 @@ def generate_field(field_name: str, field: spec.Field, model_name: str, server: 
             ref_str = "{0}.{1} > {2}".format(model_name, field_name, field.references)
     return (ref_str, field_str)
 
+
 def formatDescription(input: str) -> str:
-    if '\n' in input or '\r' in input or '"' in input:
+    if "\n" in input or "\r" in input or '"' in input:
         return "'''{0}'''".format(input)
     else:
         return '"{0}"'.format(input)
