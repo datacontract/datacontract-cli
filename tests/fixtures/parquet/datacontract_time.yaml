@@ -1,15 +1,15 @@
 dataContractSpecification: 0.9.3
-id: time-unit-test
+id: date-unit-test
 info:
-  title: Time Unit Test
+  title: Date Unit Test
   version: 1.0.0
 servers:
   production:
     type: local
-    path: ./fixtures/parquet/data/time.parquet
+    path: ./fixtures/parquet/data/date.parquet
     format: parquet
 models:
   example:
     fields:
-      time:
-        type: time
+      date:
+        type: timestamp

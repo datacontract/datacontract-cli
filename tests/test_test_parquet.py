@@ -88,7 +88,7 @@ def test_bit():
 
 def test_blob():
     data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_blob.yaml",
+        data_contract_file="fixtures/parquet/datacontract_binary.yaml",
     )
     run = data_contract.test()
     print(run.pretty())
@@ -106,7 +106,7 @@ def test_boolean():
 
 def test_date():
     data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_date.yaml",
+        data_contract_file="fixtures/parquet/datacontract_time.yaml",
     )
     run = data_contract.test()
     print(run.pretty())

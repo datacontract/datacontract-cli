@@ -13,5 +13,5 @@ models:
     fields:
       map:
         type: map
-        key_type: varchar
-        value_type: varchar
+        keys: string
+        values: string

@@ -1,5 +1,4 @@
 import os
-import uuid
 
 import pandas as pd
 
@@ -72,29 +71,19 @@ write_parquet(line_items_df, "line_items.parquet")
 # Define data for all supported types
 supported_data_types = {
     "string": ["example", "test", "data"],
-    "date": [pd.Timestamp('2024-01-01').date()],
-    "time": [pd.Timestamp('2024-01-01 12:00:00').time()],
+    "blob": [b"example", b"test", b"data"],
+    "boolean": [True, False, True],
+    "decimal": [1.23, 4.56, 7.89],
     "float": [1.23, 4.56, 7.89],
     "double": [1.23, 4.56, 7.89],
     "integer": [100, 200, 300],
     "bigint": [1000000000000000000, 2000000000000000000, 3000000000000000000],
-    "smallint": [10, 20, 30],
-    "tinyint": [1, 2, 3],
-    "ubigint": [1000000000000000000, 2000000000000000000, 3000000000000000000],
-    "uhugeint": [100000, 200000, 300000],
-    "uinteger": [100, 200, 300],
-    "usmallint": [10, 20, 30],
-    "utinyint": [1, 2, 3],
-    "boolean": [True, False, True],
-    "blob": [b"example", b"test", b"data"],
-    "bit": [b"1010", b"1100", b"1111"],
-    "interval": [pd.Timedelta(seconds=3600)],
-    "uuid": [str(uuid.uuid4()) for _ in range(3)],
-    "hugeint": [1000000000000000000, 2000000000000000000, 3000000000000000000],
     "struct": [{"a": 1, "b": "test"}],
     "array": [[1, 2, 3], [4, 5, 6]],
     "list": [[1, 2, 3], [4, 5, 6]],
-    "map": [{"key1": "value1", "key2": "value2"}]
+    "map": [{"key1": "value1", "key2": "value2"}],
+    "time": [pd.Timestamp('2024-01-01 12:00:00').time()],
+    "timestamp": [pd.Timestamp('2024-01-01').timestamp()]
 }
 
 # Write parquet files

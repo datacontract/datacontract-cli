@@ -149,38 +149,59 @@ def convert_to_databricks(field: Field) -> None | str:
 
 
 def convert_to_duckdb(field: Field) -> None | str:
-    type = field.type
-    if type is None:
+    """
+       Convert a data contract field to the corresponding DuckDB SQL type.
+
+       Parameters:
+       field (Field): The data contract field to convert.
+
+       Returns:
+       str: The corresponding DuckDB SQL type.
+       """
+    # Check
+    if field is None or field.type is None:
         return None
-    if type.lower() in ["string", "varchar", "text"]:
-        return "VARCHAR"  # aliases: VARCHAR, CHAR, BPCHAR, STRING, TEXT, VARCHAR(n)	STRING(n), TEXT(n)
-    if type.lower() in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP WITH TIME ZONE"  # aliases: TIMESTAMPTZ
-    if type.lower() in ["timestamp_ntz"]:
-        return "DATETIME"  # timestamp with microsecond precision (ignores time zone), aliases: TIMESTAMP
-    if type.lower() in ["date"]:
-        return "DATE"
-    if type.lower() in ["time"]:
-        return "TIME"  # TIME WITHOUT TIME ZONE
-    if type.lower() in ["number", "decimal", "numeric"]:
-        return f"DECIMAL({field.precision},{field.scale})"
-    if type.lower() in ["float"]:
-        return "FLOAT"
-    if type.lower() in ["double"]:
-        return "DOUBLE"
-    if type.lower() in ["integer", "int"]:
-        return "INT"
-    if type.lower() in ["long", "bigint"]:
-        return "BIGINT"
-    if type.lower() in ["boolean"]:
-        return "BOOLEAN"
-    if type.lower() in ["object", "record", "struct"]:
-        return "STRUCT"
-    if type.lower() in ["bytes"]:
-        return "BLOB"
-    if type.lower() in ["array"]:
-        return "ARRAY"
-    return None
+
+    # Get
+    type_lower = field.type.lower()
+
+    # Prepare
+    type_mapping = {
+        "varchar": "VARCHAR",
+        "string": "VARCHAR",
+        "binary": "BLOB",
+        "boolean": "BOOLEAN",
+        "integer": "INTEGER",
+        "decimal": "DECIMAL",
+        "number": "DECIMAL",
+        "numeric": "DECIMAL",
+        "double": "DOUBLE",
+        "float": "FLOAT",
+        "int32": "INTEGER",
+        "int64": "BIGINT",
+        "date": "DATE",
+        "time": "TIME",
+        "timestamp": "TIMESTAMP",
+        "struct": "STRUCT",
+        "object": "STRUCT",
+        "record": "STRUCT",
+    }
+
+    # Convert
+    if type_lower in type_mapping:
+        return type_mapping[type_lower]
+
+    # Check list and map
+    if type_lower == "list" or type_lower == "array":
+        item_type = convert_to_duckdb(field.items)
+        return f"{item_type}[]"
+    if type_lower == "map":
+        key_type = convert_to_duckdb(field.keys)
+        value_type = convert_to_duckdb(field.values)
+        return f"MAP({key_type}, {value_type})"
+
+    # Throw
+    raise ValueError(f"Unsupported type: {field.type}")
 
 
 def convert_type_to_sqlserver(field: Field) -> None | str:

@@ -15,5 +15,5 @@ models:
     fields:
       element:
         type: array
-#        items:
-#          type: integer
+        items:
+          type: integer
