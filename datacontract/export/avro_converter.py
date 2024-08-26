@@ -46,7 +46,7 @@ def to_avro_field(field, field_name):
         avro_field["type"] = {
             "type": "enum",
             "name": field.name,
-            "symbols": field.symbols,
+            "symbols": field.enum,
             "default": field.config["avroDefault"],
         }
 

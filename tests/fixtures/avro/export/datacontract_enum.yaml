@@ -9,11 +9,11 @@ models:
       color:
         type: string
         name: Color
-        symbols:
-            - RED
-            - GREEN
-            - BLUE
-            - UNKNOWN
+        enum:
+        - RED
+        - GREEN
+        - BLUE
+        - UNKNOWN
         config:
           avroType: enum
           avroDefault: UNKNOWN
