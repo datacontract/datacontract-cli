@@ -153,15 +153,15 @@ def convert_to_duckdb(field: Field) -> None | str:
     if type is None:
         return None
     if type.lower() in ["string", "varchar", "text"]:
-        return "VARCHAR"  # aliases: VARCHAR, CHAR, BPCHAR, STRING, TEXT, VARCHAR(n)	STRING(n), TEXT(n)
+        return "VARCHAR"
     if type.lower() in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP WITH TIME ZONE"  # aliases: TIMESTAMPTZ
+        return "TIMESTAMP WITH TIME ZONE"
     if type.lower() in ["timestamp_ntz"]:
-        return "DATETIME"  # timestamp with microsecond precision (ignores time zone), aliases: TIMESTAMP
+        return "TIMESTAMP"
     if type.lower() in ["date"]:
         return "DATE"
     if type.lower() in ["time"]:
-        return "TIME"  # TIME WITHOUT TIME ZONE
+        return "TIME"
     if type.lower() in ["number", "decimal", "numeric"]:
         return f"DECIMAL({field.precision},{field.scale})"
     if type.lower() in ["float"]:
@@ -169,7 +169,7 @@ def convert_to_duckdb(field: Field) -> None | str:
     if type.lower() in ["double"]:
         return "DOUBLE"
     if type.lower() in ["integer", "int"]:
-        return "INT"
+        return "INTEGER"
     if type.lower() in ["long", "bigint"]:
         return "BIGINT"
     if type.lower() in ["boolean"]:
@@ -179,7 +179,8 @@ def convert_to_duckdb(field: Field) -> None | str:
     if type.lower() in ["bytes"]:
         return "BLOB"
     if type.lower() in ["array"]:
-        return "ARRAY"
+        item_type = convert_to_duckdb(field.items)
+        return f"{item_type}[]"
     return None
 
 
