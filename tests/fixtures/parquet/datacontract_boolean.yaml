@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/boolean.parquet
     format: parquet
 models:
-  boolean:
+  example:
     fields:
-      boolean_field:
+      boolean:
         type: boolean

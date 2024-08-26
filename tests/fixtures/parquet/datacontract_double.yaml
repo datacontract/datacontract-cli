@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/double.parquet
     format: parquet
 models:
-  double:
+  example:
     fields:
-      double_field:
+      double:
         type: double

@@ -9,9 +9,9 @@ servers:
     path: ./fixtures/parquet/data/list.parquet
     format: parquet
 models:
-  list:
+  example:
     fields:
-      list_field:
+      element:
         type: list
         items:
           type: integer

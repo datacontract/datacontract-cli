@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/date.parquet
     format: parquet
 models:
-  date:
+  example:
     fields:
-      date_field:
+      date:
         type: date

@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/float.parquet
     format: parquet
 models:
-  float:
+  example:
     fields:
-      float_field:
+      float:
         type: float

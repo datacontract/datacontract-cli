@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/uhugeint.parquet
     format: parquet
 models:
-  uhugeint:
+  example:
     fields:
-      uhugeint_field:
+      uhugeint:
         type: uhugeint

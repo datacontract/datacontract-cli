@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/uuid.parquet
     format: parquet
 models:
-  uuid:
+  example:
     fields:
-      uuid_field:
+      uuid:
         type: uuid

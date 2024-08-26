@@ -9,9 +9,9 @@ servers:
     path: ./fixtures/parquet/data/struct.parquet
     format: parquet
 models:
-  struct:
+  example:
     fields:
-      struct_field:
+      struct:
         type: struct
         fields:
           a:

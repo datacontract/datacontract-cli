@@ -4,7 +4,7 @@ from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExp
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.metrics import Observation
 
-from datacontract.integration.opentelemetry import _to_observation, Telemetry
+from datacontract.integration.publish_opentelemetry import _to_observation, Telemetry
 from datacontract.model.run import Run
 
 # logging.basicConfig(level=logging.DEBUG, force=True)

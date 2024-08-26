@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/uinteger.parquet
     format: parquet
 models:
-  uinteger:
+  example:
     fields:
-      uinteger_field:
+      uinteger:
         type: uinteger

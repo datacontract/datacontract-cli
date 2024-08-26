@@ -1,13 +1,19 @@
-import pyarrow as pa
-import pyarrow.parquet as pq
-import pandas as pd
 import os
 import uuid
 
+import pandas as pd
+
 # Ensure the required directory exists
 output_dir = "../data"
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+os.makedirs(output_dir, exist_ok=True)
+
+
+def write_parquet(data, file_name):
+    df = pd.DataFrame(data)
+    file_path = os.path.join(output_dir, file_name)
+    df.to_parquet(file_path, index=False)
+    print(f"Written {file_path}")
+
 
 # Sample data for Orders table
 orders_data = {
@@ -24,9 +30,9 @@ orders_data = {
     ],
     "order_total": [5000, 7500, 3000, 2000, 6500, 12000, 4500, 8000],
 }
-
 orders_df = pd.DataFrame(orders_data)
 orders_df["order_timestamp"] = pd.to_datetime(orders_df["order_timestamp"], format="%Y-%m-%dT%H:%M:%S.%fZ")
+write_parquet(orders_df, "orders.parquet")
 
 # Sample data for Line Items table
 line_items_data = {
@@ -61,40 +67,37 @@ line_items_data = {
     ],
 }
 line_items_df = pd.DataFrame(line_items_data)
+write_parquet(line_items_df, "line_items.parquet")
 
-# Write to Parquet files
-orders_df.to_parquet(os.path.join(output_dir, "orders.parquet"))
-line_items_df.to_parquet(os.path.join(output_dir, "line_items.parquet"))
-
-# Define additional data for various types
-data = {
-    "string": pa.array(["example", "test", "data"], pa.string()),
-"date": pa.array([pd.Timestamp('2024-01-01').date()], pa.date32()),
-"time": pa.array([pd.Timestamp('2024-01-01 12:00:00').time()], pa.time32('s')),
-"float": pa.array([1.23, 4.56, 7.89], pa.float32()),
-"double": pa.array([1.23, 4.56, 7.89], pa.float64()),
-"integer": pa.array([100, 200, 300], pa.int32()),
-"bigint": pa.array([1000000000000000000, 2000000000000000000, 3000000000000000000], pa.int64()),
-"smallint": pa.array([10, 20, 30], pa.int16()),
-"tinyint": pa.array([1, 2, 3], pa.int8()),
-"ubigint": pa.array([1000000000000000000, 2000000000000000000, 3000000000000000000], pa.uint64()),
-"uhugeint": pa.array([100000, 200000, 300000], pa.uint64()),
-"uinteger": pa.array([100, 200, 300], pa.uint32()),
-"usmallint": pa.array([10, 20, 30], pa.uint16()),
-"utinyint": pa.array([1, 2, 3], pa.uint8()),
-"boolean": pa.array([True, False, True], pa.bool_()),
-"blob": pa.array([b"example", b"test", b"data"], pa.binary()),
-"bit": pa.array([b"1010", b"1100", b"1111"], pa.binary()),
-"interval": pa.array([pd.Timedelta(seconds=3600)], pa.duration('s')),
-"uuid": pa.array([uuid.uuid4().bytes], pa.binary(16)),
-"hugeint": pa.array([1000000000000000000, 2000000000000000000, 3000000000000000000], pa.int64()),
-"struct": pa.array([{"a": 1, "b": "test"}], pa.struct([("a", pa.int32()), ("b", pa.string())])),
-"array": pa.array([[1, 2, 3], [4, 5, 6]], pa.list_(pa.int32())),
-"list": pa.array([[1, 2, 3], [4, 5, 6]], pa.list_(pa.int32())),
-"map": pa.array([{"key1": "value1", "key2": "value2"}], pa.map_(pa.string(), pa.string()))
+# Define data for all supported types
+supported_data_types = {
+    "string": ["example", "test", "data"],
+    "date": [pd.Timestamp('2024-01-01').date()],
+    "time": [pd.Timestamp('2024-01-01 12:00:00').time()],
+    "float": [1.23, 4.56, 7.89],
+    "double": [1.23, 4.56, 7.89],
+    "integer": [100, 200, 300],
+    "bigint": [1000000000000000000, 2000000000000000000, 3000000000000000000],
+    "smallint": [10, 20, 30],
+    "tinyint": [1, 2, 3],
+    "ubigint": [1000000000000000000, 2000000000000000000, 3000000000000000000],
+    "uhugeint": [100000, 200000, 300000],
+    "uinteger": [100, 200, 300],
+    "usmallint": [10, 20, 30],
+    "utinyint": [1, 2, 3],
+    "boolean": [True, False, True],
+    "blob": [b"example", b"test", b"data"],
+    "bit": [b"1010", b"1100", b"1111"],
+    "interval": [pd.Timedelta(seconds=3600)],
+    "uuid": [str(uuid.uuid4()) for _ in range(3)],
+    "hugeint": [1000000000000000000, 2000000000000000000, 3000000000000000000],
+    "struct": [{"a": 1, "b": "test"}],
+    "array": [[1, 2, 3], [4, 5, 6]],
+    "list": [[1, 2, 3], [4, 5, 6]],
+    "map": [{"key1": "value1", "key2": "value2"}]
 }
 
-# Write additional Parquet files
-for type_name, array in data.items():
-    table = pa.Table.from_arrays([array], [type_name])
-    pq.write_table(table, os.path.join(output_dir, f"{type_name}.parquet"))
+# Write parquet files
+for type_name, data in supported_data_types.items():
+    df = pd.DataFrame({type_name: data})
+    write_parquet(df, f"{type_name}.parquet")

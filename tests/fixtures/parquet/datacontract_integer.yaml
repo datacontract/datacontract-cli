@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/integer.parquet
     format: parquet
 models:
-  integer:
+  example:
     fields:
-      integer_field:
+      integer:
         type: integer

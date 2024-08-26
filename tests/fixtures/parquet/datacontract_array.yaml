@@ -9,9 +9,11 @@ servers:
     path: ./fixtures/parquet/data/array.parquet
     format: parquet
 models:
-  array:
+  example:
+    description: Test data with an array
+    type: table
     fields:
-      array_field:
+      element:
         type: array
-        items:
-          type: integer
+#        items:
+#          type: integer

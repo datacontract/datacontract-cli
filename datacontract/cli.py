@@ -17,7 +17,7 @@ from datacontract.catalog.catalog import create_index_html, create_data_contract
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
-from datacontract.integration.datamesh_manager import publish_data_contract_to_datamesh_manager
+from datacontract.publish.publish import publish_to_datamesh_manager
 
 DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
 
@@ -261,10 +261,8 @@ def publish(
     """
     Publish the data contract to the Data Mesh Manager.
     """
-    publish_data_contract_to_datamesh_manager(
-        data_contract_specification=DataContract(
-            data_contract_file=location, schema_location=schema
-        ).get_data_contract_specification(),
+    publish_to_datamesh_manager(
+        data_contract=DataContract(data_contract_file=location, schema_location=schema),
     )
 
 

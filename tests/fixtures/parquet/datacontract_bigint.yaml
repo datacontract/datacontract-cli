@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/bigint.parquet
     format: parquet
 models:
-  bigint:
+  example:
     fields:
-      bigint_field:
+      bigint:
         type: bigint

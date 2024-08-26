@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/bit.parquet
     format: parquet
 models:
-  bit:
+  example:
     fields:
-      bit_field:
+      bit:
         type: bit

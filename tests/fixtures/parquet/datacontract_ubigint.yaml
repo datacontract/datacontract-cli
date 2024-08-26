@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/ubigint.parquet
     format: parquet
 models:
-  ubigint:
+  example:
     fields:
-      ubigint_field:
+      ubigint:
         type: ubigint

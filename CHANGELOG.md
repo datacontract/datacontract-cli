@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support of varchar max length in Glue import (#351)
-- `datacontract publish` now also accepts the `DATACONTRACT_MANAGER_API_KEY` as an environment variable
 
 ### Changed
 - Deltalake is now using DuckDB's native deltalake support (#258). Extra deltalake removed.

@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/utinyint.parquet
     format: parquet
 models:
-  utinyint:
+  example:
     fields:
-      utinyint_field:
+      utinyint:
         type: utinyint

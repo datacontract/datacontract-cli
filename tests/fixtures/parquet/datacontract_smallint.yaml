@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/smallint.parquet
     format: parquet
 models:
-  smallint:
+  example:
     fields:
-      smallint_field:
+      smallint:
         type: smallint

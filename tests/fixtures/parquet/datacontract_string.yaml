@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/string.parquet
     format: parquet
 models:
-  string:
+  example:
     fields:
-      string_field:
+      string:
         type: varchar

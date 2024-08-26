@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/interval.parquet
     format: parquet
 models:
-  interval:
+  example:
     fields:
-      interval_field:
+      interval:
         type: interval

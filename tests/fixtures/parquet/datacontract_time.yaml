@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/time.parquet
     format: parquet
 models:
-  time:
+  example:
     fields:
-      time_field:
+      time:
         type: time

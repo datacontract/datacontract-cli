@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/usmallint.parquet
     format: parquet
 models:
-  usmallint:
+  example:
     fields:
-      usmallint_field:
+      usmallint:
         type: usmallint

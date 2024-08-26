@@ -9,7 +9,7 @@ servers:
     path: ./fixtures/parquet/data/tinyint.parquet
     format: parquet
 models:
-  tinyint:
+  example:
     fields:
-      tinyint_field:
+      tinyint:
         type: tinyint

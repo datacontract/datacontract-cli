@@ -9,9 +9,9 @@ servers:
     path: ./fixtures/parquet/data/map.parquet
     format: parquet
 models:
-  map:
+  example:
     fields:
-      map_field:
+      map:
         type: map
         key_type: varchar
         value_type: varchar
