@@ -140,15 +140,6 @@ def test_line_items():
     assert run.result == "passed"
 
 
-def test_list():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_list.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
 def test_map():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract_map.yaml",

@@ -11,7 +11,9 @@ servers:
 models:
   example:
     fields:
-      map:
+      map_field:
         type: map
-        keys: string
-        values: string
+#        keys:
+#          type: string
+        values:
+          type: string

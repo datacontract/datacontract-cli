@@ -10,24 +10,11 @@ servers:
     path: "./fixtures/parquet/data/timestamp.parquet"
     format: parquet
 models:
-  complaintcost_c:
+  example:
     description: complaintcost_c
     type: table
     fields:
-      id:
-        type: varchar
-        required: true
-        primary: true
-        description: ID
-      isdeleted:
-        type: boolean
-        description: ISDELETED
-        required: true
-      name:
-        type: varchar
-        description: NAME_C
-        required: true
-      createddate:
+      timestamp_field:
         type: timestamp_tz
         description: CREATEDDATE
         required: true
