@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: bit-unit-test
+info:
+  title: Bit Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/bit.parquet
+    format: parquet
+models:
+  bit:
+    fields:
+      bit_field:
+        type: bit

@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: uuid-unit-test
+info:
+  title: UUID Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/uuid.parquet
+    format: parquet
+models:
+  uuid:
+    fields:
+      uuid_field:
+        type: uuid

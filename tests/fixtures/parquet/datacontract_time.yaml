@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: time-unit-test
+info:
+  title: Time Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/time.parquet
+    format: parquet
+models:
+  time:
+    fields:
+      time_field:
+        type: time

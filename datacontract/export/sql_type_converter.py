@@ -149,39 +149,96 @@ def convert_to_databricks(field: Field) -> None | str:
 
 
 def convert_to_duckdb(field: Field) -> None | str:
-    type = field.type
-    if type is None:
+    """
+       Convert a data contract field to the corresponding DuckDB SQL type.
+
+       Parameters:
+       field (Field): The data contract field to convert.
+
+       Returns:
+       str: The corresponding DuckDB SQL type.
+       """
+    # Check
+    if field is None or field.type is None:
         return None
-    if type.lower() in ["string", "varchar", "text"]:
-        return "VARCHAR"
-    if type.lower() in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP WITH TIME ZONE"
-    if type.lower() in ["timestamp_ntz"]:
-        return "TIMESTAMP"
-    if type.lower() in ["date"]:
-        return "DATE"
-    if type.lower() in ["time"]:
-        return "TIME"
-    if type.lower() in ["number", "decimal", "numeric"]:
-        return f"DECIMAL({field.precision},{field.scale})"
-    if type.lower() in ["float"]:
-        return "FLOAT"
-    if type.lower() in ["double"]:
-        return "DOUBLE"
-    if type.lower() in ["integer", "int"]:
-        return "INTEGER"
-    if type.lower() in ["long", "bigint"]:
-        return "BIGINT"
-    if type.lower() in ["boolean"]:
-        return "BOOLEAN"
-    if type.lower() in ["object", "record", "struct"]:
-        return "STRUCT"
-    if type.lower() in ["bytes"]:
-        return "BLOB"
-    if type.lower() in ["array"]:
+
+    # Get
+    type_lower = field.type.lower()
+
+    # Prepare
+    type_mapping = {
+        "string": "VARCHAR",
+        "varchar": "VARCHAR",
+        "text": "VARCHAR",
+        "char": "VARCHAR",
+        "bpchar": "VARCHAR",
+        "timestamp": "TIMESTAMP WITH TIME ZONE",
+        "timestamp_tz": "TIMESTAMP WITH TIME ZONE",
+        "timestamp_ntz": "TIMESTAMP",
+        "datetime": "TIMESTAMP",
+        "date": "DATE",
+        "time": "TIME",
+        "number": f"DECIMAL({field.precision},{field.scale})",
+        "decimal": f"DECIMAL({field.precision},{field.scale})",
+        "numeric": f"DECIMAL({field.precision},{field.scale})",
+        "float": "FLOAT",
+        "float4": "FLOAT",
+        "real": "FLOAT",
+        "double": "DOUBLE",
+        "float8": "DOUBLE",
+        "integer": "INTEGER",
+        "int": "INTEGER",
+        "int4": "INTEGER",
+        "signed": "INTEGER",
+        "bigint": "BIGINT",
+        "int8": "BIGINT",
+        "long": "BIGINT",
+        "smallint": "SMALLINT",
+        "int2": "SMALLINT",
+        "short": "SMALLINT",
+        "tinyint": "TINYINT",
+        "int1": "TINYINT",
+        "ubigint": "UBIGINT",
+        "uhugeint": "UHUGEINT",
+        "uinteger": "UINTEGER",
+        "usmallint": "USMALLINT",
+        "utinyint": "UTINYINT",
+        "boolean": "BOOLEAN",
+        "bool": "BOOLEAN",
+        "logical": "BOOLEAN",
+        "blob": "BLOB",
+        "bytea": "BLOB",
+        "binary": "BLOB",
+        "varbinary": "BLOB",
+        "bit": "BIT",
+        "bitstring": "BIT",
+        "interval": "INTERVAL",
+        "uuid": "UUID",
+        "hugeint": "HUGEINT",
+        "object": "STRUCT",
+        "record": "STRUCT",
+        "struct": "STRUCT",
+        "union": "UNION"
+    }
+
+    # Convert
+    if type_lower in type_mapping:
+        return type_mapping[type_lower]
+
+    # Check array, list, and map
+    if type_lower == "array":
+        item_type = convert_to_duckdb(field.items)
+        return f"{item_type}[{field.length}]"
+    if type_lower == "list":
         item_type = convert_to_duckdb(field.items)
         return f"{item_type}[]"
-    return None
+    if type_lower == "map":
+        key_type = convert_to_duckdb(field.key_type)
+        value_type = convert_to_duckdb(field.value_type)
+        return f"MAP({key_type}, {value_type})"
+
+    # Throw
+    raise ValueError(f"Unsupported type: {field.type}")
 
 
 def convert_type_to_sqlserver(field: Field) -> None | str:

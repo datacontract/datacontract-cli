@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: boolean-unit-test
+info:
+  title: Boolean Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/boolean.parquet
+    format: parquet
+models:
+  boolean:
+    fields:
+      boolean_field:
+        type: boolean

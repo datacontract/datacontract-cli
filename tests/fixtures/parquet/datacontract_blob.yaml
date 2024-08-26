@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: blob-unit-test
+info:
+  title: Blob Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/blob.parquet
+    format: parquet
+models:
+  blob:
+    fields:
+      blob_field:
+        type: blob

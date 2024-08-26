@@ -1,0 +1,17 @@
+dataContractSpecification: 0.9.3
+id: map-unit-test
+info:
+  title: Map Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/map.parquet
+    format: parquet
+models:
+  map:
+    fields:
+      map_field:
+        type: map
+        key_type: varchar
+        value_type: varchar

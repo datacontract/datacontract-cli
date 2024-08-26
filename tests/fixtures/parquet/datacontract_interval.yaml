@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: interval-unit-test
+info:
+  title: Interval Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/interval.parquet
+    format: parquet
+models:
+  interval:
+    fields:
+      interval_field:
+        type: interval
