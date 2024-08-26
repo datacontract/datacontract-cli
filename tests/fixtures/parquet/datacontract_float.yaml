@@ -11,5 +11,5 @@ servers:
 models:
   example:
     fields:
-      float:
+      float_field:
         type: float

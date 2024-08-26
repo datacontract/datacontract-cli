@@ -11,7 +11,7 @@ servers:
 models:
   example:
     fields:
-      struct:
+      struct_field:
         type: struct
         fields:
           a:

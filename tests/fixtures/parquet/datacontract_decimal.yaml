@@ -13,9 +13,7 @@ servers:
 models:
   orders:
     fields:
-      id:
-        type: varchar
-      price:
+      decimal_field:
         type: decimal
         precision: 6
         scale: 2

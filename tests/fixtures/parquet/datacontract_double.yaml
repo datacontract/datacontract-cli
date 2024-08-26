@@ -11,5 +11,5 @@ servers:
 models:
   example:
     fields:
-      double:
+      double_field:
         type: double

@@ -13,5 +13,5 @@ models:
     description: Test data with a blob
     type: table
     fields:
-      blob:
+      blob_field:
         type: blob

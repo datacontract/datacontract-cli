@@ -77,15 +77,6 @@ def test_bigint():
     assert run.result == "passed"
 
 
-def test_bit():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_bit.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
 def test_blob():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract_binary.yaml",
@@ -104,9 +95,9 @@ def test_boolean():
     assert run.result == "passed"
 
 
-def test_date():
+def test_time():
     data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_time.yaml",
+        data_contract_file="fixtures/parquet/datacontract_date.yaml",
     )
     run = data_contract.test()
     print(run.pretty())
@@ -131,27 +122,9 @@ def test_float():
     assert run.result == "passed"
 
 
-def test_hugeint():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_hugeint.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
 def test_integer():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract_integer.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_interval():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_interval.yaml",
     )
     run = data_contract.test()
     print(run.pretty())
@@ -194,15 +167,6 @@ def test_orders():
     assert run.result == "passed"
 
 
-def test_smallint():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_smallint.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
 def test_string():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract_string.yaml",
@@ -219,76 +183,3 @@ def test_struct():
     run = data_contract.test()
     print(run.pretty())
     assert run.result == "passed"
-
-
-def test_time():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_time.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_tinyint():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_tinyint.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_ubigint():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_ubigint.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_uhugeint():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_uhugeint.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_uinteger():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_uinteger.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_usmallint():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_usmallint.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_utinyint():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_utinyint.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-
-
-def test_uuid():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_uuid.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "passed"
-

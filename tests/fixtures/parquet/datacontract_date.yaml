@@ -11,5 +11,5 @@ servers:
 models:
   example:
     fields:
-      date:
-        type: timestamp
+      date_field:
+        type: date

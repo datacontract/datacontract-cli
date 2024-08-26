@@ -11,5 +11,5 @@ servers:
 models:
   example:
     fields:
-      boolean:
+      boolean_field:
         type: boolean

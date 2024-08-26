@@ -70,23 +70,23 @@ write_parquet(line_items_df, "line_items.parquet")
 
 # Define data for all supported types
 supported_data_types = {
-    "string": ["example", "test", "data"],
-    "blob": [b"example", b"test", b"data"],
-    "boolean": [True, False, True],
-    "decimal": [1.23, 4.56, 7.89],
-    "float": [1.23, 4.56, 7.89],
-    "double": [1.23, 4.56, 7.89],
-    "integer": [100, 200, 300],
-    "bigint": [1000000000000000000, 2000000000000000000, 3000000000000000000],
-    "struct": [{"a": 1, "b": "test"}],
-    "array": [[1, 2, 3], [4, 5, 6]],
-    "list": [[1, 2, 3], [4, 5, 6]],
-    "map": [{"key1": "value1", "key2": "value2"}],
-    "time": [pd.Timestamp('2024-01-01 12:00:00').time()],
-    "timestamp": [pd.Timestamp('2024-01-01').timestamp()]
+    "string": (["example", "test", "data"], "string"),
+    "blob": ([b"example", b"test", b"data"], "bytes"),
+    "boolean": ([True, False, True], "bool"),
+    "decimal": ([1.23, 4.56, 7.89], "float64"),
+    "float": ([1.23, 4.56, 7.89], "float32"),
+    "double": ([1.23, 4.56, 7.89], "float64"),
+    "integer": ([100, 200, 300], "int32"),
+    "bigint": ([1000000000000000000, 2000000000000000000, 3000000000000000000], "int64"),
+    "struct": ([{"a": 1, "b": "test"}], "object"),
+    "array": ([[1, 2, 3], [4, 5, 6]], "object"),
+    "list": ([[1, 2, 3], [4, 5, 6]], "object"),
+    "map": ([{"key1": "value1", "key2": "value2"}], "object"),
+    "time": ([pd.Timestamp('2024-01-01 12:00:00').time()], "object"),
+    "timestamp": ([pd.Timestamp('2024-01-01').timestamp()], "float64")
 }
 
 # Write parquet files
-for type_name, data in supported_data_types.items():
-    df = pd.DataFrame({type_name: data})
+for type_name, (data, dtype) in supported_data_types.items():
+    df = pd.DataFrame({type_name + "_field": data}).astype({type_name + "_field": dtype})
     write_parquet(df, f"{type_name}.parquet")

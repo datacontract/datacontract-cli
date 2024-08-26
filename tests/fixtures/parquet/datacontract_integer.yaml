@@ -11,5 +11,5 @@ servers:
 models:
   example:
     fields:
-      integer:
+      integer_field:
         type: integer

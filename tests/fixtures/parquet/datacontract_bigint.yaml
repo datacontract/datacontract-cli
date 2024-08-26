@@ -11,5 +11,5 @@ servers:
 models:
   example:
     fields:
-      bigint:
+      bigint_field:
         type: bigint

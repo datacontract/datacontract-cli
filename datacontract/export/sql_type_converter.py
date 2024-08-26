@@ -169,13 +169,16 @@ def convert_to_duckdb(field: Field) -> None | str:
     type_mapping = {
         "varchar": "VARCHAR",
         "string": "VARCHAR",
+        "text": "VARCHAR",
         "binary": "BLOB",
+        "bytes": "BLOB",
+        "blob": "BLOB",
         "boolean": "BOOLEAN",
         "decimal": "DECIMAL",
         "number": "DECIMAL",
         "numeric": "DECIMAL",
-        "double": "DOUBLE",
         "float": "FLOAT",
+        "double": "DOUBLE",
         "int": "INTEGER",
         "int32": "INTEGER",
         "integer": "INTEGER",
@@ -185,9 +188,8 @@ def convert_to_duckdb(field: Field) -> None | str:
         "date": "DATE",
         "time": "TIME",
         "timestamp": "TIMESTAMP",
-        "struct": "STRUCT",
-        "object": "STRUCT",
-        "record": "STRUCT",
+        "timestamp_tz": "TIMESTAMP",
+        "timestamp_ntz": "TIMESTAMP"
     }
 
     # Convert
@@ -202,6 +204,13 @@ def convert_to_duckdb(field: Field) -> None | str:
         key_type = convert_to_duckdb(field.keys)
         value_type = convert_to_duckdb(field.values)
         return f"MAP({key_type}, {value_type})"
+    if type_lower == "struct" or type_lower == "object" or type_lower == "record":
+        structure_field = "STRUCT("
+        field_strings = []
+        for fieldKey, fieldValue in field.fields.items():
+            field_strings.append(f"{fieldKey} {convert_to_duckdb(fieldValue)}")
+        structure_field += ", ".join(field_strings)
+        structure_field += ")"
 
     # Throw
     raise ValueError(f"Unsupported type: {field.type}")

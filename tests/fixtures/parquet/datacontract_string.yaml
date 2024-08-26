@@ -11,5 +11,5 @@ servers:
 models:
   example:
     fields:
-      string:
+      string_field:
         type: varchar

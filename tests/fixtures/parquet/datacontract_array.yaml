@@ -13,7 +13,7 @@ models:
     description: Test data with an array
     type: table
     fields:
-      element:
+      array_field:
         type: array
         items:
           type: integer
