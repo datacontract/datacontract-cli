@@ -13,3 +13,8 @@ models:
     fields:
       struct_field:
         type: struct
+        fields:
+          a:
+            type: integer
+          b:
+            type: varchar
