@@ -211,9 +211,10 @@ def convert_to_duckdb(field: Field) -> None | str:
             field_strings.append(f"{fieldKey} {convert_to_duckdb(fieldValue)}")
         structure_field += ", ".join(field_strings)
         structure_field += ")"
+        return structure_field
 
-    # Throw
-    raise ValueError(f"Unsupported type: {field.type}")
+    # Return none
+    return None
 
 
 def convert_type_to_sqlserver(field: Field) -> None | str:

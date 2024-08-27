@@ -16,14 +16,14 @@ models:
     description: Test data model with all field types
     fields:
       array_field:
-        description: Array of strings
+        description: Array of numbers
         type: array
         items:
-          type: varchar
+          type: integer
       bigint_field:
         description: Big integer
         type: bigint
-      binary_field:
+      blob_field:
         description: Binary data
         type: bytes
       boolean_field:
@@ -35,6 +35,8 @@ models:
       decimal_field:
         description: Decimal
         type: decimal
+        precision: 10
+        scale: 2
       double_field:
         description: Double
         type: double
@@ -57,6 +59,13 @@ models:
       struct_field:
         description: Structure, object or record
         type: struct
+        fields:
+          a:
+            description: Integer field
+            type: integer
+          b:
+            description: String field
+            type: varchar
       timestamp_field:
         description: Timestamp
-        type: timestamp
+        type: timestamp_tz
