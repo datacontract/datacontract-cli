@@ -18,3 +18,4 @@ models:
             type: integer
           b:
             type: varchar
+
