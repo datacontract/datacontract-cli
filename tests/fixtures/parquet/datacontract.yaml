@@ -1,19 +1,62 @@
 dataContractSpecification: 0.9.2
-id: orders-unit-test
+id: combined-unit-test
 info:
-  title: Orders Unit Test
+  title: Combined Unit Test
+  description: Test data with all field types
   version: 1.0.0
 servers:
   production:
     type: local
-    path: ./fixtures/parquet/data/orders.parquet
+    path: ./fixtures/parquet/data/combined.parquet
     format: parquet
-    dataProductId: orders
+    dataProductId: combined
     outputPortId: parquet
 models:
-  orders:
+  combined:
+    description: Test data model with all field types
     fields:
-      order_id:
+      array_field:
+        description: Array of strings
+        type: array
+        items:
+          type: varchar
+      bigint_field:
+        description: Big integer
+        type: bigint
+      binary_field:
+        description: Binary data
+        type: bytes
+      boolean_field:
+        description: Boolean
+        type: boolean
+      date_field:
+        description: Date
+        type: date
+      decimal_field:
+        description: Decimal
+        type: decimal
+      double_field:
+        description: Double
+        type: double
+      float_field:
+        description: Float
+        type: float
+      integer_field:
+        description: Integer
+        type: integer
+      map_field:
+        description: Map of key values as strings
+        type: map
+        keys:
+          type: varchar
+        values:
+          type: varchar
+      string_field:
+        description: String
         type: varchar
-        unique: true
-        required: true
+      struct_field:
+        description: Structure, object or record
+        type: struct
+      timestamp_field:
+        description: Timestamp
+        type: timestamp

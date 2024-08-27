@@ -10,8 +10,8 @@ servers:
     format: parquet
 models:
   blob:
-    description: Test data with a blob
+    description: Test data with binary field
     type: table
     fields:
       blob_field:
-        type: blob
+        type: bytes

@@ -13,7 +13,7 @@ models:
     fields:
       map_field:
         type: map
-#        keys:
-#          type: string
+        keys:
+          type: string
         values:
           type: string

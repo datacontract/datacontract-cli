@@ -15,6 +15,5 @@ models:
     fields:
       decimal_field:
         type: decimal
-        precision: 6
+        precision: 10
         scale: 2
-        description: price

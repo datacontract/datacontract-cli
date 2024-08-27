@@ -174,9 +174,6 @@ def convert_to_duckdb(field: Field) -> None | str:
         "bytes": "BLOB",
         "blob": "BLOB",
         "boolean": "BOOLEAN",
-        "decimal": "DECIMAL",
-        "number": "DECIMAL",
-        "numeric": "DECIMAL",
         "float": "FLOAT",
         "double": "DOUBLE",
         "int": "INTEGER",
@@ -195,6 +192,9 @@ def convert_to_duckdb(field: Field) -> None | str:
     # Convert
     if type_lower in type_mapping:
         return type_mapping[type_lower]
+
+    if type_lower == "decimal":
+        return f"DECIMAL({field.precision},{field.scale})"
 
     # Check list and map
     if type_lower == "list" or type_lower == "array":
