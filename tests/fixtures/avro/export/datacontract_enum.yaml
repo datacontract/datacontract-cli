@@ -8,7 +8,7 @@ models:
     fields:
       color:
         type: string
-        name: Color
+        title: Color
         enum:
         - RED
         - GREEN
@@ -16,5 +16,4 @@ models:
         - UNKNOWN
         config:
           avroType: enum
-          avroDefault: UNKNOWN
         

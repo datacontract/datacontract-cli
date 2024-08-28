@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support of varchar max length in Glue import (#351)
 - `datacontract publish` now also accepts the `DATACONTRACT_MANAGER_API_KEY` as an environment variable
 - Support of enum on export to avro
-- Support enum name on avro import
+- Support enum title on avro import
 
 ### Changed
 - Deltalake is now using DuckDB's native deltalake support (#258). Extra deltalake removed.
