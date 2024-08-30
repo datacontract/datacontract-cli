@@ -46,7 +46,8 @@ def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server
                 ast.alias('Double'),
                 ast.alias('Boolean'),
                 ast.alias('Date'),
-                ast.alias("ARRAY")
+                ast.alias('ARRAY'),
+                ast.alias('LargeBinary'),
             ]),
             databricks_timestamp if sql_server_type == "databricks" else timestamp,
             *documentation,
