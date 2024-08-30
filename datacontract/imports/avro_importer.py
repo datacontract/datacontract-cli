@@ -133,7 +133,7 @@ def import_record_fields(record_fields: List[avro.schema.Field]) -> Dict[str, Fi
         elif field.type.type == "enum":
             imported_field.type = "string"
             imported_field.enum = field.type.symbols
-            imported_field.name = field.type.name
+            imported_field.title = field.type.name
             if not imported_field.config:
                 imported_field.config = {}
             imported_field.config["avroType"] = "enum"

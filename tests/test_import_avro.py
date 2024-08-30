@@ -78,7 +78,7 @@ models:
         type: string
         required: true
         description: order status
-        name: Status
+        title: Status
         enum:
             - PLACED
             - SHIPPED
@@ -99,7 +99,7 @@ models:
             type:
               type: string
               required: true
-              name: MetadataType
+              title: MetadataType
               enum:
                   - STRING
                   - LONG
