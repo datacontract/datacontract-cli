@@ -6,15 +6,16 @@ from datacontract.export.exporter import Exporter
 from datacontract.export.exporter import _determine_sql_server_type
 
 class SQLAlchemyExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract: spec.DataContractSpecification, model, server, sql_server_type, export_args) -> dict:
         sql_server_type = _determine_sql_server_type(data_contract, sql_server_type, server)
-        return to_sqlalchemy_model_str(data_contract, sql_server_type)
+        return to_sqlalchemy_model_str(data_contract, sql_server_type, server)
     
 
 DECLARATIVE_BASE = "Base"
 
-def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server_type: str) -> str:
-    classdefs = [generate_model_class(model_name, model) for (model_name, model) in contract.models.items()]
+def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server_type: str='', server=None) -> str:
+    server_obj = contract.servers.get(server)
+    classdefs = [generate_model_class(model_name, model, server_obj) for (model_name, model) in contract.models.items()]
     documentation = (
         [ast.Expr(ast.Constant(contract.info.description))] if (contract.info and contract.info.description) else []
     )
@@ -27,17 +28,26 @@ def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server
         decorator_list=[],
     )
     
-    databricks_timestamp = ast.ImportFrom(module="databricks.sqlalchemy", names=[ast.alias(name="TIMESTAMP")])
+    databricks_timestamp = ast.ImportFrom(module="databricks.sqlalchemy", names=[ast.alias("TIMESTAMP"), ast.alias("TIMESTAMP_NTZ")])
     timestamp = ast.ImportFrom(module="sqlalchemy", names=[ast.alias(name="TIMESTAMP")])
     result = ast.Module(
         body=[
             ast.ImportFrom(module='sqlalchemy.orm', names=[ast.alias(name='DeclarativeBase')]),
             ast.ImportFrom(module='sqlalchemy', names=[
-                ast.alias(name='Column'),
-                ast.alias(name='Date'),
-                ast.alias(name='Integer'),
-                ast.alias(name='Numeric'),
-                ]),
+                ast.alias('Column'),
+                ast.alias('Date'),
+                ast.alias('Integer'),
+                ast.alias('Numeric'),
+                ast.alias('String'),
+                ast.alias('Text'),
+                ast.alias('VARCHAR'),
+                ast.alias('BigInteger'),
+                ast.alias('Float'),
+                ast.alias('Double'),
+                ast.alias('Boolean'),
+                ast.alias('Date'),
+                ast.alias("ARRAY")
+            ]),
             databricks_timestamp if sql_server_type == "databricks" else timestamp,
             *documentation,
             declarative_base,
@@ -66,30 +76,37 @@ def Column(predicate, **kwargs) -> ast.Call:
     return Call("Column", predicate, **kwargs)
 
 
-def constant_field_value(
-    field_name: str, field: spec.Field
-) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
+def sqlalchemy_primitive(field: spec.Field):
     sqlalchemy_name = {
-        "string": ast.Name("String", ctx=ast.Load()),
-        "text": ast.Name("Text", ctx=ast.Load()),
-        "varchar": ast.Name("VARCHAR", ctx=ast.Load()),
+        "string": Call("String", ast.Constant(field.maxLength)),
+        "text": Call("Text", ast.Constant(field.maxLength)),
+        "varchar": Call("VARCHAR", ast.Constant(field.maxLength)),
         "number": Call("Numeric", ast.Constant(field.precision), ast.Constant(field.scale)),
         "decimal": Call("Numeric", ast.Constant(field.precision), ast.Constant(field.scale)),
         "numeric": Call("Numeric", ast.Constant(field.precision), ast.Constant(field.scale)),
-        "int": ast.Name("Integer", ctx=ast.Load()),
-        "integer": ast.Name("Integer", ctx=ast.Load()),
-        "long": ast.Name("BigInteger", ctx=ast.Load()),
-        "bigint": ast.Name("BigInteger", ctx=ast.Load()),
-        "float": ast.Name("Float", ctx=ast.Load()),
-        "double": ast.Name("Double", ctx=ast.Load()),
-        "boolean": ast.Name("Boolean", ctx=ast.Load()),
-        "timestamp": ast.Name("TIMESTAMP", ctx=ast.Load()),
-        "timestamp_tz": ast.Name("TIMESTAMP", ctx=ast.Load()),
-        "timestamp_ntz": ast.Name("TIMESTAMP", ctx=ast.Load()),
-        "date": ast.Name("Date", ctx=ast.Load()),
-        "bytes": ast.Name("LargeBinary", ctx=ast.Load()),
+        "int": ast.Name("Integer"),
+        "integer": ast.Name("Integer"),
+        "long": ast.Name("BigInteger"),
+        "bigint": ast.Name("BigInteger"),
+        "float": ast.Name("Float"),
+        "double": ast.Name("Double"),
+        "boolean": ast.Name("Boolean"),
+        "timestamp": ast.Name("TIMESTAMP"),
+        "timestamp_tz": Call("TIMESTAMP", ast.Constant(True)),
+        "timestamp_ntz": ast.Name("TIMESTAMP_NTZ"),
+        "date": ast.Name("Date"),
+        "bytes": Call("LargeBinary", ast.Constant(field.maxLength)),
     }
-    new_type = sqlalchemy_name.get(field.type, None)
+    return sqlalchemy_name.get(field.type)
+
+
+def constant_field_value(
+    field_name: str, field: spec.Field
+) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
+    new_type = sqlalchemy_primitive(field)
+    match field.type:
+        case "array":
+            new_type = Call("ARRAY", sqlalchemy_primitive(field.items))
     if new_type is None:
         raise RuntimeError(f"Unsupported field type {field.type}.")
 
@@ -111,22 +128,23 @@ def field_definitions(fields: dict[str, spec.Field]) -> tuple[list[ast.Expr], li
         annotations.append(ast.Assign(targets=[ast.Name(id=field_name, ctx=ast.Store())], value=ann, lineno=0))
     return (annotations, classes)
 
-def generate_field_class(field_name: str, field: spec.Field) -> ast.ClassDef:
-    pass
 
-def generate_model_class(name: str, model_definition: spec.Model) -> ast.ClassDef:
+def generate_model_class(name: str, model_definition: spec.Model, server = None) -> ast.ClassDef:
     (field_assignments, nested_classes) = field_definitions(model_definition.fields)
     documentation = [ast.Expr(ast.Constant(model_definition.description))] if model_definition.description else []
+
+    schema = None if server is None else server.schema_
+
     result = ast.ClassDef(
         name=name.capitalize(),
         bases=[ast.Name(id=DECLARATIVE_BASE, ctx=ast.Load())],
         body=[
             *documentation,
             ast.Assign(targets=[ast.Name("__tablename__")], value=ast.Constant(name), lineno=0),
-            ast.Assign(targets=[ast.Name("__table_args__")], value=ast.Constant({
-                "comment": model_definition.description,
-            }), lineno=0),
-
+            ast.Assign(targets=[ast.Name("__table_args__")], value=ast.Dict(
+                keys=[ast.Constant('comment'), ast.Constant('schema')],
+                values=[ast.Constant(model_definition.description), ast.Constant(schema)],
+            ), lineno=0),
             *nested_classes,
             *field_assignments
         ],
