@@ -15,7 +15,7 @@ DECLARATIVE_BASE = "Base"
 
 def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server_type: str='', server=None) -> str:
     server_obj = contract.servers.get(server)
-    classdefs = [generate_model_class(model_name, model, server_obj) for (model_name, model) in contract.models.items()]
+    classdefs = [generate_model_class(model_name, model, server_obj, sql_server_type) for (model_name, model) in contract.models.items()]
     documentation = (
         [ast.Expr(ast.Constant(contract.info.description))] if (contract.info and contract.info.description) else []
     )
@@ -130,18 +130,21 @@ def field_definitions(fields: dict[str, spec.Field]) -> tuple[list[ast.Expr], li
     return (annotations, classes)
 
 
-def generate_model_class(name: str, model_definition: spec.Model, server = None) -> ast.ClassDef:
+def generate_model_class(name: str, model_definition: spec.Model, server = None, sql_server_type: str='') -> ast.ClassDef:
     (field_assignments, nested_classes) = field_definitions(model_definition.fields)
     documentation = [ast.Expr(ast.Constant(model_definition.description))] if model_definition.description else []
 
     schema = None if server is None else server.schema_
+    table_name = ast.Constant(name)
+    if sql_server_type == "databricks":
+        table_name = ast.Constant(name.lower())
 
     result = ast.ClassDef(
         name=name.capitalize(),
         bases=[ast.Name(id=DECLARATIVE_BASE, ctx=ast.Load())],
         body=[
             *documentation,
-            ast.Assign(targets=[ast.Name("__tablename__")], value=ast.Constant(name), lineno=0),
+            ast.Assign(targets=[ast.Name("__tablename__")], value=table_name, lineno=0),
             ast.Assign(targets=[ast.Name("__table_args__")], value=ast.Dict(
                 keys=[ast.Constant('comment'), ast.Constant('schema')],
                 values=[ast.Constant(model_definition.description), ast.Constant(schema)],
