@@ -749,7 +749,7 @@ models:
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
 │                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
 │                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
-│                    y|dbml|spark]                                                                                               │
+│                    y|dbml|spark|sqlalchemy]                                                                                    │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -800,6 +800,7 @@ Available export options:
 | `pydantic-model`     | Export to pydantic models                               | ✅     |
 | `DBML`               | Export to a DBML Diagram description                    | ✅     |
 | `spark`              | Export to a Spark StructType                            | ✅     |
+| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅     |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
