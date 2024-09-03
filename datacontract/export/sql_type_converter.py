@@ -150,14 +150,14 @@ def convert_to_databricks(field: Field) -> None | str:
 
 def convert_to_duckdb(field: Field) -> None | str:
     """
-       Convert a data contract field to the corresponding DuckDB SQL type.
+    Convert a data contract field to the corresponding DuckDB SQL type.
 
-       Parameters:
-       field (Field): The data contract field to convert.
+    Parameters:
+    field (Field): The data contract field to convert.
 
-       Returns:
-       str: The corresponding DuckDB SQL type.
-       """
+    Returns:
+    str: The corresponding DuckDB SQL type.
+    """
     # Check
     if field is None or field.type is None:
         return None
@@ -184,16 +184,17 @@ def convert_to_duckdb(field: Field) -> None | str:
         "bigint": "BIGINT",
         "date": "DATE",
         "time": "TIME",
-        "timestamp": "DATETIME",
+        "timestamp": "TIMESTAMP WITH TIME ZONE",
         "timestamp_tz": "TIMESTAMP WITH TIME ZONE",
-        "timestamp_ntz": "DATETIME"
+        "timestamp_ntz": "DATETIME",
     }
 
-    # Convert
+    # Convert simple mappings
     if type_lower in type_mapping:
         return type_mapping[type_lower]
 
-    if type_lower == "decimal":
+    # convert decimal numbers with precision and scale
+    if type_lower == "decimal" or type_lower == "number" or type_lower == "numeric":
         return f"DECIMAL({field.precision},{field.scale})"
 
     # Check list and map
