@@ -149,37 +149,72 @@ def convert_to_databricks(field: Field) -> None | str:
 
 
 def convert_to_duckdb(field: Field) -> None | str:
-    type = field.type
-    if type is None:
+    """
+    Convert a data contract field to the corresponding DuckDB SQL type.
+
+    Parameters:
+    field (Field): The data contract field to convert.
+
+    Returns:
+    str: The corresponding DuckDB SQL type.
+    """
+    # Check
+    if field is None or field.type is None:
         return None
-    if type.lower() in ["string", "varchar", "text"]:
-        return "VARCHAR"  # aliases: VARCHAR, CHAR, BPCHAR, STRING, TEXT, VARCHAR(n)	STRING(n), TEXT(n)
-    if type.lower() in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP WITH TIME ZONE"  # aliases: TIMESTAMPTZ
-    if type.lower() in ["timestamp_ntz"]:
-        return "DATETIME"  # timestamp with microsecond precision (ignores time zone), aliases: TIMESTAMP
-    if type.lower() in ["date"]:
-        return "DATE"
-    if type.lower() in ["time"]:
-        return "TIME"  # TIME WITHOUT TIME ZONE
-    if type.lower() in ["number", "decimal", "numeric"]:
+
+    # Get
+    type_lower = field.type.lower()
+
+    # Prepare
+    type_mapping = {
+        "varchar": "VARCHAR",
+        "string": "VARCHAR",
+        "text": "VARCHAR",
+        "binary": "BLOB",
+        "bytes": "BLOB",
+        "blob": "BLOB",
+        "boolean": "BOOLEAN",
+        "float": "FLOAT",
+        "double": "DOUBLE",
+        "int": "INTEGER",
+        "int32": "INTEGER",
+        "integer": "INTEGER",
+        "int64": "BIGINT",
+        "long": "BIGINT",
+        "bigint": "BIGINT",
+        "date": "DATE",
+        "time": "TIME",
+        "timestamp": "TIMESTAMP WITH TIME ZONE",
+        "timestamp_tz": "TIMESTAMP WITH TIME ZONE",
+        "timestamp_ntz": "DATETIME",
+    }
+
+    # Convert simple mappings
+    if type_lower in type_mapping:
+        return type_mapping[type_lower]
+
+    # convert decimal numbers with precision and scale
+    if type_lower == "decimal" or type_lower == "number" or type_lower == "numeric":
         return f"DECIMAL({field.precision},{field.scale})"
-    if type.lower() in ["float"]:
-        return "FLOAT"
-    if type.lower() in ["double"]:
-        return "DOUBLE"
-    if type.lower() in ["integer", "int"]:
-        return "INT"
-    if type.lower() in ["long", "bigint"]:
-        return "BIGINT"
-    if type.lower() in ["boolean"]:
-        return "BOOLEAN"
-    if type.lower() in ["object", "record", "struct"]:
-        return "STRUCT"
-    if type.lower() in ["bytes"]:
-        return "BLOB"
-    if type.lower() in ["array"]:
-        return "ARRAY"
+
+    # Check list and map
+    if type_lower == "list" or type_lower == "array":
+        item_type = convert_to_duckdb(field.items)
+        return f"{item_type}[]"
+    if type_lower == "map":
+        key_type = convert_to_duckdb(field.keys)
+        value_type = convert_to_duckdb(field.values)
+        return f"MAP({key_type}, {value_type})"
+    if type_lower == "struct" or type_lower == "object" or type_lower == "record":
+        structure_field = "STRUCT("
+        field_strings = []
+        for fieldKey, fieldValue in field.fields.items():
+            field_strings.append(f"{fieldKey} {convert_to_duckdb(fieldValue)}")
+        structure_field += ", ".join(field_strings)
+        structure_field += ")"
+        return structure_field
+
+    # Return none
     return None
 
 

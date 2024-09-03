@@ -1,0 +1,21 @@
+dataContractSpecification: 0.9.3
+id: struct-unit-test
+info:
+  title: Struct Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/struct.parquet
+    format: parquet
+models:
+  example:
+    fields:
+      struct_field:
+        type: struct
+        fields:
+          a:
+            type: integer
+          b:
+            type: varchar
+

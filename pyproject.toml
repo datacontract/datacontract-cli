@@ -36,7 +36,7 @@ dependencies = [
   "opentelemetry-exporter-otlp-proto-http~=1.16", # move to extra?
   "boto3>=1.34.41,<1.35.6",
   #  "botocore>=1.34.41,<1.34.137",
-  "jinja_partials >= 0.2.1"
+  "jinja_partials >= 0.2.1",
 ]
 
 [project.optional-dependencies]
@@ -85,26 +85,28 @@ dbt = [
   "dbt-core>=1.8.0"
 ]
 
+dbml = [
+  "pydbml>=1.1.1"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml]"
 ]
 
 dev = [
   "datacontract-cli[all]",
-  "httpx==0.27.0",
-  "ruff",
+  "httpx==0.27.2",
+  "kafka-python",
+  "moto==5.0.13",
+  "pandas>=2.1.0",
   "pre-commit>=3.7.1,<3.9.0",
+  "pyarrow>=12.0.0",
   "pytest",
   "pytest-xdist",
-  "moto==5.0.13",
   "pymssql==2.3.1",
-  "kafka-python",
+  "ruff",
+  "testcontainers[minio,postgres,kafka,mssql]==4.8.1",
   "trino==0.329.0",
-  "testcontainers==4.7.2",
-  "testcontainers[minio]==4.7.2",
-  "testcontainers[postgres]==4.7.2",
-  "testcontainers[kafka]==4.7.2",
-  "testcontainers[mssql]==4.7.2",
 ]
 
 [project.urls]

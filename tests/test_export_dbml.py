@@ -115,7 +115,7 @@ Table "orders" {{
 Note: "One record per order. Includes cancelled and deleted orders."
     "order_id" "VARCHAR" [pk,unique,not null,Note: "An internal ID that identifies an order in the online shop."]
 "order_timestamp" "TIMESTAMP WITH TIME ZONE" [not null,Note: "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful."]
-"order_total" "STRUCT" [not null,Note: "Total amount the smallest monetary unit (e.g., cents)."]
+"order_total" "STRUCT(amount STRUCT(sum DECIMAL(None,None), currency VARCHAR), due_date DATE, discount DOUBLE)" [not null,Note: "Total amount the smallest monetary unit (e.g., cents)."]
 "customer_id" "VARCHAR" [null,Note: "Unique identifier for the customer."]
 "customer_email_address" "VARCHAR" [not null,Note: "The email address, as entered by the customer. The email address was not verified."]
 "processed_timestamp" "TIMESTAMP WITH TIME ZONE" [not null,Note: "The timestamp when the record was processed by the data platform."]
@@ -130,5 +130,8 @@ Note: "A single article that is part of an order."
 }}
 Ref: line_items.order_id > orders.order_id
     """.format(formatted_date, datacontract_cli_version)
+
+    print("Actual Result:\n", result.strip())
+    print("Expected Result:\n", expected.strip())
 
     assert result.strip() == expected.strip()
