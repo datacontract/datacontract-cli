@@ -232,6 +232,18 @@ def import_(
             help="List of models names to import from the dbt manifest file (repeat for multiple models names, leave empty for all models in the dataset)."
         ),
     ] = None,
+    dbml_schema: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of schema names to import from the DBML file (repeat for multiple schema names, leave empty for all tables in the file)."
+        ),
+    ] = None,
+    dbml_table: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
+        ),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
@@ -245,6 +257,8 @@ def import_(
         bigquery_dataset=bigquery_dataset,
         unity_table_full_name=unity_table_full_name,
         dbt_model=dbt_model,
+        dbml_schema=dbml_schema,
+        dbml_table=dbml_table,
     )
     console.print(result.to_yaml())
 
