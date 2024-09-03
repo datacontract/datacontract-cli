@@ -1,0 +1,23 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+servers:
+  production:
+    type: local
+    format: csv
+    path: ./tests/fixtures/csv/data/sample_data.csv
+    delimiter: ','
+models:
+  sample_data:
+    description: Csv file with encoding ascii
+    type: table
+    fields:
+      field_one:
+        type: string
+      field_two:
+        type: integer
+      field_three:
+        type: string
+

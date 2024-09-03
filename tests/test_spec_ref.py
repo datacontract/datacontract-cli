@@ -12,4 +12,4 @@ def test_aliases():
     spec = data_contract.get_data_contract_specification()
     yaml = spec.to_yaml()
     print(yaml)
-    assert '$ref' in yaml
+    assert "$ref" in yaml

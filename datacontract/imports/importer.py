@@ -28,6 +28,7 @@ class ImportFormat(str, Enum):
     odcs = "odcs"
     unity = "unity"
     spark = "spark"
+    csv = "csv"
 
     @classmethod
     def get_supported_formats(cls):

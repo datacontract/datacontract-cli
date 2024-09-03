@@ -13,7 +13,8 @@ dbt_manifest_empty_columns = "fixtures/dbt/import/manifest_empty_columns.json"
 
 def test_read_dbt_manifest_():
     result = read_dbt_manifest(dbt_manifest)
-    assert len([node for node in result.nodes.values() if node.resource_type == 'model']) == 5
+    assert len([node for node in result.nodes.values() if node.resource_type == "model"]) == 5
+
 
 def test_cli():
     runner = CliRunner()
