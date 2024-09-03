@@ -873,6 +873,7 @@ models:
         description: Example for AVRO with Timestamp (microsecond precision) https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29
         type: long
         example: 1672534861000000  # Equivalent to 2023-01-01 01:01:01 in microseconds
+        required: true
         config:
           avroLogicalType: local-timestamp-micros
           avroDefault: 1672534861000000
@@ -887,6 +888,7 @@ models:
   - **description**: A textual description of the field.
   - **type**: The data type of the field. In this example, it is `long`.
   - **example**: An example value for the field.
+  - **required**: Is this a required field (as opposed to optional/nullable).
   - **config**: Section to specify custom Avro properties.
     - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
     - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
