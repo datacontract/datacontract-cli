@@ -85,8 +85,12 @@ dbt = [
   "dbt-core>=1.8.0"
 ]
 
+dbml = [
+  "pydbml>=1.1.1"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml]"
 ]
 
 dev = [

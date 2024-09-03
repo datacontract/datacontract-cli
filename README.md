@@ -923,6 +923,14 @@ models:
 │                                                                                names, leave empty for all models in the     │
 │                                                                                dataset).                                    │
 │                                                                                [default: None]                              │
+│    --dbml-schema                  TEXT                                         List of schema names to import from the DBML │
+│                                                                                file (repeat for multiple schema names,      │
+│                                                                                leave empty for all tables in the file).     │
+│                                                                                [default: None]                              │
+│    --dbml-table                   TEXT                                         List of table names to import from the DBML  │
+│                                                                                file (repeat for multiple table names, leave │
+│                                                                                empty for all tables in the file).           │
+│                                                                                [default: None]                              │
 │    --help                                                                      Show this message and exit.                  │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -946,6 +954,7 @@ Available import options:
 | `dbt`              | Import from dbt models                         | ✅      |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | `spark`            | Import from Spark StructTypes                  | ✅      |
+| `dbml`             | Import from DBML models                        | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD    |
 | Missing something? | Please create an issue on GitHub               | TBD    |
 
@@ -1032,6 +1041,38 @@ Example:
 ```bash
 datacontract import --format spark --source "users,orders"
 ```
+
+#### DBML
+
+Importing from DBML Documents.
+**NOTE:** Since DBML does _not_ have strict requirements on the types of columns, this import _may_ create non-valid datacontracts, as not all types of fields can be properly mapped. In this case you will have to adapt the generated document manually.
+We also assume, that the description for models and fields is stored in a Note within the DBML model.
+
+You may give the `dbml-table` or `dbml-schema` parameter to enumerate the tables or schemas that should be imported. 
+If no tables are given, _all_ available tables of the source will be imported. Likewise, if no schema is given, _all_ schemas are imported.
+
+Examples:
+
+```bash
+# Example import from DBML file, importing everything
+datacontract import --format dbml --source <file_path>
+```
+
+```bash
+# Example import from DBML file, filtering for tables from specific schemas
+datacontract import --format dbml --source <file_path> --dbml-schema <schema_1> --dbml-schema <schema_2>
+```
+
+```bash
+# Example import from DBML file, filtering for tables with specific names
+datacontract import --format dbml --source <file_path> --dbml-table <table_name_1> --dbml-table <table_name_2>
+```
+
+```bash
+# Example import from DBML file, filtering for tables with specific names from a specific schema
+datacontract import --format dbml --source <file_path> --dbml-table <table_name_1> --dbml-schema <schema_1>
+```
+
 
 ### breaking
 
