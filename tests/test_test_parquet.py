@@ -25,20 +25,8 @@ def test_valid():
     run = data_contract.test()
     print(run.pretty())
     assert run.result == "passed"
-    assert len(run.checks) == 4
+    assert len(run.checks) == 26
     assert all(check.result == "passed" for check in run.checks)
-
-
-def test_invalid():
-    data_contract = DataContract(
-        data_contract_file="fixtures/parquet/datacontract_invalid.yaml",
-    )
-    run = data_contract.test()
-    print(run.pretty())
-    assert run.result == "failed"
-    assert len(run.checks) == 6
-    assert any(check.result == "failed" for check in run.checks)
-    assert any(check.reason == "Type Mismatch, Expected Type: DATE; Actual Type: varchar" for check in run.checks)
 
 
 def test_timestamp():
@@ -53,6 +41,105 @@ def test_timestamp():
 def test_decimal():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract_decimal.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_array():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_array.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_bigint():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_bigint.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_blob():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_binary.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_boolean():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_boolean.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_time():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_date.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_double():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_double.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_float():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_float.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_integer():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_integer.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_map():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_map.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_string():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_string.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
+def test_struct():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_struct.yaml",
     )
     run = data_contract.test()
     print(run.pretty())

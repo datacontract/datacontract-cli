@@ -1,0 +1,19 @@
+dataContractSpecification: 0.9.3
+id: array-unit-test
+info:
+  title: Array Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/array.parquet
+    format: parquet
+models:
+  example:
+    description: Test data with an array
+    type: table
+    fields:
+      array_field:
+        type: array
+        items:
+          type: integer

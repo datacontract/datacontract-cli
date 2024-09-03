@@ -1,0 +1,15 @@
+dataContractSpecification: 0.9.3
+id: integer-unit-test
+info:
+  title: Integer Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: local
+    path: ./fixtures/parquet/data/integer.parquet
+    format: parquet
+models:
+  example:
+    fields:
+      integer_field:
+        type: integer
