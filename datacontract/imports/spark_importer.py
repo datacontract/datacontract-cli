@@ -63,12 +63,12 @@ def import_from_spark_df(df: DataFrame) -> Model:
     schema = df.schema
 
     for field in schema:
-        model.fields[field.name] = _field_from_spark(field)
+        model.fields[field.name] = _field_from_struct_type(field)
 
     return model
 
 
-def _field_from_spark(spark_field: types.StructField) -> Field:
+def _field_from_struct_type(spark_field: types.StructField) -> Field:
     """
     Converts a Spark StructField into a Field object for the data contract.
 
@@ -76,18 +76,35 @@ def _field_from_spark(spark_field: types.StructField) -> Field:
         spark_field: The Spark StructField to convert.
 
     Returns:
-        Field: The corresponding Field object.
+        Field: The generated Field object.
     """
-    field_type = _data_type_from_spark(spark_field.dataType)
     field = Field()
-    field.type = field_type
     field.required = not spark_field.nullable
+    return _type_from_data_type(field, spark_field.dataType)
 
-    if field_type == "array":
-        field.items = _field_from_spark(spark_field.dataType.elementType)
 
-    if field_type == "struct":
-        field.fields = {sf.name: _field_from_spark(sf) for sf in spark_field.dataType.fields}
+def _type_from_data_type(field: Field, spark_type: types.DataType) -> Field:
+    """
+    Maps Spark data types to the Data Contract type system and updates the field.
+
+    Args:
+        field: The Field object to update.
+        spark_type: The Spark data type to map.
+
+    Returns:
+        Field: The updated Field object.
+    """
+    field.type = _data_type_from_spark(spark_type)
+
+    if field.type == "array":
+        field.items = _type_from_data_type(Field(required=not spark_type.containsNull), spark_type.elementType)
+
+    elif field.type == "map":
+        field.keys = _type_from_data_type(Field(required=True), spark_type.keyType)
+        field.values = _type_from_data_type(Field(required=not spark_type.valueContainsNull), spark_type.valueType)
+
+    elif field.type == "struct":
+        field.fields = {sf.name: _field_from_struct_type(sf) for sf in spark_type.fields}
 
     return field
 
@@ -116,6 +133,8 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
         return "struct"
     elif isinstance(spark_type, types.ArrayType):
         return "array"
+    elif isinstance(spark_type, types.MapType):
+        return "map"
     elif isinstance(spark_type, types.TimestampType):
         return "timestamp"
     elif isinstance(spark_type, types.TimestampNTZType):

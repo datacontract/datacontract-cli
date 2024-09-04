@@ -92,6 +92,28 @@ customers = StructType([
     StructField("name",
         StringType(),
         True
+    ),
+    StructField("metadata",
+        MapType(
+            StringType(), StructType([
+            StructField("value",
+                StringType(),
+                True
+            ),
+            StructField("type",
+                StringType(),
+                True
+            ),
+            StructField("timestamp",
+                LongType(),
+                True
+            ),
+            StructField("source",
+                StringType(),
+                True
+            )
+        ])),
+        True
     )
 ])
 """
@@ -135,6 +157,21 @@ expected_dict = {
         [
             types.StructField("id", types.IntegerType(), True),
             types.StructField("name", types.StringType(), True),
+            types.StructField(
+                "metadata",
+                types.MapType(
+                    types.StringType(),
+                    types.StructType(
+                        [
+                            types.StructField("value", types.StringType()),
+                            types.StructField("type", types.StringType()),
+                            types.StructField("timestamp", types.LongType()),
+                            types.StructField("source", types.StringType()),
+                        ]
+                    ),
+                    True,
+                ),
+            ),
         ]
     ),
 }
