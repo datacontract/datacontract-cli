@@ -55,3 +55,25 @@ models:
         type: int
       name:
         type: string
+      metadata:
+        type: map
+        required: false
+        keys:
+          type: string
+          required: true
+        values:
+          type: struct
+          required: false
+          fields:
+            value:
+              type: string
+              required: false
+            type:
+              type: string
+              required: false
+            timestamp:
+              type: long
+              required: false
+            source:
+              type: string
+              required: false
