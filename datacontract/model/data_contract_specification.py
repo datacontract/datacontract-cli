@@ -73,7 +73,7 @@ class Definition(pyd.BaseModel):
     exclusiveMaximum: int = None
     pii: bool = None
     classification: str = None
-    fields: Dict[str, "Definition"] = {}
+    fields: Dict[str, "Field"] = {}
     tags: List[str] = []
     links: Dict[str, str] = {}
     example: str = None
@@ -239,4 +239,8 @@ class DataContractSpecification(pyd.BaseModel):
         return DataContractSpecification(**data)
 
     def to_yaml(self):
-        return yaml.dump(self.model_dump(exclude_defaults=True, exclude_none=True, by_alias=True), sort_keys=False, allow_unicode=True)
+        return yaml.dump(
+            self.model_dump(exclude_defaults=True, exclude_none=True, by_alias=True),
+            sort_keys=False,
+            allow_unicode=True,
+        )

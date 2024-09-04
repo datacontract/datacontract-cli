@@ -1,0 +1,19 @@
+dataContractSpecification: 0.9.3
+id: pageviews
+info:
+  title: Pageviews
+  version: 0.0.1
+models:
+  pageviews:
+    type: table
+    namespace: com.example.activity
+    fields:
+      event_ts:
+        type: timestamp_ntz
+      correlation_id:
+        type: int
+        required: true
+      user_guid:
+        type: string
+        required: false
+

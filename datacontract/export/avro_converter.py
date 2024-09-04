@@ -40,7 +40,9 @@ def to_avro_field(field, field_name):
     avro_field = {"name": field_name}
     if field.description is not None:
         avro_field["doc"] = field.description
-    avro_field["type"] = to_avro_type(field, field_name)
+    is_required_avro = field.required if field.required is not None else True
+    avro_type = to_avro_type(field, field_name)
+    avro_field["type"] = avro_type if is_required_avro else ["null", avro_type]
 
     if avro_field["type"] == "enum":
         avro_field["type"] = {

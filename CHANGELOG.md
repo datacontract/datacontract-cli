@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support of varchar max length in Glue import (#351)
 - `datacontract publish` now also accepts the `DATACONTRACT_MANAGER_API_KEY` as an environment variable
+- Support required fields for Avro schema export (#390)
+- Support for import of DBML Models (#379)
 - Support of enum on export to avro
 - Support enum title on avro import
 
@@ -23,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix bigint -> long data type mapping (#351)
 - Fix an issue where column description for Glue partition key column is ignored (#351)
 - Corrected name of table parameter for bigquery import (#377)
+- Fix an failed to connect to S3 Server (#384)
+- Fix a model bug mismatching with the specification (`definitions.fields`) (#375)
 
 
 ## [0.10.11] - 2024-08-08
