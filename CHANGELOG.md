@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract publish` now also accepts the `DATACONTRACT_MANAGER_API_KEY` as an environment variable
 - Support required fields for Avro schema export (#390)
 - Support for import of DBML Models (#379)
+- `datacontract export --format sqlalchemy`: Export to [SQLAlchemy ORM models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html) (#399)
 - Support data type map in Spark import and export (#408)
 
 ### Changed

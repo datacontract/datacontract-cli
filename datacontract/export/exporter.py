@@ -35,6 +35,7 @@ class ExportFormat(str, Enum):
     bigquery = "bigquery"
     dbml = "dbml"
     spark = "spark"
+    sqlalchemy = "sqlalchemy"
 
     @classmethod
     def get_supported_formats(cls):
