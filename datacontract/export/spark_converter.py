@@ -123,6 +123,8 @@ def to_data_type(field: Field) -> types.DataType:
         return types.ArrayType(to_data_type(field.items))
     if field_type in ["object", "record", "struct"]:
         return types.StructType(to_struct_type(field.fields))
+    if field_type == "map":
+        return types.MapType(to_data_type(field.keys), to_data_type(field.values))
     if field_type in ["string", "varchar", "text"]:
         return types.StringType()
     if field_type in ["number", "decimal", "numeric"]:
@@ -204,6 +206,8 @@ def print_schema(dtype: types.DataType) -> str:
         return format_struct_type(dtype)
     elif isinstance(dtype, types.ArrayType):
         return f"ArrayType({print_schema(dtype.elementType)})"
+    elif isinstance(dtype, types.MapType):
+        return f"MapType(\n{indent(print_schema(dtype.keyType), 1)}, {print_schema(dtype.valueType)})"
     elif isinstance(dtype, types.DecimalType):
         return f"DecimalType({dtype.precision}, {dtype.scale})"
     else:
