@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract publish` now also accepts the `DATACONTRACT_MANAGER_API_KEY` as an environment variable
 - Support required fields for Avro schema export (#390)
 - Support for import of DBML Models (#379)
+- Support data type map in Spark import and export (#408)
 
 ### Changed
 - Deltalake is now using DuckDB's native deltalake support (#258). Extra deltalake removed.
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected name of table parameter for bigquery import (#377)
 - Fix an failed to connect to S3 Server (#384)
 - Fix a model bug mismatching with the specification (`definitions.fields`) (#375)
+- Fix array type management in Spark import (#408)
 
 
 ## [0.10.11] - 2024-08-08
