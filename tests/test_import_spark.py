@@ -41,6 +41,34 @@ models:
           city:
             type: string
             required: false
+      tags:
+        type: array
+        required: false
+        items:
+          type: string
+          required: false
+      metadata:
+        type: map
+        required: false
+        keys:
+          type: string
+          required: true
+        values:
+          type: struct
+          required: false
+          fields:
+            value:
+              type: string
+              required: false
+            type:
+              type: string
+              required: false
+            timestamp:
+              type: long
+              required: false
+            source:
+              type: string
+              required: false
     """
 
 
@@ -76,6 +104,15 @@ def test_cli(spark: SparkSession):
                     "street": "Maple Street",
                     "city": "Anytown",
                 },
+                "tags": ["tag1", "tag2"],
+                "metadata": {
+                    "my-source-metadata": {
+                        "value": "1234567890",
+                        "type": "STRING",
+                        "timestamp": 1646053400,
+                        "source": "my-source",
+                    }
+                },
             }
         ],
         schema=types.StructType(
@@ -90,6 +127,21 @@ def test_cli(spark: SparkSession):
                             types.StructField("street", types.StringType()),
                             types.StructField("city", types.StringType()),
                         ]
+                    ),
+                ),
+                types.StructField("tags", types.ArrayType(types.StringType())),
+                types.StructField(
+                    "metadata",
+                    types.MapType(
+                        keyType=types.StringType(),
+                        valueType=types.StructType(
+                            [
+                                types.StructField("value", types.StringType()),
+                                types.StructField("type", types.StringType()),
+                                types.StructField("timestamp", types.LongType()),
+                                types.StructField("source", types.StringType()),
+                            ]
+                        ),
                     ),
                 ),
             ]
@@ -136,7 +188,20 @@ def test_prog(spark: SparkSession):
             {
                 "id": "1",
                 "name": "John Doe",
-                "address": {"number": 123, "street": "Maple Street", "city": "Anytown"},
+                "address": {
+                    "number": 123,
+                    "street": "Maple Street",
+                    "city": "Anytown",
+                },
+                "tags": ["tag1", "tag2"],
+                "metadata": {
+                    "my-source-metadata": {
+                        "value": "1234567890",
+                        "type": "STRING",
+                        "timestamp": 1646053400,
+                        "source": "my-source",
+                    }
+                },
             }
         ],
         schema=types.StructType(
@@ -153,10 +218,26 @@ def test_prog(spark: SparkSession):
                         ]
                     ),
                 ),
+                types.StructField("tags", types.ArrayType(types.StringType())),
+                types.StructField(
+                    "metadata",
+                    types.MapType(
+                        keyType=types.StringType(),
+                        valueType=types.StructType(
+                            [
+                                types.StructField("value", types.StringType()),
+                                types.StructField("type", types.StringType()),
+                                types.StructField("timestamp", types.LongType()),
+                                types.StructField("source", types.StringType()),
+                            ]
+                        ),
+                    ),
+                ),
             ]
         ),
     )
 
     df_user.createOrReplaceTempView("users")
     result = DataContract().import_from_source("spark", "users")
+
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
