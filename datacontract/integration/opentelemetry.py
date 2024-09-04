@@ -34,7 +34,7 @@ from datacontract.model.run import Run
 # - Metrics only, no logs yet (but loosely planned)
 
 
-def publish_opentelemetry(run: Run):
+def publish_test_results_to_opentelemetry(run: Run):
     try:
         if run.dataContractId is None:
             raise Exception("Cannot publish run results, as data contract ID is unknown")

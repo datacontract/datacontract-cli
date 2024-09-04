@@ -17,7 +17,7 @@ from datacontract.catalog.catalog import create_index_html, create_data_contract
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
-from datacontract.publish.publish import publish_to_datamesh_manager
+from datacontract.integration.datamesh_manager import publish_data_contract_to_datamesh_manager
 
 DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
 
@@ -232,6 +232,18 @@ def import_(
             help="List of models names to import from the dbt manifest file (repeat for multiple models names, leave empty for all models in the dataset)."
         ),
     ] = None,
+    dbml_schema: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of schema names to import from the DBML file (repeat for multiple schema names, leave empty for all tables in the file)."
+        ),
+    ] = None,
+    dbml_table: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
+        ),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
@@ -245,6 +257,8 @@ def import_(
         bigquery_dataset=bigquery_dataset,
         unity_table_full_name=unity_table_full_name,
         dbt_model=dbt_model,
+        dbml_schema=dbml_schema,
+        dbml_table=dbml_table,
     )
     console.print(result.to_yaml())
 
@@ -261,8 +275,10 @@ def publish(
     """
     Publish the data contract to the Data Mesh Manager.
     """
-    publish_to_datamesh_manager(
-        data_contract=DataContract(data_contract_file=location, schema_location=schema),
+    publish_data_contract_to_datamesh_manager(
+        data_contract_specification=DataContract(
+            data_contract_file=location, schema_location=schema
+        ).get_data_contract_specification(),
     )
 
 

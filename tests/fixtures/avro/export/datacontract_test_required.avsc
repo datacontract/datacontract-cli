@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "pageviews",
+  "namespace": "com.example.activity",
+  "fields": [
+    {
+      "name": "event_ts",
+      "type": {
+        "type": "long",
+        "logicalType": "local-timestamp-millis"
+      }
+    },
+    {
+      "name": "correlation_id",
+      "type": "int"
+    },
+    {
+      "name": "user_guid",
+      "type": ["null", "string"]
+    }
+  ]
+}

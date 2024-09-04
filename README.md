@@ -5,7 +5,7 @@
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/datacontract-cli/ci.yaml?branch=main"></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
-  <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://camo.githubusercontent.com/5ade1fd1e76a6ab860802cdd2941fe2501e2ca2cb534e5d8968dbf864c13d33d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f736c61636b2d6a6f696e5f636861742d77686974652e7376673f6c6f676f3d736c61636b267374796c653d736f6369616c" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
+  <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
 </p>
 
 The `datacontract` CLI is an open source command-line tool for working with [Data Contracts](https://datacontract.com/).
@@ -196,6 +196,7 @@ A list of available extras:
 | Snowflake Integration  | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server   | `pip install datacontract-cli[sqlserver]`  |
 | Trino                  | `pip install datacontract-cli[trino]`      |
+| Dbt                    | `pip install datacontract-cli[dbt]`        |
 
 
 
@@ -872,6 +873,7 @@ models:
         description: Example for AVRO with Timestamp (microsecond precision) https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29
         type: long
         example: 1672534861000000  # Equivalent to 2023-01-01 01:01:01 in microseconds
+        required: true
         config:
           avroLogicalType: local-timestamp-micros
           avroDefault: 1672534861000000
@@ -886,6 +888,7 @@ models:
   - **description**: A textual description of the field.
   - **type**: The data type of the field. In this example, it is `long`.
   - **example**: An example value for the field.
+  - **required**: Is this a required field (as opposed to optional/nullable).
   - **config**: Section to specify custom Avro properties.
     - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
     - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
@@ -922,6 +925,14 @@ models:
 │                                                                                names, leave empty for all models in the     │
 │                                                                                dataset).                                    │
 │                                                                                [default: None]                              │
+│    --dbml-schema                  TEXT                                         List of schema names to import from the DBML │
+│                                                                                file (repeat for multiple schema names,      │
+│                                                                                leave empty for all tables in the file).     │
+│                                                                                [default: None]                              │
+│    --dbml-table                   TEXT                                         List of table names to import from the DBML  │
+│                                                                                file (repeat for multiple table names, leave │
+│                                                                                empty for all tables in the file).           │
+│                                                                                [default: None]                              │
 │    --help                                                                      Show this message and exit.                  │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -945,6 +956,7 @@ Available import options:
 | `dbt`              | Import from dbt models                         | ✅      |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | `spark`            | Import from Spark StructTypes                  | ✅      |
+| `dbml`             | Import from DBML models                        | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD    |
 | Missing something? | Please create an issue on GitHub               | TBD    |
 
@@ -1031,6 +1043,38 @@ Example:
 ```bash
 datacontract import --format spark --source "users,orders"
 ```
+
+#### DBML
+
+Importing from DBML Documents.
+**NOTE:** Since DBML does _not_ have strict requirements on the types of columns, this import _may_ create non-valid datacontracts, as not all types of fields can be properly mapped. In this case you will have to adapt the generated document manually.
+We also assume, that the description for models and fields is stored in a Note within the DBML model.
+
+You may give the `dbml-table` or `dbml-schema` parameter to enumerate the tables or schemas that should be imported. 
+If no tables are given, _all_ available tables of the source will be imported. Likewise, if no schema is given, _all_ schemas are imported.
+
+Examples:
+
+```bash
+# Example import from DBML file, importing everything
+datacontract import --format dbml --source <file_path>
+```
+
+```bash
+# Example import from DBML file, filtering for tables from specific schemas
+datacontract import --format dbml --source <file_path> --dbml-schema <schema_1> --dbml-schema <schema_2>
+```
+
+```bash
+# Example import from DBML file, filtering for tables with specific names
+datacontract import --format dbml --source <file_path> --dbml-table <table_name_1> --dbml-table <table_name_2>
+```
+
+```bash
+# Example import from DBML file, filtering for tables with specific names from a specific schema
+datacontract import --format dbml --source <file_path> --dbml-table <table_name_1> --dbml-schema <schema_1>
+```
+
 
 ### breaking
 

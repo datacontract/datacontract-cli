@@ -1,0 +1,26 @@
+Project "Orders Latest" {
+    Note: '''Successful customer orders in the webshop. 
+All orders since 2020-01-01. 
+Orders with their line items are in their current state (no history included).
+'''
+}
+
+Table test.orders {
+    "order_id" "text" [pk,unique,not null,Note: "An internal ID that identifies an order in the online shop."]
+"order_timestamp" "timestamp" [not null,Note: "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful."]
+"order_total" "record" [not null,Note: "Total amount the smallest monetary unit (e.g., cents)."]
+"customer_id" "text" [null,Note: "Unique identifier for the customer."]
+"customer_email_address" "text" [not null,Note: "The email address, as entered by the customer. The email address was not verified."]
+"processed_timestamp" "timestamp" [not null,Note: "The timestamp when the record was processed by the data platform."]
+Note: "One record per order. Includes cancelled and deleted orders."
+}
+
+
+Table orders.line_items {
+"lines_item_id" "text" [pk,unique,not null,Note: "Primary key of the lines_item_id table"]
+"order_id" "text" [null,Note: "An internal ID that identifies an order in the online shop."]
+"sku" "text" [null,Note: "The purchased article number"]
+Note: "A single article that is part of an order."
+}
+
+Ref: orders.line_items.order_id > test.orders.order_id

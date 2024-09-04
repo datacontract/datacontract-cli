@@ -18,8 +18,8 @@ from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
 
-from datacontract.integration.publish_datamesh_manager import publish_datamesh_manager
-from datacontract.integration.publish_opentelemetry import publish_opentelemetry
+from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
+from datacontract.integration.opentelemetry import publish_test_results_to_opentelemetry
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
@@ -218,15 +218,10 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None:
-            try:
-                publish_datamesh_manager(run, self._publish_url)
-            except Exception:
-                run.log_error("Failed to publish to datamesh manager")
+            publish_test_results_to_datamesh_manager(run, self._publish_url)
+
         if self._publish_to_opentelemetry:
-            try:
-                publish_opentelemetry(run)
-            except Exception:
-                run.log_error("Failed to publish to opentelemetry")
+            publish_test_results_to_opentelemetry(run)
 
         return run
 
