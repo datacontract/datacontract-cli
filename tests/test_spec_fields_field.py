@@ -11,7 +11,7 @@ runner = CliRunner()
 def test_aliases():
     data_contract = DataContract(data_contract_file="fixtures/spec/datacontract_fields_field.yaml")
     spec = data_contract.get_data_contract_specification()
-    model_field = spec.models['sample_model'].fields['id']
-    definition_field = model_field.fields['id']
+    model_field = spec.models["sample_model"].fields["id"]
+    definition_field = model_field.fields["id"]
     assert isinstance(model_field, Field)
     assert isinstance(definition_field, Field)

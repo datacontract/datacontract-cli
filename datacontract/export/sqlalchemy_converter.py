@@ -5,17 +5,24 @@ import datacontract.model.data_contract_specification as spec
 from datacontract.export.exporter import Exporter
 from datacontract.export.exporter import _determine_sql_server_type
 
+
 class SQLAlchemyExporter(Exporter):
-    def export(self, data_contract: spec.DataContractSpecification, model, server, sql_server_type, export_args) -> dict:
+    def export(
+        self, data_contract: spec.DataContractSpecification, model, server, sql_server_type, export_args
+    ) -> dict:
         sql_server_type = _determine_sql_server_type(data_contract, sql_server_type, server)
         return to_sqlalchemy_model_str(data_contract, sql_server_type, server)
-    
+
 
 DECLARATIVE_BASE = "Base"
 
-def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server_type: str='', server=None) -> str:
+
+def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server_type: str = "", server=None) -> str:
     server_obj = contract.servers.get(server)
-    classdefs = [generate_model_class(model_name, model, server_obj, sql_server_type) for (model_name, model) in contract.models.items()]
+    classdefs = [
+        generate_model_class(model_name, model, server_obj, sql_server_type)
+        for (model_name, model) in contract.models.items()
+    ]
     documentation = (
         [ast.Expr(ast.Constant(contract.info.description))] if (contract.info and contract.info.description) else []
     )
@@ -27,28 +34,33 @@ def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server
         keywords=[],
         decorator_list=[],
     )
-    
-    databricks_timestamp = ast.ImportFrom(module="databricks.sqlalchemy", names=[ast.alias("TIMESTAMP"), ast.alias("TIMESTAMP_NTZ")])
+
+    databricks_timestamp = ast.ImportFrom(
+        module="databricks.sqlalchemy", names=[ast.alias("TIMESTAMP"), ast.alias("TIMESTAMP_NTZ")]
+    )
     timestamp = ast.ImportFrom(module="sqlalchemy", names=[ast.alias(name="TIMESTAMP")])
     result = ast.Module(
         body=[
-            ast.ImportFrom(module='sqlalchemy.orm', names=[ast.alias(name='DeclarativeBase')]),
-            ast.ImportFrom(module='sqlalchemy', names=[
-                ast.alias('Column'),
-                ast.alias('Date'),
-                ast.alias('Integer'),
-                ast.alias('Numeric'),
-                ast.alias('String'),
-                ast.alias('Text'),
-                ast.alias('VARCHAR'),
-                ast.alias('BigInteger'),
-                ast.alias('Float'),
-                ast.alias('Double'),
-                ast.alias('Boolean'),
-                ast.alias('Date'),
-                ast.alias('ARRAY'),
-                ast.alias('LargeBinary'),
-            ]),
+            ast.ImportFrom(module="sqlalchemy.orm", names=[ast.alias(name="DeclarativeBase")]),
+            ast.ImportFrom(
+                module="sqlalchemy",
+                names=[
+                    ast.alias("Column"),
+                    ast.alias("Date"),
+                    ast.alias("Integer"),
+                    ast.alias("Numeric"),
+                    ast.alias("String"),
+                    ast.alias("Text"),
+                    ast.alias("VARCHAR"),
+                    ast.alias("BigInteger"),
+                    ast.alias("Float"),
+                    ast.alias("Double"),
+                    ast.alias("Boolean"),
+                    ast.alias("Date"),
+                    ast.alias("ARRAY"),
+                    ast.alias("LargeBinary"),
+                ],
+            ),
             databricks_timestamp if sql_server_type == "databricks" else timestamp,
             *documentation,
             declarative_base,
@@ -62,14 +74,8 @@ def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server
 def Call(name, *args, **kwargs) -> ast.Call:
     return ast.Call(
         ast.Name(name),
-        args=[
-            v
-            for v in args
-        ],
-        keywords=[
-            ast.keyword(arg=f'{k}', value=ast.Constant(v)) 
-            for (k, v) in kwargs.items()
-        ]
+        args=[v for v in args],
+        keywords=[ast.keyword(arg=f"{k}", value=ast.Constant(v)) for (k, v) in kwargs.items()],
     )
 
 
@@ -101,9 +107,7 @@ def sqlalchemy_primitive(field: spec.Field):
     return sqlalchemy_name.get(field.type)
 
 
-def constant_field_value(
-    field_name: str, field: spec.Field
-) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
+def constant_field_value(field_name: str, field: spec.Field) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
     new_type = sqlalchemy_primitive(field)
     match field.type:
         case "array":
@@ -116,6 +120,7 @@ def constant_field_value(
 
 def column_assignment(field_name: str, field: spec.Field) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
     return constant_field_value(field_name, field)
+
 
 def is_simple_field(field: spec.Field) -> bool:
     return field.type not in set(["object", "record", "struct"])
@@ -130,7 +135,9 @@ def field_definitions(fields: dict[str, spec.Field]) -> tuple[list[ast.Expr], li
     return (annotations, classes)
 
 
-def generate_model_class(name: str, model_definition: spec.Model, server = None, sql_server_type: str='') -> ast.ClassDef:
+def generate_model_class(
+    name: str, model_definition: spec.Model, server=None, sql_server_type: str = ""
+) -> ast.ClassDef:
     (field_assignments, nested_classes) = field_definitions(model_definition.fields)
     documentation = [ast.Expr(ast.Constant(model_definition.description))] if model_definition.description else []
 
@@ -145,12 +152,16 @@ def generate_model_class(name: str, model_definition: spec.Model, server = None,
         body=[
             *documentation,
             ast.Assign(targets=[ast.Name("__tablename__")], value=table_name, lineno=0),
-            ast.Assign(targets=[ast.Name("__table_args__")], value=ast.Dict(
-                keys=[ast.Constant('comment'), ast.Constant('schema')],
-                values=[ast.Constant(model_definition.description), ast.Constant(schema)],
-            ), lineno=0),
+            ast.Assign(
+                targets=[ast.Name("__table_args__")],
+                value=ast.Dict(
+                    keys=[ast.Constant("comment"), ast.Constant("schema")],
+                    values=[ast.Constant(model_definition.description), ast.Constant(schema)],
+                ),
+                lineno=0,
+            ),
             *nested_classes,
-            *field_assignments
+            *field_assignments,
         ],
         keywords=[],
         decorator_list=[],

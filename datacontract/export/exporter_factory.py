@@ -145,5 +145,7 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.sqlalchemy, module_path="datacontract.export.sqlalchemy_converter", class_name="SQLAlchemyExporter"
+    name=ExportFormat.sqlalchemy,
+    module_path="datacontract.export.sqlalchemy_converter",
+    class_name="SQLAlchemyExporter",
 )

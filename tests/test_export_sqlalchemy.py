@@ -51,11 +51,7 @@ def test_object_model_export():
 def test_model_documentation_export():
     m = spec.Model(
         description="A test model",
-        fields={
-            "f": spec.Field(
-                type="string", description="A test field"
-            )
-        },
+        fields={"f": spec.Field(type="string", description="A test field")},
     )
     ast_class = conv.generate_model_class("Test", m)
     assert (
@@ -78,10 +74,9 @@ def test_model_description_export():
         models={"test_model": spec.Model(fields={"f": spec.Field(type="string")})},
     )
     result = conv.to_sqlalchemy_model_str(m)
-    assert (
-        result.strip().endswith(
-            dedent(
-                """
+    assert result.strip().endswith(
+        dedent(
+            """
             'Contract description'
 
             class Base(DeclarativeBase):
@@ -92,6 +87,5 @@ def test_model_description_export():
                 __table_args__ = {'comment': None, 'schema': None}
                 f = Column(String(None), nullable=True, comment=None, primary_key=None)
             """
-            ).strip()
-        )
+        ).strip()
     )
