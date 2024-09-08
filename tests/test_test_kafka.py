@@ -6,7 +6,6 @@ import six
 if sys.version_info >= (3, 12, 1):
     sys.modules["kafka.vendor.six.moves"] = six.moves
 
-import json
 
 import pytest
 from kafka import KafkaProducer
@@ -18,7 +17,7 @@ from datacontract.data_contract import DataContract
 
 datacontract = "fixtures/kafka/datacontract.yaml"
 
-kafka = KafkaContainer("confluentinc/cp-kafka:7.6.1")
+kafka = KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft()
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -46,17 +45,17 @@ def send_messages_to_topic(messages_file_path: str, topic_name: str):
     print(f"Sending messages from {messages_file_path} to Kafka topic {topic_name}")
 
     producer = KafkaProducer(
-        bootstrap_servers=kafka.get_bootstrap_server(), value_serializer=lambda m: json.dumps(m).encode("ascii")
+        bootstrap_servers=kafka.get_bootstrap_server(), value_serializer=lambda v: v.encode("utf-8")
     )
     messages_sent = 0
 
     with open(messages_file_path) as messages_file:
         for line in messages_file:
-            message = json.loads(line)
-            producer.send(topic_name, message)
+            message = line
+            producer.send(topic=topic_name, value=message)
             messages_sent += 1
+            producer.flush()
 
-    producer.flush()
     print(f"Sent {messages_sent} messages from {messages_file_path} to Kafka topic {topic_name}")
 
 
