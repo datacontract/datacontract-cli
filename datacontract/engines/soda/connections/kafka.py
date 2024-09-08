@@ -1,33 +1,26 @@
 import logging
 import os
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, expr, from_json
-from pyspark.sql.avro.functions import from_avro
-from pyspark.sql.types import (
-    StructType,
-    StructField,
-    StringType,
-    DecimalType,
-    DoubleType,
-    IntegerType,
-    LongType,
-    BooleanType,
-    TimestampType,
-    TimestampNTZType,
-    DateType,
-    BinaryType,
-    ArrayType,
-    NullType,
-    DataType,
-)
 
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import DataContractSpecification, Server, Field
 from datacontract.model.exceptions import DataContractException
 
 
-def create_spark_session(tmp_dir: str) -> SparkSession:
+def create_spark_session(tmp_dir: str):
     """Create and configure a Spark session."""
+
+    try:
+        from pyspark.sql import SparkSession
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="pyspark is missing",
+            reason="Install the extra datacontract-cli[kafka] to use kafka",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     spark = (
         SparkSession.builder.appName("datacontract")
         .config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
@@ -43,7 +36,7 @@ def create_spark_session(tmp_dir: str) -> SparkSession:
     return spark
 
 
-def read_kafka_topic(spark: SparkSession, data_contract: DataContractSpecification, server: Server, tmp_dir):
+def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Server, tmp_dir):
     """Read and process data from a Kafka topic based on the server configuration."""
 
     logging.info("Reading data from Kafka server %s topic %s", server.host, server.topic)
@@ -74,6 +67,19 @@ def read_kafka_topic(spark: SparkSession, data_contract: DataContractSpecificati
 
 
 def process_avro_format(df, model_name, model):
+    try:
+        from pyspark.sql.functions import col, expr
+        from pyspark.sql.avro.functions import from_avro
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="pyspark is missing",
+            reason="Install the extra datacontract-cli[kafka] to use kafka",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     avro_schema = to_avro_schema_json(model_name, model)
     df2 = df.withColumn("fixedValue", expr("substring(value, 6, length(value)-5)"))
     options = {"mode": "PERMISSIVE"}
@@ -83,6 +89,18 @@ def process_avro_format(df, model_name, model):
 
 
 def process_json_format(df, model_name, model):
+    try:
+        from pyspark.sql.functions import col, from_json
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="pyspark is missing",
+            reason="Install the extra datacontract-cli[kafka] to use kafka",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     struct_type = to_struct_type(model.fields)
     df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").select(
         from_json(col("value"), struct_type, {"mode": "PERMISSIVE"}).alias("json")
@@ -108,11 +126,51 @@ def get_auth_options():
 
 
 def to_struct_type(fields):
+    try:
+        from pyspark.sql.types import StructType
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="pyspark is missing",
+            reason="Install the extra datacontract-cli[kafka] to use kafka",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     """Convert field definitions to Spark StructType."""
     return StructType([to_struct_field(field_name, field) for field_name, field in fields.items()])
 
 
-def to_struct_field(field_name: str, field: Field) -> StructField:
+def to_struct_field(field_name: str, field: Field):
+    try:
+        from pyspark.sql.types import (
+            StructType,
+            StructField,
+            StringType,
+            DecimalType,
+            DoubleType,
+            IntegerType,
+            LongType,
+            BooleanType,
+            TimestampType,
+            TimestampNTZType,
+            DateType,
+            BinaryType,
+            ArrayType,
+            NullType,
+            DataType,
+        )
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="pyspark is missing",
+            reason="Install the extra datacontract-cli[kafka] to use kafka",
+            engine="datacontract",
+            original_exception=e,
+        )
+
     """Map field definitions to Spark StructField using match-case."""
     match field.type:
         case "string" | "varchar" | "text":
