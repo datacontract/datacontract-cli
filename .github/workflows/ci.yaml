@@ -63,7 +63,7 @@ jobs:
       - name: Test basic commands
         run: |
           datacontract --help
-          datacontract version
+          datacontract --version
 
   docker:
     runs-on: ubuntu-latest
