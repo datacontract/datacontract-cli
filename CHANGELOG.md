@@ -8,26 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.12] - 2024-09-08
+
 ### Added
+- Support for import of DBML Models (#379)
+- `datacontract export --format sqlalchemy`: Export to [SQLAlchemy ORM models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html) (#399)
 - Support of varchar max length in Glue import (#351)
 - `datacontract publish` now also accepts the `DATACONTRACT_MANAGER_API_KEY` as an environment variable
 - Support required fields for Avro schema export (#390)
-- Support for import of DBML Models (#379)
-- `datacontract export --format sqlalchemy`: Export to [SQLAlchemy ORM models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html) (#399)
 - Support data type map in Spark import and export (#408)
 - Support of enum on export to avro
-- Support enum title on avro import
+- Support of enum title on avro import
 
 ### Changed
 - Deltalake is now using DuckDB's native deltalake support (#258). Extra deltalake removed.
 - When dumping to YAML (import) the alias name is used instead of the pythonic name. (#373)
 
 ### Fixed
+- Fix an issue where the datacontract cli fails if installed without any extras (#400)
 - Fix an issue where Glue database without a location creates invalid data contract (#351)
 - Fix bigint -> long data type mapping (#351)
 - Fix an issue where column description for Glue partition key column is ignored (#351)
 - Corrected name of table parameter for bigquery import (#377)
-- Fix an failed to connect to S3 Server (#384)
+- Fix a failed to connect to S3 Server (#384)
 - Fix a model bug mismatching with the specification (`definitions.fields`) (#375)
 - Fix array type management in Spark import (#408)
 
