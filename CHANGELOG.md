@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for import of DBML Models (#379)
 - `datacontract export --format sqlalchemy`: Export to [SQLAlchemy ORM models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html) (#399)
 - Support data type map in Spark import and export (#408)
+- Support of enum on export to avro
+- Support enum title on avro import
 
 ### Changed
 - Deltalake is now using DuckDB's native deltalake support (#258). Extra deltalake removed.

@@ -1,0 +1,19 @@
+{
+"type": "record",
+"name": "MySchema",
+"fields": [
+    {
+        "name": "color",
+        "type": {
+            "type": "enum",
+            "name": "Color",
+            "symbols": [
+                "RED",
+                "GREEN",
+                "BLUE",
+                "UNKNOWN"
+            ]
+        }
+    }
+ ]
+}

@@ -46,3 +46,14 @@ def test_to_avro_schema_with_required():
     result = to_avro_schema_json(model_name, model)
 
     assert json.loads(result) == json.loads(expected_avro_schema)
+
+
+def test_to_avro_schema_enum():
+    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_enum.yaml")
+    with open("fixtures/avro/export/datacontract_enum.avsc") as file:
+        expected_avro_schema = file.read()
+
+    model_name, model = next(iter(data_contract.models.items()))
+    result = to_avro_schema_json(model_name, model)
+
+    assert json.loads(result) == json.loads(expected_avro_schema)

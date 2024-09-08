@@ -40,6 +40,7 @@ models:
             - CANCELLED
         config:
           avroType: enum
+        title: Status
       metadata:
         type: map
         required: true
@@ -59,6 +60,7 @@ models:
               - DOUBLE
               config:
                 avroType: enum
+              title: MetadataType
             timestamp:
               type: long
               required: true

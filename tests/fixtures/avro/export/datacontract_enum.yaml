@@ -1,0 +1,19 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  MySchema:
+    fields:
+      color:
+        type: string
+        title: Color
+        enum:
+        - RED
+        - GREEN
+        - BLUE
+        - UNKNOWN
+        config:
+          avroType: enum
+        
