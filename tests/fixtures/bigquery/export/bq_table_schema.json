@@ -82,7 +82,7 @@
       },
       {
         "name": "float_field",
-        "type": "FLOAT",
+        "type": "FLOAT64",
         "mode": "NULLABLE",
         "description": "a simple float field"
       },
