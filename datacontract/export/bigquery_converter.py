@@ -90,7 +90,7 @@ def map_type_to_bigquery(type_str: str, field_name: str) -> str:
     elif type_str.lower() in ["long", "bigint"]:
         return "INT64"
     elif type_str == "float":
-        return "FLOAT"
+        return "FLOAT64"
     elif type_str == "boolean":
         return "BOOL"
     elif type_str.lower() in ["timestamp", "timestamp_tz"]:
