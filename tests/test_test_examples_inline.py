@@ -16,6 +16,5 @@ def test_cli():
 def test_json_inline():
     data_contract = DataContract(data_contract_file="fixtures/examples/datacontract_inline.yaml", examples=True)
     run = data_contract.test()
-    print(run)
-    print(run.result)
+    print(run.pretty())
     assert run.result == "passed"

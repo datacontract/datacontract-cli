@@ -24,11 +24,14 @@
       "type": "array",
       "title": "Line Items",
       "items": {
-        "type" : "integer"
+        "type" : ["integer", "null"]
       }
     },
     "customer_id": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "minLength": 10,
       "maxLength": 20,
       "title": "Customer ID",

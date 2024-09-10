@@ -36,4 +36,6 @@ examples:
       - wert: 101
         jahrMonat: "2022-02"
         qualitaet: "vorlaeufig"
+      - wert: 102
+        jahrMonat: "2022-03"
 

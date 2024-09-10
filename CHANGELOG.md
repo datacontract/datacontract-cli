@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `datacontract export --format jsonschema` handle optional and nullable fields (#409)
+
+
 ## [0.10.12] - 2024-09-08
 
 ### Added

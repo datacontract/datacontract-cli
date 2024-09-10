@@ -36,7 +36,19 @@ def to_property(field: Field) -> dict:
     property = {}
     json_type, json_format = convert_type_format(field.type, field.format)
     if json_type is not None:
-        property["type"] = json_type
+        if not field.required:
+            """
+            From: https://json-schema.org/understanding-json-schema/reference/type
+            The type keyword may either be a string or an array:
+
+            If it's a string, it is the name of one of the basic types above.
+            If it is an array, it must be an array of strings, where each string 
+            is the name of one of the basic types, and each element is unique.
+            In this case, the JSON snippet is valid if it matches any of the given types.
+            """
+            property["type"] = [json_type, "null"]
+        else:
+            property["type"] = json_type
     if json_format is not None:
         property["format"] = json_format
     if field.unique:
@@ -50,7 +62,6 @@ def to_property(field: Field) -> dict:
         property["required"] = to_required(field.fields)
     if json_type == "array":
         property["items"] = to_property(field.items)
-
     if field.pattern:
         property["pattern"] = field.pattern
     if field.enum:
