@@ -128,7 +128,7 @@ def to_data_type(field: Field) -> types.DataType:
     if field_type in ["string", "varchar", "text"]:
         return types.StringType()
     if field_type in ["number", "decimal", "numeric"]:
-        return types.DecimalType()
+        return types.DecimalType(precision=field.precision, scale=field.scale)
     if field_type in ["integer", "int"]:
         return types.IntegerType()
     if field_type == "long":
