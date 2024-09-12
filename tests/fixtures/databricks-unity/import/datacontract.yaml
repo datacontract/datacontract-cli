@@ -5,17 +5,18 @@ info:
   version: 0.0.1
 models:
   test_table:
+    description: string
     type: table
-    title: string
+    title: test_table
     fields:
       id:
-        type: int
-        required: false
+        type: integer
+        required: true
       name:
-        type: string
+        type: varchar
         required: false
       age:
-        type: int
+        type: integer
         required: false
       salary:
         type: decimal

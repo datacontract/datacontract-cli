@@ -80,6 +80,8 @@ def _field_from_struct_type(spark_field: types.StructField) -> Field:
     """
     field = Field()
     field.required = not spark_field.nullable
+    field.description = spark_field.metadata.get("comment")
+
     return _type_from_data_type(field, spark_field.dataType)
 
 
@@ -121,7 +123,7 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
     """
     if isinstance(spark_type, types.StringType):
         return "string"
-    elif isinstance(spark_type, types.IntegerType):
+    elif isinstance(spark_type, (types.IntegerType, types.ShortType)):
         return "integer"
     elif isinstance(spark_type, types.LongType):
         return "long"
@@ -149,5 +151,7 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
         return "decimal"
     elif isinstance(spark_type, types.NullType):
         return "null"
+    elif isinstance(spark_type, types.VarcharType):
+        return "varchar"
     else:
         raise ValueError(f"Unsupported Spark type: {spark_type}")

@@ -1,5 +1,5 @@
 {
-  "name": "string",
+  "name": "test_table",
   "catalog_name": "string",
   "schema_name": "string",
   "table_type": "MANAGED",
@@ -129,7 +129,7 @@
   },
   "enable_predictive_optimization": "DISABLE",
   "metastore_id": "string",
-  "full_name": "string",
+  "full_name": "my_catalog.my_schema.test_table",
   "data_access_configuration_id": "string",
   "created_at": 0,
   "created_by": "string",
