@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `datacontract export --format jsonschema` handle optional and nullable fields (#409)
+- `datacontract import --format unity` handle nested and complex fields (#420)
+- `datacontract import --format spark` handle field descriptions (#420)
 
 
 ## [0.10.12] - 2024-09-08
