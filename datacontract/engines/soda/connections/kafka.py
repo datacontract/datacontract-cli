@@ -25,9 +25,10 @@ def create_spark_session(tmp_dir: str):
         SparkSession.builder.appName("datacontract")
         .config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
+        .config("spark.ui.enabled", "false")
         .config(
             "spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0",
+            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.2,org.apache.spark:spark-avro_2.12:3.5.2",
         )
         .getOrCreate()
     )
@@ -112,7 +113,7 @@ def get_auth_options():
     kafka_sasl_username = os.getenv("DATACONTRACT_KAFKA_SASL_USERNAME")
     kafka_sasl_password = os.getenv("DATACONTRACT_KAFKA_SASL_PASSWORD")
 
-    if kafka_sasl_username is None:
+    if kafka_sasl_username is None or kafka_sasl_username == "":
         return {}
 
     return {

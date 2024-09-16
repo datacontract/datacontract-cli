@@ -16,7 +16,9 @@ from datacontract.data_contract import DataContract
 datacontract = "fixtures/kafka/datacontract.yaml"
 
 
-def test_test_kafka():
+def test_test_kafka(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
+
     with KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka:
         send_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", "inventory-events")
         data_contract_str = _setup_datacontract(kafka)
