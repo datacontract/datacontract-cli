@@ -93,7 +93,7 @@ def import_unity_from_api(
             name="Retrieve unity catalog schema",
             reason=f"Failed to retrieve unity catalog schema from databricks profile: {os.getenv('DATABRICKS_CONFIG_PROFILE')}",
             engine="datacontract",
-            original_exception=e
+            original_exception=e,
         )
 
     convert_unity_schema(data_contract_specification, unity_schema)

@@ -53,7 +53,9 @@ def test_cli_complex_types():
 
 def test_import_unity_complex_types():
     print("running test_import_unity_complex_types")
-    result = DataContract().import_from_source("unity", "fixtures/databricks-unity/import/unity_table_schema_complex_types.json")
+    result = DataContract().import_from_source(
+        "unity", "fixtures/databricks-unity/import/unity_table_schema_complex_types.json"
+    )
 
     with open("fixtures/databricks-unity/import/datacontract_complex_types.yaml") as file:
         expected = file.read()
