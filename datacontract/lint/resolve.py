@@ -114,7 +114,16 @@ def _resolve_definition_ref(ref, spec) -> Definition:
 
 def _find_by_path_in_spec(definition_path: str, spec: DataContractSpecification):
     path_elements = definition_path.split("/")
-    definition = spec.definitions[path_elements[2]]
+    definition_key = path_elements[2]
+    if definition_key not in spec.definitions:
+        raise DataContractException(
+            type="lint",
+            result="failed",
+            name="Check that data contract YAML is valid",
+            reason=f"Cannot resolve definition {definition_key}",
+            engine="datacontract",
+        )
+    definition = spec.definitions[definition_key]
     definition = _find_subfield_in_definition(definition, path_elements[3:])
     return definition
 
