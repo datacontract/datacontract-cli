@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract export --format data-caterer`: Export to [Data Caterer YAML](https://data.catering/setup/guide/scenario/data-generation/)
+
 ### Changed
 - `datacontract export --format jsonschema` handle optional and nullable fields (#409)
 - `datacontract import --format unity` handle nested and complex fields (#420)

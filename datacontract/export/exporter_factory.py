@@ -63,6 +63,12 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
+    name=ExportFormat.data_caterer,
+    module_path="datacontract.export.data_caterer_converter",
+    class_name="DataCatererExporter",
+)
+
+exporter_factory.register_lazy_exporter(
     name=ExportFormat.dbml, module_path="datacontract.export.dbml_converter", class_name="DbmlExporter"
 )
 

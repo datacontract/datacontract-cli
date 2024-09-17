@@ -36,6 +36,7 @@ class ExportFormat(str, Enum):
     dbml = "dbml"
     spark = "spark"
     sqlalchemy = "sqlalchemy"
+    data_caterer = "data-caterer"
 
     @classmethod
     def get_supported_formats(cls):

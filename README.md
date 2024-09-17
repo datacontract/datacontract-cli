@@ -749,7 +749,7 @@ models:
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
 │                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
 │                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
-│                    y|dbml|spark|sqlalchemy]                                                                                    │
+│                    y|dbml|spark|sqlalchemy|data-caterer]                                                                       │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -801,6 +801,7 @@ Available export options:
 | `DBML`               | Export to a DBML Diagram description                    | ✅     |
 | `spark`              | Export to a Spark StructType                            | ✅     |
 | `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅     |
+| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅     |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
@@ -863,6 +864,20 @@ We support a **config map on field level**. A config map may include any additio
 To specify custom Avro properties in your data contract, you can define them within the `config` section of your field definition. Below is an example of how to structure your YAML configuration to include custom Avro properties, such as `avroLogicalType` and `avroDefault`.
 
 >NOTE: At this moment, we just support [logicalType](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and [default](https://avro.apache.org/docs/1.11.0/spec.htm)
+
+#### Data Caterer
+
+The export function converts the data contract to a data generation task in YAML format that can be 
+ingested by [Data Caterer](https://github.com/data-catering/data-caterer). This gives you the 
+ability to generate production-like data in any environment based off your data contract.
+
+```shell
+datacontract export datacontract.yaml --format data-caterer --model orders
+```
+
+You can further customise the way data is generated via adding 
+[additional metadata in the YAML](https://data.catering/setup/generator/data-generator/) 
+to suit your needs.
 
 #### Example Configuration
 
