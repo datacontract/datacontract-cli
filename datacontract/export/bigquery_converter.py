@@ -78,16 +78,17 @@ def to_field(field_name: str, field: Field) -> dict:
 
     return bq_field
 
+
 def map_type_to_bigquery(field: Field) -> str:
     logger = logging.getLogger(__name__)
 
     field_type = field.type
     if not field_type:
         return None
-    
+
     if field.config and "bigqueryType" in field.config:
         return field.config["bigqueryType"]
-    
+
     if field_type.lower() in ["string", "varchar", "text"]:
         return "STRING"
     elif field_type.lower() == "bytes":

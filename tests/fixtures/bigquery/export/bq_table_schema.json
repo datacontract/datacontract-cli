@@ -267,6 +267,12 @@
             "scale": null
           }
         ]
+      },
+      {
+        "name": "custom_type_field",
+        "type": "DATETIME",
+        "mode": "NULLABLE",
+        "description": "Change the datacontract type to a BigQuery type."
       }
     ]
   }
