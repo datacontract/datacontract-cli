@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.data_caterer_converter import to_data_caterer_generate_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 def test_cli():
@@ -23,8 +23,9 @@ def test_to_data_caterer():
 name: Orders Unit Test
 steps:
 - name: orders
-  type: csv
-  options: {}
+  type: json
+  options:
+    path: s3://covid19-lake/enigma-jhu/json/*.json
   schema:
   - name: order_id
     type: string
@@ -58,7 +59,7 @@ steps:
         type: string
 """
 
-    data_caterer_yaml = to_data_caterer_generate_yaml(data_contract, Server())
+    data_caterer_yaml = to_data_caterer_generate_yaml(data_contract)
     result = yaml.safe_load(data_caterer_yaml)
 
     assert result == yaml.safe_load(expected_data_caterer_model)
