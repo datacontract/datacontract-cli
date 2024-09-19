@@ -269,16 +269,7 @@ def convert_type_to_sqlserver(field: Field) -> None | str:
 
 def convert_type_to_bigquery(field: Field) -> None | str:
     """Convert from supported datacontract types to equivalent bigquery types"""
-    field_type = field.type
-    if not field_type:
-        return None
-
-    # If provided sql-server config type, prefer it over default mapping
-    if bigquery_type := get_type_config(field, "bigqueryType"):
-        return bigquery_type
-
-    field_type = field_type.lower()
-    return map_type_to_bigquery(field_type, field.title)
+    return map_type_to_bigquery(field)
 
 
 def get_type_config(field: Field, config_attr: str) -> dict[str, str] | None:

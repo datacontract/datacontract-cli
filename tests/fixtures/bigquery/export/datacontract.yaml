@@ -181,3 +181,9 @@ models:
               type: double
               required: true
               description: a double field
+      custom_type_field:
+        type: string
+        required: false
+        description: Change the datacontract type to a BigQuery type. 
+        config:
+          bigqueryType: DATETIME

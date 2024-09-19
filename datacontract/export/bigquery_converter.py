@@ -44,7 +44,7 @@ def to_fields_array(fields: Dict[str, Field]) -> List[Dict[str, Field]]:
 
 
 def to_field(field_name: str, field: Field) -> dict:
-    bq_type = map_type_to_bigquery(field.type, field_name)
+    bq_type = map_type_to_bigquery(field)
     bq_field = {
         "name": field_name,
         "type": bq_type,
@@ -79,37 +79,46 @@ def to_field(field_name: str, field: Field) -> dict:
     return bq_field
 
 
-def map_type_to_bigquery(type_str: str, field_name: str) -> str:
+def map_type_to_bigquery(field: Field) -> str:
     logger = logging.getLogger(__name__)
-    if type_str.lower() in ["string", "varchar", "text"]:
+
+    field_type = field.type
+    if not field_type:
+        return None
+
+    if field.config and "bigqueryType" in field.config:
+        return field.config["bigqueryType"]
+
+    if field_type.lower() in ["string", "varchar", "text"]:
         return "STRING"
-    elif type_str == "bytes":
+    elif field_type.lower() == "bytes":
         return "BYTES"
-    elif type_str.lower() in ["int", "integer"]:
+    elif field_type.lower() in ["int", "integer"]:
         return "INTEGER"
-    elif type_str.lower() in ["long", "bigint"]:
+    elif field_type.lower() in ["long", "bigint"]:
         return "INT64"
-    elif type_str == "float":
+    elif field_type.lower() == "float":
         return "FLOAT64"
-    elif type_str == "boolean":
+    elif field_type.lower() == "boolean":
         return "BOOL"
-    elif type_str.lower() in ["timestamp", "timestamp_tz"]:
+    elif field_type.lower() in ["timestamp", "timestamp_tz"]:
         return "TIMESTAMP"
-    elif type_str == "date":
+    elif field_type.lower() == "date":
         return "DATE"
-    elif type_str == "timestamp_ntz":
+    elif field_type.lower() == "timestamp_ntz":
         return "TIME"
-    elif type_str.lower() in ["number", "decimal", "numeric"]:
+    elif field_type.lower() in ["number", "decimal", "numeric"]:
         return "NUMERIC"
-    elif type_str == "double":
+    elif field_type.lower() == "double":
         return "BIGNUMERIC"
-    elif type_str.lower() in ["object", "record", "array"]:
+    elif field_type.lower() in ["object", "record", "array"]:
         return "RECORD"
-    elif type_str == "struct":
+    elif field_type.lower() == "struct":
         return "STRUCT"
-    elif type_str == "null":
+    elif field_type.lower() == "null":
         logger.info(
-            f"Can't properly map {field_name} to bigquery Schema, as 'null' is not supported as a type. Mapping it to STRING."
+            f"Can't properly map {field.title} to bigquery Schema, as 'null' \
+                 is not supported as a type. Mapping it to STRING."
         )
         return "STRING"
     else:
@@ -117,6 +126,6 @@ def map_type_to_bigquery(type_str: str, field_name: str) -> str:
             type="schema",
             result="failed",
             name="Map datacontract type to bigquery data type",
-            reason=f"Unsupported type {type_str} in data contract definition.",
+            reason=f"Unsupported type {field_type} in data contract definition.",
             engine="datacontract",
         )
