@@ -219,32 +219,15 @@
       },
       {
         "name": "string_array_field",
-        "type": "RECORD",
+        "type": "STRING",
         "mode": "REPEATED",
-        "description": "a string array",
-        "fields": [
-          {
-            "name": "string_array_field_1",
-            "type": "STRING",
-            "mode": "NULLABLE",
-            "description": "",
-            "maxLength": null
-          }
-        ]
+        "description": "a string array"
       },
       {
         "name": "int_array_field",
-        "type": "RECORD",
+        "type": "INTEGER",
         "mode": "REPEATED",
-        "description": "an int array",
-        "fields": [
-          {
-            "name": "int_array_field_1",
-            "type": "INTEGER",
-            "mode": "NULLABLE",
-            "description": ""
-          }
-        ]
+        "description": "an int array"
       },
       {
         "name": "complex_array_field",
@@ -265,6 +248,12 @@
             "description": "a double field",
             "precision": null,
             "scale": null
+          },
+          {
+            "name": "Field3",
+            "type": "STRING",
+            "mode": "REPEATED",
+            "description": "nested array."
           }
         ]
       },
