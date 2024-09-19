@@ -16,13 +16,25 @@ class DataCatererExporter(Exporter):
         return to_data_caterer_generate_yaml(data_contract, server)
 
 
-def to_data_caterer_generate_yaml(data_contract_spec: DataContractSpecification, server: Server):
+def to_data_caterer_generate_yaml(data_contract_spec: DataContractSpecification, server):
     generation_task = {"name": data_contract_spec.info.title, "steps": []}
+    server_info = _get_server_info(data_contract_spec, server)
 
     for model_key, model_value in data_contract_spec.models.items():
-        odcs_table = _to_data_caterer_generate_step(model_key, model_value, server)
+        odcs_table = _to_data_caterer_generate_step(model_key, model_value, server_info)
         generation_task["steps"].append(odcs_table)
     return yaml.dump(generation_task, indent=2, sort_keys=False, allow_unicode=True)
+
+
+def _get_server_info(data_contract_spec: DataContractSpecification, server):
+    if server is not None and server in data_contract_spec.servers:
+        return data_contract_spec.servers.get(server)
+    elif server is not None:
+        raise Exception(f"Server name not found in servers list in data contract, server-name={server}")
+    elif len(data_contract_spec.servers.keys()) > 0:
+        return next(iter(data_contract_spec.servers.values()))
+    else:
+        return None
 
 
 def _to_data_caterer_generate_step(model_key, model_value: Model, server: Server) -> dict:
@@ -52,7 +64,12 @@ def _to_data_source_options(model_key, server: Server):
     options = {}
     if server is not None and server.type is not None:
         if server.type in ["s3", "gcs", "azure", "local"]:
-            options["path"] = server.path
+            if server.path is not None:
+                options["path"] = server.path
+            elif server.location is not None:
+                options["path"] = server.location
+            else:
+                options["path"] = "/tmp/data_caterer_data"
         elif server.type == "postgres":
             options["schema"] = server.schema_
             options["table"] = model_key
