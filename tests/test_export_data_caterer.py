@@ -19,13 +19,34 @@ def test_to_data_caterer():
     data_contract = DataContractSpecification.from_string(
         read_file("fixtures/data-caterer/export/datacontract_nested.yaml")
     )
-    expected_data_caterer_model = """
+    expected_data_caterer_model = _get_expected_data_caterer_yaml("s3://covid19-lake/enigma-jhu/json/*.json")
+
+    data_caterer_yaml = to_data_caterer_generate_yaml(data_contract, None)
+    result = yaml.safe_load(data_caterer_yaml)
+
+    assert result == yaml.safe_load(expected_data_caterer_model)
+
+
+def test_to_data_caterer_with_server():
+    data_contract = DataContractSpecification.from_string(
+        read_file("fixtures/data-caterer/export/datacontract_nested.yaml")
+    )
+    expected_data_caterer_model = _get_expected_data_caterer_yaml("s3://covid19-lake-prod/enigma-jhu/json/*.json")
+
+    data_caterer_yaml = to_data_caterer_generate_yaml(data_contract, "s3-json-prod")
+    result = yaml.safe_load(data_caterer_yaml)
+
+    assert result == yaml.safe_load(expected_data_caterer_model)
+
+
+def _get_expected_data_caterer_yaml(path: str):
+    return f"""
 name: Orders Unit Test
 steps:
 - name: orders
   type: json
   options:
-    path: s3://covid19-lake/enigma-jhu/json/*.json
+    path: {path}
   schema:
   - name: order_id
     type: string
@@ -58,11 +79,6 @@ steps:
       - name: city
         type: string
 """
-
-    data_caterer_yaml = to_data_caterer_generate_yaml(data_contract)
-    result = yaml.safe_load(data_caterer_yaml)
-
-    assert result == yaml.safe_load(expected_data_caterer_model)
 
 
 def read_file(file):

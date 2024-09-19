@@ -13,21 +13,25 @@ class DataCatererExporter(Exporter):
     """
 
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        return to_data_caterer_generate_yaml(data_contract)
+        return to_data_caterer_generate_yaml(data_contract, server)
 
 
-def to_data_caterer_generate_yaml(data_contract_spec: DataContractSpecification):
+def to_data_caterer_generate_yaml(data_contract_spec: DataContractSpecification, server):
     generation_task = {"name": data_contract_spec.info.title, "steps": []}
-    server = _get_server_info(data_contract_spec)
+    server_info = _get_server_info(data_contract_spec, server)
 
     for model_key, model_value in data_contract_spec.models.items():
-        odcs_table = _to_data_caterer_generate_step(model_key, model_value, server)
+        odcs_table = _to_data_caterer_generate_step(model_key, model_value, server_info)
         generation_task["steps"].append(odcs_table)
     return yaml.dump(generation_task, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def _get_server_info(data_contract_spec: DataContractSpecification):
-    if len(data_contract_spec.servers.keys()) > 0:
+def _get_server_info(data_contract_spec: DataContractSpecification, server):
+    if server is not None and server in data_contract_spec.servers:
+        return data_contract_spec.servers.get(server)
+    elif server is not None:
+        raise Exception(f"Server name not found in servers list in data contract, server-name={server}")
+    elif len(data_contract_spec.servers.keys()) > 0:
         return next(iter(data_contract_spec.servers.values()))
     else:
         return None

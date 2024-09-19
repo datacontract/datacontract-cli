@@ -19,6 +19,11 @@ servers:
     location: s3://covid19-lake/enigma-jhu/json/*.json
     format: json
     delimiter: new_line
+  s3-json-prod:
+    type: s3
+    location: s3://covid19-lake-prod/enigma-jhu/json/*.json
+    format: json
+    delimiter: new_line
 models:
   orders:
     description: The orders model
