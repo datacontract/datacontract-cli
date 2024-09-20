@@ -112,17 +112,38 @@ def get_auth_options():
     """Retrieve Kafka authentication options from environment variables."""
     kafka_sasl_username = os.getenv("DATACONTRACT_KAFKA_SASL_USERNAME")
     kafka_sasl_password = os.getenv("DATACONTRACT_KAFKA_SASL_PASSWORD")
+    kafka_sasl_mechanism = os.getenv("DATACONTRACT_KAFKA_SASL_MECHANISM", "PLAIN").upper()
 
-    if kafka_sasl_username is None or kafka_sasl_username == "":
+    # Skip authentication if credentials are not provided
+    if not kafka_sasl_username or not kafka_sasl_password:
         return {}
 
-    return {
-        "kafka.sasl.mechanism": "PLAIN",
-        "kafka.security.protocol": "SASL_SSL",
-        "kafka.sasl.jaas.config": (
+    # SASL mechanisms supported by Kafka
+    jaas_config = {
+        "PLAIN": (
             f"org.apache.kafka.common.security.plain.PlainLoginModule required "
             f'username="{kafka_sasl_username}" password="{kafka_sasl_password}";'
         ),
+        "SCRAM-SHA-256": (
+            f"org.apache.kafka.common.security.scram.ScramLoginModule required "
+            f'username="{kafka_sasl_username}" password="{kafka_sasl_password}";'
+        ),
+        "SCRAM-SHA-512": (
+            f"org.apache.kafka.common.security.scram.ScramLoginModule required "
+            f'username="{kafka_sasl_username}" password="{kafka_sasl_password}";'
+        ),
+        # Add more mechanisms as needed
+    }
+
+    # Validate SASL mechanism
+    if kafka_sasl_mechanism not in jaas_config:
+        raise ValueError(f"Unsupported SASL mechanism: {kafka_sasl_mechanism}")
+
+    # Return config
+    return {
+        "kafka.sasl.mechanism": kafka_sasl_mechanism,
+        "kafka.security.protocol": "SASL_SSL",
+        "kafka.sasl.jaas.config": jaas_config[kafka_sasl_mechanism],
     }
 
 
