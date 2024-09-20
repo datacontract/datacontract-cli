@@ -15,10 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export --format jsonschema` handle optional and nullable fields (#409)
 - `datacontract import --format unity` handle nested and complex fields (#420)
 - `datacontract import --format spark` handle field descriptions (#420)
+- `datacontract export --format bigquery` handle bigqueryType (#422)
 
 ### Fixed
 - use correct float type with bigquery (#417)
-
+- Support DATACONTRACT_MANAGER_API_KEY
 
 ## [0.10.12] - 2024-09-08
 

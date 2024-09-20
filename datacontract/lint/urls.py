@@ -25,16 +25,30 @@ def fetch_resource(url: str):
 
 
 def _set_api_key(headers, url):
-    if ".datamesh-manager.com/" not in url:
-        return
-    datamesh_manager_api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
-    if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
-        print("Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
-        raise DataContractException(
-            type="lint",
-            name=f"Reading data contract from {url}",
-            reason="Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
-            engine="datacontract",
-            result="error",
-        )
-    headers["x-api-key"] = datamesh_manager_api_key
+    if ".datamesh-manager.com/" in url:
+        datamesh_manager_api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
+        if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
+            print("Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
+            raise DataContractException(
+                type="lint",
+                name=f"Reading data contract from {url}",
+                reason="Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
+                engine="datacontract",
+                result="error",
+            )
+        headers["x-api-key"] = datamesh_manager_api_key
+    elif ".datacontract-manager.com/" in url:
+        datacontract_manager_api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
+        if datacontract_manager_api_key is None or datacontract_manager_api_key == "":
+            print("Error: Data Contract Manager API Key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.")
+            raise DataContractException(
+                type="lint",
+                name=f"Reading data contract from {url}",
+                reason="Error: Data Contract Manager API Key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.",
+                engine="datacontract",
+                result="error",
+            )
+        headers["x-api-key"] = datacontract_manager_api_key
+    else:
+        # do nothing
+        pass
