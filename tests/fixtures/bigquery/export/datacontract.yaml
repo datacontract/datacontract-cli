@@ -181,6 +181,12 @@ models:
               type: double
               required: true
               description: a double field
+            Field3:
+              type: array
+              requiered: true
+              description: nested array.
+              items:
+                type: string
       custom_type_field:
         type: string
         required: false

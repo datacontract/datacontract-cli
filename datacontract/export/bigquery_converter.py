@@ -59,10 +59,8 @@ def to_field(field_name: str, field: Field) -> dict:
             # in case the array type is a complex object, we want to copy all its fields
             bq_field["fields"] = to_fields_array(field.items.fields)
         else:
-            # otherwise we make up a structure that gets us a single field of the specified type
-            bq_field["fields"] = to_fields_array(
-                {f"{field_name}_1": Field(type=field.items.type, required=False, description="")}
-            )
+            bq_field["type"] = map_type_to_bigquery(field.items)
+
     # all of these can carry other fields
     elif bq_type.lower() in ["record", "struct"]:
         bq_field["fields"] = to_fields_array(field.fields)
