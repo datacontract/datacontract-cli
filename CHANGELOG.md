@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.13] - 2024-09-20
+
 ### Added
 - `datacontract export --format data-caterer`: Export to [Data Caterer YAML](https://data.catering/setup/guide/scenario/data-generation/)
 
@@ -20,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - use correct float type with bigquery (#417)
 - Support DATACONTRACT_MANAGER_API_KEY
+- Some minor bug fixes
 
 ## [0.10.12] - 2024-09-08
 
