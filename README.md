@@ -665,10 +665,11 @@ servers:
 
 #### Environment Variables
 
-| Environment Variable               | Example | Description                 |
-|------------------------------------|---------|-----------------------------|
-| `DATACONTRACT_KAFKA_SASL_USERNAME` | `xxx`   | The SASL username (key).    |
-| `DATACONTRACT_KAFKA_SASL_PASSWORD` | `xxx`   | The SASL password (secret). |
+| Environment Variable                | Example | Description                                                                      |
+|-------------------------------------|---------|----------------------------------------------------------------------------------|
+| `DATACONTRACT_KAFKA_SASL_USERNAME`  | `xxx`   | The SASL username (key).                                                         |
+| `DATACONTRACT_KAFKA_SASL_PASSWORD`  | `xxx`   | The SASL password (secret).                                                      |
+| `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`. Other supported mechanisms: `SCRAM-SHA-256` and `SCRAM-SHA-512` |
 
 
 ### Postgres
