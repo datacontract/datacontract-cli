@@ -113,6 +113,8 @@ def convert_type_to_postgres(field: Field) -> None | str:
 # dataframe data types:
 # https://spark.apache.org/docs/latest/sql-ref-datatypes.html
 def convert_to_dataframe(field: Field) -> None | str:
+    if field.config and "dataframeType" in field.config:
+        return field.config["dataframeType"]
     type = field.type
     if type is None:
         return None
