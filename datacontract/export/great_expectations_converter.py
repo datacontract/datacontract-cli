@@ -16,11 +16,12 @@ class GreateExpectationsExporter(Exporter):
         )
 
 
-def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str) -> str:
+def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str, expectation_suite_name: str) -> str:
     """
     Convert each model in the contract to a Great Expectation suite
     @param data_contract_spec: data contract to export to great expectations
     @param model_key: model to great expectations to
+    @param expectation_suite_name: the name of the expectation suite
     @return: a dictionary of great expectation suites
     """
     expectations = []
@@ -28,22 +29,19 @@ def to_great_expectations(data_contract_spec: DataContractSpecification, model_k
     quality_checks = get_quality_checks(data_contract_spec.quality)
     expectations.extend(model_to_expectations(model_value.fields))
     expectations.extend(checks_to_expectations(quality_checks, model_key))
-    model_expectation_suite = to_suite(model_key, data_contract_spec.info.version, expectations)
+    model_expectation_suite = to_suite(expectations, expectation_suite_name)
 
     return model_expectation_suite
 
 
 def to_suite(
-    model_key: str,
-    contract_version: str,
     expectations: List[Dict[str, Any]],
+    expectation_suite_name: str
 ) -> str:
     return json.dumps(
         {
             "data_asset_type": "null",
-            "expectation_suite_name": "user-defined.{model_key}.{contract_version}".format(
-                model_key=model_key, contract_version=contract_version
-            ),
+            "expectation_suite_name": expectation_suite_name,
             "expectations": expectations,
             "meta": {},
         },
