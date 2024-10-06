@@ -128,7 +128,7 @@ def to_data_type(field: Field) -> types.DataType:
     if field_type in ["string", "varchar", "text"]:
         return types.StringType()
     if field_type in ["number", "decimal", "numeric"]:
-        precision = field.precision if field.precision is not None else 10
+        precision = field.precision if field.precision is not None else 38
         scale = field.scale if field.scale is not None else 0
         return types.DecimalType(precision=precision, scale=scale)
     if field_type in ["integer", "int"]:
