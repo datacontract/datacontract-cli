@@ -125,8 +125,11 @@ def to_data_type(field: Field) -> types.DataType:
         return types.StructType(to_struct_type(field.fields))
     if field_type == "map":
         return types.MapType(to_data_type(field.keys), to_data_type(field.values))
-    if field_type in ["string", "varchar", "text"]:
+    if field_type in ["string", "text"]:
         return types.StringType()
+    if field_type == "varchar":
+        length = field.maxLength if field.maxLength is not None else 2**31 - 1
+        return types.VarcharType(length=length)
     if field_type in ["number", "decimal", "numeric"]:
         return types.DecimalType(precision=field.precision, scale=field.scale)
     if field_type in ["integer", "int"]:
