@@ -920,7 +920,7 @@ models:
                                                                                                                                
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                       [sql|avro|dbt|glue|jsonschema|bigquery|odcs  The format of the source file.               │
-│                                   |unity|spark]                                [default: None]                              │
+│                                   |unity|spark|iceberg]                        [default: None]                              │
 │                                                                                [required]                                   │
 │    --source                       TEXT                                         The path to the file or Glue Database that   │
 │                                                                                should be imported.                          │
@@ -950,6 +950,8 @@ models:
 │                                                                                file (repeat for multiple table names, leave │
 │                                                                                empty for all tables in the file).           │
 │                                                                                [default: None]                              │
+│    --iceberg-table                TEXT                                         Table name to assign to the model created    │
+│                                                                                from the Iceberg schema. [default: None]     │
 │    --help                                                                      Show this message and exit.                  │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -975,6 +977,7 @@ Available import options:
 | `spark`            | Import from Spark StructTypes                  | ✅      |
 | `dbml`             | Import from DBML models                        | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD    |
+| `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
 | Missing something? | Please create an issue on GitHub               | TBD    |
 
 
@@ -1092,6 +1095,15 @@ datacontract import --format dbml --source <file_path> --dbml-table <table_name_
 datacontract import --format dbml --source <file_path> --dbml-table <table_name_1> --dbml-schema <schema_1>
 ```
 
+#### Iceberg
+
+Importing from an [Iceberg Table Json Schema Definition](https://iceberg.apache.org/spec/#appendix-c-json-serialization). Specify location of json files using the `source` parameter.
+
+Examples:
+
+```bash
+datacontract import --format iceberg --source ./tests/fixtures/iceberg/simple_schema.json --iceberg-table test-table
+```
 
 ### breaking
 

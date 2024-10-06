@@ -29,6 +29,7 @@ class ImportFormat(str, Enum):
     odcs = "odcs"
     unity = "unity"
     spark = "spark"
+    iceberg = "iceberg"
 
     @classmethod
     def get_supported_formats(cls):
