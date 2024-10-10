@@ -199,7 +199,15 @@ class DataContract:
 
         except DataContractException as e:
             run.checks.append(
-                Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
+                Check(
+                    type=e.type,
+                    name=e.name,
+                    result=e.result,
+                    reason=e.reason,
+                    model=e.model,
+                    engine=e.engine,
+                    details="",
+                )
             )
             run.log_error(str(e))
         except Exception as e:
