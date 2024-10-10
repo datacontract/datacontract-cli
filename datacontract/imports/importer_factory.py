@@ -93,3 +93,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.dbml_importer",
     class_name="DBMLImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.iceberg,
+    module_path="datacontract.imports.iceberg_importer",
+    class_name="IcebergImporter",
+)

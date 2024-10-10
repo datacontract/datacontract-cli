@@ -244,6 +244,10 @@ def import_(
             help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
         ),
     ] = None,
+    iceberg_table: Annotated[
+        Optional[str],
+        typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
@@ -259,6 +263,7 @@ def import_(
         dbt_model=dbt_model,
         dbml_schema=dbml_schema,
         dbml_table=dbml_table,
+        iceberg_table=iceberg_table,
     )
     console.print(result.to_yaml())
 
