@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Support for exporting a Data Contract to an Iceberg schema definition.
 
 ### Changed
 - Type conversion when importing contracts into dbt and exporting contracts from dbt (#534)

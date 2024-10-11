@@ -761,7 +761,7 @@ models:
 │                    t-staging-sql|odcs|odcs_v2|odcs_v3|rdf|avro|protobuf                                                        │
 │                    |great-expectations|terraform|avro-idl|sql|sql-query                                                        │
 │                    |html|go|bigquery|dbml|spark|sqlalchemy|data-caterer                                                        │
-│                    |dcs]                                                                                                       │
+│                    |dcs|iceberg]                                                                                                       │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -822,6 +822,7 @@ Available export options:
 | `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
 | `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
+| `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 
@@ -945,6 +946,63 @@ models:
     - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
     - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
 
+#### Iceberg
+
+Exports to an [Iceberg Table Json Schema Definition](https://iceberg.apache.org/spec/#appendix-c-json-serialization).
+
+This export only supports a single model export at a time because Iceberg's schema definition is for a single table and the exporter maps 1 model to 1 table, use the `--model` flag
+to limit your contract export to a single model.
+
+```bash
+ $ datacontract export --format iceberg --model orders https://datacontract.com/examples/orders-latest/datacontract.yaml --output /tmp/orders_iceberg.json
+ 
+ $ cat /tmp/orders_iceberg.json | jq '.'
+{
+  "type": "struct",
+  "fields": [
+    {
+      "id": 1,
+      "name": "order_id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": 2,
+      "name": "order_timestamp",
+      "type": "timestamptz",
+      "required": true
+    },
+    {
+      "id": 3,
+      "name": "order_total",
+      "type": "long",
+      "required": true
+    },
+    {
+      "id": 4,
+      "name": "customer_id",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": 5,
+      "name": "customer_email_address",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": 6,
+      "name": "processed_timestamp",
+      "type": "timestamptz",
+      "required": true
+    }
+  ],
+  "schema-id": 0,
+  "identifier-field-ids": [
+    1
+  ]
+}
+```
 
 ### import
 
