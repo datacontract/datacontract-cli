@@ -6,7 +6,7 @@ from datacontract.export.exporter_factory import exporter_factory
 
 
 class CustomExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> str:
         result = {
             "data_contract_servers": data_contract.servers,
             "model": model,
@@ -22,7 +22,7 @@ exporter_factory.register_exporter("custom", CustomExporter)
 
 
 def test_custom_exporter():
-    expected_custom = """{'data_contract_servers': {'production': Server(type='snowflake', description=None, environment=None, format=None, project=None, dataset=None, path=None, delimiter=None, endpointUrl=None, location=None, account='my-account', database='my-database', schema_='my-schema', host=None, port=None, catalog=None, topic=None, http_path=None, token=None, dataProductId=None, outputPortId=None, driver=None)}, 'model': 'orders', 'server': 'production', 'sql_server_type': 'auto', 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 'custom_args': 'my_custom_arg'}"""
+    expected_custom = """{'data_contract_servers': {'production': Server(type='snowflake', description=None, environment='production', format=None, project=None, dataset=None, path=None, delimiter=None, endpointUrl=None, location=None, account='my-account', database='my-database', schema_='my-schema', host=None, port=None, catalog=None, topic=None, http_path=None, token=None, dataProductId=None, outputPortId=None, driver=None, roles=[{'name': 'analyst_us', 'description': 'Access to the data for US region'}])}, 'model': 'orders', 'server': 'production', 'sql_server_type': 'auto', 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 'custom_args': 'my_custom_arg'}"""
     result = DataContract(data_contract_file="./fixtures/export/datacontract.yaml", server="production").export(
         export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
     )
