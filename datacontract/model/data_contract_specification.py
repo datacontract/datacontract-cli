@@ -15,6 +15,14 @@ class Contact(pyd.BaseModel):
     )
 
 
+class ServerRole(pyd.BaseModel):
+    name: str = None
+    description: str = None
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
+
 class Server(pyd.BaseModel):
     type: str = None
     description: str = None
@@ -38,6 +46,7 @@ class Server(pyd.BaseModel):
     dataProductId: str = None
     outputPortId: str = None
     driver: str = None
+    roles: List[ServerRole] = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
