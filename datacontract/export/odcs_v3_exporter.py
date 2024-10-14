@@ -87,8 +87,6 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
                 server_dict["database"] = server_value.database
             if server_value.schema_ is not None:
                 server_dict["schema"] = server_value.schema_
-            if server_value.roles is not None:
-                server_dict["roles"] = server_value.roles
             if server_value.format is not None:
                 server_dict["format"] = server_value.format
             if server_value.project is not None:
@@ -117,6 +115,10 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
                 server_dict["token"] = server_value.token
             if server_value.driver is not None:
                 server_dict["driver"] = server_value.driver
+            if server_value.roles is not None:
+                server_dict["roles"] = [
+                    {"name": role.name, "description": role.description} for role in server_value.roles
+                ]
             servers.append(server_dict)
 
         if len(servers) > 0:
