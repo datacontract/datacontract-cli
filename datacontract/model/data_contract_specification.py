@@ -15,6 +15,14 @@ class Contact(pyd.BaseModel):
     )
 
 
+class ServerRole(pyd.BaseModel):
+    name: str = None
+    description: str = None
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
+
 class Server(pyd.BaseModel):
     type: str = None
     description: str = None
@@ -38,6 +46,7 @@ class Server(pyd.BaseModel):
     dataProductId: str = None
     outputPortId: str = None
     driver: str = None
+    roles: List[ServerRole] = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -83,6 +92,27 @@ class Definition(pyd.BaseModel):
     )
 
 
+class Quality(pyd.BaseModel):
+    type: str = None
+    description: str = None
+    query: str = None
+    dialect: str = None
+    mustBe: int = None
+    mustNotBe: int = None
+    mustBeGreaterThan: int = None
+    mustBeGreaterThanOrEqualTo: int = None
+    mustBeLessThan: int = None
+    mustBeLessThanOrEqualTo: int = None
+    mustBeBetween: List[int] = None
+    mustNotBeBetween: List[int] = None
+    engine: str = None
+    implementation: str | Dict[str, Any] = None
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
+
 class Field(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
     ref_obj: Definition = pyd.Field(default=None, exclude=True)
@@ -113,6 +143,7 @@ class Field(pyd.BaseModel):
     precision: int = None
     scale: int = None
     example: str = None
+    quality: List[Quality] = []
     config: Dict[str, Any] = None
 
     model_config = pyd.ConfigDict(
