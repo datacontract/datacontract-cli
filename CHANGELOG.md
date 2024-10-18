@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for import from Iceberg table definitions.
 - Support for decimal logical type on avro export.
+- Support for custom Trino types
 
 ## [0.10.13] - 2024-09-20
 

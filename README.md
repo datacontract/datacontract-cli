@@ -724,6 +724,10 @@ models:
     fields:
       my_column_1: # corresponds to a column
         type: varchar
+      my_column_2: # corresponds to a column with custom trino type
+        type: object
+        config:
+          trinoType: row(en_us varchar, pt_br varchar)
 ```
 
 #### Environment Variables
