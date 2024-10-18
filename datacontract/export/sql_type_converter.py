@@ -226,9 +226,10 @@ def convert_to_duckdb(field: Field) -> None | str:
         "bigint": "BIGINT",
         "date": "DATE",
         "time": "TIME",
-        "timestamp": "TIMESTAMP WITH TIME ZONE",
+        "datetime": "TIMESTAMP",
+        "timestamp": "TIMESTAMP",
         "timestamp_tz": "TIMESTAMP WITH TIME ZONE",
-        "timestamp_ntz": "DATETIME",
+        "timestamp_ntz": "TIMESTAMP",
     }
 
     # Convert simple mappings
