@@ -58,6 +58,7 @@ def test_to_avro_schema_enum():
 
     assert json.loads(result) == json.loads(expected_avro_schema)
 
+
 def test_to_decimal_type():
     data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_decimal.yaml")
     with open("fixtures/avro/export/datacontract_decimal.avsc") as file:
