@@ -38,6 +38,13 @@ def test_timestamp():
     assert run.result == "passed"
 
 
+def test_timestamp_ntz():
+    data_contract = DataContract(data_contract_file="fixtures/parquet/datacontract_timestamp_ntz.yaml")
+    run = data_contract.test()
+    print(run)
+    assert run.result == "passed"
+
+
 def test_decimal():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract_decimal.yaml",
