@@ -1,0 +1,43 @@
+{
+  "type": "record",
+  "name": "MySchema",
+  "fields": [
+    {
+      "name": "price",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal"
+      }
+    },
+    {
+      "name": "dewey_decimal",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "scale": 2,
+        "precision": 4
+      }
+    },
+    {
+      "name": "reading_level",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "decimal"
+        }
+      ]
+    },
+    {
+      "name": "age",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "decimal",
+          "precision": 3
+        }
+      ]
+    }
+  ]
+}
