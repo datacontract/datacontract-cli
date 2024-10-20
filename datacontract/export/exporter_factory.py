@@ -163,3 +163,7 @@ exporter_factory.register_lazy_exporter(
     module_path="datacontract.export.sqlalchemy_converter",
     class_name="SQLAlchemyExporter",
 )
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dcs, module_path="datacontract.export.dcs_exporter", class_name="DcsExporter"
+)

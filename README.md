@@ -754,7 +754,7 @@ models:
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
 │                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
 │                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
-│                    y|dbml|spark|sqlalchemy|data-caterer]                                                                       │
+│                    y|dbml|spark|sqlalchemy|data-caterer|dcs]                                                                       │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -809,6 +809,7 @@ Available export options:
 | `spark`              | Export to a Spark StructType                            | ✅      |
 | `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
 | `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
+| `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
