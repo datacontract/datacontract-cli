@@ -114,7 +114,7 @@ $ datacontract test datacontract.yaml
 # execute schema and quality checks on the examples within the contract
 $ datacontract test --examples datacontract.yaml
 
-# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
+# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs_v2, odcs_v3, rdf, sql, sodacl, terraform, ...)
 $ datacontract export --format html datacontract.yaml > datacontract.html
 
 # import avro (other formats: sql, glue, bigquery...)
@@ -786,27 +786,29 @@ Available export options:
 
 | Type                 | Description                                             | Status |
 |----------------------|---------------------------------------------------------|--------|
-| `html`               | Export to HTML                                          | ✅     |
-| `jsonschema`         | Export to JSON Schema                                   | ✅     |
-| `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅     |
-| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅     |
-| `dbt`                | Export to dbt models in YAML format                     | ✅     |
-| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅     |
-| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅     |
-| `rdf`                | Export data contract to RDF representation in N3 format | ✅     |
-| `avro`               | Export to AVRO models                                   | ✅     |
-| `protobuf`           | Export to Protobuf                                      | ✅     |
-| `terraform`          | Export to terraform resources                           | ✅     |
-| `sql`                | Export to SQL DDL                                       | ✅     |
-| `sql-query`          | Export to SQL Query                                     | ✅     |
-| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅     |
-| `bigquery`           | Export to BigQuery Schemas                              | ✅     |
-| `go`                 | Export to Go types                                      | ✅     |
-| `pydantic-model`     | Export to pydantic models                               | ✅     |
-| `DBML`               | Export to a DBML Diagram description                    | ✅     |
-| `spark`              | Export to a Spark StructType                            | ✅     |
-| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅     |
-| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅     |
+| `html`               | Export to HTML                                          | ✅      |
+| `jsonschema`         | Export to JSON Schema                                   | ✅      |
+| `odcs_v2`            | Export to Open Data Contract Standard (ODCS) V2         | ✅      |
+| `odcs_v3`            | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
+| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
+| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
+| `dbt`                | Export to dbt models in YAML format                     | ✅      |
+| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅      |
+| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅      |
+| `rdf`                | Export data contract to RDF representation in N3 format | ✅      |
+| `avro`               | Export to AVRO models                                   | ✅      |
+| `protobuf`           | Export to Protobuf                                      | ✅      |
+| `terraform`          | Export to terraform resources                           | ✅      |
+| `sql`                | Export to SQL DDL                                       | ✅      |
+| `sql-query`          | Export to SQL Query                                     | ✅      |
+| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
+| `bigquery`           | Export to BigQuery Schemas                              | ✅      |
+| `go`                 | Export to Go types                                      | ✅      |
+| `pydantic-model`     | Export to pydantic models                               | ✅      |
+| `DBML`               | Export to a DBML Diagram description                    | ✅      |
+| `spark`              | Export to a Spark StructType                            | ✅      |
+| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
+| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
