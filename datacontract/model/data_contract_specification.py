@@ -143,6 +143,7 @@ class Field(pyd.BaseModel):
     precision: int = None
     scale: int = None
     example: str = None
+    examples: List[str] = None
     quality: List[Quality] = []
     config: Dict[str, Any] = None
 
@@ -158,6 +159,10 @@ class Model(pyd.BaseModel):
     title: Optional[str] = None
     fields: Dict[str, Field] = {}
     config: Dict[str, Any] = None
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
 
 
 class Info(pyd.BaseModel):

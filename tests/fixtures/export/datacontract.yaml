@@ -9,6 +9,7 @@ info:
   contact:
     email: team-orders@example.com
     url: https://wiki.example.com/teams/checkout
+  otherField: otherValue
 terms:
   usage: This data contract serves to demo datacontract CLI export.
   limitations: Not intended to use in production
@@ -42,6 +43,9 @@ models:
         tags:
           - order_id
         pattern: ^B[0-9]+$
+        examples:
+          - B12345678
+          - B12345679
       order_total:
         type: bigint
         required: true

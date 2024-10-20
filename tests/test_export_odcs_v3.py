@@ -51,8 +51,13 @@ schema:
         isUnique: true       
         tags: 
           - "order_id"
-          - "pii:true"
         classification: sensitive
+        examples:
+        - B12345678
+        - B12345679
+        customProperties:
+        - property: pii
+          value: true
       - name: order_total
         logicalType: integer
         logicalTypeOptions:
@@ -74,7 +79,8 @@ schema:
         isNullable: false
 
 servers:
-  - type: snowflake
+  - server: production
+    type: snowflake
     environment: production
     account: my-account
     database: my-database
@@ -88,9 +94,14 @@ support:
     url: mailto:team-orders@example.com
   - channel: other
     url: https://wiki.example.com/teams/checkout
+
+customProperties:
+- property: otherField
+  value: otherValue
 """
 
     odcs = to_odcs_v3_yaml(data_contract)
+    print(odcs)
     assert yaml.safe_load(odcs) == yaml.safe_load(expected_odcs_model)
 
 
