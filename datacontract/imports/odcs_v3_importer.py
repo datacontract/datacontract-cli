@@ -56,16 +56,26 @@ def import_odcs_v3(data_contract_specification: DataContractSpecification, sourc
 def import_info(odcs_contract: Dict[str, Any]) -> Info:
     info = Info()
 
-    info.title = odcs_contract.get("dataProduct") if odcs_contract.get("dataProduct") is not None else ""
+    info.title = odcs_contract.get("name") if odcs_contract.get("name") is not None else ""
 
     if odcs_contract.get("version") is not None:
         info.version = odcs_contract.get("version")
 
+    # odcs.description.purpose => datacontract.description
     if odcs_contract.get("description") is not None and odcs_contract.get("description").get("purpose") is not None:
         info.description = odcs_contract.get("description").get("purpose")
 
+    # odcs.domain => datacontract.owner
     if odcs_contract.get("domain") is not None:
         info.owner = odcs_contract.get("domain")
+
+    # add dataProduct as custom property
+    if odcs_contract.get("dataProduct") is not None:
+        info.dataProduct = odcs_contract.get("dataProduct")
+
+    # add tenant as custom property
+    if odcs_contract.get("tenant") is not None:
+        info.tenant = odcs_contract.get("tenant")
 
     return info
 
