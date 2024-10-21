@@ -77,6 +77,7 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
 
         for server_key, server_value in data_contract_spec.servers.items():
             server_dict = {}
+            server_dict["server"] = server_key
             if server_value.type is not None:
                 server_dict["type"] = server_value.type
             if server_value.environment is not None:
@@ -124,6 +125,13 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
         if len(servers) > 0:
             odcs["servers"] = servers
 
+    odcs["customProperties"] = []
+    if data_contract_spec.info.model_extra is not None:
+        for key, value in data_contract_spec.info.model_extra.items():
+            odcs["customProperties"].append({"property": key, "value": value})
+    if len(odcs["customProperties"]) == 0:
+        del odcs["customProperties"]
+
     return yaml.dump(odcs, indent=2, sort_keys=False, allow_unicode=True)
 
 
@@ -139,6 +147,14 @@ def to_odcs_schema(model_key, model_value: Model) -> dict:
     properties = to_properties(model_value.fields)
     if properties:
         odcs_table["properties"] = properties
+
+    odcs_table["customProperties"] = []
+    if model_value.model_extra is not None:
+        for key, value in model_value.model_extra.items():
+            odcs_table["customProperties"].append({"property": key, "value": value})
+    if len(odcs_table["customProperties"]) == 0:
+        del odcs_table["customProperties"]
+
     return odcs_table
 
 
@@ -202,12 +218,23 @@ def to_property(field_name: str, field: Field) -> dict:
         property["isUnique"] = field.unique
     if field.classification is not None:
         property["classification"] = field.classification
+    if field.examples is not None:
+        property["examples"] = field.examples
+    if field.example is not None:
+        property["examples"] = [field.example]
+
+    property["customProperties"] = []
+    if field.model_extra is not None:
+        for key, value in field.model_extra.items():
+            property["customProperties"].append({"property": key, "value": value})
+    if field.pii is not None:
+        property["customProperties"].append({"property": "pii", "value": field.pii})
+    if property.get("customProperties") is not None and len(property["customProperties"]) == 0:
+        del property["customProperties"]
 
     property["tags"] = []
     if field.tags is not None:
         property["tags"].extend(field.tags)
-    if field.pii is not None:
-        property["tags"].append(f"pii:{str(field.pii).lower()}")
     if not property["tags"]:
         del property["tags"]
 

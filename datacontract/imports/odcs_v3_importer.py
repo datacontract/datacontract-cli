@@ -256,11 +256,11 @@ def import_fields(
                 if not has_composite_primary_key(odcs_properties) and odcs_property.get("primaryKey") is not None
                 else False,
                 unique=odcs_property.get("unique"),
-                examples=odcs_property.get("examples"),
+                examples=odcs_property.get("examples") if odcs_property.get("examples") is not None else None,
                 classification=odcs_property.get("classification")
                 if odcs_property.get("classification") is not None
                 else "",
-                tags=odcs_property.get("tags") if odcs_property.get("tags") is not None else [],
+                tags=odcs_property.get("tags") if odcs_property.get("tags") is not None else None,
                 quality=odcs_property.get("quality") if odcs_property.get("quality") is not None else [],
                 config=import_field_config(odcs_property, server_type),
             )
