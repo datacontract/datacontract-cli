@@ -159,8 +159,8 @@ class Field(pyd.BaseModel):
     exclusiveMinimum: int = None
     maximum: int = None
     exclusiveMaximum: int = None
-    enum: List[str] = []
-    tags: List[str] = []
+    enum: List[str] | None = []
+    tags: List[str] | None = []
     links: Dict[str, str] = {}
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
@@ -169,9 +169,9 @@ class Field(pyd.BaseModel):
     precision: int = None
     scale: int = None
     example: str = None
-    examples: List[str] = None
-    quality: List[Quality] = []
-    config: Dict[str, Any] = None
+    examples: List[str] | None = None
+    quality: List[Quality] | None = []
+    config: Dict[str, Any] | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -185,6 +185,7 @@ class Model(pyd.BaseModel):
     title: Optional[str] = None
     fields: Dict[str, Field] = {}
     config: Dict[str, Any] = None
+    tags: List[str] | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
