@@ -988,9 +988,21 @@ Available import options:
 | Missing something? | Please create an issue on GitHub               | TBD    |
 
 
+#### ODCS
+
+Import from Open Data Contract Standard (ODCS) v2 or v3.
+The importer automatically detects the ODCS version and imports the data contract.
+
+Examples:
+
+```bash
+# Example import from ODCS
+datacontract import --format odcs --source my_data_contract.odcs.yaml
+```
+
 #### BigQuery
 
-Bigquery data can either be imported off of JSON Files generated from the table descriptions or directly from the Bigquery API. In case you want to use JSON Files, specify the `source` parameter with a path to the JSON File.
+BigQuery data can either be imported off of JSON Files generated from the table descriptions or directly from the Bigquery API. In case you want to use JSON Files, specify the `source` parameter with a path to the JSON File.
 
 To import from the Bigquery API, you have to _omit_ `source` and instead need to provide `bigquery-project` and `bigquery-dataset`. Additionally you may specify `bigquery-table` to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the dataset will be imported.
 

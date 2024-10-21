@@ -4,6 +4,32 @@ from typing import List, Dict, Optional, Any
 import pydantic as pyd
 import yaml
 
+DATACONTRACT_TYPES = [
+    "string",
+    "text",
+    "varchar",
+    "number",
+    "decimal",
+    "numeric",
+    "int",
+    "integer",
+    "long",
+    "bigint",
+    "float",
+    "double",
+    "boolean",
+    "timestamp",
+    "timestamp_tz",
+    "timestamp_ntz",
+    "date",
+    "array",
+    "bytes",
+    "object",
+    "record",
+    "struct",
+    "null",
+]
+
 
 class Contact(pyd.BaseModel):
     name: str = None
@@ -116,12 +142,12 @@ class Quality(pyd.BaseModel):
 class Field(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
     ref_obj: Definition = pyd.Field(default=None, exclude=True)
-    title: str = None
+    title: str | None = None
     type: str = None
     format: str = None
     required: bool = None
     primary: bool = None
-    unique: bool = None
+    unique: bool | None = None
     references: str = None
     description: str = None
     pii: bool = None
