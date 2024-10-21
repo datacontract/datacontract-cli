@@ -13,7 +13,7 @@ class OdcsV3Exporter(Exporter):
 
 def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
     odcs = {
-        "apiVersion": "3.0.0",
+        "apiVersion": "v3.0.0",
         "kind": "DataContract",
         "id": data_contract_spec.id,
         "name": data_contract_spec.info.title,

@@ -87,7 +87,7 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
     for odcs_server in odcs_contract.get("servers"):
         server_name = odcs_server.get("server")
         if server_name is None:
-            logger.info("Server name is missing, skipping server")
+            logger.warning("Server name is missing, skipping server")
             continue
 
         server = Server()
@@ -120,6 +120,8 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
 
 
 def import_terms(odcs_contract: Dict[str, Any]) -> Terms | None:
+    if odcs_contract.get("description") is None:
+        return None
     if (
         odcs_contract.get("description").get("usage") is not None
         or odcs_contract.get("description").get("limitations") is not None
@@ -246,9 +248,9 @@ def import_fields(
         mapped_type = map_type(odcs_property.get("logicalType"), custom_type_mappings)
         if mapped_type is not None:
             property_name = odcs_property["name"]
-            description = odcs_property.get("description") if odcs_property.get("description") is not None else ""
+            description = odcs_property.get("description") if odcs_property.get("description") is not None else None
             field = Field(
-                description=" ".join(description.splitlines()),
+                description=" ".join(description.splitlines()) if description is not None else None,
                 type=mapped_type,
                 title=odcs_property.get("businessName"),
                 required=not odcs_property.get("nullable") if odcs_property.get("nullable") is not None else False,

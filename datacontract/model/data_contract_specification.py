@@ -149,9 +149,9 @@ class Field(pyd.BaseModel):
     primary: bool = None
     unique: bool | None = None
     references: str = None
-    description: str = None
-    pii: bool = None
-    classification: str = None
+    description: str | None = None
+    pii: bool | None = None
+    classification: str | None = None
     pattern: str = None
     minLength: int = None
     maxLength: int = None
