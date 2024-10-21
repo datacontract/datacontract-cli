@@ -64,6 +64,7 @@ class AvroIDLProtocol:
     model_types: list[AvroModelType]
 
 
+# TODO use DATACONTRACT_TYPES from datacontract/model/data_contract_specification.py
 avro_primitive_types = set(
     [
         "string",
