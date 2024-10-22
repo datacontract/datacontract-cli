@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Fixed
+- fix timestamp serialization from parquet -> duckdb (#472)
+
 ### Added
 - `datacontract export --format odcs_v3`: Export to Open Data Contract Standard v3.0.0 (#460)
 - Support for import from Iceberg table definitions.
