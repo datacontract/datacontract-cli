@@ -169,7 +169,7 @@ class Field(pyd.BaseModel):
     precision: int = None
     scale: int = None
     example: str = None
-    examples: List[str] | None = None
+    examples: List[Any] | None = None
     quality: List[Quality] | None = []
     config: Dict[str, Any] | None = None
 

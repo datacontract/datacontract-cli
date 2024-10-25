@@ -6,6 +6,7 @@ from venv import logger
 import yaml
 
 from datacontract.imports.importer import Importer
+from datacontract.lint.resources import read_resource
 from datacontract.model.data_contract_specification import (
     Availability,
     DataContractSpecification,
@@ -29,15 +30,20 @@ class OdcsImporter(Importer):
 
 
 def import_odcs_v3(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
-    try:
-        with open(source, "r") as file:
-            odcs_contract = yaml.safe_load(file.read())
+    source_str = read_resource(source)
+    return import_odcs_v3_from_str(data_contract_specification, source_str)
 
+
+def import_odcs_v3_from_str(
+    data_contract_specification: DataContractSpecification, source_str: str
+) -> DataContractSpecification:
+    try:
+        odcs_contract = yaml.safe_load(source_str)
     except Exception as e:
         raise DataContractException(
             type="schema",
             name="Parse ODCS contract",
-            reason=f"Failed to parse odcs contract from {source}",
+            reason=f"Failed to parse odcs contract from {source_str}",
             engine="datacontract",
             original_exception=e,
         )

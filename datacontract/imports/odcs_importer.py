@@ -1,6 +1,7 @@
 import yaml
 
 from datacontract.imports.importer import Importer
+from datacontract.lint.resources import read_resource
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
 )
@@ -16,8 +17,7 @@ class OdcsImporter(Importer):
 
 def import_odcs(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
     try:
-        with open(source, "r") as file:
-            odcs_contract = yaml.safe_load(file.read())
+        odcs_contract = yaml.safe_load(read_resource(source))
 
     except Exception as e:
         raise DataContractException(
