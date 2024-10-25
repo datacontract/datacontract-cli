@@ -199,9 +199,7 @@ def _resolve_data_contract_from_str(
 
     if is_open_data_contract_standard(yaml_dict):
         # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
-        data_contract_specification = resolve_data_contract(
-            data_contract_location="https://datacontract.com/datacontract.init.yaml"
-        )
+        data_contract_specification = DataContractSpecification(dataContractSpecification="0.9.3")
         return import_odcs_v3_from_str(data_contract_specification, source_str=data_contract_str)
 
     _validate_data_contract_specification_schema(yaml_dict, schema_location)
