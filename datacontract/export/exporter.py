@@ -10,7 +10,7 @@ class Exporter(ABC):
         self.export_format = export_format
 
     @abstractmethod
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict | str:
         pass
 
 
@@ -22,6 +22,8 @@ class ExportFormat(str, Enum):
     dbt_sources = "dbt-sources"
     dbt_staging_sql = "dbt-staging-sql"
     odcs = "odcs"
+    odcs_v2 = "odcs_v2"
+    odcs_v3 = "odcs_v3"
     rdf = "rdf"
     avro = "avro"
     protobuf = "protobuf"
@@ -37,6 +39,7 @@ class ExportFormat(str, Enum):
     spark = "spark"
     sqlalchemy = "sqlalchemy"
     data_caterer = "data-caterer"
+    dcs = "dcs"
 
     @classmethod
     def get_supported_formats(cls):

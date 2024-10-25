@@ -4,12 +4,46 @@ from typing import List, Dict, Optional, Any
 import pydantic as pyd
 import yaml
 
+DATACONTRACT_TYPES = [
+    "string",
+    "text",
+    "varchar",
+    "number",
+    "decimal",
+    "numeric",
+    "int",
+    "integer",
+    "long",
+    "bigint",
+    "float",
+    "double",
+    "boolean",
+    "timestamp",
+    "timestamp_tz",
+    "timestamp_ntz",
+    "date",
+    "array",
+    "bytes",
+    "object",
+    "record",
+    "struct",
+    "null",
+]
+
 
 class Contact(pyd.BaseModel):
     name: str = None
     url: str = None
     email: str = None
 
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
+
+class ServerRole(pyd.BaseModel):
+    name: str = None
+    description: str = None
     model_config = pyd.ConfigDict(
         extra="allow",
     )
@@ -38,6 +72,7 @@ class Server(pyd.BaseModel):
     dataProductId: str = None
     outputPortId: str = None
     driver: str = None
+    roles: List[ServerRole] = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -83,19 +118,40 @@ class Definition(pyd.BaseModel):
     )
 
 
+class Quality(pyd.BaseModel):
+    type: str = None
+    description: str = None
+    query: str = None
+    dialect: str = None
+    mustBe: int = None
+    mustNotBe: int = None
+    mustBeGreaterThan: int = None
+    mustBeGreaterThanOrEqualTo: int = None
+    mustBeLessThan: int = None
+    mustBeLessThanOrEqualTo: int = None
+    mustBeBetween: List[int] = None
+    mustNotBeBetween: List[int] = None
+    engine: str = None
+    implementation: str | Dict[str, Any] = None
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
+
+
 class Field(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
     ref_obj: Definition = pyd.Field(default=None, exclude=True)
-    title: str = None
+    title: str | None = None
     type: str = None
     format: str = None
     required: bool = None
     primary: bool = None
-    unique: bool = None
+    unique: bool | None = None
     references: str = None
-    description: str = None
-    pii: bool = None
-    classification: str = None
+    description: str | None = None
+    pii: bool | None = None
+    classification: str | None = None
     pattern: str = None
     minLength: int = None
     maxLength: int = None
@@ -103,8 +159,8 @@ class Field(pyd.BaseModel):
     exclusiveMinimum: int = None
     maximum: int = None
     exclusiveMaximum: int = None
-    enum: List[str] = []
-    tags: List[str] = []
+    enum: List[str] | None = []
+    tags: List[str] | None = []
     links: Dict[str, str] = {}
     fields: Dict[str, "Field"] = {}
     items: "Field" = None
@@ -113,7 +169,9 @@ class Field(pyd.BaseModel):
     precision: int = None
     scale: int = None
     example: str = None
-    config: Dict[str, Any] = None
+    examples: List[Any] | None = None
+    quality: List[Quality] | None = []
+    config: Dict[str, Any] | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -127,6 +185,11 @@ class Model(pyd.BaseModel):
     title: Optional[str] = None
     fields: Dict[str, Field] = {}
     config: Dict[str, Any] = None
+    tags: List[str] | None = None
+
+    model_config = pyd.ConfigDict(
+        extra="allow",
+    )
 
 
 class Info(pyd.BaseModel):

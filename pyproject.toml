@@ -26,7 +26,7 @@ dependencies = [
   "python-multipart==0.0.12",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
-  "duckdb==1.1.1",
+  "duckdb==1.1.2",
   "soda-core-duckdb>=3.3.1,<3.4.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
@@ -34,7 +34,7 @@ dependencies = [
   "rdflib==7.0.0", # move to extra?
   "opentelemetry-exporter-otlp-proto-grpc~=1.16", # move to extra?
   "opentelemetry-exporter-otlp-proto-http~=1.16", # move to extra?
-  "boto3>=1.34.41,<1.35.35",
+  "boto3>=1.34.41,<1.35.45",
   #  "botocore>=1.34.41,<1.34.137",
   "jinja_partials >= 0.2.1",
 ]
@@ -51,8 +51,8 @@ bigquery = [
 
 databricks = [
   "soda-core-spark-df>=3.3.1,<3.4.0",
-  "databricks-sql-connector>=3.1.2,<3.5.0",
-  "databricks-sdk>=0.32.0,<0.33.0",
+  "databricks-sql-connector>=3.1.2,<3.6.0",
+  "databricks-sdk>=0.32.0,<0.36.0",
   "soda-core-spark[databricks]>=3.3.1,<3.4.0"
 ]
 
@@ -102,7 +102,7 @@ dev = [
   "datacontract-cli[all]",
   "httpx==0.27.2",
   "kafka-python",
-  "moto==5.0.17",
+  "moto==5.0.18",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<3.9.0",
   "pyarrow>=12.0.0",
@@ -110,7 +110,7 @@ dev = [
   "pytest-xdist",
   "pymssql==2.3.1",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.8.1",
+  "testcontainers[minio,postgres,kafka,mssql]==4.8.2",
   "trino==0.330.0",
 ]
 
@@ -126,7 +126,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
+#addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
 log_level = "INFO"
 #log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"

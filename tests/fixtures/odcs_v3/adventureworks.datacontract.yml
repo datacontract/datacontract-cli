@@ -1,0 +1,4865 @@
+dataContractSpecification: 0.9.3
+id: 6aeafdc1-ed62-4c8f-bf0a-da1061c98cdb
+info:
+  title: ''
+  version: 1.0.0
+models:
+  department:
+    description: Lookup table containing the departments within the Adventure Works
+      Cycles company.
+    type: table
+    title: department
+    fields:
+      departmentid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Department records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Name of the department.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      groupname:
+        type: object
+        required: false
+        primary: false
+        description: Name of the group to which the department belongs.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  employee:
+    description: Employee information such as salary, department, and title.
+    type: table
+    title: employee
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Employee records.  Foreign key to BusinessEntity.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      nationalidnumber:
+        type: string
+        required: false
+        primary: false
+        description: Unique national identification number such as a social security
+          number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[15]
+      loginid:
+        type: string
+        required: false
+        primary: false
+        description: Network login.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[256]
+      jobtitle:
+        type: string
+        required: false
+        primary: false
+        description: Work title such as Buyer or Sales Representative.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      birthdate:
+        type: date
+        required: false
+        primary: false
+        description: Date of birth.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: date
+      maritalstatus:
+        type: string
+        required: false
+        primary: false
+        description: M = Married, S = Single
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      gender:
+        type: string
+        required: false
+        primary: false
+        description: M = Male, F = Female
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      hiredate:
+        type: date
+        required: false
+        primary: false
+        description: Employee hired on this date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: date
+      salariedflag:
+        type: object
+        required: false
+        primary: false
+        description: Job classification. 0 = Hourly, not exempt from collective bargaining.
+          1 = Salaried, exempt from collective bargaining.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      vacationhours:
+        type: number
+        required: false
+        primary: false
+        description: Number of available vacation hours.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      sickleavehours:
+        type: number
+        required: false
+        primary: false
+        description: Number of available sick leave hours.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      currentflag:
+        type: object
+        required: false
+        primary: false
+        description: 0 = Inactive, 1 = Active
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      organizationnode:
+        type: string
+        required: false
+        primary: false
+        description: Where the employee is located in corporate hierarchy.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[2147483647]
+  employeedepartmenthistory:
+    description: Employee department transfers.
+    type: table
+    title: employeedepartmenthistory
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Employee identification number. Foreign key to Employee.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      departmentid:
+        type: number
+        required: false
+        primary: false
+        description: Department in which the employee worked including currently.
+          Foreign key to Department.DepartmentID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      shiftid:
+        type: number
+        required: false
+        primary: false
+        description: Identifies which 8-hour shift the employee works. Foreign key
+          to Shift.Shift.ID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      startdate:
+        type: date
+        required: false
+        primary: false
+        description: Date the employee started work in the department.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: date
+      enddate:
+        type: date
+        required: false
+        primary: false
+        description: Date the employee left the department. NULL = Current department.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: date
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  employeepayhistory:
+    description: Employee pay history.
+    type: table
+    title: employeepayhistory
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Employee identification number. Foreign key to Employee.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      ratechangedate:
+        type: date
+        required: false
+        primary: false
+        description: Date the change in pay is effective
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      rate:
+        type: number
+        required: false
+        primary: false
+        description: Salary hourly rate.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      payfrequency:
+        type: number
+        required: false
+        primary: false
+        description: 1 = Salary received monthly, 2 = Salary received biweekly
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  jobcandidate:
+    description: Résumés submitted to Human Resources by job applicants.
+    type: table
+    title: jobcandidate
+    fields:
+      jobcandidateid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for JobCandidate records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Employee identification number if applicant was hired. Foreign
+          key to Employee.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      resume:
+        type: string
+        required: false
+        primary: false
+        description: RÃ©sumÃ© in XML format.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: xml
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  shift:
+    description: Work shift lookup table.
+    type: table
+    title: shift
+    fields:
+      shiftid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Shift records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Shift description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      starttime:
+        type: date
+        required: false
+        primary: false
+        description: Shift start time.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: time
+      endtime:
+        type: date
+        required: false
+        primary: false
+        description: Shift end time.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: time
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  address:
+    description: Street address information for customers, employees, and vendors.
+    type: table
+    title: address
+    fields:
+      addressid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Address records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      addressline1:
+        type: string
+        required: false
+        primary: false
+        description: First street address line.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[60]
+      addressline2:
+        type: string
+        required: false
+        primary: false
+        description: Second street address line.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[60]
+      city:
+        type: string
+        required: false
+        primary: false
+        description: Name of the city.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[30]
+      stateprovinceid:
+        type: number
+        required: false
+        primary: false
+        description: Unique identification number for the state or province. Foreign
+          key to StateProvince table.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      postalcode:
+        type: string
+        required: false
+        primary: false
+        description: Postal code for the street address.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[15]
+      spatiallocation:
+        type: string
+        required: false
+        primary: false
+        description: Latitude and longitude of this address.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bytea
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  addresstype:
+    description: Types of addresses stored in the Address table.
+    type: table
+    title: addresstype
+    fields:
+      addresstypeid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for AddressType records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Address type description. For example, Billing, Home, or Shipping.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  businessentity:
+    description: Source of the ID that connects vendors, customers, and employees
+      with address and contact information.
+    type: table
+    title: businessentity
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for all customers, vendors, and employees.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  businessentityaddress:
+    description: Cross-reference table mapping customers, vendors, and employees to
+      their addresses.
+    type: table
+    title: businessentityaddress
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      addressid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to Address.AddressID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      addresstypeid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to AddressType.AddressTypeID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  businessentitycontact:
+    description: Cross-reference table mapping stores, vendors, and employees to people
+    type: table
+    title: businessentitycontact
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      personid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to Person.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      contacttypeid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key.  Foreign key to ContactType.ContactTypeID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  contacttype:
+    description: Lookup table containing the types of business entity contacts.
+    type: table
+    title: contacttype
+    fields:
+      contacttypeid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ContactType records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Contact type description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  countryregion:
+    description: Lookup table containing the ISO standard codes for countries and
+      regions.
+    type: table
+    title: countryregion
+    fields:
+      countryregioncode:
+        type: string
+        required: false
+        primary: true
+        description: ISO standard code for countries and regions.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[3]
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Country or region name.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  emailaddress:
+    description: Where to send a person email.
+    type: table
+    title: emailaddress
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Person associated with this email address.  Foreign
+          key to Person.BusinessEntityID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      emailaddressid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. ID of this email address.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      emailaddress:
+        type: string
+        required: false
+        primary: false
+        description: E-mail address for the person.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  password:
+    description: One way hashed authentication information
+    type: table
+    title: password
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: true
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      passwordhash:
+        type: string
+        required: false
+        primary: false
+        description: Password for the e-mail account.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[128]
+      passwordsalt:
+        type: string
+        required: false
+        primary: false
+        description: Random value concatenated with the password string before the
+          password is hashed.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[10]
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  person:
+    description: 'Human beings involved with AdventureWorks: employees, customer contacts,
+      and vendor contacts.'
+    type: table
+    title: person
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Person records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      persontype:
+        type: string
+        required: false
+        primary: false
+        description: 'Primary type of person: SC = Store Contact, IN = Individual
+          (retail) customer, SP = Sales person, EM = Employee (non-sales), VC = Vendor
+          contact, GC = General contact'
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      namestyle:
+        type: object
+        required: false
+        primary: false
+        description: 0 = The data in FirstName and LastName are stored in western
+          style (first name, last name) order.  1 = Eastern style (last name, first
+          name) order.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: NameStyle
+      title:
+        type: string
+        required: false
+        primary: false
+        description: A courtesy title. For example, Mr. or Ms.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[8]
+      firstname:
+        type: object
+        required: false
+        primary: false
+        description: First name of the person.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      middlename:
+        type: object
+        required: false
+        primary: false
+        description: Middle name or middle initial of the person.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      lastname:
+        type: object
+        required: false
+        primary: false
+        description: Last name of the person.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      suffix:
+        type: string
+        required: false
+        primary: false
+        description: Surname suffix. For example, Sr. or Jr.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[10]
+      emailpromotion:
+        type: number
+        required: false
+        primary: false
+        description: 0 = Contact does not wish to receive e-mail promotions, 1 = Contact
+          does wish to receive e-mail promotions from AdventureWorks, 2 = Contact
+          does wish to receive e-mail promotions from AdventureWorks and selected
+          partners.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      additionalcontactinfo:
+        type: string
+        required: false
+        primary: false
+        description: Additional contact information about the person stored in xml
+          format.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: xml
+      demographics:
+        type: string
+        required: false
+        primary: false
+        description: Personal information such as hobbies, and income collected from
+          online shoppers. Used for sales analysis.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: xml
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  personphone:
+    description: Telephone number and type of a person.
+    type: table
+    title: personphone
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Business entity identification number. Foreign key to Person.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      phonenumber:
+        type: object
+        required: false
+        primary: false
+        description: Telephone number identification number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Phone
+      phonenumbertypeid:
+        type: number
+        required: false
+        primary: false
+        description: Kind of phone number. Foreign key to PhoneNumberType.PhoneNumberTypeID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  phonenumbertype:
+    description: Type of phone number of a person.
+    type: table
+    title: phonenumbertype
+    fields:
+      phonenumbertypeid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for telephone number type records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Name of the telephone number type
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  stateprovince:
+    description: State and province lookup table.
+    type: table
+    title: stateprovince
+    fields:
+      stateprovinceid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for StateProvince records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      stateprovincecode:
+        type: string
+        required: false
+        primary: false
+        description: ISO standard state or province code.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      countryregioncode:
+        type: string
+        required: false
+        primary: false
+        description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[3]
+      isonlystateprovinceflag:
+        type: object
+        required: false
+        primary: false
+        description: 0 = StateProvinceCode exists. 1 = StateProvinceCode unavailable,
+          using CountryRegionCode.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      name:
+        type: object
+        required: false
+        primary: false
+        description: State or province description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      territoryid:
+        type: number
+        required: false
+        primary: false
+        description: ID of the territory in which the state or province is located.
+          Foreign key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  billofmaterials:
+    description: Items required to make bicycles and bicycle subassemblies. It identifies
+      the heirarchical relationship between a parent product and its components.
+    type: table
+    title: billofmaterials
+    fields:
+      billofmaterialsid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for BillOfMaterials records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      productassemblyid:
+        type: number
+        required: false
+        primary: false
+        description: Parent product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      componentid:
+        type: number
+        required: false
+        primary: false
+        description: Component identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      startdate:
+        type: date
+        required: false
+        primary: false
+        description: Date the component started being used in the assembly item.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      enddate:
+        type: date
+        required: false
+        primary: false
+        description: Date the component stopped being used in the assembly item.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      unitmeasurecode:
+        type: string
+        required: false
+        primary: false
+        description: Standard code identifying the unit of measure for the quantity.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      bomlevel:
+        type: number
+        required: false
+        primary: false
+        description: Indicates the depth the component is from its parent (AssemblyID).
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      perassemblyqty:
+        type: number
+        required: false
+        primary: false
+        description: Quantity of the component needed to create the assembly.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  culture:
+    description: Lookup table containing the languages in which some AdventureWorks
+      data is stored.
+    type: table
+    title: culture
+    fields:
+      cultureid:
+        type: string
+        required: false
+        primary: true
+        description: Primary key for Culture records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Culture description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  document:
+    description: Product maintenance documents.
+    type: table
+    title: document
+    fields:
+      title:
+        type: string
+        required: false
+        primary: false
+        description: Title of the document.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      owner:
+        type: number
+        required: false
+        primary: false
+        description: Employee who controls the document.  Foreign key to Employee.BusinessEntityID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      folderflag:
+        type: object
+        required: false
+        primary: false
+        description: 0 = This is a folder, 1 = This is a document.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      filename:
+        type: string
+        required: false
+        primary: false
+        description: File name of the document
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[400]
+      fileextension:
+        type: string
+        required: false
+        primary: false
+        description: File extension indicating the document type. For example, .doc
+          or .txt.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[8]
+      revision:
+        type: string
+        required: false
+        primary: false
+        description: Revision number of the document.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      changenumber:
+        type: number
+        required: false
+        primary: false
+        description: Engineering change approval number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      status:
+        type: number
+        required: false
+        primary: false
+        description: 1 = Pending approval, 2 = Approved, 3 = Obsolete
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      documentsummary:
+        type: string
+        required: false
+        primary: false
+        description: Document abstract.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: text
+      document:
+        type: string
+        required: false
+        primary: false
+        description: Complete document.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bytea
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        description: ROWGUIDCOL number uniquely identifying the record. Required for
+          FileStream.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      documentnode:
+        type: string
+        required: false
+        primary: true
+        description: Primary key for Document records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[2147483647]
+  illustration:
+    description: Bicycle assembly diagrams.
+    type: table
+    title: illustration
+    fields:
+      illustrationid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Illustration records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      diagram:
+        type: string
+        required: false
+        primary: false
+        description: Illustrations used in manufacturing instructions. Stored as XML.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: xml
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  location:
+    description: Product inventory and manufacturing locations.
+    type: table
+    title: location
+    fields:
+      locationid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Location records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Location description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      costrate:
+        type: number
+        required: false
+        primary: false
+        description: Standard hourly cost of the manufacturing location.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      availability:
+        type: number
+        required: false
+        primary: false
+        description: Work capacity (in hours) of the manufacturing location.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  product:
+    description: Products sold or used in the manfacturing of sold products.
+    type: table
+    title: product
+    fields:
+      productid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Product records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Name of the product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      productnumber:
+        type: string
+        required: false
+        primary: false
+        description: Unique product identification number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[25]
+      makeflag:
+        type: object
+        required: false
+        primary: false
+        description: 0 = Product is purchased, 1 = Product is manufactured in-house.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      finishedgoodsflag:
+        type: object
+        required: false
+        primary: false
+        description: 0 = Product is not a salable item. 1 = Product is salable.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      color:
+        type: string
+        required: false
+        primary: false
+        description: Product color.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[15]
+      safetystocklevel:
+        type: number
+        required: false
+        primary: false
+        description: Minimum inventory quantity.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      reorderpoint:
+        type: number
+        required: false
+        primary: false
+        description: Inventory level that triggers a purchase order or work order.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      standardcost:
+        type: number
+        required: false
+        primary: false
+        description: Standard cost of the product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      listprice:
+        type: number
+        required: false
+        primary: false
+        description: Selling price.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      size:
+        type: string
+        required: false
+        primary: false
+        description: Product size.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[5]
+      sizeunitmeasurecode:
+        type: string
+        required: false
+        primary: false
+        description: Unit of measure for Size column.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      weightunitmeasurecode:
+        type: string
+        required: false
+        primary: false
+        description: Unit of measure for Weight column.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      weight:
+        type: number
+        required: false
+        primary: false
+        description: Product weight.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      daystomanufacture:
+        type: number
+        required: false
+        primary: false
+        description: Number of days required to manufacture the product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productline:
+        type: string
+        required: false
+        primary: false
+        description: R = Road, M = Mountain, T = Touring, S = Standard
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      class:
+        type: string
+        required: false
+        primary: false
+        description: H = High, M = Medium, L = Low
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      style:
+        type: string
+        required: false
+        primary: false
+        description: W = Womens, M = Mens, U = Universal
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      productsubcategoryid:
+        type: number
+        required: false
+        primary: false
+        description: Product is a member of this product subcategory. Foreign key
+          to ProductSubCategory.ProductSubCategoryID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productmodelid:
+        type: number
+        required: false
+        primary: false
+        description: Product is a member of this product model. Foreign key to ProductModel.ProductModelID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      sellstartdate:
+        type: date
+        required: false
+        primary: false
+        description: Date the product was available for sale.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      sellenddate:
+        type: date
+        required: false
+        primary: false
+        description: Date the product was no longer available for sale.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      discontinueddate:
+        type: date
+        required: false
+        primary: false
+        description: Date the product was discontinued.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productcategory:
+    description: High-level product categorization.
+    type: table
+    title: productcategory
+    fields:
+      productcategoryid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ProductCategory records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Category description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productcosthistory:
+    description: Changes in the cost of a product over time.
+    type: table
+    title: productcosthistory
+    fields:
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      startdate:
+        type: date
+        required: false
+        primary: false
+        description: Product cost start date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      enddate:
+        type: date
+        required: false
+        primary: false
+        description: Product cost end date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      standardcost:
+        type: number
+        required: false
+        primary: false
+        description: Standard cost of the product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productdescription:
+    description: Product descriptions in several languages.
+    type: table
+    title: productdescription
+    fields:
+      productdescriptionid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ProductDescription records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      description:
+        type: string
+        required: false
+        primary: false
+        description: Description of the product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[400]
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productdocument:
+    description: Cross-reference table mapping products to related product documents.
+    type: table
+    title: productdocument
+    fields:
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      documentnode:
+        type: string
+        required: false
+        primary: false
+        description: Document identification number. Foreign key to Document.DocumentNode.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[2147483647]
+  productinventory:
+    description: Product inventory information.
+    type: table
+    title: productinventory
+    fields:
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      locationid:
+        type: number
+        required: false
+        primary: false
+        description: Inventory location identification number. Foreign key to Location.LocationID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      shelf:
+        type: string
+        required: false
+        primary: false
+        description: Storage compartment within an inventory location.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[10]
+      bin:
+        type: number
+        required: false
+        primary: false
+        description: Storage container on a shelf in an inventory location.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      quantity:
+        type: number
+        required: false
+        primary: false
+        description: Quantity of products in the inventory location.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productlistpricehistory:
+    description: Changes in the list price of a product over time.
+    type: table
+    title: productlistpricehistory
+    fields:
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      startdate:
+        type: date
+        required: false
+        primary: false
+        description: List price start date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      enddate:
+        type: date
+        required: false
+        primary: false
+        description: List price end date
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      listprice:
+        type: number
+        required: false
+        primary: false
+        description: Product list price.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productmodel:
+    description: Product model classification.
+    type: table
+    title: productmodel
+    fields:
+      productmodelid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ProductModel records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Product model description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      catalogdescription:
+        type: string
+        required: false
+        primary: false
+        description: Detailed product catalog information in xml format.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: xml
+      instructions:
+        type: string
+        required: false
+        primary: false
+        description: Manufacturing instructions in xml format.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: xml
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productmodelillustration:
+    description: Cross-reference table mapping product models and illustrations.
+    type: table
+    title: productmodelillustration
+    fields:
+      productmodelid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to ProductModel.ProductModelID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      illustrationid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to Illustration.IllustrationID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productmodelproductdescriptionculture:
+    description: Cross-reference table mapping product descriptions and the language
+      the description is written in.
+    type: table
+    title: productmodelproductdescriptionculture
+    fields:
+      productmodelid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to ProductModel.ProductModelID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productdescriptionid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to ProductDescription.ProductDescriptionID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      cultureid:
+        type: string
+        required: false
+        primary: false
+        description: Culture identification number. Foreign key to Culture.CultureID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productphoto:
+    description: Product images.
+    type: table
+    title: productphoto
+    fields:
+      productphotoid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ProductPhoto records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      thumbnailphoto:
+        type: string
+        required: false
+        primary: false
+        description: Small image of the product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bytea
+      thumbnailphotofilename:
+        type: string
+        required: false
+        primary: false
+        description: Small image file name.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      largephoto:
+        type: string
+        required: false
+        primary: false
+        description: Large image of the product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bytea
+      largephotofilename:
+        type: string
+        required: false
+        primary: false
+        description: Large image file name.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productproductphoto:
+    description: Cross-reference table mapping products and product photos.
+    type: table
+    title: productproductphoto
+    fields:
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productphotoid:
+        type: number
+        required: false
+        primary: false
+        description: Product photo identification number. Foreign key to ProductPhoto.ProductPhotoID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      primary:
+        type: object
+        required: false
+        primary: false
+        description: 0 = Photo is not the principal image. 1 = Photo is the principal
+          image.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productreview:
+    description: Customer reviews of products they have purchased.
+    type: table
+    title: productreview
+    fields:
+      productreviewid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ProductReview records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      reviewername:
+        type: object
+        required: false
+        primary: false
+        description: Name of the reviewer.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      reviewdate:
+        type: date
+        required: false
+        primary: false
+        description: Date review was submitted.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      emailaddress:
+        type: string
+        required: false
+        primary: false
+        description: Reviewer's e-mail address.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      rating:
+        type: number
+        required: false
+        primary: false
+        description: Product rating given by the reviewer. Scale is 1 to 5 with 5
+          as the highest rating.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      comments:
+        type: string
+        required: false
+        primary: false
+        description: Reviewer's comments
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[3850]
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productsubcategory:
+    description: Product subcategories. See ProductCategory table.
+    type: table
+    title: productsubcategory
+    fields:
+      productsubcategoryid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ProductSubcategory records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      productcategoryid:
+        type: number
+        required: false
+        primary: false
+        description: Product category identification number. Foreign key to ProductCategory.ProductCategoryID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Subcategory description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  scrapreason:
+    description: Manufacturing failure reasons lookup table.
+    type: table
+    title: scrapreason
+    fields:
+      scrapreasonid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ScrapReason records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Failure description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  transactionhistory:
+    description: Record of each purchase order, sales order, or work order transaction
+      year to date.
+    type: table
+    title: transactionhistory
+    fields:
+      transactionid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for TransactionHistory records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      referenceorderid:
+        type: number
+        required: false
+        primary: false
+        description: Purchase order, sales order, or work order identification number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      referenceorderlineid:
+        type: number
+        required: false
+        primary: false
+        description: Line number associated with the purchase order, sales order,
+          or work order.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      transactiondate:
+        type: date
+        required: false
+        primary: false
+        description: Date and time of the transaction.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      transactiontype:
+        type: string
+        required: false
+        primary: false
+        description: W = WorkOrder, S = SalesOrder, P = PurchaseOrder
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      quantity:
+        type: number
+        required: false
+        primary: false
+        description: Product quantity.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      actualcost:
+        type: number
+        required: false
+        primary: false
+        description: Product cost.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  transactionhistoryarchive:
+    description: Transactions for previous years.
+    type: table
+    title: transactionhistoryarchive
+    fields:
+      transactionid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for TransactionHistoryArchive records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      referenceorderid:
+        type: number
+        required: false
+        primary: false
+        description: Purchase order, sales order, or work order identification number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      referenceorderlineid:
+        type: number
+        required: false
+        primary: false
+        description: Line number associated with the purchase order, sales order,
+          or work order.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      transactiondate:
+        type: date
+        required: false
+        primary: false
+        description: Date and time of the transaction.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      transactiontype:
+        type: string
+        required: false
+        primary: false
+        description: W = Work Order, S = Sales Order, P = Purchase Order
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      quantity:
+        type: number
+        required: false
+        primary: false
+        description: Product quantity.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      actualcost:
+        type: number
+        required: false
+        primary: false
+        description: Product cost.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  unitmeasure:
+    description: Unit of measure lookup table.
+    type: table
+    title: unitmeasure
+    fields:
+      unitmeasurecode:
+        type: string
+        required: false
+        primary: true
+        description: Primary key.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Unit of measure description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  workorder:
+    description: Manufacturing work orders.
+    type: table
+    title: workorder
+    fields:
+      workorderid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for WorkOrder records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      orderqty:
+        type: number
+        required: false
+        primary: false
+        description: Product quantity to build.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      scrappedqty:
+        type: number
+        required: false
+        primary: false
+        description: Quantity that failed inspection.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      startdate:
+        type: date
+        required: false
+        primary: false
+        description: Work order start date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      enddate:
+        type: date
+        required: false
+        primary: false
+        description: Work order end date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      duedate:
+        type: date
+        required: false
+        primary: false
+        description: Work order due date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      scrapreasonid:
+        type: number
+        required: false
+        primary: false
+        description: Reason for inspection failure.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  workorderrouting:
+    description: Work order details.
+    type: table
+    title: workorderrouting
+    fields:
+      workorderid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to WorkOrder.WorkOrderID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      operationsequence:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Indicates the manufacturing process sequence.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      locationid:
+        type: number
+        required: false
+        primary: false
+        description: Manufacturing location where the part is processed. Foreign key
+          to Location.LocationID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      scheduledstartdate:
+        type: date
+        required: false
+        primary: false
+        description: Planned manufacturing start date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      scheduledenddate:
+        type: date
+        required: false
+        primary: false
+        description: Planned manufacturing end date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      actualstartdate:
+        type: date
+        required: false
+        primary: false
+        description: Actual start date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      actualenddate:
+        type: date
+        required: false
+        primary: false
+        description: Actual end date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      actualresourcehrs:
+        type: number
+        required: false
+        primary: false
+        description: Number of manufacturing hours used.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      plannedcost:
+        type: number
+        required: false
+        primary: false
+        description: Estimated manufacturing cost.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      actualcost:
+        type: number
+        required: false
+        primary: false
+        description: Actual manufacturing cost.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  productvendor:
+    description: Cross-reference table mapping vendors with the products they supply.
+    type: table
+    title: productvendor
+    fields:
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to Vendor.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      averageleadtime:
+        type: number
+        required: false
+        primary: false
+        description: The average span of time (in days) between placing an order with
+          the vendor and receiving the purchased product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      standardprice:
+        type: number
+        required: false
+        primary: false
+        description: The vendor's usual selling price.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      lastreceiptcost:
+        type: number
+        required: false
+        primary: false
+        description: The selling price when last purchased.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      lastreceiptdate:
+        type: date
+        required: false
+        primary: false
+        description: Date the product was last received by the vendor.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      minorderqty:
+        type: number
+        required: false
+        primary: false
+        description: The maximum quantity that should be ordered.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      maxorderqty:
+        type: number
+        required: false
+        primary: false
+        description: The minimum quantity that should be ordered.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      onorderqty:
+        type: number
+        required: false
+        primary: false
+        description: The quantity currently on order.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      unitmeasurecode:
+        type: string
+        required: false
+        primary: false
+        description: The product's unit of measure.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  purchaseorderdetail:
+    description: Individual products associated with a specific purchase order. See
+      PurchaseOrderHeader.
+    type: table
+    title: purchaseorderdetail
+    fields:
+      purchaseorderid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to PurchaseOrderHeader.PurchaseOrderID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      purchaseorderdetailid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. One line number per purchased product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      duedate:
+        type: date
+        required: false
+        primary: false
+        description: Date the product is expected to be received.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      orderqty:
+        type: number
+        required: false
+        primary: false
+        description: Quantity ordered.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      unitprice:
+        type: number
+        required: false
+        primary: false
+        description: Vendor's selling price of a single product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      receivedqty:
+        type: number
+        required: false
+        primary: false
+        description: Quantity actually received from the vendor.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      rejectedqty:
+        type: number
+        required: false
+        primary: false
+        description: Quantity rejected during inspection.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  purchaseorderheader:
+    description: General purchase order information. See PurchaseOrderDetail.
+    type: table
+    title: purchaseorderheader
+    fields:
+      purchaseorderid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      revisionnumber:
+        type: number
+        required: false
+        primary: false
+        description: Incremental number to track changes to the purchase order over
+          time.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      status:
+        type: number
+        required: false
+        primary: false
+        description: Order current status. 1 = Pending; 2 = Approved; 3 = Rejected;
+          4 = Complete
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      employeeid:
+        type: number
+        required: false
+        primary: false
+        description: Employee who created the purchase order. Foreign key to Employee.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      vendorid:
+        type: number
+        required: false
+        primary: false
+        description: Vendor with whom the purchase order is placed. Foreign key to
+          Vendor.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      shipmethodid:
+        type: number
+        required: false
+        primary: false
+        description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      orderdate:
+        type: date
+        required: false
+        primary: false
+        description: Purchase order creation date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      shipdate:
+        type: date
+        required: false
+        primary: false
+        description: Estimated shipment date from the vendor.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      subtotal:
+        type: number
+        required: false
+        primary: false
+        description: Purchase order subtotal. Computed as SUM(PurchaseOrderDetail.LineTotal)for
+          the appropriate PurchaseOrderID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      taxamt:
+        type: number
+        required: false
+        primary: false
+        description: Tax amount.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      freight:
+        type: number
+        required: false
+        primary: false
+        description: Shipping cost.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  shipmethod:
+    description: Shipping company lookup table.
+    type: table
+    title: shipmethod
+    fields:
+      shipmethodid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ShipMethod records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Shipping company name.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      shipbase:
+        type: number
+        required: false
+        primary: false
+        description: Minimum shipping charge.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      shiprate:
+        type: number
+        required: false
+        primary: false
+        description: Shipping charge per pound.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  vendor:
+    description: Companies from whom Adventure Works Cycles purchases parts or other
+      goods.
+    type: table
+    title: vendor
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for Vendor records.  Foreign key to BusinessEntity.BusinessEntityID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      accountnumber:
+        type: object
+        required: false
+        primary: false
+        description: Vendor account (identification) number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: AccountNumber
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Company name.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      creditrating:
+        type: number
+        required: false
+        primary: false
+        description: 1 = Superior, 2 = Excellent, 3 = Above average, 4 = Average,
+          5 = Below average
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      preferredvendorstatus:
+        type: object
+        required: false
+        primary: false
+        description: 0 = Do not use if another vendor is available. 1 = Preferred
+          over other vendors supplying the same product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      activeflag:
+        type: object
+        required: false
+        primary: false
+        description: 0 = Vendor no longer used. 1 = Vendor is actively used.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      purchasingwebserviceurl:
+        type: string
+        required: false
+        primary: false
+        description: Vendor URL.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[1024]
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  countryregioncurrency:
+    description: Cross-reference table mapping ISO currency codes to a country or
+      region.
+    type: table
+    title: countryregioncurrency
+    fields:
+      countryregioncode:
+        type: string
+        required: false
+        primary: false
+        description: ISO code for countries and regions. Foreign key to CountryRegion.CountryRegionCode.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[3]
+      currencycode:
+        type: string
+        required: false
+        primary: false
+        description: ISO standard currency code. Foreign key to Currency.CurrencyCode.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  creditcard:
+    description: Customer credit card information.
+    type: table
+    title: creditcard
+    fields:
+      creditcardid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for CreditCard records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      cardtype:
+        type: string
+        required: false
+        primary: false
+        description: Credit card name.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      cardnumber:
+        type: string
+        required: false
+        primary: false
+        description: Credit card number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[25]
+      expmonth:
+        type: number
+        required: false
+        primary: false
+        description: Credit card expiration month.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      expyear:
+        type: number
+        required: false
+        primary: false
+        description: Credit card expiration year.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  currency:
+    description: Lookup table containing standard ISO currencies.
+    type: table
+    title: currency
+    fields:
+      currencycode:
+        type: string
+        required: false
+        primary: true
+        description: The ISO code for the Currency.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Currency name.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  currencyrate:
+    description: Currency exchange rates.
+    type: table
+    title: currencyrate
+    fields:
+      currencyrateid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for CurrencyRate records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      currencyratedate:
+        type: date
+        required: false
+        primary: false
+        description: Date and time the exchange rate was obtained.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      fromcurrencycode:
+        type: string
+        required: false
+        primary: false
+        description: Exchange rate was converted from this currency code.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      tocurrencycode:
+        type: string
+        required: false
+        primary: false
+        description: Exchange rate was converted to this currency code.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: bpchar
+      averagerate:
+        type: number
+        required: false
+        primary: false
+        description: Average exchange rate for the day.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      endofdayrate:
+        type: number
+        required: false
+        primary: false
+        description: Final exchange rate for the day.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  customer:
+    description: Current customer information. Also see the Person and Store tables.
+    type: table
+    title: customer
+    fields:
+      customerid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      personid:
+        type: number
+        required: false
+        primary: false
+        description: Foreign key to Person.BusinessEntityID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      storeid:
+        type: number
+        required: false
+        primary: false
+        description: Foreign key to Store.BusinessEntityID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      territoryid:
+        type: number
+        required: false
+        primary: false
+        description: ID of the territory in which the customer is located. Foreign
+          key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  personcreditcard:
+    description: Cross-reference table mapping people to their credit card information
+      in the CreditCard table.
+    type: table
+    title: personcreditcard
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Business entity identification number. Foreign key to Person.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      creditcardid:
+        type: number
+        required: false
+        primary: false
+        description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salesorderdetail:
+    description: Individual products associated with a specific sales order. See SalesOrderHeader.
+    type: table
+    title: salesorderdetail
+    fields:
+      salesorderid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      salesorderdetailid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. One incremental unique number per product sold.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      carriertrackingnumber:
+        type: string
+        required: false
+        primary: false
+        description: Shipment tracking number supplied by the shipper.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[25]
+      orderqty:
+        type: number
+        required: false
+        primary: false
+        description: Quantity ordered per product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product sold to customer. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      specialofferid:
+        type: number
+        required: false
+        primary: false
+        description: Promotional code. Foreign key to SpecialOffer.SpecialOfferID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      unitprice:
+        type: number
+        required: false
+        primary: false
+        description: Selling price of a single product.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      unitpricediscount:
+        type: number
+        required: false
+        primary: false
+        description: Discount amount.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salesorderheader:
+    description: General sales order information.
+    type: table
+    title: salesorderheader
+    fields:
+      salesorderid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      revisionnumber:
+        type: number
+        required: false
+        primary: false
+        description: Incremental number to track changes to the sales order over time.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      orderdate:
+        type: date
+        required: false
+        primary: false
+        description: Dates the sales order was created.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      duedate:
+        type: date
+        required: false
+        primary: false
+        description: Date the order is due to the customer.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      shipdate:
+        type: date
+        required: false
+        primary: false
+        description: Date the order was shipped to the customer.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      status:
+        type: number
+        required: false
+        primary: false
+        description: Order current status. 1 = In process; 2 = Approved; 3 = Backordered;
+          4 = Rejected; 5 = Shipped; 6 = Cancelled
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      onlineorderflag:
+        type: object
+        required: false
+        primary: false
+        description: 0 = Order placed by sales person. 1 = Order placed online by
+          customer.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Flag
+      purchaseordernumber:
+        type: object
+        required: false
+        primary: false
+        description: Customer purchase order number reference.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: OrderNumber
+      accountnumber:
+        type: object
+        required: false
+        primary: false
+        description: Financial accounting number reference.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: AccountNumber
+      customerid:
+        type: number
+        required: false
+        primary: false
+        description: Customer identification number. Foreign key to Customer.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      salespersonid:
+        type: number
+        required: false
+        primary: false
+        description: Sales person who created the sales order. Foreign key to SalesPerson.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      territoryid:
+        type: number
+        required: false
+        primary: false
+        description: Territory in which the sale was made. Foreign key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      billtoaddressid:
+        type: number
+        required: false
+        primary: false
+        description: Customer billing address. Foreign key to Address.AddressID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      shiptoaddressid:
+        type: number
+        required: false
+        primary: false
+        description: Customer shipping address. Foreign key to Address.AddressID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      shipmethodid:
+        type: number
+        required: false
+        primary: false
+        description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      creditcardid:
+        type: number
+        required: false
+        primary: false
+        description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      creditcardapprovalcode:
+        type: string
+        required: false
+        primary: false
+        description: Approval code provided by the credit card company.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[15]
+      currencyrateid:
+        type: number
+        required: false
+        primary: false
+        description: Currency exchange rate used. Foreign key to CurrencyRate.CurrencyRateID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      subtotal:
+        type: number
+        required: false
+        primary: false
+        description: Sales subtotal. Computed as SUM(SalesOrderDetail.LineTotal)for
+          the appropriate SalesOrderID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      taxamt:
+        type: number
+        required: false
+        primary: false
+        description: Tax amount.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      freight:
+        type: number
+        required: false
+        primary: false
+        description: Shipping cost.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      totaldue:
+        type: number
+        required: false
+        primary: false
+        description: Total due from customer. Computed as Subtotal + TaxAmt + Freight.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      comment:
+        type: string
+        required: false
+        primary: false
+        description: Sales representative comments.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[128]
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salesorderheadersalesreason:
+    description: Cross-reference table mapping sales orders to sales reason codes.
+    type: table
+    title: salesorderheadersalesreason
+    fields:
+      salesorderid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      salesreasonid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Foreign key to SalesReason.SalesReasonID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salesperson:
+    description: Sales representative current information.
+    type: table
+    title: salesperson
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for SalesPerson records. Foreign key to Employee.BusinessEntityID
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      territoryid:
+        type: number
+        required: false
+        primary: false
+        description: Territory currently assigned to. Foreign key to SalesTerritory.SalesTerritoryID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      salesquota:
+        type: number
+        required: false
+        primary: false
+        description: Projected yearly sales.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      bonus:
+        type: number
+        required: false
+        primary: false
+        description: Bonus due if quota is met.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      commissionpct:
+        type: number
+        required: false
+        primary: false
+        description: Commision percent received per sale.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      salesytd:
+        type: number
+        required: false
+        primary: false
+        description: Sales total year to date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      saleslastyear:
+        type: number
+        required: false
+        primary: false
+        description: Sales total of previous year.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salespersonquotahistory:
+    description: Sales performance tracking.
+    type: table
+    title: salespersonquotahistory
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Sales person identification number. Foreign key to SalesPerson.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      quotadate:
+        type: date
+        required: false
+        primary: false
+        description: Sales quota date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      salesquota:
+        type: number
+        required: false
+        primary: false
+        description: Sales quota amount.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salesreason:
+    description: Lookup table of customer purchase reasons.
+    type: table
+    title: salesreason
+    fields:
+      salesreasonid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for SalesReason records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Sales reason description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      reasontype:
+        type: object
+        required: false
+        primary: false
+        description: Category the sales reason belongs to.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salestaxrate:
+    description: Tax rate lookup table.
+    type: table
+    title: salestaxrate
+    fields:
+      salestaxrateid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for SalesTaxRate records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      stateprovinceid:
+        type: number
+        required: false
+        primary: false
+        description: State, province, or country/region the sales tax applies to.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      taxtype:
+        type: number
+        required: false
+        primary: false
+        description: 1 = Tax applied to retail transactions, 2 = Tax applied to wholesale
+          transactions, 3 = Tax applied to all sales (retail and wholesale) transactions.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int2
+      taxrate:
+        type: number
+        required: false
+        primary: false
+        description: Tax rate amount.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Tax rate description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salesterritory:
+    description: Sales territory lookup table.
+    type: table
+    title: salesterritory
+    fields:
+      territoryid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for SalesTerritory records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Sales territory description
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      countryregioncode:
+        type: string
+        required: false
+        primary: false
+        description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[3]
+      group:
+        type: string
+        required: false
+        primary: false
+        description: Geographic area to which the sales territory belong.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      salesytd:
+        type: number
+        required: false
+        primary: false
+        description: Sales in the territory year to date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      saleslastyear:
+        type: number
+        required: false
+        primary: false
+        description: Sales in the territory the previous year.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      costytd:
+        type: number
+        required: false
+        primary: false
+        description: Business costs in the territory year to date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      costlastyear:
+        type: number
+        required: false
+        primary: false
+        description: Business costs in the territory the previous year.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  salesterritoryhistory:
+    description: Sales representative transfers to other sales territories.
+    type: table
+    title: salesterritoryhistory
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. The sales rep.  Foreign key to SalesPerson.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      territoryid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key. Territory identification number. Foreign key to
+          SalesTerritory.SalesTerritoryID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      startdate:
+        type: date
+        required: false
+        primary: false
+        description: Primary key. Date the sales representive started work in the
+          territory.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      enddate:
+        type: date
+        required: false
+        primary: false
+        description: Date the sales representative left work in the territory.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  shoppingcartitem:
+    description: Contains online customer orders until the order is submitted or cancelled.
+    type: table
+    title: shoppingcartitem
+    fields:
+      shoppingcartitemid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for ShoppingCartItem records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      shoppingcartid:
+        type: string
+        required: false
+        primary: false
+        description: Shopping cart identification number.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      quantity:
+        type: number
+        required: false
+        primary: false
+        description: Product quantity ordered.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product ordered. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      datecreated:
+        type: date
+        required: false
+        primary: false
+        description: Date the time the record was created.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  specialoffer:
+    description: Sale discounts lookup table.
+    type: table
+    title: specialoffer
+    fields:
+      specialofferid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key for SpecialOffer records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: serial
+      description:
+        type: string
+        required: false
+        primary: false
+        description: Discount description.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[255]
+      discountpct:
+        type: number
+        required: false
+        primary: false
+        description: Discount precentage.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: numeric
+      type:
+        type: string
+        required: false
+        primary: false
+        description: Discount type category.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      category:
+        type: string
+        required: false
+        primary: false
+        description: Group the discount applies to such as Reseller or Customer.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: varchar[50]
+      startdate:
+        type: date
+        required: false
+        primary: false
+        description: Discount start date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      enddate:
+        type: date
+        required: false
+        primary: false
+        description: Discount end date.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+      minqty:
+        type: number
+        required: false
+        primary: false
+        description: Minimum discount percent allowed.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      maxqty:
+        type: number
+        required: false
+        primary: false
+        description: Maximum discount percent allowed.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  specialofferproduct:
+    description: Cross-reference table mapping products to special offer discounts.
+    type: table
+    title: specialofferproduct
+    fields:
+      specialofferid:
+        type: number
+        required: false
+        primary: false
+        description: Primary key for SpecialOfferProduct records.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      productid:
+        type: number
+        required: false
+        primary: false
+        description: Product identification number. Foreign key to Product.ProductID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp
+  store:
+    description: Customers (resellers) of Adventure Works products.
+    type: table
+    title: store
+    fields:
+      businessentityid:
+        type: number
+        required: false
+        primary: true
+        description: Primary key. Foreign key to Customer.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      name:
+        type: object
+        required: false
+        primary: false
+        description: Name of the store.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: Name
+      salespersonid:
+        type: number
+        required: false
+        primary: false
+        description: ID of the sales person assigned to the customer. Foreign key
+          to SalesPerson.BusinessEntityID.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: int4
+      demographics:
+        type: string
+        required: false
+        primary: false
+        description: Demographic informationg about the store such as the number of
+          employees, annual sales and store type.
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: xml
+      rowguid:
+        type: string
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: uuid
+      modifieddate:
+        type: date
+        required: false
+        primary: false
+        classification: ''
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: timestamp

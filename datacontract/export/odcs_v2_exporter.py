@@ -6,12 +6,12 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.export.exporter import Exporter
 
 
-class OdcsExporter(Exporter):
+class OdcsV2Exporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        return to_odcs_yaml(data_contract)
+        return to_odcs_v2_yaml(data_contract)
 
 
-def to_odcs_yaml(data_contract_spec: DataContractSpecification):
+def to_odcs_v2_yaml(data_contract_spec: DataContractSpecification):
     odcs = {
         "kind": "DataContract",
         "apiVersion": "2.3.0",
@@ -25,7 +25,7 @@ def to_odcs_yaml(data_contract_spec: DataContractSpecification):
     if data_contract_spec.info.contact is not None:
         if data_contract_spec.info.contact.email is not None:
             odcs["productDl"] = data_contract_spec.info.contact.email
-        if data_contract_spec.info.contact.email is not None:
+        if data_contract_spec.info.contact.url is not None:
             odcs["productFeedbackUrl"] = data_contract_spec.info.contact.url
 
     if data_contract_spec.terms is not None:

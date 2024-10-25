@@ -5,11 +5,13 @@ import fastjsonschema
 import yaml
 from fastjsonschema import JsonSchemaValueException
 
-from datacontract.lint.files import read_file
+from datacontract.imports.odcs_v3_importer import import_odcs_v3_from_str
+from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
 from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Quality
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.odcs import is_open_data_contract_standard
 
 
 def resolve_data_contract(
@@ -41,10 +43,7 @@ def resolve_data_contract(
 def resolve_data_contract_from_location(
     location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
-    if location.startswith("http://") or location.startswith("https://"):
-        data_contract_str = fetch_resource(location)
-    else:
-        data_contract_str = read_file(location)
+    data_contract_str = read_resource(location)
     return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
 
 
@@ -196,10 +195,16 @@ def _get_quality_ref_file(quality_spec: str | object) -> str | object:
 def _resolve_data_contract_from_str(
     data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
-    data_contract_yaml_dict = _to_yaml(data_contract_str)
-    _validate(data_contract_yaml_dict, schema_location)
+    yaml_dict = _to_yaml(data_contract_str)
 
-    spec = DataContractSpecification(**data_contract_yaml_dict)
+    if is_open_data_contract_standard(yaml_dict):
+        # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
+        data_contract_specification = DataContractSpecification(dataContractSpecification="0.9.3")
+        return import_odcs_v3_from_str(data_contract_specification, source_str=data_contract_str)
+
+    _validate_data_contract_specification_schema(yaml_dict, schema_location)
+    data_contract_specification = yaml_dict
+    spec = DataContractSpecification(**data_contract_specification)
 
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
@@ -224,7 +229,7 @@ def _to_yaml(data_contract_str):
         )
 
 
-def _validate(data_contract_yaml, schema_location: str = None):
+def _validate_data_contract_specification_schema(data_contract_yaml, schema_location: str = None):
     schema = fetch_schema(schema_location)
     try:
         fastjsonschema.validate(schema, data_contract_yaml)

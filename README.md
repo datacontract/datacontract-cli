@@ -114,7 +114,7 @@ $ datacontract test datacontract.yaml
 # execute schema and quality checks on the examples within the contract
 $ datacontract test --examples datacontract.yaml
 
-# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
+# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs_v2, odcs_v3, rdf, sql, sodacl, terraform, ...)
 $ datacontract export --format html datacontract.yaml > datacontract.html
 
 # import avro (other formats: sql, glue, bigquery...)
@@ -754,7 +754,7 @@ models:
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
 │                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
 │                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
-│                    y|dbml|spark|sqlalchemy|data-caterer]                                                                       │
+│                    y|dbml|spark|sqlalchemy|data-caterer|dcs]                                                                       │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -786,27 +786,30 @@ Available export options:
 
 | Type                 | Description                                             | Status |
 |----------------------|---------------------------------------------------------|--------|
-| `html`               | Export to HTML                                          | ✅     |
-| `jsonschema`         | Export to JSON Schema                                   | ✅     |
-| `odcs`               | Export to Open Data Contract Standard (ODCS)            | ✅     |
-| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅     |
-| `dbt`                | Export to dbt models in YAML format                     | ✅     |
-| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅     |
-| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅     |
-| `rdf`                | Export data contract to RDF representation in N3 format | ✅     |
-| `avro`               | Export to AVRO models                                   | ✅     |
-| `protobuf`           | Export to Protobuf                                      | ✅     |
-| `terraform`          | Export to terraform resources                           | ✅     |
-| `sql`                | Export to SQL DDL                                       | ✅     |
-| `sql-query`          | Export to SQL Query                                     | ✅     |
-| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅     |
-| `bigquery`           | Export to BigQuery Schemas                              | ✅     |
-| `go`                 | Export to Go types                                      | ✅     |
-| `pydantic-model`     | Export to pydantic models                               | ✅     |
-| `DBML`               | Export to a DBML Diagram description                    | ✅     |
-| `spark`              | Export to a Spark StructType                            | ✅     |
-| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅     |
-| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅     |
+| `html`               | Export to HTML                                          | ✅      |
+| `jsonschema`         | Export to JSON Schema                                   | ✅      |
+| `odcs_v2`            | Export to Open Data Contract Standard (ODCS) V2         | ✅      |
+| `odcs_v3`            | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
+| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
+| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
+| `dbt`                | Export to dbt models in YAML format                     | ✅      |
+| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅      |
+| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅      |
+| `rdf`                | Export data contract to RDF representation in N3 format | ✅      |
+| `avro`               | Export to AVRO models                                   | ✅      |
+| `protobuf`           | Export to Protobuf                                      | ✅      |
+| `terraform`          | Export to terraform resources                           | ✅      |
+| `sql`                | Export to SQL DDL                                       | ✅      |
+| `sql-query`          | Export to SQL Query                                     | ✅      |
+| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
+| `bigquery`           | Export to BigQuery Schemas                              | ✅      |
+| `go`                 | Export to Go types                                      | ✅      |
+| `pydantic-model`     | Export to pydantic models                               | ✅      |
+| `DBML`               | Export to a DBML Diagram description                    | ✅      |
+| `spark`              | Export to a Spark StructType                            | ✅      |
+| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
+| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
+| `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 #### Great Expectations
@@ -985,9 +988,21 @@ Available import options:
 | Missing something? | Please create an issue on GitHub               | TBD    |
 
 
+#### ODCS
+
+Import from Open Data Contract Standard (ODCS) v2 or v3.
+The importer automatically detects the ODCS version and imports the data contract.
+
+Examples:
+
+```bash
+# Example import from ODCS
+datacontract import --format odcs --source my_data_contract.odcs.yaml
+```
+
 #### BigQuery
 
-Bigquery data can either be imported off of JSON Files generated from the table descriptions or directly from the Bigquery API. In case you want to use JSON Files, specify the `source` parameter with a path to the JSON File.
+BigQuery data can either be imported off of JSON Files generated from the table descriptions or directly from the Bigquery API. In case you want to use JSON Files, specify the `source` parameter with a path to the JSON File.
 
 To import from the Bigquery API, you have to _omit_ `source` and instead need to provide `bigquery-project` and `bigquery-dataset`. Additionally you may specify `bigquery-table` to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the dataset will be imported.
 
