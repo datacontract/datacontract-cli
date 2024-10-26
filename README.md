@@ -8,8 +8,8 @@
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
 </p>
 
-The `datacontract` CLI is an open source command-line tool for working with [Data Contracts](https://datacontract.com/).
-It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
+The `datacontract` CLI is an open-source command-line tool for working with data contracts.
+It uses data contract YAML files as [Data Contract Specification](https://datacontract.com/) or [ODCS](https://bitol-io.github.io/open-data-contract-standard/latest/) to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
 
@@ -21,15 +21,15 @@ Let's look at this data contract:
 
 We have a _servers_ section with endpoint details to the S3 bucket, _models_ for the structure of the data, _servicelevels_ and _quality_ attributes that describe the expected freshness and number of rows.
 
-This data contract contains all information to connect to S3 and check that the actual data meets the defined schema and quality requirements. We can use this information to test if the actual data set in S3 is compliant to the data contract.
+This data contract contains all information to connect to S3 and check that the actual data meets the defined schema and quality requirements. We can use this information to test if the actual data product in S3 is compliant to the data contract.
 
-Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker), if you prefer).
+Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
 $ python3 -m pip install datacontract-cli[all]
 ```
 
 
-We run the tests:
+now, let's run the tests:
 
 ```bash
 $ datacontract test https://datacontract.com/examples/orders-latest/datacontract.yaml
@@ -67,7 +67,7 @@ Testing https://datacontract.com/examples/orders-latest/datacontract.yaml
 
 Voilà, the CLI tested that the _datacontract.yaml_ itself is valid, all records comply with the schema, and all quality attributes are met.
 
-We can also use the datacontract.yaml to export in many [formats](#format), e.g., to SQL:
+We can also use the datacontract.yaml to export in many [formats](#format), e.g., to generate a SQL DDL:
 
 ```bash
 $ datacontract export --format sql https://datacontract.com/examples/orders-latest/datacontract.yaml
@@ -147,8 +147,7 @@ if not run.has_passed():
 Choose the most appropriate installation method for your needs:
 
 ### pip
-Python 3.11 recommended.
-Python 3.12 available as pre-release release candidate for 0.9.3
+Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
 
 ```bash
 python3 -m pip install datacontract-cli[all]
@@ -162,16 +161,21 @@ pipx install datacontract-cli[all]
 
 ### Docker
 
+You can also use our Docker image to run the CLI tool. It is also convenient for CI/CD pipelines.
+
 ```bash
 docker pull datacontract/cli
 docker run --rm -v ${PWD}:/home/datacontract datacontract/cli
 ```
 
-Or via an alias that automatically uses the latest version:
+You can create an alias for the Docker command to make it easier to use:
 
 ```bash
 alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/cli:latest'
 ```
+
+_Note:_ The output of Docker command line messages is limited to 80 columns and may include line breaks. Don't pipe docker output to files if you want to export code. Use the `--output` option instead.
+
 
 
 ## Optional Dependencies
