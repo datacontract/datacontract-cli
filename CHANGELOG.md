@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.10.14] - 2024-10-24
+## [0.10.14] - 2024-10-26
 
 Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 
