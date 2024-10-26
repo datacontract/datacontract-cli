@@ -1,8 +1,11 @@
+from typing import List
+from venv import logger
+
 import yaml
 
-from datacontract.export.sql_type_converter import convert_to_sql_type
-from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.export.exporter import Exporter
+from datacontract.export.sql_type_converter import convert_to_sql_type
+from datacontract.model.data_contract_specification import DataContractSpecification, Quality
 
 
 class SodaExporter(Exporter):
@@ -58,8 +61,13 @@ def to_checks(model_key, model_value, server_type: str, check_types: bool):
             checks.append(check_field_regex(field_name, field.pattern, quote_field_name))
         if field.enum is not None and len(field.enum) > 0:
             checks.append(check_field_enum(field_name, field.enum, quote_field_name))
+        if field.quality is not None and len(field.quality) > 0:
+            checks.append(check_quality_list(model_key, field_name, field.quality))
         # TODO references: str = None
         # TODO format
+
+    if model_value.quality is not None and len(model_value.quality) > 0:
+        checks.append(check_quality_list(model_key, None, model_value.quality))
 
     checks_for_model_key = f"checks for {model_key}"
 
@@ -179,6 +187,78 @@ def check_field_regex(field_name, pattern, quote_field_name: bool = False):
             "valid regex": pattern,
         }
     }
+
+
+def check_quality_list(model_name, field_name, quality_list: List[Quality]):
+    checks = {}
+
+    count = 0
+    for quality in quality_list:
+        if quality.type == "sql":
+            if field_name is None:
+                metric_name = f"{model_name}_{field_name}_quality_sql_{count}"
+            else:
+                metric_name = f"{model_name}_quality_sql_{count}"
+            threshold = to_sodacl_threshold(quality)
+            query = prepare_query(quality, model_name, field_name)
+            if query is None:
+                logger.warning(f"Quality check {metric_name} has no query")
+                continue
+            if threshold is None:
+                logger.warning(f"Quality check {metric_name} has no valid threshold")
+                continue
+            checks[f"{metric_name} {threshold}"] = {f"{metric_name} query": query}
+        count += 1
+
+    return checks
+
+
+def prepare_query(quality: Quality, model_name: str, field_name: str = None) -> str | None:
+    if quality.query is None:
+        return None
+    if quality.query == "":
+        return None
+
+    query = quality.query
+
+    query = query.replace("{model}", model_name)
+    query = query.replace("{table}", model_name)
+
+    if field_name is not None:
+        query = query.replace("{field}", field_name)
+        query = query.replace("{column}", field_name)
+
+    return query
+
+
+def to_sodacl_threshold(quality: Quality) -> str | None:
+    if quality.mustBe is not None:
+        return f"= {quality.mustBe}"
+    if quality.mustNotBe is not None:
+        return f"!= {quality.mustNotBe}"
+    if quality.mustBeGreaterThan is not None:
+        return f"> {quality.mustBeGreaterThan}"
+    if quality.mustBeGreaterThanOrEqualTo is not None:
+        return f">= {quality.mustBeGreaterThanOrEqualTo}"
+    if quality.mustBeLessThan is not None:
+        return f"< {quality.mustBeLessThan}"
+    if quality.mustBeLessThanOrEqualTo is not None:
+        return f"<= {quality.mustBeLessThanOrEqualTo}"
+    if quality.mustBeBetween is not None:
+        if len(quality.mustBeBetween) != 2:
+            logger.warning(
+                f"Quality check has invalid mustBeBetween, must have exactly 2 integers in an array: {quality.mustBeBetween}"
+            )
+            return None
+        return f"between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]}"
+    if quality.mustNotBeBetween is not None:
+        if len(quality.mustNotBeBetween) != 2:
+            logger.warning(
+                f"Quality check has invalid mustNotBeBetween, must have exactly 2 integers in an array: {quality.mustNotBeBetween}"
+            )
+            return None
+        return f"not between {quality.mustNotBeBetween[0]} and {quality.mustNotBeBetween[1]}"
+    return None
 
 
 def add_quality_checks(sodacl, data_contract_spec):

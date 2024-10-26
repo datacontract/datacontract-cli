@@ -25,11 +25,23 @@ schema:
     isUnique: false
     logicalTypeOptions:
       minimum: 10
+    quality:
+      - type: sql
+        description: Less than 5% of null values
+        query: |
+          SELECT (COUNT(*) FILTER (WHERE field_two IS NULL) * 100.0 / COUNT(*)) AS null_percentage
+          FROM my_table
+        mustBeLessThan: 5
   - name: field_three
     logicalType: date
     physicalType: timestamptz
     isNullable: true
     isUnique: false
+  quality:
+    - type: sql
+      query: |
+        SELECT COUNT(*) FROM my_table WHERE field_two IS NOT NULL
+      mustBeLessThan: 3600
 servers:
 - server: postgres
   type: postgres
