@@ -184,6 +184,7 @@ class Model(pyd.BaseModel):
     namespace: Optional[str] = None
     title: Optional[str] = None
     fields: Dict[str, Field] = {}
+    quality: List[Quality] | None = []
     config: Dict[str, Any] = None
     tags: List[str] | None = None
 

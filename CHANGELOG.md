@@ -15,6 +15,7 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 ### Added
 - `datacontract test` now also supports ODCS v3 data contract format
 - `datacontract export --format odcs_v3`: Export to Open Data Contract Standard v3.0.0 (#460)
+- `datacontract test` now also supports ODCS v3 anda Data Contract SQL quality checks on field and model level
 - Support for import from Iceberg table definitions.
 - Support for decimal logical type on avro export.
 - Support for custom Trino types
