@@ -47,7 +47,11 @@ def test_test_quality_invalid(postgres_container, monkeypatch):
 
     print(run.pretty())
     assert run.result == "failed"
-    # TODO asset that quality checks failed
+    assert any(
+        check.name == "my_table_quality_sql_0 between 1000 and 49900" and check.result == "failed"
+        for check in run.checks
+    )
+    assert any(check.name == "my_table_None_quality_sql_0 < 3600" and check.result == "failed" for check in run.checks)
 
 
 def _setup_datacontract(file):
