@@ -23,6 +23,10 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - `datacontract import --format odcs`: Now supports ODSC v3.0.0 files (#474)
 - `datacontract export --format odcs`: Now creates v3.0.0 Open Data Contract Standard files (alias to odcs_v3). Old versions are still available as format `odcs_v2`. (#460)
 
+### Fixed
+- fix timestamp serialization from parquet -> duckdb (#472)
+
+
 ## [0.10.13] - 2024-09-20
 
 ### Added
