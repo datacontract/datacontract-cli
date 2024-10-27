@@ -27,7 +27,7 @@ def fetch_schema(location: str = None) -> Dict[str, Any]:
 
     """
     if location is None:
-        location = "https://datacontract.com/datacontract.schema.json"
+        location = "https://raw.githubusercontent.com/datacontract/datacontract-specification/refs/heads/develop/v1/datacontract.schema.json"
 
     if location.startswith("http://") or location.startswith("https://"):
         response = requests.get(location)

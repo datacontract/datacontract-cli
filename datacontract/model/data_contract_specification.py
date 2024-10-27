@@ -282,9 +282,14 @@ class DataContractSpecification(pyd.BaseModel):
     terms: Terms = None
     models: Dict[str, Model] = {}
     definitions: Dict[str, Definition] = {}
-    # schema: Dict[str, str]
-    examples: List[Example] = []
-    quality: Quality = None
+    examples: List[Example] = pyd.Field(
+        default_factory=list,
+        deprecated="Removed in Data Contract Specification " "v1.1.0. Use models.examples instead.",
+    )
+    quality: Quality = pyd.Field(
+        default=None,
+        deprecated="Removed in Data Contract Specification v1.1.0. Use " "model-level and field-level quality instead.",
+    )
     servicelevels: Optional[ServiceLevel] = None
     links: Dict[str, str] = {}
     tags: List[str] = []

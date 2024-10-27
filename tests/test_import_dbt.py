@@ -54,7 +54,7 @@ def test_import_dbt_manifest():
     result = DataContract().import_from_source("dbt", dbt_manifest)
 
     expected = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: jaffle_shop
@@ -196,7 +196,7 @@ def test_import_dbt_manifest_with_filter_and_empty_columns():
     result = DataContract().import_from_source("dbt", dbt_manifest_empty_columns, dbt_nodes=["customers"])
 
     expected = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: jaffle_shop
@@ -218,7 +218,7 @@ def test_import_dbt_manifest_with_filter():
     result = DataContract().import_from_source("dbt", dbt_manifest, dbt_nodes=["customers"])
 
     expected = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: jaffle_shop

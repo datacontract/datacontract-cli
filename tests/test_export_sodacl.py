@@ -58,7 +58,7 @@ def check_expected() -> str:
 
 def test_export_sodacl(check_expected: str):
     data_contract_specification_str = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 models:
   orders:
     description: test

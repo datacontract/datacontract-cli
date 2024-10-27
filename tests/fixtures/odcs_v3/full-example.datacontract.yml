@@ -1,4 +1,4 @@
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: 53581432-6c55-4ba2-a65f-72344a91553a
 info:
   title: ''
@@ -70,9 +70,9 @@ models:
             scheduler: cron
             customProperties:
               - property: FIELD_NAME
-                value:
+                value: null
               - property: COMPARE_TO
-                value:
+                value: null
               - property: COMPARISON_TYPE
                 value: Greater than
         config:

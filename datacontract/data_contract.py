@@ -71,7 +71,10 @@ class DataContract:
         }
 
     @classmethod
-    def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
+    def init(
+        cls,
+        template: str = "https://raw.githubusercontent.com/datacontract/datacontract-specification/refs/heads/develop/v1/datacontract.init.yaml",
+    ) -> DataContractSpecification:
         return resolve.resolve_data_contract(data_contract_location=template)
 
     def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
