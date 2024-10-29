@@ -102,3 +102,7 @@ class BreakingRules:
 
     quality_type_updated = Severity.WARNING
     quality_specification_updated = Severity.WARNING
+
+    # info rules
+    info_added = Severity.INFO
+    info_removed = Severity.ERROR

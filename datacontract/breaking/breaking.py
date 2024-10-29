@@ -1,6 +1,172 @@
 from datacontract.breaking.breaking_rules import BreakingRules
 from datacontract.model.breaking_change import BreakingChange, Location, Severity
-from datacontract.model.data_contract_specification import Field, Model, Quality
+from datacontract.model.data_contract_specification import Field, Model, Quality, Info, Contact
+
+
+def info_breaking_changes(
+    old_info: Info,
+    new_info: Info,
+    new_path: str,
+    include_severities: [Severity],
+) -> list[BreakingChange]:
+    results = list[BreakingChange]()
+
+    composition = ["info"]
+
+    if not old_info and new_info:
+        rule_name = "info_added"
+        severity = _get_rule(rule_name)
+        description = "added info"
+
+        if severity in include_severities:
+            results.append(
+                BreakingChange(
+                    description=description,
+                    check_name=rule_name,
+                    severity=severity,
+                    location=Location(path=new_path, composition=composition),
+                )
+            )
+
+    elif old_info and not new_info:
+        rule_name = "info_removed"
+        severity = _get_rule(rule_name)
+        description = "removed info"
+
+        if severity in include_severities:
+            results.append(
+                BreakingChange(
+                    description=description,
+                    check_name=rule_name,
+                    severity=severity,
+                    location=Location(path=new_path, composition=composition),
+                )
+            )
+
+    elif old_info and new_info:
+        info_definition_fields = vars(new_info) | new_info.model_extra | old_info.model_extra
+
+        for info_definition_field in info_definition_fields.keys():
+            if info_definition_field == "contact":
+                continue
+
+            old_value = getattr(old_info, info_definition_field, None)
+            new_value = getattr(new_info, info_definition_field, None)
+
+            rule_name = None
+            description = None
+
+            if old_value is None and new_value is not None:
+                rule_name = f"info_{info_definition_field}_added"
+                description = f"added with value: `{new_value}`"
+
+            elif old_value is not None and new_value is None:
+                rule_name = f"info_{info_definition_field}_removed"
+                description = "removed info property"
+
+            elif old_value != new_value:
+                rule_name = f"info_{info_definition_field}_updated"
+                description = f"changed from `{old_value}` to `{new_value}`"
+
+            if rule_name is not None:
+                severity = Severity.WARNING
+                if severity in include_severities:
+                    results.append(
+                        BreakingChange(
+                            description=description,
+                            check_name=rule_name,
+                            severity=severity,
+                            location=Location(path=new_path, composition=composition + [info_definition_field]),
+                        )
+                    )
+
+        results.extend(
+            contact_breaking_changes(
+                old_contact=getattr(old_info, "contact", None),
+                new_contact=getattr(new_info, "contact", None),
+                composition=composition + ["contact"],
+                new_path=new_path,
+                include_severities=include_severities,
+            )
+        )
+
+    return results
+
+
+def contact_breaking_changes(
+    old_contact: Contact,
+    new_contact: Contact,
+    composition: list[str],
+    new_path: str,
+    include_severities: [Severity],
+) -> list[BreakingChange]:
+    results = list[BreakingChange]()
+
+    if not old_contact and new_contact:
+        rule_name = "contact_added"
+        severity = _get_rule(rule_name)
+        description = "added contact"
+
+        if severity in include_severities:
+            results.append(
+                BreakingChange(
+                    description=description,
+                    check_name=rule_name,
+                    severity=severity,
+                    location=Location(path=new_path, composition=composition),
+                )
+            )
+
+    elif old_contact and not new_contact:
+        rule_name = "contact_removed"
+        severity = _get_rule(rule_name)
+        description = "removed contact"
+
+        if severity in include_severities:
+            results.append(
+                BreakingChange(
+                    description=description,
+                    check_name=rule_name,
+                    severity=severity,
+                    location=Location(path=new_path, composition=composition),
+                )
+            )
+
+    elif old_contact and new_contact:
+        contact_definition_fields = vars(new_contact) | new_contact.model_extra | old_contact.model_extra
+
+        for contact_definition_field in contact_definition_fields.keys():
+            old_value = getattr(old_contact, contact_definition_field, None)
+            new_value = getattr(new_contact, contact_definition_field, None)
+
+            rule_name = None
+            description = None
+
+            if old_value is None and new_value is not None:
+                rule_name = f"contact_{contact_definition_field}_added"
+                description = f"added with value: `{new_value}`"
+
+            elif old_value is not None and new_value is None:
+                rule_name = f"contact_{contact_definition_field}_removed"
+                description = "removed contact property"
+
+            elif old_value != new_value:
+                rule_name = f"contact_{contact_definition_field}_updated"
+                description = f"changed from `{old_value}` to `{new_value}`"
+
+            if rule_name is not None:
+                severity = Severity.WARNING
+                if severity in include_severities:
+                    results.append(
+                        BreakingChange(
+                            description=description,
+                            check_name=rule_name,
+                            severity=severity,
+                            location=Location(path=new_path, composition=composition + [contact_definition_field]),
+                        )
+                    )
+
+    return results
 
 
 def quality_breaking_changes(

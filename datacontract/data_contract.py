@@ -8,7 +8,7 @@ import yaml
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
-from datacontract.breaking.breaking import models_breaking_changes, quality_breaking_changes
+from datacontract.breaking.breaking import models_breaking_changes, quality_breaking_changes, info_breaking_changes
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
 )
@@ -274,6 +274,15 @@ class DataContract:
         new = other.get_data_contract_specification()
 
         breaking_changes = list[BreakingChange]()
+
+        breaking_changes.extend(
+            info_breaking_changes(
+                old_info=old.info,
+                new_info=new.info,
+                new_path=other._data_contract_file,
+                include_severities=include_severities,
+            )
+        )
 
         breaking_changes.extend(
             quality_breaking_changes(
