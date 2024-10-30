@@ -1508,7 +1508,7 @@ if __name__ == "__main__":
 Output
   
 ```yaml
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: uuid-custom
 info:
   title: my_custom_imported_data

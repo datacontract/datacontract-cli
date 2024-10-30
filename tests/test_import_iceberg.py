@@ -11,7 +11,7 @@ from typer.testing import CliRunner
 
 
 expected = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: My Data Contract

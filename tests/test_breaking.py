@@ -122,9 +122,8 @@ def test_fields_added():
     )
 
     output = result.stdout
-
     assert result.exit_code == 0
-    assert "14 breaking changes: 0 error, 14 warning\n" in output
+    assert "15 breaking changes: 0 error, 15 warning\n" in output
     assert "field_added" not in output
     assert "field_description_added" not in output
     assert "field_tags_added" not in output
@@ -143,7 +142,7 @@ def test_fields_removed():
     output = result.stdout
 
     assert result.exit_code == 1
-    assert "15 breaking changes: 5 error, 10 warning\n" in output
+    assert "16 breaking changes: 5 error, 11 warning\n" in output
     assert "field_description_removed" not in output
     assert "field_enum_removed" not in output
     assert "field_tags_removed" not in output

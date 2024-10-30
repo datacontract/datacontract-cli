@@ -53,6 +53,7 @@ def test_lint_custom_schema():
     data_contract = DataContract(data_contract_file=data_contract_file, schema_location=schema_file)
 
     run = data_contract.lint()
+
     assert run.result == "passed"
 
 
