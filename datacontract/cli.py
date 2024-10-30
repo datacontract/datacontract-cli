@@ -19,7 +19,7 @@ from datacontract.imports.importer import ImportFormat
 from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
 from datacontract.integration.datamesh_manager import publish_data_contract_to_datamesh_manager
 
-DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://raw.githubusercontent.com/datacontract/datacontract-specification/refs/heads/develop/v1/datacontract.schema.json"
+DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
 
 console = Console()
 
