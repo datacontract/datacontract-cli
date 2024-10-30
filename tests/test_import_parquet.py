@@ -1,3 +1,6 @@
+from typer.testing import CliRunner
+
+from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
 # parquet_file_path = "fixtures/parquet/data/combined.parquet"  # todo use combined example
@@ -5,7 +8,18 @@ parquet_file_path = "fixtures/parquet/data/string.parquet"
 
 
 def test_cli():
-    """TODO"""
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "import",
+            "--format",
+            "parquet",
+            "--source",
+            parquet_file_path,
+        ],
+    )
+    assert result.exit_code == 0
 
 
 def test_import_parquet():
