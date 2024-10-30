@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
-
+- raise valid exception in DataContractSpecification.from_file if file does not exist
 
 ## [0.10.14] - 2024-10-26
 
