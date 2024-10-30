@@ -99,3 +99,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.iceberg_importer",
     class_name="IcebergImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.parquet,
+    module_path="datacontract.imports.parquet_importer",
+    class_name="ParquetImporter",
+)
