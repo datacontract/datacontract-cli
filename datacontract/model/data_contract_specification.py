@@ -297,7 +297,7 @@ class DataContractSpecification(pyd.BaseModel):
     @classmethod
     def from_file(cls, file):
         if not os.path.exists(file):
-            raise (f"The file '{file}' does not exist.")
+            raise FileNotFoundError(f"The file '{file}' does not exist.")
         with open(file, "r") as file:
             file_content = file.read()
         return DataContractSpecification.from_string(file_content)
