@@ -1,11 +1,11 @@
-from pydbml import PyDBML, Database
 from typing import List
 
+from pydbml import Database, PyDBML
 from pyparsing import ParseException
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.sql_importer import map_type_from_sql
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.model.exceptions import DataContractException
 
 

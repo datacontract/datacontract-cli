@@ -2,10 +2,9 @@ import json
 import logging
 from typing import Dict, List
 
-from datacontract.model.data_contract_specification import Model, Field, Server
-from datacontract.model.exceptions import DataContractException
-
 from datacontract.export.exporter import Exporter, _check_models_for_export
+from datacontract.model.data_contract_specification import Field, Model, Server
+from datacontract.model.exceptions import DataContractException
 
 
 class BigQueryExporter(Exporter):

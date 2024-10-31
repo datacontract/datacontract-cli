@@ -1,7 +1,7 @@
 import os
-from deltalake import write_deltalake
 
 import pandas as pd
+from deltalake import write_deltalake
 
 # Ensure the required directory exists
 output_dir = "../data"

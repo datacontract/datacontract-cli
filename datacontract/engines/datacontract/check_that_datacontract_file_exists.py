@@ -1,6 +1,6 @@
 import os
 
-from datacontract.model.run import Run, Check
+from datacontract.model.run import Check, Run
 
 
 def check_that_datacontract_file_exists(run: Run, file_path: str):

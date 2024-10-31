@@ -1,9 +1,8 @@
 import json
 from typing import Dict
 
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
-
 from datacontract.export.exporter import Exporter, _check_models_for_export
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 
 
 class JsonSchemaExporter(Exporter):

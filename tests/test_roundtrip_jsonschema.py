@@ -1,5 +1,7 @@
 import json
+
 from typer.testing import CliRunner
+
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.export.jsonschema_converter import to_jsonschemas

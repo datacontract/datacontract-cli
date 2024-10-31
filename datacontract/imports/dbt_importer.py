@@ -1,10 +1,11 @@
 import json
 from typing import TypedDict
 
-from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
+
+from datacontract.imports.importer import Importer
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 
 
 class DBTImportArgs(TypedDict, total=False):

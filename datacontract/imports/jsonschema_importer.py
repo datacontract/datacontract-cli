@@ -3,7 +3,7 @@ import json
 import fastjsonschema
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field, Definition
+from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Field, Model
 from datacontract.model.exceptions import DataContractException
 
 

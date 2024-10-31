@@ -1,10 +1,11 @@
 from pyspark.sql import types
+
+from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
-    Model,
     Field,
+    Model,
 )
-from datacontract.export.exporter import Exporter
 
 
 class SparkExporter(Exporter):

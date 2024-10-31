@@ -12,7 +12,7 @@ from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_co
 from datacontract.engines.soda.connections.trino import to_trino_soda_configuration
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
-from datacontract.model.run import Run, Check, Log
+from datacontract.model.run import Check, Log, Run
 
 
 def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark, tmp_dir):

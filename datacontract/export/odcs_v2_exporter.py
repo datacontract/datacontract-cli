@@ -2,8 +2,8 @@ from typing import Dict
 
 import yaml
 
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 from datacontract.export.exporter import Exporter
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 
 
 class OdcsV2Exporter(Exporter):

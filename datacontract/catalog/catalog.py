@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytz
-from jinja2 import PackageLoader, Environment, select_autoescape
+from jinja2 import Environment, PackageLoader, select_autoescape
 
 from datacontract.data_contract import DataContract
 from datacontract.export.html_export import get_version

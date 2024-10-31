@@ -1,10 +1,10 @@
 import json
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import yaml
 
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Quality
 from datacontract.export.exporter import Exporter, _check_models_for_export
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Quality
 
 
 class GreateExpectationsExporter(Exporter):

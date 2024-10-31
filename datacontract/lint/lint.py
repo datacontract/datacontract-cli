@@ -1,9 +1,10 @@
 import abc
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Sequence, Any, cast
+from typing import Any, Sequence, cast
 
 from datacontract.model.run import Check
+
 from ..model.data_contract_specification import DataContractSpecification
 
 """This module contains linter definitions for linting a data contract.

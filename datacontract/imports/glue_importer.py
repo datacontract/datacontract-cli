@@ -1,11 +1,13 @@
-import boto3
-from typing import List, Dict, Generator
 import re
+from typing import Dict, Generator, List
+
+import boto3
+
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
-    Model,
     Field,
+    Model,
     Server,
 )
 

@@ -5,11 +5,11 @@ from typer.testing import CliRunner
 import datacontract.model.data_contract_specification as spec
 from datacontract.cli import app
 from datacontract.export.avro_idl_converter import (
-    _contract_to_avro_idl_ir,
-    AvroPrimitiveType,
-    AvroPrimitiveField,
-    AvroModelType,
     AvroIDLProtocol,
+    AvroModelType,
+    AvroPrimitiveField,
+    AvroPrimitiveType,
+    _contract_to_avro_idl_ir,
     to_avro_idl,
 )
 from datacontract.lint.resolve import resolve_data_contract_from_location

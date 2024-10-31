@@ -1,14 +1,10 @@
-import yaml
 import pytest
-from pyspark.sql import types
-
-from pyspark.sql import SparkSession
-
-from datacontract.data_contract import DataContract
-
+import yaml
+from pyspark.sql import SparkSession, types
 from typer.testing import CliRunner
-from datacontract.cli import app
 
+from datacontract.cli import app
+from datacontract.data_contract import DataContract
 
 expected = """
 dataContractSpecification: 1.1.0

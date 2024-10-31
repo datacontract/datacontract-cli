@@ -3,7 +3,7 @@ from typing import Dict
 import yaml
 
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field, Server
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
 
 
 class DataCatererExporter(Exporter):
