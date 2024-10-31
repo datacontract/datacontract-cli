@@ -1,15 +1,24 @@
 import logging
 from datetime import datetime, timezone
+from enum import Enum
 from typing import List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 
 
+class ResultEnum(str, Enum):
+    passed = "passed"
+    warning = "warning"
+    failed = "failed"
+    error = "error"
+    unknown = "unknown"
+
+
 class Check(BaseModel):
     type: str
     name: Optional[str]
-    result: str  # passed, failed, warning, unknown
+    result: ResultEnum
     engine: str
     reason: Optional[str] = None
     model: Optional[str] = None
@@ -33,29 +42,29 @@ class Run(BaseModel):
     server: Optional[str] = None
     timestampStart: datetime
     timestampEnd: datetime
-    result: str = "unknown"  # passed, warning, failed, error, unknown
+    result: ResultEnum = ResultEnum.unknown
     checks: List[Check]
     logs: List[Log]
 
     def has_passed(self):
         self.calculate_result()
-        return self.result == "passed"
+        return self.result == ResultEnum.passed
 
     def finish(self):
         self.timestampEnd = datetime.now(timezone.utc)
         self.calculate_result()
 
     def calculate_result(self):
-        if any(check.result == "error" for check in self.checks):
-            self.result = "error"
-        elif any(check.result == "failed" for check in self.checks):
-            self.result = "failed"
-        elif any(check.result == "warning" for check in self.checks):
-            self.result = "warning"
-        elif any(check.result == "passed" for check in self.checks):
-            self.result = "passed"
+        if any(check.result == ResultEnum.error for check in self.checks):
+            self.result = ResultEnum.error
+        elif any(check.result == ResultEnum.failed for check in self.checks):
+            self.result = ResultEnum.failed
+        elif any(check.result == ResultEnum.warning for check in self.checks):
+            self.result = ResultEnum.warning
+        elif any(check.result == ResultEnum.passed for check in self.checks):
+            self.result = ResultEnum.passed
         else:
-            self.result = "unknown"
+            self.result = ResultEnum.unknown
 
     def log_info(self, message: str):
         logging.info(message)
