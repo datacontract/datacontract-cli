@@ -1066,3 +1066,97 @@ def test_info_updated():
             changed from `datateam@work.com` to `anotherteam@work.com`"""
         in output
     )
+
+
+def test_terms_added():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-terms-v1.yaml",
+            "./fixtures/breaking/datacontract-terms-v2.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "1 changes: 0 error, 0 warning, 1 info\n" in output
+
+    assert (
+        """info    [terms_added] at ./fixtures/breaking/datacontract-terms-v2.yaml
+        in terms
+            added terms"""
+        in output
+    )
+
+
+def test_terms_removed():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-terms-v2.yaml",
+            "./fixtures/breaking/datacontract-terms-v1.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "1 changes: 0 error, 0 warning, 1 info\n" in output
+
+    assert (
+        """info    [terms_removed] at ./fixtures/breaking/datacontract-terms-v1.yaml
+        in terms
+            removed terms"""
+        in output
+    )
+
+
+def test_terms_updated():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-terms-v2.yaml",
+            "./fixtures/breaking/datacontract-terms-v3.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "5 changes: 0 error, 0 warning, 5 info\n" in output
+
+    assert (
+        """info    [terms_usage_updated] at ./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.usage
+            changed from `Data can be used for reports, analytics and machine 
+learning use cases.
+Order may be linked and joined by other tables
+` to `Data can be used for anything`"""
+        in output
+    )
+    assert (
+        """info    [terms_limitations_removed] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.limitations
+            removed info property"""
+        in output
+    )
+    assert (
+        """info    [terms_billing_updated] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.billing
+            changed from `5000 USD per month` to `1000000 GBP per month`"""
+        in output
+    )
+    assert (
+        """info    [terms_notice_period_updated] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.noticePeriod
+            changed from `P3M` to `P1Y`"""
+        in output
+    )
+    assert (
+        """info    [terms_some_other_terms_added] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.someOtherTerms
+            added with value: `must abide by policies`"""
+        in output
+    )

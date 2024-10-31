@@ -111,3 +111,8 @@ class BreakingRules:
     contact_added = Severity.INFO
     contact_removed = Severity.INFO
     contact_updated = Severity.INFO
+
+    # terms rules
+    terms_added = Severity.INFO
+    terms_removed = Severity.INFO
+    terms_updated = Severity.INFO
