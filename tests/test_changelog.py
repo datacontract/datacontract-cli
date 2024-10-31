@@ -965,3 +965,104 @@ def test_definition_updated():
             changed from `my_example` to `my_example_2`"""
         in output
     )
+
+
+def test_info_added():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-info-v1.yaml",
+            "./fixtures/breaking/datacontract-info-v2.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
+
+    assert (
+        """info    [info_owner_added] at ./fixtures/breaking/datacontract-info-v2.yaml
+        in info.owner
+            added with value: `Data Team`"""
+        in output
+    )
+    assert (
+        """info    [info_some-other-key_added] at 
+./fixtures/breaking/datacontract-info-v2.yaml
+        in info.some-other-key
+            added with value: `some information`"""
+        in output
+    )
+    assert (
+        """info    [contact_added] at ./fixtures/breaking/datacontract-info-v2.yaml
+        in info.contact
+            added contact"""
+        in output
+    )
+
+
+def test_info_removed():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-info-v2.yaml",
+            "./fixtures/breaking/datacontract-info-v1.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
+    assert (
+        """info    [info_owner_removed] at ./fixtures/breaking/datacontract-info-v1.yaml
+        in info.owner
+            removed info property"""
+        in output
+    )
+    assert (
+        """info    [info_some-other-key_removed] at 
+./fixtures/breaking/datacontract-info-v1.yaml
+        in info.some-other-key
+            removed info property"""
+        in output
+    )
+    assert (
+        """info    [contact_removed] at ./fixtures/breaking/datacontract-info-v1.yaml
+        in info.contact
+            removed contact"""
+        in output
+    )
+
+
+def test_info_updated():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-info-v2.yaml",
+            "./fixtures/breaking/datacontract-info-v3.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
+
+    assert (
+        """info    [info_owner_updated] at ./fixtures/breaking/datacontract-info-v3.yaml
+        in info.owner
+            changed from `Data Team` to `Another Team`"""
+        in output
+    )
+    assert (
+        """info    [info_some-other-key_updated] at 
+./fixtures/breaking/datacontract-info-v3.yaml
+        in info.some-other-key
+            changed from `some information` to `new information`"""
+        in output
+    )
+    assert (
+        """info    [contact_email_updated] at ./fixtures/breaking/datacontract-info-v3.yaml
+        in info.contact.email
+            changed from `datateam@work.com` to `anotherteam@work.com`"""
+        in output
+    )

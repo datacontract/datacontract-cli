@@ -13,37 +13,7 @@ def info_breaking_changes(
 
     composition = ["info"]
 
-    if not old_info and new_info:
-        rule_name = "info_added"
-        severity = _get_rule(rule_name)
-        description = "added info"
-
-        if severity in include_severities:
-            results.append(
-                BreakingChange(
-                    description=description,
-                    check_name=rule_name,
-                    severity=severity,
-                    location=Location(path=new_path, composition=composition),
-                )
-            )
-
-    elif old_info and not new_info:
-        rule_name = "info_removed"
-        severity = _get_rule(rule_name)
-        description = "removed info"
-
-        if severity in include_severities:
-            results.append(
-                BreakingChange(
-                    description=description,
-                    check_name=rule_name,
-                    severity=severity,
-                    location=Location(path=new_path, composition=composition),
-                )
-            )
-
-    elif old_info and new_info:
+    if old_info and new_info:
         info_definition_fields = vars(new_info) | new_info.model_extra | old_info.model_extra
 
         for info_definition_field in info_definition_fields.keys():
@@ -57,19 +27,19 @@ def info_breaking_changes(
             description = None
 
             if old_value is None and new_value is not None:
-                rule_name = f"info_{info_definition_field}_added"
+                rule_name = f"info_{_camel_to_snake(info_definition_field)}_added"
                 description = f"added with value: `{new_value}`"
 
             elif old_value is not None and new_value is None:
-                rule_name = f"info_{info_definition_field}_removed"
+                rule_name = f"info_{_camel_to_snake(info_definition_field)}_removed"
                 description = "removed info property"
 
             elif old_value != new_value:
-                rule_name = f"info_{info_definition_field}_updated"
+                rule_name = f"info_{_camel_to_snake(info_definition_field)}_updated"
                 description = f"changed from `{old_value}` to `{new_value}`"
 
             if rule_name is not None:
-                severity = Severity.WARNING
+                severity = _get_rule(rule_name)
                 if severity in include_severities:
                     results.append(
                         BreakingChange(
@@ -143,19 +113,19 @@ def contact_breaking_changes(
             description = None
 
             if old_value is None and new_value is not None:
-                rule_name = f"contact_{contact_definition_field}_added"
+                rule_name = f"contact_{_camel_to_snake(contact_definition_field)}_added"
                 description = f"added with value: `{new_value}`"
 
             elif old_value is not None and new_value is None:
-                rule_name = f"contact_{contact_definition_field}_removed"
+                rule_name = f"contact_{_camel_to_snake(contact_definition_field)}_removed"
                 description = "removed contact property"
 
             elif old_value != new_value:
-                rule_name = f"contact_{contact_definition_field}_updated"
+                rule_name = f"contact_{_camel_to_snake(contact_definition_field)}_updated"
                 description = f"changed from `{old_value}` to `{new_value}`"
 
             if rule_name is not None:
-                severity = Severity.WARNING
+                severity = _get_rule(rule_name)
                 if severity in include_severities:
                     results.append(
                         BreakingChange(
@@ -486,8 +456,13 @@ def _get_rule(rule_name) -> Severity:
     try:
         return getattr(BreakingRules, rule_name)
     except AttributeError:
-        print(f"WARNING: Breaking Rule not found for {rule_name}!")
-        return Severity.ERROR
+        try:
+            first, *_, last = rule_name.split("_")
+            short_rule = "_".join([first, last])
+            return getattr(BreakingRules, short_rule)
+        except AttributeError:
+            print(f"WARNING: Breaking Rule not found for {rule_name}!")
+            return Severity.ERROR
 
 
 def _camel_to_snake(s):

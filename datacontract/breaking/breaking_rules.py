@@ -104,5 +104,10 @@ class BreakingRules:
     quality_specification_updated = Severity.WARNING
 
     # info rules
-    info_added = Severity.INFO
-    info_removed = Severity.ERROR
+    info_added = Severity.INFO  # will match `info_<somekey>_added` etc
+    info_removed = Severity.INFO
+    info_updated = Severity.INFO
+
+    contact_added = Severity.INFO
+    contact_removed = Severity.INFO
+    contact_updated = Severity.INFO
