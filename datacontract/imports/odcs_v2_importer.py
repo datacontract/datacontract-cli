@@ -6,16 +6,16 @@ import yaml
 
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import (
+    DATACONTRACT_TYPES,
     Availability,
     Contact,
     DataContractSpecification,
+    Field,
     Info,
     Model,
-    Field,
     Retention,
     ServiceLevel,
     Terms,
-    DATACONTRACT_TYPES,
 )
 from datacontract.model.exceptions import DataContractException
 

@@ -133,3 +133,8 @@ log_cli_level = "INFO"
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint]
+extend-select = [
+    "I",   # re-order imports in alphabetic order
+]

@@ -12,7 +12,6 @@ from testcontainers.kafka import KafkaContainer
 
 from datacontract.data_contract import DataContract
 
-
 datacontract = "fixtures/kafka/datacontract.yaml"
 
 

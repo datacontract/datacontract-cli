@@ -1,5 +1,5 @@
-import os
 import glob
+import os
 
 import pytest
 from testcontainers.minio import MinioContainer

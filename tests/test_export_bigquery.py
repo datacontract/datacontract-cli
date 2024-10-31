@@ -1,4 +1,5 @@
 import json
+
 from typer.testing import CliRunner
 
 from datacontract.cli import app

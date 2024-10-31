@@ -3,13 +3,11 @@ from importlib.metadata import version
 from typing import Tuple
 
 import pytz
-from datacontract.model.exceptions import DataContractException
 
 import datacontract.model.data_contract_specification as spec
-from datacontract.export.sql_type_converter import convert_to_sql_type
-
-
 from datacontract.export.exporter import Exporter
+from datacontract.export.sql_type_converter import convert_to_sql_type
+from datacontract.model.exceptions import DataContractException
 
 
 class DbmlExporter(Exporter):

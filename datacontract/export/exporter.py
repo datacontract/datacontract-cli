@@ -1,6 +1,6 @@
+import typing
 from abc import ABC, abstractmethod
 from enum import Enum
-import typing
 
 from datacontract.model.data_contract_specification import DataContractSpecification
 

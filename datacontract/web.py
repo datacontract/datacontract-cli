@@ -1,11 +1,10 @@
-from typing import Annotated, Union, Optional
+from typing import Annotated, Optional, Union
 
 import typer
 from fastapi import FastAPI, File
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from datacontract.data_contract import DataContract, ExportFormat
-from fastapi.responses import PlainTextResponse
 
 app = FastAPI()
 

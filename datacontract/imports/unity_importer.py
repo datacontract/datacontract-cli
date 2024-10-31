@@ -2,13 +2,13 @@ import json
 import os
 from typing import List, Optional
 
-from pyspark.sql import types
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.catalog import TableInfo, ColumnInfo
+from databricks.sdk.service.catalog import ColumnInfo, TableInfo
+from pyspark.sql import types
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.spark_importer import _field_from_struct_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.model.exceptions import DataContractException
 
 

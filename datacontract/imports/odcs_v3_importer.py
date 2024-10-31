@@ -8,16 +8,16 @@ import yaml
 from datacontract.imports.importer import Importer
 from datacontract.lint.resources import read_resource
 from datacontract.model.data_contract_specification import (
+    DATACONTRACT_TYPES,
     Availability,
     DataContractSpecification,
+    Field,
     Info,
     Model,
-    Field,
     Retention,
     Server,
     ServiceLevel,
     Terms,
-    DATACONTRACT_TYPES,
 )
 from datacontract.model.exceptions import DataContractException
 

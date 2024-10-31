@@ -1,12 +1,11 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
+from pydantic import ValidationError
+from pyiceberg import types as iceberg_types
+from pyiceberg.schema import Schema
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
-
-from pyiceberg.schema import Schema
-from pyiceberg import types as iceberg_types
-from pydantic import ValidationError
-
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.model.exceptions import DataContractException
 
 

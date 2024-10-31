@@ -12,7 +12,6 @@ from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExpo
 
 from datacontract.model.run import Run
 
-
 # Publishes metrics of a test run.
 # Metric contains the values:
 # 0 == test run passed,

@@ -2,8 +2,7 @@ import ast
 import typing
 
 import datacontract.model.data_contract_specification as spec
-from datacontract.export.exporter import Exporter
-from datacontract.export.exporter import _determine_sql_server_type
+from datacontract.export.exporter import Exporter, _determine_sql_server_type
 
 
 class SQLAlchemyExporter(Exporter):

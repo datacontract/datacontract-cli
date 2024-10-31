@@ -1,6 +1,7 @@
 import importlib.util
 import sys
-from datacontract.imports.importer import ImportFormat, Importer
+
+from datacontract.imports.importer import Importer, ImportFormat
 
 
 class ImporterFactory:

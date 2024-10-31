@@ -1,14 +1,11 @@
 import pytest
-
-from datacontract.imports.iceberg_importer import load_and_validate_iceberg_schema
-from datacontract.model.exceptions import DataContractException
-from datacontract.cli import app
-
 from pyiceberg.schema import Schema
-from pyiceberg.types import NestedField, IntegerType
-
+from pyiceberg.types import IntegerType, NestedField
 from typer.testing import CliRunner
 
+from datacontract.cli import app
+from datacontract.imports.iceberg_importer import load_and_validate_iceberg_schema
+from datacontract.model.exceptions import DataContractException
 
 expected = """
 dataContractSpecification: 1.1.0

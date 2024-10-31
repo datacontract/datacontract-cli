@@ -8,7 +8,7 @@ from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import Run, Check
+from datacontract.model.run import Check, Run
 
 
 def validate_json_stream(model_name, validate, json_stream):

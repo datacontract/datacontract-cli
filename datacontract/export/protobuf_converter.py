@@ -1,5 +1,5 @@
-from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.export.exporter import Exporter
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 class ProtoBufExporter(Exporter):

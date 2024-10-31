@@ -1,6 +1,7 @@
 import importlib
 import sys
-from datacontract.export.exporter import ExportFormat, Exporter
+
+from datacontract.export.exporter import Exporter, ExportFormat
 
 
 class ExporterFactory:

@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import pydantic as pyd
 import yaml

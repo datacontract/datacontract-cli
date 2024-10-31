@@ -1,15 +1,15 @@
-import pytest
+from datetime import datetime
 
+import pytest
 from dotenv import load_dotenv
-from pyspark.sql import SparkSession, Row
+from pyspark.sql import Row, SparkSession
 from pyspark.sql.types import (
-    StructType,
-    StructField,
-    StringType,
     IntegerType,
+    StringType,
+    StructField,
+    StructType,
     TimestampType,
 )
-from datetime import datetime
 
 from datacontract.data_contract import DataContract
 

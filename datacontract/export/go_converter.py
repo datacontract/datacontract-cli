@@ -1,6 +1,7 @@
-import datacontract.model.data_contract_specification as spec
-from typing import List
 import re
+from typing import List
+
+import datacontract.model.data_contract_specification as spec
 from datacontract.export.exporter import Exporter
 
 
