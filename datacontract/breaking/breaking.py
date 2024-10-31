@@ -466,4 +466,5 @@ def _get_rule(rule_name) -> Severity:
 
 
 def _camel_to_snake(s):
+    s = s.replace("-", "_")
     return "".join(["_" + c.lower() if c.isupper() else c for c in s]).lstrip("_")

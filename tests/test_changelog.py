@@ -987,7 +987,7 @@ def test_info_added():
         in output
     )
     assert (
-        """info    [info_some-other-key_added] at 
+        """info    [info_some_other_key_added] at 
 ./fixtures/breaking/datacontract-info-v2.yaml
         in info.some-other-key
             added with value: `some information`"""
@@ -1020,7 +1020,7 @@ def test_info_removed():
         in output
     )
     assert (
-        """info    [info_some-other-key_removed] at 
+        """info    [info_some_other_key_removed] at 
 ./fixtures/breaking/datacontract-info-v1.yaml
         in info.some-other-key
             removed info property"""
@@ -1054,7 +1054,7 @@ def test_info_updated():
         in output
     )
     assert (
-        """info    [info_some-other-key_updated] at 
+        """info    [info_some_other_key_updated] at 
 ./fixtures/breaking/datacontract-info-v3.yaml
         in info.some-other-key
             changed from `some information` to `new information`"""
