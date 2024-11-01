@@ -194,6 +194,7 @@ A list of available extras:
 | Avro Support           | `pip install datacontract-cli[avro]`       |
 | Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration | `pip install datacontract-cli[databricks]` |
+| Iceberg                | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration      | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
 | S3 Integration         | `pip install datacontract-cli[s3]`         |
@@ -201,6 +202,8 @@ A list of available extras:
 | Microsoft SQL Server   | `pip install datacontract-cli[sqlserver]`  |
 | Trino                  | `pip install datacontract-cli[trino]`      |
 | Dbt                    | `pip install datacontract-cli[dbt]`        |
+| Dbml                   | `pip install datacontract-cli[dbml]`       |
+| Parquet                | `pip install datacontract-cli[parquet]`    |
 
 
 

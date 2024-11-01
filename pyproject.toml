@@ -16,7 +16,6 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   "typer>=0.12,<0.13",
-  "pyarrow>=12.0.0",
   "pydantic>=2.8.2,<2.10.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
@@ -95,8 +94,12 @@ dbml = [
   "pydbml>=1.1.1"
 ]
 
+parquet = [
+  "pyarrow>=12.0.0"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet]"
 ]
 
 dev = [
