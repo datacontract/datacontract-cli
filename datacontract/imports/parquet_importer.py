@@ -6,8 +6,8 @@ from pyarrow import parquet
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
-    Model,
     Field,
+    Model,
 )
 from datacontract.model.exceptions import DataContractException
 
