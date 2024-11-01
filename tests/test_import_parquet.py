@@ -3,8 +3,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-# parquet_file_path = "fixtures/parquet/data/combined.parquet"  # todo use combined example
-parquet_file_path = "fixtures/parquet/data/string.parquet"
+parquet_file_path = "fixtures/parquet/data/combined_no_time.parquet"
 
 
 def test_cli():
@@ -31,10 +30,38 @@ info:
   title: My Data Contract
   version: 0.0.1
 models:
-  string:
+  combined_no_time:
     fields:
       string_field:
         type: string
+      blob_field:
+        type: bytes
+      boolean_field:
+        type: boolean
+      decimal_field:
+        type: decimal
+        precision: 10
+        scale: 2
+      float_field:
+        type: float
+      double_field:
+        type: double
+      integer_field:
+        type: int
+      bigint_field:
+        type: long
+      struct_field:
+        type: struct
+      array_field:
+        type: array
+      list_field:
+        type: array
+      map_field:
+        type: map
+      date_field:
+        type: date
+      timestamp_field:
+        type: timestamp
 """
 
     assert result.to_yaml() == expected
