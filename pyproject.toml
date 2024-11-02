@@ -94,8 +94,12 @@ dbml = [
   "pydbml>=1.1.1"
 ]
 
+parquet = [
+  "pyarrow>=12.0.0"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet]"
 ]
 
 dev = [
@@ -105,7 +109,6 @@ dev = [
   "moto==5.0.18",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<3.9.0",
-  "pyarrow>=12.0.0",
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.1",

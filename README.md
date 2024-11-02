@@ -194,6 +194,7 @@ A list of available extras:
 | Avro Support           | `pip install datacontract-cli[avro]`       |
 | Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration | `pip install datacontract-cli[databricks]` |
+| Iceberg                | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration      | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
 | S3 Integration         | `pip install datacontract-cli[s3]`         |
@@ -201,6 +202,8 @@ A list of available extras:
 | Microsoft SQL Server   | `pip install datacontract-cli[sqlserver]`  |
 | Trino                  | `pip install datacontract-cli[trino]`      |
 | Dbt                    | `pip install datacontract-cli[dbt]`        |
+| Dbml                   | `pip install datacontract-cli[dbml]`       |
+| Parquet                | `pip install datacontract-cli[parquet]`    |
 
 
 
@@ -930,8 +933,8 @@ models:
  Create a data contract from the given source location. Prints to stdout.                                                      
                                                                                                                                
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                       [sql|avro|dbt|glue|jsonschema|bigquery|odcs  The format of the source file.               │
-│                                   |unity|spark|iceberg]                        [default: None]                              │
+│ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bigquery  The format of the source file.               │
+│                                   |odcs|unity|spark|iceberg|parquet]           [default: None]                              │
 │                                                                                [required]                                   │
 │    --source                       TEXT                                         The path to the file or Glue Database that   │
 │                                                                                should be imported.                          │
@@ -962,7 +965,8 @@ models:
 │                                                                                empty for all tables in the file).           │
 │                                                                                [default: None]                              │
 │    --iceberg-table                TEXT                                         Table name to assign to the model created    │
-│                                                                                from the Iceberg schema. [default: None]     │
+│                                                                                from the Iceberg schema.                     │
+│                                                                                [default: None]                              │
 │    --help                                                                      Show this message and exit.                  │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -989,6 +993,7 @@ Available import options:
 | `dbml`             | Import from DBML models                        | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD    |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
+| `parquet`          | Import from Parquet File Metadta               | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD    |
 
 
