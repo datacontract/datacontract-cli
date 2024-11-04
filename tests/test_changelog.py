@@ -101,7 +101,7 @@ def test_models_added():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "2 changes: 0 error, 0 warning, 2 info\n" in output
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
     assert (
         """info    [model_added] at ./fixtures/breaking/datacontract-models-v2.yaml
         in models.my_table_2
@@ -113,6 +113,14 @@ def test_models_added():
 ./fixtures/breaking/datacontract-models-v2.yaml
         in models.my_table.description
             added with value: `My Model Description`"""
+        in output
+    )
+
+    assert (
+        """info    [model_another-key_added] at 
+./fixtures/breaking/datacontract-models-v2.yaml
+        in models.my_table.another-key
+            added with value: `original value`"""
         in output
     )
 
@@ -128,7 +136,7 @@ def test_models_removed():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "2 changes: 1 error, 0 warning, 1 info\n" in output
+    assert "3 changes: 1 error, 0 warning, 2 info\n" in output
     assert (
         r"""error   [model_removed] at ./fixtures/breaking/datacontract-models-v1.yaml
         in models.my_table_2
@@ -139,6 +147,13 @@ def test_models_removed():
         """info    [model_description_removed] at 
 ./fixtures/breaking/datacontract-models-v1.yaml
         in models.my_table.description
+            removed model property"""
+        in output
+    )
+    assert (
+        """info    [model_another-key_removed] at 
+./fixtures/breaking/datacontract-models-v1.yaml
+        in models.my_table.another-key
             removed model property"""
         in output
     )
@@ -155,7 +170,7 @@ def test_models_updated():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "2 changes: 1 error, 0 warning, 1 info\n" in output
+    assert "4 changes: 1 error, 0 warning, 3 info\n" in output
     assert (
         r"""error   [model_type_updated] at ./fixtures/breaking/datacontract-models-v3.yaml
         in models.my_table.type
@@ -171,6 +186,22 @@ Description`"""
         in output
     )
 
+    assert (
+        """info    [model_another-key_updated] at 
+./fixtures/breaking/datacontract-models-v3.yaml
+        in models.my_table.another-key
+            changed from `original value` to `updated value`"""
+        in output
+    )
+
+    assert (
+        """info    [model_some-other-key_removed] at 
+./fixtures/breaking/datacontract-models-v3.yaml
+        in models.my_table_2.some-other-key
+            removed model property"""
+        in output
+    )
+
 
 def test_fields_added():
     result = runner.invoke(
@@ -183,7 +214,7 @@ def test_fields_added():
     )
     assert result.exit_code == 0
     output = result.stdout
-    assert "19 changes: 0 error, 15 warning, 4 info\n" in output
+    assert "20 changes: 0 error, 15 warning, 5 info\n" in output
     assert (
         """info    [field_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
         in models.my_table.fields.new_field
@@ -302,6 +333,14 @@ def test_fields_added():
         in output
     )
 
+    assert (
+        """info    [field_custom_key_added] at 
+./fixtures/breaking/datacontract-fields-v2.yaml
+        in models.my_table.fields.field_custom_key.custom-key
+            added with value: `some value`"""
+        in output
+    )
+
 
 def test_fields_removed():
     result = runner.invoke(
@@ -314,7 +353,7 @@ def test_fields_removed():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "19 changes: 5 error, 11 warning, 3 info\n" in output
+    assert "20 changes: 5 error, 11 warning, 4 info\n" in output
     assert (
         r"""warning [field_type_removed] at ./fixtures/breaking/datacontract-fields-v1.yaml
         in models.my_table.fields.field_type.type
@@ -435,6 +474,14 @@ def test_fields_removed():
         in output
     )
 
+    assert (
+        """info    [field_custom_key_removed] at 
+./fixtures/breaking/datacontract-fields-v1.yaml
+        in models.my_table.fields.field_custom_key.custom-key
+            removed field property"""
+        in output
+    )
+
 
 def test_fields_updated():
     result = runner.invoke(
@@ -447,7 +494,7 @@ def test_fields_updated():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "20 changes: 15 error, 3 warning, 2 info\n" in output
+    assert "21 changes: 15 error, 3 warning, 3 info\n" in output
     assert (
         r"""error   [field_type_updated] at ./fixtures/breaking/datacontract-fields-v3.yaml
         in models.my_table.fields.field_type.type
@@ -581,6 +628,13 @@ def test_fields_updated():
         r"""error   [field_type_updated] at ./fixtures/breaking/datacontract-fields-v3.yaml
         in models.my_table.fields.field_fields.fields.nested_field_1.type
             changed from `string` to `integer`"""
+        in output
+    )
+    assert (
+        r"""info    [field_custom_key_updated] at 
+./fixtures/breaking/datacontract-fields-v3.yaml
+        in models.my_table.fields.field_custom_key.custom-key
+            changed from `some value` to `some other value`"""
         in output
     )
 

@@ -341,14 +341,14 @@ def model_breaking_changes(
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
-    model_definition_fields = vars(new_model)
+    model_definition_fields = vars(new_model) | new_model.model_extra | old_model.model_extra
 
     for model_definition_field in model_definition_fields.keys():
         if model_definition_field == "fields":
             continue
 
-        old_value = getattr(old_model, model_definition_field)
-        new_value = getattr(new_model, model_definition_field)
+        old_value = getattr(old_model, model_definition_field, None)
+        new_value = getattr(new_model, model_definition_field, None)
 
         rule_name = None
         description = None
@@ -449,13 +449,13 @@ def field_breaking_changes(
 ) -> list[BreakingChange]:
     results = list[BreakingChange]()
 
-    field_definition_fields = vars(new_field)
+    field_definition_fields = vars(new_field) | new_field.model_extra | old_field.model_extra
     for field_definition_field in field_definition_fields.keys():
         if field_definition_field == "ref_obj":
             continue
 
-        old_value = getattr(old_field, field_definition_field)
-        new_value = getattr(new_field, field_definition_field)
+        old_value = getattr(old_field, field_definition_field, None)
+        new_value = getattr(new_field, field_definition_field, None)
 
         if field_definition_field == "fields":
             results.extend(
@@ -534,7 +534,7 @@ def _get_rule(rule_name) -> Severity:
     except AttributeError:
         try:
             first, *_, last = rule_name.split("_")
-            short_rule = "_".join([first, last])
+            short_rule = "__".join([first, last])
             return getattr(BreakingRules, short_rule)
         except AttributeError:
             print(f"WARNING: Breaking Rule not found for {rule_name}!")
