@@ -1,6 +1,6 @@
 from datacontract.breaking.breaking_rules import BreakingRules
 from datacontract.model.breaking_change import BreakingChange, Location, Severity
-from datacontract.model.data_contract_specification import Field, Model, Quality, Info, Contact, Terms
+from datacontract.model.data_contract_specification import Contact, Field, Info, Model, Quality, Terms
 
 
 def info_breaking_changes(

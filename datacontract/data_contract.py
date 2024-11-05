@@ -9,9 +9,9 @@ if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
 from datacontract.breaking.breaking import (
+    info_breaking_changes,
     models_breaking_changes,
     quality_breaking_changes,
-    info_breaking_changes,
     terms_breaking_changes,
 )
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
