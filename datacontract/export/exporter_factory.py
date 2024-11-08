@@ -109,7 +109,7 @@ exporter_factory.register_lazy_exporter(
 exporter_factory.register_lazy_exporter(
     name=ExportFormat.great_expectations,
     module_path="datacontract.export.great_expectations_converter",
-    class_name="GreateExpectationsExporter",
+    class_name="GreatExpectationsExporter",
 )
 
 exporter_factory.register_lazy_exporter(

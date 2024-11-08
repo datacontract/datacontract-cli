@@ -1,43 +1,118 @@
+"""
+This module provides functionalities to export data contracts to Great Expectations suites.
+It includes definitions for exporting different types of data (pandas, Spark, SQL) into
+Great Expectations expectations format.
+"""
+
+from enum import Enum
 import json
 from typing import Dict, List, Any
-
 import yaml
 
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Quality
-from datacontract.export.exporter import Exporter, _check_models_for_export
+from datacontract.model.data_contract_specification import (
+    DataContractSpecification,
+    Field,
+    Quality,
+)
+from datacontract.export.exporter import (
+    Exporter,
+    _check_models_for_export,
+    _determine_sql_server_type,
+)
+from datacontract.export.pandas_type_converter import convert_to_pandas_type
+from datacontract.export.spark_converter import to_spark_data_type
+from datacontract.export.sql_type_converter import convert_to_sql_type
 
 
-class GreateExpectationsExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
-        return to_great_expectations(
-            data_contract,
-            model_name,
-        )
+class GreatExpectationsEngine(Enum):
+    """Enum to represent the type of data engine for expectations.
 
-
-def to_great_expectations(data_contract_spec: DataContractSpecification, model_key: str, expectation_suite_name: str) -> str:
+    Attributes:
+        pandas (str): Represents the Pandas engine type.
+        spark (str): Represents the Spark engine type.
+        sql (str): Represents the SQL engine type.
     """
-    Convert each model in the contract to a Great Expectation suite
-    @param data_contract_spec: data contract to export to great expectations
-    @param model_key: model to great expectations to
-    @param expectation_suite_name: the name of the expectation suite
-    @return: a dictionary of great expectation suites
+
+    pandas = "pandas"
+    spark = "spark"
+    sql = "sql"
+
+
+class GreatExpectationsExporter(Exporter):
+    """Exporter class to convert data contracts to Great Expectations suites.
+
+    Methods:
+        export: Converts a data contract model to a Great Expectations suite.
+
+    """
+
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+        """Exports a data contract model to a Great Expectations suite.
+
+        Args:
+            data_contract (DataContractSpecification): The data contract specification.
+            model (str): The model name to export.
+            server (str): The server information.
+            sql_server_type (str): Type of SQL server (e.g., "snowflake").
+            export_args (dict): Additional arguments for export, such as "suite_name" and "engine".
+
+        Returns:
+            dict: A dictionary representation of the Great Expectations suite.
+        """
+        expectation_suite_name = export_args.get("suite_name")
+        engine = export_args.get("engine")
+        sql_server_type = (
+            _determine_sql_server_type(data_contract, sql_server_type)
+            if engine == GreatExpectationsEngine.sql.value
+            else None
+        )
+        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+        return to_great_expectations(data_contract, model_name, expectation_suite_name, engine, sql_server_type)
+
+
+def to_great_expectations(
+    data_contract_spec: DataContractSpecification,
+    model_key: str,
+    expectation_suite_name: str | None = None,
+    engine: str | None = None,
+    sql_server_type: str = "snowflake",
+) -> str:
+    """Converts a data contract model to a Great Expectations suite.
+
+    Args:
+        data_contract_spec (DataContractSpecification): The data contract specification.
+        model_key (str): The model key.
+        expectation_suite_name (str | None): Optional suite name for the expectations.
+        engine (str | None): Optional engine type (e.g., "pandas", "spark").
+        sql_server_type (str): The type of SQL server (default is "snowflake").
+
+    Returns:
+        str: JSON string of the Great Expectations suite.
     """
     expectations = []
+    if not expectation_suite_name:
+        expectation_suite_name = "{model_key}.{contract_version}".format(
+            model_key=model_key, contract_version=data_contract_spec.info.version
+        )
     model_value = data_contract_spec.models.get(model_key)
     quality_checks = get_quality_checks(data_contract_spec.quality)
-    expectations.extend(model_to_expectations(model_value.fields))
+    expectations.extend(model_to_expectations(model_value.fields, engine, sql_server_type))
     expectations.extend(checks_to_expectations(quality_checks, model_key))
     model_expectation_suite = to_suite(expectations, expectation_suite_name)
 
     return model_expectation_suite
 
 
-def to_suite(
-    expectations: List[Dict[str, Any]],
-    expectation_suite_name: str
-) -> str:
+def to_suite(expectations: List[Dict[str, Any]], expectation_suite_name: str) -> str:
+    """Converts a list of expectations to a JSON-formatted suite.
+
+    Args:
+        expectations (List[Dict[str, Any]]): List of expectations.
+        expectation_suite_name (str): Name of the expectation suite.
+
+    Returns:
+        str: JSON string of the expectation suite.
+    """
     return json.dumps(
         {
             "data_asset_type": "null",
@@ -49,22 +124,53 @@ def to_suite(
     )
 
 
-def model_to_expectations(fields: Dict[str, Field]) -> List[Dict[str, Any]]:
-    """
-    Convert the model information to expectations
-    @param fields: model field
-    @return: list of expectations
+def model_to_expectations(fields: Dict[str, Field], engine: str | None, sql_server_type: str) -> List[Dict[str, Any]]:
+    """Converts model fields to a list of expectations.
+
+    Args:
+        fields (Dict[str, Field]): Dictionary of model fields.
+        engine (str | None): Engine type (e.g., "pandas", "spark").
+        sql_server_type (str): SQL server type.
+
+    Returns:
+        List[Dict[str, Any]]: List of expectations.
     """
     expectations = []
     add_column_order_exp(fields, expectations)
     for field_name, field in fields.items():
-        add_field_expectations(field_name, field, expectations)
+        add_field_expectations(field_name, field, expectations, engine, sql_server_type)
     return expectations
 
 
-def add_field_expectations(field_name, field: Field, expectations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def add_field_expectations(
+    field_name,
+    field: Field,
+    expectations: List[Dict[str, Any]],
+    engine: str | None,
+    sql_server_type: str,
+) -> List[Dict[str, Any]]:
+    """Adds expectations for a specific field based on its properties.
+
+    Args:
+        field_name (str): The name of the field.
+        field (Field): The field object.
+        expectations (List[Dict[str, Any]]): The expectations list to update.
+        engine (str | None): Engine type (e.g., "pandas", "spark").
+        sql_server_type (str): SQL server type.
+
+    Returns:
+        List[Dict[str, Any]]: Updated list of expectations.
+    """
     if field.type is not None:
-        expectations.append(to_column_types_exp(field_name, field.type))
+        if engine == GreatExpectationsEngine.spark.value:
+            field_type = to_spark_data_type(field).__class__.__name__
+        elif engine == GreatExpectationsEngine.pandas.value:
+            field_type = convert_to_pandas_type(field)
+        elif engine == GreatExpectationsEngine.sql.value:
+            field_type = convert_to_sql_type(field, sql_server_type)
+        else:
+            field_type = field.type
+        expectations.append(to_column_types_exp(field_name, field_type))
     if field.unique:
         expectations.append(to_column_unique_exp(field_name))
     if field.maxLength is not None or field.minLength is not None:
@@ -72,11 +178,16 @@ def add_field_expectations(field_name, field: Field, expectations: List[Dict[str
     if field.minimum is not None or field.maximum is not None:
         expectations.append(to_column_min_max_exp(field_name, field.minimum, field.maximum))
 
-    # TODO: all constraints
     return expectations
 
 
 def add_column_order_exp(fields: Dict[str, Field], expectations: List[Dict[str, Any]]):
+    """Adds expectation for column ordering.
+
+    Args:
+        fields (Dict[str, Field]): Dictionary of fields.
+        expectations (List[Dict[str, Any]]): The expectations list to update.
+    """
     expectations.append(
         {
             "expectation_type": "expect_table_columns_to_match_ordered_list",
@@ -87,6 +198,15 @@ def add_column_order_exp(fields: Dict[str, Field], expectations: List[Dict[str, 
 
 
 def to_column_types_exp(field_name, field_type) -> Dict[str, Any]:
+    """Creates a column type expectation.
+
+    Args:
+        field_name (str): The name of the field.
+        field_type (str): The type of the field.
+
+    Returns:
+        Dict[str, Any]: Column type expectation.
+    """
     return {
         "expectation_type": "expect_column_values_to_be_of_type",
         "kwargs": {"column": field_name, "type_": field_type},
@@ -95,18 +215,54 @@ def to_column_types_exp(field_name, field_type) -> Dict[str, Any]:
 
 
 def to_column_unique_exp(field_name) -> Dict[str, Any]:
-    return {"expectation_type": "expect_column_values_to_be_unique", "kwargs": {"column": field_name}, "meta": {}}
+    """Creates a column uniqueness expectation.
+
+    Args:
+        field_name (str): The name of the field.
+
+    Returns:
+        Dict[str, Any]: Column uniqueness expectation.
+    """
+    return {
+        "expectation_type": "expect_column_values_to_be_unique",
+        "kwargs": {"column": field_name},
+        "meta": {},
+    }
 
 
 def to_column_length_exp(field_name, min_length, max_length) -> Dict[str, Any]:
+    """Creates a column length expectation.
+
+    Args:
+        field_name (str): The name of the field.
+        min_length (int | None): Minimum length.
+        max_length (int | None): Maximum length.
+
+    Returns:
+        Dict[str, Any]: Column length expectation.
+    """
     return {
         "expectation_type": "expect_column_value_lengths_to_be_between",
-        "kwargs": {"column": field_name, "min_value": min_length, "max_value": max_length},
+        "kwargs": {
+            "column": field_name,
+            "min_value": min_length,
+            "max_value": max_length,
+        },
         "meta": {},
     }
 
 
 def to_column_min_max_exp(field_name, minimum, maximum) -> Dict[str, Any]:
+    """Creates a column min-max value expectation.
+
+    Args:
+        field_name (str): The name of the field.
+        minimum (float | None): Minimum value.
+        maximum (float | None): Maximum value.
+
+    Returns:
+        Dict[str, Any]: Column min-max value expectation.
+    """
     return {
         "expectation_type": "expect_column_values_to_be_between",
         "kwargs": {"column": field_name, "min_value": minimum, "max_value": maximum},
@@ -115,6 +271,14 @@ def to_column_min_max_exp(field_name, minimum, maximum) -> Dict[str, Any]:
 
 
 def get_quality_checks(quality: Quality) -> Dict[str, Any]:
+    """Retrieves quality checks defined in a data contract.
+
+    Args:
+        quality (Quality): Quality object from the data contract.
+
+    Returns:
+        Dict[str, Any]: Dictionary of quality checks.
+    """
     if quality is None:
         return {}
     if quality.type is None:
@@ -129,11 +293,14 @@ def get_quality_checks(quality: Quality) -> Dict[str, Any]:
 
 
 def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> List[Dict[str, Any]]:
-    """
-    Get the quality definition for each model to the model expectation list
-    @param quality_checks: dictionary of quality checks by model
-    @param model_key: id of the model
-    @return: the list of expectations for that model
+    """Converts quality checks to a list of expectations.
+
+    Args:
+        quality_checks (Dict[str, Any]): Dictionary of quality checks by model.
+        model_key (str): The model key.
+
+    Returns:
+        List[Dict[str, Any]]: List of expectations for the model.
     """
     if quality_checks is None or model_key not in quality_checks:
         return []
@@ -146,3 +313,4 @@ def checks_to_expectations(quality_checks: Dict[str, Any], model_key: str) -> Li
     if isinstance(model_quality_checks, str):
         expectation_list = json.loads(model_quality_checks)
         return expectation_list
+    return []
