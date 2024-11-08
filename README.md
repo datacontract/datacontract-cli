@@ -819,9 +819,10 @@ Available export options:
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
+
 #### Great Expectations
 
-The export function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
+The `export` function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
 If the contract includes multiple models, you need to specify the names of the model you wish to export.
 
 ```shell
@@ -831,7 +832,22 @@ datacontract  export datacontract.yaml --format great-expectations --model order
 The export creates a list of expectations by utilizing:
 
 - The data from the Model definition with a fixed mapping
-- The expectations provided in the quality field for each model (find here the expectations gallery https://greatexpectations.io/expectations/)
+- The expectations provided in the quality field for each model (find here the expectations gallery: [Great Expectations Gallery](https://greatexpectations.io/expectations/))
+
+### Additional Arguments
+
+To further customize the export, the following optional arguments are available:
+
+- **`suite_name`**: The name of the expectation suite. This suite groups all generated expectations and provides a convenient identifier within Great Expectations. If not provided, a default suite name will be generated based on the model name(s).
+
+- **`engine`**: Specifies the engine used to run Great Expectations checks. Accepted values are:
+  - `pandas` — Use this when working with in-memory data frames through the Pandas library.
+  - `spark` — Use this for working with Spark dataframes.
+  - `sql` — Use this for working with SQL databases.
+
+- **`sql_server_type`**: Specifies the type of SQL server to connect with when `engine` is set to `sql`.
+
+  Providing `sql_server_type` ensures that the appropriate SQL dialect and connection settings are applied during the expectation validation.
 
 #### RDF
 
