@@ -81,9 +81,16 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
         return "null"
     if field.type in ["string", "varchar", "text"]:
         return "string"
-    elif field.type in ["number", "decimal", "numeric"]:
+    elif field.type in ["number", "numeric"]:
         # https://avro.apache.org/docs/1.11.1/specification/#decimal
         return "bytes"
+    elif field.type in ["decimal"]:
+        typeVal = {"type": "bytes", "logicalType": "decimal"}
+        if field.scale is not None:
+            typeVal["scale"] = field.scale
+        if field.precision is not None:
+            typeVal["precision"] = field.precision
+        return typeVal
     elif field.type in ["float", "double"]:
         return "double"
     elif field.type in ["integer", "int"]:

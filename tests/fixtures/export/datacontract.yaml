@@ -1,4 +1,4 @@
-dataContractSpecification: 0.9.2
+dataContractSpecification: 1.1.0
 id: orders-unit-test
 info:
   title: Orders Unit Test
@@ -9,6 +9,7 @@ info:
   contact:
     email: team-orders@example.com
     url: https://wiki.example.com/teams/checkout
+  otherField: otherValue
 terms:
   usage: This data contract serves to demo datacontract CLI export.
   limitations: Not intended to use in production
@@ -17,14 +18,21 @@ terms:
 servers:
   production:
     type: snowflake
+    environment: production
     account: my-account
     database: my-database
     schema: my-schema
+    roles:
+      - name: analyst_us
+        description: Access to the data for US region
 models:
   orders:
+    title: orders
+    type: table
     description: The orders model
     fields:
       order_id:
+        title: Order ID
         type: varchar
         unique: true
         required: true
@@ -35,12 +43,22 @@ models:
         tags:
           - order_id
         pattern: ^B[0-9]+$
+        examples:
+          - B12345678
+          - B12345679
       order_total:
         type: bigint
         required: true
         description: The order_total field
         minimum: 0
         maximum: 1000000
+        quality:
+          - type: sql
+            description: 95% of all order total values are expected to be between 10 and 499 EUR.
+            query: |
+              SELECT quantile_cont(order_total, 0.95) AS percentile_95
+              FROM orders
+            mustBeBetween: [1000, 49900]
       order_status:
         type: text
         required: true

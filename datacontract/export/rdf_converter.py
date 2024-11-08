@@ -1,9 +1,8 @@
 from pydantic import BaseModel
-from rdflib import Graph, Literal, BNode, RDF, URIRef, Namespace
-
-from datacontract.model.data_contract_specification import DataContractSpecification
+from rdflib import RDF, BNode, Graph, Literal, Namespace, URIRef
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 class RdfExporter(Exporter):
@@ -58,8 +57,8 @@ def to_rdf(data_contract_spec: DataContractSpecification, base) -> Graph:
     else:
         g = Graph(base=Namespace(""))
 
-    dc = Namespace("https://datacontract.com/DataContractSpecification/0.9.2/")
-    dcx = Namespace("https://datacontract.com/DataContractSpecification/0.9.2/Extension/")
+    dc = Namespace("https://datacontract.com/DataContractSpecification/1.1.0/")
+    dcx = Namespace("https://datacontract.com/DataContractSpecification/1.1.0/Extension/")
 
     g.bind("dc", dc)
     g.bind("dcx", dcx)

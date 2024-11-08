@@ -17,7 +17,6 @@ from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
-
 from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
 from datacontract.integration.opentelemetry import publish_test_results_to_opentelemetry
 from datacontract.lint import resolve
@@ -28,10 +27,10 @@ from datacontract.lint.linters.field_reference_linter import FieldReferenceLinte
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
 from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
 from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
-from datacontract.model.breaking_change import BreakingChanges, BreakingChange, Severity
+from datacontract.model.breaking_change import BreakingChange, BreakingChanges, Severity
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import Run, Check
+from datacontract.model.run import Check, Run
 
 
 class DataContract:
@@ -199,7 +198,15 @@ class DataContract:
 
         except DataContractException as e:
             run.checks.append(
-                Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
+                Check(
+                    type=e.type,
+                    name=e.name,
+                    result=e.result,
+                    reason=e.reason,
+                    model=e.model,
+                    engine=e.engine,
+                    details="",
+                )
             )
             run.log_error(str(e))
         except Exception as e:

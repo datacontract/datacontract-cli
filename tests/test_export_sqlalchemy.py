@@ -1,10 +1,10 @@
 import ast
 from textwrap import dedent
 
+import pytest
+
 import datacontract.export.sqlalchemy_converter as conv
 import datacontract.model.data_contract_specification as spec
-
-import pytest
 
 
 # These tests would be easier if AST nodes were comparable.

@@ -1,7 +1,6 @@
 from importlib import metadata
 from pathlib import Path
-from typing import Iterable, Optional
-from typing import List
+from typing import Iterable, List, Optional
 
 import typer
 import uvicorn
@@ -13,10 +12,10 @@ from typer.core import TyperGroup
 from typing_extensions import Annotated
 
 from datacontract import web
-from datacontract.catalog.catalog import create_index_html, create_data_contract_html
+from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
-from datacontract.init.download_datacontract_file import download_datacontract_file, FileExistsException
+from datacontract.init.download_datacontract_file import FileExistsException, download_datacontract_file
 from datacontract.integration.datamesh_manager import publish_data_contract_to_datamesh_manager
 
 DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
@@ -244,6 +243,10 @@ def import_(
             help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
         ),
     ] = None,
+    iceberg_table: Annotated[
+        Optional[str],
+        typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Prints to stdout.
@@ -259,6 +262,7 @@ def import_(
         dbt_model=dbt_model,
         dbml_schema=dbml_schema,
         dbml_table=dbml_table,
+        iceberg_table=iceberg_table,
     )
     console.print(result.to_yaml())
 

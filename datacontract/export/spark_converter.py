@@ -1,10 +1,11 @@
 from pyspark.sql import types
+
+from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
-    Model,
     Field,
+    Model,
 )
-from datacontract.export.exporter import Exporter
 
 
 class SparkExporter(Exporter):
@@ -128,7 +129,9 @@ def to_spark_data_type(field: Field) -> types.DataType:
     if field_type in ["string", "varchar", "text"]:
         return types.StringType()
     if field_type in ["number", "decimal", "numeric"]:
-        return types.DecimalType(precision=field.precision, scale=field.scale)
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return types.DecimalType(precision=precision, scale=scale)
     if field_type in ["integer", "int"]:
         return types.IntegerType()
     if field_type == "long":

@@ -34,6 +34,8 @@ class BreakingRules:
 
     field_required_updated = Severity.ERROR
 
+    field_primary_added = Severity.WARNING
+    field_primary_removed = Severity.WARNING
     field_primary_updated = Severity.WARNING
 
     field_references_added = Severity.WARNING

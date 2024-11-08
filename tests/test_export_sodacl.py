@@ -2,7 +2,6 @@ import pytest
 import yaml
 
 from datacontract.export.sodacl_converter import to_sodacl_yaml
-from datacontract.lint import resolve
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 
@@ -34,6 +33,20 @@ def check_expected() -> str:
                   processed_timestamp: timestamp
           - missing_count(processed_timestamp) = 0:
               name: Check that required field processed_timestamp has no null values 
+          - schema:
+              name: Check that field order_total is present
+              fail:
+                when required column missing:
+                  - order_total
+          - schema:
+              name: Check that field order_total has type integer
+              fail:
+                when wrong column type:
+                  order_total: integer
+          - orders_quality_sql_0 between 1000 and 49900:
+              orders_quality_sql_0 query: |
+                SELECT quantile_cont(order_total, 0.95) AS percentile_95
+                FROM orders
           - freshness(processed_timestamp) < 1d
           - row_count > 10
         checks for line_items:
@@ -43,9 +56,9 @@ def check_expected() -> str:
     return expected
 
 
-def test_to_sodacl(check_expected: str):
+def test_export_sodacl(check_expected: str):
     data_contract_specification_str = """
-dataContractSpecification: 0.9.1
+dataContractSpecification: 1.1.0
 models:
   orders:
     description: test
@@ -56,6 +69,14 @@ models:
       processed_timestamp:
         type: timestamp
         required: true
+      order_total:
+        type: integer
+        quality:
+          - type: sql
+            query: |
+              SELECT quantile_cont({field}, 0.95) AS percentile_95
+              FROM {model}
+            mustBeBetween: [ 1000, 49900 ]
 quality:
     type: SodaCL
     specification:
@@ -69,16 +90,6 @@ quality:
 
     data = yaml.safe_load(data_contract_specification_str)
     data_contract_specification = DataContractSpecification(**data)
-
-    result = to_sodacl_yaml(data_contract_specification)
-
-    assert yaml.safe_load(result) == yaml.safe_load(check_expected)
-
-
-def test_export_sodacl(check_expected: str):
-    data_contract_specification = resolve.resolve_data_contract_from_location(
-        "./fixtures/sodacl/datacontract.yaml", inline_quality=True
-    )
 
     result = to_sodacl_yaml(data_contract_specification)
 

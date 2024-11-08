@@ -1,7 +1,7 @@
 import re
 
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.export.exporter import Exporter
+from datacontract.model.data_contract_specification import DataContractSpecification, Server
 
 
 class TerraformExporter(Exporter):

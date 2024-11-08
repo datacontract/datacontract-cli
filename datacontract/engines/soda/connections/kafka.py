@@ -2,7 +2,7 @@ import logging
 import os
 
 from datacontract.export.avro_converter import to_avro_schema_json
-from datacontract.model.data_contract_specification import DataContractSpecification, Server, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Server
 from datacontract.model.exceptions import DataContractException
 
 
@@ -69,8 +69,8 @@ def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Se
 
 def process_avro_format(df, model_name, model):
     try:
-        from pyspark.sql.functions import col, expr
         from pyspark.sql.avro.functions import from_avro
+        from pyspark.sql.functions import col, expr
     except ImportError as e:
         raise DataContractException(
             type="schema",
@@ -167,21 +167,21 @@ def to_struct_type(fields):
 def to_struct_field(field_name: str, field: Field):
     try:
         from pyspark.sql.types import (
-            StructType,
-            StructField,
-            StringType,
+            ArrayType,
+            BinaryType,
+            BooleanType,
+            DataType,
+            DateType,
             DecimalType,
             DoubleType,
             IntegerType,
             LongType,
-            BooleanType,
-            TimestampType,
-            TimestampNTZType,
-            DateType,
-            BinaryType,
-            ArrayType,
             NullType,
-            DataType,
+            StringType,
+            StructField,
+            StructType,
+            TimestampNTZType,
+            TimestampType,
         )
     except ImportError as e:
         raise DataContractException(

@@ -3,7 +3,7 @@ import logging
 from typing import List
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.model.exceptions import DataContractException
 
 

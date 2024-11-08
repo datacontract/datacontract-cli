@@ -23,7 +23,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
             )
 
         if run.dataContractId is None:
-            raise Exception("Cannot publish run results, as data contract ID is unknown")
+            raise Exception("Cannot publish run results for unknown data contract ID")
 
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
         request_body = run.model_dump_json()

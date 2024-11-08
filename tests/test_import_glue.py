@@ -1,8 +1,8 @@
 import boto3
-from typer.testing import CliRunner
+import pytest
 import yaml
 from moto import mock_aws
-import pytest
+from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract

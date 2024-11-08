@@ -3,11 +3,10 @@ from dataclasses import dataclass
 from enum import Enum
 from io import StringIO
 
+from datacontract.export.exporter import Exporter
 from datacontract.lint.resolve import inline_definitions_into_data_contract
 from datacontract.model.data_contract_specification import DataContractSpecification, Field
 from datacontract.model.exceptions import DataContractException
-
-from datacontract.export.exporter import Exporter
 
 
 class AvroPrimitiveType(Enum):
@@ -64,6 +63,7 @@ class AvroIDLProtocol:
     model_types: list[AvroModelType]
 
 
+# TODO use DATACONTRACT_TYPES from datacontract/model/data_contract_specification.py
 avro_primitive_types = set(
     [
         "string",

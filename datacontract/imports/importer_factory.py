@@ -1,6 +1,7 @@
 import importlib.util
 import sys
-from datacontract.imports.importer import ImportFormat, Importer
+
+from datacontract.imports.importer import Importer, ImportFormat
 
 
 class ImporterFactory:
@@ -92,4 +93,14 @@ importer_factory.register_lazy_importer(
     name=ImportFormat.dbml,
     module_path="datacontract.imports.dbml_importer",
     class_name="DBMLImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.iceberg,
+    module_path="datacontract.imports.iceberg_importer",
+    class_name="IcebergImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.parquet,
+    module_path="datacontract.imports.parquet_importer",
+    class_name="ParquetImporter",
 )

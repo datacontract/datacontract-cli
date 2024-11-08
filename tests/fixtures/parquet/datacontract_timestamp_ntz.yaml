@@ -1,0 +1,19 @@
+dataContractSpecification: 1.1.0
+id: parquet-timestamp-ntz-test
+info:
+  title: Parquet Timestamp w/o timezone test
+  version: 0.0.1
+  description: Parquet Timestamp w/o timezone test
+servers:
+  test:
+    type: local
+    path: "./fixtures/parquet/data/timestamp_ntz.parquet"
+    format: parquet
+models:
+  example:
+    type: table
+    fields:
+      timestamp:
+        type: timestamp_ntz
+        description: CREATEDDATE
+        required: true

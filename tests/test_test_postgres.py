@@ -10,7 +10,7 @@ from datacontract.model.exceptions import DataContractException
 postgres = PostgresContainer("postgres:16")
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def postgres_container(request):
     postgres.start()
 
@@ -32,6 +32,22 @@ def test_test_postgres(postgres_container, monkeypatch):
     run = data_contract.test()
 
     print(run)
+    assert run.result == "passed"
+    assert all(check.result == "passed" for check in run.checks)
+
+
+def test_test_postgres_odcs(postgres_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    _init_sql("fixtures/postgres/data/data.sql")
+
+    datacontract_file = "fixtures/postgres/odcs.yaml"
+    data_contract_str = _setup_datacontract(datacontract_file)
+    data_contract = DataContract(data_contract_str=data_contract_str)
+
+    run = data_contract.test()
+
+    print(run.pretty())
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
 

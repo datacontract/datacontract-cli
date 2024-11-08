@@ -1,4 +1,4 @@
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: float-unit-test
 info:
   title: Float Unit Test

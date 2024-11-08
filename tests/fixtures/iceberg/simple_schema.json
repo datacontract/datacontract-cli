@@ -1,0 +1,15 @@
+{
+  "type": "struct",
+  "fields": [
+    {
+      "id": 1,
+      "name": "foo",
+      "type": "int",
+      "required": true
+    }
+  ],
+  "schema-id": 1,
+  "identifier-field-ids": [
+    1
+  ]
+}

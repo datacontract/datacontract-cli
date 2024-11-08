@@ -1,0 +1,23 @@
+dataContractSpecification: 1.1.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  MySchema:
+    fields:
+      price:
+        type: decimal
+        required: true
+      dewey_decimal:
+        type: decimal
+        required: true
+        precision: 4
+        scale: 2
+      reading_level:
+        type: decimal
+        required: false
+      age:
+        type: decimal
+        required: false
+        precision: 3

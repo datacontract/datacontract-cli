@@ -12,7 +12,6 @@ from testcontainers.kafka import KafkaContainer
 
 from datacontract.data_contract import DataContract
 
-
 datacontract = "fixtures/kafka/datacontract.yaml"
 
 
@@ -25,7 +24,7 @@ def test_test_kafka(monkeypatch):
         data_contract = DataContract(data_contract_str=data_contract_str)
         run = data_contract.test()
 
-    print(run)
+    print(run.pretty())
     assert run.result == "passed"
 
 

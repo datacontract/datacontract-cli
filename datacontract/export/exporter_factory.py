@@ -1,6 +1,7 @@
 import importlib
 import sys
-from datacontract.export.exporter import ExportFormat, Exporter
+
+from datacontract.export.exporter import Exporter, ExportFormat
 
 
 class ExporterFactory:
@@ -99,7 +100,15 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.odcs, module_path="datacontract.export.odcs_converter", class_name="OdcsExporter"
+    name=ExportFormat.odcs_v2, module_path="datacontract.export.odcs_v2_exporter", class_name="OdcsV2Exporter"
+)
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.odcs_v3, module_path="datacontract.export.odcs_v3_exporter", class_name="OdcsV3Exporter"
+)
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.odcs, module_path="datacontract.export.odcs_v3_exporter", class_name="OdcsV3Exporter"
 )
 
 exporter_factory.register_lazy_exporter(
@@ -154,4 +163,8 @@ exporter_factory.register_lazy_exporter(
     name=ExportFormat.sqlalchemy,
     module_path="datacontract.export.sqlalchemy_converter",
     class_name="SQLAlchemyExporter",
+)
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dcs, module_path="datacontract.export.dcs_exporter", class_name="DcsExporter"
 )

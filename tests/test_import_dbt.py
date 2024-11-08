@@ -54,7 +54,7 @@ def test_import_dbt_manifest():
     result = DataContract().import_from_source("dbt", dbt_manifest)
 
     expected = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: jaffle_shop
@@ -110,6 +110,7 @@ models:
       amount:
         type: double
         description: Total amount (AUD) of the order
+    tags: []
   stg_customers:
     description: ''
     fields:
@@ -122,6 +123,7 @@ models:
       last_name:
         type: varchar
         description: ''
+    tags: []
   stg_orders:
     description: ''
     fields:
@@ -137,6 +139,7 @@ models:
       status:
         type: varchar
         description: ''
+    tags: []
   stg_payments:
     description: ''
     fields:
@@ -152,6 +155,7 @@ models:
       amount:
         type: double
         description: ''
+    tags: []
   customers:
     description: This table has basic information about a customer, as well as some
       derived facts based on a customer's orders
@@ -181,7 +185,8 @@ models:
       customer_lifetime_value:
         type: double
         description: ''
-    """
+    tags:
+    - TABLE_PII"""
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
@@ -191,7 +196,7 @@ def test_import_dbt_manifest_with_filter_and_empty_columns():
     result = DataContract().import_from_source("dbt", dbt_manifest_empty_columns, dbt_nodes=["customers"])
 
     expected = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: jaffle_shop
@@ -201,6 +206,8 @@ models:
   customers:
     description: This table has basic information about a customer, as well as some
       derived facts based on a customer's orders
+    tags:
+      - TABLE_PII
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
@@ -211,7 +218,7 @@ def test_import_dbt_manifest_with_filter():
     result = DataContract().import_from_source("dbt", dbt_manifest, dbt_nodes=["customers"])
 
     expected = """
-dataContractSpecification: 0.9.3
+dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: jaffle_shop
@@ -247,7 +254,8 @@ models:
       customer_lifetime_value:
         type: double
         description: ''
-    """
+    tags:
+    - TABLE_PII"""
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
