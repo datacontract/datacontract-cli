@@ -4,16 +4,12 @@ It includes definitions for exporting different types of data (pandas, Spark, SQ
 Great Expectations expectations format.
 """
 
-from enum import Enum
 import json
-from typing import Dict, List, Any
+from enum import Enum
+from typing import Any, Dict, List
+
 import yaml
 
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Field,
-    Quality,
-)
 from datacontract.export.exporter import (
     Exporter,
     _check_models_for_export,
@@ -22,6 +18,11 @@ from datacontract.export.exporter import (
 from datacontract.export.pandas_type_converter import convert_to_pandas_type
 from datacontract.export.spark_converter import to_spark_data_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
+from datacontract.model.data_contract_specification import (
+    DataContractSpecification,
+    Field,
+    Quality,
+)
 
 
 class GreatExpectationsEngine(Enum):
