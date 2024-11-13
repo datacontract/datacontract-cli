@@ -12,6 +12,7 @@ models:
     fields:
       my_field:
         description: My Description
+    another-key: updated value
   my_table_2:
     fields:
       my_field_2:

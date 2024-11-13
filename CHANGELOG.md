@@ -10,8 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support for model import from parquet file metadata.
+- Changelog support for `Info` and `Terms` blocks.
 
 ### Changed
+- Changelog support for custom extension keys in `Models` and `Fields` blocks.
 
 ### Fixed
 - raise valid exception in DataContractSpecification.from_file if file does not exist

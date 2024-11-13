@@ -74,6 +74,9 @@ models:
             type: string
       new_field:
         type: string
+      field_custom_key:
+        type: string
+        custom-key: some other value
 
 definitions:
     my_definition_2:
