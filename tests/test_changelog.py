@@ -101,7 +101,7 @@ def test_models_added():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "2 changes: 0 error, 0 warning, 2 info\n" in output
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
     assert (
         """info    [model_added] at ./fixtures/breaking/datacontract-models-v2.yaml
         in models.my_table_2
@@ -113,6 +113,14 @@ def test_models_added():
 ./fixtures/breaking/datacontract-models-v2.yaml
         in models.my_table.description
             added with value: `My Model Description`"""
+        in output
+    )
+
+    assert (
+        """info    [model_another-key_added] at 
+./fixtures/breaking/datacontract-models-v2.yaml
+        in models.my_table.another-key
+            added with value: `original value`"""
         in output
     )
 
@@ -128,7 +136,7 @@ def test_models_removed():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "2 changes: 1 error, 0 warning, 1 info\n" in output
+    assert "3 changes: 1 error, 0 warning, 2 info\n" in output
     assert (
         r"""error   [model_removed] at ./fixtures/breaking/datacontract-models-v1.yaml
         in models.my_table_2
@@ -139,6 +147,13 @@ def test_models_removed():
         """info    [model_description_removed] at 
 ./fixtures/breaking/datacontract-models-v1.yaml
         in models.my_table.description
+            removed model property"""
+        in output
+    )
+    assert (
+        """info    [model_another-key_removed] at 
+./fixtures/breaking/datacontract-models-v1.yaml
+        in models.my_table.another-key
             removed model property"""
         in output
     )
@@ -155,7 +170,7 @@ def test_models_updated():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "2 changes: 1 error, 0 warning, 1 info\n" in output
+    assert "4 changes: 1 error, 0 warning, 3 info\n" in output
     assert (
         r"""error   [model_type_updated] at ./fixtures/breaking/datacontract-models-v3.yaml
         in models.my_table.type
@@ -171,6 +186,22 @@ Description`"""
         in output
     )
 
+    assert (
+        """info    [model_another-key_updated] at 
+./fixtures/breaking/datacontract-models-v3.yaml
+        in models.my_table.another-key
+            changed from `original value` to `updated value`"""
+        in output
+    )
+
+    assert (
+        """info    [model_some-other-key_removed] at 
+./fixtures/breaking/datacontract-models-v3.yaml
+        in models.my_table_2.some-other-key
+            removed model property"""
+        in output
+    )
+
 
 def test_fields_added():
     result = runner.invoke(
@@ -183,7 +214,7 @@ def test_fields_added():
     )
     assert result.exit_code == 0
     output = result.stdout
-    assert "19 changes: 0 error, 15 warning, 4 info\n" in output
+    assert "20 changes: 0 error, 15 warning, 5 info\n" in output
     assert (
         """info    [field_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
         in models.my_table.fields.new_field
@@ -302,6 +333,14 @@ def test_fields_added():
         in output
     )
 
+    assert (
+        """info    [field_custom_key_added] at 
+./fixtures/breaking/datacontract-fields-v2.yaml
+        in models.my_table.fields.field_custom_key.custom-key
+            added with value: `some value`"""
+        in output
+    )
+
 
 def test_fields_removed():
     result = runner.invoke(
@@ -314,7 +353,7 @@ def test_fields_removed():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "19 changes: 5 error, 11 warning, 3 info\n" in output
+    assert "20 changes: 5 error, 11 warning, 4 info\n" in output
     assert (
         r"""warning [field_type_removed] at ./fixtures/breaking/datacontract-fields-v1.yaml
         in models.my_table.fields.field_type.type
@@ -435,6 +474,14 @@ def test_fields_removed():
         in output
     )
 
+    assert (
+        """info    [field_custom_key_removed] at 
+./fixtures/breaking/datacontract-fields-v1.yaml
+        in models.my_table.fields.field_custom_key.custom-key
+            removed field property"""
+        in output
+    )
+
 
 def test_fields_updated():
     result = runner.invoke(
@@ -447,7 +494,7 @@ def test_fields_updated():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "20 changes: 15 error, 3 warning, 2 info\n" in output
+    assert "21 changes: 15 error, 3 warning, 3 info\n" in output
     assert (
         r"""error   [field_type_updated] at ./fixtures/breaking/datacontract-fields-v3.yaml
         in models.my_table.fields.field_type.type
@@ -581,6 +628,13 @@ def test_fields_updated():
         r"""error   [field_type_updated] at ./fixtures/breaking/datacontract-fields-v3.yaml
         in models.my_table.fields.field_fields.fields.nested_field_1.type
             changed from `string` to `integer`"""
+        in output
+    )
+    assert (
+        r"""info    [field_custom_key_updated] at 
+./fixtures/breaking/datacontract-fields-v3.yaml
+        in models.my_table.fields.field_custom_key.custom-key
+            changed from `some value` to `some other value`"""
         in output
     )
 
@@ -963,5 +1017,200 @@ def test_definition_updated():
 ./fixtures/breaking/datacontract-definitions-v3.yaml
         in models.my_table.fields.my_field.example
             changed from `my_example` to `my_example_2`"""
+        in output
+    )
+
+
+def test_info_added():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-info-v1.yaml",
+            "./fixtures/breaking/datacontract-info-v2.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
+
+    assert (
+        """info    [info_owner_added] at ./fixtures/breaking/datacontract-info-v2.yaml
+        in info.owner
+            added with value: `Data Team`"""
+        in output
+    )
+    assert (
+        """info    [info_some_other_key_added] at 
+./fixtures/breaking/datacontract-info-v2.yaml
+        in info.some-other-key
+            added with value: `some information`"""
+        in output
+    )
+    assert (
+        """info    [contact_added] at ./fixtures/breaking/datacontract-info-v2.yaml
+        in info.contact
+            added contact"""
+        in output
+    )
+
+
+def test_info_removed():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-info-v2.yaml",
+            "./fixtures/breaking/datacontract-info-v1.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
+    assert (
+        """info    [info_owner_removed] at ./fixtures/breaking/datacontract-info-v1.yaml
+        in info.owner
+            removed info property"""
+        in output
+    )
+    assert (
+        """info    [info_some_other_key_removed] at 
+./fixtures/breaking/datacontract-info-v1.yaml
+        in info.some-other-key
+            removed info property"""
+        in output
+    )
+    assert (
+        """info    [contact_removed] at ./fixtures/breaking/datacontract-info-v1.yaml
+        in info.contact
+            removed contact"""
+        in output
+    )
+
+
+def test_info_updated():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-info-v2.yaml",
+            "./fixtures/breaking/datacontract-info-v3.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
+
+    assert (
+        """info    [info_owner_updated] at ./fixtures/breaking/datacontract-info-v3.yaml
+        in info.owner
+            changed from `Data Team` to `Another Team`"""
+        in output
+    )
+    assert (
+        """info    [info_some_other_key_updated] at 
+./fixtures/breaking/datacontract-info-v3.yaml
+        in info.some-other-key
+            changed from `some information` to `new information`"""
+        in output
+    )
+    assert (
+        """info    [contact_email_updated] at ./fixtures/breaking/datacontract-info-v3.yaml
+        in info.contact.email
+            changed from `datateam@work.com` to `anotherteam@work.com`"""
+        in output
+    )
+
+
+def test_terms_added():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-terms-v1.yaml",
+            "./fixtures/breaking/datacontract-terms-v2.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "1 changes: 0 error, 0 warning, 1 info\n" in output
+
+    assert (
+        """info    [terms_added] at ./fixtures/breaking/datacontract-terms-v2.yaml
+        in terms
+            added terms"""
+        in output
+    )
+
+
+def test_terms_removed():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-terms-v2.yaml",
+            "./fixtures/breaking/datacontract-terms-v1.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "1 changes: 0 error, 0 warning, 1 info\n" in output
+
+    assert (
+        """info    [terms_removed] at ./fixtures/breaking/datacontract-terms-v1.yaml
+        in terms
+            removed terms"""
+        in output
+    )
+
+
+def test_terms_updated():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "./fixtures/breaking/datacontract-terms-v2.yaml",
+            "./fixtures/breaking/datacontract-terms-v3.yaml",
+        ],
+    )
+    output = result.stdout
+    assert result.exit_code == 0
+    assert "5 changes: 0 error, 0 warning, 5 info\n" in output
+
+    assert (
+        """info    [terms_usage_updated] at ./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.usage
+            changed from `Data can be used for reports, analytics and machine 
+learning use cases.
+Order may be linked and joined by other tables
+` to `Data can be used for anything`"""
+        in output
+    )
+    assert (
+        """info    [terms_limitations_removed] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.limitations
+            removed info property"""
+        in output
+    )
+    assert (
+        """info    [terms_billing_updated] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.billing
+            changed from `5000 USD per month` to `1000000 GBP per month`"""
+        in output
+    )
+    assert (
+        """info    [terms_notice_period_updated] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.noticePeriod
+            changed from `P3M` to `P1Y`"""
+        in output
+    )
+    assert (
+        """info    [terms_some_other_terms_added] at 
+./fixtures/breaking/datacontract-terms-v3.yaml
+        in terms.someOtherTerms
+            added with value: `must abide by policies`"""
         in output
     )

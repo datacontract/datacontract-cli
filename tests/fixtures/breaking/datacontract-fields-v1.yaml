@@ -51,3 +51,5 @@ models:
         fields:
           nested_field_1:
             type: string
+      field_custom_key:
+        type: string

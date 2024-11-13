@@ -12,6 +12,10 @@ class BreakingRules:
 
     model_type_updated = Severity.ERROR
 
+    model__removed = Severity.INFO  # To support model extension keys
+    model__added = Severity.INFO
+    model__updated = Severity.INFO
+
     # field rules
     field_added = Severity.INFO
     field_removed = Severity.ERROR
@@ -96,9 +100,27 @@ class BreakingRules:
     field_example_updated = Severity.INFO
     field_example_removed = Severity.INFO
 
+    field__removed = Severity.INFO  # To support field extension keys
+    field__added = Severity.INFO
+    field__updated = Severity.INFO
+
     # quality Rules
     quality_added = Severity.INFO
     quality_removed = Severity.WARNING
 
     quality_type_updated = Severity.WARNING
     quality_specification_updated = Severity.WARNING
+
+    # info rules
+    info__added = Severity.INFO  # will match `info_<somekey>_added` etc
+    info__removed = Severity.INFO
+    info__updated = Severity.INFO
+
+    contact__added = Severity.INFO
+    contact__removed = Severity.INFO
+    contact__updated = Severity.INFO
+
+    # terms rules
+    terms__added = Severity.INFO
+    terms__removed = Severity.INFO
+    terms__updated = Severity.INFO
