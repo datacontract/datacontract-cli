@@ -934,7 +934,7 @@ models:
                                                                                                                                
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bigquery  The format of the source file.               │
-│                                   |odcs|unity|spark|iceberg|parquet]           [default: None]                              │
+│                                   |odcs|unity|spark|iceberg|parquet|protobuf]  [default: None]                              │
 │                                                                                [required]                                   │
 │    --source                       TEXT                                         The path to the file or Glue Database that   │
 │                                                                                should be imported.                          │
@@ -991,7 +991,7 @@ Available import options:
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | `spark`            | Import from Spark StructTypes                  | ✅      |
 | `dbml`             | Import from DBML models                        | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | TBD    |
+| `protobuf`         | Import from Protobuf schemas                   | ✅      |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
 | `parquet`          | Import from Parquet File Metadta               | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD    |
@@ -1132,6 +1132,17 @@ Examples:
 ```bash
 datacontract import --format iceberg --source ./tests/fixtures/iceberg/simple_schema.json --iceberg-table test-table
 ```
+
+#### ProtoBuf
+
+Importing from an [Protocol Buffers 3 Schema Definition](https://protobuf.dev/programming-guides/proto3/). Specify location of ProtoBuf files using the `source` parameter.
+
+Examples:
+
+```bash
+datacontract import --format protobuf --source ./tests/fixtures/protobuf/simple_schema.proto3.data --protobuf-table test-table
+```
+
 
 ### breaking
 

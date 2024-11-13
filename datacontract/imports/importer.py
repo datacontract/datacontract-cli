@@ -31,6 +31,8 @@ class ImportFormat(str, Enum):
     spark = "spark"
     iceberg = "iceberg"
     parquet = "parquet"
+    protobuf = "protobuf"
+
 
     @classmethod
     def get_supported_formats(cls):
