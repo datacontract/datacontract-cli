@@ -15,8 +15,13 @@ from datacontract import web
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
-from datacontract.init.download_datacontract_file import FileExistsException, download_datacontract_file
-from datacontract.integration.datamesh_manager import publish_data_contract_to_datamesh_manager
+from datacontract.init.download_datacontract_file import (
+    FileExistsException,
+    download_datacontract_file,
+)
+from datacontract.integration.datamesh_manager import (
+    publish_data_contract_to_datamesh_manager,
+)
 
 DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
 
@@ -45,7 +50,11 @@ def version_callback(value: bool):
 def common(
     ctx: typer.Context,
     version: bool = typer.Option(
-        None, "--version", help="Prints the current version.", callback=version_callback, is_eager=True
+        None,
+        "--version",
+        help="Prints the current version.",
+        callback=version_callback,
+        is_eager=True,
     ),
 ):
     """
@@ -61,7 +70,8 @@ def common(
 @app.command()
 def init(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml to create.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml to create."),
     ] = "datacontract.yaml",
     template: Annotated[
         str, typer.Option(help="URL of a template or data contract")
@@ -83,10 +93,12 @@ def init(
 @app.command()
 def lint(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+        str,
+        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
@@ -99,10 +111,12 @@ def lint(
 @app.command()
 def test(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+        str,
+        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
     server: Annotated[
         str,
@@ -114,7 +128,8 @@ def test(
         ),
     ] = "all",
     examples: Annotated[
-        bool, typer.Option(help="Run the schema and quality tests on the example data within the data contract.")
+        bool,
+        typer.Option(help="Run the schema and quality tests on the example data within the data contract."),
     ] = None,
     publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
     publish_to_opentelemetry: Annotated[
@@ -165,7 +180,10 @@ def export(
     # TODO: this should be a subcommand
     rdf_base: Annotated[
         Optional[str],
-        typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options"),
+        typer.Option(
+            help="[rdf] The base URI used to generate the RDF graph.",
+            rich_help_panel="RDF Options",
+        ),
     ] = None,
     # TODO: this should be a subcommand
     sql_server_type: Annotated[
@@ -176,11 +194,18 @@ def export(
         ),
     ] = "auto",
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+        str,
+        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    # TODO: this should be a subcommand
+    engine: Annotated[
+        Optional[str],
+        typer.Option(help="[engine] The engine used for great expection run."),
+    ] = None,
 ):
     """
     Convert data contract to a specific format. console.prints to stdout.
@@ -192,6 +217,7 @@ def export(
         server=server,
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,
+        engine=engine,
     )
     # Don't interpret console markup in output.
     if output is None:
@@ -206,7 +232,8 @@ def export(
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
     source: Annotated[
-        Optional[str], typer.Option(help="The path to the file or Glue Database that should be imported.")
+        Optional[str],
+        typer.Option(help="The path to the file or Glue Database that should be imported."),
     ] = None,
     glue_table: Annotated[
         Optional[List[str]],
@@ -270,10 +297,12 @@ def import_(
 @app.command(name="publish")
 def publish(
     location: Annotated[
-        str, typer.Argument(help="The location (url or path) of the data contract yaml.")
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+        str,
+        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
@@ -289,11 +318,13 @@ def publish(
 @app.command(name="catalog")
 def catalog(
     files: Annotated[
-        Optional[str], typer.Option(help="Glob pattern for the data contract files to include in the catalog.")
+        Optional[str],
+        typer.Option(help="Glob pattern for the data contract files to include in the catalog."),
     ] = "*.yaml",
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
-        str, typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema")
+        str,
+        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
@@ -315,8 +346,14 @@ def catalog(
 
 @app.command()
 def breaking(
-    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
-    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+    location_old: Annotated[
+        str,
+        typer.Argument(help="The location (url or path) of the old data contract yaml."),
+    ],
+    location_new: Annotated[
+        str,
+        typer.Argument(help="The location (url or path) of the new data contract yaml."),
+    ],
 ):
     """
     Identifies breaking changes between data contracts. Prints to stdout.
@@ -335,8 +372,14 @@ def breaking(
 
 @app.command()
 def changelog(
-    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
-    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+    location_old: Annotated[
+        str,
+        typer.Argument(help="The location (url or path) of the old data contract yaml."),
+    ],
+    location_new: Annotated[
+        str,
+        typer.Argument(help="The location (url or path) of the new data contract yaml."),
+    ],
 ):
     """
     Generate a changelog between data contracts. Prints to stdout.
@@ -352,8 +395,14 @@ def changelog(
 
 @app.command()
 def diff(
-    location_old: Annotated[str, typer.Argument(help="The location (url or path) of the old data contract yaml.")],
-    location_new: Annotated[str, typer.Argument(help="The location (url or path) of the new data contract yaml.")],
+    location_old: Annotated[
+        str,
+        typer.Argument(help="The location (url or path) of the old data contract yaml."),
+    ],
+    location_new: Annotated[
+        str,
+        typer.Argument(help="The location (url or path) of the new data contract yaml."),
+    ],
 ):
     """
     PLACEHOLDER. Currently works as 'changelog' does.
