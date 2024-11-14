@@ -13,7 +13,6 @@ import yaml
 from datacontract.export.exporter import (
     Exporter,
     _check_models_for_export,
-    _determine_sql_server_type,
 )
 from datacontract.export.pandas_type_converter import convert_to_pandas_type
 from datacontract.export.spark_converter import to_spark_data_type
@@ -62,12 +61,8 @@ class GreatExpectationsExporter(Exporter):
         """
         expectation_suite_name = export_args.get("suite_name")
         engine = export_args.get("engine")
-        sql_server_type = (
-            _determine_sql_server_type(data_contract, sql_server_type)
-            if engine == GreatExpectationsEngine.sql.value
-            else None
-        )
         model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+        sql_server_type = "snowflake" if sql_server_type == "auto" else sql_server_type
         return to_great_expectations(data_contract, model_name, expectation_suite_name, engine, sql_server_type)
 
 

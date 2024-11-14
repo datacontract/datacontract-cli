@@ -119,6 +119,133 @@ def expected_json_suite() -> Dict[str, Any]:
     }
 
 
+@pytest.fixture
+def expected_spark_engine() -> Dict[str, Any]:
+    return {
+        "data_asset_type": "null",
+        "expectation_suite_name": "orders.1.0.0",
+        "expectations": [
+            {
+                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "StringType"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "processed_timestamp", "type_": "TimestampType"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_table_row_count_to_be_between",
+                "kwargs": {"min_value": 10},
+                "meta": {},
+            },
+        ],
+        "meta": {},
+    }
+
+
+@pytest.fixture
+def expected_pandas_engine() -> Dict[str, Any]:
+    return {
+        "data_asset_type": "null",
+        "expectation_suite_name": "orders.1.0.0",
+        "expectations": [
+            {
+                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "str"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "processed_timestamp", "type_": "datetime64[ns]"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_table_row_count_to_be_between",
+                "kwargs": {"min_value": 10},
+                "meta": {},
+            },
+        ],
+        "meta": {},
+    }
+
+
+@pytest.fixture
+def expected_sql_engine() -> Dict[str, Any]:
+    return {
+        "data_asset_type": "null",
+        "expectation_suite_name": "orders.1.0.0",
+        "expectations": [
+            {
+                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "STRING"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "processed_timestamp", "type_": "TIMESTAMP_TZ"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_table_row_count_to_be_between",
+                "kwargs": {"min_value": 10},
+                "meta": {},
+            },
+        ],
+        "meta": {},
+    }
+
+
+@pytest.fixture
+def expected_sql_trino_engine() -> Dict[str, Any]:
+    return {
+        "data_asset_type": "null",
+        "expectation_suite_name": "orders.1.0.0",
+        "expectations": [
+            {
+                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "varchar"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {
+                    "column": "processed_timestamp",
+                    "type_": "timestamp(3) with time zone",
+                },
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_table_row_count_to_be_between",
+                "kwargs": {"min_value": 10},
+                "meta": {},
+            },
+        ],
+        "meta": {},
+    }
+
+
 def test_to_great_expectation(data_contract_basic: DataContractSpecification):
     expected_json_suite = {
         "data_asset_type": "null",
@@ -313,170 +440,63 @@ def test_to_great_expectation_custom_name(
 
 def test_to_great_expectation_engine_spark(
     data_contract_great_expectations: DataContractSpecification,
+    expected_spark_engine: Dict[str, Any],
 ):
     """
-    Test with Quality definition in the contract
+    Test with Spark engine
     """
-    expected = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
-        "expectations": [
-            {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
-                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "order_id", "type_": "StringType"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "processed_timestamp", "type_": "TimestampType"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_table_row_count_to_be_between",
-                "kwargs": {"min_value": 10},
-                "meta": {},
-            },
-        ],
-        "meta": {},
-    }
     result = to_great_expectations(
         data_contract_great_expectations,
         model_key="orders",
         engine="spark",
     )
-    assert result == json.dumps(expected, indent=2)
+    assert result == json.dumps(expected_spark_engine, indent=2)
 
 
 def test_to_great_expectation_engine_pandas(
     data_contract_great_expectations: DataContractSpecification,
+    expected_pandas_engine: Dict[str, Any],
 ):
     """
-    Test with Quality definition in the contract
+    Test with pandas engine
     """
-    expected = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
-        "expectations": [
-            {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
-                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "order_id", "type_": "str"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "processed_timestamp", "type_": "datetime64[ns]"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_table_row_count_to_be_between",
-                "kwargs": {"min_value": 10},
-                "meta": {},
-            },
-        ],
-        "meta": {},
-    }
     result = to_great_expectations(
         data_contract_great_expectations,
         model_key="orders",
         engine="pandas",
     )
-    assert result == json.dumps(expected, indent=2)
+    assert result == json.dumps(expected_pandas_engine, indent=2)
 
 
 def test_to_great_expectation_engine_sql(
     data_contract_great_expectations: DataContractSpecification,
+    expected_sql_engine: Dict[str, Any],
 ):
     """
-    Test with Quality definition in the contract
+    Test with sql engine
     """
-    expected = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
-        "expectations": [
-            {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
-                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "order_id", "type_": "STRING"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "processed_timestamp", "type_": "TIMESTAMP_TZ"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_table_row_count_to_be_between",
-                "kwargs": {"min_value": 10},
-                "meta": {},
-            },
-        ],
-        "meta": {},
-    }
     result = to_great_expectations(
         data_contract_great_expectations,
         model_key="orders",
         engine="sql",
     )
-    assert result == json.dumps(expected, indent=2)
+    assert result == json.dumps(expected_sql_engine, indent=2)
 
 
 def test_to_great_expectation_engine_sql_trino(
     data_contract_great_expectations: DataContractSpecification,
+    expected_sql_trino_engine: Dict[str, Any],
 ):
     """
-    Test with Quality definition in the contract
+    Test with sql engine and sql server trino trino
     """
-    expected = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
-        "expectations": [
-            {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
-                "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {"column": "order_id", "type_": "varchar"},
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_column_values_to_be_of_type",
-                "kwargs": {
-                    "column": "processed_timestamp",
-                    "type_": "timestamp(3) with time zone",
-                },
-                "meta": {},
-            },
-            {
-                "expectation_type": "expect_table_row_count_to_be_between",
-                "kwargs": {"min_value": 10},
-                "meta": {},
-            },
-        ],
-        "meta": {},
-    }
     result = to_great_expectations(
         data_contract_great_expectations,
         model_key="orders",
         engine="sql",
         sql_server_type="trino",
     )
-    assert result == json.dumps(expected, indent=2)
+    assert result == json.dumps(expected_sql_trino_engine, indent=2)
 
 
 def test_to_great_expectation_quality_json_file(
@@ -502,6 +522,72 @@ def test_cli_with_quality_file(expected_json_suite: Dict[str, Any]):
         ],
     )
     assert result.output.replace("\n", "") == json.dumps(expected_json_suite, indent=2).replace("\n", "")
+
+
+def test_cli_with_spark_engine(expected_spark_engine: Dict[str, Any]):
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "./fixtures/great-expectations/datacontract.yaml",
+            "--format",
+            "great-expectations",
+            "--engine",
+            "spark",
+        ],
+    )
+    assert result.output.replace("\n", "") == json.dumps(expected_spark_engine, indent=2).replace("\n", "")
+
+
+def test_cli_with_pandas_engine(expected_pandas_engine: Dict[str, Any]):
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "./fixtures/great-expectations/datacontract.yaml",
+            "--format",
+            "great-expectations",
+            "--engine",
+            "pandas",
+        ],
+    )
+    assert result.output.replace("\n", "") == json.dumps(expected_pandas_engine, indent=2).replace("\n", "")
+
+
+def test_cli_with_sql_engine(expected_sql_engine: Dict[str, Any]):
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "./fixtures/great-expectations/datacontract.yaml",
+            "--format",
+            "great-expectations",
+            "--engine",
+            "sql",
+        ],
+    )
+    assert result.output.replace("\n", "") == json.dumps(expected_sql_engine, indent=2).replace("\n", "")
+
+
+def test_cli_with_sql_trino_engine(expected_sql_trino_engine: Dict[str, Any]):
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "./fixtures/great-expectations/datacontract.yaml",
+            "--format",
+            "great-expectations",
+            "--engine",
+            "sql",
+            "--sql-server-type",
+            "trino",
+        ],
+    )
+    assert result.output.replace("\n", "") == json.dumps(expected_sql_trino_engine, indent=2).replace("\n", "")
 
 
 def test_to_great_expectation_missing_quality_json_file():
