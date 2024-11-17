@@ -1,22 +1,19 @@
-import fastjsonschema
 import json
 import logging
 import os
+from typing import List
+
+import fastjsonschema
+from fastjsonschema import JsonSchemaValueException
 
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import Run, Check
-from fastjsonschema import JsonSchemaValueException
-from typing import List
+from datacontract.model.run import Check, Run
 
 
-def validate_json_stream(
-        model_name: str,
-        validate: callable,
-        json_stream: list[dict]
-) -> List[DataContractException]:
+def validate_json_stream(model_name: str, validate: callable, json_stream: list[dict]) -> List[DataContractException]:
     logging.info(f"Validating JSON stream for model: '{model_name}'.")
     exceptions: List[DataContractException] = []
     for json_obj in json_stream:
@@ -24,15 +21,17 @@ def validate_json_stream(
             validate(json_obj)
         except JsonSchemaValueException as e:
             logging.warning(f"Validation failed for model: '{model_name}' with error: '{e.message}'.")
-            exceptions.append(DataContractException(
-                type="schema",
-                name="Check that JSON has valid schema",
-                result="failed",
-                reason=e.message,
-                model=model_name,
-                engine="jsonschema",
-                message=e.message,
-            ))
+            exceptions.append(
+                DataContractException(
+                    type="schema",
+                    name="Check that JSON has valid schema",
+                    result="failed",
+                    reason=e.message,
+                    model=model_name,
+                    engine="jsonschema",
+                    message=e.message,
+                )
+            )
     if not exceptions:
         logging.info(f"All JSON objects in the stream passed validation for model: '{model_name}'.")
     return exceptions
@@ -99,7 +98,7 @@ def process_json_file(run, model_name, validate, file, delimiter):
                     engine=exception.engine,
                     message=exception.message,
                 )
-                for exception in exceptions[:limit - 1]
+                for exception in exceptions[: limit - 1]
             ]
         )
 
