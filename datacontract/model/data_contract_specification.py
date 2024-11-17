@@ -147,6 +147,7 @@ class Field(pyd.BaseModel):
     format: str = None
     required: bool = None
     primary: bool = None
+    primaryKey: bool = None
     unique: bool | None = None
     references: str = None
     description: str | None = None
