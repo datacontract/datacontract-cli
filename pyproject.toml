@@ -46,7 +46,7 @@ avro = [
 ]
 
 bigquery = [
-  "soda-core-bigquery>=3.3.1,<3.4.0"
+  "soda-core-bigquery>=3.3.1,<3.5.0"
 ]
 
 databricks = [
