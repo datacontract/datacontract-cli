@@ -70,7 +70,7 @@ postgres = [
 ]
 
 s3 = [
-  "s3fs==2024.9.0"
+  "s3fs==2024.10.0"
 ]
 
 snowflake = [
