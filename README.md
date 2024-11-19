@@ -749,19 +749,19 @@ models:
 ### export
 
 ```
-
- Usage: datacontract export [OPTIONS] [LOCATION]
-
- Convert data contract to a specific format. Prints to stdout or to the specified output file.
-
+ Usage: datacontract export [OPTIONS] [LOCATION]                                                                                  
+                                                                                                                                  
+ Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.      
+                                                                                                                                  
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
-│                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
-│                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
-│                    y|dbml|spark|sqlalchemy|data-caterer|dcs]                                                                       │
+│                    t-staging-sql|odcs|odcs_v2|odcs_v3|rdf|avro|protobuf                                                        │
+│                    |great-expectations|terraform|avro-idl|sql|sql-query                                                        │
+│                    |html|go|bigquery|dbml|spark|sqlalchemy|data-caterer                                                        │
+│                    |dcs]                                                                                                       │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -771,6 +771,12 @@ models:
 │                                                                          file to refer to a model, e.g., `orders`, or `all`    │
 │                                                                          for all models (default).                             │
 │                                                                          [default: all]                                        │
+│    --schema        TEXT                                                  The location (url or path) of the Data Contract       │
+│                                                                          Specification JSON Schema                             │
+│                                                                          [default:                                             │
+│                                                                          https://datacontract.com/datacontract.schema.json]    │
+│    --engine        TEXT                                                  [engine] The engine used for great expection run.     │
+│                                                                          [default: None]                                       │
 │    --help                                                                Show this message and exit.                           │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ RDF Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -781,12 +787,11 @@ models:
 │                                detect the sql dialect via the specified servers in the data contract.                          │
 │                                [default: auto]                                                                                 │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 ```
 
 ```bash
 # Example export data contract as HTML
-datacontract export --format html > datacontract.html
+datacontract export --format html --output datacontract.html
 ```
 
 Available export options:
@@ -944,14 +949,20 @@ models:
 ### import
 
 ```
- Usage: datacontract import [OPTIONS]
-
- Create a data contract from the given source location. Prints to stdout.                                                      
+ Usage: datacontract import [OPTIONS]                                                                                          
+                                                                                                                               
+ Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise
+ prints to stdout.                                                                                                                    
                                                                                                                                
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bigquery  The format of the source file.               │
 │                                   |odcs|unity|spark|iceberg|parquet]           [default: None]                              │
 │                                                                                [required]                                   │
+│    --output                       PATH                                         Specify the file path where the Data         │
+│                                                                                Contract will be saved. If no path is        │
+│                                                                                provided, the output will be printed to      │
+│                                                                                stdout.                                      │
+│                                                                                [default: None]                              │
 │    --source                       TEXT                                         The path to the file or Glue Database that   │
 │                                                                                should be imported.                          │
 │                                                                                [default: None]                              │
@@ -991,6 +1002,8 @@ Example:
 ```bash
 # Example import from SQL DDL
 datacontract import --format sql --source my_ddl.sql
+# To save to file
+datacontract import --format sql --source my_ddl.sql --output datacontract.yaml
 ```
 
 Available import options:
