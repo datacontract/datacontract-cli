@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import yaml
 from typer.testing import CliRunner
 
@@ -20,6 +23,31 @@ def test_cli():
         ],
     )
     assert result.exit_code == 0
+
+
+def test_cli_with_output(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "import",
+            "--format",
+            "jsonschema",
+            "--source",
+            "fixtures/import/orders_union-types.json",
+            "--output",
+            tmp_path / "datacontract.yaml",
+        ],
+    )
+    assert result.exit_code == 0
+    assert os.path.exists(tmp_path / "datacontract.yaml")
+
+    with open(tmp_path / "datacontract.yaml") as file:
+        actual = file.read()
+    with open("fixtures/import/orders_union-types_datacontract.yml") as file:
+        expected = file.read()
+
+    assert yaml.safe_load(actual) == yaml.safe_load(expected)
 
 
 def test_import_json_schema_orders():

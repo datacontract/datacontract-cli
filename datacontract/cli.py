@@ -208,7 +208,7 @@ def export(
     ] = None,
 ):
     """
-    Convert data contract to a specific format. console.prints to stdout.
+    Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
@@ -231,6 +231,12 @@ def export(
 @app.command(name="import")
 def import_(
     format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
+    output: Annotated[
+        Path,
+        typer.Option(
+            help="Specify the file path where the Data Contract will be saved. If no path is provided, the output will be printed to stdout."
+        ),
+    ] = None,
     source: Annotated[
         Optional[str],
         typer.Option(help="The path to the file or Glue Database that should be imported."),
@@ -276,7 +282,7 @@ def import_(
     ] = None,
 ):
     """
-    Create a data contract from the given source location. Prints to stdout.
+    Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
     result = DataContract().import_from_source(
         format=format,
@@ -291,7 +297,12 @@ def import_(
         dbml_table=dbml_table,
         iceberg_table=iceberg_table,
     )
-    console.print(result.to_yaml())
+    if output is None:
+        console.print(result.to_yaml())
+    else:
+        with output.open("w") as f:
+            f.write(result.to_yaml())
+        console.print(f"Written result to {output}")
 
 
 @app.command(name="publish")
