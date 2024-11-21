@@ -111,7 +111,8 @@ def schema_to_args(property_schema, is_required: bool = None) -> dict:
     nested_properties = property_schema.get("properties")
     if nested_properties is not None:
         # recursive call for complex nested properties
-        field_kwargs["fields"] = jsonschema_to_args(nested_properties, property_schema["required"])
+        required = property_schema.get("required", [])
+        field_kwargs["fields"] = jsonschema_to_args(nested_properties, required)
 
     return field_kwargs
 

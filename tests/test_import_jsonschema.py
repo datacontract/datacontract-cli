@@ -42,3 +42,14 @@ def test_import_json_schema_football():
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+
+
+def test_import_json_schema_football_deeply_nested_no_required():
+    result = DataContract().import_from_source("jsonschema", "fixtures/import/football_deeply_nested_no_required.json")
+
+    with open("fixtures/import/football_deeply_nested_no_required_datacontract.yml") as file:
+        expected = file.read()
+        assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
