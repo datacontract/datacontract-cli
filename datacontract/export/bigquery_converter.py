@@ -108,7 +108,9 @@ def map_type_to_bigquery(field: Field) -> str:
         return "NUMERIC"
     elif field_type.lower() == "double":
         return "BIGNUMERIC"
-    elif field_type.lower() in ["object", "record", "array"]:
+    elif field_type.lower() in ["object", "record"] and (field.fields is None or len(field.fields) == 0):
+        return "JSON"
+    elif field_type.lower() in ["object", "record", "array"] and len(field.fields) > 0:
         return "RECORD"
     elif field_type.lower() == "struct":
         return "STRUCT"
