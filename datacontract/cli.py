@@ -346,7 +346,7 @@ def catalog(
     console.print(f"Created {output}")
 
     contracts = []
-    for file in Path().glob(files):
+    for file in Path().rglob(files):
         try:
             create_data_contract_html(contracts, file, path, schema)
         except Exception as e:
