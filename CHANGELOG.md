@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `sql_server_type` to define the type of SQL Server to use when engine is `sql`
 - Changelog support for `Info` and `Terms` blocks.
 - `datacontract import` now has `--output` option for saving Data Contract to file
+- fixes issue where records with no fields create an invalid bq schema.
 
 ### Changed
 - Changelog support for custom extension keys in `Models` and `Fields` blocks.
