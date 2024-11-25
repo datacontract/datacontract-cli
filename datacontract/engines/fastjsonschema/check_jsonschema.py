@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import threading
-from typing import List
+from typing import List, Optional
 
 import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
@@ -18,37 +18,34 @@ _primary_key_cache = {}
 _cache_lock = threading.Lock()
 
 
-def get_primary_key_field(schema: dict, model_name: str) -> str:
+def get_primary_key_field(schema: dict, model_name: str) -> Optional[str]:
     # Check cache first.
     with _cache_lock:
-        if model_name in _primary_key_cache:
-            return _primary_key_cache[model_name]
+        cached_value = _primary_key_cache.get(model_name)
+        if cached_value is not None:
+            return cached_value
 
     # Find primaryKey field.
     fields = schema.get("properties", {})
-    primary_key_field = None
     for field_name, attributes in fields.items():
         if attributes.get("primaryKey", False):
-            primary_key_field = field_name
-            break
+            # Cache the result before returning.
+            with _cache_lock:
+                _primary_key_cache[model_name] = field_name
+            return field_name
 
-    # Cache the result.
-    with _cache_lock:
-        _primary_key_cache[model_name] = primary_key_field
-    return primary_key_field
+    # Return None if no primary key was found.
+    return None
 
 
-def get_primary_key_value(schema: dict, model_name: str, json_object: dict) -> str:
+def get_primary_key_value(schema: dict, model_name: str, json_object: dict) -> Optional[str]:
     # Get the `primaryKey` field.
     primary_key_field = get_primary_key_field(schema, model_name)
-    logging.error(f"######## primary_key_field: '{primary_key_field}'")
     if not primary_key_field:
         return None
 
     # Return the value of the `primaryKey` field in the JSON object.
-    value = json_object.get(primary_key_field, None)
-    logging.error(f"######## value: '{value}'")
-    return value
+    return json_object.get(primary_key_field)
 
 
 def process_exceptions(run, exceptions: List[DataContractException]):
@@ -56,12 +53,17 @@ def process_exceptions(run, exceptions: List[DataContractException]):
         return
 
     # Define the maximum number of errors to process (can be adjusted by defining an ENV variable).
-    error_limit = int(os.getenv("DATACONTRACT_MAX_ERRORS", 500))
+    try:
+        error_limit = int(os.getenv("DATACONTRACT_MAX_ERRORS", 500))
+    except ValueError:
+        # Fallback to default if environment variable is invalid.
+        error_limit = 500
 
     # Calculate the effective limit to avoid index out of range
     limit = min(len(exceptions), error_limit)
 
     # Add all exceptions up to the limit - 1 to `run.checks`.
+    DEFAULT_ERROR_MESSAGE = "An error occurred during validation phase. See the logs for more details."
     run.checks.extend(
         [
             Check(
@@ -71,7 +73,7 @@ def process_exceptions(run, exceptions: List[DataContractException]):
                 reason=exception.reason,
                 model=exception.model,
                 engine=exception.engine,
-                message=exception.message,
+                message=exception.message or DEFAULT_ERROR_MESSAGE,
             )
             for exception in exceptions[: limit - 1]
         ]
