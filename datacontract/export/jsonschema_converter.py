@@ -50,6 +50,8 @@ def to_property(field: Field) -> dict:
             property["type"] = json_type
     if json_format is not None:
         property["format"] = json_format
+    if field.primaryKey:
+        property["primaryKey"] = field.primaryKey
     if field.unique:
         property["unique"] = True
     if json_type == "object":
