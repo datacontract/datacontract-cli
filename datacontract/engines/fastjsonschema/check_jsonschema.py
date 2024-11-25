@@ -13,6 +13,37 @@ from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, Run
 
 
+def process_exceptions(run, exceptions: List[DataContractException]):
+    if not exceptions:
+        return
+
+    # Define the maximum number of errors to process (can be adjusted by defining an ENV variable).
+    error_limit = int(os.getenv("DATACONTRACT_MAX_ERRORS", 500))
+
+    # Calculate the effective limit to avoid index out of range
+    limit = min(len(exceptions), error_limit)
+
+    # Add all exceptions up to the limit - 1 to `run.checks`.
+    run.checks.extend(
+        [
+            Check(
+                type=exception.type,
+                name=exception.name,
+                result=exception.result,
+                reason=exception.message,
+                model=exception.model,
+                engine=exception.engine,
+                message=exception.message,
+            )
+            for exception in exceptions[: limit - 1]
+        ]
+    )
+
+    # Raise the last exception within the limit.
+    last_exception = exceptions[limit - 1]
+    raise last_exception
+
+
 def validate_json_stream(model_name: str, validate: callable, json_stream: list[dict]) -> List[DataContractException]:
     logging.info(f"Validating JSON stream for model: '{model_name}'.")
     exceptions: List[DataContractException] = []
@@ -76,35 +107,11 @@ def process_json_file(run, model_name, validate, file, delimiter):
     else:
         json_stream = read_json_file(file)
 
-    # define the maximum number of errors to process (can be adjusted by defining an ENV variable).
-    error_limit = int(os.getenv("DATACONTRACT_MAX_ERRORS", 500))
-
-    # validate the JSON stream and collect exceptions.
+    # Validate the JSON stream and collect exceptions.
     exceptions = validate_json_stream(model_name, validate, json_stream)
 
-    if exceptions:
-        # calculate the effective limit to avoid index out of range.
-        limit = min(len(exceptions), error_limit)
-
-        # add all exceptions up to the limit - 1 to `run.checks`.
-        run.checks.extend(
-            [
-                Check(
-                    type=exception.type,
-                    name=exception.name,
-                    result=exception.result,
-                    reason=exception.message,
-                    model=exception.model,
-                    engine=exception.engine,
-                    message=exception.message,
-                )
-                for exception in exceptions[: limit - 1]
-            ]
-        )
-
-        # raise the last exception within the limit.
-        last_exception = exceptions[limit - 1]
-        raise last_exception
+    # Handle all errors from schema validation.
+    process_exceptions(run, exceptions)
 
 
 def process_local_file(run, server, model_name, validate):
@@ -132,7 +139,7 @@ def process_directory(run, path, server, model_name, validate):
     return success
 
 
-def process_s3_file(server, model_name, validate):
+def process_s3_file(run, server, model_name, validate):
     s3_endpoint_url = server.endpointUrl
     s3_location = server.location
     if "{model}" in s3_location:
@@ -156,7 +163,11 @@ def process_s3_file(server, model_name, validate):
             engine="datacontract",
         )
 
-    return validate_json_stream(model_name, validate, json_stream)
+    # Validate the JSON stream and collect exceptions.
+    exceptions = validate_json_stream(model_name, validate, json_stream)
+
+    # Handle all errors from schema validation.
+    process_exceptions(run, exceptions)
 
 
 def check_jsonschema(run: Run, data_contract: DataContractSpecification, server: Server):
@@ -195,7 +206,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
         if server.type == "local":
             process_local_file(run, server, model_name, validate)
         elif server.type == "s3":
-            process_s3_file(server, model_name, validate)
+            process_s3_file(run, server, model_name, validate)
         elif server.type == "gcs":
             run.checks.append(
                 Check(
