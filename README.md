@@ -749,19 +749,19 @@ models:
 ### export
 
 ```
- Usage: datacontract export [OPTIONS] [LOCATION]                                                                                  
-                                                                                                                                  
- Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.      
-                                                                                                                                  
+
+ Usage: datacontract export [OPTIONS] [LOCATION]
+
+ Convert data contract to a specific format. Prints to stdout or to the specified output file.
+                                                                                                                        
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
-│                    t-staging-sql|odcs|odcs_v2|odcs_v3|rdf|avro|protobuf                                                        │
-│                    |great-expectations|terraform|avro-idl|sql|sql-query                                                        │
-│                    |html|go|bigquery|dbml|spark|sqlalchemy|data-caterer                                                        │
-│                    |dcs]                                                                                                       │
+│                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
+│                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
+│                    y|dbml|spark|sqlalchemy|data-caterer|dcs]                                                                   │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
