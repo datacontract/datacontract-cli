@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `sql_server_type` to define the type of SQL Server to use when engine is `sql`
 - Changelog support for `Info` and `Terms` blocks.
 - `datacontract import` now has `--output` option for saving Data Contract to file
+- Enhance JSON file validation (local and S3) to return the first error for each JSON object, the max number of total errors can be configured via the environment variable: `DATACONTRACT_MAX_ERRORS`. Furthermore, the primaryKey will be additionally added to the error message.
 
 ### Changed
 - Changelog support for custom extension keys in `Models` and `Fields` blocks.
