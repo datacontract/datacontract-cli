@@ -19,7 +19,7 @@ dependencies = [
   "pydantic>=2.8.2,<2.10.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
-  "fastapi==0.115.2", # move to extra?
+  "fastapi==0.115.5", # move to extra?
   "uvicorn==0.32.0", # move to extra?
   "fastjsonschema>=2.19.1,<2.21.0",
   "fastparquet==2024.5.0",
@@ -70,7 +70,7 @@ postgres = [
 ]
 
 s3 = [
-  "s3fs==2024.9.0"
+  "s3fs==2024.10.0"
 ]
 
 snowflake = [
