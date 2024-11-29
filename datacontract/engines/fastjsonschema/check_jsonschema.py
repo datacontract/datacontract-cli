@@ -1,8 +1,11 @@
 import json
 import logging
 import os
+import threading
+from typing import List, Optional
 
 import fastjsonschema
+from fastjsonschema import JsonSchemaValueException
 
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_converter import to_jsonschema
@@ -10,22 +13,102 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, Run
 
+# Thread-safe cache for primaryKey fields.
+_primary_key_cache = {}
+_cache_lock = threading.Lock()
 
-def validate_json_stream(model_name, validate, json_stream):
+
+def get_primary_key_field(schema: dict, model_name: str) -> Optional[str]:
+    # Check cache first.
+    with _cache_lock:
+        cached_value = _primary_key_cache.get(model_name)
+        if cached_value is not None:
+            return cached_value
+
+    # Find primaryKey field.
+    fields = schema.get("properties", {})
+    for field_name, attributes in fields.items():
+        if attributes.get("primaryKey", False):
+            # Cache the result before returning.
+            with _cache_lock:
+                _primary_key_cache[model_name] = field_name
+            return field_name
+
+    # Return None if no primary key was found.
+    return None
+
+
+def get_primary_key_value(schema: dict, model_name: str, json_object: dict) -> Optional[str]:
+    # Get the `primaryKey` field.
+    primary_key_field = get_primary_key_field(schema, model_name)
+    if not primary_key_field:
+        return None
+
+    # Return the value of the `primaryKey` field in the JSON object.
+    return json_object.get(primary_key_field)
+
+
+def process_exceptions(run, exceptions: List[DataContractException]):
+    if not exceptions:
+        return
+
+    # Define the maximum number of errors to process (can be adjusted by defining an ENV variable).
     try:
-        logging.info("Validating JSON")
-        for json_obj in json_stream:
+        error_limit = int(os.getenv("DATACONTRACT_MAX_ERRORS", 500))
+    except ValueError:
+        # Fallback to default if environment variable is invalid.
+        error_limit = 500
+
+    # Calculate the effective limit to avoid index out of range
+    limit = min(len(exceptions), error_limit)
+
+    # Add all exceptions up to the limit - 1 to `run.checks`.
+    DEFAULT_ERROR_MESSAGE = "An error occurred during validation phase. See the logs for more details."
+    run.checks.extend(
+        [
+            Check(
+                type=exception.type,
+                name=exception.name,
+                result=exception.result,
+                reason=exception.reason,
+                model=exception.model,
+                engine=exception.engine,
+                message=exception.message or DEFAULT_ERROR_MESSAGE,
+            )
+            for exception in exceptions[: limit - 1]
+        ]
+    )
+
+    # Raise the last exception within the limit.
+    last_exception = exceptions[limit - 1]
+    raise last_exception
+
+
+def validate_json_stream(
+    schema: dict, model_name: str, validate: callable, json_stream: list[dict]
+) -> List[DataContractException]:
+    logging.info(f"Validating JSON stream for model: '{model_name}'.")
+    exceptions: List[DataContractException] = []
+    for json_obj in json_stream:
+        try:
             validate(json_obj)
-        return True
-    except fastjsonschema.JsonSchemaValueException as e:
-        raise DataContractException(
-            type="schema",
-            name="Check that JSON has valid schema",
-            model=model_name,
-            reason=e.message,
-            engine="jsonschema",
-            original_exception=e,
-        )
+        except JsonSchemaValueException as e:
+            logging.warning(f"Validation failed for JSON object with type: '{model_name}'.")
+            primary_key_value = get_primary_key_value(schema, model_name, json_obj)
+            exceptions.append(
+                DataContractException(
+                    type="schema",
+                    name="Check that JSON has valid schema",
+                    result="failed",
+                    reason=f"{f'#{primary_key_value}: ' if primary_key_value is not None else ''}{e.message}",
+                    model=model_name,
+                    engine="jsonschema",
+                    message=e.message,
+                )
+            )
+    if not exceptions:
+        logging.info(f"All JSON objects in the stream passed validation for model: '{model_name}'.")
+    return exceptions
 
 
 def read_json_lines(file):
@@ -59,17 +142,22 @@ def read_json_file_content(file_content: str):
     yield json.loads(file_content)
 
 
-def process_json_file(run, model_name, validate, file, delimiter):
+def process_json_file(run, schema, model_name, validate, file, delimiter):
     if delimiter == "new_line":
         json_stream = read_json_lines(file)
     elif delimiter == "array":
         json_stream = read_json_array(file)
     else:
         json_stream = read_json_file(file)
-    validate_json_stream(model_name, validate, json_stream)
+
+    # Validate the JSON stream and collect exceptions.
+    exceptions = validate_json_stream(schema, model_name, validate, json_stream)
+
+    # Handle all errors from schema validation.
+    process_exceptions(run, exceptions)
 
 
-def process_local_file(run, server, model_name, validate):
+def process_local_file(run, server, schema, model_name, validate):
     path = server.path
     if "{model}" in path:
         path = path.format(model=model_name)
@@ -79,7 +167,7 @@ def process_local_file(run, server, model_name, validate):
     else:
         logging.info(f"Processing file {path}")
         with open(path, "r") as file:
-            process_json_file(run, model_name, validate, file, server.delimiter)
+            process_json_file(run, schema, model_name, validate, file, server.delimiter)
 
 
 def process_directory(run, path, server, model_name, validate):
@@ -94,7 +182,7 @@ def process_directory(run, path, server, model_name, validate):
     return success
 
 
-def process_s3_file(server, model_name, validate):
+def process_s3_file(run, server, schema, model_name, validate):
     s3_endpoint_url = server.endpointUrl
     s3_location = server.location
     if "{model}" in s3_location:
@@ -118,7 +206,11 @@ def process_s3_file(server, model_name, validate):
             engine="datacontract",
         )
 
-    return validate_json_stream(model_name, validate, json_stream)
+    # Validate the JSON stream and collect exceptions.
+    exceptions = validate_json_stream(schema, model_name, validate, json_stream)
+
+    # Handle all errors from schema validation.
+    process_exceptions(run, exceptions)
 
 
 def check_jsonschema(run: Run, data_contract: DataContractSpecification, server: Server):
@@ -155,9 +247,9 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
 
         # Process files based on server type
         if server.type == "local":
-            process_local_file(run, server, model_name, validate)
+            process_local_file(run, server, schema, model_name, validate)
         elif server.type == "s3":
-            process_s3_file(server, model_name, validate)
+            process_s3_file(run, server, schema, model_name, validate)
         elif server.type == "gcs":
             run.checks.append(
                 Check(
