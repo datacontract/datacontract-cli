@@ -1225,6 +1225,16 @@ datacontract import --format iceberg --source ./tests/fixtures/iceberg/simple_sc
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+Examples:
+
+```
+# create a catalog right in the current folder
+datacontract catalog --output "."
+
+# Create a catalog based on a filename convention
+datacontract catalog --files "*.odcs.yaml"
+```
+
 ### Publish
 
 ```

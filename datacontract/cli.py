@@ -330,7 +330,7 @@ def publish(
 def catalog(
     files: Annotated[
         Optional[str],
-        typer.Option(help="Glob pattern for the data contract files to include in the catalog."),
+        typer.Option(help="Glob pattern for the data contract files to include in the catalog. Applies recursively to any subfolders."),
     ] = "*.yaml",
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
