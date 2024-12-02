@@ -176,9 +176,11 @@ def update_reason(check, c):
         if block["title"] == "Diagnostics":
             # Extract and print the 'text' value
             diagnostics_text = block["text"]
-            print(diagnostics_text)
+            # print(diagnostics_text)
             diagnostics_text_split = diagnostics_text.split(":icon-fail: ")
             if len(diagnostics_text_split) > 1:
                 check.reason = diagnostics_text_split[1].strip()
-                print(check.reason)
+                # print(check.reason)
             break  # Exit the loop once the desired block is found
+    if c["diagnostics"]["fail"] is not None:
+        check.reason = f"Got: {c['diagnostics']['value']} Expected: {c['diagnostics']['fail']}"

@@ -330,7 +330,9 @@ def publish(
 def catalog(
     files: Annotated[
         Optional[str],
-        typer.Option(help="Glob pattern for the data contract files to include in the catalog. Applies recursively to any subfolders."),
+        typer.Option(
+            help="Glob pattern for the data contract files to include in the catalog. Applies recursively to any subfolders."
+        ),
     ] = "*.yaml",
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
@@ -450,7 +452,13 @@ def _handle_result(run):
         i = 1
         for check in run.checks:
             if check.result != "passed":
-                console.print(str(++i) + ") " + check.reason)
+                field = to_field(run, check)
+                if field:
+                    field = field + " "
+                else:
+                    field = ""
+                console.print(f"{i}) {field}{check.name}: {check.reason}")
+                i += 1
         raise typer.Exit(code=1)
 
 
@@ -460,7 +468,7 @@ def _print_table(run):
     table.add_column("Check", max_width=100)
     table.add_column("Field", max_width=32)
     table.add_column("Details", max_width=50)
-    for check in run.checks:
+    for check in sorted(run.checks, key=lambda c: (c.result or "", c.model or "", c.field or "")):
         table.add_row(with_markup(check.result), check.name, to_field(run, check), check.reason)
     console.print(table)
 

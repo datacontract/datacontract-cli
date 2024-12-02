@@ -22,10 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Changelog support for custom extension keys in `Models` and `Fields` blocks.
 - `datacontract catalog --files '*.yaml'` now checks also any subfolders for such files.
+- Optimize test output table on console if tests fail
 
 ### Fixed
 - raise valid exception in DataContractSpecification.from_file if file does not exist
 - Fix importing JSON Schemas containing deeply nested objects without `required` array
+- SodaCL: Only add data quality tests for executable queries
 
 ## [0.10.14] - 2024-10-26
 

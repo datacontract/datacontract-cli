@@ -37,9 +37,7 @@ def test_lint_cli_valid():
 
 def test_lint_cli_invalid():
     data_contract_file = "fixtures/lint/invalid_datacontract.yaml"
-    expected_output = (
-        "🔴 data contract is invalid, found the following errors:\n1) data must contain ['id'] properties\n"
-    )
+    expected_output = "🔴 data contract is invalid, found the following errors:\n1) Check that data contract YAML is valid: data must contain ['id'] properties\n"
 
     result = runner.invoke(app, ["lint", data_contract_file])
 
