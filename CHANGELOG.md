@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+
+## [0.10.15] - 2024-10-26
+
+### Added
 - Support for model import from parquet file metadata.
 - Great Expectation export: add optional args (#496)
   - `suite_name` the name of the expectation suite to export
