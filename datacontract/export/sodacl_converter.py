@@ -62,12 +62,16 @@ def to_checks(model_key, model_value, server_type: str, check_types: bool):
         if field.enum is not None and len(field.enum) > 0:
             checks.append(check_field_enum(field_name, field.enum, quote_field_name))
         if field.quality is not None and len(field.quality) > 0:
-            checks.append(check_quality_list(model_key, field_name, field.quality))
+            quality_list = check_quality_list(model_key, field_name, field.quality)
+            if (quality_list is not None) and len(quality_list) > 0:
+                checks.append(quality_list)
         # TODO references: str = None
         # TODO format
 
     if model_value.quality is not None and len(model_value.quality) > 0:
-        checks.append(check_quality_list(model_key, None, model_value.quality))
+        quality_list = check_quality_list(model_key, None, model_value.quality)
+        if (quality_list is not None) and len(quality_list) > 0:
+            checks.append(quality_list)
 
     checks_for_model_key = f"checks for {model_key}"
 
