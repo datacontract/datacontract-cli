@@ -193,7 +193,7 @@ models:
 
 
 def test_import_dbt_manifest_with_filter_and_empty_columns():
-    result = DataContract().import_from_source("dbt", dbt_manifest_empty_columns, dbt_nodes=["customers"])
+    result = DataContract().import_from_source("dbt", dbt_manifest_empty_columns, dbt_model=["customers"])
 
     expected = """
 dataContractSpecification: 1.1.0
@@ -215,7 +215,7 @@ models:
 
 
 def test_import_dbt_manifest_with_filter():
-    result = DataContract().import_from_source("dbt", dbt_manifest, dbt_nodes=["customers"])
+    result = DataContract().import_from_source("dbt", dbt_manifest, dbt_model=["customers"])
 
     expected = """
 dataContractSpecification: 1.1.0
