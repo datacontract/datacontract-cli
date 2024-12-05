@@ -34,7 +34,7 @@ class DbtManifestImporter(Importer):
         return import_dbt_manifest(
             data_contract_specification=data_contract_specification,
             manifest=manifest,
-            dbt_nodes=import_args.get("dbt_nodes", []),
+            dbt_nodes=import_args.get("dbt_model", []),
             resource_types=import_args.get("resource_types", ["model"]),
         )
 
