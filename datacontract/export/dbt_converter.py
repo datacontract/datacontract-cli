@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import yaml
 
@@ -52,7 +52,7 @@ def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name
         # TODO escape SQL reserved key words, probably dependent on server type
         columns.append(field_name)
     return f"""
-    select 
+    select
         {", ".join(columns)}
     from {{{{ source('{id}', '{model_name}') }}}}
 """
@@ -69,24 +69,26 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
     if data_contract_spec.info.description is not None:
         source["description"] = data_contract_spec.info.description
     found_server = data_contract_spec.servers.get(server)
+    adapter_type = None
     if found_server is not None:
+        adapter_type = found_server.type
         source["database"] = found_server.database
         source["schema"] = found_server.schema_
 
     for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = _to_dbt_source_table(model_key, model_value)
+        dbt_model = _to_dbt_source_table(model_key, model_value, adapter_type)
         source["tables"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def _to_dbt_source_table(model_key, model_value: Model) -> dict:
+def _to_dbt_source_table(model_key, model_value: Model, adapter_type: Optional[str]) -> dict:
     dbt_model = {
         "name": model_key,
     }
 
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = _to_columns(model_value.fields, False, False)
+    columns = _to_columns(model_value.fields, False, False, adapter_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -107,7 +109,7 @@ def _to_dbt_model(model_key, model_value: Model, data_contract_spec: DataContrac
         dbt_model["config"]["contract"] = {"enforced": True}
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = _to_columns(model_value.fields, _supports_constraints(model_type), True)
+    columns = _to_columns(model_value.fields, _supports_constraints(model_type), True, None)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -130,18 +132,19 @@ def _supports_constraints(model_type):
     return model_type == "table" or model_type == "incremental"
 
 
-def _to_columns(fields: Dict[str, Field], supports_constraints: bool, supports_datatype: bool) -> list:
+def _to_columns(fields: Dict[str, Field], supports_constraints: bool, supports_datatype: bool, adapter_type: Optional[str]) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = _to_column(field, supports_constraints, supports_datatype)
+        column = _to_column(field, supports_constraints, supports_datatype, adapter_type)
         column["name"] = field_name
         columns.append(column)
     return columns
 
 
-def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool) -> dict:
+def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool, adapter_type: Optional[str]) -> dict:
     column = {}
-    dbt_type = convert_to_sql_type(field, "snowflake")
+    adapter_type = adapter_type or "snowflake"
+    dbt_type = convert_to_sql_type(field, adapter_type)
     if dbt_type is not None:
         if supports_datatype:
             column["data_type"] = dbt_type
