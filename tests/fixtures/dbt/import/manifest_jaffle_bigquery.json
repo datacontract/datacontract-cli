@@ -9,7 +9,7 @@
         "project_id": "06e5b98c2db46f8a72cc4f66410e9b3b",
         "user_id": "a9b24267-c9cb-49bb-ac4c-ae76c1eea8ee",
         "send_anonymous_usage_stats": true,
-        "adapter_type": "duckdb"
+        "adapter_type": "bigquery"
     },
     "nodes": {
         "seed.jaffle_shop.raw_customers": {
@@ -278,7 +278,7 @@
                     "name": "order_id",
                     "description": "This is a unique identifier for an order",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -287,7 +287,7 @@
                     "name": "customer_id",
                     "description": "Foreign key to the customers table",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -296,7 +296,7 @@
                     "name": "order_date",
                     "description": "Date (UTC) that the order was placed",
                     "meta": {},
-                    "data_type": "date",
+                    "data_type": "DATE",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -305,7 +305,7 @@
                     "name": "status",
                     "description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
                     "meta": {},
-                    "data_type": "varchar",
+                    "data_type": "STRING",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -314,7 +314,7 @@
                     "name": "credit_card_amount",
                     "description": "Amount of the order (AUD) paid for by credit card",
                     "meta": {},
-                    "data_type": "double",
+                    "data_type": "FLOAT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -323,7 +323,7 @@
                     "name": "coupon_amount",
                     "description": "Amount of the order (AUD) paid for by coupon",
                     "meta": {},
-                    "data_type": "double",
+                    "data_type": "FLOAT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -332,7 +332,7 @@
                     "name": "bank_transfer_amount",
                     "description": "Amount of the order (AUD) paid for by bank transfer",
                     "meta": {},
-                    "data_type": "double",
+                    "data_type": "FLOAT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -341,7 +341,7 @@
                     "name": "gift_card_amount",
                     "description": "Amount of the order (AUD) paid for by gift card",
                     "meta": {},
-                    "data_type": "double",
+                    "data_type": "FLOAT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -350,7 +350,7 @@
                     "name": "amount",
                     "description": "Total amount (AUD) of the order",
                     "meta": {},
-                    "data_type": "double",
+                    "data_type": "FLOAT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -1354,7 +1354,7 @@
                     "name": "customer_id",
                     "description": "",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -1363,7 +1363,7 @@
                     "name": "first_name",
                     "description": "",
                     "meta": {},
-                    "data_type": "varchar",
+                    "data_type": "STRING",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -1372,7 +1372,7 @@
                     "name": "last_name",
                     "description": "",
                     "meta": {},
-                    "data_type": "varchar",
+                    "data_type": "STRING",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -1657,7 +1657,7 @@
                     "name": "order_id",
                     "description": "",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -1666,7 +1666,7 @@
                     "name": "customer_id",
                     "description": "",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -1675,7 +1675,7 @@
                     "name": "order_date",
                     "description": "",
                     "meta": {},
-                    "data_type": "date",
+                    "data_type": "DATE",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -1684,7 +1684,7 @@
                     "name": "status",
                     "description": "",
                     "meta": {},
-                    "data_type": "varchar",
+                    "data_type": "STRING",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2067,7 +2067,7 @@
                     "name": "payment_id",
                     "description": "",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2076,7 +2076,7 @@
                     "name": "order_id",
                     "description": "",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2085,7 +2085,7 @@
                     "name": "payment_method",
                     "description": "",
                     "meta": {},
-                    "data_type": "varchar",
+                    "data_type": "STRING",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2094,7 +2094,7 @@
                     "name": "amount",
                     "description": "",
                     "meta": {},
-                    "data_type": "double",
+                    "data_type": "FLOAT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2475,7 +2475,7 @@
                     "name": "customer_id",
                     "description": "This is a unique identifier for a customer",
                     "meta": {},
-                    "data_type": "integer",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2484,7 +2484,7 @@
                     "name": "first_name",
                     "description": "Customer's first name. PII.",
                     "meta": {},
-                    "data_type": "varchar",
+                    "data_type": "STRING",
                     "constraints": [],
                     "quote": null,
                     "tags": ["PII"]
@@ -2493,7 +2493,7 @@
                     "name": "last_name",
                     "description": "Customer's last name. PII.",
                     "meta": {},
-                    "data_type": "varchar",
+                    "data_type": "STRING",
                     "constraints": [],
                     "quote": null,
                     "tags": ["PII"]
@@ -2502,7 +2502,7 @@
                     "name": "first_order",
                     "description": "Date (UTC) of a customer's first order",
                     "meta": {},
-                    "data_type": "date",
+                    "data_type": "DATE",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2511,7 +2511,7 @@
                     "name": "most_recent_order",
                     "description": "Date (UTC) of a customer's most recent order",
                     "meta": {},
-                    "data_type": "date",
+                    "data_type": "DATE",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2520,7 +2520,7 @@
                     "name": "number_of_orders",
                     "description": "Count of the number of orders a customer has placed",
                     "meta": {},
-                    "data_type": "bigint",
+                    "data_type": "INT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
@@ -2529,7 +2529,7 @@
                     "name": "customer_lifetime_value",
                     "description": "",
                     "meta": {},
-                    "data_type": "double",
+                    "data_type": "FLOAT64",
                     "constraints": [],
                     "quote": null,
                     "tags": []
