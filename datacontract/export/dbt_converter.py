@@ -88,7 +88,7 @@ def _to_dbt_source_table(model_key, model_value: Model, adapter_type: Optional[s
 
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = _to_columns(model_value.fields, False, False, adapter_type)
+    columns = _to_columns(model_value.fields, False, adapter_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -109,7 +109,7 @@ def _to_dbt_model(model_key, model_value: Model, data_contract_spec: DataContrac
         dbt_model["config"]["contract"] = {"enforced": True}
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = _to_columns(model_value.fields, _supports_constraints(model_type), True, None)
+    columns = _to_columns(model_value.fields, _supports_constraints(model_type), None)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -132,26 +132,25 @@ def _supports_constraints(model_type):
     return model_type == "table" or model_type == "incremental"
 
 
-def _to_columns(fields: Dict[str, Field], supports_constraints: bool, supports_datatype: bool, adapter_type: Optional[str]) -> list:
+def _to_columns(fields: Dict[str, Field], supports_constraints: bool, adapter_type: Optional[str]) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = _to_column(field, supports_constraints, supports_datatype, adapter_type)
+        column = _to_column(field, supports_constraints, adapter_type)
         column["name"] = field_name
         columns.append(column)
     return columns
 
 
-def _to_column(field: Field, supports_constraints: bool, supports_datatype: bool, adapter_type: Optional[str]) -> dict:
+def _to_column(field: Field, supports_constraints: bool, adapter_type: Optional[str]) -> dict:
     column = {}
     adapter_type = adapter_type or "snowflake"
     dbt_type = convert_to_sql_type(field, adapter_type)
     if dbt_type is not None:
-        if supports_datatype:
-            column["data_type"] = dbt_type
-        else:
-            column.setdefault("tests", []).append(
-                {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
-            )
+        column["data_type"] = dbt_type
+    else:
+        column.setdefault("tests", []).append(
+            {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
+        )
     if field.description is not None:
         column["description"] = field.description
     if field.required:

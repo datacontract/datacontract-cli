@@ -42,9 +42,8 @@ sources:
         description: The orders model
         columns:
           - name: order_id
+            data_type: VARCHAR
             tests:
-              - dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type:
-                  column_type: VARCHAR
               - not_null
               - unique
               - dbt_expectations.expect_column_value_lengths_to_be_between:
@@ -59,17 +58,15 @@ sources:
               - order_id
           - name: order_total
             description: The order_total field
+            data_type: NUMBER
             tests:
-              - dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type:
-                  column_type: NUMBER
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
                    min_value: 0
                    max_value: 1000000
           - name: order_status
+            data_type: TEXT
             tests:
-              - dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type:
-                  column_type: TEXT
               - not_null
               - accepted_values:
                   values:
@@ -115,7 +112,7 @@ sources:
               - order_id
           - name: order_total
             description: The order_total field
-            data_type: NUMERIC
+            data_type: INT64
             tests:
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
