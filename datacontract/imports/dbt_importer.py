@@ -83,7 +83,7 @@ def import_dbt_manifest(
 
 def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
     if adapter_type == "bigquery":
-        return map_type_from_bigquery.get(data_type, "")
+        return map_type_from_bigquery(data_type)
     return data_type
 
 
