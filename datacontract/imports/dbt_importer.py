@@ -4,6 +4,7 @@ from typing import TypedDict
 from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
 
+from datacontract.imports.bigquery_importer import map_type_from_bigquery
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 
@@ -58,7 +59,7 @@ def import_dbt_manifest(
     """
     data_contract_specification.info.title = manifest.metadata.project_name
     data_contract_specification.info.dbt_version = manifest.metadata.dbt_version
-
+    adapter_type = manifest.metadata.adapter_type
     data_contract_specification.models = data_contract_specification.models or {}
     for model_contents in manifest.nodes.values():
         # Only intressted in processing models.
@@ -73,19 +74,24 @@ def import_dbt_manifest(
         dc_model = Model(
             description=model_contents.description,
             tags=model_contents.tags,
-            fields=create_fields(columns=model_contents.columns),
+            fields=create_fields(columns=model_contents.columns, adapter_type=adapter_type),
         )
 
         data_contract_specification.models[model_contents.name] = dc_model
 
     return data_contract_specification
 
+def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
+    if adapter_type == "bigquery":
+        return map_type_from_bigquery(data_type)
+    return data_type
 
-def create_fields(columns: dict[str, ColumnInfo]) -> dict[str, Field]:
+
+def create_fields(columns: dict[str, ColumnInfo], adapter_type: str) -> dict[str, Field]:
     fields = {
         column.name: Field(
             description=column.description,
-            type=column.data_type if column.data_type else "",
+            type=convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else "",
             tags=column.tags,
         )
         for column in columns.values()
