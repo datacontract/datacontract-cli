@@ -111,7 +111,7 @@ dev = [
   "pre-commit>=3.7.1,<4.1.0",
   "pytest",
   "pytest-xdist",
-  "pymssql==2.3.1",
+  "pymssql==2.3.2",
   "ruff",
   "testcontainers[minio,postgres,kafka,mssql]==4.8.2",
   "trino==0.330.0",
