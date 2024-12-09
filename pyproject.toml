@@ -21,7 +21,7 @@ dependencies = [
   "requests>=2.31,<2.33",
   "fastapi==0.115.5", # move to extra?
   "uvicorn==0.32.1", # move to extra?
-  "fastjsonschema>=2.19.1,<2.21.0",
+  "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet==2024.5.0",
   "python-multipart==0.0.19",
   "rich>=13.7,<13.10",
