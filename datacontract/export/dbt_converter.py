@@ -135,14 +135,13 @@ def _supports_constraints(model_type):
 def _to_columns(fields: Dict[str, Field], supports_constraints: bool, adapter_type: Optional[str]) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = _to_column(field, supports_constraints, adapter_type)
-        column["name"] = field_name
+        column = _to_column(field_name, field, supports_constraints, adapter_type)
         columns.append(column)
     return columns
 
 
-def _to_column(field: Field, supports_constraints: bool, adapter_type: Optional[str]) -> dict:
-    column = {}
+def _to_column(field_name: str, field: Field, supports_constraints: bool, adapter_type: Optional[str]) -> dict:
+    column = {"name": field_name}
     adapter_type = adapter_type or "snowflake"
     dbt_type = convert_to_sql_type(field, adapter_type)
     if dbt_type is not None:

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Type conversion when importing contracts into dbt and exporting contracts from dbt (#534)
+- Ensure 'name' is the first column when exporting in dbt format, considering column attributes (#541)
 
 ### Fixed
 - Modify the arguments to narrow down the import target with `--dbt-model` (#532)
