@@ -182,5 +182,5 @@ def update_reason(check, c):
                 check.reason = diagnostics_text_split[1].strip()
                 # print(check.reason)
             break  # Exit the loop once the desired block is found
-    if c["diagnostics"]["fail"] is not None:
+    if "fail" in c["diagnostics"]:
         check.reason = f"Got: {c['diagnostics']['value']} Expected: {c['diagnostics']['fail']}"
