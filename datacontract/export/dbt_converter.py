@@ -72,8 +72,12 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
     adapter_type = None
     if found_server is not None:
         adapter_type = found_server.type
-        source["database"] = found_server.database
-        source["schema"] = found_server.schema_
+        if adapter_type == "bigquery":
+            source["database"] = found_server.project
+            source["schema"] = found_server.dataset
+        else:
+            source["database"] = found_server.database
+            source["schema"] = found_server.schema_
 
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = _to_dbt_source_table(model_key, model_value, adapter_type)
