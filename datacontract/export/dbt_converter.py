@@ -59,7 +59,7 @@ def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name
 
 
 def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
-    source = {"name": data_contract_spec.id, "tables": []}
+    source = {"name": data_contract_spec.id}
     dbt = {
         "version": 2,
         "sources": [source],
@@ -72,9 +72,14 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
     adapter_type = None
     if found_server is not None:
         adapter_type = found_server.type
-        source["database"] = found_server.database
-        source["schema"] = found_server.schema_
+        if adapter_type == "bigquery":
+            source["database"] = found_server.project
+            source["schema"] = found_server.dataset
+        else:
+            source["database"] = found_server.database
+            source["schema"] = found_server.schema_
 
+    source["tables"] = []
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = _to_dbt_source_table(model_key, model_value, adapter_type)
         source["tables"].append(dbt_model)
