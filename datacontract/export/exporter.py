@@ -2,7 +2,10 @@ import typing
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.model.data_contract_specification import (
+    DataContractSpecification,
+    Model,
+)
 
 
 class Exporter(ABC):
@@ -40,6 +43,7 @@ class ExportFormat(str, Enum):
     sqlalchemy = "sqlalchemy"
     data_caterer = "data-caterer"
     dcs = "dcs"
+    markdown = "markdown"
 
     @classmethod
     def get_supported_formats(cls):
@@ -48,7 +52,7 @@ class ExportFormat(str, Enum):
 
 def _check_models_for_export(
     data_contract: DataContractSpecification, model: str, export_format: str
-) -> typing.Tuple[str, str]:
+) -> typing.Tuple[str, Model]:
     if data_contract.models is None:
         raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
 
