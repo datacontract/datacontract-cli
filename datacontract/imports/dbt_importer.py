@@ -124,12 +124,14 @@ def get_column_tests(manifest: Manifest, model_name: str, column_name: str) -> l
         if test_node.column_name != column_name:
             continue
 
+        if test_node.config.where is not None:
+            continue
+
         column_tests.append(
             {
                 "test_name": test_node.name,
                 "test_type": test_node.test_metadata.name,
                 "column": test_node.column_name,
-                "args": test_node.test_metadata.kwargs,
             }
         )
     return column_tests
