@@ -2,8 +2,8 @@ import json
 from typing import TypedDict
 
 from dbt.artifacts.resources.v1.components import ColumnInfo
-from dbt.contracts.graph.nodes import GenericTestNode
 from dbt.contracts.graph.manifest import Manifest
+from dbt.contracts.graph.nodes import GenericTestNode
 from dbt_common.contracts.constraints import ConstraintType
 
 from datacontract.imports.bigquery_importer import map_type_from_bigquery
