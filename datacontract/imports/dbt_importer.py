@@ -89,12 +89,18 @@ def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
 
 def create_fields(columns: dict[str, ColumnInfo], adapter_type: str) -> dict[str, Field]:
     fields = {
-        column.name: Field(
-            description=column.description,
-            type=convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else "",
-            tags=column.tags,
-        )
+        column.name: create_field(column, adapter_type)
         for column in columns.values()
     }
 
     return fields
+
+
+def create_field(column: ColumnInfo, adapter_type: str) -> Field:
+    column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else ""
+
+    return Field(
+        description=column.description,
+        type=column_type,
+        tags=column.tags,
+    )
