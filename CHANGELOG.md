@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- When importing in dbt format, add the dbt `not_null` information as a datacontract `required` field (#547)
 
 ### Changed
 - Type conversion when importing contracts into dbt and exporting contracts from dbt (#534)
