@@ -43,7 +43,7 @@ sources:
         columns:
           - name: order_id
             data_type: VARCHAR
-            tests:
+            data_tests:
               - not_null
               - unique
               - dbt_expectations.expect_column_value_lengths_to_be_between:
@@ -59,14 +59,14 @@ sources:
           - name: order_total
             description: The order_total field
             data_type: NUMBER
-            tests:
+            data_tests:
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
                    min_value: 0
                    max_value: 1000000
           - name: order_status
             data_type: TEXT
-            tests:
+            data_tests:
               - not_null
               - accepted_values:
                   values:
@@ -97,7 +97,7 @@ sources:
         columns:
           - name: order_id
             data_type: STRING
-            tests:
+            data_tests:
               - not_null
               - unique
               - dbt_expectations.expect_column_value_lengths_to_be_between:
@@ -113,14 +113,14 @@ sources:
           - name: order_total
             description: The order_total field
             data_type: INT64
-            tests:
+            data_tests:
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
                    min_value: 0
                    max_value: 1000000
           - name: order_status
             data_type: STRING
-            tests:
+            data_tests:
               - not_null
               - accepted_values:
                   values:
