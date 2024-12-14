@@ -78,12 +78,18 @@ def import_dbt_manifest(
         dc_model = Model(
             description=model_contents.description,
             tags=model_contents.tags,
-            fields=create_fields(manifest, model_unique_id=model_contents.unique_id, columns=model_contents.columns, adapter_type=adapter_type),
+            fields=create_fields(
+                manifest,
+                model_unique_id=model_contents.unique_id,
+                columns=model_contents.columns,
+                adapter_type=adapter_type,
+            ),
         )
 
         data_contract_specification.models[model_contents.name] = dc_model
 
     return data_contract_specification
+
 
 def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
     if adapter_type == "bigquery":
@@ -91,11 +97,10 @@ def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
     return data_type
 
 
-def create_fields(manifest: Manifest, model_unique_id: str, columns: dict[str, ColumnInfo], adapter_type: str) -> dict[str, Field]:
-    fields = {
-        column.name: create_field(manifest, model_unique_id, column, adapter_type)
-        for column in columns.values()
-    }
+def create_fields(
+    manifest: Manifest, model_unique_id: str, columns: dict[str, ColumnInfo], adapter_type: str
+) -> dict[str, Field]:
+    fields = {column.name: create_field(manifest, model_unique_id, column, adapter_type) for column in columns.values()}
     return fields
 
 
@@ -119,18 +124,20 @@ def get_column_tests(manifest: Manifest, model_name: str, column_name: str) -> l
         if test_node.column_name != column_name:
             continue
 
-        column_tests.append({
-            "test_name": test_node.name,
-            "test_type": test_node.test_metadata.name,
-            "column": test_node.column_name,
-            "args": test_node.test_metadata.kwargs,
-        })
+        column_tests.append(
+            {
+                "test_name": test_node.name,
+                "test_type": test_node.test_metadata.name,
+                "column": test_node.column_name,
+                "args": test_node.test_metadata.kwargs,
+            }
+        )
     return column_tests
 
 
 def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, adapter_type: str) -> Field:
     column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else ""
-    field =  Field(
+    field = Field(
         description=column.description,
         type=column_type,
         tags=column.tags,
