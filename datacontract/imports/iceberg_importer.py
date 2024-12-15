@@ -42,8 +42,19 @@ def import_iceberg(
 
     model = Model(type="table", title=table_name)
 
+    # Iceberg identifier_fields aren't technically primary keys since Iceberg doesn't support primary keys,
+    # but they are close enough that we can probably treat them as primary keys on the conversion.
+    # ref: https://iceberg.apache.org/spec/#identifier-field-ids
+    # this code WILL NOT support finding nested primary key fields.
+    identifier_fields_ids = schema.identifier_field_ids
+
     for field in schema.fields:
-        model.fields[field.name] = _field_from_nested_field(field)
+        model_field = _field_from_nested_field(field)
+
+        if field.field_id in identifier_fields_ids:
+            model_field.primaryKey = True
+
+        model.fields[field.name] = model_field
 
     data_contract_specification.models[table_name] = model
     return data_contract_specification
