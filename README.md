@@ -761,7 +761,7 @@ models:
 │                    t-staging-sql|odcs|odcs_v2|odcs_v3|rdf|avro|protobuf                                                        │
 │                    |great-expectations|terraform|avro-idl|sql|sql-query                                                        │
 │                    |html|go|bigquery|dbml|spark|sqlalchemy|data-caterer                                                        │
-│                    |dcs]                                                                                                       │
+│                    |dcs|markdown]                                                                                              │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -822,6 +822,7 @@ Available export options:
 | `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
 | `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
+| `markdown`           | Export to Markdown                                      | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 
