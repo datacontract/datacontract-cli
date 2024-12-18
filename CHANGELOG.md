@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modify the arguments to narrow down the import target with `--dbt-model` (#532)
 - SodaCL: Prevent `KeyError: 'fail'` from happening when testing with SodaCL
 - fix: populate database and schema values for bigquery in exported dbt sources (#543)
+- Fixing the options for importing and exporting to standard output (#544)
 
 ## [0.10.15] - 2024-10-26
 
