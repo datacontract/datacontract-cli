@@ -40,6 +40,8 @@ class ExportFormat(str, Enum):
     sqlalchemy = "sqlalchemy"
     data_caterer = "data-caterer"
     dcs = "dcs"
+    iceberg = "iceberg"
+
 
     @classmethod
     def get_supported_formats(cls):

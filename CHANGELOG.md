@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Support for exporting a Data Contract to an Iceberg schema definition.
 - When importing in dbt format, add the dbt `not_null` information as a datacontract `required` field (#547)
 
 ### Changed
