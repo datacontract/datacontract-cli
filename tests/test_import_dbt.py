@@ -84,9 +84,11 @@ models:
       order_id:
         type: integer
         description: This is a unique identifier for an order
+        required: true
       customer_id:
         type: integer
         description: Foreign key to the customers table
+        required: true
       order_date:
         type: date
         description: Date (UTC) that the order was placed
@@ -114,18 +116,23 @@ models:
       credit_card_amount:
         type: double
         description: Amount of the order (AUD) paid for by credit card
+        required: true
       coupon_amount:
         type: double
         description: Amount of the order (AUD) paid for by coupon
+        required: true
       bank_transfer_amount:
         type: double
         description: Amount of the order (AUD) paid for by bank transfer
+        required: true
       gift_card_amount:
         type: double
         description: Amount of the order (AUD) paid for by gift card
+        required: true
       amount:
         type: double
         description: Total amount (AUD) of the order
+        required: true
     tags: []
   stg_customers:
     description: ''
@@ -133,6 +140,7 @@ models:
       customer_id:
         type: integer
         description: ''
+        required: true
       first_name:
         type: varchar
         description: ''
@@ -146,6 +154,7 @@ models:
       order_id:
         type: integer
         description: ''
+        required: true
       customer_id:
         type: integer
         description: ''
@@ -162,6 +171,7 @@ models:
       payment_id:
         type: integer
         description: ''
+        required: true
       order_id:
         type: integer
         description: ''
@@ -179,6 +189,7 @@ models:
       customer_id:
         type: integer
         description: This is a unique identifier for a customer
+        required: true
       first_name:
         type: varchar
         description: Customer's first name. PII.
@@ -226,9 +237,11 @@ models:
       order_id:
         type: bigint
         description: This is a unique identifier for an order
+        required: true
       customer_id:
         type: bigint
         description: Foreign key to the customers table
+        required: true
       order_date:
         type: date
         description: Date (UTC) that the order was placed
@@ -256,18 +269,23 @@ models:
       credit_card_amount:
         type: double
         description: Amount of the order (AUD) paid for by credit card
+        required: true
       coupon_amount:
         type: double
         description: Amount of the order (AUD) paid for by coupon
+        required: true
       bank_transfer_amount:
         type: double
         description: Amount of the order (AUD) paid for by bank transfer
+        required: true
       gift_card_amount:
         type: double
         description: Amount of the order (AUD) paid for by gift card
+        required: true
       amount:
         type: double
         description: Total amount (AUD) of the order
+        required: true
     tags: []
   stg_customers:
     description: ''
@@ -275,6 +293,7 @@ models:
       customer_id:
         type: bigint
         description: ''
+        required: true
       first_name:
         type: string
         description: ''
@@ -288,6 +307,7 @@ models:
       order_id:
         type: bigint
         description: ''
+        required: true
       customer_id:
         type: bigint
         description: ''
@@ -304,6 +324,7 @@ models:
       payment_id:
         type: bigint
         description: ''
+        required: true
       order_id:
         type: bigint
         description: ''
@@ -321,6 +342,7 @@ models:
       customer_id:
         type: bigint
         description: This is a unique identifier for a customer
+        required: true
       first_name:
         type: string
         description: Customer's first name. PII.
@@ -390,6 +412,7 @@ models:
       customer_id:
         type: integer
         description: This is a unique identifier for a customer
+        required: true
       first_name:
         type: varchar
         description: Customer's first name. PII.
