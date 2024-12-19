@@ -31,7 +31,7 @@ dependencies = [
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "python-dotenv~=1.0.0",
-  "rdflib==7.0.0", # move to extra?
+  "rdflib==7.1.1", # move to extra?
   "opentelemetry-exporter-otlp-proto-grpc~=1.16", # move to extra?
   "opentelemetry-exporter-otlp-proto-http~=1.16", # move to extra?
   "boto3>=1.34.41,<1.35.69",
