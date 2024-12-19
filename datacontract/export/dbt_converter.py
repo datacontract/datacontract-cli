@@ -59,7 +59,7 @@ def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name
 
 
 def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
-    source = {"name": data_contract_spec.id, "tables": []}
+    source = {"name": data_contract_spec.id}
     dbt = {
         "version": 2,
         "sources": [source],
@@ -72,9 +72,14 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
     adapter_type = None
     if found_server is not None:
         adapter_type = found_server.type
-        source["database"] = found_server.database
-        source["schema"] = found_server.schema_
+        if adapter_type == "bigquery":
+            source["database"] = found_server.project
+            source["schema"] = found_server.dataset
+        else:
+            source["database"] = found_server.database
+            source["schema"] = found_server.schema_
 
+    source["tables"] = []
     for model_key, model_value in data_contract_spec.models.items():
         dbt_model = _to_dbt_source_table(model_key, model_value, adapter_type)
         source["tables"].append(dbt_model)
@@ -144,10 +149,12 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
     column = {"name": field_name}
     adapter_type = adapter_type or "snowflake"
     dbt_type = convert_to_sql_type(field, adapter_type)
+
+    column["data_tests"] = []
     if dbt_type is not None:
         column["data_type"] = dbt_type
     else:
-        column.setdefault("tests", []).append(
+        column["data_tests"].append(
             {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
         )
     if field.description is not None:
@@ -156,21 +163,21 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
         if supports_constraints:
             column.setdefault("constraints", []).append({"type": "not_null"})
         else:
-            column.setdefault("tests", []).append("not_null")
+            column["data_tests"].append("not_null")
     if field.unique:
         if supports_constraints:
             column.setdefault("constraints", []).append({"type": "unique"})
         else:
-            column.setdefault("tests", []).append("unique")
+            column["data_tests"].append("unique")
     if field.enum is not None and len(field.enum) > 0:
-        column.setdefault("tests", []).append({"accepted_values": {"values": field.enum}})
+        column["data_tests"].append({"accepted_values": {"values": field.enum}})
     if field.minLength is not None or field.maxLength is not None:
         length_test = {}
         if field.minLength is not None:
             length_test["min_value"] = field.minLength
         if field.maxLength is not None:
             length_test["max_value"] = field.maxLength
-        column.setdefault("tests", []).append(
+        column["data_tests"].append(
             {"dbt_expectations.expect_column_value_lengths_to_be_between": length_test}
         )
     if field.pii is not None:
@@ -181,7 +188,7 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
         column.setdefault("tags", []).extend(field.tags)
     if field.pattern is not None:
         # Beware, the data contract pattern is a regex, not a like pattern
-        column.setdefault("tests", []).append(
+        column["data_tests"].append(
             {"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}}
         )
     if (
@@ -195,7 +202,7 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
             range_test["min_value"] = field.minimum
         if field.maximum is not None:
             range_test["max_value"] = field.maximum
-        column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": range_test})
+        column["data_tests"].append({"dbt_expectations.expect_column_values_to_be_between": range_test})
     elif (
         field.exclusiveMinimum is not None
         or field.exclusiveMaximum is not None
@@ -208,18 +215,18 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
         if field.exclusiveMaximum is not None:
             range_test["max_value"] = field.exclusiveMaximum
         range_test["strictly"] = True
-        column.setdefault("tests", []).append({"dbt_expectations.expect_column_values_to_be_between": range_test})
+        column["data_tests"].append({"dbt_expectations.expect_column_values_to_be_between": range_test})
     else:
         if field.minimum is not None:
-            column.setdefault("tests", []).append(
+            column["data_tests"].append(
                 {"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimum}}
             )
         if field.maximum is not None:
-            column.setdefault("tests", []).append(
+            column["data_tests"].append(
                 {"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximum}}
             )
         if field.exclusiveMinimum is not None:
-            column.setdefault("tests", []).append(
+            column["data_tests"].append(
                 {
                     "dbt_expectations.expect_column_values_to_be_between": {
                         "min_value": field.exclusiveMinimum,
@@ -228,7 +235,7 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
                 }
             )
         if field.exclusiveMaximum is not None:
-            column.setdefault("tests", []).append(
+            column["data_tests"].append(
                 {
                     "dbt_expectations.expect_column_values_to_be_between": {
                         "max_value": field.exclusiveMaximum,
@@ -236,6 +243,9 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
                     }
                 }
             )
+
+        if not column["data_tests"]:
+            column.pop("data_tests")
 
     # TODO: all constraints
     return column

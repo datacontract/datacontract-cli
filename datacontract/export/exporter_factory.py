@@ -168,3 +168,7 @@ exporter_factory.register_lazy_exporter(
 exporter_factory.register_lazy_exporter(
     name=ExportFormat.dcs, module_path="datacontract.export.dcs_exporter", class_name="DcsExporter"
 )
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.iceberg, module_path="datacontract.export.iceberg_converter", class_name="IcebergExporter"
+)

@@ -22,7 +22,7 @@ def test_to_dbt_models():
     expected_dbt_model = """
 version: 2
 models:
-  - name: orders    
+  - name: orders
     config:
       meta:
         owner: checkout
@@ -37,12 +37,12 @@ models:
         constraints:
           - type: not_null
           - type: unique
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_value_lengths_to_be_between:
               min_value: 8
               max_value: 10
           - dbt_expectations.expect_column_values_to_match_regex:
-              regex: ^B[0-9]+$      
+              regex: ^B[0-9]+$
         meta:
           classification: sensitive
           pii: true
@@ -51,9 +51,9 @@ models:
       - name: order_total
         data_type: NUMBER
         constraints:
-          - type: not_null    
+          - type: not_null
         description: The order_total field
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
                min_value: 0
                max_value: 1000000
@@ -61,7 +61,7 @@ models:
         data_type: TEXT
         constraints:
           - type: not_null
-        tests:
+        data_tests:
           - accepted_values:
               values:
                 - 'pending'

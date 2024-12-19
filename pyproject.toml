@@ -22,7 +22,7 @@ dependencies = [
   "fastapi==0.115.6", # move to extra?
   "uvicorn==0.32.1", # move to extra?
   "fastjsonschema>=2.19.1,<2.22.0",
-  "fastparquet==2024.5.0",
+  "fastparquet==2024.11.0",
   "python-multipart==0.0.19",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
@@ -57,7 +57,7 @@ databricks = [
 ]
 
 iceberg = [
-  "pyiceberg==0.8.0"
+  "pyiceberg==0.8.1"
 ]
 
 kafka = [
@@ -104,7 +104,7 @@ all = [
 
 dev = [
   "datacontract-cli[all]",
-  "httpx==0.28.0",
+  "httpx==0.28.1",
   "kafka-python",
   "moto==5.0.22",
   "pandas>=2.1.0",
@@ -113,7 +113,7 @@ dev = [
   "pytest-xdist",
   "pymssql==2.3.2",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.8.2",
+  "testcontainers[minio,postgres,kafka,mssql]==4.9.0",
   "trino==0.330.0",
 ]
 
