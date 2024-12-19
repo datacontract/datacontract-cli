@@ -177,9 +177,7 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
             length_test["min_value"] = field.minLength
         if field.maxLength is not None:
             length_test["max_value"] = field.maxLength
-        column["data_tests"].append(
-            {"dbt_expectations.expect_column_value_lengths_to_be_between": length_test}
-        )
+        column["data_tests"].append({"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
     if field.pii is not None:
         column.setdefault("meta", {})["pii"] = field.pii
     if field.classification is not None:
@@ -188,9 +186,7 @@ def _to_column(field_name: str, field: Field, supports_constraints: bool, adapte
         column.setdefault("tags", []).extend(field.tags)
     if field.pattern is not None:
         # Beware, the data contract pattern is a regex, not a like pattern
-        column["data_tests"].append(
-            {"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}}
-        )
+        column["data_tests"].append({"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}})
     if (
         field.minimum is not None
         or field.maximum is not None

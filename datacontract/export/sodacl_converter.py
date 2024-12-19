@@ -200,9 +200,9 @@ def check_quality_list(model_name, field_name, quality_list: List[Quality]):
     for quality in quality_list:
         if quality.type == "sql":
             if field_name is None:
-                metric_name = f"{model_name}_{field_name}_quality_sql_{count}"
-            else:
                 metric_name = f"{model_name}_quality_sql_{count}"
+            else:
+                metric_name = f"{model_name}_{field_name}_quality_sql_{count}"
             threshold = to_sodacl_threshold(quality)
             query = prepare_query(quality, model_name, field_name)
             if query is None:
@@ -265,6 +265,7 @@ def to_sodacl_threshold(quality: Quality) -> str | None:
     return None
 
 
+# These are deprecated root-level quality specifications, use the model-level and field-level quality fields instead
 def add_quality_checks(sodacl, data_contract_spec):
     if data_contract_spec.quality is None:
         return

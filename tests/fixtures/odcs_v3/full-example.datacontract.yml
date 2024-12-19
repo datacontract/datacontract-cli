@@ -81,6 +81,16 @@ models:
           partitionKeyPosition: -1
           criticalDataElement: false
           encryptedName: rcvr_cntry_code_encrypted
+    quality:
+    - type: library
+      description: Ensure row count is within expected volume range
+      rule: countCheck
+      dimension: completeness
+      method: reconciliation
+      severity: error
+      businessImpact: operational
+      schedule: 0 20 * * *
+      scheduler: cron
     config:
       dataGranularityDescription: Aggregation on columns txn_ref_dt, pmt_txn_id
 servicelevels:

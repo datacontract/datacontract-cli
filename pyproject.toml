@@ -131,7 +131,7 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 #addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
 log_level = "INFO"
-#log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
+log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"
 
 [tool.ruff]
