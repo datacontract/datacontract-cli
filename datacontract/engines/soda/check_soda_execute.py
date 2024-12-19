@@ -183,4 +183,4 @@ def update_reason(check, c):
                 # print(check.reason)
             break  # Exit the loop once the desired block is found
     if "fail" in c["diagnostics"]:
-        check.reason = f"Got: {c['diagnostics']['value']} Expected: {c['diagnostics']['fail']}"
+        check.reason = f"Value: {c['diagnostics']['value']} Fails`: {c['diagnostics']['fail']}"
