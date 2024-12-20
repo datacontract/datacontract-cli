@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- Define primaryKey and examples for model to follow the changes in datacontract-specification v1.1.0 (#559)
 
 ## [0.10.16] - 2024-12-19
 
