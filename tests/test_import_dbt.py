@@ -85,6 +85,7 @@ models:
         type: integer
         description: This is a unique identifier for an order
         required: true
+        unique: true
       customer_id:
         type: integer
         description: Foreign key to the customers table
@@ -141,6 +142,7 @@ models:
         type: integer
         description: ''
         required: true
+        unique: true
       first_name:
         type: varchar
         description: ''
@@ -155,6 +157,7 @@ models:
         type: integer
         description: ''
         required: true
+        unique: true
       customer_id:
         type: integer
         description: ''
@@ -172,6 +175,7 @@ models:
         type: integer
         description: ''
         required: true
+        unique: true
       order_id:
         type: integer
         description: ''
@@ -190,6 +194,7 @@ models:
         type: integer
         description: This is a unique identifier for a customer
         required: true
+        unique: true
       first_name:
         type: varchar
         description: Customer's first name. PII.
@@ -238,6 +243,7 @@ models:
         type: bigint
         description: This is a unique identifier for an order
         required: true
+        unique: true
       customer_id:
         type: bigint
         description: Foreign key to the customers table
@@ -294,6 +300,7 @@ models:
         type: bigint
         description: ''
         required: true
+        unique: true
       first_name:
         type: string
         description: ''
@@ -308,6 +315,7 @@ models:
         type: bigint
         description: ''
         required: true
+        unique: true
       customer_id:
         type: bigint
         description: ''
@@ -325,6 +333,7 @@ models:
         type: bigint
         description: ''
         required: true
+        unique: true
       order_id:
         type: bigint
         description: ''
@@ -343,6 +352,7 @@ models:
         type: bigint
         description: This is a unique identifier for a customer
         required: true
+        unique: true
       first_name:
         type: string
         description: Customer's first name. PII.
@@ -413,6 +423,7 @@ models:
         type: integer
         description: This is a unique identifier for a customer
         required: true
+        unique: true
       first_name:
         type: varchar
         description: Customer's first name. PII.

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
 
 ### Changed
 
