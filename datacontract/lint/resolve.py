@@ -9,7 +9,11 @@ from datacontract.imports.odcs_v3_importer import import_odcs_v3_from_str
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
-from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Quality
+from datacontract.model.data_contract_specification import (
+    DataContractSpecification,
+    Definition,
+    DeprecatedQuality,
+)
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.odcs import is_open_data_contract_standard
 
@@ -156,7 +160,7 @@ def _fetch_file(path) -> str:
         return file.read()
 
 
-def _resolve_quality_ref(quality: Quality):
+def _resolve_quality_ref(quality: DeprecatedQuality):
     """
     Return the content of a ref file path
     @param quality data contract quality specification

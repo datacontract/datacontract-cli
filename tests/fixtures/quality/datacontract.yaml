@@ -8,7 +8,7 @@ servers:
   my-dataproduct/postgres:
     type: postgres
     host: localhost
-    port: __PORT__
+    port: 5432
     database: test
     schema: public
 models:
@@ -28,8 +28,7 @@ models:
           - type: sql
             description: 95% of all order total values are expected to be between 10 and 499 EUR.
             dialect: postgres
-            query: |
-              SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY field_two) AS percentile_95 FROM my_table
+            query: SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY field_two) AS percentile_95 FROM my_table
             mustBeBetween: [ 1000, 49900 ]
       field_three:
         type: timestamp

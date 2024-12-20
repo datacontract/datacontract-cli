@@ -8,7 +8,7 @@ servers:
   my-dataproduct/postgres:
     type: postgres
     host: localhost
-    port: __PORT__
+    port: 5432
     database: test
     schema: public
 models:

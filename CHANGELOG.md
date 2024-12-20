@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+## [0.10.16] - 2024-12-19
+
+### Added
 - Support for exporting a Data Contract to an Iceberg schema definition.
 - When importing in dbt format, add the dbt `not_null` information as a datacontract `required` field (#547)
 
@@ -22,8 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SodaCL: Prevent `KeyError: 'fail'` from happening when testing with SodaCL
 - fix: populate database and schema values for bigquery in exported dbt sources (#543)
 - Fixing the options for importing and exporting to standard output (#544)
+- Fixing the data quality name for model-level and field-level quality tests
 
-## [0.10.15] - 2024-10-26
+## [0.10.15] - 2024-12-02
 
 ### Added
 - Support for model import from parquet file metadata.

@@ -42,7 +42,6 @@ class ExportFormat(str, Enum):
     dcs = "dcs"
     iceberg = "iceberg"
 
-
     @classmethod
     def get_supported_formats(cls):
         return list(map(lambda c: c.value, cls))

@@ -14,6 +14,7 @@ from datacontract.model.data_contract_specification import (
     Field,
     Info,
     Model,
+    Quality,
     Retention,
     Server,
     ServiceLevel,
@@ -193,6 +194,10 @@ def import_models(odcs_contract: Dict[str, Any]) -> Dict[str, Model]:
         model.fields = import_fields(
             odcs_schema.get("properties"), custom_type_mappings, server_type=get_server_type(odcs_contract)
         )
+        if odcs_schema.get("quality") is not None:
+            # convert dict to pydantic model
+
+            model.quality = [Quality.model_validate(q) for q in odcs_schema.get("quality")]
         model.title = schema_name
         if odcs_schema.get("dataGranularityDescription") is not None:
             model.config = {"dataGranularityDescription": odcs_schema.get("dataGranularityDescription")}
