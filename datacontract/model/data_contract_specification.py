@@ -186,6 +186,8 @@ class Model(pyd.BaseModel):
     title: Optional[str] = None
     fields: Dict[str, Field] = {}
     quality: List[Quality] | None = []
+    primaryKey: List[str] | None = []
+    examples: List[Any] | None = None
     config: Dict[str, Any] = None
     tags: List[str] | None = None
 
