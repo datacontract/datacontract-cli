@@ -202,3 +202,7 @@ exporter_factory.register_lazy_exporter(
     module_path="datacontract.export.markdown_converter",
     class_name="MarkdownExporter",
 )
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.iceberg, module_path="datacontract.export.iceberg_converter", class_name="IcebergExporter"
+)

@@ -44,6 +44,7 @@ class ExportFormat(str, Enum):
     data_caterer = "data-caterer"
     dcs = "dcs"
     markdown = "markdown"
+    iceberg = "iceberg"
 
     @classmethod
     def get_supported_formats(cls):

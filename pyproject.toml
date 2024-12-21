@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.15"
+version = "0.10.16"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 readme = "README.md"
 authors = [
@@ -22,7 +22,7 @@ dependencies = [
   "fastapi==0.115.6", # move to extra?
   "uvicorn==0.32.1", # move to extra?
   "fastjsonschema>=2.19.1,<2.22.0",
-  "fastparquet==2024.5.0",
+  "fastparquet==2024.11.0",
   "python-multipart==0.0.19",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
@@ -46,7 +46,9 @@ avro = [
 ]
 
 bigquery = [
-  "soda-core-bigquery>=3.3.1,<3.5.0"
+  "soda-core-bigquery>=3.3.1,<3.5.0",
+  "google-cloud-bigquery-storage>=2.27.0",
+  "grpcio==1.62.3" # avoid strange log output in newer versions
 ]
 
 databricks = [
@@ -57,7 +59,7 @@ databricks = [
 ]
 
 iceberg = [
-  "pyiceberg==0.8.0"
+  "pyiceberg==0.8.1"
 ]
 
 kafka = [
@@ -104,7 +106,7 @@ all = [
 
 dev = [
   "datacontract-cli[all]",
-  "httpx==0.28.0",
+  "httpx==0.28.1",
   "kafka-python",
   "moto==5.0.22",
   "pandas>=2.1.0",
@@ -113,7 +115,7 @@ dev = [
   "pytest-xdist",
   "pymssql==2.3.2",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.8.2",
+  "testcontainers[minio,postgres,kafka,mssql]==4.9.0",
   "trino==0.330.0",
 ]
 

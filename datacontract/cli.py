@@ -221,7 +221,7 @@ def export(
     )
     # Don't interpret console markup in output.
     if output is None:
-        console.print(result, markup=False)
+        console.print(result, markup=False, soft_wrap=True)
     else:
         with output.open("w") as f:
             f.write(result)
@@ -298,7 +298,7 @@ def import_(
         iceberg_table=iceberg_table,
     )
     if output is None:
-        console.print(result.to_yaml())
+        console.print(result.to_yaml(), markup=False, soft_wrap=True)
     else:
         with output.open("w") as f:
             f.write(result.to_yaml())

@@ -12,7 +12,7 @@ from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_co
 from datacontract.engines.soda.connections.trino import to_trino_soda_configuration
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
-from datacontract.model.run import Check, Log, Run
+from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
 def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark, tmp_dir):
@@ -33,7 +33,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
                 Check(
                     type="general",
                     name="Check that format is supported",
-                    result="warning",
+                    result=ResultEnum.warning,
                     reason=f"Format {server.format} not yet supported by datacontract CLI",
                     engine="datacontract",
                 )
@@ -93,7 +93,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             Check(
                 type="general",
                 name="Check that server type is supported",
-                result="warning",
+                result=ResultEnum.warning,
                 reason=f"Server type {server.type} not yet supported by datacontract CLI",
                 engine="datacontract-cli",
             )
@@ -183,4 +183,4 @@ def update_reason(check, c):
                 # print(check.reason)
             break  # Exit the loop once the desired block is found
     if "fail" in c["diagnostics"]:
-        check.reason = f"Got: {c['diagnostics']['value']} Expected: {c['diagnostics']['fail']}"
+        check.reason = f"Value: {c['diagnostics']['value']} Fails`: {c['diagnostics']['fail']}"

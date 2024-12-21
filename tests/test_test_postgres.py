@@ -72,7 +72,7 @@ def _setup_datacontract(file):
     with open(file) as data_contract_file:
         data_contract_str = data_contract_file.read()
     port = postgres.get_exposed_port(5432)
-    data_contract_str = data_contract_str.replace("__PORT__", port)
+    data_contract_str = data_contract_str.replace("5432", port)
     return data_contract_str
 
 
