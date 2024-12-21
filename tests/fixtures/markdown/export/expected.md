@@ -1,6 +1,10 @@
 # urn:datacontract:checkout:orders-latest
 ## Info
-*Successful customer orders in the webshop. <br>All orders since 2020-01-01. <br>Orders with their line items are in their current state (no history included).<br>*<br>• **title:** Orders Latest<br>• **version:** 2.0.0<br>• **owner:** Checkout Team<br>• **contact:** {'name': 'John Doe (Data Product Owner)', 'url': 'https://teams.microsoft.com/l/channel/example/checkout'}
+*Successful customer orders in the webshop. <br>All orders since 2020-01-01. <br>Orders with their line items are in their current state (no history included).<br>*
+- **title:** Orders Latest
+- **version:** 2.0.0
+- **owner:** Checkout Team
+- **contact:** {'name': 'John Doe (Data Product Owner)', 'url': 'https://teams.microsoft.com/l/channel/example/checkout'}
 
 ## Servers
 | Name | Type | Attributes |
@@ -8,12 +12,17 @@
 | production | s3 | *One folder per model. One file per day.*<br>• **environment:** prod<br>• **format:** json<br>• **delimiter:** new_line<br>• **location:** s3://datacontract-example-orders-latest/v2/{model}/*.json<br>• **roles:** [{'name': 'analyst_us', 'description': 'Access to the data for US region'}, {'name': 'analyst_cn', 'description': 'Access to the data for China region'}] |
 
 ## Terms
-*No description.*<br>• **usage:** Data can be used for reports, analytics and machine learning use cases.
+*No description.*
+- **usage:** Data can be used for reports, analytics and machine learning use cases.
 Order may be linked and joined by other tables
-<br>• **limitations:** Not suitable for real-time use cases.
+
+- **limitations:** Not suitable for real-time use cases.
 Data may not be used to identify individual customers.
 Max data processing per day: 10 TiB
-<br>• **billing:** 5000 USD per month<br>• **noticePeriod:** P3M<br>• **policies:** [{'name': 'privacy-policy', 'url': 'https://example.com/privacy-policy'}, {'name': 'license', 'description': 'External data is licensed under agreement 1234.', 'url': 'https://example.com/license/1234'}]
+
+- **billing:** 5000 USD per month
+- **noticePeriod:** P3M
+- **policies:** [{'name': 'privacy-policy', 'url': 'https://example.com/privacy-policy'}, {'name': 'license', 'description': 'External data is licensed under agreement 1234.', 'url': 'https://example.com/license/1234'}]
 
 ## Models
 ### orders
@@ -43,24 +52,39 @@ Max data processing per day: 10 TiB
 | sku | text |  | *A Stock Keeping Unit (SKU) is an internal unique identifier for an article. <br>It is typically associated with an article's barcode, such as the EAN/GTIN.<br>*<br>• **title:** Stock Keeping Unit<br>• **pattern:** ^[A-Za-z0-9]{8,14}$<br>• **tags:** ['inventory']<br>• **links:** {'wikipedia': 'https://en.wikipedia.org/wiki/Stock_keeping_unit'}<br>• **examples:** ['96385074'] |
 
 ## Service levels
-
 ### Availability
-*The server is available during support hours*<br>• **percentage:** 99.9%
+*The server is available during support hours*
+- **percentage:** 99.9%
 
 ### Retention
-*Data is retained for one year*<br>• **period:** P1Y
+*Data is retained for one year*
+- **period:** P1Y
 
 ### Latency
-*Data is available within 25 hours after the order was placed*<br>• **threshold:** 25h<br>• **sourceTimestampField:** orders.order_timestamp<br>• **processedTimestampField:** orders.processed_timestamp
+*Data is available within 25 hours after the order was placed*
+- **threshold:** 25h
+- **sourceTimestampField:** orders.order_timestamp
+- **processedTimestampField:** orders.processed_timestamp
 
 ### Freshness
-*The age of the youngest row in a table.*<br>• **threshold:** 25h<br>• **timestampField:** orders.order_timestamp
+*The age of the youngest row in a table.*
+- **threshold:** 25h
+- **timestampField:** orders.order_timestamp
 
 ### Frequency
-*Data is delivered once a day*<br>• **type:** batch<br>• **interval:** daily<br>• **cron:** 0 0 * * *
+*Data is delivered once a day*
+- **type:** batch
+- **interval:** daily
+- **cron:** 0 0 * * *
 
 ### Support
-*The data is available during typical business hours at headquarters*<br>• **time:** 9am to 5pm in EST on business days<br>• **responseTime:** 1h
+*The data is available during typical business hours at headquarters*
+- **time:** 9am to 5pm in EST on business days
+- **responseTime:** 1h
 
 ### Backup
-*Data is backed up once a week, every Sunday at 0:00 UTC.*<br>• **interval:** weekly<br>• **cron:** 0 0 * * 0<br>• **recoveryTime:** 24 hours<br>• **recoveryPoint:** 1 week
+*Data is backed up once a week, every Sunday at 0:00 UTC.*
+- **interval:** weekly
+- **cron:** 0 0 * * 0
+- **recoveryTime:** 24 hours
+- **recoveryPoint:** 1 week

@@ -61,15 +61,24 @@ def to_markdown(data_contract: DataContractSpecification) -> str:
     return "\n".join(markdown_parts)
 
 
-def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set()) -> str:
+def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_in_table_cell: bool = False) -> str:
     if not obj:
         return ""
+    if is_in_table_cell:
+        bullet_char = "•"
+        newline_char = "<br>"
+    else:
+        bullet_char = "-"
+        newline_char = "\n"
     obj_model = obj.model_dump(exclude_unset=True, exclude=excluded_fields)
-    description = obj_model.pop("description", None)
+    description_value = obj_model.pop("description", None)
     attributes = [
-        (f"• `{attr}`" if value is True else f"• **{attr}:** {value}") for attr, value in obj_model.items() if value
+        (f"{bullet_char} `{attr}`" if value is True else f"{bullet_char} **{attr}:** {value}")
+        for attr, value in obj_model.items()
+        if value
     ]
-    return f"*{description_to_markdown(description)}*<br>{'<br>'.join(attributes)}"
+    description = f"*{description_to_markdown(description_value)}*"
+    return newline_char.join([description] + attributes)
 
 
 def servers_to_markdown(servers: Dict[str, Server]) -> str:
@@ -81,7 +90,7 @@ def servers_to_markdown(servers: Dict[str, Server]) -> str:
     ]
     for server_name, server in servers.items():
         markdown_parts.append(
-            f"| {server_name} | {server.type or ''} | {obj_attributes_to_markdown(server, {'type'})} |"
+            f"| {server_name} | {server.type or ''} | {obj_attributes_to_markdown(server, {'type'}, True)} |"
         )
     return "\n".join(markdown_parts)
 
@@ -148,7 +157,7 @@ def field_to_markdown(field_name: str, field: Field, level: int = 0) -> str:
     arrow = "&#x21b3;" if level > 0 else ""
     column_name = f"{tabs}{arrow} {field_name}"
 
-    attributes = obj_attributes_to_markdown(field, {"type", "fields", "items", "keys", "values"})
+    attributes = obj_attributes_to_markdown(field, {"type", "fields", "items", "keys", "values"}, True)
 
     rows = [f"| {column_name} | {field.type} | {attributes} |"]
 
@@ -174,7 +183,7 @@ def definitions_to_markdown(definitions: Dict[str, Definition]) -> str:
     ]
     for definition_name, definition in definitions.items():
         markdown_parts.append(
-            f"| {definition_name} | {definition.type or ''} | {definition.domain or ''} | {obj_attributes_to_markdown(definition, {'name', 'type', 'domain'})} |",
+            f"| {definition_name} | {definition.type or ''} | {definition.domain or ''} | {obj_attributes_to_markdown(definition, {'name', 'type', 'domain'}, True)} |",
         )
     return "\n".join(markdown_parts)
 
@@ -182,63 +191,16 @@ def definitions_to_markdown(definitions: Dict[str, Definition]) -> str:
 def service_level_to_markdown(service_level: ServiceLevel | None) -> str:
     if not service_level:
         return ""
-    result = [""]
-    if service_level.availability:
-        result.extend(
-            [
-                "### Availability",
-                obj_attributes_to_markdown(service_level.availability),
-                "",
-            ]
-        )
-    if service_level.retention:
-        result.extend(
-            [
-                "### Retention",
-                obj_attributes_to_markdown(service_level.retention),
-                "",
-            ]
-        )
-    if service_level.latency:
-        result.extend(
-            [
-                "### Latency",
-                obj_attributes_to_markdown(service_level.latency),
-                "",
-            ]
-        )
-    if service_level.freshness:
-        result.extend(
-            [
-                "### Freshness",
-                obj_attributes_to_markdown(service_level.freshness),
-                "",
-            ]
-        )
-    if service_level.frequency:
-        result.extend(
-            [
-                "### Frequency",
-                obj_attributes_to_markdown(service_level.frequency),
-                "",
-            ]
-        )
-    if service_level.support:
-        result.extend(
-            [
-                "### Support",
-                obj_attributes_to_markdown(service_level.support),
-                "",
-            ]
-        )
-    if service_level.backup:
-        result.extend(
-            [
-                "### Backup",
-                obj_attributes_to_markdown(service_level.backup),
-                "",
-            ]
-        )
+    sections = {
+        "Availability": service_level.availability,
+        "Retention": service_level.retention,
+        "Latency": service_level.latency,
+        "Freshness": service_level.freshness,
+        "Frequency": service_level.frequency,
+        "Support": service_level.support,
+        "Backup": service_level.backup,
+    }
+    result = [f"### {name}\n{obj_attributes_to_markdown(attr)}\n" for name, attr in sections.items() if attr]
     return "\n".join(result)
 
 
