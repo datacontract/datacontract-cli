@@ -48,7 +48,9 @@ def load_module_class(module_path, class_name):
 exporter_factory = ExporterFactory()
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.avro, module_path="datacontract.export.avro_converter", class_name="AvroExporter"
+    name=ExportFormat.avro,
+    module_path="datacontract.export.avro_converter",
+    class_name="AvroExporter",
 )
 
 exporter_factory.register_lazy_exporter(
@@ -70,15 +72,21 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.dbml, module_path="datacontract.export.dbml_converter", class_name="DbmlExporter"
+    name=ExportFormat.dbml,
+    module_path="datacontract.export.dbml_converter",
+    class_name="DbmlExporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.rdf, module_path="datacontract.export.rdf_converter", class_name="RdfExporter"
+    name=ExportFormat.rdf,
+    module_path="datacontract.export.rdf_converter",
+    class_name="RdfExporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.dbt, module_path="datacontract.export.dbt_converter", class_name="DbtExporter"
+    name=ExportFormat.dbt,
+    module_path="datacontract.export.dbt_converter",
+    class_name="DbtExporter",
 )
 
 exporter_factory.register_lazy_exporter(
@@ -100,19 +108,27 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.odcs_v2, module_path="datacontract.export.odcs_v2_exporter", class_name="OdcsV2Exporter"
+    name=ExportFormat.odcs_v2,
+    module_path="datacontract.export.odcs_v2_exporter",
+    class_name="OdcsV2Exporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.odcs_v3, module_path="datacontract.export.odcs_v3_exporter", class_name="OdcsV3Exporter"
+    name=ExportFormat.odcs_v3,
+    module_path="datacontract.export.odcs_v3_exporter",
+    class_name="OdcsV3Exporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.odcs, module_path="datacontract.export.odcs_v3_exporter", class_name="OdcsV3Exporter"
+    name=ExportFormat.odcs,
+    module_path="datacontract.export.odcs_v3_exporter",
+    class_name="OdcsV3Exporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.go, module_path="datacontract.export.go_converter", class_name="GoExporter"
+    name=ExportFormat.go,
+    module_path="datacontract.export.go_converter",
+    class_name="GoExporter",
 )
 
 exporter_factory.register_lazy_exporter(
@@ -122,7 +138,9 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.html, module_path="datacontract.export.html_export", class_name="HtmlExporter"
+    name=ExportFormat.html,
+    module_path="datacontract.export.html_export",
+    class_name="HtmlExporter",
 )
 
 exporter_factory.register_lazy_exporter(
@@ -138,15 +156,21 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.sodacl, module_path="datacontract.export.sodacl_converter", class_name="SodaExporter"
+    name=ExportFormat.sodacl,
+    module_path="datacontract.export.sodacl_converter",
+    class_name="SodaExporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.sql, module_path="datacontract.export.sql_converter", class_name="SqlExporter"
+    name=ExportFormat.sql,
+    module_path="datacontract.export.sql_converter",
+    class_name="SqlExporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.sql_query, module_path="datacontract.export.sql_converter", class_name="SqlQueryExporter"
+    name=ExportFormat.sql_query,
+    module_path="datacontract.export.sql_converter",
+    class_name="SqlQueryExporter",
 )
 
 exporter_factory.register_lazy_exporter(
@@ -156,7 +180,9 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.spark, module_path="datacontract.export.spark_converter", class_name="SparkExporter"
+    name=ExportFormat.spark,
+    module_path="datacontract.export.spark_converter",
+    class_name="SparkExporter",
 )
 
 exporter_factory.register_lazy_exporter(
@@ -166,7 +192,15 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.dcs, module_path="datacontract.export.dcs_exporter", class_name="DcsExporter"
+    name=ExportFormat.dcs,
+    module_path="datacontract.export.dcs_exporter",
+    class_name="DcsExporter",
+)
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.markdown,
+    module_path="datacontract.export.markdown_converter",
+    class_name="MarkdownExporter",
 )
 
 exporter_factory.register_lazy_exporter(
