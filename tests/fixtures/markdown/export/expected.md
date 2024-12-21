@@ -64,4 +64,3 @@ Max data processing per day: 10 TiB
 
 ### Backup
 *Data is backed up once a week, every Sunday at 0:00 UTC.*<br>• **interval:** weekly<br>• **cron:** 0 0 * * 0<br>• **recoveryTime:** 24 hours<br>• **recoveryPoint:** 1 week
-
