@@ -65,40 +65,24 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set()) -> 
     if not obj:
         return ""
     obj_model = obj.model_dump(exclude_unset=True, exclude=excluded_fields)
-    description = obj_model.pop("description", "No description.")
-    result = [f"<i>{description}</i>"]
-    result.extend(
-        (f"<li><code>{attr}</code></li>" if value is True else f"<li><b>{attr}:</b> {value}</li>")
-        for attr, value in obj_model.items()
-        if value
-    )
-    return "\n".join(result)
+    description = obj_model.pop("description", None)
+    attributes = [
+        (f"• `{attr}`" if value is True else f"• **{attr}:** {value}") for attr, value in obj_model.items() if value
+    ]
+    return f"*{description_to_markdown(description)}*<br>{'<br>'.join(attributes)}"
 
 
 def servers_to_markdown(servers: Dict[str, Server]) -> str:
     if not servers:
         return ""
     markdown_parts = [
-        "<table>",
-        "<tr>",
-        "<th>Name</th>",
-        "<th>Type</th>",
-        "<th>Attributes</th>",
-        "</tr>",
+        "| Name | Type | Attributes |",
+        "| ---- | ---- | ---------- |",
     ]
     for server_name, server in servers.items():
-        markdown_parts.extend(
-            [
-                "<tr>",
-                f"<td>{server_name}</td>",
-                f"<td>{server.type or ''}</td>",
-                "<td>",
-                obj_attributes_to_markdown(server, {"type"}),
-                "</td>",
-                "</tr>",
-            ]
+        markdown_parts.append(
+            f"| {server_name} | {server.type or ''} | {obj_attributes_to_markdown(server, {'type'})} |"
         )
-    markdown_parts.append("</table>")
     return "\n".join(markdown_parts)
 
 
@@ -118,15 +102,15 @@ def model_to_markdown(model_name: str, model: Model) -> str:
         str: The Markdown representation of the model.
     """
     parts = [
-        "<table>",
-        "<tr>",
-        f"<th colspan=3>{model_name.upper()}<br/>",
-        f"<i>{model.description or 'No description.'}</i></th>",
-        "</tr>",
+        f"### {model_name}",
+        f"*{description_to_markdown(model.description)}*",
+        "",
+        "| Field | Type | Attributes |",
+        "| ----- | ---- | ---------- |",
     ]
 
     # Append generated field rows
-    parts.extend([fields_to_markdown(model.fields), "</table>", ""])
+    parts.append(fields_to_markdown(model.fields))
     return "\n".join(parts)
 
 
@@ -166,13 +150,7 @@ def field_to_markdown(field_name: str, field: Field, level: int = 0) -> str:
 
     attributes = obj_attributes_to_markdown(field, {"type", "fields", "items", "keys", "values"})
 
-    rows = [
-        "<tr>",
-        f"<td>{column_name}</td>",
-        f"<td>{field.type}</td>",
-        f"<td>{attributes}</td>",
-        "</tr>",
-    ]
+    rows = [f"| {column_name} | {field.type} | {attributes} |"]
 
     # Recursively handle nested fields, array, map
     if field.fields:
@@ -191,28 +169,13 @@ def definitions_to_markdown(definitions: Dict[str, Definition]) -> str:
     if not definitions:
         return ""
     markdown_parts = [
-        "<table>",
-        "<tr>",
-        "<th>Name</th>",
-        "<th>Type</th>",
-        "<th>Domain</th>",
-        "<th>Attributes</th>",
-        "</tr>",
+        "| Name | Type | Domain | Attributes |",
+        "| ---- | ---- | ------ | ---------- |",
     ]
     for definition_name, definition in definitions.items():
-        markdown_parts.extend(
-            [
-                "<tr>",
-                f"<td>{definition_name}</td>",
-                f"<td>{definition.type or ''}</td>",
-                f"<td>{definition.domain or ''}</td>",
-                "<td>",
-                obj_attributes_to_markdown(definition, {"name", "type", "domain"}),
-                "</td>",
-                "</tr>",
-            ]
+        markdown_parts.append(
+            f"| {definition_name} | {definition.type or ''} | {definition.domain or ''} | {obj_attributes_to_markdown(definition, {'name', 'type', 'domain'})} |",
         )
-    markdown_parts.append("</table>")
     return "\n".join(markdown_parts)
 
 
@@ -277,3 +240,7 @@ def service_level_to_markdown(service_level: ServiceLevel | None) -> str:
             ]
         )
     return "\n".join(result)
+
+
+def description_to_markdown(description: str | None) -> str:
+    return (description or "No description.").replace("\n", "<br>")
