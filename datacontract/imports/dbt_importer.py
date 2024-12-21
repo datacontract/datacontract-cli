@@ -155,4 +155,12 @@ def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, a
     if required:
         field.required = required
 
+    unique = False
+    if any(constraint.type == ConstraintType.unique for constraint in column.constraints):
+        unique = True
+    if [test for test in all_tests if test["test_type"] == "unique"]:
+        unique = True
+    if unique:
+        field.unique = unique
+
     return field
