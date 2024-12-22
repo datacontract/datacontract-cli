@@ -76,6 +76,7 @@ def import_dbt_manifest(
             continue
 
         model_unique_id = model_contents.unique_id
+        primary_keys = []
 
         if isinstance(model_contents, ModelNode):
             test_nodes = []
@@ -88,7 +89,11 @@ def import_dbt_manifest(
                 if test_node.config.where is not None:
                     continue
                 test_nodes.append(test_node)
-            primary_key = model_contents.infer_primary_key(test_nodes)
+            primary_keys = model_contents.infer_primary_key(test_nodes)
+
+        primary_key = None
+        if len(primary_keys) == 1:
+            primary_key = primary_keys[0]
 
         dc_model = Model(
             description=model_contents.description,
@@ -97,11 +102,12 @@ def import_dbt_manifest(
                 manifest,
                 model_unique_id=model_unique_id,
                 columns=model_contents.columns,
+                primary_key_name=primary_key,
                 adapter_type=adapter_type,
             ),
         )
-        if primary_key:
-            dc_model.primaryKey = primary_key
+        if len(primary_keys) > 1:
+            dc_model.primaryKey = primary_keys
 
         data_contract_specification.models[model_contents.name] = dc_model
 
@@ -115,9 +121,9 @@ def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
 
 
 def create_fields(
-    manifest: Manifest, model_unique_id: str, columns: dict[str, ColumnInfo], adapter_type: str
+    manifest: Manifest, model_unique_id: str, columns: dict[str, ColumnInfo], primary_key_name: str, adapter_type: str
 ) -> dict[str, Field]:
-    fields = {column.name: create_field(manifest, model_unique_id, column, adapter_type) for column in columns.values()}
+    fields = {column.name: create_field(manifest, model_unique_id, column, primary_key_name, adapter_type) for column in columns.values()}
     return fields
 
 
@@ -154,7 +160,7 @@ def get_column_tests(manifest: Manifest, model_name: str, column_name: str) -> l
     return column_tests
 
 
-def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, adapter_type: str) -> Field:
+def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, primary_key_name: str, adapter_type: str) -> Field:
     column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else ""
     field = Field(
         description=column.description,
@@ -180,12 +186,7 @@ def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, a
     if unique:
         field.unique = unique
 
-    primary_key= False
-    if any(constraint.type == ConstraintType.primary_key for constraint in column.constraints):
-        primary_key = True
-    if any(test["test_type"] == "not_null" for test in all_tests) and any(test["test_type"] == "unique" for test in all_tests):
-        primary_key = True
-    if primary_key:
-        field.primaryKey = primary_key
+    if column.name == primary_key_name:
+        field.primaryKey = True
 
     return field
