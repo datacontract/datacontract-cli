@@ -84,6 +84,7 @@ models:
       order_id:
         type: integer
         description: This is a unique identifier for an order
+        primaryKey: true
         required: true
         unique: true
       customer_id:
@@ -141,6 +142,7 @@ models:
       customer_id:
         type: integer
         description: ''
+        primaryKey: true
         required: true
         unique: true
       first_name:
@@ -156,6 +158,7 @@ models:
       order_id:
         type: integer
         description: ''
+        primaryKey: true
         required: true
         unique: true
       customer_id:
@@ -174,6 +177,7 @@ models:
       payment_id:
         type: integer
         description: ''
+        primaryKey: true
         required: true
         unique: true
       order_id:
@@ -193,6 +197,7 @@ models:
       customer_id:
         type: integer
         description: This is a unique identifier for a customer
+        primaryKey: true
         required: true
         unique: true
       first_name:
@@ -242,6 +247,7 @@ models:
       order_id:
         type: bigint
         description: This is a unique identifier for an order
+        primaryKey: true
         required: true
         unique: true
       customer_id:
@@ -299,6 +305,7 @@ models:
       customer_id:
         type: bigint
         description: ''
+        primaryKey: true
         required: true
         unique: true
       first_name:
@@ -314,6 +321,7 @@ models:
       order_id:
         type: bigint
         description: ''
+        primaryKey: true
         required: true
         unique: true
       customer_id:
@@ -332,6 +340,7 @@ models:
       payment_id:
         type: bigint
         description: ''
+        primaryKey: true
         required: true
         unique: true
       order_id:
@@ -351,6 +360,7 @@ models:
       customer_id:
         type: bigint
         description: This is a unique identifier for a customer
+        primaryKey: true
         required: true
         unique: true
       first_name:
@@ -422,6 +432,7 @@ models:
       customer_id:
         type: integer
         description: This is a unique identifier for a customer
+        primaryKey: true
         required: true
         unique: true
       first_name:
