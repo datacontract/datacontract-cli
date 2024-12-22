@@ -135,6 +135,8 @@ models:
         type: double
         description: Total amount (AUD) of the order
         required: true
+    primaryKey:
+      - order_id
     tags: []
   stg_customers:
     description: ''
@@ -151,6 +153,8 @@ models:
       last_name:
         type: varchar
         description: ''
+    primaryKey:
+      - customer_id
     tags: []
   stg_orders:
     description: ''
@@ -170,6 +174,8 @@ models:
       status:
         type: varchar
         description: ''
+    primaryKey:
+      - order_id
     tags: []
   stg_payments:
     description: ''
@@ -189,6 +195,8 @@ models:
       amount:
         type: double
         description: ''
+    primaryKey:
+      - payment_id
     tags: []
   customers:
     description: This table has basic information about a customer, as well as some
@@ -222,6 +230,8 @@ models:
       customer_lifetime_value:
         type: double
         description: ''
+    primaryKey:
+      - customer_id
     tags:
     - TABLE_PII"""
     print("Result:\n", result.to_yaml())
@@ -298,6 +308,8 @@ models:
         type: double
         description: Total amount (AUD) of the order
         required: true
+    primaryKey:
+      - order_id
     tags: []
   stg_customers:
     description: ''
@@ -314,6 +326,8 @@ models:
       last_name:
         type: string
         description: ''
+    primaryKey:
+      - customer_id
     tags: []
   stg_orders:
     description: ''
@@ -333,6 +347,8 @@ models:
       status:
         type: string
         description: ''
+    primaryKey:
+      - order_id
     tags: []
   stg_payments:
     description: ''
@@ -352,6 +368,8 @@ models:
       amount:
         type: double
         description: ''
+    primaryKey:
+      - payment_id
     tags: []
   customers:
     description: This table has basic information about a customer, as well as some
@@ -385,6 +403,8 @@ models:
       customer_lifetime_value:
         type: double
         description: ''
+    primaryKey:
+      - customer_id
     tags:
     - TABLE_PII"""
     print("Result:\n", result.to_yaml())
@@ -457,6 +477,8 @@ models:
       customer_lifetime_value:
         type: double
         description: ''
+    primaryKey:
+      - customer_id
     tags:
     - TABLE_PII"""
     print("Result:\n", result.to_yaml())
