@@ -3,7 +3,7 @@ from typing import TypedDict
 
 from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
-from dbt.contracts.graph.nodes import GenericTestNode
+from dbt.contracts.graph.nodes import GenericTestNode, ModelNode
 from dbt_common.contracts.constraints import ConstraintType
 
 from datacontract.imports.bigquery_importer import map_type_from_bigquery
@@ -75,16 +75,33 @@ def import_dbt_manifest(
         if dbt_nodes and model_contents.name not in dbt_nodes:
             continue
 
+        model_unique_id = model_contents.unique_id
+
+        if isinstance(model_contents, ModelNode):
+            test_nodes = []
+            for node_id in manifest.child_map.get(model_unique_id, []):
+                test_node = manifest.nodes.get(node_id)
+                if not test_node or test_node.resource_type != "test":
+                    continue
+                if not isinstance(test_node, GenericTestNode):
+                    continue
+                if test_node.config.where is not None:
+                    continue
+                test_nodes.append(test_node)
+            primary_key = model_contents.infer_primary_key(test_nodes)
+
         dc_model = Model(
             description=model_contents.description,
             tags=model_contents.tags,
             fields=create_fields(
                 manifest,
-                model_unique_id=model_contents.unique_id,
+                model_unique_id=model_unique_id,
                 columns=model_contents.columns,
                 adapter_type=adapter_type,
             ),
         )
+        if primary_key:
+            dc_model.primaryKey = primary_key
 
         data_contract_specification.models[model_contents.name] = dc_model
 
