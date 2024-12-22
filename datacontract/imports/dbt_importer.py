@@ -163,4 +163,12 @@ def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, a
     if unique:
         field.unique = unique
 
+    primary_key= False
+    if any(constraint.type == ConstraintType.primary_key for constraint in column.constraints):
+        primary_key = True
+    if any(test["test_type"] == "not_null" for test in all_tests) and any(test["test_type"] == "unique" for test in all_tests):
+        primary_key = True
+    if primary_key:
+        field.primaryKey = primary_key
+
     return field
