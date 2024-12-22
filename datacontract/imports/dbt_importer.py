@@ -3,7 +3,7 @@ from typing import TypedDict
 
 from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
-from dbt.contracts.graph.nodes import GenericTestNode, ModelNode
+from dbt.contracts.graph.nodes import GenericTestNode, ManifestNode, ModelNode
 from dbt_common.contracts.constraints import ConstraintType
 
 from datacontract.imports.bigquery_importer import map_type_from_bigquery
@@ -51,6 +51,23 @@ def read_dbt_manifest(manifest_path: str) -> Manifest:
     return manifest
 
 
+def _get_primary_keys(manifest: Manifest, node: ManifestNode):
+    node_unique_id = node.unique_id
+    if isinstance(node, ModelNode):
+        test_nodes = []
+        for node_id in manifest.child_map.get(node_unique_id, []):
+            test_node = manifest.nodes.get(node_id)
+            if not test_node or test_node.resource_type != "test":
+                continue
+            if not isinstance(test_node, GenericTestNode):
+                continue
+            if test_node.config.where is not None:
+                continue
+            test_nodes.append(test_node)
+        return node.infer_primary_key(test_nodes)
+    return []
+
+
 def import_dbt_manifest(
     data_contract_specification: DataContractSpecification,
     manifest: Manifest,
@@ -76,20 +93,7 @@ def import_dbt_manifest(
             continue
 
         model_unique_id = model_contents.unique_id
-        primary_keys = []
-
-        if isinstance(model_contents, ModelNode):
-            test_nodes = []
-            for node_id in manifest.child_map.get(model_unique_id, []):
-                test_node = manifest.nodes.get(node_id)
-                if not test_node or test_node.resource_type != "test":
-                    continue
-                if not isinstance(test_node, GenericTestNode):
-                    continue
-                if test_node.config.where is not None:
-                    continue
-                test_nodes.append(test_node)
-            primary_keys = model_contents.infer_primary_key(test_nodes)
+        primary_keys = _get_primary_keys(manifest, model_contents)
 
         primary_key = None
         if len(primary_keys) == 1:
