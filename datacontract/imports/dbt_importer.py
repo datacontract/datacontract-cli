@@ -82,30 +82,30 @@ def import_dbt_manifest(
     data_contract_specification.info.dbt_version = manifest.metadata.dbt_version
     adapter_type = manifest.metadata.adapter_type
     data_contract_specification.models = data_contract_specification.models or {}
-    for model_contents in manifest.nodes.values():
+    for node in manifest.nodes.values():
         # Only intressted in processing models.
-        if model_contents.resource_type not in resource_types:
+        if node.resource_type not in resource_types:
             continue
 
         # To allow args stored in dbt_models to filter relevant models.
         # If dbt_models is empty, use all models.
-        if dbt_nodes and model_contents.name not in dbt_nodes:
+        if dbt_nodes and node.name not in dbt_nodes:
             continue
 
-        model_unique_id = model_contents.unique_id
-        primary_keys = _get_primary_keys(manifest, model_contents)
+        model_unique_id = node.unique_id
+        primary_keys = _get_primary_keys(manifest, node)
 
         primary_key = None
         if len(primary_keys) == 1:
             primary_key = primary_keys[0]
 
         dc_model = Model(
-            description=model_contents.description,
-            tags=model_contents.tags,
+            description=node.description,
+            tags=node.tags,
             fields=create_fields(
                 manifest,
                 model_unique_id=model_unique_id,
-                columns=model_contents.columns,
+                columns=node.columns,
                 primary_key_name=primary_key,
                 adapter_type=adapter_type,
             ),
@@ -113,7 +113,7 @@ def import_dbt_manifest(
         if len(primary_keys) > 1:
             dc_model.primaryKey = primary_keys
 
-        data_contract_specification.models[model_contents.name] = dc_model
+        data_contract_specification.models[node.name] = dc_model
 
     return data_contract_specification
 
