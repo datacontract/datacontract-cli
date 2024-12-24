@@ -802,7 +802,7 @@ Available export options:
 | `jsonschema`         | Export to JSON Schema                                   | ✅      |
 | `odcs_v2`            | Export to Open Data Contract Standard (ODCS) V2         | ✅      |
 | `odcs_v3`            | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
-| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
+| `odcs`               | Export to Open Data Contract Standard (ODCS) V1         | ✅      |
 | `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
 | `dbt`                | Export to dbt models in YAML format                     | ✅      |
 | `dbt-sources`        | Export to dbt sources in YAML format                    | ✅      |
