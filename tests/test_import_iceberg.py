@@ -28,6 +28,7 @@ models:
         title: bar
         type: integer
         required: true
+        primaryKey: true
         config:
           icebergFieldId: 2
       baz:

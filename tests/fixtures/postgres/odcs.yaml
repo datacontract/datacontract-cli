@@ -48,4 +48,4 @@ servers:
   database: test
   schema: public
   host: localhost
-  port: __PORT__
+  port: 5432

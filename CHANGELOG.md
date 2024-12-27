@@ -9,15 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Support for model import from parquet file metadata.
-- Changelog support for `Info` and `Terms` blocks.
+- added export format **markdown**: `datacontract export --format markdown` (#545)
+- When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
 - Added import for `ProtoBuf`
+
+
+### Changed
+
+## [0.10.16] - 2024-12-19
+
+### Added
+- Support for exporting a Data Contract to an Iceberg schema definition.
+- When importing in dbt format, add the dbt `not_null` information as a datacontract `required` field (#547)
+
+### Changed
+- Type conversion when importing contracts into dbt and exporting contracts from dbt (#534)
+- Ensure 'name' is the first column when exporting in dbt format, considering column attributes (#541)
+- Rename dbt's `tests` to `data_tests` (#548)
+
+### Fixed
+- Modify the arguments to narrow down the import target with `--dbt-model` (#532)
+- SodaCL: Prevent `KeyError: 'fail'` from happening when testing with SodaCL
+- fix: populate database and schema values for bigquery in exported dbt sources (#543)
+- Fixing the options for importing and exporting to standard output (#544)
+- Fixing the data quality name for model-level and field-level quality tests
+
+## [0.10.15] - 2024-12-02
+
+### Added
+- Support for model import from parquet file metadata.
+- Great Expectation export: add optional args (#496)
+  - `suite_name` the name of the expectation suite to export
+  - `engine` used to run checks
+  - `sql_server_type` to define the type of SQL Server to use when engine is `sql`
+- Changelog support for `Info` and `Terms` blocks.
+- `datacontract import` now has `--output` option for saving Data Contract to file
+- Enhance JSON file validation (local and S3) to return the first error for each JSON object, the max number of total errors can be configured via the environment variable: `DATACONTRACT_MAX_ERRORS`. Furthermore, the primaryKey will be additionally added to the error message.
+- fixes issue where records with no fields create an invalid bq schema.
 
 ### Changed
 - Changelog support for custom extension keys in `Models` and `Fields` blocks.
+- `datacontract catalog --files '*.yaml'` now checks also any subfolders for such files.
+- Optimize test output table on console if tests fail
 
 ### Fixed
 - raise valid exception in DataContractSpecification.from_file if file does not exist
+- Fix importing JSON Schemas containing deeply nested objects without `required` array
+- SodaCL: Only add data quality tests for executable queries
 
 ## [0.10.14] - 2024-10-26
 

@@ -1,6 +1,6 @@
 from datacontract.breaking.breaking_rules import BreakingRules
 from datacontract.model.breaking_change import BreakingChange, Location, Severity
-from datacontract.model.data_contract_specification import Contact, Field, Info, Model, Quality, Terms
+from datacontract.model.data_contract_specification import Contact, DeprecatedQuality, Field, Info, Model, Terms
 
 
 def info_breaking_changes(
@@ -216,8 +216,8 @@ def terms_breaking_changes(
 
 
 def quality_breaking_changes(
-    old_quality: Quality,
-    new_quality: Quality,
+    old_quality: DeprecatedQuality,
+    new_quality: DeprecatedQuality,
     new_path: str,
     include_severities: [Severity],
 ) -> list[BreakingChange]:

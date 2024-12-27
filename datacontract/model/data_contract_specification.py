@@ -147,6 +147,7 @@ class Field(pyd.BaseModel):
     format: str = None
     required: bool = None
     primary: bool = None
+    primaryKey: bool = None
     unique: bool | None = None
     references: str = None
     description: str | None = None
@@ -213,7 +214,8 @@ class Example(pyd.BaseModel):
     data: str | object = None
 
 
-class Quality(pyd.BaseModel):
+# Deprecated Quality class
+class DeprecatedQuality(pyd.BaseModel):
     type: str = None
     specification: str | object = None
 
@@ -286,7 +288,7 @@ class DataContractSpecification(pyd.BaseModel):
         default_factory=list,
         deprecated="Removed in Data Contract Specification " "v1.1.0. Use models.examples instead.",
     )
-    quality: Quality = pyd.Field(
+    quality: DeprecatedQuality = pyd.Field(
         default=None,
         deprecated="Removed in Data Contract Specification v1.1.0. Use " "model-level and field-level quality instead.",
     )

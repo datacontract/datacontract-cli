@@ -148,6 +148,10 @@ def to_odcs_schema(model_key, model_value: Model) -> dict:
     if properties:
         odcs_table["properties"] = properties
 
+    model_quality = to_odcs_quality_list(model_value.quality)
+    if len(model_quality) > 0:
+        odcs_table["quality"] = model_quality
+
     odcs_table["customProperties"] = []
     if model_value.model_extra is not None:
         for key, value in model_value.model_extra.items():
@@ -257,38 +261,48 @@ def to_property(field_name: str, field: Field) -> dict:
         del property["logicalTypeOptions"]
 
     if field.quality is not None:
-        quality_property = []
-        for quality in field.quality:
-            quality_dict = {"type": quality.type}
-            if quality.description is not None:
-                quality_dict["description"] = quality.description
-            if quality.query is not None:
-                quality_dict["query"] = quality.query
-            # dialect is not supported in v3.0.0
-            if quality.mustBe is not None:
-                quality_dict["mustBe"] = quality.mustBe
-            if quality.mustNotBe is not None:
-                quality_dict["mustNotBe"] = quality.mustNotBe
-            if quality.mustBeGreaterThan is not None:
-                quality_dict["mustBeGreaterThan"] = quality.mustBeGreaterThan
-            if quality.mustBeGreaterThanOrEqualTo is not None:
-                quality_dict["mustBeGreaterThanOrEqualTo"] = quality.mustBeGreaterThanOrEqualTo
-            if quality.mustBeLessThan is not None:
-                quality_dict["mustBeLessThan"] = quality.mustBeLessThan
-            if quality.mustBeLessThanOrEqualTo is not None:
-                quality_dict["mustBeLessThanOrEqualTo"] = quality.mustBeLessThanOrEqualTo
-            if quality.mustBeBetween is not None:
-                quality_dict["mustBeBetween"] = quality.mustBeBetween
-            if quality.mustNotBeBetween is not None:
-                quality_dict["mustNotBeBetween"] = quality.mustNotBeBetween
-            if quality.engine is not None:
-                quality_dict["engine"] = quality.engine
-            if quality.implementation is not None:
-                quality_dict["implementation"] = quality.implementation
-            quality_property.append(quality_dict)
+        quality_list = field.quality
+        quality_property = to_odcs_quality_list(quality_list)
         if len(quality_property) > 0:
             property["quality"] = quality_property
 
     # todo enum
 
     return property
+
+
+def to_odcs_quality_list(quality_list):
+    quality_property = []
+    for quality in quality_list:
+        quality_property.append(to_odcs_quality(quality))
+    return quality_property
+
+
+def to_odcs_quality(quality):
+    quality_dict = {"type": quality.type}
+    if quality.description is not None:
+        quality_dict["description"] = quality.description
+    if quality.query is not None:
+        quality_dict["query"] = quality.query
+    # dialect is not supported in v3.0.0
+    if quality.mustBe is not None:
+        quality_dict["mustBe"] = quality.mustBe
+    if quality.mustNotBe is not None:
+        quality_dict["mustNotBe"] = quality.mustNotBe
+    if quality.mustBeGreaterThan is not None:
+        quality_dict["mustBeGreaterThan"] = quality.mustBeGreaterThan
+    if quality.mustBeGreaterThanOrEqualTo is not None:
+        quality_dict["mustBeGreaterThanOrEqualTo"] = quality.mustBeGreaterThanOrEqualTo
+    if quality.mustBeLessThan is not None:
+        quality_dict["mustBeLessThan"] = quality.mustBeLessThan
+    if quality.mustBeLessThanOrEqualTo is not None:
+        quality_dict["mustBeLessThanOrEqualTo"] = quality.mustBeLessThanOrEqualTo
+    if quality.mustBeBetween is not None:
+        quality_dict["mustBeBetween"] = quality.mustBeBetween
+    if quality.mustNotBeBetween is not None:
+        quality_dict["mustNotBeBetween"] = quality.mustNotBeBetween
+    if quality.engine is not None:
+        quality_dict["engine"] = quality.engine
+    if quality.implementation is not None:
+        quality_dict["implementation"] = quality.implementation
+    return quality_dict

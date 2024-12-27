@@ -48,17 +48,17 @@ def test_test_quality_invalid(postgres_container, monkeypatch):
     print(run.pretty())
     assert run.result == "failed"
     assert any(
-        check.name == "my_table_quality_sql_0 between 1000 and 49900" and check.result == "failed"
+        check.name == "my_table_field_two_quality_sql_0 between 1000 and 49900" and check.result == "failed"
         for check in run.checks
     )
-    assert any(check.name == "my_table_None_quality_sql_0 < 3600" and check.result == "failed" for check in run.checks)
+    assert any(check.name == "my_table_quality_sql_0 < 3600" and check.result == "failed" for check in run.checks)
 
 
 def _setup_datacontract(file):
     with open(file) as data_contract_file:
         data_contract_str = data_contract_file.read()
     port = postgres.get_exposed_port(5432)
-    data_contract_str = data_contract_str.replace("__PORT__", port)
+    data_contract_str = data_contract_str.replace("5432", port)
     return data_contract_str
 
 

@@ -78,17 +78,17 @@
 
               <li class="col-span-1 rounded-lg bg-white shadow hover:bg-gray-50"
                   data-search="{{
-    contract.spec.info.title|lower }} {{
-    contract.spec.info.owner|lower if contract.spec.info.owner else '' }} {{
-    contract.spec.info.description|lower }} {%
+    contract.spec.info.title|lower|e }} {{
+    contract.spec.info.owner|lower|e if contract.spec.info.owner else '' }} {{
+    contract.spec.info.description|lower|e }} {%
     for model_name, model in contract.spec.models.items() %}
-      {{ model.description|lower }} {%
+      {{ model.description|lower|e }} {%
       for field_name, field in model.fields.items() %}
-        {{ field_name|lower }} {{ field.description|lower if field.description else '' }} {%
+        {{ field_name|lower|e }} {{ field.description|lower|e if field.description else '' }} {%
       endfor %}
     {% endfor %}
   ">
-                <a href="{{contract.html_link}}" >
+                <a href="{{contract.html_link|e}}" >
                   <div class="flex w-full justify-between space-x-1 p-6 pb-4">
                     <div class="flex-1 truncate">
                       <div class="flex items-center space-x-3">

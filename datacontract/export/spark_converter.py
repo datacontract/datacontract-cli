@@ -103,11 +103,11 @@ def to_struct_field(field: Field, field_name: str) -> types.StructField:
     Returns:
         types.StructField: The corresponding Spark StructField.
     """
-    data_type = to_data_type(field)
+    data_type = to_spark_data_type(field)
     return types.StructField(name=field_name, dataType=data_type, nullable=not field.required)
 
 
-def to_data_type(field: Field) -> types.DataType:
+def to_spark_data_type(field: Field) -> types.DataType:
     """
     Convert a field to a Spark DataType.
 
@@ -121,11 +121,11 @@ def to_data_type(field: Field) -> types.DataType:
     if field_type is None or field_type in ["null"]:
         return types.NullType()
     if field_type == "array":
-        return types.ArrayType(to_data_type(field.items))
+        return types.ArrayType(to_spark_data_type(field.items))
     if field_type in ["object", "record", "struct"]:
         return types.StructType(to_struct_type(field.fields))
     if field_type == "map":
-        return types.MapType(to_data_type(field.keys), to_data_type(field.values))
+        return types.MapType(to_spark_data_type(field.keys), to_spark_data_type(field.values))
     if field_type in ["string", "varchar", "text"]:
         return types.StringType()
     if field_type in ["number", "decimal", "numeric"]:

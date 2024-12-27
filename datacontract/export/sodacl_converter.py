@@ -62,12 +62,16 @@ def to_checks(model_key, model_value, server_type: str, check_types: bool):
         if field.enum is not None and len(field.enum) > 0:
             checks.append(check_field_enum(field_name, field.enum, quote_field_name))
         if field.quality is not None and len(field.quality) > 0:
-            checks.append(check_quality_list(model_key, field_name, field.quality))
+            quality_list = check_quality_list(model_key, field_name, field.quality)
+            if (quality_list is not None) and len(quality_list) > 0:
+                checks.append(quality_list)
         # TODO references: str = None
         # TODO format
 
     if model_value.quality is not None and len(model_value.quality) > 0:
-        checks.append(check_quality_list(model_key, None, model_value.quality))
+        quality_list = check_quality_list(model_key, None, model_value.quality)
+        if (quality_list is not None) and len(quality_list) > 0:
+            checks.append(quality_list)
 
     checks_for_model_key = f"checks for {model_key}"
 
@@ -196,9 +200,9 @@ def check_quality_list(model_name, field_name, quality_list: List[Quality]):
     for quality in quality_list:
         if quality.type == "sql":
             if field_name is None:
-                metric_name = f"{model_name}_{field_name}_quality_sql_{count}"
-            else:
                 metric_name = f"{model_name}_quality_sql_{count}"
+            else:
+                metric_name = f"{model_name}_{field_name}_quality_sql_{count}"
             threshold = to_sodacl_threshold(quality)
             query = prepare_query(quality, model_name, field_name)
             if query is None:
@@ -261,6 +265,7 @@ def to_sodacl_threshold(quality: Quality) -> str | None:
     return None
 
 
+# These are deprecated root-level quality specifications, use the model-level and field-level quality fields instead
 def add_quality_checks(sodacl, data_contract_spec):
     if data_contract_spec.quality is None:
         return

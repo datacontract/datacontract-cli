@@ -77,6 +77,13 @@ schema:
         logicalType: string
         physicalType: text
         isNullable: false
+    quality:
+    - type: sql
+      description: Row Count
+      query: |
+        SELECT COUNT(*) AS row_count
+        FROM orders
+      mustBeGreaterThan: 1000  
 
 servers:
   - server: production

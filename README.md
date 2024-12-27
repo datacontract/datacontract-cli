@@ -749,19 +749,19 @@ models:
 ### export
 
 ```
-
- Usage: datacontract export [OPTIONS] [LOCATION]
-
- Convert data contract to a specific format. Prints to stdout or to the specified output file.
-
+ Usage: datacontract export [OPTIONS] [LOCATION]                                                                                  
+                                                                                                                                  
+ Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.      
+                                                                                                                                  
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
-│                    t-staging-sql|odcs|rdf|avro|protobuf|great-expectati                                                        │
-│                    ons|terraform|avro-idl|sql|sql-query|html|go|bigquer                                                        │
-│                    y|dbml|spark|sqlalchemy|data-caterer|dcs]                                                                       │
+│                    t-staging-sql|odcs|odcs_v2|odcs_v3|rdf|avro|protobuf                                                        │
+│                    |great-expectations|terraform|avro-idl|sql|sql-query                                                        │
+│                    |html|go|bigquery|dbml|spark|sqlalchemy|data-caterer                                                        │
+│                    |dcs|markdown|iceberg]                                                                                              │
 │    --output        PATH                                                  Specify the file path where the exported data will be │
 │                                                                          saved. If no path is provided, the output will be     │
 │                                                                          printed to stdout.                                    │
@@ -771,6 +771,12 @@ models:
 │                                                                          file to refer to a model, e.g., `orders`, or `all`    │
 │                                                                          for all models (default).                             │
 │                                                                          [default: all]                                        │
+│    --schema        TEXT                                                  The location (url or path) of the Data Contract       │
+│                                                                          Specification JSON Schema                             │
+│                                                                          [default:                                             │
+│                                                                          https://datacontract.com/datacontract.schema.json]    │
+│    --engine        TEXT                                                  [engine] The engine used for great expection run.     │
+│                                                                          [default: None]                                       │
 │    --help                                                                Show this message and exit.                           │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ RDF Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -781,12 +787,11 @@ models:
 │                                detect the sql dialect via the specified servers in the data contract.                          │
 │                                [default: auto]                                                                                 │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 ```
 
 ```bash
 # Example export data contract as HTML
-datacontract export --format html > datacontract.html
+datacontract export --format html --output datacontract.html
 ```
 
 Available export options:
@@ -817,11 +822,14 @@ Available export options:
 | `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
 | `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
+| `markdown`           | Export to Markdown                                      | ✅      |
+| `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
+
 
 #### Great Expectations
 
-The export function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
+The `export` function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
 If the contract includes multiple models, you need to specify the names of the model you wish to export.
 
 ```shell
@@ -831,7 +839,22 @@ datacontract  export datacontract.yaml --format great-expectations --model order
 The export creates a list of expectations by utilizing:
 
 - The data from the Model definition with a fixed mapping
-- The expectations provided in the quality field for each model (find here the expectations gallery https://greatexpectations.io/expectations/)
+- The expectations provided in the quality field for each model (find here the expectations gallery: [Great Expectations Gallery](https://greatexpectations.io/expectations/))
+
+### Additional Arguments
+
+To further customize the export, the following optional arguments are available:
+
+- **`suite_name`**: The name of the expectation suite. This suite groups all generated expectations and provides a convenient identifier within Great Expectations. If not provided, a default suite name will be generated based on the model name(s).
+
+- **`engine`**: Specifies the engine used to run Great Expectations checks. Accepted values are:
+  - `pandas` — Use this when working with in-memory data frames through the Pandas library.
+  - `spark` — Use this for working with Spark dataframes.
+  - `sql` — Use this for working with SQL databases.
+
+- **`sql_server_type`**: Specifies the type of SQL server to connect with when `engine` is set to `sql`.
+
+  Providing `sql_server_type` ensures that the appropriate SQL dialect and connection settings are applied during the expectation validation.
 
 #### RDF
 
@@ -924,18 +947,81 @@ models:
     - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
     - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
 
+#### Iceberg
+
+Exports to an [Iceberg Table Json Schema Definition](https://iceberg.apache.org/spec/#appendix-c-json-serialization).
+
+This export only supports a single model export at a time because Iceberg's schema definition is for a single table and the exporter maps 1 model to 1 table, use the `--model` flag
+to limit your contract export to a single model.
+
+```bash
+ $ datacontract export --format iceberg --model orders https://datacontract.com/examples/orders-latest/datacontract.yaml --output /tmp/orders_iceberg.json
+ 
+ $ cat /tmp/orders_iceberg.json | jq '.'
+{
+  "type": "struct",
+  "fields": [
+    {
+      "id": 1,
+      "name": "order_id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": 2,
+      "name": "order_timestamp",
+      "type": "timestamptz",
+      "required": true
+    },
+    {
+      "id": 3,
+      "name": "order_total",
+      "type": "long",
+      "required": true
+    },
+    {
+      "id": 4,
+      "name": "customer_id",
+      "type": "string",
+      "required": false
+    },
+    {
+      "id": 5,
+      "name": "customer_email_address",
+      "type": "string",
+      "required": true
+    },
+    {
+      "id": 6,
+      "name": "processed_timestamp",
+      "type": "timestamptz",
+      "required": true
+    }
+  ],
+  "schema-id": 0,
+  "identifier-field-ids": [
+    1
+  ]
+}
+```
 
 ### import
 
 ```
- Usage: datacontract import [OPTIONS]
-
- Create a data contract from the given source location. Prints to stdout.                                                      
+ Usage: datacontract import [OPTIONS]                                                                                          
+                                                                                                                               
+ Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise
+ prints to stdout.                                                                                                                    
                                                                                                                                
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bigquery  The format of the source file.               │
 │                                   |odcs|unity|spark|iceberg|parquet|protobuf]  [default: None]                              │
 │                                                                                [required]                                   │
+│    --output                       PATH                                         Specify the file path where the Data         │
+│                                                                                Contract will be saved. If no path is        │
+│                                                                                provided, the output will be printed to      │
+│                                                                                stdout.                                      │
+│                                                                                [default: None]                              │
 │    --source                       TEXT                                         The path to the file or Glue Database that   │
 │                                                                                should be imported.                          │
 │                                                                                [default: None]                              │
@@ -975,6 +1061,8 @@ Example:
 ```bash
 # Example import from SQL DDL
 datacontract import --format sql --source my_ddl.sql
+# To save to file
+datacontract import --format sql --source my_ddl.sql --output datacontract.yaml
 ```
 
 Available import options:
@@ -1205,6 +1293,16 @@ datacontract import --format protobuf --source ./tests/fixtures/protobuf/simple_
 │ --output        TEXT  Output directory for the catalog html files. [default: catalog/]                                   │
 │ --help                Show this message and exit.                                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+Examples:
+
+```
+# create a catalog right in the current folder
+datacontract catalog --output "."
+
+# Create a catalog based on a filename convention
+datacontract catalog --files "*.odcs.yaml"
 ```
 
 ### Publish

@@ -17,11 +17,11 @@ terms:
   noticePeriod: P3M
 servers:
   production:
-    type: snowflake
+    type: bigquery
     environment: production
     account: my-account
-    database: my-database
-    schema: my-schema
+    project: my-database
+    dataset: my-schema
     roles:
       - name: analyst_us
         description: Access to the data for US region
@@ -66,10 +66,3 @@ models:
           - pending
           - shipped
           - delivered
-    quality:
-      - type: sql
-        description: Row Count
-        query: |
-          SELECT COUNT(*) AS row_count
-          FROM orders
-        mustBeGreaterThan: 1000

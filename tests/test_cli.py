@@ -15,4 +15,4 @@ def test_test_help():
 def test_file_does_not_exist():
     result = runner.invoke(app, ["test", "unknown.yaml"])
     assert result.exit_code == 1
-    assert "The file 'unknown.yaml' does not exist." in result.stdout
+    assert "The file 'unknown.yaml' does not \nexist." in result.stdout

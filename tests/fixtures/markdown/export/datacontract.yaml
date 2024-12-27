@@ -46,7 +46,7 @@ models:
     type: table
     fields:
       order_id:
-        $ref: '#/definitions/order_id'
+        $ref: "#/definitions/order_id"
         required: true
         unique: true
         primaryKey: true
@@ -63,13 +63,13 @@ models:
         required: true
         examples:
           - 9999
-#        quality:
-#          - type: sql
-#            description: 95% of all order total values are expected to be between 10 and 499 EUR.
-#            query: |
-#              SELECT quantile_cont(order_total, 0.95) AS percentile_95
-#              FROM orders
-#            mustBeBetween: [1000, 49900]
+      #        quality:
+      #          - type: sql
+      #            description: 95% of all order total values are expected to be between 10 and 499 EUR.
+      #            query: |
+      #              SELECT quantile_cont(order_total, 0.95) AS percentile_95
+      #              FROM orders
+      #            mustBeBetween: [1000, 49900]
       customer_id:
         description: Unique identifier for the customer.
         type: text
@@ -98,15 +98,15 @@ models:
           jsonType: string
           jsonFormat: date-time
     quality:
-#      - type: sql
-#        description: The maximum duration between two orders should be less that 3600 seconds
-#        query: |
-#          SELECT MAX(duration) AS max_duration
-#            FROM (
-#            SELECT epoch(order_timestamp - LAG(order_timestamp) OVER (ORDER BY order_timestamp)) AS duration
-#            FROM orders
-#          ) subquery
-#        mustBeLessThan: 3600
+      #      - type: sql
+      #        description: The maximum duration between two orders should be less that 3600 seconds
+      #        query: |
+      #          SELECT MAX(duration) AS max_duration
+      #            FROM (
+      #            SELECT epoch(order_timestamp - LAG(order_timestamp) OVER (ORDER BY order_timestamp)) AS duration
+      #            FROM orders
+      #          ) subquery
+      #        mustBeLessThan: 3600
       - type: sql
         description: Row Count
         query: |
@@ -135,11 +135,11 @@ models:
         description: Primary key of the lines_item_id table
         required: true
       order_id:
-        $ref: '#/definitions/order_id'
+        $ref: "#/definitions/order_id"
         references: orders.order_id
       sku:
         description: The purchased article number
-        $ref: '#/definitions/sku'
+        $ref: "#/definitions/sku"
     primaryKey: ["order_id", "line_item_id"]
     examples:
       - |
