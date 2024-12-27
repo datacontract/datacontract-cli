@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
 
 ### Changed
+- Define primaryKey and examples for model to follow the changes in datacontract-specification v1.1.0 (#559)
 
 ## [0.10.16] - 2024-12-19
 
