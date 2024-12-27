@@ -1,0 +1,21 @@
+dataContractSpecification: 0.9.3
+id: my-data-contract-id-001
+info:
+  title: My Data Contract
+  version: 0.0.1
+servers:
+  production:
+    type: local
+    format: protobuf
+    path: ./tests/fixtures/protobuf/data/sample_data.proto3.data
+models:
+  sample_data:
+    description: ProtoBuf file with simple schema
+    type: table
+    fields:
+      field_1:
+        type: integer
+      field_2:
+        type: string
+      field_3:
+        type: string
