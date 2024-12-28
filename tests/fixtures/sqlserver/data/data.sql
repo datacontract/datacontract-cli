@@ -1,12 +1,12 @@
 -- Create the table
-CREATE TABLE dbo.my_table (
+CREATE TABLE [dbo].[my_table] (
     field_one VARCHAR(10) PRIMARY KEY,
     field_two INT NOT NULL,
     field_three DATETIME2
 );
 
 -- Insert the data
-INSERT INTO dbo.my_table (field_one, field_two, field_three) VALUES
+INSERT INTO [dbo].[my_table] (field_one, field_two, field_three) VALUES
     ('CX-263-DU', 50, '2023-06-16 13:12:56'),
     ('IK-894-MN', 47, '2023-10-08 22:40:57'),
     ('ER-399-JY', 22, '2023-05-16 01:08:22 '),

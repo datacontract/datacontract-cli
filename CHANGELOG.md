@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Primary and example fields have been deprecated in Data Contract Specification v1.1.0 (#561)
 - Define primaryKey and examples for model to follow the changes in datacontract-specification v1.1.0 (#559)
 
+### Fixed
+- SQL Server: cannot escape reserved word on model (#557)
+
+
 ## [0.10.16] - 2024-12-19
 
 ### Added
