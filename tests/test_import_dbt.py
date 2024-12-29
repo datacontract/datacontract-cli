@@ -91,6 +91,7 @@ models:
         type: integer
         description: Foreign key to the customers table
         required: true
+        references: customers.customer_id
       order_date:
         type: date
         description: Date (UTC) that the order was placed
@@ -254,6 +255,7 @@ models:
         type: bigint
         description: Foreign key to the customers table
         required: true
+        references: customers.customer_id
       order_date:
         type: date
         description: Date (UTC) that the order was placed
