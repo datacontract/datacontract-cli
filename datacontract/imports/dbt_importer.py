@@ -1,5 +1,5 @@
 import json
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
