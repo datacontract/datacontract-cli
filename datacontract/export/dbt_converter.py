@@ -145,7 +145,7 @@ def _to_columns(data_contract_spec: DataContractSpecification, fields: Dict[str,
     return columns
 
 
-def get_table_name_and_column_name(references: str) -> tuple[str, str]:
+def get_table_name_and_column_name(references: str) -> tuple[Optional[str], str]:
     parts = references.split('.')
     if len(parts) < 2:
         return None, parts[0]
