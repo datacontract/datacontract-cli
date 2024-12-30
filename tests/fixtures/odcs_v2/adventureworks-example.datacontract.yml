@@ -13,7 +13,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Department records.
         classification: ''
@@ -21,7 +21,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Name of the department.
         classification: ''
@@ -29,7 +29,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Name of the group to which the department belongs.
         classification: ''
@@ -37,7 +37,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -49,7 +49,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Employee records.  Foreign key to BusinessEntity.BusinessEntityID.
         classification: ''
@@ -57,7 +57,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Unique national identification number such as a social security
           number.
@@ -66,7 +66,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Network login.
         classification: ''
@@ -74,7 +74,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Work title such as Buyer or Sales Representative.
         classification: ''
@@ -82,7 +82,7 @@ models:
         title: ''
         type: date
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date of birth.
         classification: ''
@@ -90,7 +90,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: M = Married, S = Single
         classification: ''
@@ -98,7 +98,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: M = Male, F = Female
         classification: ''
@@ -106,7 +106,7 @@ models:
         title: ''
         type: date
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Employee hired on this date.
         classification: ''
@@ -114,7 +114,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Job classification. 0 = Hourly, not exempt from collective bargaining.
           1 = Salaried, exempt from collective bargaining.
@@ -123,7 +123,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Number of available vacation hours.
         classification: ''
@@ -131,7 +131,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Number of available sick leave hours.
         classification: ''
@@ -139,7 +139,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Inactive, 1 = Active
         classification: ''
@@ -147,7 +147,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -155,7 +155,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Where the employee is located in corporate hierarchy.
         classification: ''
@@ -167,7 +167,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Employee identification number. Foreign key to Employee.BusinessEntityID.
         classification: ''
@@ -175,7 +175,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Department in which the employee worked including currently.
           Foreign key to Department.DepartmentID.
@@ -184,7 +184,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Identifies which 8-hour shift the employee works. Foreign key
           to Shift.Shift.ID.
@@ -193,7 +193,7 @@ models:
         title: ''
         type: date
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the employee started work in the department.
         classification: ''
@@ -201,7 +201,7 @@ models:
         title: ''
         type: date
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the employee left the department. NULL = Current department.
         classification: ''
@@ -209,7 +209,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -221,7 +221,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Employee identification number. Foreign key to Employee.BusinessEntityID.
         classification: ''
@@ -229,7 +229,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the change in pay is effective
         classification: ''
@@ -237,7 +237,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Salary hourly rate.
         classification: ''
@@ -245,7 +245,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 1 = Salary received monthly, 2 = Salary received biweekly
         classification: ''
@@ -253,7 +253,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -265,7 +265,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for JobCandidate records.
         classification: ''
@@ -273,7 +273,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Employee identification number if applicant was hired. Foreign
           key to Employee.BusinessEntityID.
@@ -282,7 +282,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -294,7 +294,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Shift records.
         classification: ''
@@ -302,7 +302,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shift description.
         classification: ''
@@ -310,7 +310,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shift start time.
         classification: ''
@@ -318,7 +318,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shift end time.
         classification: ''
@@ -326,7 +326,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -338,7 +338,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Address records.
         classification: ''
@@ -346,7 +346,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: First street address line.
         classification: ''
@@ -354,7 +354,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Second street address line.
         classification: ''
@@ -362,7 +362,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Name of the city.
         classification: ''
@@ -370,7 +370,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Unique identification number for the state or province. Foreign
           key to StateProvince table.
@@ -379,7 +379,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Postal code for the street address.
         classification: ''
@@ -387,7 +387,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -399,7 +399,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for AddressType records.
         classification: ''
@@ -407,7 +407,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Address type description. For example, Billing, Home, or Shipping.
         classification: ''
@@ -415,7 +415,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -428,7 +428,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for all customers, vendors, and employees.
         classification: ''
@@ -436,7 +436,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -449,7 +449,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
         classification: ''
@@ -457,7 +457,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to Address.AddressID.
         classification: ''
@@ -465,7 +465,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to AddressType.AddressTypeID.
         classification: ''
@@ -473,7 +473,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -485,7 +485,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
         classification: ''
@@ -493,7 +493,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to Person.BusinessEntityID.
         classification: ''
@@ -501,7 +501,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key.  Foreign key to ContactType.ContactTypeID.
         classification: ''
@@ -509,7 +509,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -521,7 +521,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ContactType records.
         classification: ''
@@ -529,7 +529,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Contact type description.
         classification: ''
@@ -537,7 +537,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -550,7 +550,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ISO standard code for countries and regions.
         classification: ''
@@ -558,7 +558,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Country or region name.
         classification: ''
@@ -566,7 +566,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -578,7 +578,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Person associated with this email address.  Foreign
           key to Person.BusinessEntityID
@@ -587,7 +587,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. ID of this email address.
         classification: ''
@@ -595,7 +595,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: E-mail address for the person.
         classification: ''
@@ -603,7 +603,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -615,7 +615,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -623,7 +623,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Password for the e-mail account.
         classification: ''
@@ -631,7 +631,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Random value concatenated with the password string before the
           password is hashed.
@@ -640,7 +640,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -653,7 +653,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Person records.
         classification: ''
@@ -661,7 +661,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 'Primary type of person: SC = Store Contact, IN = Individual
           (retail) customer, SP = Sales person, EM = Employee (non-sales), VC = Vendor
@@ -671,7 +671,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = The data in FirstName and LastName are stored in western
           style (first name, last name) order.  1 = Eastern style (last name, first
@@ -681,7 +681,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: A courtesy title. For example, Mr. or Ms.
         classification: ''
@@ -689,7 +689,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: First name of the person.
         classification: ''
@@ -697,7 +697,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Middle name or middle initial of the person.
         classification: ''
@@ -705,7 +705,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Last name of the person.
         classification: ''
@@ -713,7 +713,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Surname suffix. For example, Sr. or Jr.
         classification: ''
@@ -721,7 +721,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Contact does not wish to receive e-mail promotions, 1 = Contact
           does wish to receive e-mail promotions from AdventureWorks, 2 = Contact
@@ -732,7 +732,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -744,7 +744,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Business entity identification number. Foreign key to Person.BusinessEntityID.
         classification: ''
@@ -752,7 +752,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Telephone number identification number.
         classification: ''
@@ -760,7 +760,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Kind of phone number. Foreign key to PhoneNumberType.PhoneNumberTypeID.
         classification: ''
@@ -768,7 +768,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -780,7 +780,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for telephone number type records.
         classification: ''
@@ -788,7 +788,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Name of the telephone number type
         classification: ''
@@ -796,7 +796,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -808,7 +808,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for StateProvince records.
         classification: ''
@@ -816,7 +816,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ISO standard state or province code.
         classification: ''
@@ -824,7 +824,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
         classification: ''
@@ -832,7 +832,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = StateProvinceCode exists. 1 = StateProvinceCode unavailable,
           using CountryRegionCode.
@@ -841,7 +841,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: State or province description.
         classification: ''
@@ -849,7 +849,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ID of the territory in which the state or province is located.
           Foreign key to SalesTerritory.SalesTerritoryID.
@@ -858,7 +858,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -871,7 +871,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for BillOfMaterials records.
         classification: ''
@@ -879,7 +879,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Parent product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -887,7 +887,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Component identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -895,7 +895,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the component started being used in the assembly item.
         classification: ''
@@ -903,7 +903,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the component stopped being used in the assembly item.
         classification: ''
@@ -911,7 +911,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Standard code identifying the unit of measure for the quantity.
         classification: ''
@@ -919,7 +919,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Indicates the depth the component is from its parent (AssemblyID).
         classification: ''
@@ -927,7 +927,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Quantity of the component needed to create the assembly.
         classification: ''
@@ -935,7 +935,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -948,7 +948,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Culture records.
         classification: ''
@@ -956,7 +956,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Culture description.
         classification: ''
@@ -964,7 +964,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -976,7 +976,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Title of the document.
         classification: ''
@@ -984,7 +984,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Employee who controls the document.  Foreign key to Employee.BusinessEntityID
         classification: ''
@@ -992,7 +992,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = This is a folder, 1 = This is a document.
         classification: ''
@@ -1000,7 +1000,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: File name of the document
         classification: ''
@@ -1008,7 +1008,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: File extension indicating the document type. For example, .doc
           or .txt.
@@ -1017,7 +1017,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Revision number of the document.
         classification: ''
@@ -1025,7 +1025,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Engineering change approval number.
         classification: ''
@@ -1033,7 +1033,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 1 = Pending approval, 2 = Approved, 3 = Obsolete
         classification: ''
@@ -1041,7 +1041,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Document abstract.
         classification: ''
@@ -1049,7 +1049,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1057,7 +1057,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Document records.
         classification: ''
@@ -1069,7 +1069,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Illustration records.
         classification: ''
@@ -1077,7 +1077,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1089,7 +1089,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Location records.
         classification: ''
@@ -1097,7 +1097,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Location description.
         classification: ''
@@ -1105,7 +1105,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Standard hourly cost of the manufacturing location.
         classification: ''
@@ -1113,7 +1113,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Work capacity (in hours) of the manufacturing location.
         classification: ''
@@ -1121,7 +1121,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1133,7 +1133,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Product records.
         classification: ''
@@ -1141,7 +1141,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Name of the product.
         classification: ''
@@ -1149,7 +1149,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Unique product identification number.
         classification: ''
@@ -1157,7 +1157,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Product is purchased, 1 = Product is manufactured in-house.
         classification: ''
@@ -1165,7 +1165,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Product is not a salable item. 1 = Product is salable.
         classification: ''
@@ -1173,7 +1173,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product color.
         classification: ''
@@ -1181,7 +1181,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Minimum inventory quantity.
         classification: ''
@@ -1189,7 +1189,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Inventory level that triggers a purchase order or work order.
         classification: ''
@@ -1197,7 +1197,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Standard cost of the product.
         classification: ''
@@ -1205,7 +1205,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Selling price.
         classification: ''
@@ -1213,7 +1213,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product size.
         classification: ''
@@ -1221,7 +1221,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Unit of measure for Size column.
         classification: ''
@@ -1229,7 +1229,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Unit of measure for Weight column.
         classification: ''
@@ -1237,7 +1237,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product weight.
         classification: ''
@@ -1245,7 +1245,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Number of days required to manufacture the product.
         classification: ''
@@ -1253,7 +1253,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: R = Road, M = Mountain, T = Touring, S = Standard
         classification: ''
@@ -1261,7 +1261,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: H = High, M = Medium, L = Low
         classification: ''
@@ -1269,7 +1269,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: W = Womens, M = Mens, U = Universal
         classification: ''
@@ -1277,7 +1277,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product is a member of this product subcategory. Foreign key
           to ProductSubCategory.ProductSubCategoryID.
@@ -1286,7 +1286,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product is a member of this product model. Foreign key to ProductModel.ProductModelID.
         classification: ''
@@ -1294,7 +1294,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the product was available for sale.
         classification: ''
@@ -1302,7 +1302,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the product was no longer available for sale.
         classification: ''
@@ -1310,7 +1310,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the product was discontinued.
         classification: ''
@@ -1318,7 +1318,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1330,7 +1330,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ProductCategory records.
         classification: ''
@@ -1338,7 +1338,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Category description.
         classification: ''
@@ -1346,7 +1346,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1358,7 +1358,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID
         classification: ''
@@ -1366,7 +1366,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product cost start date.
         classification: ''
@@ -1374,7 +1374,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product cost end date.
         classification: ''
@@ -1382,7 +1382,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Standard cost of the product.
         classification: ''
@@ -1390,7 +1390,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1402,7 +1402,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ProductDescription records.
         classification: ''
@@ -1410,7 +1410,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Description of the product.
         classification: ''
@@ -1418,7 +1418,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1430,7 +1430,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -1438,7 +1438,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1446,7 +1446,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Document identification number. Foreign key to Document.DocumentNode.
         classification: ''
@@ -1458,7 +1458,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -1466,7 +1466,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Inventory location identification number. Foreign key to Location.LocationID.
         classification: ''
@@ -1474,7 +1474,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Storage compartment within an inventory location.
         classification: ''
@@ -1482,7 +1482,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Storage container on a shelf in an inventory location.
         classification: ''
@@ -1490,7 +1490,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Quantity of products in the inventory location.
         classification: ''
@@ -1498,7 +1498,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1510,7 +1510,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID
         classification: ''
@@ -1518,7 +1518,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: List price start date.
         classification: ''
@@ -1526,7 +1526,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: List price end date
         classification: ''
@@ -1534,7 +1534,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product list price.
         classification: ''
@@ -1542,7 +1542,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1554,7 +1554,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ProductModel records.
         classification: ''
@@ -1562,7 +1562,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product model description.
         classification: ''
@@ -1570,7 +1570,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1582,7 +1582,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to ProductModel.ProductModelID.
         classification: ''
@@ -1590,7 +1590,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to Illustration.IllustrationID.
         classification: ''
@@ -1598,7 +1598,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1611,7 +1611,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to ProductModel.ProductModelID.
         classification: ''
@@ -1619,7 +1619,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to ProductDescription.ProductDescriptionID.
         classification: ''
@@ -1627,7 +1627,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Culture identification number. Foreign key to Culture.CultureID.
         classification: ''
@@ -1635,7 +1635,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1647,7 +1647,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ProductPhoto records.
         classification: ''
@@ -1655,7 +1655,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Small image file name.
         classification: ''
@@ -1663,7 +1663,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Large image file name.
         classification: ''
@@ -1671,7 +1671,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1683,7 +1683,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -1691,15 +1691,15 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product photo identification number. Foreign key to ProductPhoto.ProductPhotoID.
         classification: ''
-      primary:
+      primaryKey:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Photo is not the principal image. 1 = Photo is the principal
           image.
@@ -1708,7 +1708,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1720,7 +1720,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ProductReview records.
         classification: ''
@@ -1728,7 +1728,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -1736,7 +1736,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Name of the reviewer.
         classification: ''
@@ -1744,7 +1744,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date review was submitted.
         classification: ''
@@ -1752,7 +1752,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Reviewer's e-mail address.
         classification: ''
@@ -1760,7 +1760,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product rating given by the reviewer. Scale is 1 to 5 with 5
           as the highest rating.
@@ -1769,7 +1769,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Reviewer's comments
         classification: ''
@@ -1777,7 +1777,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1789,7 +1789,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ProductSubcategory records.
         classification: ''
@@ -1797,7 +1797,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product category identification number. Foreign key to ProductCategory.ProductCategoryID.
         classification: ''
@@ -1805,7 +1805,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Subcategory description.
         classification: ''
@@ -1813,7 +1813,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1825,7 +1825,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ScrapReason records.
         classification: ''
@@ -1833,7 +1833,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Failure description.
         classification: ''
@@ -1841,7 +1841,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1854,7 +1854,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for TransactionHistory records.
         classification: ''
@@ -1862,7 +1862,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -1870,7 +1870,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Purchase order, sales order, or work order identification number.
         classification: ''
@@ -1878,7 +1878,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Line number associated with the purchase order, sales order,
           or work order.
@@ -1887,7 +1887,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date and time of the transaction.
         classification: ''
@@ -1895,7 +1895,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: W = WorkOrder, S = SalesOrder, P = PurchaseOrder
         classification: ''
@@ -1903,7 +1903,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product quantity.
         classification: ''
@@ -1911,7 +1911,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product cost.
         classification: ''
@@ -1919,7 +1919,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -1931,7 +1931,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for TransactionHistoryArchive records.
         classification: ''
@@ -1939,7 +1939,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -1947,7 +1947,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Purchase order, sales order, or work order identification number.
         classification: ''
@@ -1955,7 +1955,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Line number associated with the purchase order, sales order,
           or work order.
@@ -1964,7 +1964,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date and time of the transaction.
         classification: ''
@@ -1972,7 +1972,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: W = Work Order, S = Sales Order, P = Purchase Order
         classification: ''
@@ -1980,7 +1980,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product quantity.
         classification: ''
@@ -1988,7 +1988,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product cost.
         classification: ''
@@ -1996,7 +1996,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2008,7 +2008,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key.
         classification: ''
@@ -2016,7 +2016,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Unit of measure description.
         classification: ''
@@ -2024,7 +2024,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2036,7 +2036,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for WorkOrder records.
         classification: ''
@@ -2044,7 +2044,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -2052,7 +2052,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product quantity to build.
         classification: ''
@@ -2060,7 +2060,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Quantity that failed inspection.
         classification: ''
@@ -2068,7 +2068,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Work order start date.
         classification: ''
@@ -2076,7 +2076,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Work order end date.
         classification: ''
@@ -2084,7 +2084,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Work order due date.
         classification: ''
@@ -2092,7 +2092,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Reason for inspection failure.
         classification: ''
@@ -2100,7 +2100,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2112,7 +2112,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to WorkOrder.WorkOrderID.
         classification: ''
@@ -2120,7 +2120,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to Product.ProductID.
         classification: ''
@@ -2128,7 +2128,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Indicates the manufacturing process sequence.
         classification: ''
@@ -2136,7 +2136,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Manufacturing location where the part is processed. Foreign key
           to Location.LocationID.
@@ -2145,7 +2145,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Planned manufacturing start date.
         classification: ''
@@ -2153,7 +2153,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Planned manufacturing end date.
         classification: ''
@@ -2161,7 +2161,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Actual start date.
         classification: ''
@@ -2169,7 +2169,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Actual end date.
         classification: ''
@@ -2177,7 +2177,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Number of manufacturing hours used.
         classification: ''
@@ -2185,7 +2185,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Estimated manufacturing cost.
         classification: ''
@@ -2193,7 +2193,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Actual manufacturing cost.
         classification: ''
@@ -2201,7 +2201,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2213,7 +2213,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to Product.ProductID.
         classification: ''
@@ -2221,7 +2221,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to Vendor.BusinessEntityID.
         classification: ''
@@ -2229,7 +2229,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The average span of time (in days) between placing an order with
           the vendor and receiving the purchased product.
@@ -2238,7 +2238,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The vendor's usual selling price.
         classification: ''
@@ -2246,7 +2246,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The selling price when last purchased.
         classification: ''
@@ -2254,7 +2254,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the product was last received by the vendor.
         classification: ''
@@ -2262,7 +2262,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The maximum quantity that should be ordered.
         classification: ''
@@ -2270,7 +2270,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The minimum quantity that should be ordered.
         classification: ''
@@ -2278,7 +2278,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The quantity currently on order.
         classification: ''
@@ -2286,7 +2286,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The product's unit of measure.
         classification: ''
@@ -2294,7 +2294,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2307,7 +2307,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to PurchaseOrderHeader.PurchaseOrderID.
         classification: ''
@@ -2315,7 +2315,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. One line number per purchased product.
         classification: ''
@@ -2323,7 +2323,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the product is expected to be received.
         classification: ''
@@ -2331,7 +2331,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Quantity ordered.
         classification: ''
@@ -2339,7 +2339,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -2347,7 +2347,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Vendor's selling price of a single product.
         classification: ''
@@ -2355,7 +2355,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Quantity actually received from the vendor.
         classification: ''
@@ -2363,7 +2363,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Quantity rejected during inspection.
         classification: ''
@@ -2371,7 +2371,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2383,7 +2383,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key.
         classification: ''
@@ -2391,7 +2391,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Incremental number to track changes to the purchase order over
           time.
@@ -2400,7 +2400,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Order current status. 1 = Pending; 2 = Approved; 3 = Rejected;
           4 = Complete
@@ -2409,7 +2409,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Employee who created the purchase order. Foreign key to Employee.BusinessEntityID.
         classification: ''
@@ -2417,7 +2417,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Vendor with whom the purchase order is placed. Foreign key to
           Vendor.BusinessEntityID.
@@ -2426,7 +2426,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
         classification: ''
@@ -2434,7 +2434,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Purchase order creation date.
         classification: ''
@@ -2442,7 +2442,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Estimated shipment date from the vendor.
         classification: ''
@@ -2450,7 +2450,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Purchase order subtotal. Computed as SUM(PurchaseOrderDetail.LineTotal)for
           the appropriate PurchaseOrderID.
@@ -2459,7 +2459,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Tax amount.
         classification: ''
@@ -2467,7 +2467,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shipping cost.
         classification: ''
@@ -2475,7 +2475,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2487,7 +2487,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ShipMethod records.
         classification: ''
@@ -2495,7 +2495,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shipping company name.
         classification: ''
@@ -2503,7 +2503,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Minimum shipping charge.
         classification: ''
@@ -2511,7 +2511,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shipping charge per pound.
         classification: ''
@@ -2519,7 +2519,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2532,7 +2532,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for Vendor records.  Foreign key to BusinessEntity.BusinessEntityID
         classification: ''
@@ -2540,7 +2540,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Vendor account (identification) number.
         classification: ''
@@ -2548,7 +2548,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Company name.
         classification: ''
@@ -2556,7 +2556,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 1 = Superior, 2 = Excellent, 3 = Above average, 4 = Average,
           5 = Below average
@@ -2565,7 +2565,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Do not use if another vendor is available. 1 = Preferred
           over other vendors supplying the same product.
@@ -2574,7 +2574,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Vendor no longer used. 1 = Vendor is actively used.
         classification: ''
@@ -2582,7 +2582,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Vendor URL.
         classification: ''
@@ -2590,7 +2590,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2603,7 +2603,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ISO code for countries and regions. Foreign key to CountryRegion.CountryRegionCode.
         classification: ''
@@ -2611,7 +2611,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ISO standard currency code. Foreign key to Currency.CurrencyCode.
         classification: ''
@@ -2619,7 +2619,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2631,7 +2631,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for CreditCard records.
         classification: ''
@@ -2639,7 +2639,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Credit card name.
         classification: ''
@@ -2647,7 +2647,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Credit card number.
         classification: ''
@@ -2655,7 +2655,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Credit card expiration month.
         classification: ''
@@ -2663,7 +2663,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Credit card expiration year.
         classification: ''
@@ -2671,7 +2671,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2683,7 +2683,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The ISO code for the Currency.
         classification: ''
@@ -2691,7 +2691,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Currency name.
         classification: ''
@@ -2699,7 +2699,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2711,7 +2711,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for CurrencyRate records.
         classification: ''
@@ -2719,7 +2719,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date and time the exchange rate was obtained.
         classification: ''
@@ -2727,7 +2727,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Exchange rate was converted from this currency code.
         classification: ''
@@ -2735,7 +2735,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Exchange rate was converted to this currency code.
         classification: ''
@@ -2743,7 +2743,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Average exchange rate for the day.
         classification: ''
@@ -2751,7 +2751,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Final exchange rate for the day.
         classification: ''
@@ -2759,7 +2759,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2771,7 +2771,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key.
         classification: ''
@@ -2779,7 +2779,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Foreign key to Person.BusinessEntityID
         classification: ''
@@ -2787,7 +2787,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Foreign key to Store.BusinessEntityID
         classification: ''
@@ -2795,7 +2795,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ID of the territory in which the customer is located. Foreign
           key to SalesTerritory.SalesTerritoryID.
@@ -2804,7 +2804,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2817,7 +2817,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Business entity identification number. Foreign key to Person.BusinessEntityID.
         classification: ''
@@ -2825,7 +2825,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
         classification: ''
@@ -2833,7 +2833,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2845,7 +2845,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
         classification: ''
@@ -2853,7 +2853,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. One incremental unique number per product sold.
         classification: ''
@@ -2861,7 +2861,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shipment tracking number supplied by the shipper.
         classification: ''
@@ -2869,7 +2869,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Quantity ordered per product.
         classification: ''
@@ -2877,7 +2877,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product sold to customer. Foreign key to Product.ProductID.
         classification: ''
@@ -2885,7 +2885,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Promotional code. Foreign key to SpecialOffer.SpecialOfferID.
         classification: ''
@@ -2893,7 +2893,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Selling price of a single product.
         classification: ''
@@ -2901,7 +2901,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Discount amount.
         classification: ''
@@ -2909,7 +2909,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -2921,7 +2921,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key.
         classification: ''
@@ -2929,7 +2929,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Incremental number to track changes to the sales order over time.
         classification: ''
@@ -2937,7 +2937,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Dates the sales order was created.
         classification: ''
@@ -2945,7 +2945,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the order is due to the customer.
         classification: ''
@@ -2953,7 +2953,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the order was shipped to the customer.
         classification: ''
@@ -2961,7 +2961,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Order current status. 1 = In process; 2 = Approved; 3 = Backordered;
           4 = Rejected; 5 = Shipped; 6 = Cancelled
@@ -2970,7 +2970,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 0 = Order placed by sales person. 1 = Order placed online by
           customer.
@@ -2979,7 +2979,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Customer purchase order number reference.
         classification: ''
@@ -2987,7 +2987,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Financial accounting number reference.
         classification: ''
@@ -2995,7 +2995,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Customer identification number. Foreign key to Customer.BusinessEntityID.
         classification: ''
@@ -3003,7 +3003,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales person who created the sales order. Foreign key to SalesPerson.BusinessEntityID.
         classification: ''
@@ -3011,7 +3011,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Territory in which the sale was made. Foreign key to SalesTerritory.SalesTerritoryID.
         classification: ''
@@ -3019,7 +3019,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Customer billing address. Foreign key to Address.AddressID.
         classification: ''
@@ -3027,7 +3027,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Customer shipping address. Foreign key to Address.AddressID.
         classification: ''
@@ -3035,7 +3035,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
         classification: ''
@@ -3043,7 +3043,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
         classification: ''
@@ -3051,7 +3051,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Approval code provided by the credit card company.
         classification: ''
@@ -3059,7 +3059,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Currency exchange rate used. Foreign key to CurrencyRate.CurrencyRateID.
         classification: ''
@@ -3067,7 +3067,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales subtotal. Computed as SUM(SalesOrderDetail.LineTotal)for
           the appropriate SalesOrderID.
@@ -3076,7 +3076,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Tax amount.
         classification: ''
@@ -3084,7 +3084,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shipping cost.
         classification: ''
@@ -3092,7 +3092,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Total due from customer. Computed as Subtotal + TaxAmt + Freight.
         classification: ''
@@ -3100,7 +3100,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales representative comments.
         classification: ''
@@ -3108,7 +3108,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3120,7 +3120,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
         classification: ''
@@ -3128,7 +3128,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to SalesReason.SalesReasonID.
         classification: ''
@@ -3136,7 +3136,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3148,7 +3148,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for SalesPerson records. Foreign key to Employee.BusinessEntityID
         classification: ''
@@ -3156,7 +3156,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Territory currently assigned to. Foreign key to SalesTerritory.SalesTerritoryID.
         classification: ''
@@ -3164,7 +3164,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Projected yearly sales.
         classification: ''
@@ -3172,7 +3172,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Bonus due if quota is met.
         classification: ''
@@ -3180,7 +3180,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Commision percent received per sale.
         classification: ''
@@ -3188,7 +3188,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales total year to date.
         classification: ''
@@ -3196,7 +3196,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales total of previous year.
         classification: ''
@@ -3204,7 +3204,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3216,7 +3216,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales person identification number. Foreign key to SalesPerson.BusinessEntityID.
         classification: ''
@@ -3224,7 +3224,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales quota date.
         classification: ''
@@ -3232,7 +3232,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales quota amount.
         classification: ''
@@ -3240,7 +3240,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3252,7 +3252,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for SalesReason records.
         classification: ''
@@ -3260,7 +3260,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales reason description.
         classification: ''
@@ -3268,7 +3268,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Category the sales reason belongs to.
         classification: ''
@@ -3276,7 +3276,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3288,7 +3288,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for SalesTaxRate records.
         classification: ''
@@ -3296,7 +3296,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: State, province, or country/region the sales tax applies to.
         classification: ''
@@ -3304,7 +3304,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: 1 = Tax applied to retail transactions, 2 = Tax applied to wholesale
           transactions, 3 = Tax applied to all sales (retail and wholesale) transactions.
@@ -3313,7 +3313,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Tax rate amount.
         classification: ''
@@ -3321,7 +3321,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Tax rate description.
         classification: ''
@@ -3329,7 +3329,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3341,7 +3341,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for SalesTerritory records.
         classification: ''
@@ -3349,7 +3349,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales territory description
         classification: ''
@@ -3357,7 +3357,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
         classification: ''
@@ -3365,7 +3365,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Geographic area to which the sales territory belong.
         classification: ''
@@ -3373,7 +3373,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales in the territory year to date.
         classification: ''
@@ -3381,7 +3381,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Sales in the territory the previous year.
         classification: ''
@@ -3389,7 +3389,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Business costs in the territory year to date.
         classification: ''
@@ -3397,7 +3397,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Business costs in the territory the previous year.
         classification: ''
@@ -3405,7 +3405,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3417,7 +3417,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. The sales rep.  Foreign key to SalesPerson.BusinessEntityID.
         classification: ''
@@ -3425,7 +3425,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Territory identification number. Foreign key to
           SalesTerritory.SalesTerritoryID.
@@ -3434,7 +3434,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Date the sales representive started work in the
           territory.
@@ -3443,7 +3443,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the sales representative left work in the territory.
         classification: ''
@@ -3451,7 +3451,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3463,7 +3463,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for ShoppingCartItem records.
         classification: ''
@@ -3471,7 +3471,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Shopping cart identification number.
         classification: ''
@@ -3479,7 +3479,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product quantity ordered.
         classification: ''
@@ -3487,7 +3487,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product ordered. Foreign key to Product.ProductID.
         classification: ''
@@ -3495,7 +3495,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Date the time the record was created.
         classification: ''
@@ -3503,7 +3503,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3515,7 +3515,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for SpecialOffer records.
         classification: ''
@@ -3523,7 +3523,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Discount description.
         classification: ''
@@ -3531,7 +3531,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Discount precentage.
         classification: ''
@@ -3539,7 +3539,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Discount type category.
         classification: ''
@@ -3547,7 +3547,7 @@ models:
         title: ''
         type: string
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Group the discount applies to such as Reseller or Customer.
         classification: ''
@@ -3555,7 +3555,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Discount start date.
         classification: ''
@@ -3563,7 +3563,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Discount end date.
         classification: ''
@@ -3571,7 +3571,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Minimum discount percent allowed.
         classification: ''
@@ -3579,7 +3579,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Maximum discount percent allowed.
         classification: ''
@@ -3587,7 +3587,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3599,7 +3599,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key for SpecialOfferProduct records.
         classification: ''
@@ -3607,7 +3607,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
@@ -3615,7 +3615,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''
@@ -3627,7 +3627,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Primary key. Foreign key to Customer.BusinessEntityID.
         classification: ''
@@ -3635,7 +3635,7 @@ models:
         title: ''
         type: object
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Name of the store.
         classification: ''
@@ -3643,7 +3643,7 @@ models:
         title: ''
         type: numeric
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ID of the sales person assigned to the customer. Foreign key
           to SalesPerson.BusinessEntityID.
@@ -3652,7 +3652,7 @@ models:
         title: ''
         type: timestamp
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: ''
         classification: ''

@@ -21,7 +21,7 @@ models:
         title: transaction reference date
         type: date
         required: true
-        primary: false
+        primaryKey: false
         unique: false
         description: Reference date for transaction
         classification: public
@@ -29,7 +29,7 @@ models:
         title: receiver id
         type: string
         required: true
-        primary: true
+        primaryKey: true
         unique: false
         description: A description for column rcvr_id.
         classification: restricted
@@ -37,7 +37,7 @@ models:
         title: receiver country code
         type: string
         required: true
-        primary: false
+        primaryKey: false
         unique: false
         description: Country code
         classification: public

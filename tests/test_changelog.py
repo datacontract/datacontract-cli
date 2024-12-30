@@ -518,7 +518,7 @@ def test_fields_updated():
     assert (
         """warning [field_primary_updated] at 
 ./fixtures/breaking/datacontract-fields-v3.yaml
-        in models.my_table.fields.field_primary.primary
+        in models.my_table.fields.field_primary.primaryKey
             changed from `false` to `true`"""
         in output
     )

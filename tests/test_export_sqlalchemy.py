@@ -10,7 +10,7 @@ import datacontract.model.data_contract_specification as spec
 # These tests would be easier if AST nodes were comparable.
 # Current string comparisons are very brittle.
 def test_simple_model_export():
-    m = spec.Model(fields={"f": spec.Field(type="string")})
+    m = spec.Model(fields={"f": spec.Field(type="string", primary=True)})
     ast_class = conv.generate_model_class("Test", m)
     assert (
         ast.unparse(ast_class)
@@ -19,11 +19,25 @@ def test_simple_model_export():
     class Test(Base):
         __tablename__ = 'Test'
         __table_args__ = {'comment': None, 'schema': None}
-        f = Column(String(None), nullable=True, comment=None, primary_key=None)
+        f = Column(String(None), nullable=True, comment=None, primary_key=True)
     """
         ).strip()
     )
 
+def test_simple_model_export_with_primaryKey():
+    m = spec.Model(fields={"f": spec.Field(type="string", primaryKey=True)})
+    ast_class = conv.generate_model_class("Test", m)
+    assert (
+        ast.unparse(ast_class)
+        == dedent(
+            """
+    class Test(Base):
+        __tablename__ = 'Test'
+        __table_args__ = {'comment': None, 'schema': None}
+        f = Column(String(None), nullable=True, comment=None, primary_key=True)
+    """
+        ).strip()
+    )
 
 def test_array_model_export():
     m = spec.Model(fields={"f": spec.Field(type="array", items=spec.Field(type="string", required=True))})

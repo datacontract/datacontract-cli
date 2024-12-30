@@ -28,7 +28,7 @@ models:
         title: transaction reference date
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Reference date for transaction
         examples:
           - "2022-10-03"
@@ -44,7 +44,7 @@ models:
         title: receiver id
         type: string
         required: false
-        primary: true
+        primaryKey: true
         description: A description for column rcvr_id.
         classification: restricted
         config:
@@ -57,7 +57,7 @@ models:
         description: Country code
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: public
         quality:
           - type: library

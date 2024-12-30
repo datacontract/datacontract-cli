@@ -41,7 +41,7 @@ models:
       field_one:
         type: varchar
         required: true
-        primary: true
+        primaryKey: true
         unique: true
         maxLength: 10
       field_two:
@@ -72,7 +72,7 @@ models:
       id:
         type: numeric
         required: true
-        primary: true
+        primaryKey: true
         unique: true
       created_by:
         type: varchar

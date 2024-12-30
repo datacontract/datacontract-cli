@@ -1748,62 +1748,64 @@ video {
 
               <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Data Contract YAML</h3>
             </div>
-            <pre class="overflow-x-auto text-sm bg-gray-50 p-4"><code>dataContractSpecification: 1.1.0
-id: orders-unit-test
-info:
-  title: Orders Unit Test
-  version: 1.0.0
-  description: The orders data contract
-  owner: checkout
-  contact:
-    url: https://wiki.example.com/teams/checkout
-    email: team-orders@example.com
-servers:
-  production:
-    type: snowflake
-    account: my-account
-    database: my-database
-    schema_: my-schema
-terms:
-  usage: This data contract serves to demo datacontract CLI export.
-  limitations: Not intended to use in production
-  billing: free
-  noticePeriod: P3M
-models:
-  orders:
-    description: The orders model
-    type: table
-    fields:
-      order_id:
-        type: varchar
-        required: true
-        primary: false
-        unique: true
-        pii: true
-        classification: sensitive
-        pattern: ^B[0-9]+$
-        minLength: 8
-        maxLength: 10
-        tags:
-        - order_id
-      order_total:
-        type: bigint
-        required: true
-        primary: false
-        unique: false
-        description: The order_total field
-        minimum: 0
-        maximum: 1000000
-      order_status:
-        type: text
-        required: true
-        primary: false
-        unique: false
-        enum:
-        - pending
-        - shipped
-        - delivered
-</code></pre>
+            <pre class="overflow-x-auto text-sm bg-gray-50 p-4">
+              <code>
+                dataContractSpecification: 1.1.0
+                id: orders-unit-test
+                info:
+                  title: Orders Unit Test
+                  version: 1.0.0
+                  description: The orders data contract
+                  owner: checkout
+                  contact:
+                    url: https://wiki.example.com/teams/checkout
+                    email: team-orders@example.com
+                servers:
+                  production:
+                    type: snowflake
+                    account: my-account
+                    database: my-database
+                    schema_: my-schema
+                terms:
+                  usage: This data contract serves to demo datacontract CLI export.
+                  limitations: Not intended to use in production
+                  billing: free
+                  noticePeriod: P3M
+                models:
+                  orders:
+                    description: The orders model
+                    type: table
+                    fields:
+                      order_id:
+                        type: varchar
+                        required: true
+                        primaryKey: false
+                        unique: true
+                        pii: true
+                        classification: sensitive
+                        pattern: ^B[0-9]+$
+                        minLength: 8
+                        maxLength: 10
+                        tags:
+                        - order_id
+                      order_total:
+                        type: bigint
+                        required: true
+                        primaryKey: false
+                        unique: false
+                        description: The order_total field
+                        minimum: 0
+                        maximum: 1000000
+                      order_status:
+                        type: text
+                        required: true
+                        primaryKey: false
+                        unique: false
+                        enum:
+                        - pending
+                        - shipped
+                        - delivered
+                </code></pre>
           </div>
           <div class="mt-5 sm:mt-6">
             <button type="button" onclick="document.getElementById('dialog-datacontract-yaml').close()"

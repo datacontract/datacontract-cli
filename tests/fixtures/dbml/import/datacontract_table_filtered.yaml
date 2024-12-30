@@ -11,38 +11,38 @@ models:
       order_id:
         type: text
         required: true
-        primary: true
+        primaryKey: true
         unique: true
         description: An internal ID that identifies an order in the online shop.
       order_timestamp:
         type: timestamp
         required: true
-        primary: false
+        primaryKey: false
         unique: false
         description: The business timestamp in UTC when the order was successfully
           registered in the source system and the payment was successful.
       order_total:
         type: variant
         required: true
-        primary: false
+        primaryKey: false
         unique: false
         description: Total amount the smallest monetary unit (e.g., cents).
       customer_id:
         type: text
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: Unique identifier for the customer.
       customer_email_address:
         type: text
         required: true
-        primary: false
+        primaryKey: false
         unique: false
         description: The email address, as entered by the customer. The email address
           was not verified.
       processed_timestamp:
         type: timestamp
         required: true
-        primary: false
+        primaryKey: false
         unique: false
         description: The timestamp when the record was processed by the data platform.

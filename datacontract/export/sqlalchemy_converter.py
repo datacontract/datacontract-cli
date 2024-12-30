@@ -114,7 +114,7 @@ def constant_field_value(field_name: str, field: spec.Field) -> tuple[ast.Call, 
     if new_type is None:
         raise RuntimeError(f"Unsupported field type {field.type}.")
 
-    return Column(new_type, nullable=not field.required, comment=field.description, primary_key=field.primary), None
+    return Column(new_type, nullable=not field.required, comment=field.description, primary_key=field.primaryKey or field.primary), None
 
 
 def column_assignment(field_name: str, field: spec.Field) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:

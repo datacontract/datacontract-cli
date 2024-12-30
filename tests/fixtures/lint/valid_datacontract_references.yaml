@@ -16,7 +16,7 @@ models:
         $ref: '#/definitions/order_id'
         required: true
         unique: true
-        primary: true
+        primaryKey: true
 definitions:
   order_id:
     domain: checkout

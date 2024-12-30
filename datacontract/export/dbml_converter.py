@@ -90,7 +90,7 @@ Note: {1}
 
 
 def generate_field(field_name: str, field: spec.Field, model_name: str, server: spec.Server) -> Tuple[str, str]:
-    if field.primary:
+    if field.primaryKey or field.primary:
         if field.required is not None:
             if not field.required:
                 raise DataContractException(
@@ -115,7 +115,7 @@ def generate_field(field_name: str, field: spec.Field, model_name: str, server: 
             field.unique = True
 
     field_attrs = []
-    if field.primary:
+    if field.primaryKey or field.primary:
         field_attrs.append("pk")
 
     if field.unique:
