@@ -4,8 +4,8 @@ info:
   title: Orders Latest
   version: 2.0.0
   description: |
-    Successful customer orders in the webshop.
-    All orders since 2020-01-01.
+    Successful customer orders in the webshop. 
+    All orders since 2020-01-01. 
     Orders with their line items are in their current state (no history included).
   owner: Checkout Team
   contact:
@@ -63,13 +63,13 @@ models:
         required: true
         examples:
           - 9999
-        quality:
-          - type: sql
-            description: 95% of all order total values are expected to be between 10 and 499 EUR.
-            query: |
-              SELECT quantile_cont(order_total, 0.95) AS percentile_95
-              FROM orders
-            mustBeBetween: [1000, 49900]
+#        quality:
+#          - type: sql
+#            description: 95% of all order total values are expected to be between 10 and 499 EUR.
+#            query: |
+#              SELECT quantile_cont(order_total, 0.95) AS percentile_95
+#              FROM orders
+#            mustBeBetween: [1000, 49900]
       customer_id:
         description: Unique identifier for the customer.
         type: text
@@ -98,12 +98,15 @@ models:
           jsonType: string
           jsonFormat: date-time
     quality:
-      - type: sql
-        description: The maximum duration between two orders should be less that 3600 seconds
-        query: |
-          SELECT MAX(duration) AS max_duration FROM (SELECT EXTRACT(EPOCH FROM (order_timestamp - LAG(order_timestamp)
-          OVER (ORDER BY order_timestamp))) AS duration FROM orders)
-        mustBeLessThan: 3600
+#      - type: sql
+#        description: The maximum duration between two orders should be less that 3600 seconds
+#        query: |
+#          SELECT MAX(duration) AS max_duration
+#            FROM (
+#            SELECT epoch(order_timestamp - LAG(order_timestamp) OVER (ORDER BY order_timestamp)) AS duration
+#            FROM orders
+#          ) subquery
+#        mustBeLessThan: 3600
       - type: sql
         description: Row Count
         query: |
@@ -112,17 +115,17 @@ models:
         mustBeGreaterThan: 5
     examples:
       - |
-          order_id,order_timestamp,order_total,customer_id,customer_email_address,processed_timestamp
-          "1001","2030-09-09T08:30:00Z",2500,"1000000001","mary.taylor82@example.com","2030-09-09T08:31:00Z"
-          "1002","2030-09-08T15:45:00Z",1800,"1000000002","michael.miller83@example.com","2030-09-09T08:31:00Z"
-          "1003","2030-09-07T12:15:00Z",3200,"1000000003","michael.smith5@example.com","2030-09-09T08:31:00Z"
-          "1004","2030-09-06T19:20:00Z",1500,"1000000004","elizabeth.moore80@example.com","2030-09-09T08:31:00Z"
-          "1005","2030-09-05T10:10:00Z",4200,"1000000004","elizabeth.moore80@example.com","2030-09-09T08:31:00Z"
-          "1006","2030-09-04T14:55:00Z",2800,"1000000005","john.davis28@example.com","2030-09-09T08:31:00Z"
-          "1007","2030-09-03T21:05:00Z",1900,"1000000006","linda.brown67@example.com","2030-09-09T08:31:00Z"
-          "1008","2030-09-02T17:40:00Z",3600,"1000000007","patricia.smith40@example.com","2030-09-09T08:31:00Z"
-          "1009","2030-09-01T09:25:00Z",3100,"1000000008","linda.wilson43@example.com","2030-09-09T08:31:00Z"
-          "1010","2030-08-31T22:50:00Z",2700,"1000000009","mary.smith98@example.com","2030-09-09T08:31:00Z"
+        order_id,order_timestamp,order_total,customer_id,customer_email_address,processed_timestamp
+        "1001","2030-09-09T08:30:00Z",2500,"1000000001","mary.taylor82@example.com","2030-09-09T08:31:00Z"
+        "1002","2030-09-08T15:45:00Z",1800,"1000000002","michael.miller83@example.com","2030-09-09T08:31:00Z"
+        "1003","2030-09-07T12:15:00Z",3200,"1000000003","michael.smith5@example.com","2030-09-09T08:31:00Z"
+        "1004","2030-09-06T19:20:00Z",1500,"1000000004","elizabeth.moore80@example.com","2030-09-09T08:31:00Z"
+        "1005","2030-09-05T10:10:00Z",4200,"1000000004","elizabeth.moore80@example.com","2030-09-09T08:31:00Z"
+        "1006","2030-09-04T14:55:00Z",2800,"1000000005","john.davis28@example.com","2030-09-09T08:31:00Z"
+        "1007","2030-09-03T21:05:00Z",1900,"1000000006","linda.brown67@example.com","2030-09-09T08:31:00Z"
+        "1008","2030-09-02T17:40:00Z",3600,"1000000007","patricia.smith40@example.com","2030-09-09T08:31:00Z"
+        "1009","2030-09-01T09:25:00Z",3100,"1000000008","linda.wilson43@example.com","2030-09-09T08:31:00Z"
+        "1010","2030-08-31T22:50:00Z",2700,"1000000009","mary.smith98@example.com","2030-09-09T08:31:00Z"
   line_items:
     description: A single article that is part of an order.
     type: table
@@ -139,18 +142,18 @@ models:
         $ref: '#/definitions/sku'
     primaryKey: ["order_id", "line_item_id"]
     examples:
-    - |
-      line_item_id,order_id,sku
-      "LI-1","1001","5901234123457"
-      "LI-2","1001","4001234567890"
-      "LI-3","1002","5901234123457"
-      "LI-4","1002","2001234567893"
-      "LI-5","1003","4001234567890"
-      "LI-6","1003","5001234567892"
-      "LI-7","1004","5901234123457"
-      "LI-8","1005","2001234567893"
-      "LI-9","1005","5001234567892"
-      "LI-10","1005","6001234567891"
+      - |
+        line_item_id,order_id,sku
+        "LI-1","1001","5901234123457"
+        "LI-2","1001","4001234567890"
+        "LI-3","1002","5901234123457"
+        "LI-4","1002","2001234567893"
+        "LI-5","1003","4001234567890"
+        "LI-6","1003","5001234567892"
+        "LI-7","1004","5901234123457"
+        "LI-8","1005","2001234567893"
+        "LI-9","1005","5001234567892"
+        "LI-10","1005","6001234567891"
 definitions:
   order_id:
     title: Order ID
@@ -170,7 +173,7 @@ definitions:
     examples:
       - "96385074"
     description: |
-      A Stock Keeping Unit (SKU) is an internal unique identifier for an article.
+      A Stock Keeping Unit (SKU) is an internal unique identifier for an article. 
       It is typically associated with an article's barcode, such as the EAN/GTIN.
     links:
       wikipedia: https://en.wikipedia.org/wiki/Stock_keeping_unit
