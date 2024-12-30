@@ -146,7 +146,10 @@ class Field(pyd.BaseModel):
     type: str = None
     format: str = None
     required: bool = None
-    primary: bool = None
+    primary: bool = pyd.Field(
+        default=None,
+        deprecated="Removed in Data Contract Specification v1.1.0. Use " "primaryKey instead.",
+    )
     primaryKey: bool = None
     unique: bool | None = None
     references: str = None
@@ -169,7 +172,10 @@ class Field(pyd.BaseModel):
     values: "Field" = None
     precision: int = None
     scale: int = None
-    example: str = None
+    example: str = pyd.Field(
+        default=None,
+        deprecated="Removed in Data Contract Specification v1.1.0. Use " "examples instead.",
+    )
     examples: List[Any] | None = None
     quality: List[Quality] | None = []
     config: Dict[str, Any] | None = None
@@ -193,6 +199,8 @@ class Model(pyd.BaseModel):
     title: Optional[str] = None
     fields: Dict[str, Field] = {}
     quality: List[Quality] | None = []
+    primaryKey: List[str] | None = []
+    examples: List[Any] | None = None
     config: Dict[str, Any] = None
     tags: List[str] | None = None
 
