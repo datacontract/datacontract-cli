@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added export format **markdown**: `datacontract export --format markdown` (#545)
 - When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
 - When importing in dbt format, add the dbt primary key information as a datacontract primaryKey field (#562)
+- When importing in dbt format, add the dbt relationships test field as a reference in the data contract (#570)
 
 ### Changed
 - Primary and example fields have been deprecated in Data Contract Specification v1.1.0 (#561)
