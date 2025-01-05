@@ -127,7 +127,10 @@ def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
 def create_fields(
     manifest: Manifest, model_unique_id: str, columns: dict[str, ColumnInfo], primary_key_name: str, adapter_type: str
 ) -> dict[str, Field]:
-    fields = {column.name: create_field(manifest, model_unique_id, column, primary_key_name, adapter_type) for column in columns.values()}
+    fields = {
+        column.name: create_field(manifest, model_unique_id, column, primary_key_name, adapter_type)
+        for column in columns.values()
+    }
     return fields
 
 
@@ -164,7 +167,9 @@ def get_column_tests(manifest: Manifest, model_name: str, column_name: str) -> l
     return column_tests
 
 
-def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, primary_key_name: str, adapter_type: str) -> Field:
+def create_field(
+    manifest: Manifest, model_unique_id: str, column: ColumnInfo, primary_key_name: str, adapter_type: str
+) -> Field:
     column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else ""
     field = Field(
         description=column.description,
