@@ -25,7 +25,7 @@ This data contract contains all information to connect to S3 and check that the 
 
 Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ python3 -m pip install datacontract-cli[all]
+$ python3 -m pip install 'datacontract-cli[all]'
 ```
 
 
@@ -150,13 +150,13 @@ Choose the most appropriate installation method for your needs:
 Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
 
 ```bash
-python3 -m pip install datacontract-cli[all]
+python3 -m pip install 'datacontract-cli[all]'
 ```
 
 ### pipx
 pipx installs into an isolated environment.
 ```bash
-pipx install datacontract-cli[all]
+pipx install 'datacontract-cli[all]'
 ```
 
 ### Docker

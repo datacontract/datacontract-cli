@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from testcontainers.mssql import SqlServerContainer
 
@@ -29,7 +31,7 @@ def mssql_container(request):
 # export CPPFLAGS="-I/opt/homebrew/opt/openssl@3/include"
 # pip uninstall pymssql -y
 # pip install pymssql==2.2.8 --no-binary :all:
-# @pytest.mark.skipif(not os.getenv("CI"), reason="Skipping test outside CI/CD environment")
+@pytest.mark.skipif(not os.getenv("CI"), reason="Skipping test outside CI/CD environment")
 def test_test_sqlserver(mssql_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_USERNAME", sql_server.username)
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_PASSWORD", sql_server.password)
