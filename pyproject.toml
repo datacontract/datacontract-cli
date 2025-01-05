@@ -23,11 +23,12 @@ dependencies = [
   "uvicorn==0.34.0", # move to extra?
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet==2024.11.0",
+  "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
   "python-multipart==0.0.19",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
-  "duckdb==1.1.3",
-  "soda-core-duckdb>=3.3.1,<3.5.0",
+  "duckdb>=1.0.0",
+  "soda-core-duckdb>=3.4.3,<3.5.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "python-dotenv~=1.0.0",
@@ -46,16 +47,16 @@ avro = [
 ]
 
 bigquery = [
-  "soda-core-bigquery>=3.3.1,<3.5.0",
+  "soda-core-bigquery>=3.4.3,<3.5.0",
   "google-cloud-bigquery-storage>=2.27.0",
   "grpcio==1.62.3" # avoid strange log output in newer versions
 ]
 
 databricks = [
-  "soda-core-spark-df>=3.3.1,<3.5.0",
+  "soda-core-spark-df>=3.4.3,<3.5.0",
+  "soda-core-spark[databricks]>=3.4.3,<3.5.0",
   "databricks-sql-connector>=3.7.0,<3.8.0",
-  "databricks-sdk>=0.32.0,<0.39.0",
-  "soda-core-spark[databricks]>=3.3.1,<3.5.0"
+  "databricks-sdk>=0.39.0,<0.41.0",
 ]
 
 iceberg = [
@@ -64,11 +65,11 @@ iceberg = [
 
 kafka = [
   "datacontract-cli[avro]",
-  "soda-core-spark-df>=3.3.1,<3.5.0"
+  "soda-core-spark-df>=3.4.3,<3.5.0"
 ]
 
 postgres = [
-  "soda-core-postgres>=3.3.1,<3.5.0"
+  "soda-core-postgres>=3.4.3,<3.5.0"
 ]
 
 s3 = [
@@ -77,15 +78,15 @@ s3 = [
 
 snowflake = [
   "snowflake-connector-python[pandas]>=3.6,<3.13",
-  "soda-core-snowflake>=3.3.1,<3.5.0"
+  "soda-core-snowflake>=3.4.3,<3.5.0"
 ]
 
 sqlserver = [
-  "soda-core-sqlserver>=3.3.1,<3.5.0"
+  "soda-core-sqlserver>=3.4.3,<3.5.0"
 ]
 
 trino = [
-  "soda-core-trino>=3.3.1,<3.5.0"
+  "soda-core-trino>=3.4.3,<3.5.0"
 ]
 
 dbt = [
