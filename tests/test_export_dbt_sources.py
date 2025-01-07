@@ -127,21 +127,6 @@ sources:
                     - 'pending'
                     - 'shipped'
                     - 'delivered'
-          - name: user_id
-            data_tests:
-              - not_null
-              - relationships:
-                  to: source("orders-unit-test", "users")
-                  field: user_id
-            data_type: STRING
-      - name: users
-        description: The users model
-        columns:
-          - name: user_id
-            data_tests:
-              - not_null
-              - unique
-            data_type: STRING
 """
 
     result = to_dbt_sources_yaml(data_contract, "production")

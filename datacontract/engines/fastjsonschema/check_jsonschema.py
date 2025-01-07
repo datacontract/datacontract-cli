@@ -11,7 +11,7 @@ from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.run import Check, Run
 
 # Thread-safe cache for primaryKey fields.
 _primary_key_cache = {}
@@ -256,19 +256,8 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
                     type="schema",
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.info,
+                    result="info",
                     reason="JSON Schema check skipped for GCS, as GCS is currently not supported",
-                    engine="jsonschema",
-                )
-            )
-        elif server.type == "azure":
-            run.checks.append(
-                Check(
-                    type="schema",
-                    name="Check that JSON has valid schema",
-                    model=model_name,
-                    result=ResultEnum.info,
-                    reason="JSON Schema check skipped for azure, as azure is currently not supported",
                     engine="jsonschema",
                 )
             )
@@ -278,7 +267,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
                     type="schema",
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.warning,
+                    result="warn",
                     reason=f"Server type {server.type} not supported",
                     engine="jsonschema",
                 )
@@ -290,7 +279,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
                 type="schema",
                 name="Check that JSON has valid schema",
                 model=model_name,
-                result=ResultEnum.passed,
+                result="passed",
                 reason="All JSON entries are valid.",
                 engine="jsonschema",
             )

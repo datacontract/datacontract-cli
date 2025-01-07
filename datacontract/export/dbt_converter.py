@@ -81,19 +81,19 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
 
     source["tables"] = []
     for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = _to_dbt_source_table(data_contract_spec, model_key, model_value, adapter_type)
+        dbt_model = _to_dbt_source_table(model_key, model_value, adapter_type)
         source["tables"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def _to_dbt_source_table(data_contract_spec: DataContractSpecification, model_key, model_value: Model, adapter_type: Optional[str]) -> dict:
+def _to_dbt_source_table(model_key, model_value: Model, adapter_type: Optional[str]) -> dict:
     dbt_model = {
         "name": model_key,
     }
 
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = _to_columns(data_contract_spec, model_value.fields, False, adapter_type)
+    columns = _to_columns(model_value.fields, False, adapter_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -114,7 +114,7 @@ def _to_dbt_model(model_key, model_value: Model, data_contract_spec: DataContrac
         dbt_model["config"]["contract"] = {"enforced": True}
     if model_value.description is not None:
         dbt_model["description"] = model_value.description
-    columns = _to_columns(data_contract_spec, model_value.fields, _supports_constraints(model_type), None)
+    columns = _to_columns(model_value.fields, _supports_constraints(model_type), None)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -137,22 +137,15 @@ def _supports_constraints(model_type):
     return model_type == "table" or model_type == "incremental"
 
 
-def _to_columns(data_contract_spec: DataContractSpecification, fields: Dict[str, Field], supports_constraints: bool, adapter_type: Optional[str]) -> list:
+def _to_columns(fields: Dict[str, Field], supports_constraints: bool, adapter_type: Optional[str]) -> list:
     columns = []
     for field_name, field in fields.items():
-        column = _to_column(data_contract_spec, field_name, field, supports_constraints, adapter_type)
+        column = _to_column(field_name, field, supports_constraints, adapter_type)
         columns.append(column)
     return columns
 
 
-def get_table_name_and_column_name(references: str) -> tuple[Optional[str], str]:
-    parts = references.split('.')
-    if len(parts) < 2:
-        return None, parts[0]
-    return parts[-2], parts[-1]
-
-
-def _to_column(data_contract_spec: DataContractSpecification, field_name: str, field: Field, supports_constraints: bool, adapter_type: Optional[str]) -> dict:
+def _to_column(field_name: str, field: Field, supports_constraints: bool, adapter_type: Optional[str]) -> dict:
     column = {"name": field_name}
     adapter_type = adapter_type or "snowflake"
     dbt_type = convert_to_sql_type(field, adapter_type)
@@ -246,21 +239,9 @@ def _to_column(data_contract_spec: DataContractSpecification, field_name: str, f
                     }
                 }
             )
-    if field.references is not None:
-        ref_source_name = data_contract_spec.id
-        table_name, column_name = get_table_name_and_column_name(field.references)
-        if table_name is not None and column_name is not None:
-            column["data_tests"].append(
-                {
-                    "relationships": {
-                        "to": f"""source("{ref_source_name}", "{table_name}")""",
-                        "field": f"{column_name}",
-                    }
-                }
-            )
 
-    if not column["data_tests"]:
-        column.pop("data_tests")
+        if not column["data_tests"]:
+            column.pop("data_tests")
 
     # TODO: all constraints
     return column
