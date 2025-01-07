@@ -109,7 +109,7 @@ dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
   "kafka-python",
-  "moto==5.0.24",
+  "moto==5.0.26",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.1.0",
   "pytest",
