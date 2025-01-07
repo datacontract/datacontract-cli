@@ -226,6 +226,12 @@ def to_property(field_name: str, field: Field) -> dict:
         property["examples"] = field.examples
     if field.example is not None:
         property["examples"] = [field.example]
+    if field.primaryKey is not None and field.primaryKey == True:
+        property["primaryKey"] = field.primaryKey
+        property["primaryKeyPosition"] = 1
+    if field.primary is not None and field.primary == True:
+        property["primaryKey"] = field.primary
+        property["primaryKeyPosition"] = 1
 
     property["customProperties"] = []
     if field.model_extra is not None:
