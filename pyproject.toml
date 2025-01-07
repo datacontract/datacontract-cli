@@ -23,7 +23,7 @@ dependencies = [
   "uvicorn==0.34.0", # move to extra?
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet==2024.11.0",
-  "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
+  "numpy>=1.26.4,<3.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
   "python-multipart==0.0.20",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
