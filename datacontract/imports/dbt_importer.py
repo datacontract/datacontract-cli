@@ -85,7 +85,9 @@ def _get_references(manifest: Manifest, node: ManifestNode) -> dict[str, str]:
             continue
         relationship_target_node_id = [n for n in test_node.depends_on.nodes if n != node_unique_id][0]
         relationship_target_node = manifest.nodes.get(relationship_target_node_id)
-        references[f"{node.name}.{test_node.column_name}"] = f"""{relationship_target_node.name}.{test_node.test_metadata.kwargs["field"]}"""
+        references[f"{node.name}.{test_node.column_name}"] = (
+            f"""{relationship_target_node.name}.{test_node.test_metadata.kwargs["field"]}"""
+        )
     return references
 
 
@@ -155,7 +157,10 @@ def create_fields(
     references: dict[str, str],
     adapter_type: str,
 ) -> dict[str, Field]:
-    fields = {column.name: create_field(manifest, model_unique_id, column, primary_key_name, references, adapter_type) for column in columns.values()}
+    fields = {
+        column.name: create_field(manifest, model_unique_id, column, primary_key_name, references, adapter_type)
+        for column in columns.values()
+    }
     return fields
 
 
