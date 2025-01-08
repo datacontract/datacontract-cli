@@ -86,7 +86,9 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
     return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def _to_dbt_source_table(data_contract_spec: DataContractSpecification, model_key, model_value: Model, adapter_type: Optional[str]) -> dict:
+def _to_dbt_source_table(
+    data_contract_spec: DataContractSpecification, model_key, model_value: Model, adapter_type: Optional[str]
+) -> dict:
     dbt_model = {
         "name": model_key,
     }
@@ -137,7 +139,12 @@ def _supports_constraints(model_type):
     return model_type == "table" or model_type == "incremental"
 
 
-def _to_columns(data_contract_spec: DataContractSpecification, fields: Dict[str, Field], supports_constraints: bool, adapter_type: Optional[str]) -> list:
+def _to_columns(
+    data_contract_spec: DataContractSpecification,
+    fields: Dict[str, Field],
+    supports_constraints: bool,
+    adapter_type: Optional[str],
+) -> list:
     columns = []
     for field_name, field in fields.items():
         column = _to_column(data_contract_spec, field_name, field, supports_constraints, adapter_type)
@@ -146,13 +153,19 @@ def _to_columns(data_contract_spec: DataContractSpecification, fields: Dict[str,
 
 
 def get_table_name_and_column_name(references: str) -> tuple[Optional[str], str]:
-    parts = references.split('.')
+    parts = references.split(".")
     if len(parts) < 2:
         return None, parts[0]
     return parts[-2], parts[-1]
 
 
-def _to_column(data_contract_spec: DataContractSpecification, field_name: str, field: Field, supports_constraints: bool, adapter_type: Optional[str]) -> dict:
+def _to_column(
+    data_contract_spec: DataContractSpecification,
+    field_name: str,
+    field: Field,
+    supports_constraints: bool,
+    adapter_type: Optional[str],
+) -> dict:
     column = {"name": field_name}
     adapter_type = adapter_type or "snowflake"
     dbt_type = convert_to_sql_type(field, adapter_type)

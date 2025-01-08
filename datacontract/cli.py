@@ -447,6 +447,18 @@ def _handle_result(run):
         console.print(
             f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
+    elif run.result == "warning":
+        console.print("🟠 data contract has warnings. Found the following warnings:")
+        i = 1
+        for check in run.checks:
+            if check.result != "passed":
+                field = to_field(run, check)
+                if field:
+                    field = field + " "
+                else:
+                    field = ""
+                console.print(f"{i}) {field}{check.name}: {check.reason}")
+                i += 1
     else:
         console.print("🔴 data contract is invalid, found the following errors:")
         i = 1
