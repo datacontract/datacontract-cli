@@ -39,13 +39,6 @@ def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
 
 
 def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name: str, model_value: Model) -> str:
-    if data_contract_spec.models is None or len(data_contract_spec.models.items()) != 1:
-        print(
-            "Export to dbt-staging-sql currently only works with exactly one model in the data contract."
-            "Please specify the model name."
-        )
-        return ""
-
     id = data_contract_spec.id
     columns = []
     for field_name, field in model_value.fields.items():
