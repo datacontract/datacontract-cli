@@ -139,6 +139,10 @@ def test(
         ),
     ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
+    ssl_verification: Annotated[
+        bool,
+        typer.Option(help="SSL verification when publishing the test results."),
+    ] = True,
 ):
     """
     Run schema and quality tests on configured servers.
@@ -315,6 +319,10 @@ def publish(
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ssl_verification: Annotated[
+        bool,
+        typer.Option(help="SSL verification when publishing the data contract."),
+    ] = True,
 ):
     """
     Publish the data contract to the Data Mesh Manager.
@@ -323,6 +331,7 @@ def publish(
         data_contract_specification=DataContract(
             data_contract_file=location, schema_location=schema
         ).get_data_contract_specification(),
+        ssl_verification=ssl_verification,
     )
 
 
