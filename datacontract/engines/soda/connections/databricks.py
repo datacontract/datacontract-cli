@@ -10,9 +10,9 @@ def to_databricks_soda_configuration(server):
     http_path = os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH")
     host = server.host
     if host is None:
-        host = os.getenv("DATACONTRACT_DATABRICKS_HOST")
+        host = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME")
     if host is None:
-        raise ValueError("DATACONTRACT_DATABRICKS_HOST environment variable is not set")
+        raise ValueError("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set")
     soda_configuration = {
         f"data_source {server.type}": {
             "type": "spark",

@@ -62,7 +62,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         else:
             run.log_info("Connecting to databricks directly")
             soda_configuration_str = to_databricks_soda_configuration(server)
-            # run.log_info(f"soda configuration string {soda_configuration_str}")
+            run.log_info(f"soda configuration string {soda_configuration_str}")
             scan.add_configuration_yaml_str(soda_configuration_str)
             scan.set_data_source_name(server.type)
     elif server.type == "dataframe":
