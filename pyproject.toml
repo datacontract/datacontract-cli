@@ -49,7 +49,7 @@ avro = [
 bigquery = [
   "soda-core-bigquery>=3.4.3,<3.5.0",
   "google-cloud-bigquery-storage>=2.27.0",
-  "grpcio==1.62.3" # avoid strange log output in newer versions
+  "grpcio==1.69.0" # avoid strange log output in newer versions
 ]
 
 databricks = [
