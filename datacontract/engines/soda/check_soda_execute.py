@@ -25,6 +25,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
 
     if server.type in ["s3", "gcs", "azure", "local"]:
         if server.format in ["json", "parquet", "csv", "delta"]:
+            run.log_info(f"Configuring engine soda-core to connect to {server.type} {server.format} with duckdb")
             con = get_duckdb_connection(data_contract, server, run)
             scan.add_duckdb_connection(duckdb_connection=con, data_source_name=server.type)
             scan.set_data_source_name(server.type)
@@ -54,12 +55,14 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         scan.set_data_source_name(server.type)
     elif server.type == "databricks":
         if spark is not None:
-            logging.info("Use Spark to connect to data source")
+            run.log_info("Connecting to databricks via spark")
             scan.add_spark_session(spark, data_source_name=server.type)
             scan.set_data_source_name(server.type)
             spark.sql(f"USE {server.catalog}.{server.schema_}")
         else:
+            run.log_info("Connecting to databricks directly")
             soda_configuration_str = to_databricks_soda_configuration(server)
+            # run.log_info(f"soda configuration string {soda_configuration_str}")
             scan.add_configuration_yaml_str(soda_configuration_str)
             scan.set_data_source_name(server.type)
     elif server.type == "dataframe":
