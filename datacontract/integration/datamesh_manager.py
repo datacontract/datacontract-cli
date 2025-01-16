@@ -28,7 +28,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
         request_body = run.model_dump_json()
         # print("Request Body:", request_body)
-        response = requests.post(url, data=request_body, headers=headers)
+        response = requests.post(url, data=request_body, headers=headers, verify=False,)
         # print("Status Code:", response.status_code)
         # print("Response Body:", response.text)
         if response.status_code != 200:
@@ -39,9 +39,12 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
         run.log_error(f"Failed publishing test results. Error: {str(e)}")
 
 
-def publish_data_contract_to_datamesh_manager(data_contract_specification: DataContractSpecification):
+def publish_data_contract_to_datamesh_manager(data_contract_specification: DataContractSpecification, ssl_verification: bool):
     try:
         api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
+        host = "https://api.datamesh-manager.com"
+        if os.getenv("DATAMESH_MANAGER_HOST") is not None:
+            host = os.getenv("DATAMESH_MANAGER_HOST")
         if api_key is None:
             api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
         if api_key is None:
@@ -51,12 +54,13 @@ def publish_data_contract_to_datamesh_manager(data_contract_specification: DataC
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
         spec = data_contract_specification
         id = spec.id
-        url = "https://api.datamesh-manager.com/api/datacontracts/{0}".format(id)
+        url = f"{host}/api/datacontracts/{id}"
         request_body = spec.model_dump_json().encode("utf-8")
         response = requests.put(
             url=url,
             data=request_body,
             headers=headers,
+            verify=ssl_verification,
         )
         if response.status_code != 200:
             print(f"Error publishing data contract to Data Mesh Manager: {response.text}")

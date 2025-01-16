@@ -27,6 +27,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{matrix.python-version}}
+          cache: 'pip' # caching pip dependencies
       - name: Install msodbcsql18
         run: |
           sudo apt-get update
@@ -56,6 +57,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{matrix.python-version}}
+          cache: 'pip' # caching pip dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

@@ -12,6 +12,7 @@ class ResultEnum(str, Enum):
     warning = "warning"
     failed = "failed"
     error = "error"
+    info = "info"
     unknown = "unknown"
 
 

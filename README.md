@@ -25,7 +25,7 @@ This data contract contains all information to connect to S3 and check that the 
 
 Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ python3 -m pip install datacontract-cli[all]
+$ python3 -m pip install 'datacontract-cli[all]'
 ```
 
 
@@ -150,13 +150,13 @@ Choose the most appropriate installation method for your needs:
 Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
 
 ```bash
-python3 -m pip install datacontract-cli[all]
+python3 -m pip install 'datacontract-cli[all]'
 ```
 
 ### pipx
 pipx installs into an isolated environment.
 ```bash
-pipx install datacontract-cli[all]
+pipx install 'datacontract-cli[all]'
 ```
 
 ### Docker
@@ -512,7 +512,6 @@ datacontract.yaml
 servers:
   production:
     type: databricks
-    host: dbc-abcdefgh-1234.cloud.databricks.com
     catalog: acme_catalog_prod
     schema: orders_latest
 models:
@@ -523,10 +522,11 @@ models:
 
 #### Environment Variables
 
-| Environment Variable                         | Example                              | Description                                           |
-|----------------------------------------------|--------------------------------------|-------------------------------------------------------|
-| `DATACONTRACT_DATABRICKS_TOKEN`              | `dapia00000000000000000000000000000` | The personal access token to authenticate             |
-| `DATACONTRACT_DATABRICKS_HTTP_PATH`          | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster |
+| Environment Variable                      | Example                              | Description                                               |
+|-------------------------------------------|--------------------------------------|-----------------------------------------------------------|
+| `DATACONTRACT_DATABRICKS_TOKEN`           | `dapia00000000000000000000000000000` | The personal access token to authenticate                 |
+| `DATACONTRACT_DATABRICKS_HTTP_PATH`       | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster     |
+| `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | The host name of the SQL warehouse or compute cluster |
 
 
 ### Databricks (programmatic)

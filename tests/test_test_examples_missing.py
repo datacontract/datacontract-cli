@@ -10,7 +10,9 @@ runner = CliRunner()
 
 def test_cli():
     result = runner.invoke(app, ["test", "--examples", "./fixtures/examples/datacontract_missing.yaml"])
-    assert result.exit_code == 1
+    # File has warnings, but exit code should be zero (i.e. success).
+    # See issue https://github.com/datacontract/datacontract-cli/issues/555
+    assert result.exit_code == 0
 
 
 def test_missing():

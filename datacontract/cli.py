@@ -139,6 +139,10 @@ def test(
         ),
     ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
+    ssl_verification: Annotated[
+        bool,
+        typer.Option(help="SSL verification when publishing the test results."),
+    ] = True,
 ):
     """
     Run schema and quality tests on configured servers.
@@ -315,6 +319,10 @@ def publish(
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ssl_verification: Annotated[
+        bool,
+        typer.Option(help="SSL verification when publishing the data contract."),
+    ] = True,
 ):
     """
     Publish the data contract to the Data Mesh Manager.
@@ -323,6 +331,7 @@ def publish(
         data_contract_specification=DataContract(
             data_contract_file=location, schema_location=schema
         ).get_data_contract_specification(),
+        ssl_verification=ssl_verification,
     )
 
 
@@ -447,6 +456,18 @@ def _handle_result(run):
         console.print(
             f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
+    elif run.result == "warning":
+        console.print("🟠 data contract has warnings. Found the following warnings:")
+        i = 1
+        for check in run.checks:
+            if check.result != "passed":
+                field = to_field(run, check)
+                if field:
+                    field = field + " "
+                else:
+                    field = ""
+                console.print(f"{i}) {field}{check.name}: {check.reason}")
+                i += 1
     else:
         console.print("🔴 data contract is invalid, found the following errors:")
         i = 1

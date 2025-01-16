@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added export format **markdown**: `datacontract export --format markdown` (#545)
 - When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
 - When importing in dbt format, add the dbt primary key information as a datacontract primaryKey field (#562)
+- When exporting in dbt format, add the datacontract references field as a dbt relationships test (#569)
+- When importing in dbt format, add the dbt relationships test field as a reference in the data contract (#570)
 
 ### Changed
 - Primary and example fields have been deprecated in Data Contract Specification v1.1.0 (#561)
@@ -19,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - SQL Server: cannot escape reserved word on model (#557)
+- Export dbt-staging-sql error on multi models contracts (#587) 
 
 
 ## [0.10.16] - 2024-12-19
