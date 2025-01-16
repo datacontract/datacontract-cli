@@ -23,7 +23,6 @@ from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
 from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
-from datacontract.integration.opentelemetry import publish_test_results_to_opentelemetry
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
@@ -48,7 +47,6 @@ class DataContract:
         server: str = None,
         examples: bool = False,
         publish_url: str = None,
-        publish_to_opentelemetry: bool = False,
         spark: "SparkSession" = None,
         inline_definitions: bool = True,
         inline_quality: bool = True,
@@ -60,7 +58,6 @@ class DataContract:
         self._server = server
         self._examples = examples
         self._publish_url = publish_url
-        self._publish_to_opentelemetry = publish_to_opentelemetry
         self._spark = spark
         self._inline_definitions = inline_definitions
         self._inline_quality = inline_quality
@@ -231,9 +228,6 @@ class DataContract:
 
         if self._publish_url is not None:
             publish_test_results_to_datamesh_manager(run, self._publish_url)
-
-        if self._publish_to_opentelemetry:
-            publish_test_results_to_opentelemetry(run)
 
         return run
 
