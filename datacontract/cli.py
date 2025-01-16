@@ -284,6 +284,18 @@ def import_(
         Optional[str],
         typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
     ] = None,
+    template: Annotated[
+        Optional[str],
+        typer.Option(
+            help="The location (url or path) of the Data Contract Specification Template"
+        ),
+    ] = None,
+    schema: Annotated[
+        str,
+        typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema"
+        ),
+    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -291,6 +303,8 @@ def import_(
     result = DataContract().import_from_source(
         format=format,
         source=source,
+        template=template,
+        schema=schema,
         glue_table=glue_table,
         bigquery_table=bigquery_table,
         bigquery_project=bigquery_project,

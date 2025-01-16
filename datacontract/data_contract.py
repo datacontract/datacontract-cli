@@ -37,6 +37,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, Run
 
+DEFAULT_DATA_CONTRACT_TEMPLATE_URL = "https://datacontract.com/datacontract.init.yaml"
 
 class DataContract:
     def __init__(
@@ -75,8 +76,10 @@ class DataContract:
         }
 
     @classmethod
-    def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
-        return resolve.resolve_data_contract(data_contract_location=template)
+    def init(cls, template: str = DEFAULT_DATA_CONTRACT_TEMPLATE_URL, schema: typing.Optional[str] = None) -> DataContractSpecification:
+        return resolve.resolve_data_contract(
+            data_contract_location=template, schema_location=schema
+        )
 
     def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
         """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
@@ -347,10 +350,12 @@ class DataContract:
         )
 
     def import_from_source(
-        self, format: str, source: typing.Optional[str] = None, **kwargs
+        self, format: str, source: typing.Optional[str] = None, template: typing.Optional[str] = None, schema: typing.Optional[str] = None, **kwargs
     ) -> DataContractSpecification:
-        data_contract_specification_initial = DataContract.init()
+        template = DEFAULT_DATA_CONTRACT_TEMPLATE_URL if template is None else template
+        data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
         return importer_factory.create(format).import_source(
             data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
         )
+
