@@ -286,9 +286,6 @@ Commands
 │                                                                      [default: no-examples]                                     │
 │ --publish                                                      TEXT  The url to publish the results after the test              │
 │                                                                      [default: None]                                            │
-│ --publish-to-opentelemetry    --no-publish-to-opentelemetry          Publish the results to opentelemetry. Use environment      │
-│                                                                      variables to configure the OTLP endpoint, headers, etc.    │
-│                                                                      [default: no-publish-to-opentelemetry]                     │
 │ --logs                        --no-logs                              Print logs [default: no-logs]                              │
 │ --help                                                               Show this message and exit.                                │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -1333,7 +1330,6 @@ datacontract catalog --files "*.odcs.yaml"
 |-----------------------|------------------------------|---------------------------------------------------------------------------------------------------------------|
 | Data Mesh Manager     | `--publish`                  | Push full results to the [Data Mesh Manager API](https://api.datamesh-manager.com/swagger/index.html)         |
 | Data Contract Manager | `--publish`                  | Push full results to the [Data Contract Manager API](https://api.datacontract-manager.com/swagger/index.html) |
-| OpenTelemetry         | `--publish-to-opentelemetry` | Push result as gauge metrics                                                                                  |
 
 ### Integration with Data Mesh Manager
 
@@ -1346,36 +1342,6 @@ $ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontr
  --server production \
  --publish https://api.datamesh-manager.com/api/test-results
 ```
-
-### Integration with OpenTelemetry
-
-If you use OpenTelemetry, you can use the data contract URL and append the `--publish-to-opentelemetry` option to send the test results to your OLTP-compatible instance, e.g., Prometheus.
-
-The metric name is "datacontract.cli.test.result" and it uses the following encoding for the result:
-
-| datacontract.cli.test.result | Description                           |
-|------------------------------|---------------------------------------|
-| 0                            | test run passed, no warnings          |
-| 1                            | test run has warnings                 |
-| 2                            | test run failed                       |
-| 3                            | test run not possible due to an error |
-| 4                            | test status unknown                   |
-
-
-```bash
-# Fetch current data contract, execute tests on production, and publish result to open telemetry
-$ EXPORT OTEL_SERVICE_NAME=datacontract-cli
-$ EXPORT OTEL_EXPORTER_OTLP_ENDPOINT=https://YOUR_ID.apm.westeurope.azure.elastic-cloud.com:443
-$ EXPORT OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer%20secret # Optional, when using SaaS Products
-$ EXPORT OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf # Optional, default is http/protobuf - use value grpc to use the gRPC protocol instead
-# Send to OpenTelemetry
-$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml --server production --publish-to-opentelemetry
-```
-
-Current limitations:
-- currently, only ConsoleExporter and OTLP Exporter
-- Metrics only, no logs yet (but loosely planned)
-
 
 ## Best Practices
 
@@ -1408,7 +1374,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract lint
    ```
 
-5. Set up a CI pipeline that executes daily and reports the results to the [Data Mesh Manager](https://datamesh-manager.com). Or to some place else. You can even publish to any opentelemetry compatible system.
+5. Set up a CI pipeline that executes daily for continuous quality checks. You can also report the test results to tools like [Data Mesh Manager](https://datamesh-manager.com) 
    ```bash
    $ datacontract test --publish https://api.datamesh-manager.com/api/test-results
    ```
