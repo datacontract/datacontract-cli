@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When importing in dbt format, add the dbt primary key information as a datacontract primaryKey field (#562)
 - When exporting in dbt format, add the datacontract references field as a dbt relationships test (#569)
 - When importing in dbt format, add the dbt relationships test field as a reference in the data contract (#570)
+- Add serve command on README (#592)
 
 ### Changed
 - Primary and example fields have been deprecated in Data Contract Specification v1.1.0 (#561)

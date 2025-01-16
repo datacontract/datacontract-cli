@@ -221,6 +221,7 @@ Commands
 - [diff](#diff)
 - [catalog](#catalog)
 - [publish](#publish)
+- [serve](#serve)
 
 ### init
 
@@ -1308,6 +1309,22 @@ datacontract catalog --files "*.odcs.yaml"
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                                                │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+### Serve
+
+```
+
+ Usage: datacontract serve [OPTIONS]
+
+ Start the datacontract web server.
+
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --port        INTEGER  Bind socket to this port. [default: 4242]                                                           │
+│ --host        TEXT     Bind socket to this host. [default: 127.0.0.1]                                                      │
+│ --help                 Show this message and exit.                                                                         │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 ```
 
 ## Integrations
