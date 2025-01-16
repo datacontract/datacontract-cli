@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+
+
+## [0.10.17] - 2024-01-16
+
+### Added
 - added export format **markdown**: `datacontract export --format markdown` (#545)
 - When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
 - When importing in dbt format, add the dbt primary key information as a datacontract primaryKey field (#562)
