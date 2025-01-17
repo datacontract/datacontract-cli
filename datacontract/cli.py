@@ -132,12 +132,6 @@ def test(
         typer.Option(help="Run the schema and quality tests on the example data within the data contract."),
     ] = None,
     publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
-    publish_to_opentelemetry: Annotated[
-        bool,
-        typer.Option(
-            help="Publish the results to opentelemetry. Use environment variables to configure the OTLP endpoint, headers, etc."
-        ),
-    ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
         bool,
@@ -154,7 +148,6 @@ def test(
         data_contract_file=location,
         schema_location=schema,
         publish_url=publish,
-        publish_to_opentelemetry=publish_to_opentelemetry,
         server=server,
         examples=examples,
     ).test()
@@ -284,6 +277,18 @@ def import_(
         Optional[str],
         typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
     ] = None,
+    template: Annotated[
+        Optional[str],
+        typer.Option(
+            help="The location (url or path) of the Data Contract Specification Template"
+        ),
+    ] = None,
+    schema: Annotated[
+        str,
+        typer.Option(
+            help="The location (url or path) of the Data Contract Specification JSON Schema"
+        ),
+    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -291,6 +296,8 @@ def import_(
     result = DataContract().import_from_source(
         format=format,
         source=source,
+        template=template,
+        schema=schema,
         glue_table=glue_table,
         bigquery_table=bigquery_table,
         bigquery_project=bigquery_project,
