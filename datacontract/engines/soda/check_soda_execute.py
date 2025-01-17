@@ -1,7 +1,5 @@
 import logging
 
-from soda.scan import Scan
-
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 from datacontract.engines.soda.connections.databricks import to_databricks_soda_configuration
 from datacontract.engines.soda.connections.duckdb import get_duckdb_connection
@@ -21,6 +19,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         return
 
     run.log_info("Running engine soda-core")
+    from soda.scan import Scan
     scan = Scan()
 
     if server.type in ["s3", "gcs", "azure", "local"]:

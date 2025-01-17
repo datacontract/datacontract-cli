@@ -1,12 +1,11 @@
 import os
 
-import duckdb
-
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 from datacontract.model.run import Run
 
 
 def get_duckdb_connection(data_contract, server, run: Run):
+    import duckdb
     con = duckdb.connect(database=":memory:")
     path: str = ""
     if server.type == "local":
