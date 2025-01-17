@@ -27,8 +27,6 @@ dependencies = [
   "python-multipart==0.0.20",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
-  "duckdb>=1.0.0",
-  "soda-core-duckdb>=3.4.3,<3.5.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "python-dotenv~=1.0.0",
@@ -98,8 +96,13 @@ parquet = [
   "pyarrow>=18.1.0"
 ]
 
+duckdb = [
+  "duckdb>=1.0.0",
+  "soda-core-duckdb>=3.4.3,<3.5.0"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,duckdb]"
 ]
 
 dev = [
