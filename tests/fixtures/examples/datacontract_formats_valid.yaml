@@ -12,7 +12,7 @@ models:
       id:
         type: text
         required: true
-        primary: true
+        primaryKey: true
         unique: true
         title: ID
         description: A unique identifier

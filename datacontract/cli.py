@@ -279,15 +279,11 @@ def import_(
     ] = None,
     template: Annotated[
         Optional[str],
-        typer.Option(
-            help="The location (url or path) of the Data Contract Specification Template"
-        ),
+        typer.Option(help="The location (url or path) of the Data Contract Specification Template"),
     ] = None,
     schema: Annotated[
         str,
-        typer.Option(
-            help="The location (url or path) of the Data Contract Specification JSON Schema"
-        ),
+        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
 ):
     """
