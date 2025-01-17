@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.16"
+version = "0.10.17"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 readme = "README.md"
 authors = [
@@ -24,19 +24,16 @@ dependencies = [
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet==2024.11.0",
   "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
-  "python-multipart==0.0.19",
+  "python-multipart==0.0.20",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
-  "duckdb>=1.0.0",
-  "soda-core-duckdb>=3.4.3,<3.5.0",
+  "duckdb==1.1.2",
+  "soda-core-duckdb>=3.3.1,<3.5.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "python-dotenv~=1.0.0",
   "rdflib==7.0.0", # move to extra?
-  "opentelemetry-exporter-otlp-proto-grpc~=1.16", # move to extra?
-  "opentelemetry-exporter-otlp-proto-http~=1.16", # move to extra?
-  "boto3>=1.34.41,<1.35.69",
-  #  "botocore>=1.34.41,<1.34.137",
+  "boto3>=1.34.41,<1.35.98",
   "jinja_partials >= 0.2.1",
 ]
 
@@ -47,16 +44,14 @@ avro = [
 ]
 
 bigquery = [
-  "soda-core-bigquery>=3.4.3,<3.5.0",
-  "google-cloud-bigquery-storage>=2.27.0",
-  "grpcio==1.62.3" # avoid strange log output in newer versions
+  "soda-core-bigquery>=3.3.1,<3.5.0",
 ]
 
 databricks = [
-  "soda-core-spark-df>=3.4.3,<3.5.0",
-  "soda-core-spark[databricks]>=3.4.3,<3.5.0",
+  "soda-core-spark-df>=3.3.1,<3.5.0",
+  "soda-core-spark[databricks]>=3.3.1,<3.5.0",
   "databricks-sql-connector>=3.7.0,<3.8.0",
-  "databricks-sdk>=0.39.0,<0.41.0",
+  "databricks-sdk<0.41.0",
 ]
 
 iceberg = [
@@ -65,28 +60,28 @@ iceberg = [
 
 kafka = [
   "datacontract-cli[avro]",
-  "soda-core-spark-df>=3.4.3,<3.5.0"
+  "soda-core-spark-df>=3.3.1,<3.5.0"
 ]
 
 postgres = [
-  "soda-core-postgres>=3.4.3,<3.5.0"
+  "soda-core-postgres>=3.3.1,<3.5.0"
 ]
 
 s3 = [
-  "s3fs==2024.10.0"
+  "s3fs==2024.12.0"
 ]
 
 snowflake = [
   "snowflake-connector-python[pandas]>=3.6,<3.13",
-  "soda-core-snowflake>=3.4.3,<3.5.0"
+  "soda-core-snowflake>=3.3.1,<3.5.0"
 ]
 
 sqlserver = [
-  "soda-core-sqlserver>=3.4.3,<3.5.0"
+  "soda-core-sqlserver>=3.3.1,<3.5.0"
 ]
 
 trino = [
-  "soda-core-trino>=3.4.3,<3.5.0"
+  "soda-core-trino>=3.3.1,<3.5.0"
 ]
 
 dbt = [
@@ -109,7 +104,7 @@ dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
   "kafka-python",
-  "moto==5.0.24",
+  "moto==5.0.26",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.1.0",
   "pytest",

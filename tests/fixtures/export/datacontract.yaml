@@ -30,6 +30,8 @@ models:
     title: orders
     type: table
     description: The orders model
+    primaryKey:
+    - order_id
     fields:
       order_id:
         title: Order ID

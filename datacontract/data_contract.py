@@ -23,7 +23,6 @@ from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
 from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
-from datacontract.integration.opentelemetry import publish_test_results_to_opentelemetry
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
 from datacontract.lint.linters.example_model_linter import ExampleModelLinter
@@ -37,6 +36,8 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, Run
 
+DEFAULT_DATA_CONTRACT_TEMPLATE_URL = "https://datacontract.com/datacontract.init.yaml"
+
 
 class DataContract:
     def __init__(
@@ -48,7 +49,6 @@ class DataContract:
         server: str = None,
         examples: bool = False,
         publish_url: str = None,
-        publish_to_opentelemetry: bool = False,
         spark: "SparkSession" = None,
         inline_definitions: bool = True,
         inline_quality: bool = True,
@@ -60,7 +60,6 @@ class DataContract:
         self._server = server
         self._examples = examples
         self._publish_url = publish_url
-        self._publish_to_opentelemetry = publish_to_opentelemetry
         self._spark = spark
         self._inline_definitions = inline_definitions
         self._inline_quality = inline_quality
@@ -75,8 +74,10 @@ class DataContract:
         }
 
     @classmethod
-    def init(cls, template: str = "https://datacontract.com/datacontract.init.yaml") -> DataContractSpecification:
-        return resolve.resolve_data_contract(data_contract_location=template)
+    def init(
+        cls, template: str = DEFAULT_DATA_CONTRACT_TEMPLATE_URL, schema: typing.Optional[str] = None
+    ) -> DataContractSpecification:
+        return resolve.resolve_data_contract(data_contract_location=template, schema_location=schema)
 
     def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
         """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
@@ -232,9 +233,6 @@ class DataContract:
         if self._publish_url is not None:
             publish_test_results_to_datamesh_manager(run, self._publish_url)
 
-        if self._publish_to_opentelemetry:
-            publish_test_results_to_opentelemetry(run)
-
         return run
 
     def _get_examples_server(self, data_contract, run, tmp_dir):
@@ -347,9 +345,15 @@ class DataContract:
         )
 
     def import_from_source(
-        self, format: str, source: typing.Optional[str] = None, **kwargs
+        self,
+        format: str,
+        source: typing.Optional[str] = None,
+        template: typing.Optional[str] = None,
+        schema: typing.Optional[str] = None,
+        **kwargs,
     ) -> DataContractSpecification:
-        data_contract_specification_initial = DataContract.init()
+        template = DEFAULT_DATA_CONTRACT_TEMPLATE_URL if template is None else template
+        data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
         return importer_factory.create(format).import_source(
             data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs

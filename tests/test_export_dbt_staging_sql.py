@@ -14,9 +14,11 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/export/datacontract.yaml",
+            "./fixtures/dbt/export/datacontract.yaml",
             "--format",
             "dbt-staging-sql",
+            "--model",
+            "orders",
         ],
     )
     print(result.stdout)
@@ -24,12 +26,13 @@ def test_cli():
 
 
 def test_to_dbt_staging():
-    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    data_contract = DataContractSpecification.from_file("fixtures/dbt/export/datacontract.yaml")
     expected = """
 select 
     order_id,
     order_total,
-    order_status
+    order_status,
+    user_id
 from {{ source('orders-unit-test', 'orders') }}
 """
 
