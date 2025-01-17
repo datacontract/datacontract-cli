@@ -20,7 +20,7 @@ models:
         required: true
       field_primary:
         type: string
-        primary: true
+        primaryKey: true
       field_references:
         type: string
         references: my_table.field_format

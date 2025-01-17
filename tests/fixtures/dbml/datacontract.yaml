@@ -36,7 +36,7 @@ models:
         $ref: '#/definitions/order_id'
         required: true
         unique: true
-        primary: true
+        primaryKey: true
       order_timestamp:
         description: The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.
         type: timestamp
@@ -95,7 +95,7 @@ models:
         description: Primary key of the lines_item_id table
         required: true
         unique: true
-        primary: true
+        primaryKey: true
       order_id:
         $ref: '#/definitions/order_id'
         references: orders.order_id
