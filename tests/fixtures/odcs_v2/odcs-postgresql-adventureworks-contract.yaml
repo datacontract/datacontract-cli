@@ -28,7 +28,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/department/departmentid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -40,7 +40,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/department/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "groupname"
       logicalType: "Object"
@@ -52,7 +52,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/department/groupname"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -63,7 +63,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/department/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "employee"
     physicalName: "employee"
@@ -79,7 +79,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "nationalidnumber"
       logicalType: "String"
@@ -92,7 +92,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/nationalidnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "loginid"
       logicalType: "String"
@@ -104,7 +104,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/loginid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "jobtitle"
       logicalType: "String"
@@ -116,7 +116,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/jobtitle"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "birthdate"
       logicalType: "Date"
@@ -128,7 +128,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/birthdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "maritalstatus"
       logicalType: "String"
@@ -140,7 +140,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/maritalstatus"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "gender"
       logicalType: "String"
@@ -152,7 +152,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/gender"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "hiredate"
       logicalType: "Date"
@@ -164,7 +164,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/hiredate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "salariedflag"
       logicalType: "Object"
@@ -177,7 +177,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/salariedflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "vacationhours"
       logicalType: "Numeric"
@@ -189,7 +189,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/vacationhours"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "sickleavehours"
       logicalType: "Numeric"
@@ -201,7 +201,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/sickleavehours"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "currentflag"
       logicalType: "Object"
@@ -213,7 +213,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/currentflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -224,7 +224,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -235,7 +235,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "organizationnode"
       logicalType: "String"
@@ -247,7 +247,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employee/organizationnode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "employeedepartmenthistory"
     physicalName: "employeedepartmenthistory"
@@ -263,7 +263,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeedepartmenthistory/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "departmentid"
       logicalType: "Numeric"
@@ -276,7 +276,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeedepartmenthistory/departmentid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "shiftid"
       logicalType: "Numeric"
@@ -289,7 +289,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeedepartmenthistory/shiftid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "startdate"
       logicalType: "Date"
@@ -301,7 +301,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeedepartmenthistory/startdate"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "enddate"
       logicalType: "Date"
@@ -313,7 +313,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeedepartmenthistory/enddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -324,7 +324,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeedepartmenthistory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "employeepayhistory"
     physicalName: "employeepayhistory"
@@ -340,7 +340,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeepayhistory/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "ratechangedate"
       logicalType: "Timestamp"
@@ -352,7 +352,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeepayhistory/ratechangedate"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "rate"
       logicalType: "Numeric"
@@ -364,7 +364,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeepayhistory/rate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "payfrequency"
       logicalType: "Numeric"
@@ -376,7 +376,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeepayhistory/payfrequency"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -387,7 +387,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/employeepayhistory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "jobcandidate"
     physicalName: "jobcandidate"
@@ -403,7 +403,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/jobcandidate/jobcandidateid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "businessentityid"
       logicalType: "Numeric"
@@ -416,7 +416,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/jobcandidate/businessentityid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "resume"
       logicalType: "XML"
@@ -428,7 +428,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/jobcandidate/resume"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -439,7 +439,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/jobcandidate/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "shift"
     physicalName: "shift"
@@ -455,7 +455,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shift/shiftid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -467,7 +467,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shift/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "starttime"
       logicalType: "Timestamp"
@@ -479,7 +479,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shift/starttime"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "endtime"
       logicalType: "Timestamp"
@@ -491,7 +491,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shift/endtime"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -502,7 +502,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shift/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "address"
     physicalName: "address"
@@ -518,7 +518,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/addressid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "addressline1"
       logicalType: "String"
@@ -530,7 +530,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/addressline1"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "addressline2"
       logicalType: "String"
@@ -542,7 +542,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/addressline2"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "city"
       logicalType: "String"
@@ -554,7 +554,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/city"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "stateprovinceid"
       logicalType: "Numeric"
@@ -567,7 +567,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/stateprovinceid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "postalcode"
       logicalType: "String"
@@ -579,7 +579,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/postalcode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "spatiallocation"
       logicalType: "Binary"
@@ -591,7 +591,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/spatiallocation"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -602,7 +602,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -613,7 +613,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/address/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "addresstype"
     physicalName: "addresstype"
@@ -629,7 +629,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/addresstype/addresstypeid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -641,7 +641,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/addresstype/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -652,7 +652,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/addresstype/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -663,7 +663,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/addresstype/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "businessentity"
     physicalName: "businessentity"
@@ -680,7 +680,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentity/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -691,7 +691,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentity/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -702,7 +702,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentity/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "businessentityaddress"
     physicalName: "businessentityaddress"
@@ -719,7 +719,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentityaddress/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "addressid"
       logicalType: "Numeric"
@@ -731,7 +731,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentityaddress/addressid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "addresstypeid"
       logicalType: "Numeric"
@@ -743,7 +743,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentityaddress/addresstypeid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -754,7 +754,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentityaddress/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -765,7 +765,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentityaddress/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "businessentitycontact"
     physicalName: "businessentitycontact"
@@ -782,7 +782,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentitycontact/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "personid"
       logicalType: "Numeric"
@@ -794,7 +794,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentitycontact/personid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "contacttypeid"
       logicalType: "Numeric"
@@ -806,7 +806,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentitycontact/contacttypeid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -817,7 +817,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentitycontact/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -828,7 +828,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/businessentitycontact/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "contacttype"
     physicalName: "contacttype"
@@ -844,7 +844,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/contacttype/contacttypeid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -856,7 +856,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/contacttype/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -867,7 +867,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/contacttype/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "countryregion"
     physicalName: "countryregion"
@@ -884,7 +884,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/countryregion/countryregioncode"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -896,7 +896,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/countryregion/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -907,7 +907,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/countryregion/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "emailaddress"
     physicalName: "emailaddress"
@@ -924,7 +924,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/emailaddress/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "emailaddressid"
       logicalType: "Numeric"
@@ -936,7 +936,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/emailaddress/emailaddressid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "emailaddress"
       logicalType: "String"
@@ -948,7 +948,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/emailaddress/emailaddress"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -959,7 +959,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/emailaddress/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -970,7 +970,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/emailaddress/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "password"
     physicalName: "password"
@@ -985,7 +985,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/password/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "passwordhash"
       logicalType: "String"
@@ -997,7 +997,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/password/passwordhash"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "passwordsalt"
       logicalType: "String"
@@ -1010,7 +1010,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/password/passwordsalt"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -1021,7 +1021,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/password/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1032,7 +1032,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/password/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "person"
     physicalName: "person"
@@ -1049,7 +1049,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "persontype"
       logicalType: "String"
@@ -1063,7 +1063,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/persontype"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "namestyle"
       logicalType: "Object"
@@ -1077,7 +1077,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/namestyle"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "title"
       logicalType: "String"
@@ -1089,7 +1089,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/title"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "firstname"
       logicalType: "Object"
@@ -1101,7 +1101,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/firstname"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "middlename"
       logicalType: "Object"
@@ -1113,7 +1113,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/middlename"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "lastname"
       logicalType: "Object"
@@ -1125,7 +1125,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/lastname"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "suffix"
       logicalType: "String"
@@ -1137,7 +1137,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/suffix"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "emailpromotion"
       logicalType: "Numeric"
@@ -1152,7 +1152,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/emailpromotion"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "additionalcontactinfo"
       logicalType: "XML"
@@ -1165,7 +1165,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/additionalcontactinfo"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "demographics"
       logicalType: "XML"
@@ -1178,7 +1178,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/demographics"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -1189,7 +1189,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1200,7 +1200,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/person/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "personphone"
     physicalName: "personphone"
@@ -1216,7 +1216,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/personphone/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "phonenumber"
       logicalType: "Object"
@@ -1228,7 +1228,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/personphone/phonenumber"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "phonenumbertypeid"
       logicalType: "Numeric"
@@ -1240,7 +1240,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/personphone/phonenumbertypeid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1251,7 +1251,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/personphone/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "phonenumbertype"
     physicalName: "phonenumbertype"
@@ -1267,7 +1267,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/phonenumbertype/phonenumbertypeid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -1279,7 +1279,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/phonenumbertype/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1290,7 +1290,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/phonenumbertype/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "stateprovince"
     physicalName: "stateprovince"
@@ -1306,7 +1306,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/stateprovinceid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "stateprovincecode"
       logicalType: "String"
@@ -1318,7 +1318,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/stateprovincecode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "countryregioncode"
       logicalType: "String"
@@ -1330,7 +1330,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/countryregioncode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "isonlystateprovinceflag"
       logicalType: "Object"
@@ -1343,7 +1343,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/isonlystateprovinceflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -1355,7 +1355,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "territoryid"
       logicalType: "Numeric"
@@ -1368,7 +1368,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/territoryid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -1379,7 +1379,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1390,7 +1390,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/stateprovince/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "billofmaterials"
     physicalName: "billofmaterials"
@@ -1407,7 +1407,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/billofmaterialsid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productassemblyid"
       logicalType: "Numeric"
@@ -1419,7 +1419,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/productassemblyid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "componentid"
       logicalType: "Numeric"
@@ -1431,7 +1431,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/componentid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "startdate"
       logicalType: "Timestamp"
@@ -1443,7 +1443,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/startdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "enddate"
       logicalType: "Timestamp"
@@ -1455,7 +1455,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/enddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "unitmeasurecode"
       logicalType: "String"
@@ -1467,7 +1467,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/unitmeasurecode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "bomlevel"
       logicalType: "Numeric"
@@ -1479,7 +1479,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/bomlevel"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "perassemblyqty"
       logicalType: "Numeric"
@@ -1491,7 +1491,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/perassemblyqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1502,7 +1502,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/billofmaterials/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "culture"
     physicalName: "culture"
@@ -1519,7 +1519,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/culture/cultureid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -1531,7 +1531,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/culture/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1542,7 +1542,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/culture/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "document"
     physicalName: "document"
@@ -1558,7 +1558,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/title"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "owner"
       logicalType: "Numeric"
@@ -1570,7 +1570,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/owner"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "folderflag"
       logicalType: "Object"
@@ -1582,7 +1582,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/folderflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "filename"
       logicalType: "String"
@@ -1594,7 +1594,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/filename"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "fileextension"
       logicalType: "String"
@@ -1607,7 +1607,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/fileextension"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "revision"
       logicalType: "String"
@@ -1619,7 +1619,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/revision"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "changenumber"
       logicalType: "Numeric"
@@ -1631,7 +1631,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/changenumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "status"
       logicalType: "Numeric"
@@ -1643,7 +1643,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/status"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "documentsummary"
       logicalType: "String"
@@ -1655,7 +1655,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/documentsummary"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "document"
       logicalType: "Binary"
@@ -1667,7 +1667,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/document"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -1680,7 +1680,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1691,7 +1691,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "documentnode"
       logicalType: "String"
@@ -1703,7 +1703,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/document/documentnode"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
   - table: "illustration"
     physicalName: "illustration"
@@ -1719,7 +1719,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/illustration/illustrationid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "diagram"
       logicalType: "XML"
@@ -1731,7 +1731,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/illustration/diagram"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1742,7 +1742,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/illustration/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "location"
     physicalName: "location"
@@ -1758,7 +1758,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/location/locationid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -1770,7 +1770,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/location/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "costrate"
       logicalType: "Numeric"
@@ -1782,7 +1782,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/location/costrate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "availability"
       logicalType: "Numeric"
@@ -1794,7 +1794,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/location/availability"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -1805,7 +1805,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/location/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "product"
     physicalName: "product"
@@ -1821,7 +1821,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -1833,7 +1833,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "productnumber"
       logicalType: "String"
@@ -1845,7 +1845,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/productnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "makeflag"
       logicalType: "Object"
@@ -1857,7 +1857,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/makeflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "finishedgoodsflag"
       logicalType: "Object"
@@ -1869,7 +1869,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/finishedgoodsflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "color"
       logicalType: "String"
@@ -1881,7 +1881,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/color"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "safetystocklevel"
       logicalType: "Numeric"
@@ -1893,7 +1893,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/safetystocklevel"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "reorderpoint"
       logicalType: "Numeric"
@@ -1905,7 +1905,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/reorderpoint"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "standardcost"
       logicalType: "Numeric"
@@ -1917,7 +1917,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/standardcost"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "listprice"
       logicalType: "Numeric"
@@ -1929,7 +1929,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/listprice"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "size"
       logicalType: "String"
@@ -1941,7 +1941,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/size"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "sizeunitmeasurecode"
       logicalType: "String"
@@ -1953,7 +1953,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/sizeunitmeasurecode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "weightunitmeasurecode"
       logicalType: "String"
@@ -1965,7 +1965,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/weightunitmeasurecode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "weight"
       logicalType: "Numeric"
@@ -1977,7 +1977,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/weight"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "daystomanufacture"
       logicalType: "Numeric"
@@ -1989,7 +1989,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/daystomanufacture"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "productline"
       logicalType: "String"
@@ -2001,7 +2001,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/productline"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "class"
       logicalType: "String"
@@ -2013,7 +2013,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/class"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "style"
       logicalType: "String"
@@ -2025,7 +2025,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/style"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "productsubcategoryid"
       logicalType: "Numeric"
@@ -2038,7 +2038,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/productsubcategoryid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "productmodelid"
       logicalType: "Numeric"
@@ -2050,7 +2050,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/productmodelid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "sellstartdate"
       logicalType: "Timestamp"
@@ -2062,7 +2062,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/sellstartdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "sellenddate"
       logicalType: "Timestamp"
@@ -2074,7 +2074,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/sellenddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "discontinueddate"
       logicalType: "Timestamp"
@@ -2086,7 +2086,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/discontinueddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -2097,7 +2097,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2108,7 +2108,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/product/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productcategory"
     physicalName: "productcategory"
@@ -2124,7 +2124,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcategory/productcategoryid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -2136,7 +2136,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcategory/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -2147,7 +2147,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcategory/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2158,7 +2158,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcategory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productcosthistory"
     physicalName: "productcosthistory"
@@ -2174,7 +2174,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcosthistory/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "startdate"
       logicalType: "Timestamp"
@@ -2186,7 +2186,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcosthistory/startdate"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "enddate"
       logicalType: "Timestamp"
@@ -2198,7 +2198,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcosthistory/enddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "standardcost"
       logicalType: "Numeric"
@@ -2210,7 +2210,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcosthistory/standardcost"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2221,7 +2221,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productcosthistory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productdescription"
     physicalName: "productdescription"
@@ -2237,7 +2237,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productdescription/productdescriptionid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "description"
       logicalType: "String"
@@ -2249,7 +2249,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productdescription/description"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -2260,7 +2260,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productdescription/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2271,7 +2271,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productdescription/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productdocument"
     physicalName: "productdocument"
@@ -2287,7 +2287,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productdocument/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2298,7 +2298,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productdocument/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "documentnode"
       logicalType: "String"
@@ -2310,7 +2310,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productdocument/documentnode"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
   - table: "productinventory"
     physicalName: "productinventory"
@@ -2326,7 +2326,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productinventory/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "locationid"
       logicalType: "Numeric"
@@ -2338,7 +2338,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productinventory/locationid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "shelf"
       logicalType: "String"
@@ -2350,7 +2350,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productinventory/shelf"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "bin"
       logicalType: "Numeric"
@@ -2362,7 +2362,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productinventory/bin"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "quantity"
       logicalType: "Numeric"
@@ -2374,7 +2374,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productinventory/quantity"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -2385,7 +2385,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productinventory/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2396,7 +2396,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productinventory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productlistpricehistory"
     physicalName: "productlistpricehistory"
@@ -2412,7 +2412,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productlistpricehistory/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "startdate"
       logicalType: "Timestamp"
@@ -2424,7 +2424,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productlistpricehistory/startdate"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "enddate"
       logicalType: "Timestamp"
@@ -2436,7 +2436,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productlistpricehistory/enddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "listprice"
       logicalType: "Numeric"
@@ -2448,7 +2448,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productlistpricehistory/listprice"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2459,7 +2459,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productlistpricehistory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productmodel"
     physicalName: "productmodel"
@@ -2475,7 +2475,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodel/productmodelid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -2487,7 +2487,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodel/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "catalogdescription"
       logicalType: "XML"
@@ -2499,7 +2499,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodel/catalogdescription"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "instructions"
       logicalType: "XML"
@@ -2511,7 +2511,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodel/instructions"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -2522,7 +2522,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodel/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2533,7 +2533,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodel/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productmodelillustration"
     physicalName: "productmodelillustration"
@@ -2549,7 +2549,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodelillustration/productmodelid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "illustrationid"
       logicalType: "Numeric"
@@ -2561,7 +2561,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodelillustration/illustrationid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2572,7 +2572,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodelillustration/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productmodelproductdescriptionculture"
     physicalName: "productmodelproductdescriptionculture"
@@ -2589,7 +2589,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodelproductdescriptionculture/productmodelid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productdescriptionid"
       logicalType: "Numeric"
@@ -2601,7 +2601,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodelproductdescriptionculture/productdescriptionid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "cultureid"
       logicalType: "String"
@@ -2613,7 +2613,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodelproductdescriptionculture/cultureid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2624,7 +2624,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productmodelproductdescriptionculture/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productphoto"
     physicalName: "productphoto"
@@ -2640,7 +2640,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productphoto/productphotoid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "thumbnailphoto"
       logicalType: "Binary"
@@ -2652,7 +2652,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productphoto/thumbnailphoto"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "thumbnailphotofilename"
       logicalType: "String"
@@ -2664,7 +2664,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productphoto/thumbnailphotofilename"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "largephoto"
       logicalType: "Binary"
@@ -2676,7 +2676,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productphoto/largephoto"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "largephotofilename"
       logicalType: "String"
@@ -2688,7 +2688,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productphoto/largephotofilename"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2699,7 +2699,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productphoto/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productproductphoto"
     physicalName: "productproductphoto"
@@ -2715,7 +2715,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productproductphoto/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productphotoid"
       logicalType: "Numeric"
@@ -2727,9 +2727,9 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productproductphoto/productphotoid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
-    - column: "primary"
+    - column: "primaryKey"
       logicalType: "Object"
       physicalType: "Flag"
       description: "0 = Photo is not the principal image. 1 = Photo is the principal\
@@ -2738,9 +2738,9 @@ dataset:
       clusterStatus: false
       authoritativeDefinitions:
       - type: "implementation"
-        url: "jdbc:postgresql://localhost:5432/adventureworks/productproductphoto/primary"
+        url: "jdbc:postgresql://localhost:5432/adventureworks/productproductphoto/primaryKey"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2751,7 +2751,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productproductphoto/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productreview"
     physicalName: "productreview"
@@ -2767,7 +2767,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/productreviewid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -2779,7 +2779,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/productid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "reviewername"
       logicalType: "Object"
@@ -2791,7 +2791,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/reviewername"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "reviewdate"
       logicalType: "Timestamp"
@@ -2803,7 +2803,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/reviewdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "emailaddress"
       logicalType: "String"
@@ -2815,7 +2815,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/emailaddress"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rating"
       logicalType: "Numeric"
@@ -2828,7 +2828,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/rating"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "comments"
       logicalType: "String"
@@ -2840,7 +2840,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/comments"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2851,7 +2851,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productreview/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productsubcategory"
     physicalName: "productsubcategory"
@@ -2867,7 +2867,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productsubcategory/productsubcategoryid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productcategoryid"
       logicalType: "Numeric"
@@ -2879,7 +2879,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productsubcategory/productcategoryid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -2891,7 +2891,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productsubcategory/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -2902,7 +2902,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productsubcategory/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2913,7 +2913,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productsubcategory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "scrapreason"
     physicalName: "scrapreason"
@@ -2929,7 +2929,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/scrapreason/scrapreasonid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -2941,7 +2941,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/scrapreason/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -2952,7 +2952,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/scrapreason/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "transactionhistory"
     physicalName: "transactionhistory"
@@ -2969,7 +2969,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/transactionid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -2981,7 +2981,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/productid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "referenceorderid"
       logicalType: "Numeric"
@@ -2993,7 +2993,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/referenceorderid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "referenceorderlineid"
       logicalType: "Numeric"
@@ -3006,7 +3006,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/referenceorderlineid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "transactiondate"
       logicalType: "Timestamp"
@@ -3018,7 +3018,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/transactiondate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "transactiontype"
       logicalType: "String"
@@ -3030,7 +3030,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/transactiontype"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "quantity"
       logicalType: "Numeric"
@@ -3042,7 +3042,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/quantity"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "actualcost"
       logicalType: "Numeric"
@@ -3054,7 +3054,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/actualcost"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3065,7 +3065,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "transactionhistoryarchive"
     physicalName: "transactionhistoryarchive"
@@ -3081,7 +3081,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/transactionid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -3093,7 +3093,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/productid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "referenceorderid"
       logicalType: "Numeric"
@@ -3105,7 +3105,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/referenceorderid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "referenceorderlineid"
       logicalType: "Numeric"
@@ -3118,7 +3118,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/referenceorderlineid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "transactiondate"
       logicalType: "Timestamp"
@@ -3130,7 +3130,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/transactiondate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "transactiontype"
       logicalType: "String"
@@ -3142,7 +3142,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/transactiontype"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "quantity"
       logicalType: "Numeric"
@@ -3154,7 +3154,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/quantity"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "actualcost"
       logicalType: "Numeric"
@@ -3166,7 +3166,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/actualcost"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3177,7 +3177,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/transactionhistoryarchive/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "unitmeasure"
     physicalName: "unitmeasure"
@@ -3193,7 +3193,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/unitmeasure/unitmeasurecode"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -3205,7 +3205,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/unitmeasure/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3216,7 +3216,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/unitmeasure/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "workorder"
     physicalName: "workorder"
@@ -3232,7 +3232,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/workorderid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -3244,7 +3244,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/productid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "orderqty"
       logicalType: "Numeric"
@@ -3256,7 +3256,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/orderqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "scrappedqty"
       logicalType: "Numeric"
@@ -3268,7 +3268,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/scrappedqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "startdate"
       logicalType: "Timestamp"
@@ -3280,7 +3280,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/startdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "enddate"
       logicalType: "Timestamp"
@@ -3292,7 +3292,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/enddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "duedate"
       logicalType: "Timestamp"
@@ -3304,7 +3304,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/duedate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "scrapreasonid"
       logicalType: "Numeric"
@@ -3316,7 +3316,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/scrapreasonid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3327,7 +3327,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorder/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "workorderrouting"
     physicalName: "workorderrouting"
@@ -3343,7 +3343,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/workorderid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -3355,7 +3355,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "operationsequence"
       logicalType: "Numeric"
@@ -3367,7 +3367,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/operationsequence"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "locationid"
       logicalType: "Numeric"
@@ -3380,7 +3380,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/locationid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "scheduledstartdate"
       logicalType: "Timestamp"
@@ -3392,7 +3392,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/scheduledstartdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "scheduledenddate"
       logicalType: "Timestamp"
@@ -3404,7 +3404,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/scheduledenddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "actualstartdate"
       logicalType: "Timestamp"
@@ -3416,7 +3416,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/actualstartdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "actualenddate"
       logicalType: "Timestamp"
@@ -3428,7 +3428,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/actualenddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "actualresourcehrs"
       logicalType: "Numeric"
@@ -3440,7 +3440,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/actualresourcehrs"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "plannedcost"
       logicalType: "Numeric"
@@ -3452,7 +3452,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/plannedcost"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "actualcost"
       logicalType: "Numeric"
@@ -3464,7 +3464,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/actualcost"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3475,7 +3475,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/workorderrouting/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "productvendor"
     physicalName: "productvendor"
@@ -3491,7 +3491,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "businessentityid"
       logicalType: "Numeric"
@@ -3503,7 +3503,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "averageleadtime"
       logicalType: "Numeric"
@@ -3516,7 +3516,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/averageleadtime"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "standardprice"
       logicalType: "Numeric"
@@ -3528,7 +3528,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/standardprice"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "lastreceiptcost"
       logicalType: "Numeric"
@@ -3540,7 +3540,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/lastreceiptcost"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "lastreceiptdate"
       logicalType: "Timestamp"
@@ -3552,7 +3552,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/lastreceiptdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "minorderqty"
       logicalType: "Numeric"
@@ -3564,7 +3564,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/minorderqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "maxorderqty"
       logicalType: "Numeric"
@@ -3576,7 +3576,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/maxorderqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "onorderqty"
       logicalType: "Numeric"
@@ -3588,7 +3588,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/onorderqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "unitmeasurecode"
       logicalType: "String"
@@ -3600,7 +3600,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/unitmeasurecode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3611,7 +3611,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/productvendor/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "purchaseorderdetail"
     physicalName: "purchaseorderdetail"
@@ -3628,7 +3628,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/purchaseorderid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "purchaseorderdetailid"
       logicalType: "Numeric"
@@ -3640,7 +3640,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/purchaseorderdetailid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "duedate"
       logicalType: "Timestamp"
@@ -3652,7 +3652,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/duedate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "orderqty"
       logicalType: "Numeric"
@@ -3664,7 +3664,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/orderqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -3676,7 +3676,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/productid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "unitprice"
       logicalType: "Numeric"
@@ -3688,7 +3688,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/unitprice"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "receivedqty"
       logicalType: "Numeric"
@@ -3700,7 +3700,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/receivedqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rejectedqty"
       logicalType: "Numeric"
@@ -3712,7 +3712,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/rejectedqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3723,7 +3723,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderdetail/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "purchaseorderheader"
     physicalName: "purchaseorderheader"
@@ -3739,7 +3739,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/purchaseorderid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "revisionnumber"
       logicalType: "Numeric"
@@ -3752,7 +3752,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/revisionnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "status"
       logicalType: "Numeric"
@@ -3765,7 +3765,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/status"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "employeeid"
       logicalType: "Numeric"
@@ -3777,7 +3777,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/employeeid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "vendorid"
       logicalType: "Numeric"
@@ -3790,7 +3790,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/vendorid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "shipmethodid"
       logicalType: "Numeric"
@@ -3802,7 +3802,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/shipmethodid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "orderdate"
       logicalType: "Timestamp"
@@ -3814,7 +3814,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/orderdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "shipdate"
       logicalType: "Timestamp"
@@ -3826,7 +3826,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/shipdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "subtotal"
       logicalType: "Numeric"
@@ -3839,7 +3839,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/subtotal"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "taxamt"
       logicalType: "Numeric"
@@ -3851,7 +3851,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/taxamt"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "freight"
       logicalType: "Numeric"
@@ -3863,7 +3863,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/freight"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3874,7 +3874,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/purchaseorderheader/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "shipmethod"
     physicalName: "shipmethod"
@@ -3890,7 +3890,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shipmethod/shipmethodid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -3902,7 +3902,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shipmethod/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "shipbase"
       logicalType: "Numeric"
@@ -3914,7 +3914,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shipmethod/shipbase"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "shiprate"
       logicalType: "Numeric"
@@ -3926,7 +3926,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shipmethod/shiprate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -3937,7 +3937,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shipmethod/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -3948,7 +3948,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shipmethod/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "vendor"
     physicalName: "vendor"
@@ -3965,7 +3965,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "accountnumber"
       logicalType: "Object"
@@ -3977,7 +3977,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/accountnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -3989,7 +3989,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "creditrating"
       logicalType: "Numeric"
@@ -4002,7 +4002,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/creditrating"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "preferredvendorstatus"
       logicalType: "Object"
@@ -4015,7 +4015,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/preferredvendorstatus"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "activeflag"
       logicalType: "Object"
@@ -4027,7 +4027,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/activeflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "purchasingwebserviceurl"
       logicalType: "String"
@@ -4039,7 +4039,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/purchasingwebserviceurl"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4050,7 +4050,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/vendor/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "countryregioncurrency"
     physicalName: "countryregioncurrency"
@@ -4067,7 +4067,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/countryregioncurrency/countryregioncode"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "currencycode"
       logicalType: "String"
@@ -4079,7 +4079,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/countryregioncurrency/currencycode"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4090,7 +4090,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/countryregioncurrency/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "creditcard"
     physicalName: "creditcard"
@@ -4106,7 +4106,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/creditcard/creditcardid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "cardtype"
       logicalType: "String"
@@ -4118,7 +4118,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/creditcard/cardtype"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "cardnumber"
       logicalType: "String"
@@ -4130,7 +4130,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/creditcard/cardnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "expmonth"
       logicalType: "Numeric"
@@ -4142,7 +4142,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/creditcard/expmonth"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "expyear"
       logicalType: "Numeric"
@@ -4154,7 +4154,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/creditcard/expyear"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4165,7 +4165,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/creditcard/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "currency"
     physicalName: "currency"
@@ -4181,7 +4181,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currency/currencycode"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -4193,7 +4193,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currency/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4204,7 +4204,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currency/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "currencyrate"
     physicalName: "currencyrate"
@@ -4220,7 +4220,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currencyrate/currencyrateid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "currencyratedate"
       logicalType: "Timestamp"
@@ -4232,7 +4232,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currencyrate/currencyratedate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "fromcurrencycode"
       logicalType: "String"
@@ -4244,7 +4244,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currencyrate/fromcurrencycode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "tocurrencycode"
       logicalType: "String"
@@ -4256,7 +4256,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currencyrate/tocurrencycode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "averagerate"
       logicalType: "Numeric"
@@ -4268,7 +4268,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currencyrate/averagerate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "endofdayrate"
       logicalType: "Numeric"
@@ -4280,7 +4280,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currencyrate/endofdayrate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4291,7 +4291,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/currencyrate/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "customer"
     physicalName: "customer"
@@ -4307,7 +4307,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/customer/customerid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "personid"
       logicalType: "Numeric"
@@ -4319,7 +4319,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/customer/personid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "storeid"
       logicalType: "Numeric"
@@ -4331,7 +4331,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/customer/storeid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "territoryid"
       logicalType: "Numeric"
@@ -4344,7 +4344,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/customer/territoryid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -4355,7 +4355,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/customer/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4366,7 +4366,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/customer/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "personcreditcard"
     physicalName: "personcreditcard"
@@ -4383,7 +4383,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/personcreditcard/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "creditcardid"
       logicalType: "Numeric"
@@ -4395,7 +4395,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/personcreditcard/creditcardid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4406,7 +4406,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/personcreditcard/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salesorderdetail"
     physicalName: "salesorderdetail"
@@ -4423,7 +4423,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/salesorderid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "salesorderdetailid"
       logicalType: "Numeric"
@@ -4435,7 +4435,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/salesorderdetailid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "carriertrackingnumber"
       logicalType: "String"
@@ -4447,7 +4447,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/carriertrackingnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "orderqty"
       logicalType: "Numeric"
@@ -4459,7 +4459,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/orderqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -4471,7 +4471,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/productid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "specialofferid"
       logicalType: "Numeric"
@@ -4483,7 +4483,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/specialofferid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "unitprice"
       logicalType: "Numeric"
@@ -4495,7 +4495,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/unitprice"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "unitpricediscount"
       logicalType: "Numeric"
@@ -4507,7 +4507,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/unitpricediscount"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -4518,7 +4518,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4529,7 +4529,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderdetail/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salesorderheader"
     physicalName: "salesorderheader"
@@ -4545,7 +4545,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/salesorderid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "revisionnumber"
       logicalType: "Numeric"
@@ -4557,7 +4557,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/revisionnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "orderdate"
       logicalType: "Timestamp"
@@ -4569,7 +4569,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/orderdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "duedate"
       logicalType: "Timestamp"
@@ -4581,7 +4581,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/duedate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "shipdate"
       logicalType: "Timestamp"
@@ -4593,7 +4593,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/shipdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "status"
       logicalType: "Numeric"
@@ -4606,7 +4606,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/status"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "onlineorderflag"
       logicalType: "Object"
@@ -4618,7 +4618,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/onlineorderflag"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "purchaseordernumber"
       logicalType: "Object"
@@ -4630,7 +4630,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/purchaseordernumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "accountnumber"
       logicalType: "Object"
@@ -4642,7 +4642,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/accountnumber"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "customerid"
       logicalType: "Numeric"
@@ -4654,7 +4654,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/customerid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "salespersonid"
       logicalType: "Numeric"
@@ -4666,7 +4666,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/salespersonid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "territoryid"
       logicalType: "Numeric"
@@ -4678,7 +4678,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/territoryid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "billtoaddressid"
       logicalType: "Numeric"
@@ -4690,7 +4690,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/billtoaddressid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "shiptoaddressid"
       logicalType: "Numeric"
@@ -4702,7 +4702,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/shiptoaddressid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "shipmethodid"
       logicalType: "Numeric"
@@ -4714,7 +4714,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/shipmethodid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "creditcardid"
       logicalType: "Numeric"
@@ -4726,7 +4726,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/creditcardid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "creditcardapprovalcode"
       logicalType: "String"
@@ -4738,7 +4738,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/creditcardapprovalcode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "currencyrateid"
       logicalType: "Numeric"
@@ -4750,7 +4750,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/currencyrateid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "subtotal"
       logicalType: "Numeric"
@@ -4763,7 +4763,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/subtotal"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "taxamt"
       logicalType: "Numeric"
@@ -4775,7 +4775,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/taxamt"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "freight"
       logicalType: "Numeric"
@@ -4787,7 +4787,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/freight"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "totaldue"
       logicalType: "Numeric"
@@ -4799,7 +4799,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/totaldue"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "comment"
       logicalType: "String"
@@ -4811,7 +4811,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/comment"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -4822,7 +4822,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4833,7 +4833,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheader/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salesorderheadersalesreason"
     physicalName: "salesorderheadersalesreason"
@@ -4849,7 +4849,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheadersalesreason/salesorderid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "salesreasonid"
       logicalType: "Numeric"
@@ -4861,7 +4861,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheadersalesreason/salesreasonid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4872,7 +4872,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesorderheadersalesreason/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salesperson"
     physicalName: "salesperson"
@@ -4888,7 +4888,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "territoryid"
       logicalType: "Numeric"
@@ -4900,7 +4900,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/territoryid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "salesquota"
       logicalType: "Numeric"
@@ -4912,7 +4912,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/salesquota"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "bonus"
       logicalType: "Numeric"
@@ -4924,7 +4924,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/bonus"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "commissionpct"
       logicalType: "Numeric"
@@ -4936,7 +4936,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/commissionpct"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "salesytd"
       logicalType: "Numeric"
@@ -4948,7 +4948,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/salesytd"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "saleslastyear"
       logicalType: "Numeric"
@@ -4960,7 +4960,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/saleslastyear"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -4971,7 +4971,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -4982,7 +4982,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesperson/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salespersonquotahistory"
     physicalName: "salespersonquotahistory"
@@ -4998,7 +4998,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salespersonquotahistory/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "quotadate"
       logicalType: "Timestamp"
@@ -5010,7 +5010,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salespersonquotahistory/quotadate"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "salesquota"
       logicalType: "Numeric"
@@ -5022,7 +5022,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salespersonquotahistory/salesquota"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -5033,7 +5033,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salespersonquotahistory/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5044,7 +5044,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salespersonquotahistory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salesreason"
     physicalName: "salesreason"
@@ -5060,7 +5060,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesreason/salesreasonid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -5072,7 +5072,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesreason/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "reasontype"
       logicalType: "Object"
@@ -5084,7 +5084,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesreason/reasontype"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5095,7 +5095,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesreason/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salestaxrate"
     physicalName: "salestaxrate"
@@ -5111,7 +5111,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salestaxrate/salestaxrateid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "stateprovinceid"
       logicalType: "Numeric"
@@ -5123,7 +5123,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salestaxrate/stateprovinceid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "taxtype"
       logicalType: "Numeric"
@@ -5136,7 +5136,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salestaxrate/taxtype"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "taxrate"
       logicalType: "Numeric"
@@ -5148,7 +5148,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salestaxrate/taxrate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -5160,7 +5160,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salestaxrate/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -5171,7 +5171,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salestaxrate/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5182,7 +5182,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salestaxrate/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salesterritory"
     physicalName: "salesterritory"
@@ -5198,7 +5198,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/territoryid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -5210,7 +5210,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "countryregioncode"
       logicalType: "String"
@@ -5222,7 +5222,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/countryregioncode"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "group"
       logicalType: "String"
@@ -5234,7 +5234,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/group"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "salesytd"
       logicalType: "Numeric"
@@ -5246,7 +5246,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/salesytd"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "saleslastyear"
       logicalType: "Numeric"
@@ -5258,7 +5258,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/saleslastyear"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "costytd"
       logicalType: "Numeric"
@@ -5270,7 +5270,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/costytd"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "costlastyear"
       logicalType: "Numeric"
@@ -5282,7 +5282,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/costlastyear"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -5293,7 +5293,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5304,7 +5304,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "salesterritoryhistory"
     physicalName: "salesterritoryhistory"
@@ -5320,7 +5320,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritoryhistory/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "territoryid"
       logicalType: "Numeric"
@@ -5332,7 +5332,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritoryhistory/territoryid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "startdate"
       logicalType: "Timestamp"
@@ -5344,7 +5344,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritoryhistory/startdate"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "enddate"
       logicalType: "Timestamp"
@@ -5356,7 +5356,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritoryhistory/enddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -5367,7 +5367,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritoryhistory/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5378,7 +5378,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/salesterritoryhistory/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "shoppingcartitem"
     physicalName: "shoppingcartitem"
@@ -5395,7 +5395,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shoppingcartitem/shoppingcartitemid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "shoppingcartid"
       logicalType: "String"
@@ -5407,7 +5407,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shoppingcartitem/shoppingcartid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "quantity"
       logicalType: "Numeric"
@@ -5419,7 +5419,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shoppingcartitem/quantity"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -5431,7 +5431,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shoppingcartitem/productid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "datecreated"
       logicalType: "Timestamp"
@@ -5443,7 +5443,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shoppingcartitem/datecreated"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5454,7 +5454,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/shoppingcartitem/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "specialoffer"
     physicalName: "specialoffer"
@@ -5470,7 +5470,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/specialofferid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "description"
       logicalType: "String"
@@ -5482,7 +5482,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/description"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "discountpct"
       logicalType: "Numeric"
@@ -5494,7 +5494,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/discountpct"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "type"
       logicalType: "String"
@@ -5506,7 +5506,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/type"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "category"
       logicalType: "String"
@@ -5518,7 +5518,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/category"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "startdate"
       logicalType: "Timestamp"
@@ -5530,7 +5530,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/startdate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "enddate"
       logicalType: "Timestamp"
@@ -5542,7 +5542,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/enddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "minqty"
       logicalType: "Numeric"
@@ -5554,7 +5554,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/minqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "maxqty"
       logicalType: "Numeric"
@@ -5566,7 +5566,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/maxqty"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -5577,7 +5577,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5588,7 +5588,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialoffer/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "specialofferproduct"
     physicalName: "specialofferproduct"
@@ -5604,7 +5604,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialofferproduct/specialofferid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "productid"
       logicalType: "Numeric"
@@ -5616,7 +5616,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialofferproduct/productid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -5627,7 +5627,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialofferproduct/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5638,7 +5638,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/specialofferproduct/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
   - table: "store"
     physicalName: "store"
@@ -5654,7 +5654,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/store/businessentityid"
       criticalDataElementStatus: false
-      primary: true
+      primaryKey: true
       nullable: false
     - column: "name"
       logicalType: "Object"
@@ -5666,7 +5666,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/store/name"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "salespersonid"
       logicalType: "Numeric"
@@ -5679,7 +5679,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/store/salespersonid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "demographics"
       logicalType: "XML"
@@ -5692,7 +5692,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/store/demographics"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "rowguid"
       logicalType: "UUID"
@@ -5703,7 +5703,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/store/rowguid"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
     - column: "modifieddate"
       logicalType: "Timestamp"
@@ -5714,7 +5714,7 @@ dataset:
       - type: "implementation"
         url: "jdbc:postgresql://localhost:5432/adventureworks/store/modifieddate"
       criticalDataElementStatus: false
-      primary: false
+      primaryKey: false
       nullable: false
 contractCreatedTs: "2023-09-28 20:24:49.331 UTC"
 
