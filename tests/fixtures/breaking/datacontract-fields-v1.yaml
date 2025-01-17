@@ -15,7 +15,7 @@ models:
         type: string
       field_required:
         type: string
-      field_primary:
+      field_primaryKey:
         type: string
       field_references:
         type: string

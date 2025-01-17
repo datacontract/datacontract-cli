@@ -18,7 +18,7 @@ models:
       field_required:
         type: string
         required: false
-      field_primary:
+      field_primaryKey:
         type: string
         primaryKey: false
       field_references:

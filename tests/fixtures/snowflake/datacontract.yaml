@@ -45,6 +45,12 @@ models:
         type: text
         format: email
         required: true
+      PROCESSING_TIMESTAMP:
+        description: The processing timestamp in the current session’s time zone.
+        type: timestamp
+        required: true
+        config:
+          snowflakeType: TIMESTAMP_LTZ
   line_items:
     description: A single article that is part of an order.
     type: table

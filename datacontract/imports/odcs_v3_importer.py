@@ -265,7 +265,7 @@ def import_fields(
                 type=mapped_type,
                 title=odcs_property.get("businessName"),
                 required=not odcs_property.get("nullable") if odcs_property.get("nullable") is not None else False,
-                primary=odcs_property.get("primaryKey")
+                primaryKey=odcs_property.get("primaryKey")
                 if not has_composite_primary_key(odcs_properties) and odcs_property.get("primaryKey") is not None
                 else False,
                 unique=odcs_property.get("unique"),
