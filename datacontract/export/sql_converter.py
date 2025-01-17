@@ -113,7 +113,7 @@ def _to_sql_table(model_name, model, server_type="snowflake"):
         result += f"  {field_name} {type}"
         if field.required:
             result += " not null"
-        if field.primary:
+        if field.primaryKey or field.primary:
             result += " primary key"
         if server_type == "databricks" and field.description is not None:
             result += f' COMMENT "{_escape(field.description)}"'
