@@ -141,7 +141,6 @@ class Quality(pyd.BaseModel):
 
 class Field(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
-    ref_obj: Definition = pyd.Field(default=None, exclude=True)
     title: str | None = None
     type: str = None
     format: str = None

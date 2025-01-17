@@ -54,6 +54,64 @@ def test_resolve_data_contract_complex_definition():
     assert datacontract.models["orders"].fields["order_id"].type == "int"
 
 
+def test_resolve_data_contract_array_definition():
+    datacontract = resolve_data_contract(
+        data_contract_str="""
+    dataContractSpecification: 1.1.0
+    id: my-id
+    info:
+      title: My Title
+      version: 1.0.0
+    models:
+      my_message:
+        fields:
+          my_data:
+            type: array
+            items:
+              name: My Data
+              type: object
+              fields:
+                data_id:
+                  $ref: "#/definitions/order_id"
+                  required: true
+    definitions:
+      order_id:
+        name: order_id
+        type: int
+    """,
+        inline_definitions=True,
+    )
+    assert datacontract.models["my_message"].fields["my_data"].items.fields["data_id"].type == "int"
+
+
+def test_resolve_data_contract_nested_definition():
+    datacontract = resolve_data_contract(
+        data_contract_str="""
+    dataContractSpecification: 1.1.0
+    id: my-id
+    info:
+      title: My Title
+      version: 1.0.0
+    models:
+      my_message:
+        fields:
+          my_data:
+            name: My Data
+            type: object
+            fields:
+              data_id:
+                $ref: "#/definitions/order_id"
+                required: true
+    definitions:
+      order_id:
+        name: order_id
+        type: int
+    """,
+        inline_definitions=True,
+    )
+    assert datacontract.models["my_message"].fields["my_data"].fields["data_id"].type == "int"
+
+
 def test_resolve_data_contract_simple_definition_file():
     with tempfile.NamedTemporaryFile(delete=True) as temp_file:
         # create temp file with content
