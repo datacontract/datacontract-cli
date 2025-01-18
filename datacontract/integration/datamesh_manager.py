@@ -58,13 +58,11 @@ def publish_data_contract_to_datamesh_manager(
                 "Cannot publish data contract, as neither DATAMESH_MANAGER_API_KEY nor DATACONTRACT_MANAGER_API_KEY is set"
             )
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
-        spec = data_contract_dict
-        id = spec["id"]
+        id = data_contract_dict["id"]
         url = f"{host}/api/datacontracts/{id}"
-        request_body = spec
         response = requests.put(
             url=url,
-            data=request_body,
+            json=data_contract_dict,
             headers=headers,
             verify=ssl_verification,
         )
