@@ -1,6 +1,6 @@
+import os
 import re
 import subprocess
-import os
 from pathlib import Path
 
 # File path to your markdown file
