@@ -27,11 +27,12 @@ servers:
         description: Access to the data for US region
 models:
   orders:
-    title: orders
+    title: Webshop Orders
     type: table
     description: The orders model
     primaryKey:
     - order_id
+    customModelProperty1: customModelProperty1Value
     fields:
       order_id:
         title: Order ID
@@ -48,6 +49,7 @@ models:
         examples:
           - B12345678
           - B12345679
+        customFieldProperty1: customFieldProperty1Value
       order_total:
         type: bigint
         required: true
