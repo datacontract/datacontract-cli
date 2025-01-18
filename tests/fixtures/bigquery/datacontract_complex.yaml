@@ -1,0 +1,45 @@
+dataContractSpecification: 1.1.0
+id: bigquery
+info:
+  title: bigquery
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  my-dataproduct/bigquery:
+    type: bigquery
+    project: datameshexample-product
+    dataset: datacontract_cli
+models:
+  complex_table:
+    type: table
+    fields:
+      some_string:
+        type: string
+      some_record:
+        type: record
+        fields:
+          some_field_1:
+            type: string
+          some_field_2:
+            type: string
+      some_array_of_strings:
+        type: array
+        items:
+          type: string
+      some_array_of_records:
+        type: array
+        items:
+          type: record
+          fields:
+            some_other_field_1:
+              type: string
+            some_other_field_2:
+              type: string
+      some_json:
+        type: text
+        config:
+          bigqueryType: json
+      some_range_of_timestamp:
+        type: record
+        config:
+          bigqueryType: RANGE<TIMESTAMP>

@@ -11,19 +11,19 @@ models:
       lines_item_id:
         type: text
         required: true
-        primary: true
+        primaryKey: true
         unique: true
         description: Primary key of the lines_item_id table
       order_id:
         type: text
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         references: orders.order_id
         description: An internal ID that identifies an order in the online shop.
       sku:
         type: text
         required: false
-        primary: false
+        primaryKey: false
         unique: false
         description: The purchased article number

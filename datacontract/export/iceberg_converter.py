@@ -105,14 +105,14 @@ def make_field(field_name, field):
     # Note 2: field_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values.
     # also, the Iceberg sdk catalog code will re-set the fieldIDs prior to executing any table operations on the schema
     # ref: https://github.com/apache/iceberg-python/pull/1072
-    return types.NestedField(field_id=0, name=field_name, field_type=field_type, required=field.required)
+    return types.NestedField(field_id=0, name=field_name, field_type=field_type, required=field.required is True)
 
 
 def make_list(item):
     field_type = get_field_type(item)
 
     # element_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values (see #make_field)
-    return types.ListType(element_id=0, element_type=field_type, element_required=item.required)
+    return types.ListType(element_id=0, element_type=field_type, element_required=item.required is True)
 
 
 def make_map(field):
@@ -121,7 +121,7 @@ def make_map(field):
 
     # key_id and value_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values (see #make_field)
     return types.MapType(
-        key_id=0, key_type=key_type, value_id=0, value_type=value_type, value_required=field.values.required
+        key_id=0, key_type=key_type, value_id=0, value_type=value_type, value_required=field.values.required is True
     )
 
 

@@ -32,7 +32,7 @@ def to_checks(model_key, model_value, server_type: str, check_types: bool):
     checks = []
     fields = model_value.fields
 
-    quote_field_name = server_type in ["postgres"]
+    quote_field_name = server_type in ["postgres", "sqlserver"]
 
     for field_name, field in fields.items():
         checks.append(check_field_is_present(field_name))

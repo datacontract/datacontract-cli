@@ -1,7 +1,5 @@
 import logging
 
-from soda.scan import Scan
-
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 from datacontract.engines.soda.connections.databricks import to_databricks_soda_configuration
 from datacontract.engines.soda.connections.duckdb import get_duckdb_connection
@@ -16,6 +14,11 @@ from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
 def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark, tmp_dir):
+    from soda.common.config_helper import ConfigHelper
+
+    ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
+    from soda.scan import Scan
+
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return
@@ -25,6 +28,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
 
     if server.type in ["s3", "gcs", "azure", "local"]:
         if server.format in ["json", "parquet", "csv", "delta"]:
+            run.log_info(f"Configuring engine soda-core to connect to {server.type} {server.format} with duckdb")
             con = get_duckdb_connection(data_contract, server, run)
             scan.add_duckdb_connection(duckdb_connection=con, data_source_name=server.type)
             scan.set_data_source_name(server.type)
@@ -54,11 +58,12 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         scan.set_data_source_name(server.type)
     elif server.type == "databricks":
         if spark is not None:
-            logging.info("Use Spark to connect to data source")
+            run.log_info("Connecting to databricks via spark")
             scan.add_spark_session(spark, data_source_name=server.type)
             scan.set_data_source_name(server.type)
             spark.sql(f"USE {server.catalog}.{server.schema_}")
         else:
+            run.log_info("Connecting to databricks directly")
             soda_configuration_str = to_databricks_soda_configuration(server)
             scan.add_configuration_yaml_str(soda_configuration_str)
             scan.set_data_source_name(server.type)
@@ -183,4 +188,4 @@ def update_reason(check, c):
                 # print(check.reason)
             break  # Exit the loop once the desired block is found
     if "fail" in c["diagnostics"]:
-        check.reason = f"Value: {c['diagnostics']['value']} Fails`: {c['diagnostics']['fail']}"
+        check.reason = f"Value: {c['diagnostics']['value']} Fail: {c['diagnostics']['fail']}"

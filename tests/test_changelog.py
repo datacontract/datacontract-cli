@@ -101,7 +101,7 @@ def test_models_added():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "3 changes: 0 error, 0 warning, 3 info\n" in output
+    assert "4 changes: 0 error, 0 warning, 4 info\n" in output
     assert (
         """info    [model_added] at ./fixtures/breaking/datacontract-models-v2.yaml
         in models.my_table_2
@@ -136,7 +136,7 @@ def test_models_removed():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "3 changes: 1 error, 0 warning, 2 info\n" in output
+    assert "4 changes: 1 error, 0 warning, 3 info\n" in output
     assert (
         r"""error   [model_removed] at ./fixtures/breaking/datacontract-models-v1.yaml
         in models.my_table_2
@@ -214,7 +214,7 @@ def test_fields_added():
     )
     assert result.exit_code == 0
     output = result.stdout
-    assert "20 changes: 0 error, 15 warning, 5 info\n" in output
+    assert "22 changes: 0 error, 15 warning, 7 info\n" in output
     assert (
         """info    [field_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
         in models.my_table.fields.new_field
@@ -353,7 +353,7 @@ def test_fields_removed():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "20 changes: 5 error, 11 warning, 4 info\n" in output
+    assert "22 changes: 5 error, 11 warning, 6 info\n" in output
     assert (
         r"""warning [field_type_removed] at ./fixtures/breaking/datacontract-fields-v1.yaml
         in models.my_table.fields.field_type.type
@@ -516,9 +516,9 @@ def test_fields_updated():
         in output
     )
     assert (
-        """warning [field_primary_updated] at 
+        """warning [field_primary_key_updated] at 
 ./fixtures/breaking/datacontract-fields-v3.yaml
-        in models.my_table.fields.field_primary.primary
+        in models.my_table.fields.field_primaryKey.primaryKey
             changed from `false` to `true`"""
         in output
     )
@@ -651,7 +651,7 @@ def test_definition_added():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "17 changes: 0 error, 13 warning, 4 info\n" in output
+    assert "18 changes: 0 error, 13 warning, 5 info\n" in output
     assert (
         r"""warning [field_ref_added] at 
 ./fixtures/breaking/datacontract-definitions-v2.yaml
@@ -778,7 +778,7 @@ def test_definition_removed():
     output = result.stdout
 
     assert result.exit_code == 0
-    assert "17 changes: 3 error, 9 warning, 5 info\n" in output
+    assert "18 changes: 3 error, 9 warning, 6 info\n" in output
     assert (
         r"""warning [field_ref_removed] at 
 ./fixtures/breaking/datacontract-definitions-v1.yaml

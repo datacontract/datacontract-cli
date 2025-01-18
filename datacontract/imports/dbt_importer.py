@@ -3,7 +3,7 @@ from typing import TypedDict
 
 from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
-from dbt.contracts.graph.nodes import GenericTestNode
+from dbt.contracts.graph.nodes import GenericTestNode, ManifestNode, ModelNode
 from dbt_common.contracts.constraints import ConstraintType
 
 from datacontract.imports.bigquery_importer import map_type_from_bigquery
@@ -51,6 +51,46 @@ def read_dbt_manifest(manifest_path: str) -> Manifest:
     return manifest
 
 
+def _get_primary_keys(manifest: Manifest, node: ManifestNode) -> list[str]:
+    node_unique_id = node.unique_id
+    if isinstance(node, ModelNode):
+        test_nodes = []
+        for node_id in manifest.child_map.get(node_unique_id, []):
+            test_node = manifest.nodes.get(node_id)
+            if not test_node or test_node.resource_type != "test":
+                continue
+            if not isinstance(test_node, GenericTestNode):
+                continue
+            if test_node.config.where is not None:
+                continue
+            test_nodes.append(test_node)
+        return node.infer_primary_key(test_nodes)
+    return []
+
+
+def _get_references(manifest: Manifest, node: ManifestNode) -> dict[str, str]:
+    node_unique_id = node.unique_id
+    references = {}
+    for node_id in manifest.child_map.get(node_unique_id, []):
+        test_node = manifest.nodes.get(node_id)
+        if not test_node or test_node.resource_type != "test":
+            continue
+        if not isinstance(test_node, GenericTestNode):
+            continue
+        if test_node.test_metadata.name != "relationships":
+            continue
+        if test_node.config.where is not None:
+            continue
+        if test_node.attached_node != node_unique_id:
+            continue
+        relationship_target_node_id = [n for n in test_node.depends_on.nodes if n != node_unique_id][0]
+        relationship_target_node = manifest.nodes.get(relationship_target_node_id)
+        references[f"{node.name}.{test_node.column_name}"] = (
+            f"""{relationship_target_node.name}.{test_node.test_metadata.kwargs["field"]}"""
+        )
+    return references
+
+
 def import_dbt_manifest(
     data_contract_specification: DataContractSpecification,
     manifest: Manifest,
@@ -65,28 +105,40 @@ def import_dbt_manifest(
     data_contract_specification.info.dbt_version = manifest.metadata.dbt_version
     adapter_type = manifest.metadata.adapter_type
     data_contract_specification.models = data_contract_specification.models or {}
-    for model_contents in manifest.nodes.values():
+    for node in manifest.nodes.values():
         # Only intressted in processing models.
-        if model_contents.resource_type not in resource_types:
+        if node.resource_type not in resource_types:
             continue
 
         # To allow args stored in dbt_models to filter relevant models.
         # If dbt_models is empty, use all models.
-        if dbt_nodes and model_contents.name not in dbt_nodes:
+        if dbt_nodes and node.name not in dbt_nodes:
             continue
 
+        model_unique_id = node.unique_id
+        primary_keys = _get_primary_keys(manifest, node)
+        references = _get_references(manifest, node)
+
+        primary_key = None
+        if len(primary_keys) == 1:
+            primary_key = primary_keys[0]
+
         dc_model = Model(
-            description=model_contents.description,
-            tags=model_contents.tags,
+            description=node.description,
+            tags=node.tags,
             fields=create_fields(
                 manifest,
-                model_unique_id=model_contents.unique_id,
-                columns=model_contents.columns,
+                model_unique_id=model_unique_id,
+                columns=node.columns,
+                primary_key_name=primary_key,
+                references=references,
                 adapter_type=adapter_type,
             ),
         )
+        if len(primary_keys) > 1:
+            dc_model.primaryKey = primary_keys
 
-        data_contract_specification.models[model_contents.name] = dc_model
+        data_contract_specification.models[node.name] = dc_model
 
     return data_contract_specification
 
@@ -98,9 +150,17 @@ def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
 
 
 def create_fields(
-    manifest: Manifest, model_unique_id: str, columns: dict[str, ColumnInfo], adapter_type: str
+    manifest: Manifest,
+    model_unique_id: str,
+    columns: dict[str, ColumnInfo],
+    primary_key_name: str,
+    references: dict[str, str],
+    adapter_type: str,
 ) -> dict[str, Field]:
-    fields = {column.name: create_field(manifest, model_unique_id, column, adapter_type) for column in columns.values()}
+    fields = {
+        column.name: create_field(manifest, model_unique_id, column, primary_key_name, references, adapter_type)
+        for column in columns.values()
+    }
     return fields
 
 
@@ -137,7 +197,14 @@ def get_column_tests(manifest: Manifest, model_name: str, column_name: str) -> l
     return column_tests
 
 
-def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, adapter_type: str) -> Field:
+def create_field(
+    manifest: Manifest,
+    model_unique_id: str,
+    column: ColumnInfo,
+    primary_key_name: str,
+    references: dict[str, str],
+    adapter_type: str,
+) -> Field:
     column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else ""
     field = Field(
         description=column.description,
@@ -162,5 +229,12 @@ def create_field(manifest: Manifest, model_unique_id: str, column: ColumnInfo, a
         unique = True
     if unique:
         field.unique = unique
+
+    if column.name == primary_key_name:
+        field.primaryKey = True
+
+    references_key = f"{manifest.nodes[model_unique_id].name}.{column.name}"
+    if references_key in references:
+        field.references = references[references_key]
 
     return field

@@ -13,7 +13,7 @@ models:
       departmentid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Department records.
         classification: ''
         config:
@@ -23,7 +23,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Name of the department.
         classification: ''
         config:
@@ -33,7 +33,7 @@ models:
       groupname:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Name of the group to which the department belongs.
         classification: ''
         config:
@@ -43,7 +43,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -57,7 +57,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Employee records.  Foreign key to BusinessEntity.BusinessEntityID.
         classification: ''
         config:
@@ -67,7 +67,7 @@ models:
       nationalidnumber:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Unique national identification number such as a social security
           number.
         classification: ''
@@ -78,7 +78,7 @@ models:
       loginid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Network login.
         classification: ''
         config:
@@ -88,7 +88,7 @@ models:
       jobtitle:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Work title such as Buyer or Sales Representative.
         classification: ''
         config:
@@ -98,7 +98,7 @@ models:
       birthdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date of birth.
         classification: ''
         config:
@@ -108,7 +108,7 @@ models:
       maritalstatus:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: M = Married, S = Single
         classification: ''
         config:
@@ -118,7 +118,7 @@ models:
       gender:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: M = Male, F = Female
         classification: ''
         config:
@@ -128,7 +128,7 @@ models:
       hiredate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Employee hired on this date.
         classification: ''
         config:
@@ -138,7 +138,7 @@ models:
       salariedflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Job classification. 0 = Hourly, not exempt from collective bargaining.
           1 = Salaried, exempt from collective bargaining.
         classification: ''
@@ -149,7 +149,7 @@ models:
       vacationhours:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Number of available vacation hours.
         classification: ''
         config:
@@ -159,7 +159,7 @@ models:
       sickleavehours:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Number of available sick leave hours.
         classification: ''
         config:
@@ -169,7 +169,7 @@ models:
       currentflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Inactive, 1 = Active
         classification: ''
         config:
@@ -179,7 +179,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -188,7 +188,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -197,7 +197,7 @@ models:
       organizationnode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Where the employee is located in corporate hierarchy.
         classification: ''
         config:
@@ -212,7 +212,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Employee identification number. Foreign key to Employee.BusinessEntityID.
         classification: ''
         config:
@@ -222,7 +222,7 @@ models:
       departmentid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Department in which the employee worked including currently.
           Foreign key to Department.DepartmentID.
         classification: ''
@@ -233,7 +233,7 @@ models:
       shiftid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Identifies which 8-hour shift the employee works. Foreign key
           to Shift.Shift.ID.
         classification: ''
@@ -244,7 +244,7 @@ models:
       startdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the employee started work in the department.
         classification: ''
         config:
@@ -254,7 +254,7 @@ models:
       enddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the employee left the department. NULL = Current department.
         classification: ''
         config:
@@ -264,7 +264,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -278,7 +278,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Employee identification number. Foreign key to Employee.BusinessEntityID.
         classification: ''
         config:
@@ -288,7 +288,7 @@ models:
       ratechangedate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the change in pay is effective
         classification: ''
         config:
@@ -298,7 +298,7 @@ models:
       rate:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Salary hourly rate.
         classification: ''
         config:
@@ -308,7 +308,7 @@ models:
       payfrequency:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: 1 = Salary received monthly, 2 = Salary received biweekly
         classification: ''
         config:
@@ -318,7 +318,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -332,7 +332,7 @@ models:
       jobcandidateid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for JobCandidate records.
         classification: ''
         config:
@@ -342,7 +342,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Employee identification number if applicant was hired. Foreign
           key to Employee.BusinessEntityID.
         classification: ''
@@ -353,7 +353,7 @@ models:
       resume:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: RÃ©sumÃ© in XML format.
         classification: ''
         config:
@@ -363,7 +363,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -377,7 +377,7 @@ models:
       shiftid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Shift records.
         classification: ''
         config:
@@ -387,7 +387,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Shift description.
         classification: ''
         config:
@@ -397,7 +397,7 @@ models:
       starttime:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Shift start time.
         classification: ''
         config:
@@ -407,7 +407,7 @@ models:
       endtime:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Shift end time.
         classification: ''
         config:
@@ -417,7 +417,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -431,7 +431,7 @@ models:
       addressid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Address records.
         classification: ''
         config:
@@ -441,7 +441,7 @@ models:
       addressline1:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: First street address line.
         classification: ''
         config:
@@ -451,7 +451,7 @@ models:
       addressline2:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Second street address line.
         classification: ''
         config:
@@ -461,7 +461,7 @@ models:
       city:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Name of the city.
         classification: ''
         config:
@@ -471,7 +471,7 @@ models:
       stateprovinceid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Unique identification number for the state or province. Foreign
           key to StateProvince table.
         classification: ''
@@ -482,7 +482,7 @@ models:
       postalcode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Postal code for the street address.
         classification: ''
         config:
@@ -492,7 +492,7 @@ models:
       spatiallocation:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Latitude and longitude of this address.
         classification: ''
         config:
@@ -502,7 +502,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -511,7 +511,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -525,7 +525,7 @@ models:
       addresstypeid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for AddressType records.
         classification: ''
         config:
@@ -535,7 +535,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Address type description. For example, Billing, Home, or Shipping.
         classification: ''
         config:
@@ -545,7 +545,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -554,7 +554,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -569,7 +569,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for all customers, vendors, and employees.
         classification: ''
         config:
@@ -579,7 +579,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -588,7 +588,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -603,7 +603,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
         classification: ''
         config:
@@ -613,7 +613,7 @@ models:
       addressid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to Address.AddressID.
         classification: ''
         config:
@@ -623,7 +623,7 @@ models:
       addresstypeid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to AddressType.AddressTypeID.
         classification: ''
         config:
@@ -633,7 +633,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -642,7 +642,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -656,7 +656,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
         classification: ''
         config:
@@ -666,7 +666,7 @@ models:
       personid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to Person.BusinessEntityID.
         classification: ''
         config:
@@ -676,7 +676,7 @@ models:
       contacttypeid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key.  Foreign key to ContactType.ContactTypeID.
         classification: ''
         config:
@@ -686,7 +686,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -695,7 +695,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -709,7 +709,7 @@ models:
       contacttypeid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ContactType records.
         classification: ''
         config:
@@ -719,7 +719,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Contact type description.
         classification: ''
         config:
@@ -729,7 +729,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -744,7 +744,7 @@ models:
       countryregioncode:
         type: string
         required: false
-        primary: true
+        primaryKey: true
         description: ISO standard code for countries and regions.
         classification: ''
         config:
@@ -754,7 +754,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Country or region name.
         classification: ''
         config:
@@ -764,7 +764,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -778,7 +778,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Person associated with this email address.  Foreign
           key to Person.BusinessEntityID
         classification: ''
@@ -789,7 +789,7 @@ models:
       emailaddressid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. ID of this email address.
         classification: ''
         config:
@@ -799,7 +799,7 @@ models:
       emailaddress:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: E-mail address for the person.
         classification: ''
         config:
@@ -809,7 +809,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -818,7 +818,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -832,7 +832,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         classification: ''
         config:
           criticalDataElement: false
@@ -841,7 +841,7 @@ models:
       passwordhash:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Password for the e-mail account.
         classification: ''
         config:
@@ -851,7 +851,7 @@ models:
       passwordsalt:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Random value concatenated with the password string before the
           password is hashed.
         classification: ''
@@ -862,7 +862,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -871,7 +871,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -886,7 +886,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Person records.
         classification: ''
         config:
@@ -896,7 +896,7 @@ models:
       persontype:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: 'Primary type of person: SC = Store Contact, IN = Individual
           (retail) customer, SP = Sales person, EM = Employee (non-sales), VC = Vendor
           contact, GC = General contact'
@@ -908,7 +908,7 @@ models:
       namestyle:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = The data in FirstName and LastName are stored in western
           style (first name, last name) order.  1 = Eastern style (last name, first
           name) order.
@@ -920,7 +920,7 @@ models:
       title:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: A courtesy title. For example, Mr. or Ms.
         classification: ''
         config:
@@ -930,7 +930,7 @@ models:
       firstname:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: First name of the person.
         classification: ''
         config:
@@ -940,7 +940,7 @@ models:
       middlename:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Middle name or middle initial of the person.
         classification: ''
         config:
@@ -950,7 +950,7 @@ models:
       lastname:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Last name of the person.
         classification: ''
         config:
@@ -960,7 +960,7 @@ models:
       suffix:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Surname suffix. For example, Sr. or Jr.
         classification: ''
         config:
@@ -970,7 +970,7 @@ models:
       emailpromotion:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Contact does not wish to receive e-mail promotions, 1 = Contact
           does wish to receive e-mail promotions from AdventureWorks, 2 = Contact
           does wish to receive e-mail promotions from AdventureWorks and selected
@@ -983,7 +983,7 @@ models:
       additionalcontactinfo:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Additional contact information about the person stored in xml
           format.
         classification: ''
@@ -994,7 +994,7 @@ models:
       demographics:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Personal information such as hobbies, and income collected from
           online shoppers. Used for sales analysis.
         classification: ''
@@ -1005,7 +1005,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1014,7 +1014,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1028,7 +1028,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Business entity identification number. Foreign key to Person.BusinessEntityID.
         classification: ''
         config:
@@ -1038,7 +1038,7 @@ models:
       phonenumber:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Telephone number identification number.
         classification: ''
         config:
@@ -1048,7 +1048,7 @@ models:
       phonenumbertypeid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Kind of phone number. Foreign key to PhoneNumberType.PhoneNumberTypeID.
         classification: ''
         config:
@@ -1058,7 +1058,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1072,7 +1072,7 @@ models:
       phonenumbertypeid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for telephone number type records.
         classification: ''
         config:
@@ -1082,7 +1082,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Name of the telephone number type
         classification: ''
         config:
@@ -1092,7 +1092,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1106,7 +1106,7 @@ models:
       stateprovinceid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for StateProvince records.
         classification: ''
         config:
@@ -1116,7 +1116,7 @@ models:
       stateprovincecode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: ISO standard state or province code.
         classification: ''
         config:
@@ -1126,7 +1126,7 @@ models:
       countryregioncode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
         classification: ''
         config:
@@ -1136,7 +1136,7 @@ models:
       isonlystateprovinceflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = StateProvinceCode exists. 1 = StateProvinceCode unavailable,
           using CountryRegionCode.
         classification: ''
@@ -1147,7 +1147,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: State or province description.
         classification: ''
         config:
@@ -1157,7 +1157,7 @@ models:
       territoryid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: ID of the territory in which the state or province is located.
           Foreign key to SalesTerritory.SalesTerritoryID.
         classification: ''
@@ -1168,7 +1168,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1177,7 +1177,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1192,7 +1192,7 @@ models:
       billofmaterialsid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for BillOfMaterials records.
         classification: ''
         config:
@@ -1202,7 +1202,7 @@ models:
       productassemblyid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Parent product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -1212,7 +1212,7 @@ models:
       componentid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Component identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -1222,7 +1222,7 @@ models:
       startdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the component started being used in the assembly item.
         classification: ''
         config:
@@ -1232,7 +1232,7 @@ models:
       enddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the component stopped being used in the assembly item.
         classification: ''
         config:
@@ -1242,7 +1242,7 @@ models:
       unitmeasurecode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Standard code identifying the unit of measure for the quantity.
         classification: ''
         config:
@@ -1252,7 +1252,7 @@ models:
       bomlevel:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Indicates the depth the component is from its parent (AssemblyID).
         classification: ''
         config:
@@ -1262,7 +1262,7 @@ models:
       perassemblyqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Quantity of the component needed to create the assembly.
         classification: ''
         config:
@@ -1272,7 +1272,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1287,7 +1287,7 @@ models:
       cultureid:
         type: string
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Culture records.
         classification: ''
         config:
@@ -1297,7 +1297,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Culture description.
         classification: ''
         config:
@@ -1307,7 +1307,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1321,7 +1321,7 @@ models:
       title:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Title of the document.
         classification: ''
         config:
@@ -1331,7 +1331,7 @@ models:
       owner:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Employee who controls the document.  Foreign key to Employee.BusinessEntityID
         classification: ''
         config:
@@ -1341,7 +1341,7 @@ models:
       folderflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = This is a folder, 1 = This is a document.
         classification: ''
         config:
@@ -1351,7 +1351,7 @@ models:
       filename:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: File name of the document
         classification: ''
         config:
@@ -1361,7 +1361,7 @@ models:
       fileextension:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: File extension indicating the document type. For example, .doc
           or .txt.
         classification: ''
@@ -1372,7 +1372,7 @@ models:
       revision:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Revision number of the document.
         classification: ''
         config:
@@ -1382,7 +1382,7 @@ models:
       changenumber:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Engineering change approval number.
         classification: ''
         config:
@@ -1392,7 +1392,7 @@ models:
       status:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: 1 = Pending approval, 2 = Approved, 3 = Obsolete
         classification: ''
         config:
@@ -1402,7 +1402,7 @@ models:
       documentsummary:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Document abstract.
         classification: ''
         config:
@@ -1412,7 +1412,7 @@ models:
       document:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Complete document.
         classification: ''
         config:
@@ -1422,7 +1422,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: ROWGUIDCOL number uniquely identifying the record. Required for
           FileStream.
         classification: ''
@@ -1433,7 +1433,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1442,7 +1442,7 @@ models:
       documentnode:
         type: string
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Document records.
         classification: ''
         config:
@@ -1457,7 +1457,7 @@ models:
       illustrationid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Illustration records.
         classification: ''
         config:
@@ -1467,7 +1467,7 @@ models:
       diagram:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Illustrations used in manufacturing instructions. Stored as XML.
         classification: ''
         config:
@@ -1477,7 +1477,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1491,7 +1491,7 @@ models:
       locationid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Location records.
         classification: ''
         config:
@@ -1501,7 +1501,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Location description.
         classification: ''
         config:
@@ -1511,7 +1511,7 @@ models:
       costrate:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Standard hourly cost of the manufacturing location.
         classification: ''
         config:
@@ -1521,7 +1521,7 @@ models:
       availability:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Work capacity (in hours) of the manufacturing location.
         classification: ''
         config:
@@ -1531,7 +1531,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1545,7 +1545,7 @@ models:
       productid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Product records.
         classification: ''
         config:
@@ -1555,7 +1555,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Name of the product.
         classification: ''
         config:
@@ -1565,7 +1565,7 @@ models:
       productnumber:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Unique product identification number.
         classification: ''
         config:
@@ -1575,7 +1575,7 @@ models:
       makeflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Product is purchased, 1 = Product is manufactured in-house.
         classification: ''
         config:
@@ -1585,7 +1585,7 @@ models:
       finishedgoodsflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Product is not a salable item. 1 = Product is salable.
         classification: ''
         config:
@@ -1595,7 +1595,7 @@ models:
       color:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Product color.
         classification: ''
         config:
@@ -1605,7 +1605,7 @@ models:
       safetystocklevel:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Minimum inventory quantity.
         classification: ''
         config:
@@ -1615,7 +1615,7 @@ models:
       reorderpoint:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Inventory level that triggers a purchase order or work order.
         classification: ''
         config:
@@ -1625,7 +1625,7 @@ models:
       standardcost:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Standard cost of the product.
         classification: ''
         config:
@@ -1635,7 +1635,7 @@ models:
       listprice:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Selling price.
         classification: ''
         config:
@@ -1645,7 +1645,7 @@ models:
       size:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Product size.
         classification: ''
         config:
@@ -1655,7 +1655,7 @@ models:
       sizeunitmeasurecode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Unit of measure for Size column.
         classification: ''
         config:
@@ -1665,7 +1665,7 @@ models:
       weightunitmeasurecode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Unit of measure for Weight column.
         classification: ''
         config:
@@ -1675,7 +1675,7 @@ models:
       weight:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product weight.
         classification: ''
         config:
@@ -1685,7 +1685,7 @@ models:
       daystomanufacture:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Number of days required to manufacture the product.
         classification: ''
         config:
@@ -1695,7 +1695,7 @@ models:
       productline:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: R = Road, M = Mountain, T = Touring, S = Standard
         classification: ''
         config:
@@ -1705,7 +1705,7 @@ models:
       class:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: H = High, M = Medium, L = Low
         classification: ''
         config:
@@ -1715,7 +1715,7 @@ models:
       style:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: W = Womens, M = Mens, U = Universal
         classification: ''
         config:
@@ -1725,7 +1725,7 @@ models:
       productsubcategoryid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product is a member of this product subcategory. Foreign key
           to ProductSubCategory.ProductSubCategoryID.
         classification: ''
@@ -1736,7 +1736,7 @@ models:
       productmodelid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product is a member of this product model. Foreign key to ProductModel.ProductModelID.
         classification: ''
         config:
@@ -1746,7 +1746,7 @@ models:
       sellstartdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the product was available for sale.
         classification: ''
         config:
@@ -1756,7 +1756,7 @@ models:
       sellenddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the product was no longer available for sale.
         classification: ''
         config:
@@ -1766,7 +1766,7 @@ models:
       discontinueddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the product was discontinued.
         classification: ''
         config:
@@ -1776,7 +1776,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1785,7 +1785,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1799,7 +1799,7 @@ models:
       productcategoryid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ProductCategory records.
         classification: ''
         config:
@@ -1809,7 +1809,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Category description.
         classification: ''
         config:
@@ -1819,7 +1819,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1828,7 +1828,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1842,7 +1842,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID
         classification: ''
         config:
@@ -1852,7 +1852,7 @@ models:
       startdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Product cost start date.
         classification: ''
         config:
@@ -1862,7 +1862,7 @@ models:
       enddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Product cost end date.
         classification: ''
         config:
@@ -1872,7 +1872,7 @@ models:
       standardcost:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Standard cost of the product.
         classification: ''
         config:
@@ -1882,7 +1882,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1896,7 +1896,7 @@ models:
       productdescriptionid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ProductDescription records.
         classification: ''
         config:
@@ -1906,7 +1906,7 @@ models:
       description:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Description of the product.
         classification: ''
         config:
@@ -1916,7 +1916,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1925,7 +1925,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1939,7 +1939,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -1949,7 +1949,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -1958,7 +1958,7 @@ models:
       documentnode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Document identification number. Foreign key to Document.DocumentNode.
         classification: ''
         config:
@@ -1973,7 +1973,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -1983,7 +1983,7 @@ models:
       locationid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Inventory location identification number. Foreign key to Location.LocationID.
         classification: ''
         config:
@@ -1993,7 +1993,7 @@ models:
       shelf:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Storage compartment within an inventory location.
         classification: ''
         config:
@@ -2003,7 +2003,7 @@ models:
       bin:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Storage container on a shelf in an inventory location.
         classification: ''
         config:
@@ -2013,7 +2013,7 @@ models:
       quantity:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Quantity of products in the inventory location.
         classification: ''
         config:
@@ -2023,7 +2023,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2032,7 +2032,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2046,7 +2046,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID
         classification: ''
         config:
@@ -2056,7 +2056,7 @@ models:
       startdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: List price start date.
         classification: ''
         config:
@@ -2066,7 +2066,7 @@ models:
       enddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: List price end date
         classification: ''
         config:
@@ -2076,7 +2076,7 @@ models:
       listprice:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product list price.
         classification: ''
         config:
@@ -2086,7 +2086,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2100,7 +2100,7 @@ models:
       productmodelid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ProductModel records.
         classification: ''
         config:
@@ -2110,7 +2110,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Product model description.
         classification: ''
         config:
@@ -2120,7 +2120,7 @@ models:
       catalogdescription:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Detailed product catalog information in xml format.
         classification: ''
         config:
@@ -2130,7 +2130,7 @@ models:
       instructions:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Manufacturing instructions in xml format.
         classification: ''
         config:
@@ -2140,7 +2140,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2149,7 +2149,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2163,7 +2163,7 @@ models:
       productmodelid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to ProductModel.ProductModelID.
         classification: ''
         config:
@@ -2173,7 +2173,7 @@ models:
       illustrationid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to Illustration.IllustrationID.
         classification: ''
         config:
@@ -2183,7 +2183,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2198,7 +2198,7 @@ models:
       productmodelid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to ProductModel.ProductModelID.
         classification: ''
         config:
@@ -2208,7 +2208,7 @@ models:
       productdescriptionid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to ProductDescription.ProductDescriptionID.
         classification: ''
         config:
@@ -2218,7 +2218,7 @@ models:
       cultureid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Culture identification number. Foreign key to Culture.CultureID.
         classification: ''
         config:
@@ -2228,7 +2228,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2242,7 +2242,7 @@ models:
       productphotoid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ProductPhoto records.
         classification: ''
         config:
@@ -2252,7 +2252,7 @@ models:
       thumbnailphoto:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Small image of the product.
         classification: ''
         config:
@@ -2262,7 +2262,7 @@ models:
       thumbnailphotofilename:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Small image file name.
         classification: ''
         config:
@@ -2272,7 +2272,7 @@ models:
       largephoto:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Large image of the product.
         classification: ''
         config:
@@ -2282,7 +2282,7 @@ models:
       largephotofilename:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Large image file name.
         classification: ''
         config:
@@ -2292,7 +2292,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2306,7 +2306,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -2316,7 +2316,7 @@ models:
       productphotoid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product photo identification number. Foreign key to ProductPhoto.ProductPhotoID.
         classification: ''
         config:
@@ -2326,7 +2326,7 @@ models:
       primary:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Photo is not the principal image. 1 = Photo is the principal
           image.
         classification: ''
@@ -2337,7 +2337,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2351,7 +2351,7 @@ models:
       productreviewid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ProductReview records.
         classification: ''
         config:
@@ -2361,7 +2361,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -2371,7 +2371,7 @@ models:
       reviewername:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Name of the reviewer.
         classification: ''
         config:
@@ -2381,7 +2381,7 @@ models:
       reviewdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date review was submitted.
         classification: ''
         config:
@@ -2391,7 +2391,7 @@ models:
       emailaddress:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Reviewer's e-mail address.
         classification: ''
         config:
@@ -2401,7 +2401,7 @@ models:
       rating:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product rating given by the reviewer. Scale is 1 to 5 with 5
           as the highest rating.
         classification: ''
@@ -2412,7 +2412,7 @@ models:
       comments:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Reviewer's comments
         classification: ''
         config:
@@ -2422,7 +2422,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2436,7 +2436,7 @@ models:
       productsubcategoryid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ProductSubcategory records.
         classification: ''
         config:
@@ -2446,7 +2446,7 @@ models:
       productcategoryid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product category identification number. Foreign key to ProductCategory.ProductCategoryID.
         classification: ''
         config:
@@ -2456,7 +2456,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Subcategory description.
         classification: ''
         config:
@@ -2466,7 +2466,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2475,7 +2475,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2489,7 +2489,7 @@ models:
       scrapreasonid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ScrapReason records.
         classification: ''
         config:
@@ -2499,7 +2499,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Failure description.
         classification: ''
         config:
@@ -2509,7 +2509,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2524,7 +2524,7 @@ models:
       transactionid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for TransactionHistory records.
         classification: ''
         config:
@@ -2534,7 +2534,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -2544,7 +2544,7 @@ models:
       referenceorderid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Purchase order, sales order, or work order identification number.
         classification: ''
         config:
@@ -2554,7 +2554,7 @@ models:
       referenceorderlineid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Line number associated with the purchase order, sales order,
           or work order.
         classification: ''
@@ -2565,7 +2565,7 @@ models:
       transactiondate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date and time of the transaction.
         classification: ''
         config:
@@ -2575,7 +2575,7 @@ models:
       transactiontype:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: W = WorkOrder, S = SalesOrder, P = PurchaseOrder
         classification: ''
         config:
@@ -2585,7 +2585,7 @@ models:
       quantity:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product quantity.
         classification: ''
         config:
@@ -2595,7 +2595,7 @@ models:
       actualcost:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product cost.
         classification: ''
         config:
@@ -2605,7 +2605,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2619,7 +2619,7 @@ models:
       transactionid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for TransactionHistoryArchive records.
         classification: ''
         config:
@@ -2629,7 +2629,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -2639,7 +2639,7 @@ models:
       referenceorderid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Purchase order, sales order, or work order identification number.
         classification: ''
         config:
@@ -2649,7 +2649,7 @@ models:
       referenceorderlineid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Line number associated with the purchase order, sales order,
           or work order.
         classification: ''
@@ -2660,7 +2660,7 @@ models:
       transactiondate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date and time of the transaction.
         classification: ''
         config:
@@ -2670,7 +2670,7 @@ models:
       transactiontype:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: W = Work Order, S = Sales Order, P = Purchase Order
         classification: ''
         config:
@@ -2680,7 +2680,7 @@ models:
       quantity:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product quantity.
         classification: ''
         config:
@@ -2690,7 +2690,7 @@ models:
       actualcost:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product cost.
         classification: ''
         config:
@@ -2700,7 +2700,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2714,7 +2714,7 @@ models:
       unitmeasurecode:
         type: string
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key.
         classification: ''
         config:
@@ -2724,7 +2724,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Unit of measure description.
         classification: ''
         config:
@@ -2734,7 +2734,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2748,7 +2748,7 @@ models:
       workorderid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for WorkOrder records.
         classification: ''
         config:
@@ -2758,7 +2758,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -2768,7 +2768,7 @@ models:
       orderqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product quantity to build.
         classification: ''
         config:
@@ -2778,7 +2778,7 @@ models:
       scrappedqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Quantity that failed inspection.
         classification: ''
         config:
@@ -2788,7 +2788,7 @@ models:
       startdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Work order start date.
         classification: ''
         config:
@@ -2798,7 +2798,7 @@ models:
       enddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Work order end date.
         classification: ''
         config:
@@ -2808,7 +2808,7 @@ models:
       duedate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Work order due date.
         classification: ''
         config:
@@ -2818,7 +2818,7 @@ models:
       scrapreasonid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Reason for inspection failure.
         classification: ''
         config:
@@ -2828,7 +2828,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2842,7 +2842,7 @@ models:
       workorderid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to WorkOrder.WorkOrderID.
         classification: ''
         config:
@@ -2852,7 +2852,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -2862,7 +2862,7 @@ models:
       operationsequence:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Indicates the manufacturing process sequence.
         classification: ''
         config:
@@ -2872,7 +2872,7 @@ models:
       locationid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Manufacturing location where the part is processed. Foreign key
           to Location.LocationID.
         classification: ''
@@ -2883,7 +2883,7 @@ models:
       scheduledstartdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Planned manufacturing start date.
         classification: ''
         config:
@@ -2893,7 +2893,7 @@ models:
       scheduledenddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Planned manufacturing end date.
         classification: ''
         config:
@@ -2903,7 +2903,7 @@ models:
       actualstartdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Actual start date.
         classification: ''
         config:
@@ -2913,7 +2913,7 @@ models:
       actualenddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Actual end date.
         classification: ''
         config:
@@ -2923,7 +2923,7 @@ models:
       actualresourcehrs:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Number of manufacturing hours used.
         classification: ''
         config:
@@ -2933,7 +2933,7 @@ models:
       plannedcost:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Estimated manufacturing cost.
         classification: ''
         config:
@@ -2943,7 +2943,7 @@ models:
       actualcost:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Actual manufacturing cost.
         classification: ''
         config:
@@ -2953,7 +2953,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -2967,7 +2967,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -2977,7 +2977,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to Vendor.BusinessEntityID.
         classification: ''
         config:
@@ -2987,7 +2987,7 @@ models:
       averageleadtime:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: The average span of time (in days) between placing an order with
           the vendor and receiving the purchased product.
         classification: ''
@@ -2998,7 +2998,7 @@ models:
       standardprice:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: The vendor's usual selling price.
         classification: ''
         config:
@@ -3008,7 +3008,7 @@ models:
       lastreceiptcost:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: The selling price when last purchased.
         classification: ''
         config:
@@ -3018,7 +3018,7 @@ models:
       lastreceiptdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the product was last received by the vendor.
         classification: ''
         config:
@@ -3028,7 +3028,7 @@ models:
       minorderqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: The maximum quantity that should be ordered.
         classification: ''
         config:
@@ -3038,7 +3038,7 @@ models:
       maxorderqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: The minimum quantity that should be ordered.
         classification: ''
         config:
@@ -3048,7 +3048,7 @@ models:
       onorderqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: The quantity currently on order.
         classification: ''
         config:
@@ -3058,7 +3058,7 @@ models:
       unitmeasurecode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: The product's unit of measure.
         classification: ''
         config:
@@ -3068,7 +3068,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3083,7 +3083,7 @@ models:
       purchaseorderid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to PurchaseOrderHeader.PurchaseOrderID.
         classification: ''
         config:
@@ -3093,7 +3093,7 @@ models:
       purchaseorderdetailid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. One line number per purchased product.
         classification: ''
         config:
@@ -3103,7 +3103,7 @@ models:
       duedate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the product is expected to be received.
         classification: ''
         config:
@@ -3113,7 +3113,7 @@ models:
       orderqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Quantity ordered.
         classification: ''
         config:
@@ -3123,7 +3123,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -3133,7 +3133,7 @@ models:
       unitprice:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Vendor's selling price of a single product.
         classification: ''
         config:
@@ -3143,7 +3143,7 @@ models:
       receivedqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Quantity actually received from the vendor.
         classification: ''
         config:
@@ -3153,7 +3153,7 @@ models:
       rejectedqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Quantity rejected during inspection.
         classification: ''
         config:
@@ -3163,7 +3163,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3177,7 +3177,7 @@ models:
       purchaseorderid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key.
         classification: ''
         config:
@@ -3187,7 +3187,7 @@ models:
       revisionnumber:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Incremental number to track changes to the purchase order over
           time.
         classification: ''
@@ -3198,7 +3198,7 @@ models:
       status:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Order current status. 1 = Pending; 2 = Approved; 3 = Rejected;
           4 = Complete
         classification: ''
@@ -3209,7 +3209,7 @@ models:
       employeeid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Employee who created the purchase order. Foreign key to Employee.BusinessEntityID.
         classification: ''
         config:
@@ -3219,7 +3219,7 @@ models:
       vendorid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Vendor with whom the purchase order is placed. Foreign key to
           Vendor.BusinessEntityID.
         classification: ''
@@ -3230,7 +3230,7 @@ models:
       shipmethodid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
         classification: ''
         config:
@@ -3240,7 +3240,7 @@ models:
       orderdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Purchase order creation date.
         classification: ''
         config:
@@ -3250,7 +3250,7 @@ models:
       shipdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Estimated shipment date from the vendor.
         classification: ''
         config:
@@ -3260,7 +3260,7 @@ models:
       subtotal:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Purchase order subtotal. Computed as SUM(PurchaseOrderDetail.LineTotal)for
           the appropriate PurchaseOrderID.
         classification: ''
@@ -3271,7 +3271,7 @@ models:
       taxamt:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Tax amount.
         classification: ''
         config:
@@ -3281,7 +3281,7 @@ models:
       freight:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Shipping cost.
         classification: ''
         config:
@@ -3291,7 +3291,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3305,7 +3305,7 @@ models:
       shipmethodid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ShipMethod records.
         classification: ''
         config:
@@ -3315,7 +3315,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Shipping company name.
         classification: ''
         config:
@@ -3325,7 +3325,7 @@ models:
       shipbase:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Minimum shipping charge.
         classification: ''
         config:
@@ -3335,7 +3335,7 @@ models:
       shiprate:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Shipping charge per pound.
         classification: ''
         config:
@@ -3345,7 +3345,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3354,7 +3354,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3369,7 +3369,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for Vendor records.  Foreign key to BusinessEntity.BusinessEntityID
         classification: ''
         config:
@@ -3379,7 +3379,7 @@ models:
       accountnumber:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Vendor account (identification) number.
         classification: ''
         config:
@@ -3389,7 +3389,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Company name.
         classification: ''
         config:
@@ -3399,7 +3399,7 @@ models:
       creditrating:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: 1 = Superior, 2 = Excellent, 3 = Above average, 4 = Average,
           5 = Below average
         classification: ''
@@ -3410,7 +3410,7 @@ models:
       preferredvendorstatus:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Do not use if another vendor is available. 1 = Preferred
           over other vendors supplying the same product.
         classification: ''
@@ -3421,7 +3421,7 @@ models:
       activeflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Vendor no longer used. 1 = Vendor is actively used.
         classification: ''
         config:
@@ -3431,7 +3431,7 @@ models:
       purchasingwebserviceurl:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Vendor URL.
         classification: ''
         config:
@@ -3441,7 +3441,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3456,7 +3456,7 @@ models:
       countryregioncode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: ISO code for countries and regions. Foreign key to CountryRegion.CountryRegionCode.
         classification: ''
         config:
@@ -3466,7 +3466,7 @@ models:
       currencycode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: ISO standard currency code. Foreign key to Currency.CurrencyCode.
         classification: ''
         config:
@@ -3476,7 +3476,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3490,7 +3490,7 @@ models:
       creditcardid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for CreditCard records.
         classification: ''
         config:
@@ -3500,7 +3500,7 @@ models:
       cardtype:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Credit card name.
         classification: ''
         config:
@@ -3510,7 +3510,7 @@ models:
       cardnumber:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Credit card number.
         classification: ''
         config:
@@ -3520,7 +3520,7 @@ models:
       expmonth:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Credit card expiration month.
         classification: ''
         config:
@@ -3530,7 +3530,7 @@ models:
       expyear:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Credit card expiration year.
         classification: ''
         config:
@@ -3540,7 +3540,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3554,7 +3554,7 @@ models:
       currencycode:
         type: string
         required: false
-        primary: true
+        primaryKey: true
         description: The ISO code for the Currency.
         classification: ''
         config:
@@ -3564,7 +3564,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Currency name.
         classification: ''
         config:
@@ -3574,7 +3574,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3588,7 +3588,7 @@ models:
       currencyrateid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for CurrencyRate records.
         classification: ''
         config:
@@ -3598,7 +3598,7 @@ models:
       currencyratedate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date and time the exchange rate was obtained.
         classification: ''
         config:
@@ -3608,7 +3608,7 @@ models:
       fromcurrencycode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Exchange rate was converted from this currency code.
         classification: ''
         config:
@@ -3618,7 +3618,7 @@ models:
       tocurrencycode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Exchange rate was converted to this currency code.
         classification: ''
         config:
@@ -3628,7 +3628,7 @@ models:
       averagerate:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Average exchange rate for the day.
         classification: ''
         config:
@@ -3638,7 +3638,7 @@ models:
       endofdayrate:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Final exchange rate for the day.
         classification: ''
         config:
@@ -3648,7 +3648,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3662,7 +3662,7 @@ models:
       customerid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key.
         classification: ''
         config:
@@ -3672,7 +3672,7 @@ models:
       personid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Foreign key to Person.BusinessEntityID
         classification: ''
         config:
@@ -3682,7 +3682,7 @@ models:
       storeid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Foreign key to Store.BusinessEntityID
         classification: ''
         config:
@@ -3692,7 +3692,7 @@ models:
       territoryid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: ID of the territory in which the customer is located. Foreign
           key to SalesTerritory.SalesTerritoryID.
         classification: ''
@@ -3703,7 +3703,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3712,7 +3712,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3727,7 +3727,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Business entity identification number. Foreign key to Person.BusinessEntityID.
         classification: ''
         config:
@@ -3737,7 +3737,7 @@ models:
       creditcardid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
         classification: ''
         config:
@@ -3747,7 +3747,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3761,7 +3761,7 @@ models:
       salesorderid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
         classification: ''
         config:
@@ -3771,7 +3771,7 @@ models:
       salesorderdetailid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. One incremental unique number per product sold.
         classification: ''
         config:
@@ -3781,7 +3781,7 @@ models:
       carriertrackingnumber:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Shipment tracking number supplied by the shipper.
         classification: ''
         config:
@@ -3791,7 +3791,7 @@ models:
       orderqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Quantity ordered per product.
         classification: ''
         config:
@@ -3801,7 +3801,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product sold to customer. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -3811,7 +3811,7 @@ models:
       specialofferid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Promotional code. Foreign key to SpecialOffer.SpecialOfferID.
         classification: ''
         config:
@@ -3821,7 +3821,7 @@ models:
       unitprice:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Selling price of a single product.
         classification: ''
         config:
@@ -3831,7 +3831,7 @@ models:
       unitpricediscount:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Discount amount.
         classification: ''
         config:
@@ -3841,7 +3841,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3850,7 +3850,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -3864,7 +3864,7 @@ models:
       salesorderid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key.
         classification: ''
         config:
@@ -3874,7 +3874,7 @@ models:
       revisionnumber:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Incremental number to track changes to the sales order over time.
         classification: ''
         config:
@@ -3884,7 +3884,7 @@ models:
       orderdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Dates the sales order was created.
         classification: ''
         config:
@@ -3894,7 +3894,7 @@ models:
       duedate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the order is due to the customer.
         classification: ''
         config:
@@ -3904,7 +3904,7 @@ models:
       shipdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the order was shipped to the customer.
         classification: ''
         config:
@@ -3914,7 +3914,7 @@ models:
       status:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Order current status. 1 = In process; 2 = Approved; 3 = Backordered;
           4 = Rejected; 5 = Shipped; 6 = Cancelled
         classification: ''
@@ -3925,7 +3925,7 @@ models:
       onlineorderflag:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: 0 = Order placed by sales person. 1 = Order placed online by
           customer.
         classification: ''
@@ -3936,7 +3936,7 @@ models:
       purchaseordernumber:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Customer purchase order number reference.
         classification: ''
         config:
@@ -3946,7 +3946,7 @@ models:
       accountnumber:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Financial accounting number reference.
         classification: ''
         config:
@@ -3956,7 +3956,7 @@ models:
       customerid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Customer identification number. Foreign key to Customer.BusinessEntityID.
         classification: ''
         config:
@@ -3966,7 +3966,7 @@ models:
       salespersonid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales person who created the sales order. Foreign key to SalesPerson.BusinessEntityID.
         classification: ''
         config:
@@ -3976,7 +3976,7 @@ models:
       territoryid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Territory in which the sale was made. Foreign key to SalesTerritory.SalesTerritoryID.
         classification: ''
         config:
@@ -3986,7 +3986,7 @@ models:
       billtoaddressid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Customer billing address. Foreign key to Address.AddressID.
         classification: ''
         config:
@@ -3996,7 +3996,7 @@ models:
       shiptoaddressid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Customer shipping address. Foreign key to Address.AddressID.
         classification: ''
         config:
@@ -4006,7 +4006,7 @@ models:
       shipmethodid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Shipping method. Foreign key to ShipMethod.ShipMethodID.
         classification: ''
         config:
@@ -4016,7 +4016,7 @@ models:
       creditcardid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
         classification: ''
         config:
@@ -4026,7 +4026,7 @@ models:
       creditcardapprovalcode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Approval code provided by the credit card company.
         classification: ''
         config:
@@ -4036,7 +4036,7 @@ models:
       currencyrateid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Currency exchange rate used. Foreign key to CurrencyRate.CurrencyRateID.
         classification: ''
         config:
@@ -4046,7 +4046,7 @@ models:
       subtotal:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales subtotal. Computed as SUM(SalesOrderDetail.LineTotal)for
           the appropriate SalesOrderID.
         classification: ''
@@ -4057,7 +4057,7 @@ models:
       taxamt:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Tax amount.
         classification: ''
         config:
@@ -4067,7 +4067,7 @@ models:
       freight:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Shipping cost.
         classification: ''
         config:
@@ -4077,7 +4077,7 @@ models:
       totaldue:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Total due from customer. Computed as Subtotal + TaxAmt + Freight.
         classification: ''
         config:
@@ -4087,7 +4087,7 @@ models:
       comment:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Sales representative comments.
         classification: ''
         config:
@@ -4097,7 +4097,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4106,7 +4106,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4120,7 +4120,7 @@ models:
       salesorderid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
         classification: ''
         config:
@@ -4130,7 +4130,7 @@ models:
       salesreasonid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Foreign key to SalesReason.SalesReasonID.
         classification: ''
         config:
@@ -4140,7 +4140,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4154,7 +4154,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for SalesPerson records. Foreign key to Employee.BusinessEntityID
         classification: ''
         config:
@@ -4164,7 +4164,7 @@ models:
       territoryid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Territory currently assigned to. Foreign key to SalesTerritory.SalesTerritoryID.
         classification: ''
         config:
@@ -4174,7 +4174,7 @@ models:
       salesquota:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Projected yearly sales.
         classification: ''
         config:
@@ -4184,7 +4184,7 @@ models:
       bonus:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Bonus due if quota is met.
         classification: ''
         config:
@@ -4194,7 +4194,7 @@ models:
       commissionpct:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Commision percent received per sale.
         classification: ''
         config:
@@ -4204,7 +4204,7 @@ models:
       salesytd:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales total year to date.
         classification: ''
         config:
@@ -4214,7 +4214,7 @@ models:
       saleslastyear:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales total of previous year.
         classification: ''
         config:
@@ -4224,7 +4224,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4233,7 +4233,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4247,7 +4247,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales person identification number. Foreign key to SalesPerson.BusinessEntityID.
         classification: ''
         config:
@@ -4257,7 +4257,7 @@ models:
       quotadate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Sales quota date.
         classification: ''
         config:
@@ -4267,7 +4267,7 @@ models:
       salesquota:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales quota amount.
         classification: ''
         config:
@@ -4277,7 +4277,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4286,7 +4286,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4300,7 +4300,7 @@ models:
       salesreasonid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for SalesReason records.
         classification: ''
         config:
@@ -4310,7 +4310,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Sales reason description.
         classification: ''
         config:
@@ -4320,7 +4320,7 @@ models:
       reasontype:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Category the sales reason belongs to.
         classification: ''
         config:
@@ -4330,7 +4330,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4344,7 +4344,7 @@ models:
       salestaxrateid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for SalesTaxRate records.
         classification: ''
         config:
@@ -4354,7 +4354,7 @@ models:
       stateprovinceid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: State, province, or country/region the sales tax applies to.
         classification: ''
         config:
@@ -4364,7 +4364,7 @@ models:
       taxtype:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: 1 = Tax applied to retail transactions, 2 = Tax applied to wholesale
           transactions, 3 = Tax applied to all sales (retail and wholesale) transactions.
         classification: ''
@@ -4375,7 +4375,7 @@ models:
       taxrate:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Tax rate amount.
         classification: ''
         config:
@@ -4385,7 +4385,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Tax rate description.
         classification: ''
         config:
@@ -4395,7 +4395,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4404,7 +4404,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4418,7 +4418,7 @@ models:
       territoryid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for SalesTerritory records.
         classification: ''
         config:
@@ -4428,7 +4428,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Sales territory description
         classification: ''
         config:
@@ -4438,7 +4438,7 @@ models:
       countryregioncode:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.
         classification: ''
         config:
@@ -4448,7 +4448,7 @@ models:
       group:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Geographic area to which the sales territory belong.
         classification: ''
         config:
@@ -4458,7 +4458,7 @@ models:
       salesytd:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales in the territory year to date.
         classification: ''
         config:
@@ -4468,7 +4468,7 @@ models:
       saleslastyear:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Sales in the territory the previous year.
         classification: ''
         config:
@@ -4478,7 +4478,7 @@ models:
       costytd:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Business costs in the territory year to date.
         classification: ''
         config:
@@ -4488,7 +4488,7 @@ models:
       costlastyear:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Business costs in the territory the previous year.
         classification: ''
         config:
@@ -4498,7 +4498,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4507,7 +4507,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4521,7 +4521,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. The sales rep.  Foreign key to SalesPerson.BusinessEntityID.
         classification: ''
         config:
@@ -4531,7 +4531,7 @@ models:
       territoryid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Territory identification number. Foreign key to
           SalesTerritory.SalesTerritoryID.
         classification: ''
@@ -4542,7 +4542,7 @@ models:
       startdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key. Date the sales representive started work in the
           territory.
         classification: ''
@@ -4553,7 +4553,7 @@ models:
       enddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the sales representative left work in the territory.
         classification: ''
         config:
@@ -4563,7 +4563,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4572,7 +4572,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4586,7 +4586,7 @@ models:
       shoppingcartitemid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for ShoppingCartItem records.
         classification: ''
         config:
@@ -4596,7 +4596,7 @@ models:
       shoppingcartid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Shopping cart identification number.
         classification: ''
         config:
@@ -4606,7 +4606,7 @@ models:
       quantity:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product quantity ordered.
         classification: ''
         config:
@@ -4616,7 +4616,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product ordered. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -4626,7 +4626,7 @@ models:
       datecreated:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Date the time the record was created.
         classification: ''
         config:
@@ -4636,7 +4636,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4650,7 +4650,7 @@ models:
       specialofferid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key for SpecialOffer records.
         classification: ''
         config:
@@ -4660,7 +4660,7 @@ models:
       description:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Discount description.
         classification: ''
         config:
@@ -4670,7 +4670,7 @@ models:
       discountpct:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Discount precentage.
         classification: ''
         config:
@@ -4680,7 +4680,7 @@ models:
       type:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Discount type category.
         classification: ''
         config:
@@ -4690,7 +4690,7 @@ models:
       category:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Group the discount applies to such as Reseller or Customer.
         classification: ''
         config:
@@ -4700,7 +4700,7 @@ models:
       startdate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Discount start date.
         classification: ''
         config:
@@ -4710,7 +4710,7 @@ models:
       enddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         description: Discount end date.
         classification: ''
         config:
@@ -4720,7 +4720,7 @@ models:
       minqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Minimum discount percent allowed.
         classification: ''
         config:
@@ -4730,7 +4730,7 @@ models:
       maxqty:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Maximum discount percent allowed.
         classification: ''
         config:
@@ -4740,7 +4740,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4749,7 +4749,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4763,7 +4763,7 @@ models:
       specialofferid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Primary key for SpecialOfferProduct records.
         classification: ''
         config:
@@ -4773,7 +4773,7 @@ models:
       productid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         classification: ''
         config:
@@ -4783,7 +4783,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4792,7 +4792,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4806,7 +4806,7 @@ models:
       businessentityid:
         type: number
         required: false
-        primary: true
+        primaryKey: true
         description: Primary key. Foreign key to Customer.BusinessEntityID.
         classification: ''
         config:
@@ -4816,7 +4816,7 @@ models:
       name:
         type: object
         required: false
-        primary: false
+        primaryKey: false
         description: Name of the store.
         classification: ''
         config:
@@ -4826,7 +4826,7 @@ models:
       salespersonid:
         type: number
         required: false
-        primary: false
+        primaryKey: false
         description: ID of the sales person assigned to the customer. Foreign key
           to SalesPerson.BusinessEntityID.
         classification: ''
@@ -4837,7 +4837,7 @@ models:
       demographics:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         description: Demographic informationg about the store such as the number of
           employees, annual sales and store type.
         classification: ''
@@ -4848,7 +4848,7 @@ models:
       rowguid:
         type: string
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false
@@ -4857,7 +4857,7 @@ models:
       modifieddate:
         type: date
         required: false
-        primary: false
+        primaryKey: false
         classification: ''
         config:
           criticalDataElement: false

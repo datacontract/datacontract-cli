@@ -9,12 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- added export format **markdown**: `datacontract export --format markdown` (#545)
-- When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
+
 - Added import for `ProtoBuf`
 
 
+### Fixed
+
+## [0.10.18] - 2024-01-18
+
+### Fixed
+
+- Fixed an issue when resolving project's dependencies when all extras are installed.
+- Definitions referenced by nested fields are not validated correctly (#595)
+- Replaced deprecated `primary` field with `primaryKey` in exporters, importers, examples, and Jinja templates for backward compatibility. Fixes [#518](https://github.com/your-repo/your-project/issues/518).
+- Cannot execute test on column of type record(bigquery) #597
+
+
+## [0.10.17] - 2024-01-16
+
+### Added
+- added export format **markdown**: `datacontract export --format markdown` (#545)
+- When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
+- When importing in dbt format, add the dbt primary key information as a datacontract primaryKey field (#562)
+- When exporting in dbt format, add the datacontract references field as a dbt relationships test (#569)
+- When importing in dbt format, add the dbt relationships test field as a reference in the data contract (#570)
+- Add serve command on README (#592)
+
 ### Changed
+- Primary and example fields have been deprecated in Data Contract Specification v1.1.0 (#561)
+- Define primaryKey and examples for model to follow the changes in datacontract-specification v1.1.0 (#559)
+
+### Fixed
+- SQL Server: cannot escape reserved word on model (#557)
+- Export dbt-staging-sql error on multi models contracts (#587) 
+
+### Removed
+- OpenTelemetry publisher, as it was hardly used
 
 ## [0.10.16] - 2024-12-19
 

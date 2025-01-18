@@ -54,20 +54,30 @@ def resolve_data_contract_from_location(
 def inline_definitions_into_data_contract(spec: DataContractSpecification):
     for model in spec.models.values():
         for field in model.fields.values():
-            # If ref_obj is not empty, we've already inlined definitions.
-            if not field.ref and not field.ref_obj:
-                continue
+            inline_definition_into_field(field, spec)
 
-            definition = _resolve_definition_ref(field.ref, spec)
-            field.ref_obj = definition
 
-            for field_name in field.model_fields.keys():
-                if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
-                    setattr(field, field_name, getattr(definition, field_name))
-            # extras
-            for extra_field_name, extra_field_value in definition.model_extra.items():
-                if extra_field_name not in field.model_extra.keys():
-                    setattr(field, extra_field_name, extra_field_value)
+def inline_definition_into_field(field, spec):
+    # iterate recursively over arrays
+    if field.items is not None:
+        inline_definition_into_field(field.items, spec)
+
+    # iterate recursively over nested fields
+    if field.fields is not None:
+        for nested_field_name, nested_field in field.fields.items():
+            inline_definition_into_field(nested_field, spec)
+
+    if not field.ref:
+        return
+
+    definition = _resolve_definition_ref(field.ref, spec)
+    for field_name in field.model_fields.keys():
+        if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
+            setattr(field, field_name, getattr(definition, field_name))
+    # extras
+    for extra_field_name, extra_field_value in definition.model_extra.items():
+        if extra_field_name not in field.model_extra.keys():
+            setattr(field, extra_field_name, extra_field_value)
 
 
 def _resolve_definition_ref(ref, spec) -> Definition:
@@ -202,9 +212,12 @@ def _resolve_data_contract_from_str(
     yaml_dict = _to_yaml(data_contract_str)
 
     if is_open_data_contract_standard(yaml_dict):
+        logging.info("Importing ODCS v3")
         # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
         data_contract_specification = DataContractSpecification(dataContractSpecification="1.1.0")
         return import_odcs_v3_from_str(data_contract_specification, source_str=data_contract_str)
+    else:
+        logging.info("Importing DCS")
 
     _validate_data_contract_specification_schema(yaml_dict, schema_location)
     data_contract_specification = yaml_dict
@@ -236,7 +249,7 @@ def _to_yaml(data_contract_str):
 def _validate_data_contract_specification_schema(data_contract_yaml, schema_location: str = None):
     schema = fetch_schema(schema_location)
     try:
-        fastjsonschema.validate(schema, data_contract_yaml)
+        fastjsonschema.validate(schema, data_contract_yaml, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {e.message}")

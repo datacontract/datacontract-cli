@@ -84,7 +84,7 @@ def import_table_fields(table, references) -> dict[str, Field]:
         imported_fields[field_name] = Field()
         imported_fields[field_name].required = field.not_null
         imported_fields[field_name].description = field.note.text
-        imported_fields[field_name].primary = field.pk
+        imported_fields[field_name].primaryKey = field.pk
         imported_fields[field_name].unique = field.unique
         # This is an assumption, that these might be valid SQL Types, since
         # DBML doesn't really enforce anything other than 'no spaces' in column types

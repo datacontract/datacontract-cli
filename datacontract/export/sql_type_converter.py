@@ -311,6 +311,27 @@ def convert_type_to_sqlserver(field: Field) -> None | str:
 
 def convert_type_to_bigquery(field: Field) -> None | str:
     """Convert from supported datacontract types to equivalent bigquery types"""
+
+    # BigQuery exporter cannot be used for complex types, as the exporter has different syntax than SodaCL
+
+    field_type = field.type
+    if not field_type:
+        return None
+
+    if field.config and "bigqueryType" in field.config:
+        return field.config["bigqueryType"]
+
+    if field_type.lower() in ["array"]:
+        item_type = convert_type_to_bigquery(field.items)
+        return f"ARRAY<{item_type}>"
+
+    if field_type.lower() in ["object", "record", "struct"]:
+        nested_fields = []
+        for nested_field_name, nested_field in field.fields.items():
+            nested_field_type = convert_type_to_bigquery(nested_field)
+            nested_fields.append(f"{nested_field_name} {nested_field_type}")
+        return f"STRUCT<{', '.join(nested_fields)}>"
+
     return map_type_to_bigquery(field)
 
 
