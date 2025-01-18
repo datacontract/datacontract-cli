@@ -311,8 +311,8 @@ Commands
 │ --logs                --no-logs                      Print logs              │
 │                                                      [default: no-logs]      │
 │ --ssl-verification    --no-ssl-verification          SSL verification when   │
-│                                                      publishing the test     │
-│                                                      results.                │
+│                                                      publishing the data     │
+│                                                      contract.               │
 │                                                      [default:               │
 │                                                      ssl-verification]       │
 │ --help                                               Show this message and   │
