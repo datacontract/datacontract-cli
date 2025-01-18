@@ -21,6 +21,7 @@ commands = [
     "serve",
 ]
 
+
 def fetch_help(command: str) -> str:
     print(f"Fetching help text for command: {command}")
     env = {"COLUMNS": "80"}  # Set terminal width to 80 columns (or your preferred width)
@@ -33,6 +34,7 @@ def fetch_help(command: str) -> str:
     )
     print(f"Help text fetched for command: {command}\n{result.stdout}")
     return result.stdout
+
 
 # Function to update the markdown file
 def update_markdown(file_path: Path, commands: list[str]) -> None:
@@ -63,6 +65,7 @@ def update_markdown(file_path: Path, commands: list[str]) -> None:
 
     print(f"Writing updated content back to file: {file_path}")
     file_path.write_text(content)
+
 
 # Call the function to update the markdown
 print("Starting markdown update process")

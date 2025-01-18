@@ -1,0 +1,91 @@
+dataContractSpecification: 1.1.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+#  description:
+#  owner:
+#  contact:
+#    name:
+#    url:
+#    email:
+
+
+### servers
+
+#servers:
+#  production:
+#    type: s3
+#    location: s3://
+#    format: parquet
+#    delimiter: new_line
+
+### terms
+
+#terms:
+#  usage:
+#  limitations:
+#  billing:
+#  noticePeriod:
+
+
+### models
+
+# models:
+#   my_model:
+#     description:
+#     type:
+#     fields:
+#       my_field:
+#         type:
+#         description:
+
+
+### definitions
+
+# definitions:
+#   my_field:
+#     domain:
+#     name:
+#     title:
+#     type:
+#     description:
+#     example:
+#     pii:
+#     classification:
+
+
+### servicelevels
+
+#servicelevels:
+#  availability:
+#    description: The server is available during support hours
+#    percentage: 99.9%
+#  retention:
+#    description: Data is retained for one year because!
+#    period: P1Y
+#    unlimited: false
+#  latency:
+#    description: Data is available within 25 hours after the order was placed
+#    threshold: 25h
+#    sourceTimestampField: orders.order_timestamp
+#    processedTimestampField: orders.processed_timestamp
+#  freshness:
+#    description: The age of the youngest row in a table.
+#    threshold: 25h
+#    timestampField: orders.order_timestamp
+#  frequency:
+#    description: Data is delivered once a day
+#    type: batch # or streaming
+#    interval: daily # for batch, either or cron
+#    cron: 0 0 * * * # for batch, either or interval
+#  support:
+#    description: The data is available during typical business hours at headquarters
+#    time: 9am to 5pm in EST on business days
+#    responseTime: 1h
+#  backup:
+#    description: Data is backed up once a week, every Sunday at 0:00 UTC.
+#    interval: weekly
+#    cron: 0 0 * * 0
+#    recoveryTime: 24 hours
+#    recoveryPoint: 1 week

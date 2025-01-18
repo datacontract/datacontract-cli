@@ -1,3 +1,4 @@
+import os
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -15,10 +16,7 @@ from datacontract import web
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
-from datacontract.init.download_datacontract_file import (
-    FileExistsException,
-    download_datacontract_file,
-)
+from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
 )
@@ -68,24 +66,21 @@ def common(
 @app.command()
 def init(
     location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml to create."),
+        str, typer.Argument(help="The location of the data contract file to create.")
     ] = "datacontract.yaml",
-    template: Annotated[
-        str, typer.Option(help="URL of a template or data contract")
-    ] = "https://datacontract.com/datacontract.init.yaml",
+    template: Annotated[str, typer.Option(help="URL of a template or data contract")] = None,
     overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
 ):
     """
-    Download a datacontract.yaml template and write it to file.
+    Create an empty data contract.
     """
-    try:
-        download_datacontract_file(location, template, overwrite)
-    except FileExistsException:
+    if not overwrite and os.path.exists(location):
         console.print("File already exists, use --overwrite to overwrite")
         raise typer.Exit(code=1)
-    else:
-        console.print("📄 data contract written to " + location)
+    template_str = get_init_template(template)
+    with open(location, "w") as f:
+        f.write(template_str)
+    console.print("📄 data contract written to " + location)
 
 
 @app.command()

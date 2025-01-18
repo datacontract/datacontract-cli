@@ -422,6 +422,7 @@
             "$ref": "#/$defs/ServerSource/InformixServer"
           }
         },
+
         {
           "if": {
             "properties": {
