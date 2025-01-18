@@ -32,6 +32,7 @@ models:
     description: The orders model
     primaryKey:
     - order_id
+    - order_status
     customModelProperty1: customModelProperty1Value
     fields:
       order_id:
