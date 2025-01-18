@@ -27,7 +27,7 @@ def test_cli():
 def test_import_sql():
     result = DataContract().import_from_source("csv", csv_file_path)
 
-    expected = """dataContractSpecification: 0.9.3
+    expected = """dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: My Data Contract
