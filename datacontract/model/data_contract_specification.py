@@ -147,9 +147,9 @@ class Field(pyd.BaseModel):
     required: bool = None
     primary: bool = pyd.Field(
         default=None,
-        deprecated="Removed in Data Contract Specification v1.1.0. Use " "primaryKey instead.",
+        deprecated="Removed in Data Contract Specification v1.1.0. Use primaryKey instead.",
     )
-    primaryKey: bool = None
+    primaryKey: bool | None = None
     unique: bool | None = None
     references: str = None
     description: str | None = None
@@ -178,13 +178,6 @@ class Field(pyd.BaseModel):
     examples: List[Any] | None = None
     quality: List[Quality] | None = []
     config: Dict[str, Any] | None = None
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if self.primary is not None and self.primaryKey is None:
-            self.primaryKey = self.primary
-        elif self.primaryKey is not None and self.primary is None:
-            self.primary = self.primaryKey
 
     model_config = pyd.ConfigDict(
         extra="allow",

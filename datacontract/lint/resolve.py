@@ -249,7 +249,7 @@ def _to_yaml(data_contract_str):
 def _validate_data_contract_specification_schema(data_contract_yaml, schema_location: str = None):
     schema = fetch_schema(schema_location)
     try:
-        fastjsonschema.validate(schema, data_contract_yaml)
+        fastjsonschema.validate(schema, data_contract_yaml, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {e.message}")
