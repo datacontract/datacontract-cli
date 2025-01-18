@@ -52,6 +52,7 @@ class DataContract:
         spark: "SparkSession" = None,
         inline_definitions: bool = True,
         inline_quality: bool = True,
+        ssl_verification: bool = True,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -63,6 +64,7 @@ class DataContract:
         self._spark = spark
         self._inline_definitions = inline_definitions
         self._inline_quality = inline_quality
+        self._ssl_verification = ssl_verification
         self.all_linters = {
             ExampleModelLinter(),
             QualityUsesSchemaLinter(),
@@ -231,7 +233,7 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None:
-            publish_test_results_to_datamesh_manager(run, self._publish_url)
+            publish_test_results_to_datamesh_manager(run, self._publish_url, self._ssl_verification)
 
         return run
 

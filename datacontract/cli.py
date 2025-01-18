@@ -135,7 +135,7 @@ def test(
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
         bool,
-        typer.Option(help="SSL verification when publishing the test results."),
+        typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
 ):
     """
@@ -150,6 +150,7 @@ def test(
         publish_url=publish,
         server=server,
         examples=examples,
+        ssl_verification=ssl_verification,
     ).test()
     if logs:
         _print_logs(run)

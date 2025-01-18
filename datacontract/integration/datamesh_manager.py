@@ -6,7 +6,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.run import Run
 
 
-def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
+def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_verification: bool):
     try:
         if publish_url is None:
             # this url supports Data Mesh Manager and Data Contract Manager
@@ -32,7 +32,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
             url,
             data=request_body,
             headers=headers,
-            verify=False,
+            verify=ssl_verification,
         )
         # print("Status Code:", response.status_code)
         # print("Response Body:", response.text)
