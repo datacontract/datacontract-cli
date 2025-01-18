@@ -22,6 +22,7 @@ from datacontract.init.download_datacontract_file import (
 from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
 )
+from datacontract.lint.resolve import resolve_data_contract_dict
 
 DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
 
@@ -332,9 +333,7 @@ def publish(
     Publish the data contract to the Data Mesh Manager.
     """
     publish_data_contract_to_datamesh_manager(
-        data_contract_specification=DataContract(
-            data_contract_file=location, schema_location=schema
-        ).get_data_contract_specification(),
+        data_contract_dict=resolve_data_contract_dict(location),
         ssl_verification=ssl_verification,
     )
 

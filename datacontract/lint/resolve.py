@@ -43,6 +43,26 @@ def resolve_data_contract(
             engine="datacontract",
         )
 
+def resolve_data_contract_dict(
+    data_contract_location: str = None,
+    data_contract_str: str = None,
+    data_contract: DataContractSpecification = None,
+) -> dict:
+    if data_contract_location is not None:
+        return _to_yaml(read_resource(data_contract_location))
+    elif data_contract_str is not None:
+        return _to_yaml(data_contract_str)
+    elif data_contract is not None:
+        return data_contract.model_dump()
+    else:
+        raise DataContractException(
+            type="lint",
+            result="failed",
+            name="Check that data contract YAML is valid",
+            reason="Data contract needs to be provided",
+            engine="datacontract",
+        )
+
 
 def resolve_data_contract_from_location(
     location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
@@ -231,7 +251,7 @@ def _resolve_data_contract_from_str(
     return spec
 
 
-def _to_yaml(data_contract_str):
+def _to_yaml(data_contract_str) -> dict:
     try:
         yaml_dict = yaml.safe_load(data_contract_str)
         return yaml_dict

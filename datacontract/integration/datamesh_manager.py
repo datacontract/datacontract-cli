@@ -2,7 +2,6 @@ import os
 
 import requests
 
-from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.run import Run
 
 
@@ -45,7 +44,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_ver
 
 
 def publish_data_contract_to_datamesh_manager(
-    data_contract_specification: DataContractSpecification, ssl_verification: bool
+    data_contract_dict: dict, ssl_verification: bool
 ):
     try:
         api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
@@ -59,10 +58,10 @@ def publish_data_contract_to_datamesh_manager(
                 "Cannot publish data contract, as neither DATAMESH_MANAGER_API_KEY nor DATACONTRACT_MANAGER_API_KEY is set"
             )
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
-        spec = data_contract_specification
-        id = spec.id
+        spec = data_contract_dict
+        id = spec["id"]
         url = f"{host}/api/datacontracts/{id}"
-        request_body = spec.model_dump_json().encode("utf-8")
+        request_body = spec
         response = requests.put(
             url=url,
             data=request_body,
