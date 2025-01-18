@@ -22,7 +22,16 @@ class FieldReferenceLinter(Linter):
         for model_name, model in contract.models.items():
             for field_name, field in model.fields.items():
                 if field.references:
-                    (ref_model, ref_field) = field.references.split(".", maxsplit=2)
+                    reference_hierarchy = field.references.split(".")
+                    if len(reference_hierarchy) != 2:
+                        result = result.with_error(
+                            f"Field '{field_name}' in model '{model_name}'"
+                            f" references must follow the model.field syntax and refer to a field in a model in this data contract."
+                        )
+                        continue
+                    ref_model = reference_hierarchy[0]
+                    ref_field = reference_hierarchy[1]
+
                     if ref_model not in contract.models:
                         result = result.with_error(
                             f"Field '{field_name}' in model '{model_name}'"

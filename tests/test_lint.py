@@ -55,8 +55,20 @@ def test_lint_custom_schema():
     assert run.result == "passed"
 
 
-def test_lint_with_references():
+def test_lint_with_ref():
     data_contract = DataContract(
-        data_contract_file="fixtures/lint/valid_datacontract_references.yaml", inline_definitions=True
+        data_contract_file="fixtures/lint/valid_datacontract_ref.yaml", inline_definitions=True
     )
+
+    run = data_contract.lint()
     DataContractSpecification.model_validate(data_contract.get_data_contract_specification())
+
+    assert run.result == "passed"
+
+
+def test_lint_with_references():
+    data_contract = DataContract(data_contract_file="fixtures/lint/valid_datacontract_references.yaml")
+
+    run = data_contract.lint()
+
+    assert run.result == "passed"
