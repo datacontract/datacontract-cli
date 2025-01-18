@@ -1063,7 +1063,7 @@ to limit your contract export to a single model.
 │ *  --format                     [sql|avro|dbt|dbml|gl  The format of the     │
 │                                 ue|jsonschema|bigquer  source file.          │
 │                                 y|odcs|unity|spark|ic  [default: None]       │
-│                                 eberg|parquet]         [required]            │
+│                                 eberg|parquet|csv]     [required]            │
 │    --output                     PATH                   Specify the file path │
 │                                                        where the Data        │
 │                                                        Contract will be      │
