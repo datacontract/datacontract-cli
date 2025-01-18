@@ -31,6 +31,7 @@ class ImportFormat(str, Enum):
     spark = "spark"
     iceberg = "iceberg"
     parquet = "parquet"
+    csv = "csv"
 
     @classmethod
     def get_supported_formats(cls):

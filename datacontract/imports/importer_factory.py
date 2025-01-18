@@ -104,3 +104,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.parquet_importer",
     class_name="ParquetImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.csv,
+    module_path="datacontract.imports.csv_importer",
+    class_name="CsvImporter",
+)
