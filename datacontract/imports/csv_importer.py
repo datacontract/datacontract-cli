@@ -1,7 +1,9 @@
 import os
+
 import clevercsv
+
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field, Example, Server
+from datacontract.model.data_contract_specification import DataContractSpecification, Example, Field, Model, Server
 
 
 class CsvImporter(Importer):
