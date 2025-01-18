@@ -330,7 +330,7 @@ Supported formats:
 
 Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for an additional type and formats.
 
-### S3
+#### S3
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
@@ -340,9 +340,9 @@ Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant
 - Parquet
 - Iceberg (coming soon)
 
-#### Examples
+##### Examples
 
-##### JSON
+###### JSON
 
 datacontract.yaml
 ```yaml
@@ -355,7 +355,7 @@ servers:
     delimiter: new_line # new_line, array, or none
 ```
 
-##### Delta Tables
+###### Delta Tables
 
 datacontract.yaml
 ```yaml
@@ -367,7 +367,7 @@ servers:
     format: delta
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                | Example                         | Description                            |
 |-------------------------------------|---------------------------------|----------------------------------------|
@@ -378,12 +378,12 @@ servers:
 
 
 
-### Google Cloud Storage (GCS)
+#### Google Cloud Storage (GCS)
 
 The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
 Use `https://storage.googleapis.com` as the endpoint URL.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -396,7 +396,7 @@ servers:
     delimiter: new_line # new_line, array, or none
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                | Example        | Description                                                                              |
 |-------------------------------------|----------------|------------------------------------------------------------------------------------------|
@@ -404,14 +404,14 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...`    | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Secret |
 
 
-### BigQuery
+#### BigQuery
 
 We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
 * BigQuery Job User
 * BigQuery Data Viewer
 
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -426,18 +426,18 @@ models:
     fields: ...
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                         | Example                   | Description                                             |
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery. If this environment variable isn't set, the cli tries to use `GOOGLE_APPLICATION_CREDENTIALS` as a fallback, so if you have that set for using their Python library anyway, it should work seamlessly. |
 
 
-### Azure
+#### Azure
 
 Data Contract CLI can test data that is stored in Azure Blob storage or Azure Data Lake Storage (Gen2) (ADLS) in various formats.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -448,7 +448,7 @@ servers:
     format: parquet
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 Authentication works with an Azure Service Principal (SPN) aka App Registration with a secret.
 
@@ -460,11 +460,11 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 
 
 
-### Sqlserver
+#### Sqlserver
 
 Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool).
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -484,7 +484,7 @@ models:
         type: varchar
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                              | Example| Description                                  |
 |---------------------------------------------------|--------|----------------------------------------------|
@@ -497,13 +497,13 @@ models:
 
 
 
-### Databricks
+#### Databricks
 
 Works with Unity Catalog and Hive metastore.
 
 Needs a running SQL warehouse or compute cluster.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -518,7 +518,7 @@ models:
     fields: ...
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                      | Example                              | Description                                               |
 |-------------------------------------------|--------------------------------------|-----------------------------------------------------------|
@@ -527,7 +527,7 @@ models:
 | `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | The host name of the SQL warehouse or compute cluster |
 
 
-### Databricks (programmatic)
+#### Databricks (programmatic)
 
 Works with Unity Catalog and Hive metastore.
 When running in a notebook or pipeline, the provided `spark` session can be used.
@@ -535,7 +535,7 @@ An additional authentication is not required.
 
 Requires a Databricks Runtime with Python >= 3.10.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -565,7 +565,7 @@ run = data_contract.test()
 run.result
 ```
 
-### Dataframe (programmatic)
+#### Dataframe (programmatic)
 
 Works with Spark DataFrames.
 DataFrames need to be created as named temporary views.
@@ -573,7 +573,7 @@ Multiple temporary views are supported if your data contract contains multiple m
 
 Testing DataFrames is useful to test your datasets in a pipeline before writing them to a data source.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -601,11 +601,11 @@ assert run.result == "passed"
 ```
 
 
-### Snowflake
+#### Snowflake
 
 Data Contract CLI can test data in Snowflake.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -624,7 +624,7 @@ models:
         type: varchar
 ```
 
-#### Environment Variables
+##### Environment Variables
 All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.  
 For example:
 
@@ -652,11 +652,11 @@ servers:
 ```
 
 
-### Kafka
+#### Kafka
 
 Kafka support is currently considered experimental.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -668,7 +668,7 @@ servers:
     format: json
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                | Example | Description                                                                      |
 |-------------------------------------|---------|----------------------------------------------------------------------------------|
@@ -677,11 +677,11 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`. Other supported mechanisms: `SCRAM-SHA-256` and `SCRAM-SHA-512` |
 
 
-### Postgres
+#### Postgres
 
 Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -700,7 +700,7 @@ models:
         type: varchar
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable             | Example            | Description |
 |----------------------------------|--------------------|-------------|
@@ -708,11 +708,11 @@ models:
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
 
 
-### Trino
+#### Trino
 
 Data Contract CLI can test data in Trino.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -735,7 +735,7 @@ models:
           trinoType: row(en_us varchar, pt_br varchar)
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable          | Example            | Description |
 |-------------------------------|--------------------|-------------|
@@ -839,7 +839,7 @@ The export creates a list of expectations by utilizing:
 - The data from the Model definition with a fixed mapping
 - The expectations provided in the quality field for each model (find here the expectations gallery: [Great Expectations Gallery](https://greatexpectations.io/expectations/))
 
-### Additional Arguments
+##### Additional Arguments
 
 To further customize the export, the following optional arguments are available:
 
@@ -1292,7 +1292,7 @@ datacontract catalog --output "."
 datacontract catalog --files "*.odcs.yaml"
 ```
 
-### Publish
+### publish
 
 ```
 
@@ -1308,7 +1308,7 @@ datacontract catalog --files "*.odcs.yaml"
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-### Serve
+### serve
 
 ```
 
