@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- JSON Schemas are now bundled with the application (#598)
 - datacontract export --format html: The model title is now shown if it is different to the model
   name (#585)
 - datacontract export --format html: Custom model attributes are now shown (#585)
