@@ -23,8 +23,6 @@ from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
 )
 
-DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
-
 console = Console()
 
 
@@ -99,7 +97,7 @@ def lint(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -117,7 +115,7 @@ def test(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     server: Annotated[
         str,
         typer.Option(
@@ -198,7 +196,7 @@ def export(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     # TODO: this should be a subcommand
     engine: Annotated[
         Optional[str],
@@ -285,7 +283,7 @@ def import_(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -322,7 +320,7 @@ def publish(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
@@ -351,7 +349,7 @@ def catalog(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Create an html catalog of data contracts.

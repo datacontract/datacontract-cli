@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+curl -o datacontract-1.1.0.json https://datacontract.com/datacontract.schema.json
+curl -o odcs-3.0.1.json https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-v3.0.1.json
+
