@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+### Fixed
+
+## [0.10.18] - 2024-01-18
+
 ### Fixed
 
 - Fixed an issue when resolving project's dependencies when all extras are installed.
