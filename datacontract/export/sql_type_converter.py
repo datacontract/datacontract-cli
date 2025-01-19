@@ -182,11 +182,16 @@ def convert_to_databricks(field: Field) -> None | str:
     if type.lower() in ["boolean"]:
         return "BOOLEAN"
     if type.lower() in ["object", "record", "struct"]:
-        return "STRUCT"
+        nested_fields = []
+        for nested_field_name, nested_field in field.fields.items():
+            nested_field_type = convert_to_databricks(nested_field)
+            nested_fields.append(f"{nested_field_name} {nested_field_type}")
+        return f"STRUCT<{', '.join(nested_fields)}>"
     if type.lower() in ["bytes"]:
         return "BINARY"
     if type.lower() in ["array"]:
-        return "ARRAY"
+        item_type = convert_to_databricks(field.items)
+        return f"ARRAY<{item_type}>"
     return None
 
 
