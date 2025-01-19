@@ -22,6 +22,7 @@ from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
+from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
@@ -35,8 +36,6 @@ from datacontract.model.breaking_change import BreakingChange, BreakingChanges, 
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, Run
-
-DEFAULT_DATA_CONTRACT_TEMPLATE_URL = "https://datacontract.com/datacontract.init.yaml"
 
 
 class DataContract:
@@ -76,10 +75,10 @@ class DataContract:
         }
 
     @classmethod
-    def init(
-        cls, template: str = DEFAULT_DATA_CONTRACT_TEMPLATE_URL, schema: typing.Optional[str] = None
-    ) -> DataContractSpecification:
-        return resolve.resolve_data_contract(data_contract_location=template, schema_location=schema)
+    def init(cls, template: str, schema: typing.Optional[str] = None) -> DataContractSpecification:
+        if template is None:
+            template_str = get_init_template(template)
+        return resolve.resolve_data_contract(data_contract_str=template_str, schema_location=schema)
 
     def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
         """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
@@ -354,7 +353,6 @@ class DataContract:
         schema: typing.Optional[str] = None,
         **kwargs,
     ) -> DataContractSpecification:
-        template = DEFAULT_DATA_CONTRACT_TEMPLATE_URL if template is None else template
         data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
         return importer_factory.create(format).import_source(

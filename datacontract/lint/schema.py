@@ -1,10 +1,14 @@
+import importlib.resources as resources
 import json
+import logging
 import os
 from typing import Any, Dict
 
 import requests
 
 from datacontract.model.exceptions import DataContractException
+
+DEFAULT_DATA_CONTRACT_SCHEMA = "datacontract-1.1.0.schema.json"
 
 
 def fetch_schema(location: str = None) -> Dict[str, Any]:
@@ -27,9 +31,12 @@ def fetch_schema(location: str = None) -> Dict[str, Any]:
 
     """
     if location is None:
-        location = "https://datacontract.com/datacontract.schema.json"
-
-    if location.startswith("http://") or location.startswith("https://"):
+        logging.info("Use default bundled schema " + DEFAULT_DATA_CONTRACT_SCHEMA)
+        schemas = resources.files("datacontract")
+        schema_file = schemas.joinpath("schemas", DEFAULT_DATA_CONTRACT_SCHEMA)
+        with schema_file.open("r") as file:
+            schema = json.load(file)
+    elif location.startswith("http://") or location.startswith("https://"):
         response = requests.get(location)
         schema = response.json()
     else:

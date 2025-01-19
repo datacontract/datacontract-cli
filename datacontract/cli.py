@@ -1,3 +1,4 @@
+import os
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -15,16 +16,11 @@ from datacontract import web
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
-from datacontract.init.download_datacontract_file import (
-    FileExistsException,
-    download_datacontract_file,
-)
+from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
 )
 from datacontract.lint.resolve import resolve_data_contract_dict
-
-DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
 
 console = Console()
 
@@ -71,24 +67,21 @@ def common(
 @app.command()
 def init(
     location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml to create."),
+        str, typer.Argument(help="The location of the data contract file to create.")
     ] = "datacontract.yaml",
-    template: Annotated[
-        str, typer.Option(help="URL of a template or data contract")
-    ] = "https://datacontract.com/datacontract.init.yaml",
+    template: Annotated[str, typer.Option(help="URL of a template or data contract")] = None,
     overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
 ):
     """
-    Download a datacontract.yaml template and write it to file.
+    Create an empty data contract.
     """
-    try:
-        download_datacontract_file(location, template, overwrite)
-    except FileExistsException:
+    if not overwrite and os.path.exists(location):
         console.print("File already exists, use --overwrite to overwrite")
         raise typer.Exit(code=1)
-    else:
-        console.print("📄 data contract written to " + location)
+    template_str = get_init_template(template)
+    with open(location, "w") as f:
+        f.write(template_str)
+    console.print("📄 data contract written to " + location)
 
 
 @app.command()
@@ -100,7 +93,7 @@ def lint(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -118,7 +111,7 @@ def test(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     server: Annotated[
         str,
         typer.Option(
@@ -199,7 +192,7 @@ def export(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     # TODO: this should be a subcommand
     engine: Annotated[
         Optional[str],
@@ -286,7 +279,7 @@ def import_(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -323,7 +316,7 @@ def publish(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
@@ -350,7 +343,7 @@ def catalog(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Create an html catalog of data contracts.
