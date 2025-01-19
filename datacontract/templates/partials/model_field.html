@@ -39,6 +39,15 @@
     </div>
     {% endif %}
 
+    {% if field.examples %}
+    <div class="mt-1 italic">
+      Examples:
+      {% for example in field.examples %}
+      <span class="font-mono">{{ example }}</span>{% if not loop.last %}, {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <div>
       {% if field.primaryKey or field.primary %}
       <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">primary</span>

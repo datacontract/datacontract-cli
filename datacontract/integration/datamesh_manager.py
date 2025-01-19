@@ -43,9 +43,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_ver
         run.log_error(f"Failed publishing test results. Error: {str(e)}")
 
 
-def publish_data_contract_to_datamesh_manager(
-    data_contract_dict: dict, ssl_verification: bool
-):
+def publish_data_contract_to_datamesh_manager(data_contract_dict: dict, ssl_verification: bool):
     try:
         api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
         host = "https://api.datamesh-manager.com"

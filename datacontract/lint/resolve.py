@@ -43,6 +43,7 @@ def resolve_data_contract(
             engine="datacontract",
         )
 
+
 def resolve_data_contract_dict(
     data_contract_location: str = None,
     data_contract_str: str = None,

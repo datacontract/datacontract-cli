@@ -78,3 +78,15 @@ models:
           SELECT COUNT(*) AS row_count
           FROM orders
         mustBeGreaterThan: 1000
+definitions:
+  customer_id:
+    title: Customer ID
+    type: string
+    format: uuid
+    description: Unique identifier for the customer.
+    examples:
+      - acbd1a47-9dca-4cb8-893e-87aa0aa0f243
+      - 5742637f-bb8b-4f0c-8ed1-afb1a91300a9
+    tags:
+      - features
+      - pii

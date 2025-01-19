@@ -13,22 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - publish command also supports publishing ODCS format
 
 ### Changed
-
 - JSON Schemas are now bundled with the application (#598)
 - datacontract export --format html: The model title is now shown if it is different to the model
   name (#585)
 - datacontract export --format html: Custom model attributes are now shown (#585)
 - datacontract export --format html: The composite primary key is now shown. (#591)
+- datacontract export --format html: now examples are rendered in the model and definition (#497)
 
 ### Fixed
-
 - datacontract lint: Linter 'Field references existing field' too many values to unpack (expected
   2) (#586)
 
 ## [0.10.18] - 2024-01-18
 
 ### Fixed
-
 - Fixed an issue when resolving project's dependencies when all extras are installed.
 - Definitions referenced by nested fields are not validated correctly (#595)
 - Replaced deprecated `primary` field with `primaryKey` in exporters, importers, examples, and Jinja templates for backward compatibility. Fixes [#518](https://github.com/your-repo/your-project/issues/518).

@@ -20,7 +20,7 @@
                   {% if definition.title %}
                   <div>{{ definition.title }}</div>
                   {% endif %}
-                  <div class="font-mono">{{ definition.name }}</div>
+                  <div class="font-mono">{{ definition_name }}</div>
                 </div>
               </td>
               <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
@@ -33,13 +33,23 @@
               </td>
               <td class="px-3 py-2 text-sm text-gray-500 w-9/12">
                 {% if definition.example %}
-                <div class="mt-1">
-                  <span class="text-gray-600 font-medium">Example:</span> <span class="font-mono">{{ definition.example }}</span>
+                <div class="mt-1 italic">
+                  <span class="text-gray-600">Example:</span> <span class="font-mono">{{ definition.example }}</span>
                 </div>
                 {% endif %}
+
+                {% if definition.examples %}
+                <div class="mt-1 italic">
+                  <span class="text-gray-600">Examples:</span>
+                  {% for example in definition.examples %}
+                  <span class="font-mono">{{ example }}</span>{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                </div>
+                {% endif %}
+
                 {% if definition.tags %}
                 <div>
-                  <span class="text-gray-600 font-medium">Tags:</span>
+                  <span class="text-gray-600 italic">Tags:</span>
                   {% for tag in definition.tags %}
                   <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{ tag }}</span>
                   {% endfor %}
@@ -47,7 +57,7 @@
                 {% endif %}
                 {% if definition.enum %}
                 <div class="py-2 text-sm">
-                  <span class="text-gray-600 font-medium">Enum:</span>
+                  <span class="text-gray-600 italic">Enum:</span>
                   {% for value in definition.enum %}
                   <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">{{ value }}</span>
                   {% endfor %}

@@ -112,6 +112,7 @@ class Definition(pyd.BaseModel):
     tags: List[str] = []
     links: Dict[str, str] = {}
     example: str = None
+    examples: List[Any] | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
