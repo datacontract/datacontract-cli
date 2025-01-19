@@ -72,6 +72,7 @@ class Server(pyd.BaseModel):
     dataProductId: str = None
     outputPortId: str = None
     driver: str = None
+    storageAccount: str = None
     roles: List[ServerRole] = None
 
     model_config = pyd.ConfigDict(

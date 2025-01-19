@@ -1316,8 +1316,10 @@
         "location": {
           "type": "string",
           "format": "uri",
-          "description": "Fully qualified path to Azure Blob Storage or Azure Data Lake Storage (ADLS), supports globs.",
+          "description": "Path to Azure Blob Storage or Azure Data Lake Storage (ADLS), supports globs. Recommended pattern is 'abfss://<container_name>/<path>'",
           "examples": [
+            "abfss://my_container_name/path",
+            "abfss://my_container_name/path/*.json",
             "az://my_storage_account_name.blob.core.windows.net/my_container/path/*.parquet",
             "abfss://my_storage_account_name.dfs.core.windows.net/my_container_name/path/*.parquet"
           ]

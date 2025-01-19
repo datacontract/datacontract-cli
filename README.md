@@ -474,7 +474,8 @@ datacontract.yaml
 servers:
   production:
     type: azure
-    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/dataproducts/inventory_events/*.parquet
+    storageAccount: datameshdatabricksdemo
+    location: abfss://dataproducts/inventory_events/*.parquet
     format: parquet
 ```
 

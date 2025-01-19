@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - datacontract lint: Linter 'Field references existing field' too many values to unpack (expected
   2) (#586)
+- datacontract test (Azure): Error querying delta tables from azure storage. (#458)
 
 ## [0.10.18] - 2024-01-18
 
