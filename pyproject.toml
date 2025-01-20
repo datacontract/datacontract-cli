@@ -54,7 +54,7 @@ csv = [
 ]
 
 databricks = [
-  "soda-core-spark-df>=3.3.20,<3.4.0",
+  "soda-core-spark-df>=3.3.20,<3.5.0",
   "soda-core-spark[databricks]>=3.3.20,<3.4.0",
   "databricks-sql-connector>=3.7.0,<3.8.0",
   "databricks-sdk<0.41.0",
@@ -66,7 +66,7 @@ iceberg = [
 
 kafka = [
   "datacontract-cli[avro]",
-  "soda-core-spark-df>=3.3.20,<3.4.0"
+  "soda-core-spark-df>=3.3.20,<3.5.0"
 ]
 
 postgres = [
