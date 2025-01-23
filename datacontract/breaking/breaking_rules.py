@@ -95,6 +95,7 @@ class BreakingRules:
     field_enum_added = Severity.WARNING
     field_enum_removed = Severity.INFO
     field_enum_updated = Severity.ERROR
+    field_enum_members_added = Severity.INFO
 
     field_tags_added = Severity.INFO
     field_tags_removed = Severity.INFO

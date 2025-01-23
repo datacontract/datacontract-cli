@@ -494,7 +494,7 @@ def test_fields_updated():
     )
     output = result.stdout
     assert result.exit_code == 0
-    assert "21 changes: 15 error, 3 warning, 3 info\n" in output
+    assert "21 changes: 14 error, 3 warning, 4 info\n" in output
     assert (
         r"""error   [field_type_updated] at ./fixtures/breaking/datacontract-fields-v3.yaml
         in models.my_table.fields.field_type.type
@@ -606,7 +606,8 @@ def test_fields_updated():
         in output
     )
     assert (
-        r"""error   [field_enum_updated] at ./fixtures/breaking/datacontract-fields-v3.yaml
+        r"""info    [field_enum_members_added] at 
+./fixtures/breaking/datacontract-fields-v3.yaml
         in models.my_table.fields.field_enum.enum
             changed from `['one']` to `['one', 'two']`"""
         in output

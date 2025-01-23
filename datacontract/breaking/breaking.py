@@ -493,8 +493,12 @@ def field_breaking_changes(
                 rule_name = f"field_{_camel_to_snake(field_definition_field)}_removed"
                 description = "removed field property"
             elif sorted(old_value) != sorted(new_value):
-                rule_name = f"field_{_camel_to_snake(field_definition_field)}_updated"
                 description = f"changed from `{old_value}` to `{new_value}`"
+                if field_definition_field == "enum" and all(item in new_value for item in old_value):
+                    # new_value contains all items in old_value, therefore only new members added to enum
+                    rule_name = "field_enum_members_added"
+                else:
+                    rule_name = f"field_{_camel_to_snake(field_definition_field)}_updated"
 
         # logic for normal fields
         elif old_value is None and new_value is not None:

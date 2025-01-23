@@ -161,9 +161,32 @@ def test_fields_updated():
     output = result.stdout
 
     assert result.exit_code == 1
-    assert "18 breaking changes: 15 error, 3 warning\n" in output
+    assert "17 breaking changes: 14 error, 3 warning\n" in output
     assert "field_description_updated" not in output
     assert "field_tags_updated" not in output
+    assert "field_enum_updated" not in output
+    assert "field_enum_members_added" not in output
+
+
+def test_enum_values_removed():
+    result = runner.invoke(
+        app,
+        [
+            "breaking",
+            "./fixtures/breaking/datacontract-fields-v3.yaml",
+            "./fixtures/breaking/datacontract-fields-v2.yaml",
+        ],
+    )
+
+    output = result.stdout
+
+    assert result.exit_code == 1
+    assert (
+        r"""error   [field_enum_updated] at ./fixtures/breaking/datacontract-fields-v2.yaml
+        in models.my_table.fields.field_enum.enum
+            changed from `['one', 'two']` to `['one']`"""
+        in output
+    )
 
 
 def test_definition_added():
