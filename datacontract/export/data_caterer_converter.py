@@ -42,11 +42,11 @@ def _to_data_caterer_generate_step(model_key, model_value: Model, server: Server
         "name": model_key,
         "type": _to_step_type(server),
         "options": _to_data_source_options(model_key, server),
-        "schema": [],
+        "fields": [],
     }
     fields = _to_fields(model_value.fields)
     if fields:
-        step["schema"] = fields
+        step["fields"] = fields
     return step
 
 
@@ -97,16 +97,29 @@ def _to_field(field_name: str, field: Field) -> dict:
         if new_type == "object" or new_type == "record" or new_type == "struct":
             # need to get nested field definitions
             nested_fields = _to_fields(field.fields)
-            dc_field["schema"] = {"fields": nested_fields}
+            dc_field["fields"] = nested_fields
+        elif new_type == "array":
+            if field.items is not None and field.items.type is not None:
+                dc_generator_opts["arrayType"] = _to_data_type(field.items.type)
+            else:
+                dc_generator_opts["arrayType"] = "string"
 
     if field.enum is not None and len(field.enum) > 0:
         dc_generator_opts["oneOf"] = field.enum
     if field.unique is not None and field.unique:
         dc_generator_opts["isUnique"] = field.unique
+    if field.primaryKey is not None and field.primaryKey:
+        dc_generator_opts["isPrimaryKey"] = field.primaryKey
     if field.minLength is not None:
-        dc_generator_opts["minLength"] = field.minLength
+        if field.type is not None and field.type == "array":
+            dc_generator_opts["arrayMinLen"] = field.minLength
+        else:
+            dc_generator_opts["minLen"] = field.minLength
     if field.maxLength is not None:
-        dc_generator_opts["maxLength"] = field.maxLength
+        if field.type is not None and field.type == "array":
+            dc_generator_opts["arrayMaxLen"] = field.maxLength
+        else:
+            dc_generator_opts["maxLen"] = field.maxLength
     if field.pattern is not None:
         dc_generator_opts["regex"] = field.pattern
     if field.minimum is not None:
@@ -115,7 +128,7 @@ def _to_field(field_name: str, field: Field) -> dict:
         dc_generator_opts["max"] = field.maximum
 
     if len(dc_generator_opts.keys()) > 0:
-        dc_field["generator"] = {"options": dc_generator_opts}
+        dc_field["options"] = dc_generator_opts
     return dc_field
 
 
@@ -124,7 +137,7 @@ def _to_data_type(data_type):
         return "double"
     elif data_type == "decimal" or data_type == "bigint":
         return "decimal"
-    elif data_type == "int":
+    elif data_type == "int" or data_type == "integer":
         return "integer"
     elif data_type == "long":
         return "long"

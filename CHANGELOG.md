@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - datacontract lint: Linter 'Field references existing field' too many values to unpack (expected
   2) (#586)
 - datacontract test (Azure): Error querying delta tables from azure storage. (#458)
+- datacontract export --format data-caterer: Use `fields` instead of `schema`
+- datacontract export --format data-caterer: Use `options` instead of `generator.options`
+- datacontract export --format data-caterer: Capture array type length option and inner data type
 
 ## [0.10.18] - 2024-01-18
 
