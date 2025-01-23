@@ -950,20 +950,6 @@ To specify custom Avro properties in your data contract, you can define them wit
 
 >NOTE: At this moment, we just support [logicalType](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and [default](https://avro.apache.org/docs/1.11.0/spec.htm)
 
-#### Data Caterer
-
-The export function converts the data contract to a data generation task in YAML format that can be 
-ingested by [Data Caterer](https://github.com/data-catering/data-caterer). This gives you the 
-ability to generate production-like data in any environment based off your data contract.
-
-```shell
-datacontract export datacontract.yaml --format data-caterer --model orders
-```
-
-You can further customise the way data is generated via adding 
-[additional metadata in the YAML](https://data.catering/setup/generator/data-generator/) 
-to suit your needs.
-
 #### Example Configuration
 
 ```yaml
@@ -993,6 +979,20 @@ models:
   - **config**: Section to specify custom Avro properties.
     - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
     - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
+
+#### Data Caterer
+
+The export function converts the data contract to a data generation task in YAML format that can be
+ingested by [Data Caterer](https://github.com/data-catering/data-caterer). This gives you the
+ability to generate production-like data in any environment based off your data contract.
+
+```shell
+datacontract export datacontract.yaml --format data-caterer --model orders
+```
+
+You can further customise the way data is generated via adding
+[additional metadata in the YAML](https://data.catering/setup/generator/data-generator/)
+to suit your needs.
 
 #### Iceberg
 
