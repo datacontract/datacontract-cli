@@ -30,6 +30,7 @@ def to_sodacl_yaml(
 
 def to_checks(model_key, model_value, server_type: str, check_types: bool):
     checks = []
+    model_name = to_model_name(model_key, model_value, server_type)
     fields = model_value.fields
 
     quote_field_name = server_type in ["postgres", "sqlserver"]
@@ -62,23 +63,39 @@ def to_checks(model_key, model_value, server_type: str, check_types: bool):
         if field.enum is not None and len(field.enum) > 0:
             checks.append(check_field_enum(field_name, field.enum, quote_field_name))
         if field.quality is not None and len(field.quality) > 0:
-            quality_list = check_quality_list(model_key, field_name, field.quality)
+            quality_list = check_quality_list(model_name, field_name, field.quality)
             if (quality_list is not None) and len(quality_list) > 0:
                 checks.append(quality_list)
         # TODO references: str = None
         # TODO format
 
     if model_value.quality is not None and len(model_value.quality) > 0:
-        quality_list = check_quality_list(model_key, None, model_value.quality)
+        quality_list = check_quality_list(model_name, None, model_value.quality)
         if (quality_list is not None) and len(quality_list) > 0:
             checks.append(quality_list)
 
-    checks_for_model_key = f"checks for {model_key}"
+    checks_for_model_key = f"checks for {model_name}"
 
     if quote_field_name:
-        checks_for_model_key = f'checks for "{model_key}"'
+        checks_for_model_key = f'checks for "{model_name}"'
 
     return checks_for_model_key, checks
+
+
+def to_model_name(model_key, model_value, server_type):
+    if server_type == "databricks":
+        if model_value.config is not None and "databricksTable" in model_value.config:
+            return model_value.config["databricksTable"]
+    if server_type == "snowflake":
+        if model_value.config is not None and "snowflakeTable" in model_value.config:
+            return model_value.config["snowflakeTable"]
+    if server_type == "sqlserver":
+        if model_value.config is not None and "sqlserverTable" in model_value.config:
+            return model_value.config["sqlserverTable"]
+    if server_type == "postgres" or server_type == "postgresql":
+        if model_value.config is not None and "postgresTable" in model_value.config:
+            return model_value.config["postgresTable"]
+    return model_key
 
 
 def check_field_is_present(field_name):
