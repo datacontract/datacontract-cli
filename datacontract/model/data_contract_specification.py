@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pydantic as pyd
 import yaml
@@ -32,9 +32,9 @@ DATACONTRACT_TYPES = [
 
 
 class Contact(pyd.BaseModel):
-    name: Optional[str] = None
-    url: Optional[str] = None
-    email: Optional[str] = None
+    name: str | None = None
+    url: str | None = None
+    email: str | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -42,37 +42,37 @@ class Contact(pyd.BaseModel):
 
 
 class ServerRole(pyd.BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
     model_config = pyd.ConfigDict(
         extra="allow",
     )
 
 
 class Server(pyd.BaseModel):
-    type: Optional[str] = None
-    description: Optional[str] = None
-    environment: Optional[str] = None
-    format: Optional[str] = None
-    project: Optional[str] = None
-    dataset: Optional[str] = None
-    path: Optional[str] = None
-    delimiter: Optional[str] = None
-    endpointUrl: Optional[str] = None
-    location: Optional[str] = None
-    account: Optional[str] = None
-    database: Optional[str] = None
-    schema_: Optional[str] = pyd.Field(default=None, alias="schema")
-    host: Optional[str] = None
-    port: Optional[int] = None
-    catalog: Optional[str] = None
-    topic: Optional[str] = None
-    http_path: Optional[str] = None  # Use ENV variable
-    token: Optional[str] = None  # Use ENV variable
-    dataProductId: Optional[str] = None
-    outputPortId: Optional[str] = None
-    driver: Optional[str] = None
-    storageAccount: Optional[str] = None
+    type: str | None = None
+    description: str | None = None
+    environment: str | None = None
+    format: str | None = None
+    project: str | None = None
+    dataset: str | None = None
+    path: str | None = None
+    delimiter: str | None = None
+    endpointUrl: str | None = None
+    location: str | None = None
+    account: str | None = None
+    database: str | None = None
+    schema_: str | None = pyd.Field(default=None, alias="schema")
+    host: str | None = None
+    port: int | None = None
+    catalog: str | None = None
+    topic: str | None = None
+    http_path: str | None = None  # Use ENV variable
+    token: str | None = None  # Use ENV variable
+    dataProductId: str | None = None
+    outputPortId: str | None = None
+    driver: str | None = None
+    storageAccount: str | None = None
     roles: List[ServerRole] = None
 
     model_config = pyd.ConfigDict(
@@ -81,11 +81,11 @@ class Server(pyd.BaseModel):
 
 
 class Terms(pyd.BaseModel):
-    usage: Optional[str] = None
-    limitations: Optional[str] = None
-    billing: Optional[str] = None
-    noticePeriod: Optional[str] = None
-    description: Optional[str] = None
+    usage: str | None = None
+    limitations: str | None = None
+    billing: str | None = None
+    noticePeriod: str | None = None
+    description: str | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -93,26 +93,26 @@ class Terms(pyd.BaseModel):
 
 
 class Definition(pyd.BaseModel):
-    domain: Optional[str] = None
-    name: Optional[str] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    type: Optional[str] = None
+    domain: str | None = None
+    name: str | None = None
+    title: str | None = None
+    description: str | None = None
+    type: str | None = None
     enum: List[str] = []
-    format: Optional[str] = None
-    minLength: Optional[int] = None
-    maxLength: Optional[int] = None
-    pattern: Optional[str] = None
-    minimum: Optional[int] = None
-    exclusiveMinimum: Optional[int] = None
-    maximum: Optional[int] = None
-    exclusiveMaximum: Optional[int] = None
-    pii: Optional[bool] = None
-    classification: Optional[str] = None
+    format: str | None = None
+    minLength: int | None = None
+    maxLength: int | None = None
+    pattern: str | None = None
+    minimum: int | None = None
+    exclusiveMinimum: int | None = None
+    maximum: int | None = None
+    exclusiveMaximum: int | None = None
+    pii: bool | None = None
+    classification: str | None = None
     fields: Dict[str, "Field"] = {}
     tags: List[str] = []
     links: Dict[str, str] = {}
-    example: Optional[str] = None
+    example: str | None = None
     examples: List[Any] | None = None
 
     model_config = pyd.ConfigDict(
@@ -121,19 +121,19 @@ class Definition(pyd.BaseModel):
 
 
 class Quality(pyd.BaseModel):
-    type: Optional[str] = None
-    description: Optional[str] = None
-    query: Optional[str] = None
-    dialect: Optional[str] = None
-    mustBe: Optional[int] = None
-    mustNotBe: Optional[int] = None
-    mustBeGreaterThan: Optional[int] = None
-    mustBeGreaterThanOrEqualTo: Optional[int] = None
-    mustBeLessThan: Optional[int] = None
-    mustBeLessThanOrEqualTo: Optional[int] = None
+    type: str | None = None
+    description: str | None = None
+    query: str | None = None
+    dialect: str | None = None
+    mustBe: int | None = None
+    mustNotBe: int | None = None
+    mustBeGreaterThan: int | None = None
+    mustBeGreaterThanOrEqualTo: int | None = None
+    mustBeLessThan: int | None = None
+    mustBeLessThanOrEqualTo: int | None = None
     mustBeBetween: List[int] = None
     mustNotBeBetween: List[int] = None
-    engine: Optional[str] = None
+    engine: str | None = None
     implementation: str | Dict[str, Any] | None = None
 
     model_config = pyd.ConfigDict(
@@ -144,26 +144,26 @@ class Quality(pyd.BaseModel):
 class Field(pyd.BaseModel):
     ref: str = pyd.Field(default=None, alias="$ref")
     title: str | None = None
-    type: Optional[str] = None
-    format: Optional[str] = None
-    required: Optional[bool] = None
+    type: str | None = None
+    format: str | None = None
+    required: bool | None = None
     primary: bool = pyd.Field(
         default=None,
         deprecated="Removed in Data Contract Specification v1.1.0. Use primaryKey instead.",
     )
     primaryKey: bool | None = None
     unique: bool | None = None
-    references: Optional[str] = None
+    references: str | None = None
     description: str | None = None
     pii: bool | None = None
     classification: str | None = None
-    pattern: Optional[str] = None
-    minLength: Optional[int] = None
-    maxLength: Optional[int] = None
-    minimum: Optional[int] = None
-    exclusiveMinimum: Optional[int] = None
-    maximum: Optional[int] = None
-    exclusiveMaximum: Optional[int] = None
+    pattern: str | None = None
+    minLength: int | None = None
+    maxLength: int | None = None
+    minimum: int | None = None
+    exclusiveMinimum: int | None = None
+    maximum: int | None = None
+    exclusiveMaximum: int | None = None
     enum: List[str] | None = []
     tags: List[str] | None = []
     links: Dict[str, str] = {}
@@ -171,8 +171,8 @@ class Field(pyd.BaseModel):
     items: "Field" = None
     keys: "Field" = None
     values: "Field" = None
-    precision: Optional[int] = None
-    scale: Optional[int] = None
+    precision: int | None = None
+    scale: int | None = None
     example: str = pyd.Field(
         default=None,
         deprecated="Removed in Data Contract Specification v1.1.0. Use " "examples instead.",
@@ -187,10 +187,10 @@ class Field(pyd.BaseModel):
 
 
 class Model(pyd.BaseModel):
-    description: Optional[str] = None
-    type: Optional[str] = None
-    namespace: Optional[str] = None
-    title: Optional[str] = None
+    description: str | None = None
+    type: str | None = None
+    namespace: str | None = None
+    title: str | None = None
     fields: Dict[str, Field] = {}
     quality: List[Quality] | None = []
     primaryKey: List[str] | None = []
@@ -204,12 +204,12 @@ class Model(pyd.BaseModel):
 
 
 class Info(pyd.BaseModel):
-    title: Optional[str] = None
-    version: Optional[str] = None
-    status: Optional[str] = None
-    description: Optional[str] = None
-    owner: Optional[str] = None
-    contact: Optional[Contact] = None
+    title: str | None = None
+    version: str | None = None
+    status: str | None = None
+    description: str | None = None
+    owner: str | None = None
+    contact: Contact | None = None
 
     model_config = pyd.ConfigDict(
         extra="allow",
@@ -217,91 +217,91 @@ class Info(pyd.BaseModel):
 
 
 class Example(pyd.BaseModel):
-    type: Optional[str] = None
-    description: Optional[str] = None
-    model: Optional[str] = None
+    type: str | None = None
+    description: str | None = None
+    model: str | None = None
     data: str | object = None
 
 
 # Deprecated Quality class
 class DeprecatedQuality(pyd.BaseModel):
-    type: Optional[str] = None
+    type: str | None = None
     specification: str | object = None
 
 
 class Availability(pyd.BaseModel):
-    description: Optional[str] = None
-    percentage: Optional[str] = None
+    description: str | None = None
+    percentage: str | None = None
 
 
 class Retention(pyd.BaseModel):
-    description: Optional[str] = None
-    period: Optional[str] = None
-    unlimited: Optional[bool] = None
-    timestampField: Optional[str] = None
+    description: str | None = None
+    period: str | None = None
+    unlimited: bool | None = None
+    timestampField: str | None = None
 
 
 class Latency(pyd.BaseModel):
-    description: Optional[str] = None
-    threshold: Optional[str] = None
-    sourceTimestampField: Optional[str] = None
-    processedTimestampField: Optional[str] = None
+    description: str | None = None
+    threshold: str | None = None
+    sourceTimestampField: str | None = None
+    processedTimestampField: str | None = None
 
 
 class Freshness(pyd.BaseModel):
-    description: Optional[str] = None
-    threshold: Optional[str] = None
-    timestampField: Optional[str] = None
+    description: str | None = None
+    threshold: str | None = None
+    timestampField: str | None = None
 
 
 class Frequency(pyd.BaseModel):
-    description: Optional[str] = None
-    type: Optional[str] = None
-    interval: Optional[str] = None
-    cron: Optional[str] = None
+    description: str | None = None
+    type: str | None = None
+    interval: str | None = None
+    cron: str | None = None
 
 
 class Support(pyd.BaseModel):
-    description: Optional[str] = None
-    time: Optional[str] = None
-    responseTime: Optional[str] = None
+    description: str | None = None
+    time: str | None = None
+    responseTime: str | None = None
 
 
 class Backup(pyd.BaseModel):
-    description: Optional[str] = None
-    interval: Optional[str] = None
-    cron: Optional[str] = None
-    recoveryTime: Optional[str] = None
-    recoveryPoint: Optional[str] = None
+    description: str | None = None
+    interval: str | None = None
+    cron: str | None = None
+    recoveryTime: str | None = None
+    recoveryPoint: str | None = None
 
 
 class ServiceLevel(pyd.BaseModel):
-    availability: Optional[Availability] = None
-    retention: Optional[Retention] = None
-    latency: Optional[Latency] = None
-    freshness: Optional[Freshness] = None
-    frequency: Optional[Frequency] = None
-    support: Optional[Support] = None
-    backup: Optional[Backup] = None
+    availability: Availability | None = None
+    retention: Retention | None = None
+    latency: Latency | None = None
+    freshness: Freshness | None  = None
+    frequency: Frequency | None = None
+    support: Support | None = None
+    backup: Backup | None = None
 
 
 class DataContractSpecification(pyd.BaseModel):
-    dataContractSpecification: Optional[str] = None
-    id: Optional[str] = None
-    info: Optional[Info] = None
+    dataContractSpecification: str | None = None
+    id: str | None = None
+    info: Info | None = None
     servers: Dict[str, Server] = {}
-    terms: Optional[Terms] = None
+    terms: Terms | None  = None
     models: Dict[str, Model] = {}
     definitions: Dict[str, Definition] = {}
     examples: List[Example] = pyd.Field(
         default_factory=list,
         deprecated="Removed in Data Contract Specification " "v1.1.0. Use models.examples instead.",
     )
-    quality: Optional[DeprecatedQuality] = pyd.Field(
+    quality: DeprecatedQuality | None = pyd.Field(
         default=None,
         deprecated="Removed in Data Contract Specification v1.1.0. Use " "model-level and field-level quality instead.",
     )
-    servicelevels: Optional[ServiceLevel] = None
+    servicelevels: ServiceLevel | None = None
     links: Dict[str, str] = {}
     tags: List[str] = []
 
