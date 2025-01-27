@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - datacontract export --format html: The composite primary key is now shown. (#591)
 - datacontract export --format html: now examples are rendered in the model and definition (#497)
 - datacontract export --format sql: Create arrays and struct for Databricks (#467)
+- Adding new members to enums without removing existing ones is no longer a breaking change
 
 ### Fixed
 - datacontract lint: Linter 'Field references existing field' too many values to unpack (expected
