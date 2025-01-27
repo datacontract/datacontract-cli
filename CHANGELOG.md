@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - datacontract export --format data-caterer: Use `fields` instead of `schema`
 - datacontract export --format data-caterer: Use `options` instead of `generator.options`
 - datacontract export --format data-caterer: Capture array type length option and inner data type
+- Fixed schemas/datacontract-1.1.0.init.yaml not included in build and `--template` not resolving file
 
 ## [0.10.18] - 2024-01-18
 

@@ -75,9 +75,8 @@ class DataContract:
         }
 
     @classmethod
-    def init(cls, template: str, schema: typing.Optional[str] = None) -> DataContractSpecification:
-        if template is None:
-            template_str = get_init_template(template)
+    def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> DataContractSpecification:
+        template_str = get_init_template(template)
         return resolve.resolve_data_contract(data_contract_str=template_str, schema_location=schema)
 
     def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
