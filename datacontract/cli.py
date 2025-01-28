@@ -198,6 +198,11 @@ def export(
         Optional[str],
         typer.Option(help="[engine] The engine used for great expection run."),
     ] = None,
+    # TODO: this should be a subcommand
+    template: Annotated[
+        Optional[str],
+        typer.Option(help="[custom] The file path of Jinja template."),
+    ] = None,
 ):
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -210,6 +215,7 @@ def export(
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,
         engine=engine,
+        template=template,
     )
     # Don't interpret console markup in output.
     if output is None:

@@ -16,5 +16,13 @@ class CustomExporter(Exporter):
         sql_server_type: str,
         export_args: dict,
     ) -> str:
-        """Exports a data contract to Markdown format."""
-        return ""
+        """Exports a data contract to custom format with Jinja."""
+        template = export_args.get("template")
+        if template is None:
+            raise RuntimeError("Export to custom requires template argument.")
+
+        return to_custom(data_contract, template)
+
+
+def to_custom(data_contract: DataContractSpecification, template: str) -> str:
+    return ""

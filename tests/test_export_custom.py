@@ -14,6 +14,8 @@ def test_cli():
             "./fixtures/custom/export/datacontract.yaml",
             "--format",
             "custom",
+            "--template",
+            "template.sql",
         ],
     )
     assert result.exit_code == 0
