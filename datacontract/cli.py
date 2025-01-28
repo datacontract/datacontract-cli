@@ -200,7 +200,7 @@ def export(
     ] = None,
     # TODO: this should be a subcommand
     template: Annotated[
-        Optional[str],
+        Optional[Path],
         typer.Option(help="[custom] The file path of Jinja template."),
     ] = None,
 ):

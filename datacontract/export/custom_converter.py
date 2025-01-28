@@ -1,3 +1,7 @@
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
+
 from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
@@ -24,5 +28,13 @@ class CustomExporter(Exporter):
         return to_custom(data_contract, template)
 
 
-def to_custom(data_contract: DataContractSpecification, template: str) -> str:
-    return ""
+def to_custom(data_contract: DataContractSpecification, template_path: Path) -> str:
+    template = get_template(template_path)
+    rendered_sql = template.render(data_contract=data_contract)
+    return rendered_sql
+
+
+def get_template(path: Path):
+    abosolute_path = Path(path).resolve()
+    env = Environment(loader=FileSystemLoader(str(abosolute_path.parent)))
+    return env.get_template(path.name)
