@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added import CSV
 - publish command also supports publishing ODCS format
+- Option to separate physical table name for a model via config option (#270)
 
 ### Changed
 - JSON Schemas are now bundled with the application (#598)
