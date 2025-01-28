@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract export --format custom`: Export to custom format with Jinja
 - Added import CSV
 - publish command also supports publishing ODCS format
 - Option to separate physical table name for a model via config option (#270)
