@@ -103,8 +103,12 @@ parquet = [
   "pyarrow>=18.1.0"
 ]
 
+custom = [
+  "Jinja2>=3.1.5"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,custom]"
 ]
 
 dev = [
