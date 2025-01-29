@@ -5,11 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
-## [Unreleased]
+## [0.10.19] - 2025-01-29
 
 ### Added
-- Added import CSV
+
+- datacontract import --format csv
 - publish command also supports publishing ODCS format
 - Option to separate physical table name for a model via config option (#270)
 
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - datacontract export --format data-caterer: Use `options` instead of `generator.options`
 - datacontract export --format data-caterer: Capture array type length option and inner data type
 
-## [0.10.18] - 2024-01-18
+## [0.10.18] - 2025-01-18
 
 ### Fixed
 - Fixed an issue when resolving project's dependencies when all extras are installed.
@@ -38,8 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced deprecated `primary` field with `primaryKey` in exporters, importers, examples, and Jinja templates for backward compatibility. Fixes [#518](https://github.com/your-repo/your-project/issues/518).
 - Cannot execute test on column of type record(bigquery) #597
 
-
-## [0.10.17] - 2024-01-16
+## [0.10.17] - 2025-01-16
 
 ### Added
 - added export format **markdown**: `datacontract export --format markdown` (#545)
