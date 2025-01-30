@@ -11,7 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [0.10.20] - 2025-01-30
+
+### Added
+
+- datacontract serve: now has a route for testing data contracts
+- datacontract serve: now has a OpenAPI documentation on root
+
+### Changed
+
+- FastAPI endpoint is now moved to extra "web"
+
 ### Fixed
+
+- API Keys for Data Mesh Manager are now also applied for on-premise installations
 
 ## [0.10.19] - 2025-01-29
 
