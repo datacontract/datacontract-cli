@@ -1693,7 +1693,7 @@ class CustomExporter(Exporter):
 
 
 # Register the new custom class into factory
-exporter_factory.register_exporter("custom", CustomExporter)
+exporter_factory.register_exporter("custom_exporter", CustomExporter)
 
 
 if __name__ == "__main__":
@@ -1703,7 +1703,7 @@ if __name__ == "__main__":
     )
     # Call export
     result = data_contract.export(
-        export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
+        export_format="custom_exporter", model="orders", server="production", custom_arg="my_custom_arg"
     )
     print(result)
 
