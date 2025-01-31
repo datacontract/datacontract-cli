@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+- Fix Error: 'dict object' has no attribute 'model_extra' when trying to use type: string with enum
+  values inside an array (#619)
+
 ## [0.10.20] - 2025-01-30
 
 ### Added

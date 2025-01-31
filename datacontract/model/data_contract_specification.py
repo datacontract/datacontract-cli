@@ -110,6 +110,7 @@ class Definition(pyd.BaseModel):
     pii: bool = None
     classification: str = None
     fields: Dict[str, "Field"] = {}
+    items: "Field" = None
     tags: List[str] = []
     links: Dict[str, str] = {}
     example: str = None

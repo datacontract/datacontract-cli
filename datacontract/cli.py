@@ -344,7 +344,7 @@ def catalog(
     ] = None,
 ):
     """
-    Create an html catalog of data contracts.
+    Create a html catalog of data contracts.
     """
     path = Path(output)
     path.mkdir(parents=True, exist_ok=True)
