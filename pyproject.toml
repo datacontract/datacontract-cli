@@ -101,13 +101,13 @@ parquet = [
   "pyarrow>=18.1.0"
 ]
 
-custom = [
-  "Jinja2>=3.1.5"
-]
-
 web = [
   "fastapi==0.115.6",
   "uvicorn==0.34.0",
+]
+
+custom = [
+  "Jinja2>=3.1.5"
 ]
 
 all = [
