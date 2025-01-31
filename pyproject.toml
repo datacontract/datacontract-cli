@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.19"
+version = "0.10.20"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 readme = "README.md"
 authors = [
@@ -19,8 +19,6 @@ dependencies = [
   "pydantic>=2.8.2,<2.11.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
-  "fastapi==0.115.6", # move to extra?
-  "uvicorn==0.34.0", # move to extra?
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet==2024.11.0",
   "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
@@ -107,8 +105,13 @@ custom = [
   "Jinja2>=3.1.5"
 ]
 
+web = [
+  "fastapi==0.115.6",
+  "uvicorn==0.34.0",
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,custom]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,web,custom]"
 ]
 
 dev = [

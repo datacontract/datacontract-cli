@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 import typer
-import uvicorn
 from click import Context
 from rich import box
 from rich.console import Console
@@ -12,7 +11,6 @@ from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
-from datacontract import web
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
@@ -448,8 +446,9 @@ def serve(
     """
     Start the datacontract web server.
     """
+    import uvicorn
 
-    uvicorn.run(web.app, port=port, host=host)
+    uvicorn.run("datacontract.web:app", port=port, host=host, reload=True)
 
 
 def _handle_result(run):
