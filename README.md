@@ -1052,6 +1052,74 @@ to limit your contract export to a single model.
 }
 ```
 
+#### Custom
+
+The export function converts the data contract specification into the custom format with Jinja. You can specify the path to a Jinja template with the `--template` argument, allowing you to output files in any format.
+
+```shell
+datacontract export --format custom --template template.txt datacontract.yaml
+```
+
+##### Jinja variables
+
+You can directly use the Data Contract Specification as template variables.
+
+```shell
+$ cat template.txt
+title: {{ data_contract.info.title }}
+
+$ datacontract export --format custom --template template.txt datacontract.yaml
+title: Orders Latest
+```
+
+##### Example Jinja Templates
+
+###### Customized dbt model
+
+You can export the dbt models containing any logic.
+
+Below is an example of a dbt staging layer that converts a field of `type: timestamp` to a `DATETIME` type with time zone conversion.
+
+template.sql
+
+```sql
+{%- for model_name, model in data_contract.models.items() %}
+{#- Export only the first model #}
+{%- if loop.first -%}
+SELECT
+{%- for field_name, field in model.fields.items() %}
+  {%- if field.type == "timestamp" %}
+  DATETIME({{ field_name }}, "Asia/Tokyo") AS {{ field_name }},
+  {%- else %}
+  {{ field_name }} AS {{ field_name }},
+  {%- endif %}
+{%- endfor %}
+FROM
+  {{ "{{" }} ref('{{ model_name }}') {{ "}}" }} 
+{%- endif %}
+{%- endfor %}
+```
+
+command
+
+```shell
+datacontract export --format custom --template template.sql --output output.sql datacontract.yaml
+```
+
+output.sql
+
+```sql
+SELECT
+  order_id AS order_id,
+  DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
+  order_total AS order_total,
+  customer_id AS customer_id,
+  customer_email_address AS customer_email_address,
+  DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
+FROM
+  {{ ref('orders') }}
+```
+
 ### import
 ```
                                                                                 
@@ -1625,7 +1693,7 @@ class CustomExporter(Exporter):
 
 
 # Register the new custom class into factory
-exporter_factory.register_exporter("custom", CustomExporter)
+exporter_factory.register_exporter("custom_exporter", CustomExporter)
 
 
 if __name__ == "__main__":
@@ -1635,7 +1703,7 @@ if __name__ == "__main__":
     )
     # Call export
     result = data_contract.export(
-        export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
+        export_format="custom_exporter", model="orders", server="production", custom_arg="my_custom_arg"
     )
     print(result)
 

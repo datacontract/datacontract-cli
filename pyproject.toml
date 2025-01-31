@@ -106,8 +106,12 @@ web = [
   "uvicorn==0.34.0",
 ]
 
+custom = [
+  "Jinja2>=3.1.5"
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,web]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,web,custom]"
 ]
 
 dev = [
