@@ -73,7 +73,7 @@ postgres = [
 
 s3 = [
   "s3fs==2024.12.0",
-  "aiobotocore>=2.17.0,<2.18.0",
+  "aiobotocore>=2.17.0,<2.20.0",
 ]
 
 snowflake = [
@@ -118,7 +118,7 @@ dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
   "kafka-python",
-  "moto==5.0.26",
+  "moto==5.0.27",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.1.0",
   "pytest",
