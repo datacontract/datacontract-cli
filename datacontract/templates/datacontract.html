@@ -150,14 +150,12 @@
                       <tfoot class="divide-y divide-gray-200 bg-white">
                       {% if model.quality %}
                       {% for quality in model.quality %}
-                      {% if quality.type == 'sql' %}
                       <tr>
                         <th scope="colgroup" colspan="4"
                             class="py-2 pl-4 pr-3 text-left text-sm font-normal sm:pl-6 bg-white">
                           {{ render_partial('partials/quality.html', quality = quality)}}
                         </th>
                       </tr>
-                      {% endif %}
                       {% endfor %}
                       {% endif %}
 
