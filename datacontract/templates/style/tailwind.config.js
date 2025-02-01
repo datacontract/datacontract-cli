@@ -9,6 +9,7 @@ module.exports = {
     "../partials/datacontract_servicelevels.html",
     "../partials/datacontract_terms.html",
     "../partials/example.html",
+    "../partials/quality.html",
   ],
   theme: { },
   plugins: [],

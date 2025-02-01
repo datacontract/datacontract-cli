@@ -1,0 +1,49 @@
+<div class="mt-2">
+  <span class="italic">Quality | {{quality.type|upper}}:</span> {{ quality.description }}
+  {% if quality.type == 'sql' and quality.query %}
+  <div class="pl-4">
+    Query:
+    <div class="ring-1 ring-inset ring-gray-500/10 bg-gray-50 p-2 rounded-md"><pre><code>{{ quality.query }}</code></pre></div>
+    {% if quality.mustBe != None %}
+    <div>
+      Must Be: <span class="font-mono font-bold"> {{quality.mustBe}}</span>
+    </div>
+    {% endif %}
+    {% if quality.mustNotBe != None %}
+    <div>
+      Must Not Be: <span class="font-mono font-bold"> {{quality.mustNotBe}}</span>
+    </div>
+    {% endif %}
+    {% if quality.mustBeGreaterThan != None %}
+    <div>
+      Must Be Greater Than: <span class="font-mono font-bold"> {{quality.mustBeGreaterThan}}</span>
+    </div>
+    {% endif %}
+    {% if quality.mustBeGreaterThanOrEqualTo != None %}
+    <div>
+      Must Be Greater Than Or Equal To: <span class="font-mono font-bold"> {{quality.mustBeGreaterThanOrEqualTo}}</span>
+    </div>
+    {% endif %}
+    {% if quality.mustBeLessThan != None %}
+    <div>
+      Must Be Less Than: <span class="font-mono font-bold"> {{quality.mustBeLessThan}}</span>
+    </div>
+    {% endif %}
+    {% if quality.mustBeLessThanOrEqualTo != None %}
+    <div>
+      Must Be Less Than Or Equal To: <span class="font-mono font-bold"> {{quality.mustBeLessThanOrEqualTo}}</span>
+    </div>
+    {% endif %}
+    {% if quality.mustBeBetween %}
+    <div>
+      Must Be Between: <span class="font-mono font-bold"> {{quality.mustBeBetween|join(' and ')}}</span>
+    </div>
+    {% endif %}
+    {% if quality.mustNotBeBetween %}
+    <div>
+      Must Not Be Between: <span class="font-mono font-bold"> {{quality.mustNotBeBetween}}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

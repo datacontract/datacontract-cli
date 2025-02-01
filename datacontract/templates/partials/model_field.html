@@ -111,6 +111,11 @@
       {% endfor %}
       {% endif %}
     </div>
+    {% if field.quality %}
+    {% for quality in field.quality %}
+    {{ render_partial('partials/quality.html', quality = quality) }}
+    {% endfor %}
+    {% endif %}
   </td>
 </tr>
 
