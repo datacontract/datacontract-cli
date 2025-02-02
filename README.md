@@ -1082,6 +1082,7 @@ Below is an example of a dbt staging layer that converts a field of `type: times
 
 template.sql
 
+{% raw %}
 ```sql
 {%- for model_name, model in data_contract.models.items() %}
 {#- Export only the first model #}
@@ -1099,6 +1100,7 @@ FROM
 {%- endif %}
 {%- endfor %}
 ```
+{% endraw %}
 
 command
 
