@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # Data Contract CLI
 
 <p>
