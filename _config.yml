@@ -3,8 +3,3 @@ plugins:
 markdown: kramdown
 name: "Data Contract CLI"
 title: null
-defaults:
-  - scope:
-      path: "README.md" # an empty string here means all files in the project
-    values:
-      render_with_liquid: false
