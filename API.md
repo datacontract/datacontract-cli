@@ -5,7 +5,7 @@ linting, and exports.
 
 ## Demo
 
-Open the Demo: https://api.datacontract.com
+Open the Demo: [https://api.datacontract.com](https://api.datacontract.com)
 
 You can use the API to test, export, and lint your data contracts.
 Please note, that this demo endpoint cannot test to your secured data sources.
