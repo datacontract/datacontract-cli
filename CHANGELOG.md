@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `datacontract export --format custom`: Export to custom format with Jinja
+- `datacontract api` now can be protected with an API key
 
 ### Changed
+
+- `datacontract serve` renamed to `datacontract api`
 
 ### Fixed
 

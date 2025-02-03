@@ -101,7 +101,7 @@ parquet = [
   "pyarrow>=18.1.0"
 ]
 
-web = [
+api = [
   "fastapi==0.115.6",
   "uvicorn==0.34.0",
 ]
@@ -111,7 +111,7 @@ custom = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,web,custom]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,api,custom]"
 ]
 
 dev = [

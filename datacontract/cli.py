@@ -439,16 +439,32 @@ def diff(
 
 
 @app.command()
-def serve(
+def api(
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
-    host: Annotated[str, typer.Option(help="Bind socket to this host.")] = "127.0.0.1",
+    host: Annotated[
+        str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
+    ] = "127.0.0.1",
 ):
     """
-    Start the datacontract web server.
+    Start the datacontract CLI as server application with REST API.
+
+    The OpenAPI documentation as Swagger UI is available on http://localhost:4242.
+    You can execute the commands directly from the Swagger UI.
+
+    To protect the API, you can set the environment variable DATACONTRACT_CLI_API_KEY to a secret API key.
+    To authenticate, requests must include the header 'x-api-key' with the correct API key.
+    This is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive information.
+
+    To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in
+    https://cli.datacontract.com/#test
     """
     import uvicorn
+    from uvicorn.config import LOGGING_CONFIG
 
-    uvicorn.run("datacontract.web:app", port=port, host=host, reload=True)
+    log_config = LOGGING_CONFIG
+    log_config["root"] = {"level": "INFO"}
+
+    uvicorn.run(app="datacontract.api:app", port=port, host=host, reload=True, log_config=LOGGING_CONFIG)
 
 
 def _handle_result(run):

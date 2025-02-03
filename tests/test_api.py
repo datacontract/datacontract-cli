@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from datacontract.web import app
+from datacontract.api import app
 
 client = TestClient(app)
 
