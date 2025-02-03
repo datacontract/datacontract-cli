@@ -174,9 +174,9 @@ class Field(pyd.BaseModel):
     values: "Field" = None
     precision: int | None = None
     scale: int | None = None
-    example: str = pyd.Field(
+    example: Any | None = pyd.Field(
         default=None,
-        deprecated="Removed in Data Contract Specification v1.1.0. Use " "examples instead.",
+        deprecated="Removed in Data Contract Specification v1.1.0. Use examples instead.",
     )
     examples: List[Any] | None = None
     quality: List[Quality] | None = []
@@ -280,7 +280,7 @@ class ServiceLevel(pyd.BaseModel):
     availability: Availability | None = None
     retention: Retention | None = None
     latency: Latency | None = None
-    freshness: Freshness | None  = None
+    freshness: Freshness | None = None
     frequency: Frequency | None = None
     support: Support | None = None
     backup: Backup | None = None
@@ -291,7 +291,7 @@ class DataContractSpecification(pyd.BaseModel):
     id: str | None = None
     info: Info | None = None
     servers: Dict[str, Server] = {}
-    terms: Terms | None  = None
+    terms: Terms | None = None
     models: Dict[str, Model] = {}
     definitions: Dict[str, Definition] = {}
     examples: List[Example] = pyd.Field(

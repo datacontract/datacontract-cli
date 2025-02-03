@@ -33,22 +33,22 @@ def _set_api_key(headers, url):
 
     if hostname == "datamesh-manager.com" or hostname.endswith(".datamesh-manager.com"):
         if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
-            print("Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
+            print("Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
             raise DataContractException(
                 type="lint",
                 name=f"Reading data contract from {url}",
-                reason="Error: Data Mesh Manager API Key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
+                reason="Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
                 engine="datacontract",
                 result="error",
             )
         headers["x-api-key"] = datamesh_manager_api_key
     elif hostname == "datacontract-manager.com" or hostname.endswith(".datacontract-manager.com"):
         if datacontract_manager_api_key is None or datacontract_manager_api_key == "":
-            print("Error: Data Contract Manager API Key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.")
+            print("Error: Data Contract Manager API key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.")
             raise DataContractException(
                 type="lint",
                 name=f"Reading data contract from {url}",
-                reason="Error: Data Contract Manager API Key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.",
+                reason="Error: Data Contract Manager API key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.",
                 engine="datacontract",
                 result="error",
             )

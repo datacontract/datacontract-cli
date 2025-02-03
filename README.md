@@ -1530,18 +1530,23 @@ datacontract catalog --files "*.odcs.yaml"
 
 ```
 
-### serve
+### api
 ```
-                                                                                
- Usage: datacontract serve [OPTIONS]                                            
-                                                                                
- Start the datacontract web server.                                             
-                                                                                
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --port        INTEGER  Bind socket to this port. [default: 4242]             │
-│ --host        TEXT     Bind socket to this host. [default: 127.0.0.1]        │
-│ --help                 Show this message and exit.                           │
-╰──────────────────────────────────────────────────────────────────────────────╯
+
+ Usage: datacontract api [OPTIONS]   
+                                                                                 
+ Start the datacontract CLI as server application with REST API.                                                                                                                  
+ The OpenAPI documentation as Swagger UI is available on http://localhost:4242. You can execute the commands directly from the Swagger UI.                                        
+ To protect the API, you can set the environment variable DATACONTRACT_CLI_API_KEY to a secret API key. To authenticate, requests must include the header 'x-api-key' with the    
+ correct API key. This is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive information.                                              
+ To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in https://cli.datacontract.com/#test                        
+                                                                                                                                                                                  
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --port        INTEGER  Bind socket to this port. [default: 4242]                                                                                                               │
+│ --host        TEXT     Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0 [default: 127.0.0.1]                                                           │
+│ --help                 Show this message and exit.                                                                                                                             │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 
 ```
 

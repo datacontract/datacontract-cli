@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Annotated, Optional
 
@@ -6,7 +7,6 @@ from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
 
-from datacontract.cli import console
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.run import Run
 
@@ -58,8 +58,8 @@ models:
 
 app = FastAPI(
     docs_url="/",
-    title="Data Contract CLI Server",
-    summary="API to execute Data Contract CLI operations.",
+    title="Data Contract CLI API",
+    summary="You can use the API to test, export, and lint your data contracts.",
     license_info={
         "name": "MIT License",
         "identifier": "MIT",
@@ -97,23 +97,23 @@ api_key_header = APIKeyHeader(
 
 
 def check_api_key(api_key_header: str | None):
-    correct_api_key = os.getenv("DATACONTRACT_CLI_SERVER_API_KEY")
+    correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
-        console.print("Environment variable DATACONTRACT_CLI_SERVER_API_KEY is not set. Skip API Key check.")
+        logging.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
         return
     if api_key_header is None or api_key_header == "":
-        console.print("The API Key is missing.")
+        logging.info("The API key is missing.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
     if api_key_header != correct_api_key:
-        console.print("The provided API Key is not correct.")
+        logging.info("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="The provided API Key is not correct.",
+            detail="The provided API key is not correct.",
         )
-    console.print("Request authenticated with API Key.")
+    logging.info("Request authenticated with API key.")
     pass
 
 
@@ -129,17 +129,17 @@ def check_api_key(api_key_header: str | None):
             """,
     responses={
         401: {
-            "description": "Unauthorized (when an environment variable DATACONTRACT_CLI_SERVER_API_KEY is configured).",
+            "description": "Unauthorized (when an environment variable DATACONTRACT_CLI_API_KEY is configured).",
             "content": {
                 "application/json": {
                     "examples": {
                         "api_key_missing": {
-                            "summary": "API Key Missing",
+                            "summary": "API key Missing",
                             "value": {"detail": "Missing API key. Use Header 'x-api-key' to provide the API key."},
                         },
                         "api_key_wrong": {
-                            "summary": "API Key Wrong",
-                            "value": {"detail": "The provided API Key is not correct."},
+                            "summary": "API key Wrong",
+                            "value": {"detail": "The provided API key is not correct."},
                         },
                     }
                 }
@@ -168,6 +168,8 @@ async def test(
     ] = None,
 ) -> Run:
     check_api_key(api_key)
+    logging.info("Testing data contract...")
+    logging.info(body)
     return DataContract(data_contract_str=body, server=server).test()
 
 
