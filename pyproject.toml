@@ -31,7 +31,7 @@ dependencies = [
   "setuptools>=60",
   "python-dotenv~=1.0.0",
   "rdflib==7.0.0", # move to extra?
-  "boto3>=1.34.41,<1.35.98",
+  "boto3>=1.34.41,<1.36.12",
   "jinja_partials >= 0.2.1",
 
 ]
