@@ -797,7 +797,7 @@ models:
 │                    vro-idl|sql|sql-query|html|                               │
 │                    go|bigquery|dbml|spark|sqla                               │
 │                    lchemy|data-caterer|dcs|mar                               │
-│                    kdown|iceberg]                                            │
+│                    kdown|iceberg|custom]                                     │
 │    --output        PATH                         Specify the file path where  │
 │                                                 the exported data will be    │
 │                                                 saved. If no path is         │
@@ -819,6 +819,9 @@ models:
 │                                                 https://datacontract.com/da… │
 │    --engine        TEXT                         [engine] The engine used for │
 │                                                 great expection run.         │
+│                                                 [default: None]              │
+│    --template      PATH                         [custom] The file path of    │
+│                                                 Jinja template.              │
 │                                                 [default: None]              │
 │    --help                                       Show this message and exit.  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -871,6 +874,7 @@ Available export options:
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
 | `markdown`           | Export to Markdown                                      | ✅      |
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
+| `custom`             | Export to Custom format with Jinja                      | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 
