@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `datacontract serve` renamed to `datacontract api`
+- Move soda-core-duckdb to duckdb section (#625)
 
 ### Fixed
 
@@ -86,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - SQL Server: cannot escape reserved word on model (#557)
-- Export dbt-staging-sql error on multi models contracts (#587) 
+- Export dbt-staging-sql error on multi models contracts (#587)
 
 ### Removed
 - OpenTelemetry publisher, as it was hardly used
