@@ -19,8 +19,6 @@ dependencies = [
   "pydantic>=2.8.2,<2.11.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
-  "fastapi==0.115.6", # move to extra?
-  "uvicorn==0.34.0", # move to extra?
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet==2024.11.0",
   "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
@@ -96,8 +94,13 @@ parquet = [
   "pyarrow>=18.1.0"
 ]
 
+web = [
+  "fastapi==0.115.6",
+  "uvicorn==0.34.0",
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet]"
+  "datacontract-cli[kafka,bigquery,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,web]"
 ]
 
 dev = [
