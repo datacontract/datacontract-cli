@@ -221,7 +221,7 @@ Commands
 - [diff](#diff)
 - [catalog](#catalog)
 - [publish](#publish)
-- [serve](#serve)
+- [api](#api)
 
 ### init
 ```
