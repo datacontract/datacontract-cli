@@ -6,8 +6,116 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <style>
-    /*
-! tailwindcss v3.4.3 | MIT License | https://tailwindcss.com
+    *, ::before, ::after {
+  --tw-border-spacing-x: 0;
+  --tw-border-spacing-y: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-pan-x:  ;
+  --tw-pan-y:  ;
+  --tw-pinch-zoom:  ;
+  --tw-scroll-snap-strictness: proximity;
+  --tw-gradient-from-position:  ;
+  --tw-gradient-via-position:  ;
+  --tw-gradient-to-position:  ;
+  --tw-ordinal:  ;
+  --tw-slashed-zero:  ;
+  --tw-numeric-figure:  ;
+  --tw-numeric-spacing:  ;
+  --tw-numeric-fraction:  ;
+  --tw-ring-inset:  ;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: rgb(59 130 246 / 0.5);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  --tw-blur:  ;
+  --tw-brightness:  ;
+  --tw-contrast:  ;
+  --tw-grayscale:  ;
+  --tw-hue-rotate:  ;
+  --tw-invert:  ;
+  --tw-saturate:  ;
+  --tw-sepia:  ;
+  --tw-drop-shadow:  ;
+  --tw-backdrop-blur:  ;
+  --tw-backdrop-brightness:  ;
+  --tw-backdrop-contrast:  ;
+  --tw-backdrop-grayscale:  ;
+  --tw-backdrop-hue-rotate:  ;
+  --tw-backdrop-invert:  ;
+  --tw-backdrop-opacity:  ;
+  --tw-backdrop-saturate:  ;
+  --tw-backdrop-sepia:  ;
+  --tw-contain-size:  ;
+  --tw-contain-layout:  ;
+  --tw-contain-paint:  ;
+  --tw-contain-style:  ;
+}
+
+::backdrop {
+  --tw-border-spacing-x: 0;
+  --tw-border-spacing-y: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-pan-x:  ;
+  --tw-pan-y:  ;
+  --tw-pinch-zoom:  ;
+  --tw-scroll-snap-strictness: proximity;
+  --tw-gradient-from-position:  ;
+  --tw-gradient-via-position:  ;
+  --tw-gradient-to-position:  ;
+  --tw-ordinal:  ;
+  --tw-slashed-zero:  ;
+  --tw-numeric-figure:  ;
+  --tw-numeric-spacing:  ;
+  --tw-numeric-fraction:  ;
+  --tw-ring-inset:  ;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: rgb(59 130 246 / 0.5);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  --tw-blur:  ;
+  --tw-brightness:  ;
+  --tw-contrast:  ;
+  --tw-grayscale:  ;
+  --tw-hue-rotate:  ;
+  --tw-invert:  ;
+  --tw-saturate:  ;
+  --tw-sepia:  ;
+  --tw-drop-shadow:  ;
+  --tw-backdrop-blur:  ;
+  --tw-backdrop-brightness:  ;
+  --tw-backdrop-contrast:  ;
+  --tw-backdrop-grayscale:  ;
+  --tw-backdrop-hue-rotate:  ;
+  --tw-backdrop-invert:  ;
+  --tw-backdrop-opacity:  ;
+  --tw-backdrop-saturate:  ;
+  --tw-backdrop-sepia:  ;
+  --tw-contain-size:  ;
+  --tw-contain-layout:  ;
+  --tw-contain-paint:  ;
+  --tw-contain-style:  ;
+}
+
+/*
+! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com
 */
 
 /*
@@ -450,116 +558,8 @@ video {
 
 /* Make elements with the HTML hidden attribute stay hidden by default */
 
-[hidden] {
+[hidden]:where(:not([hidden="until-found"])) {
   display: none;
-}
-
-*, ::before, ::after {
-  --tw-border-spacing-x: 0;
-  --tw-border-spacing-y: 0;
-  --tw-translate-x: 0;
-  --tw-translate-y: 0;
-  --tw-rotate: 0;
-  --tw-skew-x: 0;
-  --tw-skew-y: 0;
-  --tw-scale-x: 1;
-  --tw-scale-y: 1;
-  --tw-pan-x:  ;
-  --tw-pan-y:  ;
-  --tw-pinch-zoom:  ;
-  --tw-scroll-snap-strictness: proximity;
-  --tw-gradient-from-position:  ;
-  --tw-gradient-via-position:  ;
-  --tw-gradient-to-position:  ;
-  --tw-ordinal:  ;
-  --tw-slashed-zero:  ;
-  --tw-numeric-figure:  ;
-  --tw-numeric-spacing:  ;
-  --tw-numeric-fraction:  ;
-  --tw-ring-inset:  ;
-  --tw-ring-offset-width: 0px;
-  --tw-ring-offset-color: #fff;
-  --tw-ring-color: rgb(59 130 246 / 0.5);
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-shadow: 0 0 #0000;
-  --tw-shadow-colored: 0 0 #0000;
-  --tw-blur:  ;
-  --tw-brightness:  ;
-  --tw-contrast:  ;
-  --tw-grayscale:  ;
-  --tw-hue-rotate:  ;
-  --tw-invert:  ;
-  --tw-saturate:  ;
-  --tw-sepia:  ;
-  --tw-drop-shadow:  ;
-  --tw-backdrop-blur:  ;
-  --tw-backdrop-brightness:  ;
-  --tw-backdrop-contrast:  ;
-  --tw-backdrop-grayscale:  ;
-  --tw-backdrop-hue-rotate:  ;
-  --tw-backdrop-invert:  ;
-  --tw-backdrop-opacity:  ;
-  --tw-backdrop-saturate:  ;
-  --tw-backdrop-sepia:  ;
-  --tw-contain-size:  ;
-  --tw-contain-layout:  ;
-  --tw-contain-paint:  ;
-  --tw-contain-style:  ;
-}
-
-::backdrop {
-  --tw-border-spacing-x: 0;
-  --tw-border-spacing-y: 0;
-  --tw-translate-x: 0;
-  --tw-translate-y: 0;
-  --tw-rotate: 0;
-  --tw-skew-x: 0;
-  --tw-skew-y: 0;
-  --tw-scale-x: 1;
-  --tw-scale-y: 1;
-  --tw-pan-x:  ;
-  --tw-pan-y:  ;
-  --tw-pinch-zoom:  ;
-  --tw-scroll-snap-strictness: proximity;
-  --tw-gradient-from-position:  ;
-  --tw-gradient-via-position:  ;
-  --tw-gradient-to-position:  ;
-  --tw-ordinal:  ;
-  --tw-slashed-zero:  ;
-  --tw-numeric-figure:  ;
-  --tw-numeric-spacing:  ;
-  --tw-numeric-fraction:  ;
-  --tw-ring-inset:  ;
-  --tw-ring-offset-width: 0px;
-  --tw-ring-offset-color: #fff;
-  --tw-ring-color: rgb(59 130 246 / 0.5);
-  --tw-ring-offset-shadow: 0 0 #0000;
-  --tw-ring-shadow: 0 0 #0000;
-  --tw-shadow: 0 0 #0000;
-  --tw-shadow-colored: 0 0 #0000;
-  --tw-blur:  ;
-  --tw-brightness:  ;
-  --tw-contrast:  ;
-  --tw-grayscale:  ;
-  --tw-hue-rotate:  ;
-  --tw-invert:  ;
-  --tw-saturate:  ;
-  --tw-sepia:  ;
-  --tw-drop-shadow:  ;
-  --tw-backdrop-blur:  ;
-  --tw-backdrop-brightness:  ;
-  --tw-backdrop-contrast:  ;
-  --tw-backdrop-grayscale:  ;
-  --tw-backdrop-hue-rotate:  ;
-  --tw-backdrop-invert:  ;
-  --tw-backdrop-opacity:  ;
-  --tw-backdrop-saturate:  ;
-  --tw-backdrop-sepia:  ;
-  --tw-contain-size:  ;
-  --tw-contain-layout:  ;
-  --tw-contain-paint:  ;
-  --tw-contain-style:  ;
 }
 
 .sr-only {
@@ -572,6 +572,14 @@ video {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+.visible {
+  visibility: visible;
 }
 
 .fixed {
@@ -590,6 +598,15 @@ video {
   inset: 0px;
 }
 
+.inset-y-0 {
+  top: 0px;
+  bottom: 0px;
+}
+
+.left-0 {
+  left: 0px;
+}
+
 .right-0 {
   right: 0px;
 }
@@ -600,6 +617,10 @@ video {
 
 .z-10 {
   z-index: 10;
+}
+
+.col-span-1 {
+  grid-column: span 1 / span 1;
 }
 
 .-mx-4 {
@@ -617,16 +638,25 @@ video {
   margin-right: auto;
 }
 
-.-ml-0 {
-  margin-left: -0px;
+.my-2 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .-ml-0\.5 {
   margin-left: -0.125rem;
 }
 
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
 .mb-3 {
   margin-bottom: 0.75rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
 }
 
 .mr-1 {
@@ -669,6 +699,17 @@ video {
   margin-top: auto;
 }
 
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.block {
+  display: block;
+}
+
 .inline-block {
   display: inline-block;
 }
@@ -697,8 +738,16 @@ video {
   display: none;
 }
 
+.h-10 {
+  height: 2.5rem;
+}
+
 .h-16 {
   height: 4rem;
+}
+
+.h-4 {
+  height: 1rem;
 }
 
 .h-5 {
@@ -707,6 +756,10 @@ video {
 
 .h-6 {
   height: 1.5rem;
+}
+
+.h-8 {
+  height: 2rem;
 }
 
 .h-full {
@@ -721,12 +774,20 @@ video {
   width: 8.333333%;
 }
 
-.w-16 {
-  width: 4rem;
+.w-10 {
+  width: 2.5rem;
 }
 
-.w-3\/12 {
-  width: 25%;
+.w-2 {
+  width: 0.5rem;
+}
+
+.w-2\/12 {
+  width: 16.666667%;
+}
+
+.w-4 {
+  width: 1rem;
 }
 
 .w-5 {
@@ -739,6 +800,10 @@ video {
 
 .w-7\/12 {
   width: 58.333333%;
+}
+
+.w-8 {
+  width: 2rem;
 }
 
 .w-full {
@@ -781,12 +846,20 @@ video {
   flex-direction: column;
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .items-end {
   align-items: flex-end;
 }
 
 .items-center {
   align-items: center;
+}
+
+.items-baseline {
+  align-items: baseline;
 }
 
 .justify-center {
@@ -797,8 +870,16 @@ video {
   justify-content: space-between;
 }
 
+.gap-1 {
+  gap: 0.25rem;
+}
+
 .gap-3 {
   gap: 0.75rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
 }
 
 .gap-x-4 {
@@ -815,10 +896,28 @@ video {
   row-gap: 1.5rem;
 }
 
+.space-x-1 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(0.25rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.25rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.space-x-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(0.75rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.75rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
 .space-x-6 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-x-reverse: 0;
   margin-right: calc(1.5rem * var(--tw-space-x-reverse));
   margin-left: calc(1.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.space-x-8 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(2rem * var(--tw-space-x-reverse));
+  margin-left: calc(2rem * calc(1 - var(--tw-space-x-reverse)));
 }
 
 .space-y-6 > :not([hidden]) ~ :not([hidden]) {
@@ -835,17 +934,17 @@ video {
 
 .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-opacity: 1;
-  border-color: rgb(243 244 246 / var(--tw-divide-opacity));
+  border-color: rgb(243 244 246 / var(--tw-divide-opacity, 1));
 }
 
 .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-opacity: 1;
-  border-color: rgb(229 231 235 / var(--tw-divide-opacity));
+  border-color: rgb(229 231 235 / var(--tw-divide-opacity, 1));
 }
 
 .divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-opacity: 1;
-  border-color: rgb(209 213 219 / var(--tw-divide-opacity));
+  border-color: rgb(209 213 219 / var(--tw-divide-opacity, 1));
 }
 
 .overflow-hidden {
@@ -860,12 +959,22 @@ video {
   overflow-y: auto;
 }
 
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .whitespace-nowrap {
   white-space: nowrap;
 }
 
 .whitespace-pre-wrap {
   white-space: pre-wrap;
+}
+
+.rounded-full {
+  border-radius: 9999px;
 }
 
 .rounded-lg {
@@ -876,37 +985,69 @@ video {
   border-radius: 0.375rem;
 }
 
+.border-0 {
+  border-width: 0px;
+}
+
+.bg-blue-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 246 255 / var(--tw-bg-opacity, 1));
+}
+
 .bg-gray-100 {
   --tw-bg-opacity: 1;
-  background-color: rgb(243 244 246 / var(--tw-bg-opacity));
+  background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1));
 }
 
 .bg-gray-50 {
   --tw-bg-opacity: 1;
-  background-color: rgb(249 250 251 / var(--tw-bg-opacity));
+  background-color: rgb(249 250 251 / var(--tw-bg-opacity, 1));
 }
 
 .bg-gray-500 {
   --tw-bg-opacity: 1;
-  background-color: rgb(107 114 128 / var(--tw-bg-opacity));
+  background-color: rgb(107 114 128 / var(--tw-bg-opacity, 1));
+}
+
+.bg-indigo-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(224 231 255 / var(--tw-bg-opacity, 1));
 }
 
 .bg-indigo-600 {
   --tw-bg-opacity: 1;
-  background-color: rgb(79 70 229 / var(--tw-bg-opacity));
+  background-color: rgb(79 70 229 / var(--tw-bg-opacity, 1));
 }
 
 .bg-white {
   --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
+}
+
+.bg-yellow-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 252 232 / var(--tw-bg-opacity, 1));
 }
 
 .bg-opacity-75 {
   --tw-bg-opacity: 0.75;
 }
 
+.p-2 {
+  padding: 0.5rem;
+}
+
 .p-4 {
   padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.px-0 {
+  padding-left: 0px;
+  padding-right: 0px;
 }
 
 .px-1 {
@@ -917,6 +1058,11 @@ video {
 .px-2 {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+}
+
+.px-2\.5 {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
 }
 
 .px-3 {
@@ -934,9 +1080,19 @@ video {
   padding-right: 1.5rem;
 }
 
+.py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+
 .py-1 {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
+}
+
+.py-1\.5 {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
 }
 
 .py-2 {
@@ -953,8 +1109,20 @@ video {
   padding-bottom: 1rem;
 }
 
+.pb-6 {
+  padding-bottom: 1.5rem;
+}
+
 .pb-7 {
   padding-bottom: 1.75rem;
+}
+
+.pl-10 {
+  padding-left: 2.5rem;
+}
+
+.pl-3 {
+  padding-left: 0.75rem;
 }
 
 .pl-4 {
@@ -991,6 +1159,10 @@ video {
 
 .align-middle {
   vertical-align: middle;
+}
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .text-2xl {
@@ -1030,6 +1202,14 @@ video {
   font-weight: 600;
 }
 
+.font-normal {
+  font-weight: 400;
+}
+
+.italic {
+  font-style: italic;
+}
+
 .leading-5 {
   line-height: 1.25rem;
 }
@@ -1042,34 +1222,49 @@ video {
   line-height: 1.75rem;
 }
 
+.text-blue-600 {
+  --tw-text-opacity: 1;
+  color: rgb(37 99 235 / var(--tw-text-opacity, 1));
+}
+
 .text-gray-400 {
   --tw-text-opacity: 1;
-  color: rgb(156 163 175 / var(--tw-text-opacity));
+  color: rgb(156 163 175 / var(--tw-text-opacity, 1));
 }
 
 .text-gray-500 {
   --tw-text-opacity: 1;
-  color: rgb(107 114 128 / var(--tw-text-opacity));
+  color: rgb(107 114 128 / var(--tw-text-opacity, 1));
 }
 
 .text-gray-600 {
   --tw-text-opacity: 1;
-  color: rgb(75 85 99 / var(--tw-text-opacity));
+  color: rgb(75 85 99 / var(--tw-text-opacity, 1));
+}
+
+.text-gray-800 {
+  --tw-text-opacity: 1;
+  color: rgb(31 41 55 / var(--tw-text-opacity, 1));
 }
 
 .text-gray-900 {
   --tw-text-opacity: 1;
-  color: rgb(17 24 39 / var(--tw-text-opacity));
+  color: rgb(17 24 39 / var(--tw-text-opacity, 1));
 }
 
 .text-sky-500 {
   --tw-text-opacity: 1;
-  color: rgb(14 165 233 / var(--tw-text-opacity));
+  color: rgb(14 165 233 / var(--tw-text-opacity, 1));
 }
 
 .text-white {
   --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity));
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+.text-yellow-600 {
+  --tw-text-opacity: 1;
+  color: rgb(202 138 4 / var(--tw-text-opacity, 1));
 }
 
 .shadow {
@@ -1102,12 +1297,16 @@ video {
 
 .ring-black {
   --tw-ring-opacity: 1;
-  --tw-ring-color: rgb(0 0 0 / var(--tw-ring-opacity));
+  --tw-ring-color: rgb(0 0 0 / var(--tw-ring-opacity, 1));
+}
+
+.ring-blue-500\/10 {
+  --tw-ring-color: rgb(59 130 246 / 0.1);
 }
 
 .ring-gray-300 {
   --tw-ring-opacity: 1;
-  --tw-ring-color: rgb(209 213 219 / var(--tw-ring-opacity));
+  --tw-ring-color: rgb(209 213 219 / var(--tw-ring-opacity, 1));
 }
 
 .ring-gray-500\/10 {
@@ -1116,6 +1315,10 @@ video {
 
 .ring-gray-900\/5 {
   --tw-ring-color: rgb(17 24 39 / 0.05);
+}
+
+.ring-yellow-500\/10 {
+  --tw-ring-color: rgb(234 179 8 / 0.1);
 }
 
 .ring-opacity-5 {
@@ -1134,24 +1337,49 @@ video {
   transition-duration: 150ms;
 }
 
+.placeholder\:text-gray-400::-moz-placeholder {
+  --tw-text-opacity: 1;
+  color: rgb(156 163 175 / var(--tw-text-opacity, 1));
+}
+
+.placeholder\:text-gray-400::placeholder {
+  --tw-text-opacity: 1;
+  color: rgb(156 163 175 / var(--tw-text-opacity, 1));
+}
+
 .hover\:bg-gray-50:hover {
   --tw-bg-opacity: 1;
-  background-color: rgb(249 250 251 / var(--tw-bg-opacity));
+  background-color: rgb(249 250 251 / var(--tw-bg-opacity, 1));
 }
 
 .hover\:bg-indigo-500:hover {
   --tw-bg-opacity: 1;
-  background-color: rgb(99 102 241 / var(--tw-bg-opacity));
+  background-color: rgb(99 102 241 / var(--tw-bg-opacity, 1));
 }
 
 .hover\:text-gray-500:hover {
   --tw-text-opacity: 1;
-  color: rgb(107 114 128 / var(--tw-text-opacity));
+  color: rgb(107 114 128 / var(--tw-text-opacity, 1));
 }
 
 .hover\:text-gray-700:hover {
   --tw-text-opacity: 1;
-  color: rgb(55 65 81 / var(--tw-text-opacity));
+  color: rgb(55 65 81 / var(--tw-text-opacity, 1));
+}
+
+.focus\:ring-2:focus {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+
+.focus\:ring-inset:focus {
+  --tw-ring-inset: inset;
+}
+
+.focus\:ring-indigo-600:focus {
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgb(79 70 229 / var(--tw-ring-opacity, 1));
 }
 
 .focus-visible\:outline:focus-visible {
@@ -1211,6 +1439,10 @@ video {
 
   .sm\:w-4\/5 {
     width: 80%;
+  }
+
+  .sm\:w-72 {
+    width: 18rem;
   }
 
   .sm\:grid-cols-2 {
@@ -1276,6 +1508,15 @@ video {
     line-height: 2.25rem;
   }
 
+  .sm\:text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .sm\:leading-6 {
+    line-height: 1.5rem;
+  }
+
   .sm\:tracking-tight {
     letter-spacing: -0.025em;
   }
@@ -1325,6 +1566,10 @@ video {
     display: flex;
   }
 
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .lg\:items-center {
     align-items: center;
   }
@@ -1350,7 +1595,7 @@ video {
         <div class="flex">
           <div class="flex flex-shrink-0 items-center mr-6">
             <a class="text-xl text-gray-900 font-semibold" href="/">
-              Data Contract
+              Data Contracts
             </a>
           </div>
         </div>
@@ -1372,6 +1617,9 @@ video {
             <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
               orders-unit-test
             </div>
+            <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+              
+            </div>
           </div>
           <div class="mt-5 flex lg:mt-0 lg:ml-4 gap-3 items-center">
             <button
@@ -1385,78 +1633,89 @@ video {
             </button>
           </div>
         </div>
-
-
       </div>
 
       <div>
-
         <div class="space-y-6 mt-6">
-
-
-          <section>
+          <section id="information">
             <div class=" px-4 sm:px-0">
-              <h1 class="text-base font-semibold leading-6 text-gray-900" id="info">Info</h1>
-              <p class="text-sm text-gray-500">Information about the data contract</p>
+  <h1 class="text-base font-semibold leading-6 text-gray-900" id="info">Info</h1>
+  <p class="text-sm text-gray-500">Information about the data contract</p>
+</div>
+<div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+
+  <div class="px-4 py-5 sm:px-6">
+
+    
+
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Title</dt>
+        <dd class="mt-1 text-sm text-gray-900">Orders Unit Test</dd>
+      </div>
+
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Version</dt>
+        <dd class="mt-1 text-sm text-gray-900">1.0.0</dd>
+      </div>
+
+      
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Status</dt>
+        <dd class="mt-1 text-sm text-gray-900">active</dd>
+      </div>
+      
+
+      
+      <div class="sm:col-span-2">
+        <dt class="text-sm font-medium text-gray-500">Description</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">The orders data contract</span>
+        </dd>
+      </div>
+      
+
+      
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Owner</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          <span>checkout</span>
+        </dd>
+      </div>
+      
+
+      
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">otherField</dt>
+        <dd class="mt-1 text-sm text-gray-900">otherValue</dd>
+      </div>
+      
+
+      
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Contact</dt>
+        <dd class="mt-1 text-sm text-gray-900">
+          
+          
+            <a href="mailto:team-orders@example.com" class="text-sky-500 hover:text-gray-700">team-orders@example.com</a>
+          
+          
+            <div>
+              <a href="https://wiki.example.com/teams/checkout" class="text-sky-500 hover:text-gray-700">https://wiki.example.com/teams/checkout</a>
             </div>
-            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+          
+        </dd>
+      </div>
+      
 
-              <div class="px-4 py-5 sm:px-6">
-
-                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Title</dt>
-                    <dd class="mt-1 text-sm text-gray-900">Orders Unit Test</dd>
-                  </div>
-
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Version</dt>
-                    <dd class="mt-1 text-sm text-gray-900">1.0.0</dd>
-                  </div>
-
-                  
-                  <div class="sm:col-span-2">
-                    <dt class="text-sm font-medium text-gray-500">Description</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">The orders data contract</span>
-                    </dd>
-                  </div>
-                  
-
-                  
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Owner</dt>
-                    <dd class="mt-1 text-sm text-gray-900">
-                      <span>checkout</span>
-                    </dd>
-                  </div>
-                  
-
-                  
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Contact</dt>
-                    <dd class="mt-1 text-sm text-gray-900">
-                      
-                      
-                        <a href="mailto:team-orders@example.com" class="text-sky-500 hover:text-gray-700">team-orders@example.com</a>
-                      
-                      
-                        <div>
-                          <a href="https://wiki.example.com/teams/checkout" class="text-sky-500 hover:text-gray-700">https://wiki.example.com/teams/checkout</a>
-                        </div>
-                      
-                    </dd>
-                  </div>
-                  
-
-                </dl>
-              </div>
-            </div>
+    </dl>
+  </div>
+</div>
           </section>
 
 
           
-          <section>
+          <section id="servers">
             <div class="px-4 sm:px-0">
               <h1 class="text-base font-semibold leading-6 text-gray-900" id="servers">Servers</h1>
               <p class="text-sm text-gray-500">Servers of the data contract</p>
@@ -1465,73 +1724,98 @@ video {
             <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
 
               
-              <li class="relative flex gap-x-6 px-4 py-5 sm:px-6">
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Server</dt>
-                    <dd class="mt-1 text-sm text-gray-900">production</dd>
-                  </div>
-                </div>
+                <li class="relative flex gap-x-6 px-4 py-5 sm:px-6">
+  <div class="flex items-center gap-x-4">
+    <div class="sm:flex sm:flex-col">
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Server</dt>
+        <dd class="mt-1 text-sm text-gray-900">production</dd>
+      </div>
+    </div>
+  </div>
 
-                
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Type</dt>
-                    <dd class="mt-1 text-sm text-gray-900">snowflake</dd>
-                  </div>
-                </div>
-                
+  
+  <div class="flex items-center gap-x-4">
+    <div class="sm:flex sm:flex-col">
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Environment</dt>
+        <dd class="mt-1 text-sm text-gray-900">production</dd>
+      </div>
+    </div>
+  </div>
+  
 
-                
+  
+  <div class="flex items-center gap-x-4">
+    <div class="sm:flex sm:flex-col">
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Type</dt>
+        <dd class="mt-1 text-sm text-gray-900">snowflake</dd>
+      </div>
+    </div>
+  </div>
+  
 
-                
+  
 
-                
+  
 
-                
+  
 
-                
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Account</dt>
-                    <dd class="mt-1 text-sm text-gray-900">my-account</dd>
-                  </div>
-                </div>
-                
+  
 
-                
+  
+  <div class="flex items-center gap-x-4">
+    <div class="sm:flex sm:flex-col">
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Account</dt>
+        <dd class="mt-1 text-sm text-gray-900">my-account</dd>
+      </div>
+    </div>
+  </div>
+  
 
-                
+  
 
-                
+  
 
-                
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Database</dt>
-                    <dd class="mt-1 text-sm text-gray-900">my-database</dd>
-                  </div>
-                </div>
-                
+  
 
-                
-                <div class="flex items-center gap-x-4">
-                  <div class="hidden sm:flex sm:flex-col">
-                    <dt class="text-sm font-medium text-gray-500">Schema</dt>
-                    <dd class="mt-1 text-sm text-gray-900">my-schema</dd>
-                  </div>
-                </div>
-                
+  
+  <div class="flex items-center gap-x-4">
+    <div class="sm:flex sm:flex-col">
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Database</dt>
+        <dd class="mt-1 text-sm text-gray-900">my-database</dd>
+      </div>
+    </div>
+  </div>
+  
 
-                
+  
+  <div class="flex items-center gap-x-4">
+    <div class="sm:flex sm:flex-col">
+      <div class="flex flex-col">
+        <dt class="text-sm font-medium text-gray-500">Schema</dt>
+        <dd class="mt-1 text-sm text-gray-900">my-schema</dd>
+      </div>
+    </div>
+  </div>
+  
 
-                
+  
 
-                
+  
 
-                
+  
 
-              </li>
+  
+
+  
+
+  
+
+</li>
               
 
             </ul>
@@ -1541,51 +1825,53 @@ video {
 
 
           
-          <section>
+          <section id="terms">
             <div class="px-4 sm:px-0">
-              <h1 class="text-base font-semibold leading-6 text-gray-900" id="terms">Terms</h1>
-              <p class="text-sm text-gray-500">Terms and conditions of the data contract</p>
-            </div>
-            <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+  <h1 class="text-base font-semibold leading-6 text-gray-900" id="terms">Terms</h1>
+  <p class="text-sm text-gray-500">Terms and conditions of the data contract</p>
+</div>
+<div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
 
-              <div class="px-4 py-5 sm:px-6">
+  <div class="px-4 py-5 sm:px-6">
 
-                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Usage</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">This data contract serves to demo datacontract CLI export.</span>
-                    </dd>
-                  </div>
+    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Usage</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">This data contract serves to demo datacontract CLI export.</span>
+        </dd>
+      </div>
 
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Limitations</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">Not intended to use in production</span>
-                    </dd>
-                  </div>
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Limitations</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">Not intended to use in production</span>
+        </dd>
+      </div>
 
-                  
-                  <div class="sm:col-span-1">
-                    <dt class="text-sm font-medium text-gray-500">Billing</dt>
-                    <dd class="mt-1 text-sm text-gray-900" >
-                      <span class="whitespace-pre-wrap">free</span>
-                    </dd>
-                  </div>
-                  
+      
+      <div class="sm:col-span-1">
+        <dt class="text-sm font-medium text-gray-500">Billing</dt>
+        <dd class="mt-1 text-sm text-gray-900" >
+          <span class="whitespace-pre-wrap">free</span>
+        </dd>
+      </div>
+      
 
-                  
-                    <div class="sm:col-span-1">
-                      <dt class="text-sm font-medium text-gray-500">Notice Period</dt>
-                      <dd class="mt-1 text-sm text-gray-900 flex" >
-                        <span class="whitespace-pre-wrap">P3M</span>
-                      </dd>
-                    </div>
-                  
+      
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Notice Period</dt>
+          <dd class="mt-1 text-sm text-gray-900 flex" >
+            <span class="whitespace-pre-wrap">P3M</span>
+          </dd>
+        </div>
+      
 
-                </dl>
-              </div>
-            </div>
+      
+
+    </dl>
+  </div>
+</div>
           </section>
           
 
@@ -1610,107 +1896,424 @@ video {
                     <table class="min-w-full divide-y divide-gray-300">
                       <thead class="bg-gray-50">
                       <tr>
-                        <th scope="colgroup" colspan="4" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
-                          <span>orders</span>
+                        <th scope="colgroup" colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+                          
+                          Webshop Orders
+                          
+                          
+                          <span class="font-mono font-medium">orders</span>
+                          
                           <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">table</span>
                           <div class="text-sm font-medium text-gray-500">The orders model</div>
+                          
+                          <span
+                            class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">customModelProperty1: customModelProperty1Value</span>
+                          
                         </th>
 
                       </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-200 bg-white">
+                      
+                        
+<tr>
+  <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
+
+    <div class="py-2 text-sm">
+      
+      <span>Order ID</span><br>
+      
+      <span class="font-mono flex">order_id</span>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+    
+    varchar
+    
+  </td>
+  <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+    
+    <div class="text-gray-400">No description</div>
+    
+
+    
+
+    
+    <div class="mt-1 italic">
+      Examples:
+      
+      <span class="font-mono">B12345678</span>, 
+      
+      <span class="font-mono">B12345679</span>
+      
+    </div>
+    
+
+    
+    <div>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">unique</span>
+      
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">minLength:8</span>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maxLength:10</span>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">pattern:^B[0-9]+$</span>
+      
+      
+      
+      
+      
+      
+      
+      
+      <span class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">sensitive</span>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-yellow-50 px-1 py-1 text-xs font-medium text-yellow-600 ring-1 ring-inset ring-yellow-500/10 mr-1 mt-1">PII</span>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">customFieldProperty1:customFieldProperty1Value</span>
+      
+      
+    </div>
+    
+  </td>
+</tr>
+
+
+
+
+
+
+
+
+
 
                       
+                        
+<tr>
+  <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
 
-                      <tr>
-                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
-                          <div class="py-2 text-sm">
-                            order_id
-                            
-                          </div>
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
-                          
-                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
-                          
-                          
-                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="unique">U</span>
-                          
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
-                          
-                          varchar
-                          
-                        </td>
-                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
-                          <div class="text-gray-400">No description</div>
-                          
-                        </td>
+    <div class="py-2 text-sm">
+      
+      <span class="font-mono flex">order_total</span>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+    
+    bigint
+    
+  </td>
+  <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+    
+    <div class="text-gray-500">The order_total field</div>
+    
 
-                      </tr>
+    
+
+    
+
+    
+    <div>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">maximum:1000000</span>
+      
+      
+      
+      
+      
+      
+    </div>
+    
+    
+    <div class="mt-2">
+  <span class="italic">Quality | SQL:</span> 95% of all order total values are expected to be between 10 and 499 EUR.
+  
+  <div class="pl-4">
+    Query:
+    <div class="ring-1 ring-inset ring-gray-500/10 bg-gray-50 p-2 rounded-md"><pre><code>SELECT quantile_cont(order_total, 0.95) AS percentile_95
+FROM orders
+</code></pre></div>
+    
+    
+    
+    
+    
+    
+    
+    <div>
+      Must Be Between: <span class="font-mono font-bold"> 1000 and 49900</span>
+    </div>
+    
+    
+  </div>
+  
+</div>
+    
+    
+  </td>
+</tr>
+
+
+
+
+
+
+
+
+
+
                       
+                        
+<tr>
+  <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
 
-                      <tr>
-                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
-                          <div class="py-2 text-sm">
-                            order_total
-                            
-                          </div>
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
-                          
-                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
-                          
-                          
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
-                          
-                          bigint
-                          
-                        </td>
-                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
-                          <div class="text-gray-400">The order_total field</div>
-                          
-                        </td>
+    <div class="py-2 text-sm">
+      
+      <span class="font-mono flex">order_status</span>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+    
+    text
+    
+  </td>
+  <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+    
+    <div class="text-gray-400">No description</div>
+    
 
-                      </tr>
+    
+
+    
+
+    
+    <div class="mt-1 italic">
+      Enum:
+      
+      <span class="font-mono">pending</span>, 
+      
+      <span class="font-mono">shipped</span>, 
+      
+      <span class="font-mono">delivered</span>
+      
+    </div>
+    
+    <div>
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">required</span>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </div>
+    
+  </td>
+</tr>
+
+
+
+
+
+
+
+
+
+
                       
-
-                      <tr>
-                        <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-3/12">
-                          <div class="py-2 text-sm">
-                            order_status
-                            
-                          </div>
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-16">
-                          
-                          <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="required">R</span>
-                          
-                          
-                        </td>
-                        <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
-                          
-                          text
-                          
-                        </td>
-                        <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
-                          <div class="text-gray-400">No description</div>
-                          
-                        </td>
-
-                      </tr>
-                      
-
                       </tbody>
+                      
+                      <tfoot class="divide-y divide-gray-200 bg-white">
+                      
+                      
+                      <tr>
+                        <th scope="colgroup" colspan="4"
+                            class="py-2 pl-4 pr-3 text-left text-sm font-normal sm:pl-6 bg-white">
+                          <div class="mt-2">
+  <span class="italic">Quality | SQL:</span> Row Count
+  
+  <div class="pl-4">
+    Query:
+    <div class="ring-1 ring-inset ring-gray-500/10 bg-gray-50 p-2 rounded-md"><pre><code>SELECT COUNT(*) AS row_count
+FROM orders
+</code></pre></div>
+    
+    
+    
+    <div>
+      Must Be Greater Than: <span class="font-mono font-bold"> 1000</span>
+    </div>
+    
+    
+    
+    
+    
+    
+  </div>
+  
+</div>
+                        </th>
+                      </tr>
+                      
+                      
+
+                      
+                      <tr class="bg-gray-50">
+                        <th scope="colgroup" colspan="4"
+                            class="py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                          <span>Primary Key: ['order_id', 'order_status']</span>
+                        </th>
+                      </tr>
+                      
+
+                      </tfoot>
+                      
                     </table>
                   </div>
                 </div>
               </div>
             </div>
             
-
           </section>
+
+          
+          <section id="definitions">
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900">Definitions</h1>
+              <p class="text-sm text-gray-500">Domain specific definitions in the data contract</p>
+            </div>
+
+            
+            <div class="mt-3 flow-root">
+  <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+      <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+
+        <table class="min-w-full divide-y divide-gray-300" id="/definitions/customer_id">
+          <thead class="bg-gray-50">
+          <tr>
+            <th scope="colgroup" colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+              <span>customer_id</span>
+              <div class="text-sm font-medium text-gray-500">Unique identifier for the customer.</div>
+            </th>
+          </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+
+          
+<tr>
+  <td class="whitespace-nowrap py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6 w-2/12">
+
+    <div class="py-2 text-sm">
+      
+      <span>Customer ID</span><br>
+      
+      <span class="font-mono flex">customer_id</span>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-1 py-2 text-sm text-gray-500 w-1/12">
+    
+    string
+    
+  </td>
+  <td class="px-3 py-2 text-sm text-gray-500 w-7/12">
+    
+    <div class="text-gray-500">Unique identifier for the customer.</div>
+    
+
+    
+
+    
+    <div class="mt-1 italic">
+      Examples:
+      
+      <span class="font-mono">acbd1a47-9dca-4cb8-893e-87aa0aa0f243</span>, 
+      
+      <span class="font-mono">5742637f-bb8b-4f0c-8ed1-afb1a91300a9</span>
+      
+    </div>
+    
+
+    
+    <div>
+      
+      
+      
+      
+      <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mt-1">format:uuid</span>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </div>
+    
+  </td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+            
+          </section>
+          
 
           
 
@@ -1719,11 +2322,10 @@ video {
           
 
         </div>
-
       </div>
 
       <div class="mt-6 text-sm text-gray-400">
-        Created at 25 Apr 2024 14:38:16 UTC with <a href="https://cli.datacontract.com" class="text-gray-400 hover:text-gray-500">Data Contract CLI</a> v0.10.1
+        Created at 02 Feb 2025 18:36:28 UTC with <a href="https://cli.datacontract.com" class="text-gray-400 hover:text-gray-500">Data Contract CLI</a> v0.10.20
       </div>
 
     </div>
@@ -1748,64 +2350,106 @@ video {
 
               <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Data Contract YAML</h3>
             </div>
-            <pre class="overflow-x-auto text-sm bg-gray-50 p-4">
-              <code>
-                dataContractSpecification: 1.1.0
-                id: orders-unit-test
-                info:
-                  title: Orders Unit Test
-                  version: 1.0.0
-                  description: The orders data contract
-                  owner: checkout
-                  contact:
-                    url: https://wiki.example.com/teams/checkout
-                    email: team-orders@example.com
-                servers:
-                  production:
-                    type: snowflake
-                    account: my-account
-                    database: my-database
-                    schema_: my-schema
-                terms:
-                  usage: This data contract serves to demo datacontract CLI export.
-                  limitations: Not intended to use in production
-                  billing: free
-                  noticePeriod: P3M
-                models:
-                  orders:
-                    description: The orders model
-                    type: table
-                    fields:
-                      order_id:
-                        type: varchar
-                        required: true
-                        primaryKey: false
-                        unique: true
-                        pii: true
-                        classification: sensitive
-                        pattern: ^B[0-9]+$
-                        minLength: 8
-                        maxLength: 10
-                        tags:
-                        - order_id
-                      order_total:
-                        type: bigint
-                        required: true
-                        primaryKey: false
-                        unique: false
-                        description: The order_total field
-                        minimum: 0
-                        maximum: 1000000
-                      order_status:
-                        type: text
-                        required: true
-                        primaryKey: false
-                        unique: false
-                        enum:
-                        - pending
-                        - shipped
-                        - delivered
-                </code></pre>
+            <pre class="overflow-x-auto text-sm bg-gray-50 p-4"><code>dataContractSpecification: 1.1.0
+id: orders-unit-test
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+  status: active
+  description: The orders data contract
+  owner: checkout
+  contact:
+    url: https://wiki.example.com/teams/checkout
+    email: team-orders@example.com
+  otherField: otherValue
+servers:
+  production:
+    type: snowflake
+    environment: production
+    account: my-account
+    database: my-database
+    schema: my-schema
+    roles:
+    - name: analyst_us
+      description: Access to the data for US region
+terms:
+  usage: This data contract serves to demo datacontract CLI export.
+  limitations: Not intended to use in production
+  billing: free
+  noticePeriod: P3M
+models:
+  orders:
+    description: The orders model
+    type: table
+    title: Webshop Orders
+    fields:
+      order_id:
+        title: Order ID
+        type: varchar
+        required: true
+        unique: true
+        pii: true
+        classification: sensitive
+        pattern: ^B[0-9]+$
+        minLength: 8
+        maxLength: 10
+        tags:
+        - order_id
+        examples:
+        - B12345678
+        - B12345679
+        customFieldProperty1: customFieldProperty1Value
+      order_total:
+        type: bigint
+        required: true
+        description: The order_total field
+        minimum: 0
+        maximum: 1000000
+        quality:
+        - type: sql
+          description: 95% of all order total values are expected to be between 10
+            and 499 EUR.
+          query: 'SELECT quantile_cont(order_total, 0.95) AS percentile_95
+
+            FROM orders
+
+            '
+          mustBeBetween:
+          - 1000
+          - 49900
+      order_status:
+        type: text
+        required: true
+        enum:
+        - pending
+        - shipped
+        - delivered
+    quality:
+    - type: sql
+      description: Row Count
+      query: 'SELECT COUNT(*) AS row_count
+
+        FROM orders
+
+        '
+      mustBeGreaterThan: 1000
+    primaryKey:
+    - order_id
+    - order_status
+    customModelProperty1: customModelProperty1Value
+definitions:
+  customer_id:
+    title: Customer ID
+    description: Unique identifier for the customer.
+    type: string
+    format: uuid
+    tags:
+    - features
+    - pii
+    examples:
+    - acbd1a47-9dca-4cb8-893e-87aa0aa0f243
+    - 5742637f-bb8b-4f0c-8ed1-afb1a91300a9
+</code></pre>
           </div>
           <div class="mt-5 sm:mt-6">
             <button type="button" onclick="document.getElementById('dialog-datacontract-yaml').close()"

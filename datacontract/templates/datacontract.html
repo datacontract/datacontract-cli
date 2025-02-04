@@ -146,14 +146,28 @@
                         {{ render_partial('partials/model_field.html', nested = False, field_name=field_name, field = field, level = 0) }}
                       {% endfor %}
                       </tbody>
-                      {% if model.primaryKey %}
-                      <tfoot class="bg-gray-50">
+                      {% if model.primaryKey or model.quality %}
+                      <tfoot class="divide-y divide-gray-200 bg-white">
+                      {% if model.quality %}
+                      {% for quality in model.quality %}
                       <tr>
+                        <th scope="colgroup" colspan="4"
+                            class="py-2 pl-4 pr-3 text-left text-sm font-normal sm:pl-6 bg-white">
+                          {{ render_partial('partials/quality.html', quality = quality)}}
+                        </th>
+                      </tr>
+                      {% endfor %}
+                      {% endif %}
+
+                      {% if model.primaryKey %}
+                      <tr class="bg-gray-50">
                         <th scope="colgroup" colspan="4"
                             class="py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
                           <span>Primary Key: {{ model.primaryKey }}</span>
                         </th>
                       </tr>
+                      {% endif %}
+
                       </tfoot>
                       {% endif %}
                     </table>
