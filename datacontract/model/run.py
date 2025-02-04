@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import List
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
@@ -18,14 +18,14 @@ class ResultEnum(str, Enum):
 
 class Check(BaseModel):
     type: str
-    name: Optional[str]
-    result: ResultEnum
-    engine: str
-    reason: Optional[str] = None
-    model: Optional[str] = None
-    field: Optional[str] = None
-    details: Optional[str] = None
-    diagnostics: Optional[dict] = None
+    name: str | None
+    result: ResultEnum | None
+    engine: str | None
+    reason: str | None = None
+    model: str | None = None
+    field: str | None = None
+    details: str | None = None
+    diagnostics: dict | None = None
 
 
 class Log(BaseModel):
@@ -36,16 +36,16 @@ class Log(BaseModel):
 
 class Run(BaseModel):
     runId: UUID
-    dataContractId: Optional[str] = None
-    dataContractVersion: Optional[str] = None
-    dataProductId: Optional[str] = None
-    outputPortId: Optional[str] = None
-    server: Optional[str] = None
-    timestampStart: datetime
-    timestampEnd: datetime
+    dataContractId: str | None = None
+    dataContractVersion: str | None = None
+    dataProductId: str | None = None
+    outputPortId: str | None = None
+    server: str | None = None
+    timestampStart: datetime | None
+    timestampEnd: datetime | None
     result: ResultEnum = ResultEnum.unknown
-    checks: List[Check]
-    logs: List[Log]
+    checks: List[Check] | None
+    logs: List[Log] | None
 
     def has_passed(self):
         self.calculate_result()

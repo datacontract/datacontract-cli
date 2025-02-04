@@ -1,18 +1,17 @@
 from fastapi.testclient import TestClient
 
-from datacontract.web import app
+from datacontract.api import app
 
 client = TestClient(app)
 
 
 def test_lint():
-    with open("fixtures/lint/valid_datacontract.yaml", "rb") as f:
+    with open("fixtures/lint/valid_datacontract.yaml", "r") as f:
         data_contract_str = f.read()
 
     response = client.post(
         url="/lint",
-        files={"file": ("datacontract.yaml", data_contract_str, "application/yaml")},
-        params={"linters": "none"},
+        json=data_contract_str,
     )
     assert response.status_code == 200
     print(response.json())
@@ -22,12 +21,11 @@ def test_lint():
 
 
 def test_export_jsonschema():
-    with open("fixtures/local-json/datacontract.yaml", "rb") as f:
+    with open("fixtures/local-json/datacontract.yaml", "r") as f:
         data_contract_str = f.read()
     response = client.post(
-        url="/export",
-        files={"file": ("datacontract.yaml", data_contract_str, "application/yaml")},
-        params={"export_format": "jsonschema"},
+        url="/export?format=jsonschema",
+        json=data_contract_str,
     )
     assert response.status_code == 200
     print(response.text)

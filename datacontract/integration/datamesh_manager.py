@@ -2,11 +2,10 @@ import os
 
 import requests
 
-from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.run import Run
 
 
-def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
+def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_verification: bool):
     try:
         if publish_url is None:
             # this url supports Data Mesh Manager and Data Contract Manager
@@ -32,7 +31,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
             url,
             data=request_body,
             headers=headers,
-            verify=False,
+            verify=ssl_verification,
         )
         # print("Status Code:", response.status_code)
         # print("Response Body:", response.text)
@@ -44,9 +43,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str):
         run.log_error(f"Failed publishing test results. Error: {str(e)}")
 
 
-def publish_data_contract_to_datamesh_manager(
-    data_contract_specification: DataContractSpecification, ssl_verification: bool
-):
+def publish_data_contract_to_datamesh_manager(data_contract_dict: dict, ssl_verification: bool):
     try:
         api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
         host = "https://api.datamesh-manager.com"
@@ -59,13 +56,11 @@ def publish_data_contract_to_datamesh_manager(
                 "Cannot publish data contract, as neither DATAMESH_MANAGER_API_KEY nor DATACONTRACT_MANAGER_API_KEY is set"
             )
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
-        spec = data_contract_specification
-        id = spec.id
+        id = data_contract_dict["id"]
         url = f"{host}/api/datacontracts/{id}"
-        request_body = spec.model_dump_json().encode("utf-8")
         response = requests.put(
             url=url,
-            data=request_body,
+            json=data_contract_dict,
             headers=headers,
             verify=ssl_verification,
         )

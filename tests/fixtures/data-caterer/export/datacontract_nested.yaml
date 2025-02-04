@@ -36,6 +36,7 @@ models:
         maxLength: 10
         pii: true
         classification: sensitive
+        primaryKey: true
         tags:
           - order_id
         pattern: ^B[0-9]+$
@@ -45,6 +46,28 @@ models:
         description: The order_total field
         minimum: 0
         maximum: 1000000
+      amount:
+        type: double
+      customer_id:
+        type: integer
+      customer_id_int:
+        type: int
+      customer_id_long:
+        type: long
+      customer_id_float:
+        type: float
+      customer_id_number:
+        type: number
+      customer_id_numeric:
+        type: numeric
+      created_date:
+        type: date
+      created_ts:
+        type: timestamp
+      created_ts_tz:
+        type: timestamp_tz
+      created_ts_ntz:
+        type: timestamp_ntz
       order_status:
         type: text
         required: true
@@ -59,3 +82,11 @@ models:
             type: string
           city:
             type: string
+      tags:
+        type: array
+        items:
+          type: string
+      tags_int:
+        type: array
+        items:
+          type: integer

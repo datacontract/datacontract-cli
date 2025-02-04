@@ -12,7 +12,7 @@ servers:
     database: test
     schema: public
 models:
-  my_table:
+  my_table_old_name:
     type: table
     fields:
       field_one:
@@ -25,3 +25,5 @@ models:
         minimum: 10
       field_three:
         type: timestamp
+    config:
+      postgresTable: my_table

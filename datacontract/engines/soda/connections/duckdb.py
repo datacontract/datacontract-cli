@@ -146,6 +146,7 @@ def setup_azure_connection(con, server):
     tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
     client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
     client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
+    storage_account = server.storageAccount
 
     if tenant_id is None:
         raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
@@ -157,12 +158,24 @@ def setup_azure_connection(con, server):
     con.install_extension("azure")
     con.load_extension("azure")
 
-    con.sql(f"""
-    CREATE SECRET azure_spn (
-        TYPE AZURE,
-        PROVIDER SERVICE_PRINCIPAL,
-        TENANT_ID '{tenant_id}',
-        CLIENT_ID '{client_id}',
-        CLIENT_SECRET '{client_secret}'
-    );
-    """)
+    if storage_account is not None:
+        con.sql(f"""
+        CREATE SECRET azure_spn (
+            TYPE AZURE,
+            PROVIDER SERVICE_PRINCIPAL,
+            TENANT_ID '{tenant_id}',
+            CLIENT_ID '{client_id}',
+            CLIENT_SECRET '{client_secret}',
+            ACCOUNT_NAME '{storage_account}'
+        );
+        """)
+    else:
+        con.sql(f"""
+        CREATE SECRET azure_spn (
+            TYPE AZURE,
+            PROVIDER SERVICE_PRINCIPAL,
+            TENANT_ID '{tenant_id}',
+            CLIENT_ID '{client_id}',
+            CLIENT_SECRET '{client_secret}'
+        );
+        """)

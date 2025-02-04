@@ -56,6 +56,8 @@ schema:
         - B12345678
         - B12345679
         customProperties:
+        - property: customFieldProperty1
+          value: customFieldProperty1Value
         - property: pii
           value: true
       - name: order_total
@@ -84,7 +86,9 @@ schema:
         SELECT COUNT(*) AS row_count
         FROM orders
       mustBeGreaterThan: 1000  
-
+    customProperties:
+    - property: customModelProperty1
+      value: customModelProperty1Value
 servers:
   - server: production
     type: snowflake
@@ -108,7 +112,7 @@ customProperties:
 """
 
     odcs = to_odcs_v3_yaml(data_contract)
-    print(odcs)
+
     assert yaml.safe_load(odcs) == yaml.safe_load(expected_odcs_model)
 
 

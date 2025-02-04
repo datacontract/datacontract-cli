@@ -1,9 +1,9 @@
+import os
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
 
 import typer
-import uvicorn
 from click import Context
 from rich import box
 from rich.console import Console
@@ -11,19 +11,14 @@ from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
-from datacontract import web
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat
-from datacontract.init.download_datacontract_file import (
-    FileExistsException,
-    download_datacontract_file,
-)
+from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
 )
-
-DEFAULT_DATA_CONTRACT_SCHEMA_URL = "https://datacontract.com/datacontract.schema.json"
+from datacontract.lint.resolve import resolve_data_contract_dict
 
 console = Console()
 
@@ -70,24 +65,21 @@ def common(
 @app.command()
 def init(
     location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml to create."),
+        str, typer.Argument(help="The location of the data contract file to create.")
     ] = "datacontract.yaml",
-    template: Annotated[
-        str, typer.Option(help="URL of a template or data contract")
-    ] = "https://datacontract.com/datacontract.init.yaml",
+    template: Annotated[str, typer.Option(help="URL of a template or data contract")] = None,
     overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
 ):
     """
-    Download a datacontract.yaml template and write it to file.
+    Create an empty data contract.
     """
-    try:
-        download_datacontract_file(location, template, overwrite)
-    except FileExistsException:
+    if not overwrite and os.path.exists(location):
         console.print("File already exists, use --overwrite to overwrite")
         raise typer.Exit(code=1)
-    else:
-        console.print("📄 data contract written to " + location)
+    template_str = get_init_template(template)
+    with open(location, "w") as f:
+        f.write(template_str)
+    console.print("📄 data contract written to " + location)
 
 
 @app.command()
@@ -99,7 +91,7 @@ def lint(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
@@ -117,7 +109,7 @@ def test(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     server: Annotated[
         str,
         typer.Option(
@@ -135,7 +127,7 @@ def test(
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
         bool,
-        typer.Option(help="SSL verification when publishing the test results."),
+        typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
 ):
     """
@@ -150,6 +142,7 @@ def test(
         publish_url=publish,
         server=server,
         examples=examples,
+        ssl_verification=ssl_verification,
     ).test()
     if logs:
         _print_logs(run)
@@ -197,11 +190,16 @@ def export(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     # TODO: this should be a subcommand
     engine: Annotated[
         Optional[str],
         typer.Option(help="[engine] The engine used for great expection run."),
+    ] = None,
+    # TODO: this should be a subcommand
+    template: Annotated[
+        Optional[Path],
+        typer.Option(help="[custom] The file path of Jinja template."),
     ] = None,
 ):
     """
@@ -215,6 +213,7 @@ def export(
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,
         engine=engine,
+        template=template,
     )
     # Don't interpret console markup in output.
     if output is None:
@@ -284,7 +283,7 @@ def import_(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
@@ -321,7 +320,7 @@ def publish(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
@@ -331,9 +330,7 @@ def publish(
     Publish the data contract to the Data Mesh Manager.
     """
     publish_data_contract_to_datamesh_manager(
-        data_contract_specification=DataContract(
-            data_contract_file=location, schema_location=schema
-        ).get_data_contract_specification(),
+        data_contract_dict=resolve_data_contract_dict(location),
         ssl_verification=ssl_verification,
     )
 
@@ -350,10 +347,10 @@ def catalog(
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
-    ] = DEFAULT_DATA_CONTRACT_SCHEMA_URL,
+    ] = None,
 ):
     """
-    Create an html catalog of data contracts.
+    Create a html catalog of data contracts.
     """
     path = Path(output)
     path.mkdir(parents=True, exist_ok=True)
@@ -442,15 +439,32 @@ def diff(
 
 
 @app.command()
-def serve(
+def api(
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
-    host: Annotated[str, typer.Option(help="Bind socket to this host.")] = "127.0.0.1",
+    host: Annotated[
+        str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
+    ] = "127.0.0.1",
 ):
     """
-    Start the datacontract web server.
-    """
+    Start the datacontract CLI as server application with REST API.
 
-    uvicorn.run(web.app, port=port, host=host)
+    The OpenAPI documentation as Swagger UI is available on http://localhost:4242.
+    You can execute the commands directly from the Swagger UI.
+
+    To protect the API, you can set the environment variable DATACONTRACT_CLI_API_KEY to a secret API key.
+    To authenticate, requests must include the header 'x-api-key' with the correct API key.
+    This is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive information.
+
+    To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in
+    https://cli.datacontract.com/#test
+    """
+    import uvicorn
+    from uvicorn.config import LOGGING_CONFIG
+
+    log_config = LOGGING_CONFIG
+    log_config["root"] = {"level": "INFO"}
+
+    uvicorn.run(app="datacontract.api:app", port=port, host=host, reload=True, log_config=LOGGING_CONFIG)
 
 
 def _handle_result(run):

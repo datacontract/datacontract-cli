@@ -224,71 +224,101 @@ Commands
 - [serve](#serve)
 
 ### init
-
 ```
- Usage: datacontract init [OPTIONS] [LOCATION]
+                                                                                
+ Usage: datacontract init [OPTIONS] [LOCATION]                                  
+                                                                                
+ Download a datacontract.yaml template and write it to file.                    
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract  │
+│                             yaml to create.                                  │
+│                             [default: datacontract.yaml]                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --template                       TEXT  URL of a template or data contract    │
+│                                        [default:                             │
+│                                        https://datacontract.com/datacontrac… │
+│ --overwrite    --no-overwrite          Replace the existing                  │
+│                                        datacontract.yaml                     │
+│                                        [default: no-overwrite]               │
+│ --help                                 Show this message and exit.           │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
- Download a datacontract.yaml template and write it to file.
-
-╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml to create.  │
-│                             [default: datacontract.yaml]                                     │
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────╮
-│ --template                       TEXT  URL of a template or data contract                    │
-│                                        [default:                                             │
-│                                        https://datacontract.com/datacontract.init.yaml]      │
-│ --overwrite    --no-overwrite          Replace the existing datacontract.yaml                │
-│                                        [default: no-overwrite]                               │
-│ --help                                 Show this message and exit.                           │
-╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### lint
-
 ```
- Usage: datacontract lint [OPTIONS] [LOCATION]
+                                                                                
+ Usage: datacontract lint [OPTIONS] [LOCATION]                                  
+                                                                                
+ Validate that the datacontract.yaml is correctly formatted.                    
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract  │
+│                             yaml.                                            │
+│                             [default: datacontract.yaml]                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --schema        TEXT  The location (url or path) of the Data Contract        │
+│                       Specification JSON Schema                              │
+│                       [default:                                              │
+│                       https://datacontract.com/datacontract.schema.json]     │
+│ --help                Show this message and exit.                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
- Validate that the datacontract.yaml is correctly formatted.
-
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                  │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --schema        TEXT  The location (url or path) of the Data Contract Specification JSON Schema                                 │
-│                       [default: https://datacontract.com/datacontract.schema.json]                                              │
-│ --help                Show this message and exit.                                                                               │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### test
-
 ```
- Usage: datacontract test [OPTIONS] [LOCATION]
+                                                                                
+ Usage: datacontract test [OPTIONS] [LOCATION]                                  
+                                                                                
+ Run schema and quality tests on configured servers.                            
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract  │
+│                             yaml.                                            │
+│                             [default: datacontract.yaml]                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --schema                                       TEXT  The location (url or    │
+│                                                      path) of the Data       │
+│                                                      Contract Specification  │
+│                                                      JSON Schema             │
+│                                                      [default:               │
+│                                                      https://datacontract.c… │
+│ --server                                       TEXT  The server              │
+│                                                      configuration to run    │
+│                                                      the schema and quality  │
+│                                                      tests. Use the key of   │
+│                                                      the server object in    │
+│                                                      the data contract yaml  │
+│                                                      file to refer to a      │
+│                                                      server, e.g.,           │
+│                                                      `production`, or `all`  │
+│                                                      for all servers         │
+│                                                      (default).              │
+│                                                      [default: all]          │
+│ --examples            --no-examples                  Run the schema and      │
+│                                                      quality tests on the    │
+│                                                      example data within the │
+│                                                      data contract.          │
+│                                                      [default: no-examples]  │
+│ --publish                                      TEXT  The url to publish the  │
+│                                                      results after the test  │
+│                                                      [default: None]         │
+│ --logs                --no-logs                      Print logs              │
+│                                                      [default: no-logs]      │
+│ --ssl-verification    --no-ssl-verification          SSL verification when   │
+│                                                      publishing the data     │
+│                                                      contract.               │
+│                                                      [default:               │
+│                                                      ssl-verification]       │
+│ --help                                               Show this message and   │
+│                                                      exit.                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
- Run schema and quality tests on configured servers.
-
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                  │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --schema                                                       TEXT  The location (url or path) of the Data Contract            │
-│                                                                      Specification JSON Schema                                  │
-│                                                                      [default:                                                  │
-│                                                                      https://datacontract.com/datacontract.schema.json]         │
-│ --server                                                       TEXT  The server configuration to run the schema and quality     │
-│                                                                      tests. Use the key of the server object in the data        │
-│                                                                      contract yaml file to refer to a server, e.g.,             │
-│                                                                      `production`, or `all` for all servers (default).          │
-│                                                                      [default: all]                                             │
-│ --examples                    --no-examples                          Run the schema and quality tests on the example data       │
-│                                                                      within the data contract.                                  │
-│                                                                      [default: no-examples]                                     │
-│ --publish                                                      TEXT  The url to publish the results after the test              │
-│                                                                      [default: None]                                            │
-│ --logs                        --no-logs                              Print logs [default: no-logs]                              │
-│ --help                                                               Show this message and exit.                                │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Data Contract CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid.
@@ -330,7 +360,7 @@ Supported formats:
 
 Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for an additional type and formats.
 
-### S3
+#### S3
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
@@ -340,9 +370,9 @@ Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant
 - Parquet
 - Iceberg (coming soon)
 
-#### Examples
+##### Examples
 
-##### JSON
+###### JSON
 
 datacontract.yaml
 ```yaml
@@ -355,7 +385,7 @@ servers:
     delimiter: new_line # new_line, array, or none
 ```
 
-##### Delta Tables
+###### Delta Tables
 
 datacontract.yaml
 ```yaml
@@ -367,7 +397,7 @@ servers:
     format: delta
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                | Example                         | Description                            |
 |-------------------------------------|---------------------------------|----------------------------------------|
@@ -378,12 +408,12 @@ servers:
 
 
 
-### Google Cloud Storage (GCS)
+#### Google Cloud Storage (GCS)
 
 The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
 Use `https://storage.googleapis.com` as the endpoint URL.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -396,7 +426,7 @@ servers:
     delimiter: new_line # new_line, array, or none
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                | Example        | Description                                                                              |
 |-------------------------------------|----------------|------------------------------------------------------------------------------------------|
@@ -404,14 +434,14 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...`    | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Secret |
 
 
-### BigQuery
+#### BigQuery
 
 We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
 * BigQuery Job User
 * BigQuery Data Viewer
 
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -426,29 +456,30 @@ models:
     fields: ...
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                         | Example                   | Description                                             |
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery. If this environment variable isn't set, the cli tries to use `GOOGLE_APPLICATION_CREDENTIALS` as a fallback, so if you have that set for using their Python library anyway, it should work seamlessly. |
 
 
-### Azure
+#### Azure
 
 Data Contract CLI can test data that is stored in Azure Blob storage or Azure Data Lake Storage (Gen2) (ADLS) in various formats.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
 servers:
   production:
     type: azure
-    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/dataproducts/inventory_events/*.parquet
+    storageAccount: datameshdatabricksdemo
+    location: abfss://dataproducts/inventory_events/*.parquet
     format: parquet
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 Authentication works with an Azure Service Principal (SPN) aka App Registration with a secret.
 
@@ -460,11 +491,11 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 
 
 
-### Sqlserver
+#### Sqlserver
 
 Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool).
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -484,7 +515,7 @@ models:
         type: varchar
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                              | Example| Description                                  |
 |---------------------------------------------------|--------|----------------------------------------------|
@@ -497,13 +528,13 @@ models:
 
 
 
-### Databricks
+#### Databricks
 
 Works with Unity Catalog and Hive metastore.
 
 Needs a running SQL warehouse or compute cluster.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -518,7 +549,7 @@ models:
     fields: ...
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                      | Example                              | Description                                               |
 |-------------------------------------------|--------------------------------------|-----------------------------------------------------------|
@@ -527,7 +558,7 @@ models:
 | `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | The host name of the SQL warehouse or compute cluster |
 
 
-### Databricks (programmatic)
+#### Databricks (programmatic)
 
 Works with Unity Catalog and Hive metastore.
 When running in a notebook or pipeline, the provided `spark` session can be used.
@@ -535,7 +566,7 @@ An additional authentication is not required.
 
 Requires a Databricks Runtime with Python >= 3.10.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -565,7 +596,7 @@ run = data_contract.test()
 run.result
 ```
 
-### Dataframe (programmatic)
+#### Dataframe (programmatic)
 
 Works with Spark DataFrames.
 DataFrames need to be created as named temporary views.
@@ -573,7 +604,7 @@ Multiple temporary views are supported if your data contract contains multiple m
 
 Testing DataFrames is useful to test your datasets in a pipeline before writing them to a data source.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -601,11 +632,11 @@ assert run.result == "passed"
 ```
 
 
-### Snowflake
+#### Snowflake
 
 Data Contract CLI can test data in Snowflake.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -624,11 +655,11 @@ models:
         type: varchar
 ```
 
-#### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.  
+##### Environment Variables
+All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
 For example:
 
-| Soda parameter       | Environment Variable                        | 
+| Soda parameter       | Environment Variable                        |
 |----------------------|---------------------------------------------|
 | `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
 | `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
@@ -641,7 +672,7 @@ Beware, that parameters:
 * `database`
 * `schema`
 
-are obtained from the `servers` section of the YAML-file.  
+are obtained from the `servers` section of the YAML-file.
 E.g. from the example above:
 ```yaml
 servers:
@@ -652,11 +683,11 @@ servers:
 ```
 
 
-### Kafka
+#### Kafka
 
 Kafka support is currently considered experimental.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -668,7 +699,7 @@ servers:
     format: json
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable                | Example | Description                                                                      |
 |-------------------------------------|---------|----------------------------------------------------------------------------------|
@@ -677,11 +708,11 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`. Other supported mechanisms: `SCRAM-SHA-256` and `SCRAM-SHA-512` |
 
 
-### Postgres
+#### Postgres
 
 Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -700,7 +731,7 @@ models:
         type: varchar
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable             | Example            | Description |
 |----------------------------------|--------------------|-------------|
@@ -708,11 +739,11 @@ models:
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
 
 
-### Trino
+#### Trino
 
 Data Contract CLI can test data in Trino.
 
-#### Example
+##### Example
 
 datacontract.yaml
 ```yaml
@@ -735,7 +766,7 @@ models:
           trinoType: row(en_us varchar, pt_br varchar)
 ```
 
-#### Environment Variables
+##### Environment Variables
 
 | Environment Variable          | Example            | Description |
 |-------------------------------|--------------------|-------------|
@@ -745,46 +776,67 @@ models:
 
 
 ### export
-
 ```
- Usage: datacontract export [OPTIONS] [LOCATION]                                                                                  
-                                                                                                                                  
- Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.      
-                                                                                                                                  
-╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]                 │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format        [jsonschema|pydantic-model|sodacl|dbt|dbt-sources|db  The export format. [default: None] [required]         │
-│                    t-staging-sql|odcs|odcs_v2|odcs_v3|rdf|avro|protobuf                                                        │
-│                    |great-expectations|terraform|avro-idl|sql|sql-query                                                        │
-│                    |html|go|bigquery|dbml|spark|sqlalchemy|data-caterer                                                        │
-│                    |dcs|markdown|iceberg]                                                                                              │
-│    --output        PATH                                                  Specify the file path where the exported data will be │
-│                                                                          saved. If no path is provided, the output will be     │
-│                                                                          printed to stdout.                                    │
-│                                                                          [default: None]                                       │
-│    --server        TEXT                                                  The server name to export. [default: None]            │
-│    --model         TEXT                                                  Use the key of the model in the data contract yaml    │
-│                                                                          file to refer to a model, e.g., `orders`, or `all`    │
-│                                                                          for all models (default).                             │
-│                                                                          [default: all]                                        │
-│    --schema        TEXT                                                  The location (url or path) of the Data Contract       │
-│                                                                          Specification JSON Schema                             │
-│                                                                          [default:                                             │
-│                                                                          https://datacontract.com/datacontract.schema.json]    │
-│    --engine        TEXT                                                  [engine] The engine used for great expection run.     │
-│                                                                          [default: None]                                       │
-│    --help                                                                Show this message and exit.                           │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ RDF Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --rdf-base        TEXT  [rdf] The base URI used to generate the RDF graph. [default: None]                                     │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ SQL Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --sql-server-type        TEXT  [sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically │
-│                                detect the sql dialect via the specified servers in the data contract.                          │
-│                                [default: auto]                                                                                 │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+ Usage: datacontract export [OPTIONS] [LOCATION]                                
+                                                                                
+ Convert data contract to a specific format. Saves to file specified by         
+ `output` option if present, otherwise prints to stdout.                        
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract  │
+│                             yaml.                                            │
+│                             [default: datacontract.yaml]                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ *  --format        [jsonschema|pydantic-model|  The export format.           │
+│                    sodacl|dbt|dbt-sources|dbt-  [default: None]              │
+│                    staging-sql|odcs|odcs_v2|od  [required]                   │
+│                    cs_v3|rdf|avro|protobuf|gre                               │
+│                    at-expectations|terraform|a                               │
+│                    vro-idl|sql|sql-query|html|                               │
+│                    go|bigquery|dbml|spark|sqla                               │
+│                    lchemy|data-caterer|dcs|mar                               │
+│                    kdown|iceberg|custom]                                     │
+│    --output        PATH                         Specify the file path where  │
+│                                                 the exported data will be    │
+│                                                 saved. If no path is         │
+│                                                 provided, the output will be │
+│                                                 printed to stdout.           │
+│                                                 [default: None]              │
+│    --server        TEXT                         The server name to export.   │
+│                                                 [default: None]              │
+│    --model         TEXT                         Use the key of the model in  │
+│                                                 the data contract yaml file  │
+│                                                 to refer to a model, e.g.,   │
+│                                                 `orders`, or `all` for all   │
+│                                                 models (default).            │
+│                                                 [default: all]               │
+│    --schema        TEXT                         The location (url or path)   │
+│                                                 of the Data Contract         │
+│                                                 Specification JSON Schema    │
+│                                                 [default:                    │
+│                                                 https://datacontract.com/da… │
+│    --engine        TEXT                         [engine] The engine used for │
+│                                                 great expection run.         │
+│                                                 [default: None]              │
+│    --template      PATH                         [custom] The file path of    │
+│                                                 Jinja template.              │
+│                                                 [default: None]              │
+│    --help                                       Show this message and exit.  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ RDF Options ────────────────────────────────────────────────────────────────╮
+│ --rdf-base        TEXT  [rdf] The base URI used to generate the RDF graph.   │
+│                         [default: None]                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ SQL Options ────────────────────────────────────────────────────────────────╮
+│ --sql-server-type        TEXT  [sql] The server type to determine the sql    │
+│                                dialect. By default, it uses 'auto' to        │
+│                                automatically detect the sql dialect via the  │
+│                                specified servers in the data contract.       │
+│                                [default: auto]                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
 ```
 
 ```bash
@@ -822,6 +874,7 @@ Available export options:
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
 | `markdown`           | Export to Markdown                                      | ✅      |
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
+| `custom`             | Export to Custom format with Jinja                      | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
 
@@ -839,7 +892,7 @@ The export creates a list of expectations by utilizing:
 - The data from the Model definition with a fixed mapping
 - The expectations provided in the quality field for each model (find here the expectations gallery: [Great Expectations Gallery](https://greatexpectations.io/expectations/))
 
-### Additional Arguments
+##### Additional Arguments
 
 To further customize the export, the following optional arguments are available:
 
@@ -886,8 +939,8 @@ logical data types are exported.
 
 #### Spark
 
-The export function converts the data contract specification into a StructType Spark schema. The returned value is a Python code picture of the model schemas.  
-Spark DataFrame schema is defined as StructType. For more details about Spark Data Types please see [the spark documentation](https://spark.apache.org/docs/latest/sql-ref-datatypes.html) 
+The export function converts the data contract specification into a StructType Spark schema. The returned value is a Python code picture of the model schemas.
+Spark DataFrame schema is defined as StructType. For more details about Spark Data Types please see [the spark documentation](https://spark.apache.org/docs/latest/sql-ref-datatypes.html)
 
 #### Avro
 
@@ -900,20 +953,6 @@ We support a **config map on field level**. A config map may include any additio
 To specify custom Avro properties in your data contract, you can define them within the `config` section of your field definition. Below is an example of how to structure your YAML configuration to include custom Avro properties, such as `avroLogicalType` and `avroDefault`.
 
 >NOTE: At this moment, we just support [logicalType](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and [default](https://avro.apache.org/docs/1.11.0/spec.htm)
-
-#### Data Caterer
-
-The export function converts the data contract to a data generation task in YAML format that can be 
-ingested by [Data Caterer](https://github.com/data-catering/data-caterer). This gives you the 
-ability to generate production-like data in any environment based off your data contract.
-
-```shell
-datacontract export datacontract.yaml --format data-caterer --model orders
-```
-
-You can further customise the way data is generated via adding 
-[additional metadata in the YAML](https://data.catering/setup/generator/data-generator/) 
-to suit your needs.
 
 #### Example Configuration
 
@@ -944,6 +983,20 @@ models:
   - **config**: Section to specify custom Avro properties.
     - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
     - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
+
+#### Data Caterer
+
+The export function converts the data contract to a data generation task in YAML format that can be
+ingested by [Data Caterer](https://github.com/data-catering/data-caterer). This gives you the
+ability to generate production-like data in any environment based off your data contract.
+
+```shell
+datacontract export datacontract.yaml --format data-caterer --model orders
+```
+
+You can further customise the way data is generated via adding
+[additional metadata in the YAML](https://data.catering/setup/generator/data-generator/)
+to suit your needs.
 
 #### Iceberg
 
@@ -1003,56 +1056,171 @@ to limit your contract export to a single model.
 }
 ```
 
-### import
+#### Custom
 
+The export function converts the data contract specification into the custom format with Jinja. You can specify the path to a Jinja template with the `--template` argument, allowing you to output files in any format.
+
+```shell
+datacontract export --format custom --template template.txt datacontract.yaml
 ```
- Usage: datacontract import [OPTIONS]                                                                                          
-                                                                                                                               
- Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise
- prints to stdout.                                                                                                                    
-                                                                                                                               
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bigquery  The format of the source file.               │
-│                                   |odcs|unity|spark|iceberg|parquet]           [default: None]                              │
-│                                                                                [required]                                   │
-│    --output                       PATH                                         Specify the file path where the Data         │
-│                                                                                Contract will be saved. If no path is        │
-│                                                                                provided, the output will be printed to      │
-│                                                                                stdout.                                      │
-│                                                                                [default: None]                              │
-│    --source                       TEXT                                         The path to the file or Glue Database that   │
-│                                                                                should be imported.                          │
-│                                                                                [default: None]                              │
-│    --glue-table                   TEXT                                         List of table ids to import from the Glue    │
-│                                                                                Database (repeat for multiple table ids,     │
-│                                                                                leave empty for all tables in the dataset).  │
-│                                                                                [default: None]                              │
-│    --bigquery-project             TEXT                                         The bigquery project id. [default: None]     │
-│    --bigquery-dataset             TEXT                                         The bigquery dataset id. [default: None]     │
-│    --bigquery-table               TEXT                                         List of table ids to import from the         │
-│                                                                                bigquery API (repeat for multiple table ids, │
-│                                                                                leave empty for all tables in the dataset).  │
-│                                                                                [default: None]                              │
-│    --unity-table-full-name        TEXT                                         Full name of a table in the unity catalog    │
-│                                                                                [default: None]                              │
-│    --dbt-model                    TEXT                                         List of models names to import from the dbt  │
-│                                                                                manifest file (repeat for multiple models    │
-│                                                                                names, leave empty for all models in the     │
-│                                                                                dataset).                                    │
-│                                                                                [default: None]                              │
-│    --dbml-schema                  TEXT                                         List of schema names to import from the DBML │
-│                                                                                file (repeat for multiple schema names,      │
-│                                                                                leave empty for all tables in the file).     │
-│                                                                                [default: None]                              │
-│    --dbml-table                   TEXT                                         List of table names to import from the DBML  │
-│                                                                                file (repeat for multiple table names, leave │
-│                                                                                empty for all tables in the file).           │
-│                                                                                [default: None]                              │
-│    --iceberg-table                TEXT                                         Table name to assign to the model created    │
-│                                                                                from the Iceberg schema.                     │
-│                                                                                [default: None]                              │
-│    --help                                                                      Show this message and exit.                  │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+##### Jinja variables
+
+You can directly use the Data Contract Specification as template variables.
+
+```shell
+$ cat template.txt
+title: {{ data_contract.info.title }}
+
+$ datacontract export --format custom --template template.txt datacontract.yaml
+title: Orders Latest
+```
+
+##### Example Jinja Templates
+
+###### Customized dbt model
+
+You can export the dbt models containing any logic.
+
+Below is an example of a dbt staging layer that converts a field of `type: timestamp` to a `DATETIME` type with time zone conversion.
+
+template.sql
+
+{% raw %}
+```sql
+{%- for model_name, model in data_contract.models.items() %}
+{#- Export only the first model #}
+{%- if loop.first -%}
+SELECT
+{%- for field_name, field in model.fields.items() %}
+  {%- if field.type == "timestamp" %}
+  DATETIME({{ field_name }}, "Asia/Tokyo") AS {{ field_name }},
+  {%- else %}
+  {{ field_name }} AS {{ field_name }},
+  {%- endif %}
+{%- endfor %}
+FROM
+  {{ "{{" }} ref('{{ model_name }}') {{ "}}" }} 
+{%- endif %}
+{%- endfor %}
+```
+{% endraw %}
+
+command
+
+```shell
+datacontract export --format custom --template template.sql --output output.sql datacontract.yaml
+```
+
+output.sql
+
+```sql
+SELECT
+  order_id AS order_id,
+  DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
+  order_total AS order_total,
+  customer_id AS customer_id,
+  customer_email_address AS customer_email_address,
+  DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
+FROM
+  {{ ref('orders') }}
+```
+
+### import
+```
+                                                                                
+ Usage: datacontract import [OPTIONS]                                           
+                                                                                
+ Create a data contract from the given source location. Saves to file specified 
+ by `output` option if present, otherwise prints to stdout.                     
+                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ *  --format                     [sql|avro|dbt|dbml|gl  The format of the     │
+│                                 ue|jsonschema|bigquer  source file.          │
+│                                 y|odcs|unity|spark|ic  [default: None]       │
+│                                 eberg|parquet|csv]     [required]            │
+│    --output                     PATH                   Specify the file path │
+│                                                        where the Data        │
+│                                                        Contract will be      │
+│                                                        saved. If no path is  │
+│                                                        provided, the output  │
+│                                                        will be printed to    │
+│                                                        stdout.               │
+│                                                        [default: None]       │
+│    --source                     TEXT                   The path to the file  │
+│                                                        or Glue Database that │
+│                                                        should be imported.   │
+│                                                        [default: None]       │
+│    --glue-table                 TEXT                   List of table ids to  │
+│                                                        import from the Glue  │
+│                                                        Database (repeat for  │
+│                                                        multiple table ids,   │
+│                                                        leave empty for all   │
+│                                                        tables in the         │
+│                                                        dataset).             │
+│                                                        [default: None]       │
+│    --bigquery-project           TEXT                   The bigquery project  │
+│                                                        id.                   │
+│                                                        [default: None]       │
+│    --bigquery-dataset           TEXT                   The bigquery dataset  │
+│                                                        id.                   │
+│                                                        [default: None]       │
+│    --bigquery-table             TEXT                   List of table ids to  │
+│                                                        import from the       │
+│                                                        bigquery API (repeat  │
+│                                                        for multiple table    │
+│                                                        ids, leave empty for  │
+│                                                        all tables in the     │
+│                                                        dataset).             │
+│                                                        [default: None]       │
+│    --unity-table-full-n…        TEXT                   Full name of a table  │
+│                                                        in the unity catalog  │
+│                                                        [default: None]       │
+│    --dbt-model                  TEXT                   List of models names  │
+│                                                        to import from the    │
+│                                                        dbt manifest file     │
+│                                                        (repeat for multiple  │
+│                                                        models names, leave   │
+│                                                        empty for all models  │
+│                                                        in the dataset).      │
+│                                                        [default: None]       │
+│    --dbml-schema                TEXT                   List of schema names  │
+│                                                        to import from the    │
+│                                                        DBML file (repeat for │
+│                                                        multiple schema       │
+│                                                        names, leave empty    │
+│                                                        for all tables in the │
+│                                                        file).                │
+│                                                        [default: None]       │
+│    --dbml-table                 TEXT                   List of table names   │
+│                                                        to import from the    │
+│                                                        DBML file (repeat for │
+│                                                        multiple table names, │
+│                                                        leave empty for all   │
+│                                                        tables in the file).  │
+│                                                        [default: None]       │
+│    --iceberg-table              TEXT                   Table name to assign  │
+│                                                        to the model created  │
+│                                                        from the Iceberg      │
+│                                                        schema.               │
+│                                                        [default: None]       │
+│    --template                   TEXT                   The location (url or  │
+│                                                        path) of the Data     │
+│                                                        Contract              │
+│                                                        Specification         │
+│                                                        Template              │
+│                                                        [default: None]       │
+│    --schema                     TEXT                   The location (url or  │
+│                                                        path) of the Data     │
+│                                                        Contract              │
+│                                                        Specification JSON    │
+│                                                        Schema                │
+│                                                        [default:             │
+│                                                        https://datacontract… │
+│    --help                                              Show this message and │
+│                                                        exit.                 │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
 ```
 
 Example:
@@ -1077,6 +1245,7 @@ Available import options:
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | `spark`            | Import from Spark StructTypes                  | ✅      |
 | `dbml`             | Import from DBML models                        | ✅      |
+| `csv`              | Import from CSV File                           | ✅      |
 | `protobuf`         | Import from Protobuf schemas                   | TBD    |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
 | `parquet`          | Import from Parquet File Metadta               | ✅      |
@@ -1219,67 +1388,106 @@ Examples:
 datacontract import --format iceberg --source ./tests/fixtures/iceberg/simple_schema.json --iceberg-table test-table
 ```
 
-### breaking
+#### CSV
 
+Importing from CSV File. Specify file in `source` parameter. It does autodetection for encoding and csv dialect
+
+Example:
+
+```bash
+datacontract import --format csv --source "test.csv"
 ```
- Usage: datacontract breaking [OPTIONS] LOCATION_OLD LOCATION_NEW
 
- Identifies breaking changes between data contracts. Prints to stdout.
 
-╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]         │
-│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]         │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                               │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+### breaking
+```
+                                                                                
+ Usage: datacontract breaking [OPTIONS] LOCATION_OLD LOCATION_NEW               
+                                                                                
+ Identifies breaking changes between data contracts. Prints to stdout.          
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│ *    location_old      TEXT  The location (url or path) of the old data      │
+│                              contract yaml.                                  │
+│                              [default: None]                                 │
+│                              [required]                                      │
+│ *    location_new      TEXT  The location (url or path) of the new data      │
+│                              contract yaml.                                  │
+│                              [default: None]                                 │
+│                              [required]                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
 ```
 
 ### changelog
-
 ```
- Usage: datacontract changelog [OPTIONS] LOCATION_OLD LOCATION_NEW
+                                                                                
+ Usage: datacontract changelog [OPTIONS] LOCATION_OLD LOCATION_NEW              
+                                                                                
+ Generate a changelog between data contracts. Prints to stdout.                 
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│ *    location_old      TEXT  The location (url or path) of the old data      │
+│                              contract yaml.                                  │
+│                              [default: None]                                 │
+│                              [required]                                      │
+│ *    location_new      TEXT  The location (url or path) of the new data      │
+│                              contract yaml.                                  │
+│                              [default: None]                                 │
+│                              [required]                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
- Generate a changelog between data contracts. Prints to stdout.
-
-╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]         │
-│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]         │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                               │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### diff
-
 ```
- Usage: datacontract diff [OPTIONS] LOCATION_OLD LOCATION_NEW
+                                                                                
+ Usage: datacontract diff [OPTIONS] LOCATION_OLD LOCATION_NEW                   
+                                                                                
+ PLACEHOLDER. Currently works as 'changelog' does.                              
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│ *    location_old      TEXT  The location (url or path) of the old data      │
+│                              contract yaml.                                  │
+│                              [default: None]                                 │
+│                              [required]                                      │
+│ *    location_new      TEXT  The location (url or path) of the new data      │
+│                              contract yaml.                                  │
+│                              [default: None]                                 │
+│                              [required]                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
- PLACEHOLDER. Currently works as 'changelog' does.
-
-╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    location_old      TEXT  The location (url or path) of the old data contract yaml. [default: None] [required]         │
-│ *    location_new      TEXT  The location (url or path) of the new data contract yaml. [default: None] [required]         │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                               │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### catalog
-
 ```
+                                                                                
+ Usage: datacontract catalog [OPTIONS]                                          
+                                                                                
+ Create an html catalog of data contracts.                                      
+                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --files         TEXT  Glob pattern for the data contract files to include in │
+│                       the catalog. Applies recursively to any subfolders.    │
+│                       [default: *.yaml]                                      │
+│ --output        TEXT  Output directory for the catalog html files.           │
+│                       [default: catalog/]                                    │
+│ --schema        TEXT  The location (url or path) of the Data Contract        │
+│                       Specification JSON Schema                              │
+│                       [default:                                              │
+│                       https://datacontract.com/datacontract.schema.json]     │
+│ --help                Show this message and exit.                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
- Usage: datacontract catalog [OPTIONS]
-
- Create an html catalog of data contracts.
-
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --files         TEXT  Glob pattern for the data contract files to include in the catalog. [default: *.yaml]              │
-│ --output        TEXT  Output directory for the catalog html files. [default: catalog/]                                   │
-│ --help                Show this message and exit.                                                                        │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Examples:
@@ -1292,35 +1500,53 @@ datacontract catalog --output "."
 datacontract catalog --files "*.odcs.yaml"
 ```
 
-### Publish
+### publish
+```
+                                                                                
+ Usage: datacontract publish [OPTIONS] [LOCATION]                               
+                                                                                
+ Publish the data contract to the Data Mesh Manager.                            
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract  │
+│                             yaml.                                            │
+│                             [default: datacontract.yaml]                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --schema                                       TEXT  The location (url or    │
+│                                                      path) of the Data       │
+│                                                      Contract Specification  │
+│                                                      JSON Schema             │
+│                                                      [default:               │
+│                                                      https://datacontract.c… │
+│ --ssl-verification    --no-ssl-verification          SSL verification when   │
+│                                                      publishing the data     │
+│                                                      contract.               │
+│                                                      [default:               │
+│                                                      ssl-verification]       │
+│ --help                                               Show this message and   │
+│                                                      exit.                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
- Usage: datacontract publish [OPTIONS] [LOCATION]
-
- Publish the data contract to the Data Mesh Manager.
-
-╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml. [default: datacontract.yaml]             │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                                │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+### api
 ```
 
-### Serve
+ Usage: datacontract api [OPTIONS]   
+                                                                                 
+ Start the datacontract CLI as server application with REST API.                                                                                                                  
+ The OpenAPI documentation as Swagger UI is available on http://localhost:4242. You can execute the commands directly from the Swagger UI.                                        
+ To protect the API, you can set the environment variable DATACONTRACT_CLI_API_KEY to a secret API key. To authenticate, requests must include the header 'x-api-key' with the    
+ correct API key. This is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive information.                                              
+ To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in https://cli.datacontract.com/#test                        
+                                                                                                                                                                                  
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --port        INTEGER  Bind socket to this port. [default: 4242]                                                                                                               │
+│ --host        TEXT     Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0 [default: 127.0.0.1]                                                           │
+│ --help                 Show this message and exit.                                                                                                                             │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-```
-
- Usage: datacontract serve [OPTIONS]
-
- Start the datacontract web server.
-
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --port        INTEGER  Bind socket to this port. [default: 4242]                                                           │
-│ --host        TEXT     Bind socket to this host. [default: 127.0.0.1]                                                      │
-│ --help                 Show this message and exit.                                                                         │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -1338,7 +1564,7 @@ If you use [Data Mesh Manager](https://datamesh-manager.com/) or [Data Contract 
 ```bash
 # Fetch current data contract, execute tests on production, and publish result to data mesh manager
 $ EXPORT DATAMESH_MANAGER_API_KEY=xxx
-$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml \ 
+$ datacontract test https://demo.datamesh-manager.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml \
  --server production \
  --publish https://api.datamesh-manager.com/api/test-results
 ```
@@ -1450,7 +1676,7 @@ Examples: Removing or renaming models and fields.
   ```
 
 ## Customizing Exporters and Importers
- 
+
 ### Custom Exporter
 Using the exporter factory to add a new custom exporter
 ```python
@@ -1478,7 +1704,7 @@ class CustomExporter(Exporter):
 
 
 # Register the new custom class into factory
-exporter_factory.register_exporter("custom", CustomExporter)
+exporter_factory.register_exporter("custom_exporter", CustomExporter)
 
 
 if __name__ == "__main__":
@@ -1488,7 +1714,7 @@ if __name__ == "__main__":
     )
     # Call export
     result = data_contract.export(
-        export_format="custom", model="orders", server="production", custom_arg="my_custom_arg"
+        export_format="custom_exporter", model="orders", server="production", custom_arg="my_custom_arg"
     )
     print(result)
 
@@ -1496,18 +1722,18 @@ if __name__ == "__main__":
 Output
 ```python
 {
- 'title': 'Orders Unit Test', 
- 'version': '1.0.0', 
- 'description': 'The orders data contract', 
- 'email': 'team-orders@example.com', 
- 'url': 'https://wiki.example.com/teams/checkout', 
- 'model': 'orders', 
- 'model_columns': 'order_id, order_total, order_status', 
- 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'}, 
+ 'title': 'Orders Unit Test',
+ 'version': '1.0.0',
+ 'description': 'The orders data contract',
+ 'email': 'team-orders@example.com',
+ 'url': 'https://wiki.example.com/teams/checkout',
+ 'model': 'orders',
+ 'model_columns': 'order_id, order_total, order_status',
+ 'export_args': {'server': 'production', 'custom_arg': 'my_custom_arg'},
  'custom_args': 'my_custom_arg'
 }
 ```
-  
+
 ### Custom Importer
 Using the importer factory to add a new custom importer
 ```python
@@ -1529,31 +1755,31 @@ class CustomImporter(Importer):
         data_contract_specification.info.title = source_dict.get("title")
         data_contract_specification.info.version = source_dict.get("version")
         data_contract_specification.info.description = source_dict.get("description_from_app")
-        
+
         for model in source_dict.get("models", []):
             fields = {}
             for column in model.get('columns'):
                 field = Field(
-                    description=column.get('column_description'), 
-                    type=column.get('type') 
+                    description=column.get('column_description'),
+                    type=column.get('type')
                 )
-                fields[column.get('name')] = field               
-                   
+                fields[column.get('name')] = field
+
             dc_model = Model(
-                description=model.get('description'), 
+                description=model.get('description'),
                 fields= fields
             )
 
             data_contract_specification.models[model.get('name')] = dc_model
         return data_contract_specification
- 
+
 
 # Register the new custom class into factory
 importer_factory.register_importer("custom_company_importer", CustomImporter)
 
 
 if __name__ == "__main__":
-    # Get a custom data from other app 
+    # Get a custom data from other app
     json_from_custom_app = '''
     {
         "id_custom": "uuid-custom",
@@ -1585,14 +1811,14 @@ if __name__ == "__main__":
 
     # Call import_from_source
     result = data_contract.import_from_source(
-        format="custom_company_importer", 
-        data_contract_specification=DataContract.init(), 
+        format="custom_company_importer",
+        data_contract_specification=DataContract.init(),
         source=json_from_custom_app
-    ) 
+    )
     print(result.to_yaml() )
 ```
 Output
-  
+
 ```yaml
 dataContractSpecification: 1.1.0
 id: uuid-custom

@@ -42,6 +42,10 @@ class BreakingRules:
     field_primary_removed = Severity.WARNING
     field_primary_updated = Severity.WARNING
 
+    field_primary_key_added = Severity.WARNING
+    field_primary_key_removed = Severity.WARNING
+    field_primary_key_updated = Severity.WARNING
+
     field_references_added = Severity.WARNING
     field_references_removed = Severity.WARNING
     field_references_updated = Severity.WARNING

@@ -44,6 +44,27 @@ def resolve_data_contract(
         )
 
 
+def resolve_data_contract_dict(
+    data_contract_location: str = None,
+    data_contract_str: str = None,
+    data_contract: DataContractSpecification = None,
+) -> dict:
+    if data_contract_location is not None:
+        return _to_yaml(read_resource(data_contract_location))
+    elif data_contract_str is not None:
+        return _to_yaml(data_contract_str)
+    elif data_contract is not None:
+        return data_contract.model_dump()
+    else:
+        raise DataContractException(
+            type="lint",
+            result="failed",
+            name="Check that data contract YAML is valid",
+            reason="Data contract needs to be provided",
+            engine="datacontract",
+        )
+
+
 def resolve_data_contract_from_location(
     location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
@@ -54,20 +75,30 @@ def resolve_data_contract_from_location(
 def inline_definitions_into_data_contract(spec: DataContractSpecification):
     for model in spec.models.values():
         for field in model.fields.values():
-            # If ref_obj is not empty, we've already inlined definitions.
-            if not field.ref and not field.ref_obj:
-                continue
+            inline_definition_into_field(field, spec)
 
-            definition = _resolve_definition_ref(field.ref, spec)
-            field.ref_obj = definition
 
-            for field_name in field.model_fields.keys():
-                if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
-                    setattr(field, field_name, getattr(definition, field_name))
-            # extras
-            for extra_field_name, extra_field_value in definition.model_extra.items():
-                if extra_field_name not in field.model_extra.keys():
-                    setattr(field, extra_field_name, extra_field_value)
+def inline_definition_into_field(field, spec):
+    # iterate recursively over arrays
+    if field.items is not None:
+        inline_definition_into_field(field.items, spec)
+
+    # iterate recursively over nested fields
+    if field.fields is not None:
+        for nested_field_name, nested_field in field.fields.items():
+            inline_definition_into_field(nested_field, spec)
+
+    if not field.ref:
+        return
+
+    definition = _resolve_definition_ref(field.ref, spec)
+    for field_name in field.model_fields.keys():
+        if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
+            setattr(field, field_name, getattr(definition, field_name))
+    # extras
+    for extra_field_name, extra_field_value in definition.model_extra.items():
+        if extra_field_name not in field.model_extra.keys():
+            setattr(field, extra_field_name, extra_field_value)
 
 
 def _resolve_definition_ref(ref, spec) -> Definition:
@@ -221,7 +252,7 @@ def _resolve_data_contract_from_str(
     return spec
 
 
-def _to_yaml(data_contract_str):
+def _to_yaml(data_contract_str) -> dict:
     try:
         yaml_dict = yaml.safe_load(data_contract_str)
         return yaml_dict
@@ -239,7 +270,7 @@ def _to_yaml(data_contract_str):
 def _validate_data_contract_specification_schema(data_contract_yaml, schema_location: str = None):
     schema = fetch_schema(schema_location)
     try:
-        fastjsonschema.validate(schema, data_contract_yaml)
+        fastjsonschema.validate(schema, data_contract_yaml, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {e.message}")

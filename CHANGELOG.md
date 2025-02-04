@@ -5,19 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
-## [Unreleased]
+## Unreleased
 
 ### Added
 
+- `datacontract export --format custom`: Export to custom format with Jinja
+- `datacontract api` now can be protected with an API key
+
 ### Changed
 
+- `datacontract serve` renamed to `datacontract api`
+
 ### Fixed
+
+- Fix Error: 'dict object' has no attribute 'model_extra' when trying to use type: string with enum
+  values inside an array (#619)
+
+## [0.10.20] - 2025-01-30
+
+### Added
+
+- datacontract serve: now has a route for testing data contracts
+- datacontract serve: now has a OpenAPI documentation on root
+
+### Changed
+
+- FastAPI endpoint is now moved to extra "web"
+
+### Fixed
+
+- API Keys for Data Mesh Manager are now also applied for on-premise installations
+
+## [0.10.19] - 2025-01-29
+
+### Added
+
+- datacontract import --format csv
+- publish command also supports publishing ODCS format
+- Option to separate physical table name for a model via config option (#270)
+
+### Changed
+- JSON Schemas are now bundled with the application (#598)
+- datacontract export --format html: The model title is now shown if it is different to the model
+  name (#585)
+- datacontract export --format html: Custom model attributes are now shown (#585)
+- datacontract export --format html: The composite primary key is now shown. (#591)
+- datacontract export --format html: now examples are rendered in the model and definition (#497)
+- datacontract export --format sql: Create arrays and struct for Databricks (#467)
+
+### Fixed
+- datacontract lint: Linter 'Field references existing field' too many values to unpack (expected
+  2) (#586)
+- datacontract test (Azure): Error querying delta tables from azure storage. (#458)
+- datacontract export --format data-caterer: Use `fields` instead of `schema`
+- datacontract export --format data-caterer: Use `options` instead of `generator.options`
+- datacontract export --format data-caterer: Capture array type length option and inner data type
+- Fixed schemas/datacontract-1.1.0.init.yaml not included in build and `--template` not resolving file
+
+## [0.10.18] - 2025-01-18
+
+### Fixed
+- Fixed an issue when resolving project's dependencies when all extras are installed.
+- Definitions referenced by nested fields are not validated correctly (#595)
 - Replaced deprecated `primary` field with `primaryKey` in exporters, importers, examples, and Jinja templates for backward compatibility. Fixes [#518](https://github.com/your-repo/your-project/issues/518).
+- Cannot execute test on column of type record(bigquery) #597
 
-
-
-## [0.10.17] - 2024-01-16
+## [0.10.17] - 2025-01-16
 
 ### Added
 - added export format **markdown**: `datacontract export --format markdown` (#545)

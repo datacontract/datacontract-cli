@@ -1,7 +1,5 @@
 import logging
 
-from soda.scan import Scan
-
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 from datacontract.engines.soda.connections.databricks import to_databricks_soda_configuration
 from datacontract.engines.soda.connections.duckdb import get_duckdb_connection
@@ -16,6 +14,11 @@ from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
 def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark, tmp_dir):
+    from soda.common.config_helper import ConfigHelper
+
+    ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
+    from soda.scan import Scan
+
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return

@@ -1,0 +1,23 @@
+dataContractSpecification: 1.1.0
+id: orders-unit-test
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+servers:
+  production:
+    type: azure
+    storageAccount: datameshdatabricksdemo
+    location: abfss://dataproducts/orders_delta/orders.delta
+    format: delta
+models:
+  orders:
+    fields:
+      order_id:
+        type: varchar
+        unique: true
+        required: true
+      order_timestamp:
+        required: true
+      order_total:
+        type: bigint
+        required: true

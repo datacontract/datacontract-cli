@@ -2323,7 +2323,7 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: int4
-      primaryKey:
+      primary:
         type: object
         required: false
         primaryKey: false

@@ -125,9 +125,18 @@
                       <thead class="bg-gray-50">
                       <tr>
                         <th scope="colgroup" colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
-                          <span>{{ model_name }}</span>
+                          {% if model.title %}
+                          {{ model.title }}
+                          {% endif %}
+                          {% if model.title != model_name %}
+                          <span class="font-mono font-medium">{{ model_name }}</span>
+                          {% endif %}
                           <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ model.type }}</span>
                           <div class="text-sm font-medium text-gray-500">{{ model.description }}</div>
+                          {% for key, value in model.model_extra.items() %}
+                          <span
+                            class="inline-flex items-center rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mt-1">{{ key }}: {{ value }}</span>
+                          {% endfor %}
                         </th>
 
                       </tr>
@@ -137,6 +146,16 @@
                         {{ render_partial('partials/model_field.html', nested = False, field_name=field_name, field = field, level = 0) }}
                       {% endfor %}
                       </tbody>
+                      {% if model.primaryKey %}
+                      <tfoot class="bg-gray-50">
+                      <tr>
+                        <th scope="colgroup" colspan="4"
+                            class="py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                          <span>Primary Key: {{ model.primaryKey }}</span>
+                        </th>
+                      </tr>
+                      </tfoot>
+                      {% endif %}
                     </table>
                   </div>
                 </div>

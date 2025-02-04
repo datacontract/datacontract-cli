@@ -47,37 +47,64 @@ steps:
   type: json
   options:
     path: {path}
-  schema:
+  fields:
   - name: order_id
     type: string
-    generator:
-      options:
-        isUnique: true
-        minLength: 8
-        maxLength: 10
-        regex: ^B[0-9]+$
+    options:
+      isUnique: true
+      minLen: 8
+      maxLen: 10
+      regex: ^B[0-9]+$
+      isPrimaryKey: true
   - name: order_total
     type: decimal
-    generator:
-      options:
-        min: 0
-        max: 1000000
+    options:
+      min: 0
+      max: 1000000
+  - name: amount
+    type: double
+  - name: customer_id
+    type: integer
+  - name: customer_id_int
+    type: integer
+  - name: customer_id_long
+    type: long
+  - name: customer_id_float
+    type: float
+  - name: customer_id_number
+    type: double
+  - name: customer_id_numeric
+    type: double
+  - name: created_date
+    type: date
+  - name: created_ts
+    type: timestamp
+  - name: created_ts_tz
+    type: timestamp
+  - name: created_ts_ntz
+    type: timestamp
   - name: order_status
     type: string
-    generator:
-      options:
-        oneOf:
-        - pending
-        - shipped
-        - delivered
+    options:
+      oneOf:
+      - pending
+      - shipped
+      - delivered
   - name: address
     type: struct
-    schema:
-      fields:
-      - name: street
-        type: string
-      - name: city
-        type: string
+    fields:
+    - name: street
+      type: string
+    - name: city
+      type: string
+  - name: tags
+    type: array
+    options:
+      arrayType: string
+  - name: tags_int
+    type: array
+    options:
+      arrayType: integer
 """
 
 

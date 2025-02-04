@@ -24,6 +24,7 @@ def test_simple_model_export():
         ).strip()
     )
 
+
 def test_simple_model_export_with_primaryKey():
     m = spec.Model(fields={"f": spec.Field(type="string", primaryKey=True)})
     ast_class = conv.generate_model_class("Test", m)
@@ -38,6 +39,7 @@ def test_simple_model_export_with_primaryKey():
     """
         ).strip()
     )
+
 
 def test_array_model_export():
     m = spec.Model(fields={"f": spec.Field(type="array", items=spec.Field(type="string", required=True))})

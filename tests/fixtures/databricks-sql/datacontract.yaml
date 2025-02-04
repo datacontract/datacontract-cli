@@ -59,6 +59,18 @@ models:
         type: string
         format: email
         required: true
+      discounts:
+        description: This is an array of records
+        type: array
+        items:
+          type: object
+          fields:
+            discount_code:
+              type: string
+              description: The discount code that was applied to the order.
+            discount_amount:
+              type: long
+              description: The amount of the discount in the smallest monetary unit (e.g., cents).
   line_items:
     description: A single article that is part of an order.
     type: table
