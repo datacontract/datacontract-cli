@@ -21,3 +21,16 @@ models:
         minimum: 10
       field_three:
         type: timestamp
+      field_array_of_strings:
+        type: array
+        items:
+          type: string
+      field_array_of_structs:
+        type: array
+        items:
+          type: struct
+          fields:
+            inner_field_string:
+              type: varchar
+            inner_field_int:
+              type: int
