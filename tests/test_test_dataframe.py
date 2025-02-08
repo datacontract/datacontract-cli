@@ -4,6 +4,7 @@ import pytest
 from dotenv import load_dotenv
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.types import (
+    ArrayType,
     IntegerType,
     StringType,
     StructField,
@@ -63,6 +64,18 @@ def _prepare_dataframe(spark):
             StructField("field_one", StringType(), nullable=False),
             StructField("field_two", IntegerType(), nullable=True),
             StructField("field_three", TimestampType(), nullable=True),
+            StructField("field_array_of_strings", ArrayType(StringType()), nullable=True),
+            StructField(
+                "field_array_of_structs",
+                ArrayType(
+                    StructType(
+                        [
+                            StructField("inner_field_string", StringType()),
+                            StructField("inner_field_int", IntegerType()),
+                        ]
+                    )
+                ),
+            ),
         ]
     )
     data = [
@@ -70,11 +83,21 @@ def _prepare_dataframe(spark):
             field_one="AB-123-CD",
             field_two=15,
             field_three=datetime.strptime("2024-01-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
+            field_array_of_strings=["string1", "string2"],
+            field_array_of_structs=[
+                Row(inner_field_string="string1", inner_field_int=1),
+                Row(inner_field_string="string2", inner_field_int=2),
+            ],
         ),
         Row(
             field_one="XY-456-ZZ",
             field_two=20,
             field_three=datetime.strptime("2024-02-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
+            field_array_of_strings=["string3", "string4"],
+            field_array_of_structs=[
+                Row(inner_field_string="string3", inner_field_int=3),
+                Row(inner_field_string="string4", inner_field_int=4),
+            ],
         ),
     ]
     # Create DataFrame
