@@ -30,7 +30,6 @@ dependencies = [
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
   "python-dotenv~=1.0.0",
-  "rdflib==7.0.0", # move to extra?
   "boto3>=1.34.41,<1.36.12",
   "jinja_partials >= 0.2.1",
 
@@ -101,6 +100,10 @@ parquet = [
   "pyarrow>=18.1.0"
 ]
 
+rdf = [
+  "rdflib==7.0.0",
+]
+
 api = [
   "fastapi==0.115.6",
   "uvicorn==0.34.0",
@@ -111,7 +114,7 @@ custom = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,api,custom]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api,custom]"
 ]
 
 dev = [

@@ -189,21 +189,23 @@ pip install datacontract-cli[all]
 
 A list of available extras:
 
-| Dependency             | Installation Command                       |
-|------------------------|--------------------------------------------|
-| Avro Support           | `pip install datacontract-cli[avro]`       |
-| Google BigQuery        | `pip install datacontract-cli[bigquery]`   |
-| Databricks Integration | `pip install datacontract-cli[databricks]` |
-| Iceberg                | `pip install datacontract-cli[iceberg]`    |
-| Kafka Integration      | `pip install datacontract-cli[kafka]`      |
-| PostgreSQL Integration | `pip install datacontract-cli[postgres]`   |
-| S3 Integration         | `pip install datacontract-cli[s3]`         |
-| Snowflake Integration  | `pip install datacontract-cli[snowflake]`  |
-| Microsoft SQL Server   | `pip install datacontract-cli[sqlserver]`  |
-| Trino                  | `pip install datacontract-cli[trino]`      |
-| Dbt                    | `pip install datacontract-cli[dbt]`        |
-| Dbml                   | `pip install datacontract-cli[dbml]`       |
-| Parquet                | `pip install datacontract-cli[parquet]`    |
+| Dependency              | Installation Command                       |
+|-------------------------|--------------------------------------------|
+| Avro Support            | `pip install datacontract-cli[avro]`       |
+| Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
+| Databricks Integration  | `pip install datacontract-cli[databricks]` |
+| Iceberg                 | `pip install datacontract-cli[iceberg]`    |
+| Kafka Integration       | `pip install datacontract-cli[kafka]`      |
+| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
+| S3 Integration          | `pip install datacontract-cli[s3]`         |
+| Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
+| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
+| Trino                   | `pip install datacontract-cli[trino]`      |
+| dbt                     | `pip install datacontract-cli[dbt]`        |
+| DBML                    | `pip install datacontract-cli[dbml]`       |
+| Parquet                 | `pip install datacontract-cli[parquet]`    |
+| RDF                     | `pip install datacontract-cli[rdf]`        |
+| API (run as web server) | `pip install datacontract-cli[api]`        |
 
 
 
