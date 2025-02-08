@@ -1,0 +1,32 @@
+dataContractSpecification: 1.1.0
+id: postgres
+info:
+  title: postgres
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  my-dataproduct/postgres:
+    type: postgres
+    host: localhost
+    port: 5432
+    database: test
+    schema: public
+models:
+  my_table:
+    type: table
+    fields:
+      field_one:
+        type: varchar
+        required: true
+        unique: true
+        pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+      field_two:
+        type: integer
+        minimum: 10
+      field_three:
+        type: timestamp
+servicelevels:
+  freshness:
+    description: This is expected to fail
+    threshold: PT1H
+    timestampField: my_table.field_three

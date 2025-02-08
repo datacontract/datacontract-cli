@@ -14,6 +14,9 @@ models:
       order_id:
         type: string
         required: true
+      order_timestamp:
+        type: timestamp
+        required: true
       processed_timestamp:
         type: timestamp
         required: true
@@ -25,11 +28,21 @@ models:
               SELECT quantile_cont({field}, 0.95) AS percentile_95
               FROM {model}
             mustBeBetween: [ 1000, 49900 ]
+servicelevels:
+  retention:
+    period: P1Y
+    timestampField: orders.processed_timestamp
+  latency:
+    threshold: 1m
+    sourceTimestampField: orders.order_timestamp
+    processedTimestampField: orders.processed_timestamp
+  freshness:
+    threshold: 24h
+    timestampField: orders.order_timestamp
 quality:
     type: SodaCL
     specification:
       checks for orders:
-         - freshness(processed_timestamp) < 1d
          - row_count > 10
       checks for line_items:
          - row_count > 10:
@@ -37,51 +50,65 @@ quality:
     """
 
     expected = """
-            checks for orders:
-              - schema:
-                  name: Check that field order_id is present
-                  fail:
-                    when required column missing:
-                      - order_id
-              - schema:
-                  name: Check that field order_id has type string
-                  fail:
-                    when wrong column type:
-                      order_id: string
-              - missing_count(order_id) = 0:
-                  name: Check that required field order_id has no null values 
-              - schema:
-                  name: Check that field processed_timestamp is present
-                  fail:
-                    when required column missing:
-                      - processed_timestamp
-              - schema:
-                  name: Check that field processed_timestamp has type timestamp
-                  fail:
-                    when wrong column type:
-                      processed_timestamp: timestamp
-              - missing_count(processed_timestamp) = 0:
-                  name: Check that required field processed_timestamp has no null values 
-              - schema:
-                  name: Check that field order_total is present
-                  fail:
-                    when required column missing:
-                      - order_total
-              - schema:
-                  name: Check that field order_total has type integer
-                  fail:
-                    when wrong column type:
-                      order_total: integer
-              - orders_order_total_quality_sql_0 between 1000 and 49900:
-                  orders_order_total_quality_sql_0 query: |
-                    SELECT quantile_cont(order_total, 0.95) AS percentile_95
-                    FROM orders
-              - freshness(processed_timestamp) < 1d
-              - row_count > 10
-            checks for line_items:
-              - row_count > 10:
-                  name: Have at lease 10 line items
-            """
+checks for orders:
+  - schema:
+      name: Check that field order_id is present
+      fail:
+        when required column missing:
+          - order_id
+  - schema:
+      name: Check that field order_id has type string
+      fail:
+        when wrong column type:
+          order_id: string
+  - missing_count(order_id) = 0:
+      name: Check that required field order_id has no null values 
+  - schema:
+      name: Check that field order_timestamp is present
+      fail:
+        when required column missing:
+          - order_timestamp
+  - schema:
+      name: Check that field order_timestamp has type timestamp
+      fail:
+        when wrong column type:
+          order_timestamp: timestamp
+  - missing_count(order_timestamp) = 0:
+      name: Check that required field order_timestamp has no null values 
+  - schema:
+      name: Check that field processed_timestamp is present
+      fail:
+        when required column missing:
+          - processed_timestamp
+  - schema:
+      name: Check that field processed_timestamp has type timestamp
+      fail:
+        when wrong column type:
+          processed_timestamp: timestamp
+  - missing_count(processed_timestamp) = 0:
+      name: Check that required field processed_timestamp has no null values 
+  - schema:
+      name: Check that field order_total is present
+      fail:
+        when required column missing:
+          - order_total
+  - schema:
+      name: Check that field order_total has type integer
+      fail:
+        when wrong column type:
+          order_total: integer
+  - orders_order_total_quality_sql_0 between 1000 and 49900:
+      orders_order_total_quality_sql_0 query: |
+        SELECT quantile_cont(order_total, 0.95) AS percentile_95
+        FROM orders
+  - freshness(order_timestamp) < 24h
+  - orders_servicelevel_retention < 1y:
+      orders_servicelevel_retention expression: MIN(processed_timestamp)
+  - row_count > 10
+checks for line_items:
+  - row_count > 10:
+      name: Have at lease 10 line items
+"""
 
     data = yaml.safe_load(data_contract_specification_str)
     data_contract_specification = DataContractSpecification(**data)
