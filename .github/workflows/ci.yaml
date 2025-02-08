@@ -67,7 +67,7 @@ jobs:
       - name: Test datacontract --version
         run: datacontract --version
       - name: Test datacontract init
-        run: datacontract init --location datacontract-init.yaml
+        run: datacontract init new-datacontract.yaml
       - name: Test datacontract test
         run: cd tests && datacontract test fixtures/local-delta/datacontract.yaml
       - name: Test datacontract export
