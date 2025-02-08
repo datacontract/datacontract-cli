@@ -21,6 +21,7 @@ def to_sodacl_yaml(
         for model_key, model_value in data_contract_spec.models.items():
             k, v = to_checks(model_key, model_value, server_type, check_types)
             sodacl[k] = v
+        add_servicelevel_checks(sodacl, data_contract_spec)
         add_quality_checks(sodacl, data_contract_spec)
         sodacl_yaml_str = yaml.dump(sodacl, default_flow_style=False, sort_keys=False)
         return sodacl_yaml_str
@@ -280,6 +281,99 @@ def to_sodacl_threshold(quality: Quality) -> str | None:
             return None
         return f"not between {quality.mustNotBeBetween[0]} and {quality.mustNotBeBetween[1]}"
     return None
+
+
+def add_servicelevel_checks(sodacl, data_contract_spec):
+    if data_contract_spec.servicelevels is None:
+        return
+    if data_contract_spec.servicelevels.freshness is not None:
+        add_servicelevel_freshness_check(sodacl, data_contract_spec)
+    if data_contract_spec.servicelevels.retention is not None:
+        add_servicelevel_retention_check(sodacl, data_contract_spec)
+
+
+def add_servicelevel_freshness_check(sodacl, data_contract_spec):
+    if data_contract_spec.servicelevels.freshness.timestampField is None:
+        return
+    freshness_threshold = data_contract_spec.servicelevels.freshness.threshold
+    if freshness_threshold is None:
+        logger.info("servicelevel.freshness.threshold is not defined")
+        return
+
+    if not (
+        "d" in freshness_threshold
+        or "D" in freshness_threshold
+        or "h" in freshness_threshold
+        or "H" in freshness_threshold
+        or "m" in freshness_threshold
+        or "M" in freshness_threshold
+    ):
+        logger.info("servicelevel.freshness.threshold must be in days, hours, or minutes (e.g., PT1H, or 1h)")
+        return
+    timestamp_field_fully_qualified = data_contract_spec.servicelevels.freshness.timestampField
+    if "." not in timestamp_field_fully_qualified:
+        logger.info("servicelevel.freshness.timestampField is not fully qualified, skipping freshness check")
+        return
+    if timestamp_field_fully_qualified.count(".") > 1:
+        logger.info(
+            "servicelevel.freshness.timestampField contains multiple dots, which is currently not supported, skipping freshness check"
+        )
+        return
+    model_name = timestamp_field_fully_qualified.split(".")[0]
+    field_name = timestamp_field_fully_qualified.split(".")[1]
+    threshold = freshness_threshold
+    threshold = threshold.replace("P", "")
+    threshold = threshold.replace("T", "")
+    threshold = threshold.lower()
+    if model_name not in data_contract_spec.models:
+        logger.info(f"Model {model_name} not found in data_contract_spec.models, skipping freshness check")
+        return
+
+    check_key = f"checks for {model_name}"
+    if check_key not in sodacl:
+        sodacl[check_key] = []
+    sodacl[check_key].append(f"freshness({field_name}) < {threshold}")
+
+
+def add_servicelevel_retention_check(sodacl, data_contract_spec):
+    if data_contract_spec.servicelevels.retention is None:
+        return
+    if data_contract_spec.servicelevels.retention.unlimited is True:
+        return
+    if data_contract_spec.servicelevels.retention.timestampField is None:
+        logger.info("servicelevel.retention.timestampField is not defined")
+        return
+    if data_contract_spec.servicelevels.retention.period is None:
+        logger.info("servicelevel.retention.period is not defined")
+        return
+    timestamp_field_fully_qualified = data_contract_spec.servicelevels.retention.timestampField
+    if "." not in timestamp_field_fully_qualified:
+        logger.info("servicelevel.retention.timestampField is not fully qualified, skipping retention check")
+        return
+    if timestamp_field_fully_qualified.count(".") > 1:
+        logger.info(
+            "servicelevel.retention.timestampField contains multiple dots, which is currently not supported, skipping retention check"
+        )
+        return
+
+    model_name = timestamp_field_fully_qualified.split(".")[0]
+    field_name = timestamp_field_fully_qualified.split(".")[1]
+    period = data_contract_spec.servicelevels.retention.period
+    period = period.replace("P", "")
+    period = period.lower()
+    if model_name not in data_contract_spec.models:
+        logger.info(f"Model {model_name} not found in data_contract_spec.models, skipping retention check")
+        return
+    check_key = f"checks for {model_name}"
+    if check_key not in sodacl:
+        sodacl[check_key] = []
+    sodacl[check_key].append(
+        {
+            f"orders_servicelevel_retention < {period}": {
+                "orders_servicelevel_retention expression": f"MIN({field_name})"
+            }
+        }
+    )
 
 
 # These are deprecated root-level quality specifications, use the model-level and field-level quality fields instead
