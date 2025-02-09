@@ -10,11 +10,7 @@ from datacontract.breaking.breaking import (
     quality_breaking_changes,
     terms_breaking_changes,
 )
-from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
-    check_that_datacontract_contains_valid_server_configuration,
-)
-from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
-from datacontract.engines.soda.check_soda_execute import check_soda_execute
+from datacontract.engines.data_contract_test import test_data_contract
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
@@ -150,39 +146,7 @@ class DataContract:
                 inline_quality=self._inline_quality,
             )
 
-            if data_contract.models is None or len(data_contract.models) == 0:
-                raise DataContractException(
-                    type="lint",
-                    name="Check that data contract contains models",
-                    result="warning",
-                    reason="Models block is missing. Skip executing tests.",
-                    engine="datacontract",
-                )
-
-            check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
-
-            if self._server:
-                server_name = self._server
-                server = data_contract.servers.get(server_name)
-            else:
-                server_name = list(data_contract.servers.keys())[0]
-                server = data_contract.servers.get(server_name)
-
-            run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
-            run.dataContractId = data_contract.id
-            run.dataContractVersion = data_contract.info.version
-            run.dataProductId = server.dataProductId
-            run.outputPortId = server.outputPortId
-            run.server = server_name
-
-            # TODO check server is supported type for nicer error messages
-
-            # TODO check server credentials are complete for nicer error messages
-
-            if server.format == "json" and server.type != "kafka":
-                check_jsonschema(run, data_contract, server)
-
-            check_soda_execute(run, data_contract, server, self._spark)
+            test_data_contract(data_contract, run, self._server, self._spark)
 
         except DataContractException as e:
             run.checks.append(
