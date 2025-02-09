@@ -13,7 +13,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
-def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark, tmp_dir):
+def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark):
     from soda.common.config_helper import ConfigHelper
 
     ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
@@ -80,8 +80,8 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             scan.set_data_source_name("datacontract-cli")
     elif server.type == "kafka":
         if spark is None:
-            spark = create_spark_session(tmp_dir)
-        read_kafka_topic(spark, data_contract, server, tmp_dir)
+            spark = create_spark_session()
+        read_kafka_topic(spark, data_contract, server)
         scan.add_spark_session(spark, data_source_name=server.type)
         scan.set_data_source_name(server.type)
     elif server.type == "sqlserver":

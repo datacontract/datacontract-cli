@@ -1,5 +1,4 @@
 import logging
-import tempfile
 import typing
 
 if typing.TYPE_CHECKING:
@@ -162,30 +161,28 @@ class DataContract:
 
             check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
 
-            # TODO create directory only for spark
-            with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
-                if self._server:
-                    server_name = self._server
-                    server = data_contract.servers.get(server_name)
-                else:
-                    server_name = list(data_contract.servers.keys())[0]
-                    server = data_contract.servers.get(server_name)
+            if self._server:
+                server_name = self._server
+                server = data_contract.servers.get(server_name)
+            else:
+                server_name = list(data_contract.servers.keys())[0]
+                server = data_contract.servers.get(server_name)
 
-                run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
-                run.dataContractId = data_contract.id
-                run.dataContractVersion = data_contract.info.version
-                run.dataProductId = server.dataProductId
-                run.outputPortId = server.outputPortId
-                run.server = server_name
+            run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
+            run.dataContractId = data_contract.id
+            run.dataContractVersion = data_contract.info.version
+            run.dataProductId = server.dataProductId
+            run.outputPortId = server.outputPortId
+            run.server = server_name
 
-                # TODO check server is supported type for nicer error messages
+            # TODO check server is supported type for nicer error messages
 
-                # TODO check server credentials are complete for nicer error messages
+            # TODO check server credentials are complete for nicer error messages
 
-                if server.format == "json" and server.type != "kafka":
-                    check_jsonschema(run, data_contract, server)
+            if server.format == "json" and server.type != "kafka":
+                check_jsonschema(run, data_contract, server)
 
-                check_soda_execute(run, data_contract, server, self._spark, tmp_dir)
+            check_soda_execute(run, data_contract, server, self._spark)
 
         except DataContractException as e:
             run.checks.append(

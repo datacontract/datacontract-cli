@@ -1,12 +1,14 @@
+import atexit
 import logging
 import os
+import tempfile
 
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Server
 from datacontract.model.exceptions import DataContractException
 
 
-def create_spark_session(tmp_dir: str):
+def create_spark_session():
     """Create and configure a Spark session."""
 
     try:
@@ -20,6 +22,9 @@ def create_spark_session(tmp_dir: str):
             engine="datacontract",
             original_exception=e,
         )
+
+    tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract-cli-spark")
+    atexit.register(tmp_dir.cleanup)
 
     spark = (
         SparkSession.builder.appName("datacontract")
@@ -37,7 +42,7 @@ def create_spark_session(tmp_dir: str):
     return spark
 
 
-def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Server, tmp_dir):
+def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Server):
     """Read and process data from a Kafka topic based on the server configuration."""
 
     logging.info("Reading data from Kafka server %s topic %s", server.host, server.topic)
@@ -62,7 +67,7 @@ def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Se
                 type="test",
                 name="Configuring Kafka checks",
                 result="warning",
-                reason=f"Kafka format '{server.format}' is not supported. " f"Skip executing tests.",
+                reason=f"Kafka format '{server.format}' is not supported. Skip executing tests.",
                 engine="datacontract",
             )
 
