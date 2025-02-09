@@ -111,9 +111,6 @@ $ datacontract lint datacontract.yaml
 # execute schema and quality checks
 $ datacontract test datacontract.yaml
 
-# execute schema and quality checks on the examples within the contract
-$ datacontract test --examples datacontract.yaml
-
 # export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs_v2, odcs_v3, rdf, sql, sodacl, terraform, ...)
 $ datacontract export --format html datacontract.yaml > datacontract.html
 
@@ -1580,24 +1577,20 @@ Create a data contract based on the actual data. This is the fastest way to get 
     $ datacontract test
     ```
 
-2. Add examples to the `datacontract.yaml`. If you can, use actual data and anonymize. Make sure that the examples match the imported logical data model.
+2. Add quality checks and additional type constraints one by one to the contract and make sure the
+   data still adheres to the contract.
    ```bash
-   $ datacontract test --examples
-   ```
-
-
-3. Add quality checks and additional type constraints one by one to the contract and make sure the examples and the actual data still adheres to the contract. Check against examples for a very fast feedback loop.
-   ```bash
-   $ datacontract test --examples
    $ datacontract test
    ```
 
-4. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You probably forgot to document some fields and add the terms and conditions.
+3. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You
+   probably forgot to document some fields and add the terms and conditions.
    ```bash
    $ datacontract lint
    ```
 
-5. Set up a CI pipeline that executes daily for continuous quality checks. You can also report the test results to tools like [Data Mesh Manager](https://datamesh-manager.com) 
+4. Set up a CI pipeline that executes daily for continuous quality checks. You can also report the
+   test results to tools like [Data Mesh Manager](https://datamesh-manager.com)
    ```bash
    $ datacontract test --publish https://api.datamesh-manager.com/api/test-results
    ```
@@ -1611,36 +1604,26 @@ Create a data contract based on the requirements from use cases.
    $ datacontract init
    ```
 
-2. Add examples to the `datacontract.yaml`. Do not start with the data model, although you are probably tempted to do that. Examples are the fastest way to get feedback from everybody and not loose someone in the discussion.
-
-3. Create the model based on the examples. Test the model against the examples to double-check whether the model matches the examples.
-    ```bash
-    $ datacontract test --examples
-    ```
-
-4. Add quality checks and additional type constraints one by one to the contract and make sure the examples and the actual data still adheres to the contract. Check against examples for a very fast feedback loop.
-    ```bash
-    $ datacontract test --examples
-    ```
-
-5. Fill in the terms, descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the linter.
+2. Create the model and quality guarantees based on your business requirements. Fill in the terms,
+   descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the
+   linter.
     ```bash
     $ datacontract lint
     ```
 
-6. Set up a CI pipeline that lints and tests the examples so you make sure that any changes later do not decrease the quality of the contract.
-    ```bash
-    $ datacontract lint
-    $ datacontract test --examples
-    ```
-
-7. Use the export function to start building the providing data product as well as the integration into the consuming data products.
+3. Use the export function to start building the providing data product as well as the integration
+   into the consuming data products.
     ```bash
     # data provider
     $ datacontract export --format dbt
     # data consumer
     $ datacontract export --format dbt-sources
     $ datacontract export --format dbt-staging-sql
+    ```
+
+4. Test that your data product implementation adheres to the contract.
+    ```bash
+    $ datacontract test
     ```
 
 ### Schema Evolution
