@@ -21,7 +21,7 @@ dependencies = [
   "requests>=2.31,<2.33",
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet==2024.11.0",
-  "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
+  #  "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
   "python-multipart==0.0.20",
   "rich>=13.7,<13.10",
   "simple-ddl-parser==1.7.1",
@@ -31,6 +31,7 @@ dependencies = [
   "setuptools>=60",
   "python-dotenv~=1.0.0",
   "boto3>=1.34.41,<1.36.12",
+  "Jinja2>=3.1.5",
   "jinja_partials >= 0.2.1",
 
 ]
@@ -109,12 +110,8 @@ api = [
   "uvicorn==0.34.0",
 ]
 
-custom = [
-  "Jinja2>=3.1.5"
-]
-
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api,custom]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api]"
 ]
 
 dev = [
