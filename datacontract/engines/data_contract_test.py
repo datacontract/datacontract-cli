@@ -14,12 +14,12 @@ from datacontract.model.run import Run
 
 
 def test_data_contract(
-    data_contract: DataContractSpecification,
+    data_contract_specification: DataContractSpecification,
     run: Run,
     server_name: str = None,
     spark: "SparkSession" = None,
 ):
-    if data_contract.models is None or len(data_contract.models) == 0:
+    if data_contract_specification.models is None or len(data_contract_specification.models) == 0:
         raise DataContractException(
             type="lint",
             name="Check that data contract contains models",
@@ -27,20 +27,21 @@ def test_data_contract(
             reason="Models block is missing. Skip executing tests.",
             engine="datacontract",
         )
-    check_that_datacontract_contains_valid_server_configuration(run, data_contract, server_name)
+    check_that_datacontract_contains_valid_server_configuration(run, data_contract_specification, server_name)
     if server_name:
-        server = data_contract.servers.get(server_name)
+        server = data_contract_specification.servers.get(server_name)
     else:
-        server_name = list(data_contract.servers.keys())[0]
-        server = data_contract.servers.get(server_name)
-    run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
-    run.dataContractId = data_contract.id
-    run.dataContractVersion = data_contract.info.version
+        server_name = list(data_contract_specification.servers.keys())[0]
+        server = data_contract_specification.servers.get(server_name)
+    run.log_info(f"Running tests for data contract {data_contract_specification.id} with server {server_name}")
+    run.dataContractId = data_contract_specification.id
+    run.dataContractVersion = data_contract_specification.info.version
     run.dataProductId = server.dataProductId
     run.outputPortId = server.outputPortId
     run.server = server_name
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
-        check_jsonschema(run, data_contract, server)
-    check_soda_execute(run, data_contract, server, spark)
+        check_jsonschema(run, data_contract_specification, server)
+
+    check_soda_execute(run, data_contract_specification, server, spark)

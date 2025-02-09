@@ -1,5 +1,5 @@
+from datacontract.breaking.breaking_change import BreakingChange, Location, Severity
 from datacontract.breaking.breaking_rules import BreakingRules
-from datacontract.model.breaking_change import BreakingChange, Location, Severity
 from datacontract.model.data_contract_specification import Contact, DeprecatedQuality, Field, Info, Model, Terms
 
 

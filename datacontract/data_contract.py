@@ -10,6 +10,7 @@ from datacontract.breaking.breaking import (
     quality_breaking_changes,
     terms_breaking_changes,
 )
+from datacontract.breaking.breaking_change import BreakingChange, BreakingChanges, Severity
 from datacontract.engines.data_contract_test import test_data_contract
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
@@ -23,7 +24,6 @@ from datacontract.lint.linters.field_reference_linter import FieldReferenceLinte
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
 from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
 from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
-from datacontract.model.breaking_change import BreakingChange, BreakingChanges, Severity
 from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run

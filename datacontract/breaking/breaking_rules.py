@@ -1,4 +1,4 @@
-from datacontract.model.breaking_change import Severity
+from datacontract.breaking.breaking_change import Severity
 
 
 class BreakingRules:
