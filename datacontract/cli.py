@@ -119,10 +119,6 @@ def test(
             "servers (default)."
         ),
     ] = "all",
-    examples: Annotated[
-        bool,
-        typer.Option(help="Run the schema and quality tests on the example data within the data contract."),
-    ] = None,
     publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
@@ -141,7 +137,6 @@ def test(
         schema_location=schema,
         publish_url=publish,
         server=server,
-        examples=examples,
         ssl_verification=ssl_verification,
     ).test()
     if logs:

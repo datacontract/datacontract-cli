@@ -302,11 +302,6 @@ Commands
 │                                                      for all servers         │
 │                                                      (default).              │
 │                                                      [default: all]          │
-│ --examples            --no-examples                  Run the schema and      │
-│                                                      quality tests on the    │
-│                                                      example data within the │
-│                                                      data contract.          │
-│                                                      [default: no-examples]  │
 │ --publish                                      TEXT  The url to publish the  │
 │                                                      results after the test  │
 │                                                      [default: None]         │

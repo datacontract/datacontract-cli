@@ -1,9 +1,6 @@
-import json
 import logging
 import tempfile
 import typing
-
-import yaml
 
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
@@ -26,16 +23,15 @@ from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
 from datacontract.lint import resolve
 from datacontract.lint.linters.description_linter import DescriptionLinter
-from datacontract.lint.linters.example_model_linter import ExampleModelLinter
 from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
 from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
 from datacontract.lint.linters.quality_schema_linter import QualityUsesSchemaLinter
 from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
 from datacontract.model.breaking_change import BreakingChange, BreakingChanges, Severity
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
+from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import Check, Run
+from datacontract.model.run import Check, ResultEnum, Run
 
 
 class DataContract:
@@ -46,7 +42,6 @@ class DataContract:
         data_contract: DataContractSpecification = None,
         schema_location: str = None,
         server: str = None,
-        examples: bool = False,
         publish_url: str = None,
         spark: "SparkSession" = None,
         inline_definitions: bool = True,
@@ -58,14 +53,12 @@ class DataContract:
         self._data_contract = data_contract
         self._schema_location = schema_location
         self._server = server
-        self._examples = examples
         self._publish_url = publish_url
         self._spark = spark
         self._inline_definitions = inline_definitions
         self._inline_quality = inline_quality
         self._ssl_verification = ssl_verification
         self.all_linters = {
-            ExampleModelLinter(),
             QualityUsesSchemaLinter(),
             FieldPatternLinter(),
             FieldReferenceLinter(),
@@ -96,7 +89,12 @@ class DataContract:
                 inline_quality=self._inline_quality,
             )
             run.checks.append(
-                Check(type="lint", result="passed", name="Data contract is syntactically valid", engine="datacontract")
+                Check(
+                    type="lint",
+                    result=ResultEnum.passed,
+                    name="Data contract is syntactically valid",
+                    engine="datacontract",
+                )
             )
             if enabled_linters == "none":
                 linters_to_check = set()
@@ -113,7 +111,7 @@ class DataContract:
                     run.checks.append(
                         Check(
                             type="general",
-                            result="error",
+                            result=ResultEnum.error,
                             name=f"Linter '{linter.name}'",
                             reason=str(e),
                             engine="datacontract",
@@ -130,7 +128,7 @@ class DataContract:
             run.checks.append(
                 Check(
                     type="general",
-                    result="error",
+                    result=ResultEnum.error,
                     name="Check Data Contract",
                     reason=str(e),
                     engine="datacontract",
@@ -162,24 +160,11 @@ class DataContract:
                     engine="datacontract",
                 )
 
-            if self._examples:
-                if data_contract.examples is None or len(data_contract.examples) == 0:
-                    raise DataContractException(
-                        type="lint",
-                        name="Check that data contract contains valid examples",
-                        result="warning",
-                        reason="Examples block is missing. Skip executing tests.",
-                        engine="datacontract",
-                    )
-            else:
-                check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
+            check_that_datacontract_contains_valid_server_configuration(run, data_contract, self._server)
 
-            # TODO create directory only for examples
+            # TODO create directory only for spark
             with tempfile.TemporaryDirectory(prefix="datacontract-cli") as tmp_dir:
-                if self._examples:
-                    server_name = "examples"
-                    server = self._get_examples_server(data_contract, run, tmp_dir)
-                elif self._server:
+                if self._server:
                     server_name = self._server
                     server = data_contract.servers.get(server_name)
                 else:
@@ -234,38 +219,6 @@ class DataContract:
             publish_test_results_to_datamesh_manager(run, self._publish_url, self._ssl_verification)
 
         return run
-
-    def _get_examples_server(self, data_contract, run, tmp_dir):
-        run.log_info(f"Copying examples to files in temporary directory {tmp_dir}")
-        format = "json"
-        for example in data_contract.examples:
-            format = example.type
-            p = f"{tmp_dir}/{example.model}.{format}"
-            run.log_info(f"Creating example file {p}")
-            with open(p, "w") as f:
-                content = ""
-                if format == "json" and isinstance(example.data, list):
-                    content = json.dumps(example.data)
-                elif format == "json" and isinstance(example.data, str):
-                    content = example.data
-                elif format == "yaml" and isinstance(example.data, list):
-                    content = yaml.dump(example.data, allow_unicode=True)
-                elif format == "yaml" and isinstance(example.data, str):
-                    content = example.data
-                elif format == "csv":
-                    content = example.data
-                logging.debug(f"Content of example file {p}: {content}")
-                f.write(content)
-        path = f"{tmp_dir}" + "/{model}." + format
-        delimiter = "array"
-        server = Server(
-            type="local",
-            path=path,
-            format=format,
-            delimiter=delimiter,
-        )
-        run.log_info(f"Using {server} for testing the examples")
-        return server
 
     def breaking(self, other: "DataContract") -> BreakingChanges:
         return self.changelog(other, include_severities=[Severity.ERROR, Severity.WARNING])
