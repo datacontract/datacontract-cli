@@ -1,0 +1,17 @@
+dataContractSpecification: 1.1.0
+id: pageviews
+info:
+  title: Pageviews
+  version: 0.0.1
+models:
+  row:
+    type: table
+    namespace: com.example
+    fields:
+      field_name:
+        type: record
+        config:
+          namespace: com.example
+        fields:
+          field:
+            type: string

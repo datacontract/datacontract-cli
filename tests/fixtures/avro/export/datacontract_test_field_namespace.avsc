@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "row",
+  "namespace": "com.example",
+  "fields": [
+    {
+            "name": "field_name",
+            "type":
+                {
+                    "type": "record",
+                    "name": "field_name",
+                    "namespace": "com.example",
+                    "fields": [
+                        {
+                            "name": "field",
+                            "type": "string"
+
+                        }
+                    ]
+                }
+
+        }
+  ]
+}
