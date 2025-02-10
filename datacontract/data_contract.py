@@ -11,7 +11,7 @@ from datacontract.breaking.breaking import (
     terms_breaking_changes,
 )
 from datacontract.breaking.breaking_change import BreakingChange, BreakingChanges, Severity
-from datacontract.engines.data_contract_test import test_data_contract
+from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
@@ -146,7 +146,7 @@ class DataContract:
                 inline_quality=self._inline_quality,
             )
 
-            test_data_contract(data_contract, run, self._server, self._spark)
+            execute_data_contract_test(data_contract, run, self._server, self._spark)
 
         except DataContractException as e:
             run.checks.append(
