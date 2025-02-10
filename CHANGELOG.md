@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Schema type checks fail on nested fields for Databricks spark (#618)
+- Export to Avro add namespace on field as optional configuration (#631)
 
 ### Removed
 
