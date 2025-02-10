@@ -3,6 +3,7 @@ from testcontainers.postgres import PostgresContainer
 
 from datacontract.data_contract import DataContract
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum
 
 postgres = PostgresContainer("postgres:16")
 
@@ -43,12 +44,17 @@ def test_test_quality_invalid(postgres_container, monkeypatch):
     run = data_contract.test()
 
     print(run.pretty())
-    assert run.result == "failed"
+    assert run.result == ResultEnum.failed
     assert any(
-        check.name == "my_table_field_two_quality_sql_0 between 1000 and 49900" and check.result == "failed"
+        check.name == "95% of all order total values are expected to be between 10 and 499 EUR."
+        and check.result == ResultEnum.failed
         for check in run.checks
     )
-    assert any(check.name == "my_table_quality_sql_0 < 3600" and check.result == "failed" for check in run.checks)
+    assert any(
+        check.name == "The maximum duration between two orders should be less that 3600 seconds"
+        and check.result == ResultEnum.failed
+        for check in run.checks
+    )
 
 
 def _setup_datacontract(file):

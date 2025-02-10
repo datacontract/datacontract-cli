@@ -1,3 +1,6 @@
+from datacontract.model.run import ResultEnum
+
+
 class DataContractException(Exception):
     """Exception raised for errors in the execution of a run.
 
@@ -19,7 +22,7 @@ class DataContractException(Exception):
         engine="datacontract",
         model=None,
         original_exception=None,
-        result: str = "failed",
+        result: ResultEnum = ResultEnum.failed,
         message="Run operation failed",
     ):
         self.type = type

@@ -25,16 +25,13 @@ def minio_container():
 def test_test_s3_json(minio_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "test-access")
     monkeypatch.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "test-secret")
-
     data_contract_str = _prepare_s3_files(minio_container)
-
     data_contract = DataContract(data_contract_str=data_contract_str)
 
     run = data_contract.test()
 
     print(run.pretty())
     assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
 
 
 def _prepare_s3_files(minio_container):

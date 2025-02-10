@@ -17,13 +17,20 @@ class ResultEnum(str, Enum):
 
 
 class Check(BaseModel):
+    id: str | None = None
+    key: str | None = None
+    category: str | None = None
     type: str
-    name: str | None
-    result: ResultEnum | None
-    engine: str | None
-    reason: str | None = None
+    name: str | None = None
     model: str | None = None
     field: str | None = None
+
+    engine: str | None = None
+    language: str | None = None
+    implementation: str | None = None
+
+    result: ResultEnum | None = None
+    reason: str | None = None
     details: str | None = None
     diagnostics: dict | None = None
 

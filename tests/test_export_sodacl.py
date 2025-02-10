@@ -1,6 +1,6 @@
 import yaml
 
-from datacontract.export.sodacl_converter import to_sodacl_yaml
+from datacontract.export.sodacl_converter import SodaExporter
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 
@@ -52,58 +52,61 @@ quality:
     expected = """
 checks for orders:
   - schema:
-      name: Check that field order_id is present
+      name: orders__order_id__field_is_present
       fail:
         when required column missing:
           - order_id
   - schema:
-      name: Check that field order_id has type string
+      name: orders__order_id__field_type
       fail:
         when wrong column type:
           order_id: string
   - missing_count(order_id) = 0:
-      name: Check that required field order_id has no null values 
+      name: orders__order_id__field_required
   - schema:
-      name: Check that field order_timestamp is present
+      name: orders__order_timestamp__field_is_present
       fail:
         when required column missing:
           - order_timestamp
   - schema:
-      name: Check that field order_timestamp has type timestamp
+      name: orders__order_timestamp__field_type
       fail:
         when wrong column type:
           order_timestamp: timestamp
   - missing_count(order_timestamp) = 0:
-      name: Check that required field order_timestamp has no null values 
+      name: orders__order_timestamp__field_required
   - schema:
-      name: Check that field processed_timestamp is present
+      name: orders__processed_timestamp__field_is_present
       fail:
         when required column missing:
           - processed_timestamp
   - schema:
-      name: Check that field processed_timestamp has type timestamp
+      name: orders__processed_timestamp__field_type
       fail:
         when wrong column type:
           processed_timestamp: timestamp
   - missing_count(processed_timestamp) = 0:
-      name: Check that required field processed_timestamp has no null values 
+      name: orders__processed_timestamp__field_required
   - schema:
-      name: Check that field order_total is present
+      name: orders__order_total__field_is_present
       fail:
         when required column missing:
           - order_total
   - schema:
-      name: Check that field order_total has type integer
+      name: orders__order_total__field_type
       fail:
         when wrong column type:
           order_total: integer
-  - orders_order_total_quality_sql_0 between 1000 and 49900:
-      orders_order_total_quality_sql_0 query: |
+  - orders__order_total__quality_sql_0 between 1000 and 49900:
+      name: orders__order_total__quality_sql_0
+      orders__order_total__quality_sql_0 query: |
         SELECT quantile_cont(order_total, 0.95) AS percentile_95
         FROM orders
-  - freshness(order_timestamp) < 24h
-  - orders_servicelevel_retention < 1y:
-      orders_servicelevel_retention expression: MIN(processed_timestamp)
+  - freshness(order_timestamp) < 24h:
+      name: servicelevel_freshness
+  - orders_servicelevel_retention < 31536000:
+      name: servicelevel_retention
+      orders_servicelevel_retention expression: TIMESTAMPDIFF(SECOND, MIN(processed_timestamp), CURRENT_TIMESTAMP)
   - row_count > 10
 checks for line_items:
   - row_count > 10:
@@ -113,6 +116,7 @@ checks for line_items:
     data = yaml.safe_load(data_contract_specification_str)
     data_contract_specification = DataContractSpecification(**data)
 
-    result = to_sodacl_yaml(data_contract_specification)
+    exporter = SodaExporter(export_format="sodacl")
+    result = exporter.export(data_contract_specification, "all", None, "auto", None)
 
-    assert yaml.safe_load(result) == yaml.safe_load(expected)
+    assert yaml.safe_load(expected) == yaml.safe_load(result)

@@ -15,6 +15,6 @@ def test_test_s3_json(monkeypatch):
 
     run = data_contract.test()
 
-    print(run)
+    print(run.pretty())
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)

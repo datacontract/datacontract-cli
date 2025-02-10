@@ -3,6 +3,7 @@ from testcontainers.postgres import PostgresContainer
 
 from datacontract.data_contract import DataContract
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -33,7 +34,7 @@ def test_test_postgres(postgres_container, monkeypatch):
 
     print(run)
     assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert all(check.result == ResultEnum.passed for check in run.checks)
 
 
 def test_test_postgres_odcs(postgres_container, monkeypatch):

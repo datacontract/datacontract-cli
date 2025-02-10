@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 from datacontract.engines.soda.connections.databricks import to_databricks_soda_configuration
@@ -106,37 +107,34 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         run.log_warn(f"Server type {server.type} not yet supported by datacontract CLI")
         return
 
-    # Don't check types for json format, as they are checked with json schema
-    # Don't check types for avro format, as they are checked with avro schema
-    # Don't check types for csv format, as they are hard to detect
-    server_type = server.type
-    check_types = server.format != "json" and server.format != "csv" and server.format != "avro"
-
-    sodacl_yaml_str = to_sodacl_yaml(data_contract, server_type, check_types)
+    sodacl_yaml_str = to_sodacl_yaml(run)
     # print("sodacl_yaml_str:\n" + sodacl_yaml_str)
     scan.add_sodacl_yaml_str(sodacl_yaml_str)
 
     # Execute the scan
-    logging.info("Starting soda scan")
+    logging.info("Starting soda scan with checks:\n" + sodacl_yaml_str)
     scan.execute()
     logging.info("Finished soda scan")
 
     # pprint.PrettyPrinter(indent=2).pprint(scan.build_scan_results())
 
     scan_results = scan.get_scan_results()
-    for c in scan_results.get("checks"):
-        check = Check(
-            type="schema",
-            result=to_result(c),
-            reason=", ".join(c.get("outcomeReasons")),
-            name=c.get("name"),
-            model=c.get("table"),
-            field=c.get("column"),
-            engine="soda-core",
-            diagnostics=c.get("diagnostics"),
-        )
-        update_reason(check, c)
-        run.checks.append(check)
+    for scan_result in scan_results.get("checks"):
+        name = scan_result.get("name")
+        check = get_check(run, scan_result)
+        if check is None:
+            check = Check(
+                id=str(uuid.uuid4()),
+                category="custom",
+                type="custom",
+                name=name,
+                engine="soda-core",
+            )
+            run.checks.append(check)
+        check.result = to_result(scan_result)
+        check.reason = ", ".join(scan_result.get("outcomeReasons"))
+        check.diagnostics = scan_result.get("diagnostics")
+        update_reason(check, scan_result)
 
     for log in scan_results.get("logs"):
         run.logs.append(
@@ -152,8 +150,8 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         run.checks.append(
             Check(
                 type="general",
-                name="Execute quality checks",
-                result="warning",
+                name="Data Contract Tests",
+                result=ResultEnum.warning,
                 reason="Engine soda-core has errors. See the logs for details.",
                 engine="soda-core",
             )
@@ -161,14 +159,22 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
         return
 
 
-def to_result(c) -> str:
+def get_check(run, scan_result) -> Check | None:
+    check_by_name = next((c for c in run.checks if c.key == scan_result.get("name")), None)
+    if check_by_name is not None:
+        return check_by_name
+
+    return None
+
+
+def to_result(c) -> ResultEnum:
     soda_outcome = c.get("outcome")
     if soda_outcome == "pass":
-        return "passed"
+        return ResultEnum.passed
     elif soda_outcome == "fail":
-        return "failed"
+        return ResultEnum.failed
     else:
-        return soda_outcome
+        return ResultEnum.unknown
 
 
 def update_reason(check, c):

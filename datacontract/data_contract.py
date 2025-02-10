@@ -165,7 +165,7 @@ class DataContract:
             run.checks.append(
                 Check(
                     type="general",
-                    result="error",
+                    result=ResultEnum.error,
                     name="Test Data Contract",
                     reason=str(e),
                     engine="datacontract",
