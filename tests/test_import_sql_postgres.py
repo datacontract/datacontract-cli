@@ -25,8 +25,8 @@ def test_cli():
     assert result.exit_code == 0
 
 
-def test_import_sql():
-    result = DataContract().import_from_source("sql", sql_file_path)
+def test_import_sql_postgres():
+    result = DataContract().import_from_source("sql", sql_file_path, dialect="postgres")
 
     expected = """
 dataContractSpecification: 1.1.0
@@ -34,21 +34,28 @@ id: my-data-contract-id
 info:
   title: My Data Contract
   version: 0.0.1
+servers:
+  postgres: 
+    type: postgres
 models:
   my_table:
     type: table
     fields:
       field_one:
-        type: varchar
-        required: true
+        type: string
         primaryKey: true
-        unique: true
         maxLength: 10
+        config:
+          postgresType: VARCHAR(10)
       field_two:
-        type: integer
+        type: int
         required: true
+        config:
+          postgresType: INT
       field_three:
-        type: timestamp
+        type: timestamp_tz
+        config:
+          postgresType: TIMESTAMPTZ
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
@@ -57,7 +64,7 @@ models:
 
 
 def test_import_sql_constraints():
-    result = DataContract().import_from_source("sql", "fixtures/postgres/data/data_constraints.sql")
+    result = DataContract().import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
 dataContractSpecification: 1.1.0
@@ -65,52 +72,78 @@ id: my-data-contract-id
 info:
   title: My Data Contract
   version: 0.0.1
+servers:
+  postgres:
+    type: postgres
 models:
   customer_location:
     type: table
     fields:
       id:
-        type: numeric
+        type: decimal
         required: true
-        primaryKey: true
-        unique: true
+        # primaryKey: true
+        config:
+          postgresType: DECIMAL
       created_by:
-        type: varchar
+        type: string
         required: true
         maxLength: 30
+        config:
+          postgresType: VARCHAR(30)
       create_date:
-        type: timestamp
+        type: timestamp_ntz
         required: true
+        config:
+          postgresType: TIMESTAMP
       changed_by:
-        type: varchar
+        type: string
         maxLength: 30
+        config:
+          postgresType: VARCHAR(30)
       change_date:
-        type: timestamp
+        type: timestamp_ntz
+        config:
+          postgresType: TIMESTAMP
       name:
-        type: varchar
+        type: string
         required: true
         maxLength: 120
+        config:
+          postgresType: VARCHAR(120)
       short_name:
-        type: varchar
+        type: string
         maxLength: 60
+        config:
+          postgresType: VARCHAR(60)
       display_name:
-        type: varchar
+        type: string
         required: true
         maxLength: 120
+        config:
+          postgresType: VARCHAR(120)
       code:
-        type: varchar
+        type: string
         required: true
         maxLength: 30
+        config:
+          postgresType: VARCHAR(30)
       description:
-        type: varchar
+        type: string
         maxLength: 4000
+        config:
+          postgresType: VARCHAR(4000)
       language_id:
-        type: numeric
+        type: decimal
         required: true
+        config:
+          postgresType: DECIMAL
       status:
-        type: varchar
+        type: string
         required: true
         maxLength: 2
+        config:
+          postgresType: VARCHAR(2)
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
