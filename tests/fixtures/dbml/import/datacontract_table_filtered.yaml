@@ -9,13 +9,13 @@ models:
     namespace: test
     fields:
       order_id:
-        type: text
+        type: string
         required: true
         primaryKey: true
         unique: true
         description: An internal ID that identifies an order in the online shop.
       order_timestamp:
-        type: timestamp
+        type: timestamp_ntz
         required: true
         primaryKey: false
         unique: false
@@ -28,20 +28,20 @@ models:
         unique: false
         description: Total amount the smallest monetary unit (e.g., cents).
       customer_id:
-        type: text
+        type: string
         required: false
         primaryKey: false
         unique: false
         description: Unique identifier for the customer.
       customer_email_address:
-        type: text
+        type: string
         required: true
         primaryKey: false
         unique: false
         description: The email address, as entered by the customer. The email address
           was not verified.
       processed_timestamp:
-        type: timestamp
+        type: timestamp_ntz
         required: true
         primaryKey: false
         unique: false

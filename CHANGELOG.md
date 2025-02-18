@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `datacontract import --format sql` is now using SqlGlot as importer.
+- `datacontract import --format sql --dialect <dialect>` Dialect can now to defined when importing
+  SQL.
+
 ### Fixed
 
 - Schema type checks fail on nested fields for Databricks spark (#618)
