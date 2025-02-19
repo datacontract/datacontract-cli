@@ -807,8 +807,8 @@ models:
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ *  --format        [jsonschema|pydantic-model|  The export format.           │
 │                    sodacl|dbt|dbt-sources|dbt-  [default: None]              │
-│                    staging-sql|odcs|odcs_v2|od  [required]                   │
-│                    cs_v3|rdf|avro|protobuf|gre                               │
+│                    staging-sql|odcs|            [required]                   │
+│                    rdf|avro|protobuf|gre                                     │
 │                    at-expectations|terraform|a                               │
 │                    vro-idl|sql|sql-query|html|                               │
 │                    go|bigquery|dbml|spark|sqla                               │
@@ -866,8 +866,6 @@ Available export options:
 |----------------------|---------------------------------------------------------|--------|
 | `html`               | Export to HTML                                          | ✅      |
 | `jsonschema`         | Export to JSON Schema                                   | ✅      |
-| `odcs_v2`            | Export to Open Data Contract Standard (ODCS) V2         | ✅      |
-| `odcs_v3`            | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
 | `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
 | `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
 | `dbt`                | Export to dbt models in YAML format                     | ✅      |

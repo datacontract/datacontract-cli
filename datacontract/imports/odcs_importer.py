@@ -41,9 +41,12 @@ def import_odcs(data_contract_specification: DataContractSpecification, source: 
         )
 
     if odcs_api_version.startswith("v2."):
-        from datacontract.imports.odcs_v2_importer import import_odcs_v2
-
-        return import_odcs_v2(data_contract_specification, source)
+        raise DataContractException(
+            type="schema",
+            name="Importing ODCS contract",
+            reason=f"Unsupported ODCS API version: {odcs_api_version}",
+            engine="datacontract",
+        )
     elif odcs_api_version.startswith("v3."):
         from datacontract.imports.odcs_v3_importer import import_odcs_v3
 

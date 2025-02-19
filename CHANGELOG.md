@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `datacontract test --examples`: This option was removed as it was not very popular and top-level
   examples section is deprecated in the Data Contract Specification v1.1.0 (#628)
+- Support for `odcs_v2` (#645)
 
 ## [0.10.21] - 2025-02-06
 
