@@ -108,14 +108,20 @@ $ datacontract init datacontract.yaml
 # lint the datacontract.yaml
 $ datacontract lint datacontract.yaml
 
-# execute schema and quality checks
+# execute schema and quality checks (define credentials as environment variables)
 $ datacontract test datacontract.yaml
 
-# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs_v2, odcs_v3, rdf, sql, sodacl, terraform, ...)
-$ datacontract export --format html datacontract.yaml > datacontract.html
+# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
+$ datacontract export --format html datacontract.yaml --output datacontract.html
 
-# import avro (other formats: sql, glue, bigquery...)
-$ datacontract import --format avro --source avro_schema.avsc
+# export data contract to ODCS
+$ datacontract export --format odcs datacontract.yaml --output odcs.yaml
+
+# import ODCS to data contract
+$ datacontract import --format odcs odcs.yaml --output datacontract.yaml
+
+# import sql (other formats: avro, glue, bigquery, jsonschema ...)
+$ datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
 
 # find differences between two data contracts
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
