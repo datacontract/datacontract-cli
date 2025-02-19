@@ -148,12 +148,28 @@ Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
 
 ```bash
 python3 -m pip install 'datacontract-cli[all]'
+datacontract --version
+```
+
+### pip with venv
+
+Typically it is better to install the application in a virtual environment for your projects:
+
+```bash
+cd my-project
+python3.11 -m venv venv
+source venv/bin/activate
+pip install 'datacontract-cli[all]'
+datacontract --version
 ```
 
 ### pipx
+
 pipx installs into an isolated environment.
+
 ```bash
 pipx install 'datacontract-cli[all]'
+datacontract --version
 ```
 
 ### Docker
