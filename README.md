@@ -191,7 +191,7 @@ _Note:_ The output of Docker command line messages is limited to 80 columns and 
 
 
 
-## Optional Dependencies
+## Optional Dependencies (Extras)
 
 The CLI tool defines several optional dependencies (also known as extras) that can be installed for using with specific servers types.
 With _all_, all server dependencies are included.
