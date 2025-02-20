@@ -9,20 +9,20 @@ models:
     namespace: orders
     fields:
       lines_item_id:
-        type: text
+        type: string
         required: true
         primaryKey: true
         unique: true
         description: Primary key of the lines_item_id table
       order_id:
-        type: text
+        type: string
         required: false
         primaryKey: false
         unique: false
         references: orders.order_id
         description: An internal ID that identifies an order in the online shop.
       sku:
-        type: text
+        type: string
         required: false
         primaryKey: false
         unique: false

@@ -15,7 +15,7 @@ from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
 
 
-def test_data_contract(
+def execute_data_contract_test(
     data_contract_specification: DataContractSpecification,
     run: Run,
     server_name: str = None,

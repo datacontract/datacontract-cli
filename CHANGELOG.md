@@ -7,20 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.10.22] - 2025-02-20
+
 ### Added
 
 - `datacontract test` now also executes tests for service levels freshness and retention (#407)
 
 ### Changed
 
+- `datacontract import --format sql` is now using SqlGlot as importer.
+- `datacontract import --format sql --dialect <dialect>` Dialect can now to defined when importing
+  SQL.
+
 ### Fixed
 
 - Schema type checks fail on nested fields for Databricks spark (#618)
+- Export to Avro add namespace on field as optional configuration (#631)
 
 ### Removed
 
 - `datacontract test --examples`: This option was removed as it was not very popular and top-level
   examples section is deprecated in the Data Contract Specification v1.1.0 (#628)
+- Support for `odcs_v2` (#645)
 
 ## [0.10.21] - 2025-02-06
 

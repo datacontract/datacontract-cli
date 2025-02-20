@@ -68,3 +68,14 @@ def test_to_decimal_type():
     result = to_avro_schema_json(model_name, model)
 
     assert json.loads(result) == json.loads(expected_avro_schema)
+
+
+def test_to_field_namepsace():
+    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_test_field_namespace.yaml")
+    with open("fixtures/avro/export/datacontract_test_field_namespace.avsc") as file:
+        expected_avro_schema = file.read()
+
+    model_name, model = next(iter(data_contract.models.items()))
+    result = to_avro_schema_json(model_name, model)
+
+    assert json.loads(result) == json.loads(expected_avro_schema)

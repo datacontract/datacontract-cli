@@ -25,8 +25,6 @@ class ExportFormat(str, Enum):
     dbt_sources = "dbt-sources"
     dbt_staging_sql = "dbt-staging-sql"
     odcs = "odcs"
-    odcs_v2 = "odcs_v2"
-    odcs_v3 = "odcs_v3"
     rdf = "rdf"
     avro = "avro"
     protobuf = "protobuf"

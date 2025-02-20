@@ -287,6 +287,8 @@ def import_fields(
 
 
 def map_type(odcs_type: str, custom_mappings: Dict[str, str]) -> str | None:
+    if odcs_type is None:
+        return None
     t = odcs_type.lower()
     if t in DATACONTRACT_TYPES:
         return t

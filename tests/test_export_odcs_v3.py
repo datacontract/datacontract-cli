@@ -13,7 +13,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "odcs_v3"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "odcs"])
     assert result.exit_code == 0
 
 

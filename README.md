@@ -108,14 +108,20 @@ $ datacontract init datacontract.yaml
 # lint the datacontract.yaml
 $ datacontract lint datacontract.yaml
 
-# execute schema and quality checks
+# execute schema and quality checks (define credentials as environment variables)
 $ datacontract test datacontract.yaml
 
-# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs_v2, odcs_v3, rdf, sql, sodacl, terraform, ...)
-$ datacontract export --format html datacontract.yaml > datacontract.html
+# export data contract as html (other formats: avro, dbt, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
+$ datacontract export --format html datacontract.yaml --output datacontract.html
 
-# import avro (other formats: sql, glue, bigquery...)
-$ datacontract import --format avro --source avro_schema.avsc
+# export data contract to ODCS
+$ datacontract export --format odcs datacontract.yaml --output odcs.yaml
+
+# import ODCS to data contract
+$ datacontract import --format odcs odcs.yaml --output datacontract.yaml
+
+# import sql (other formats: avro, glue, bigquery, jsonschema ...)
+$ datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
 
 # find differences between two data contracts
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
@@ -148,12 +154,28 @@ Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
 
 ```bash
 python3 -m pip install 'datacontract-cli[all]'
+datacontract --version
+```
+
+### pip with venv
+
+Typically it is better to install the application in a virtual environment for your projects:
+
+```bash
+cd my-project
+python3.11 -m venv venv
+source venv/bin/activate
+pip install 'datacontract-cli[all]'
+datacontract --version
 ```
 
 ### pipx
+
 pipx installs into an isolated environment.
+
 ```bash
 pipx install 'datacontract-cli[all]'
+datacontract --version
 ```
 
 ### Docker
@@ -175,7 +197,7 @@ _Note:_ The output of Docker command line messages is limited to 80 columns and 
 
 
 
-## Optional Dependencies
+## Optional Dependencies (Extras)
 
 The CLI tool defines several optional dependencies (also known as extras) that can be installed for using with specific servers types.
 With _all_, all server dependencies are included.
@@ -785,8 +807,8 @@ models:
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ *  --format        [jsonschema|pydantic-model|  The export format.           │
 │                    sodacl|dbt|dbt-sources|dbt-  [default: None]              │
-│                    staging-sql|odcs|odcs_v2|od  [required]                   │
-│                    cs_v3|rdf|avro|protobuf|gre                               │
+│                    staging-sql|odcs|            [required]                   │
+│                    rdf|avro|protobuf|gre                                     │
 │                    at-expectations|terraform|a                               │
 │                    vro-idl|sql|sql-query|html|                               │
 │                    go|bigquery|dbml|spark|sqla                               │
@@ -844,8 +866,6 @@ Available export options:
 |----------------------|---------------------------------------------------------|--------|
 | `html`               | Export to HTML                                          | ✅      |
 | `jsonschema`         | Export to JSON Schema                                   | ✅      |
-| `odcs_v2`            | Export to Open Data Contract Standard (ODCS) V2         | ✅      |
-| `odcs_v3`            | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
 | `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
 | `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
 | `dbt`                | Export to dbt models in YAML format                     | ✅      |
@@ -1122,107 +1142,80 @@ FROM
 
 ### import
 ```
-                                                                                
- Usage: datacontract import [OPTIONS]                                           
-                                                                                
- Create a data contract from the given source location. Saves to file specified 
- by `output` option if present, otherwise prints to stdout.                     
-                                                                                
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --format                     [sql|avro|dbt|dbml|gl  The format of the     │
-│                                 ue|jsonschema|bigquer  source file.          │
-│                                 y|odcs|unity|spark|ic  [default: None]       │
-│                                 eberg|parquet|csv]     [required]            │
-│    --output                     PATH                   Specify the file path │
-│                                                        where the Data        │
-│                                                        Contract will be      │
-│                                                        saved. If no path is  │
-│                                                        provided, the output  │
-│                                                        will be printed to    │
-│                                                        stdout.               │
-│                                                        [default: None]       │
-│    --source                     TEXT                   The path to the file  │
-│                                                        or Glue Database that │
-│                                                        should be imported.   │
-│                                                        [default: None]       │
-│    --glue-table                 TEXT                   List of table ids to  │
-│                                                        import from the Glue  │
-│                                                        Database (repeat for  │
-│                                                        multiple table ids,   │
-│                                                        leave empty for all   │
-│                                                        tables in the         │
-│                                                        dataset).             │
-│                                                        [default: None]       │
-│    --bigquery-project           TEXT                   The bigquery project  │
-│                                                        id.                   │
-│                                                        [default: None]       │
-│    --bigquery-dataset           TEXT                   The bigquery dataset  │
-│                                                        id.                   │
-│                                                        [default: None]       │
-│    --bigquery-table             TEXT                   List of table ids to  │
-│                                                        import from the       │
-│                                                        bigquery API (repeat  │
-│                                                        for multiple table    │
-│                                                        ids, leave empty for  │
-│                                                        all tables in the     │
-│                                                        dataset).             │
-│                                                        [default: None]       │
-│    --unity-table-full-n…        TEXT                   Full name of a table  │
-│                                                        in the unity catalog  │
-│                                                        [default: None]       │
-│    --dbt-model                  TEXT                   List of models names  │
-│                                                        to import from the    │
-│                                                        dbt manifest file     │
-│                                                        (repeat for multiple  │
-│                                                        models names, leave   │
-│                                                        empty for all models  │
-│                                                        in the dataset).      │
-│                                                        [default: None]       │
-│    --dbml-schema                TEXT                   List of schema names  │
-│                                                        to import from the    │
-│                                                        DBML file (repeat for │
-│                                                        multiple schema       │
-│                                                        names, leave empty    │
-│                                                        for all tables in the │
-│                                                        file).                │
-│                                                        [default: None]       │
-│    --dbml-table                 TEXT                   List of table names   │
-│                                                        to import from the    │
-│                                                        DBML file (repeat for │
-│                                                        multiple table names, │
-│                                                        leave empty for all   │
-│                                                        tables in the file).  │
-│                                                        [default: None]       │
-│    --iceberg-table              TEXT                   Table name to assign  │
-│                                                        to the model created  │
-│                                                        from the Iceberg      │
-│                                                        schema.               │
-│                                                        [default: None]       │
-│    --template                   TEXT                   The location (url or  │
-│                                                        path) of the Data     │
-│                                                        Contract              │
-│                                                        Specification         │
-│                                                        Template              │
-│                                                        [default: None]       │
-│    --schema                     TEXT                   The location (url or  │
-│                                                        path) of the Data     │
-│                                                        Contract              │
-│                                                        Specification JSON    │
-│                                                        Schema                │
-│                                                        [default:             │
-│                                                        https://datacontract… │
-│    --help                                              Show this message and │
-│                                                        exit.                 │
-╰──────────────────────────────────────────────────────────────────────────────╯
+ Usage: datacontract import [OPTIONS]                                                                             
+                                                                                                                  
+ Create a data contract from the given source location. Saves to file specified by `output` option if present,    
+ otherwise prints to stdout.                                                                                      
+                                                                                                                  
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bi  The format of the source file.        │
+│                                   gquery|odcs|unity|spark|iceberg|parqu  [default: None]                       │
+│                                   et|csv]                                [required]                            │
+│    --output                       PATH                                   Specify the file path where the Data  │
+│                                                                          Contract will be saved. If no path is │
+│                                                                          provided, the output will be printed  │
+│                                                                          to stdout.                            │
+│                                                                          [default: None]                       │
+│    --source                       TEXT                                   The path to the file or Glue Database │
+│                                                                          that should be imported.              │
+│                                                                          [default: None]                       │
+│    --dialect                      TEXT                                   The SQL dialect to use when importing │
+│                                                                          SQL files, e.g., postgres, tsql,      │
+│                                                                          bigquery.                             │
+│                                                                          [default: None]                       │
+│    --glue-table                   TEXT                                   List of table ids to import from the  │
+│                                                                          Glue Database (repeat for multiple    │
+│                                                                          table ids, leave empty for all tables │
+│                                                                          in the dataset).                      │
+│                                                                          [default: None]                       │
+│    --bigquery-project             TEXT                                   The bigquery project id.              │
+│                                                                          [default: None]                       │
+│    --bigquery-dataset             TEXT                                   The bigquery dataset id.              │
+│                                                                          [default: None]                       │
+│    --bigquery-table               TEXT                                   List of table ids to import from the  │
+│                                                                          bigquery API (repeat for multiple     │
+│                                                                          table ids, leave empty for all tables │
+│                                                                          in the dataset).                      │
+│                                                                          [default: None]                       │
+│    --unity-table-full-name        TEXT                                   Full name of a table in the unity     │
+│                                                                          catalog                               │
+│                                                                          [default: None]                       │
+│    --dbt-model                    TEXT                                   List of models names to import from   │
+│                                                                          the dbt manifest file (repeat for     │
+│                                                                          multiple models names, leave empty    │
+│                                                                          for all models in the dataset).       │
+│                                                                          [default: None]                       │
+│    --dbml-schema                  TEXT                                   List of schema names to import from   │
+│                                                                          the DBML file (repeat for multiple    │
+│                                                                          schema names, leave empty for all     │
+│                                                                          tables in the file).                  │
+│                                                                          [default: None]                       │
+│    --dbml-table                   TEXT                                   List of table names to import from    │
+│                                                                          the DBML file (repeat for multiple    │
+│                                                                          table names, leave empty for all      │
+│                                                                          tables in the file).                  │
+│                                                                          [default: None]                       │
+│    --iceberg-table                TEXT                                   Table name to assign to the model     │
+│                                                                          created from the Iceberg schema.      │
+│                                                                          [default: None]                       │
+│    --template                     TEXT                                   The location (url or path) of the     │
+│                                                                          Data Contract Specification Template  │
+│                                                                          [default: None]                       │
+│    --schema                       TEXT                                   The location (url or path) of the     │
+│                                                                          Data Contract Specification JSON      │
+│                                                                          Schema                                │
+│                                                                          [default: None]                       │
+│    --help                                                                Show this message and exit.           │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
 Example:
 ```bash
 # Example import from SQL DDL
-datacontract import --format sql --source my_ddl.sql
+datacontract import --format sql --source my_ddl.sql --dialect postgres
 # To save to file
-datacontract import --format sql --source my_ddl.sql --output datacontract.yaml
+datacontract import --format sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
 Available import options:

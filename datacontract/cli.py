@@ -232,6 +232,10 @@ def import_(
         Optional[str],
         typer.Option(help="The path to the file or Glue Database that should be imported."),
     ] = None,
+    dialect: Annotated[
+        Optional[str],
+        typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
+    ] = None,
     glue_table: Annotated[
         Optional[List[str]],
         typer.Option(
@@ -288,6 +292,7 @@ def import_(
         source=source,
         template=template,
         schema=schema,
+        dialect=dialect,
         glue_table=glue_table,
         bigquery_table=bigquery_table,
         bigquery_project=bigquery_project,
