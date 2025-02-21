@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `datacontract test --output-format junit --output TEST-datacontract.xml` Export CLI test results
+  to a file, in a standard format (e.g. JUnit) to improve CI/CD experience (#650)
+
 ## [0.10.22] - 2025-02-20
 
 ### Added

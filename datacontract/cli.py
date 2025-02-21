@@ -5,9 +5,7 @@ from typing import Iterable, List, Optional
 
 import typer
 from click import Context
-from rich import box
 from rich.console import Console
-from rich.table import Table
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
@@ -19,6 +17,8 @@ from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
 )
 from datacontract.lint.resolve import resolve_data_contract_dict
+from datacontract.output.output_format import OutputFormat
+from datacontract.output.test_results_writer import write_test_result
 
 console = Console()
 
@@ -92,12 +92,19 @@ def lint(
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = None,
+    output: Annotated[
+        Path,
+        typer.Option(
+            help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml'). If no path is provided, the output will be printed to stdout."
+        ),
+    ] = None,
+    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
     """
     run = DataContract(data_contract_file=location, schema_location=schema).lint()
-    _handle_result(run)
+    write_test_result(run, console, output_format, output)
 
 
 @app.command()
@@ -120,6 +127,13 @@ def test(
         ),
     ] = "all",
     publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
+    output: Annotated[
+        Path,
+        typer.Option(
+            help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
+        ),
+    ] = None,
+    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
         bool,
@@ -141,7 +155,7 @@ def test(
     ).test()
     if logs:
         _print_logs(run)
-    _handle_result(run)
+    write_test_result(run, console, output_format, output)
 
 
 @app.command()
@@ -467,76 +481,10 @@ def api(
     uvicorn.run(app="datacontract.api:app", port=port, host=host, reload=True, log_config=LOGGING_CONFIG)
 
 
-def _handle_result(run):
-    _print_table(run)
-    if run.result == "passed":
-        console.print(
-            f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
-        )
-    elif run.result == "warning":
-        console.print("🟠 data contract has warnings. Found the following warnings:")
-        i = 1
-        for check in run.checks:
-            if check.result != "passed":
-                field = to_field(run, check)
-                if field:
-                    field = field + " "
-                else:
-                    field = ""
-                console.print(f"{i}) {field}{check.name}: {check.reason}")
-                i += 1
-    else:
-        console.print("🔴 data contract is invalid, found the following errors:")
-        i = 1
-        for check in run.checks:
-            if check.result != "passed":
-                field = to_field(run, check)
-                if field:
-                    field = field + " "
-                else:
-                    field = ""
-                console.print(f"{i}) {field}{check.name}: {check.reason}")
-                i += 1
-        raise typer.Exit(code=1)
-
-
-def _print_table(run):
-    table = Table(box=box.ROUNDED)
-    table.add_column("Result", no_wrap=True)
-    table.add_column("Check", max_width=100)
-    table.add_column("Field", max_width=32)
-    table.add_column("Details", max_width=50)
-    for check in sorted(run.checks, key=lambda c: (c.result or "", c.model or "", c.field or "")):
-        table.add_row(with_markup(check.result), check.name, to_field(run, check), check.reason)
-    console.print(table)
-
-
-def to_field(run, check):
-    models = [c.model for c in run.checks]
-    if len(set(models)) > 1:
-        if check.field is None:
-            return check.model
-        return check.model + "." + check.field
-    else:
-        return check.field
-
-
 def _print_logs(run):
     console.print("\nLogs:")
     for log in run.logs:
         console.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
-
-
-def with_markup(result):
-    if result == "passed":
-        return "[green]passed[/green]"
-    if result == "warning":
-        return "[yellow]warning[/yellow]"
-    if result == "failed":
-        return "[red]failed[/red]"
-    if result == "error":
-        return "[red]error[/red]"
-    return result
 
 
 if __name__ == "__main__":

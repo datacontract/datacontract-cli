@@ -1,0 +1,24 @@
+dataContractSpecification: 1.1.0
+id: junit_test
+info:
+  title: Sample contract to demonstrate the JUnit output format
+  version: 1.0.0
+  owner: my-domain-team
+servers:
+  local:
+    type: local
+    path: ./fixtures/junit/data/somedata.csv
+    format: csv
+models:
+  my_object:
+    fields:
+      field_ok:
+        description: This field is OK
+        type: integer
+        required: true
+        minimum: 0
+      field_nok:
+        description: This check should fail
+        type: string
+        required: true
+        minLength: 4

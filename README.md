@@ -292,49 +292,41 @@ Commands
 
 ### test
 ```
-                                                                                
- Usage: datacontract test [OPTIONS] [LOCATION]                                  
-                                                                                
- Run schema and quality tests on configured servers.                            
-                                                                                
-╭─ Arguments ──────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract  │
-│                             yaml.                                            │
-│                             [default: datacontract.yaml]                     │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --schema                                       TEXT  The location (url or    │
-│                                                      path) of the Data       │
-│                                                      Contract Specification  │
-│                                                      JSON Schema             │
-│                                                      [default:               │
-│                                                      https://datacontract.c… │
-│ --server                                       TEXT  The server              │
-│                                                      configuration to run    │
-│                                                      the schema and quality  │
-│                                                      tests. Use the key of   │
-│                                                      the server object in    │
-│                                                      the data contract yaml  │
-│                                                      file to refer to a      │
-│                                                      server, e.g.,           │
-│                                                      `production`, or `all`  │
-│                                                      for all servers         │
-│                                                      (default).              │
-│                                                      [default: all]          │
-│ --publish                                      TEXT  The url to publish the  │
-│                                                      results after the test  │
-│                                                      [default: None]         │
-│ --logs                --no-logs                      Print logs              │
-│                                                      [default: no-logs]      │
-│ --ssl-verification    --no-ssl-verification          SSL verification when   │
-│                                                      publishing the data     │
-│                                                      contract.               │
-│                                                      [default:               │
-│                                                      ssl-verification]       │
-│ --help                                               Show this message and   │
-│                                                      exit.                   │
-╰──────────────────────────────────────────────────────────────────────────────╯
-
+                                                                                                    
+ Usage: datacontract test [OPTIONS] [LOCATION]                                                      
+                                                                                                    
+ Run schema and quality tests on configured servers.                                                
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
+│                             [default: datacontract.yaml]                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --schema                                       TEXT     The location (url or path) of the Data   │
+│                                                         Contract Specification JSON Schema       │
+│                                                         [default: None]                          │
+│ --server                                       TEXT     The server configuration to run the      │
+│                                                         schema and quality tests. Use the key of │
+│                                                         the server object in the data contract   │
+│                                                         yaml file to refer to a server, e.g.,    │
+│                                                         `production`, or `all` for all servers   │
+│                                                         (default).                               │
+│                                                         [default: all]                           │
+│ --publish                                      TEXT     The url to publish the results after the │
+│                                                         test                                     │
+│                                                         [default: None]                          │
+│ --output                                       PATH     Specify the file path where the test     │
+│                                                         results should be written to (e.g.,      │
+│                                                         './test-results/TEST-datacontract.xml'). │
+│                                                         [default: None]                          │
+│ --output-format                                [junit]  The target format for the test results.  │
+│                                                         [default: None]                          │
+│ --logs                --no-logs                         Print logs [default: no-logs]            │
+│ --ssl-verification    --no-ssl-verification             SSL verification when publishing the     │
+│                                                         data contract.                           │
+│                                                         [default: ssl-verification]              │
+│ --help                                                  Show this message and exit.              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Data Contract CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid.
