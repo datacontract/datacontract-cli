@@ -100,7 +100,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           # linux/arm64 is disabled
@@ -110,3 +110,4 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: datacontract/cli:snapshot-latest
           labels: ${{ steps.meta.outputs.labels }}
+          sbom: true
