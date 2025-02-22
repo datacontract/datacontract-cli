@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed Docker base image to python:3.11-bullseye
 
+### Fixed
+
+- Unicode Encode Error when exporting data contract YAML to HTML
+  (#652)
+
 ## [0.10.22] - 2025-02-20
 
 ### Added

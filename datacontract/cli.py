@@ -228,7 +228,7 @@ def export(
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
     else:
-        with output.open("w") as f:
+        with output.open(mode="w", encoding="utf-8") as f:
             f.write(result)
         console.print(f"Written result to {output}")
 
@@ -320,7 +320,7 @@ def import_(
     if output is None:
         console.print(result.to_yaml(), markup=False, soft_wrap=True)
     else:
-        with output.open("w") as f:
+        with output.open(mode="w", encoding="utf-8") as f:
             f.write(result.to_yaml())
         console.print(f"Written result to {output}")
 
