@@ -326,7 +326,7 @@ Commands
 │                                                         data contract.                           │
 │                                                         [default: ssl-verification]              │
 │ --help                                                  Show this message and exit.              │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯  
 ```
 
 Data Contract CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid.
@@ -1808,7 +1808,7 @@ Python base interpreter should be 3.11.x (unless working on 3.12 release candida
 
 ```bash
 # create venv
-python3 -m venv venv
+python3.11 -m venv venv
 source venv/bin/activate
 
 # Install Requirements
