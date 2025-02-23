@@ -19,10 +19,10 @@ FROM python:3.11-bullseye AS runner-image
 
 COPY --from=builder-image /opt/venv /opt/venv
 
-RUN groupadd -r datacontract
-RUN useradd -r --home /home/datacontract -g datacontract datacontract
-USER datacontract
-WORKDIR /home/datacontract
+# RUN groupadd -r datacontract
+# RUN useradd -r --home /home/datacontract -g datacontract datacontract
+# USER datacontract
+# WORKDIR /home/datacontract
 
 # Setting PYTHONUNBUFFERED to a non-empty value different from 0 ensures that the python output i.e.
 # the stdout and stderr streams are sent straight to terminal (e.g. your container log) without
