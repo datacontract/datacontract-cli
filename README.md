@@ -144,6 +144,12 @@ if not run.has_passed():
     # Abort pipeline, alert, or take corrective actions...
 ```
 
+## How to
+
+- [How to integrate Data Contract CLI in your CI/CD pipeline as a GitHub Action](https://github.com/datacontract/datacontract-action/)
+- [How to run the Data Contract CLI API to test data contracts with POST requests](https://cli.datacontract.com/API)
+- [How to run Data Contract CLI in a Databricks pipeline](https://www.datamesh-architecture.com/howto/build-a-dataproduct-with-databricks#test-the-data-product)
+
 
 ## Installation
 
