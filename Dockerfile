@@ -6,7 +6,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 # create and activate virtual environment
 RUN python3.11 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-ENV VIRTUAL_ENV=/opt/venv
 
 # Setting PYTHONUNBUFFERED to a non-empty value different from 0 ensures that the python output i.e.
 # the stdout and stderr streams are sent straight to terminal (e.g. your container log) without
