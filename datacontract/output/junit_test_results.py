@@ -38,7 +38,9 @@ def write_junit_test_results(run: Run, console, output_path: Path):
 
     for check in run.checks:
         testcase = ET.SubElement(testsuite, "testcase", classname=to_class_name(check), name=to_testcase_name(check))
-        if check.result == ResultEnum.failed:
+        if check.result == ResultEnum.passed:
+            pass
+        elif check.result == ResultEnum.failed:
             failure = ET.SubElement(
                 testcase,
                 "failure",
@@ -46,7 +48,7 @@ def write_junit_test_results(run: Run, console, output_path: Path):
                 type=check.category if check.category else "General",
             )
             failure.text = to_failure_text(check)
-        if check.result == ResultEnum.error:
+        elif check.result == ResultEnum.error:
             error = ET.SubElement(
                 testcase,
                 "error",
@@ -54,6 +56,21 @@ def write_junit_test_results(run: Run, console, output_path: Path):
                 type=check.category if check.category else "General",
             )
             error.text = to_failure_text(check)
+        elif check.result is ResultEnum.warning:
+            skipped = ET.SubElement(
+                testcase,
+                "skipped",
+                message=check.reason if check.reason else "Warning",
+                type=check.category if check.category else "General",
+            )
+            skipped.skipped = to_failure_text(check)
+        else:
+            ET.SubElement(
+                testcase,
+                "skipped",
+                message=check.reason if check.reason else "None",
+                type=check.category if check.category else "General",
+            )
 
     if run.logs:
         system_out = ET.SubElement(testsuite, "system-out")
@@ -95,7 +112,15 @@ def to_class_name(check):
 
 
 def to_failure_text(check):
-    return check.reason + "\n" + yaml.dump(check.diagnostics, default_flow_style=False)
+    return (
+        f"Name: {check.name}\n"
+        f"Engine: {check.engine}\n"
+        f"Implementation:\n{check.implementation}\n\n"
+        f"Result: {check.result.value if check.result is not None else ''}\n"
+        f"Reason: {check.reason}\n"
+        f"Details: {check.details}\n"
+        f"Diagnostics:\n{yaml.dump(check.diagnostics, default_flow_style=False)}"
+    )
 
 
 def count_errors(run):
