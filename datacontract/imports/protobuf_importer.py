@@ -5,8 +5,10 @@ import yaml
 import time
 import re
 from google.protobuf import descriptor_pb2
+
 from datacontract.model.data_contract_specification import DataContractSpecification
-from datacontract.imports.importer import Importer  # Import the abstract Importer class
+from datacontract.imports.importer import Importer
+from datacontract.model.exceptions import DataContractException
 
 
 def map_type_from_protobuf(field_type: int):
@@ -34,8 +36,17 @@ def parse_imports(proto_file: str) -> list:
     """
     Parse import statements from a .proto file and return a list of imported file paths.
     """
-    with open(proto_file, "r") as f:
-        content = f.read()
+    try:
+        with open(proto_file, "r") as f:
+            content = f.read()
+    except Exception as e:
+        raise DataContractException(
+            type="file",
+            name="Parse proto imports",
+            reason=f"Failed to read proto file: {proto_file}",
+            engine="datacontract",
+            original_exception=e,
+        )
     imported_files = re.findall(r'import\s+"(.+?)";', content)
     proto_dir = os.path.dirname(proto_file)
     return [os.path.join(proto_dir, imp) for imp in imported_files]
@@ -52,7 +63,13 @@ def compile_proto_to_binary(proto_files: list, output_file: str):
         subprocess.run(command, check=True)
         print(f"Compiled proto files to {output_file}")
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to compile proto files: {e}")
+        raise DataContractException(
+            type="schema",
+            name="Compile proto files",
+            reason=f"Failed to compile proto files: {e}",
+            engine="datacontract",
+            original_exception=e,
+        )
 
 
 def extract_enum_values_from_fds(fds: descriptor_pb2.FileDescriptorSet, enum_name: str) -> dict:
@@ -147,7 +164,16 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
     with open(descriptor_file, "rb") as f:
         proto_data = f.read()
     fds = descriptor_pb2.FileDescriptorSet()
-    fds.ParseFromString(proto_data)
+    try:
+        fds.ParseFromString(proto_data)
+    except Exception as e:
+        raise DataContractException(
+            type="schema",
+            name="Parse descriptor set",
+            reason="Failed to parse descriptor set from compiled proto files",
+            engine="datacontract",
+            original_exception=e,
+        )
     print("File Descriptor Set:", fds)
 
     # --- Step 3: Build models from the descriptor set.
@@ -232,11 +258,6 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
         yaml.dump(contract_structure, f, default_flow_style=False)
     print(f"Data contract file written: {output_file}")
     return data_contract_specification
-
-
-###############################################################################
-# Exported class for the importer factory
-###############################################################################
 
 class ProtoBufImporter(Importer):
     def __init__(self, name):
