@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Azure Storage Account json Check
+- Azure and S3 filepath token `{year}, {month}, {day}, {date}, {day-1}, {quarter}`
+
+### Added
+
 - `datacontract test --output-format junit --output TEST-datacontract.xml` Export CLI test results
   to a file, in a standard format (e.g. JUnit) to improve CI/CD experience (#650)
 
