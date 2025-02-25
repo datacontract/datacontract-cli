@@ -109,3 +109,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.csv_importer",
     class_name="CsvImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.protobuf,
+    module_path="datacontract.imports.protobuf_importer",
+    class_name="ProtoBufImporter",
+)
