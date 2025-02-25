@@ -1,13 +1,14 @@
 import os
-import sys
-import subprocess
-import yaml
-import time
 import re
+import subprocess
+import sys
+import time
+
+import yaml
 from google.protobuf import descriptor_pb2
 
-from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.imports.importer import Importer
+from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.exceptions import DataContractException
 
 
