@@ -1,0 +1,30 @@
+dataContractSpecification: 1.1.0
+id: resolved_alerts
+info:
+  contact:
+    email: support@risk.example.com
+    name: Global Risk Analytics Support
+    url: https://risk.example.com/support
+  description: Data contract for alerts based on the provided protobuf schema.
+  owner: Global Risk Analytics Team
+  status: active
+  title: Alerts Data Contract
+  version: 0.0.1
+models:
+  product:
+        description: Product
+        fields:
+          id:
+            description: Field id
+            required: false
+            type: string
+          name:
+            description: Field name
+            required: false
+            type: string
+          price:
+            description: Field price
+            required: false
+            type: double
+        type: table
+      
