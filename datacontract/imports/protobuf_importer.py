@@ -6,6 +6,7 @@ import time
 import re
 from google.protobuf import descriptor_pb2
 from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.imports.importer import Importer  # Import the abstract Importer class
 
 
 def map_type_from_protobuf(field_type: int):
@@ -237,7 +238,7 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
 # Exported class for the importer factory
 ###############################################################################
 
-class ProtoBufImporter:
+class ProtoBufImporter(Importer):
     def __init__(self, name):
         # 'name' is passed by the importer factory.
         self.name = name
