@@ -42,14 +42,45 @@ def get_duckdb_connection(data_contract, server, run: Run):
         elif server.format == "csv":
             columns = to_csv_types(model)
             run.log_info("Using columns: " + str(columns))
-            if columns is None:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""
-                )
-            else:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
-                )
+
+            # Start with the required parameter.
+            params = ["hive_partitioning=1"]
+
+            # Define a mapping for CSV parameters: server attribute -> read_csv parameter name.
+            param_mapping = {
+                "delimiter": "delim",  # Map server.delimiter to 'delim'
+                "header": "header",
+                "escape": "escape",
+                "all_varchar": "all_varchar",
+                "allow_quoted_nulls": "allow_quoted_nulls",
+                "dateformat": "dateformat",
+                "decimal_separator": "decimal_separator",
+                "new_line": "new_line",
+                "timestampformat": "timestampformat",
+                "quote": "quote",
+            }
+            for server_attr, read_csv_param in param_mapping.items():
+                value = getattr(server, server_attr, None)
+                if value is not None:
+                    # Wrap string values in quotes.
+                    if isinstance(value, str):
+                        params.append(f"{read_csv_param}='{value}'")
+                    else:
+                        params.append(f"{read_csv_param}={value}")
+
+            # Add columns if they exist.
+            if columns is not None:
+                params.append(f"columns={columns}")
+
+            # Build the parameter string.
+            params_str = ", ".join(params)
+
+            # Create the view with the assembled parameters.
+            con.sql(f"""
+                CREATE VIEW "{model_name}" AS
+                SELECT * FROM read_csv('{model_path}', {params_str});
+            """)
+
         elif server.format == "delta":
             con.sql("update extensions;")  # Make sure we have the latest delta extension
             con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")

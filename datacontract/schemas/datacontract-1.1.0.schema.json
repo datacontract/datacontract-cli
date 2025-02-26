@@ -1212,11 +1212,48 @@
         },
         "delimiter": {
           "type": "string",
-          "enum": [
-            "new_line",
-            "array"
+          "anyOf": [
+            { "enum": ["new_line", "array"] },
+            { "pattern": "^.$" }
           ],
-          "description": "Only for format = json. How multiple json documents are delimited within one file"
+          "description": "For JSON format, only 'new_line' or 'array' is allowed to indicate how multiple JSON documents are delimited. For CSV format, any single character can be used as the delimiter between columns. Only valid for CSV."
+          },
+          "header": {
+            "type": "boolean",
+            "description": "Indicates whether the first row in the CSV file should be treated as column headers. Only valid for CSV."
+          },
+          "escape": {
+            "type": "string",
+            "description": "Specifies the escape character used in the CSV file to include special characters in fields. Only valid for CSV."
+          },
+          "all_varchar": {
+            "type": "boolean",
+            "description": "If true, all CSV columns are read as VARCHAR (strings), bypassing type inference. Only valid for CSV."
+          },
+          "allow_quoted_nulls": {
+            "type": "boolean",
+            "description": "If true, quoted 'NULL' values in the CSV are interpreted as SQL NULL rather than as the string 'NULL'. Only valid for CSV."
+          },
+          "dateformat": {
+            "type": "string",
+            "description": "A format string (e.g., '%Y-%m-%d') used to parse date values in the CSV. Only valid for CSV."
+          },
+          "decimal_separator": {
+            "type": "string",
+            "description": "The character used as the decimal separator in numeric CSV values (e.g., '.' or ','). Only valid for CSV."
+          },
+          "new_line": {
+            "type": "string",
+            "description": "The newline character(s) used in the CSV file (e.g., '\\n' or '\\r\\n'). Only valid for CSV."
+          },
+          "timestampformat": {
+            "type": "string",
+            "description": "A format string (e.g., '%Y-%m-%d %H:%M:%S') used to parse timestamp values in the CSV. Only valid for CSV."
+          },
+          "quote": {
+            "type": "string",
+            "description": "The character used for quoting fields in the CSV file (e.g., '\"'). Only valid for CSV."
+          }
         }
       },
       "required": [
@@ -1248,11 +1285,47 @@
         },
         "delimiter": {
           "type": "string",
-          "enum": [
-            "new_line",
-            "array"
+          "anyOf": [
+            { "enum": ["new_line", "array"] },
+            { "pattern": "^.$" }
           ],
-          "description": "Only for format = json. How multiple json documents are delimited within one file"
+          "description": "For JSON format, only 'new_line' or 'array' is allowed to indicate how multiple JSON documents are delimited. For CSV format, any single character can be used as the delimiter between columns. Only valid for CSV."
+        },
+        "header": {
+          "type": "boolean",
+          "description": "Indicates whether the first row in the CSV file should be treated as column headers. Only valid for CSV."
+        },
+        "escape": {
+          "type": "string",
+          "description": "Specifies the escape character used in the CSV file to include special characters in fields. Only valid for CSV."
+        },
+        "all_varchar": {
+          "type": "boolean",
+          "description": "If true, all CSV columns are read as VARCHAR (strings), bypassing type inference. Only valid for CSV."
+        },
+        "allow_quoted_nulls": {
+          "type": "boolean",
+          "description": "If true, quoted 'NULL' values in the CSV are interpreted as SQL NULL rather than as the string 'NULL'. Only valid for CSV."
+        },
+        "dateformat": {
+          "type": "string",
+          "description": "A format string (e.g., '%Y-%m-%d') used to parse date values in the CSV. Only valid for CSV."
+        },
+        "decimal_separator": {
+          "type": "string",
+          "description": "The character used as the decimal separator in numeric CSV values (e.g., '.' or ','). Only valid for CSV."
+        },
+        "new_line": {
+          "type": "string",
+          "description": "The newline character(s) used in the CSV file (e.g., '\\n' or '\\r\\n'). Only valid for CSV."
+        },
+        "timestampformat": {
+          "type": "string",
+          "description": "A format string (e.g., '%Y-%m-%d %H:%M:%S') used to parse timestamp values in the CSV. Only valid for CSV."
+        },
+        "quote": {
+          "type": "string",
+          "description": "The character used for quoting fields in the CSV file (e.g., '\"'). Only valid for CSV."
         }
       },
       "required": [
@@ -1336,11 +1409,47 @@
         },
         "delimiter": {
           "type": "string",
-          "enum": [
-            "new_line",
-            "array"
+          "anyOf": [
+            { "enum": ["new_line", "array"] },
+            { "pattern": "^.$" }
           ],
-          "description": "Only for format = json. How multiple json documents are delimited within one file"
+          "description": "For JSON format, only 'new_line' or 'array' is allowed to indicate how multiple JSON documents are delimited. For CSV format, any single character can be used as the delimiter between columns. Only valid for CSV."
+        },
+        "header": {
+          "type": "boolean",
+          "description": "Indicates whether the first row in the CSV file should be treated as column headers. Only valid for CSV."
+        },
+        "escape": {
+          "type": "string",
+          "description": "Specifies the escape character used in the CSV file to include special characters in fields. Only valid for CSV."
+        },
+        "all_varchar": {
+          "type": "boolean",
+          "description": "If true, all CSV columns are read as VARCHAR (strings), bypassing type inference. Only valid for CSV."
+        },
+        "allow_quoted_nulls": {
+          "type": "boolean",
+          "description": "If true, quoted 'NULL' values in the CSV are interpreted as SQL NULL rather than as the string 'NULL'. Only valid for CSV."
+        },
+        "dateformat": {
+          "type": "string",
+          "description": "A format string (e.g., '%Y-%m-%d') used to parse date values in the CSV. Only valid for CSV."
+        },
+        "decimal_separator": {
+          "type": "string",
+          "description": "The character used as the decimal separator in numeric CSV values (e.g., '.' or ','). Only valid for CSV."
+        },
+        "new_line": {
+          "type": "string",
+          "description": "The newline character(s) used in the CSV file (e.g., '\\n' or '\\r\\n'). Only valid for CSV."
+        },
+        "timestampformat": {
+          "type": "string",
+          "description": "A format string (e.g., '%Y-%m-%d %H:%M:%S') used to parse timestamp values in the CSV. Only valid for CSV."
+        },
+        "quote": {
+          "type": "string",
+          "description": "The character used for quoting fields in the CSV file (e.g., '\"'). Only valid for CSV."
         }
       },
       "required": [
