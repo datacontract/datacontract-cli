@@ -125,11 +125,24 @@ def _resolve_definition_ref(ref, spec) -> Definition:
         path = path.replace("file://", "")
         definition_str = _fetch_file(path)
         definition_dict = _to_yaml(definition_str)
+        if definition_path:
+            path_parts = [part for part in definition_path.split("/") if part != ""]
+            for path_part in path_parts:
+                definition_dict = definition_dict.get(path_part, None)
+                if not definition_dict:
+                    raise DataContractException(
+                        type="lint",
+                        result="failed",
+                        name="Check that data contract YAML is valid",
+                        reason=f"Cannot resolve definition {definition_path}, {path_part} not found",
+                        engine="datacontract",
+                    )
+        # this assumes that definitions_dict is a definitions dict, however,
+        # all we know is that it is a file!
         definition = Definition(**definition_dict)
-        if definition_path is not None:
-            return _find_by_path_in_definition(definition_path, definition)
-        else:
-            return definition
+        # if definition_path is not None:
+        #     definition = _find_by_path_in_definition(definition_path, definition)
+        return definition
     elif ref.startswith("#"):
         logging.info(f"Resolving definition local path {path}")
 
