@@ -44,7 +44,7 @@ def s3_fs(s3_endpoint_url):
         client_kwargs={"endpoint_url": s3_endpoint_url},
     )
 
-def ad_lfs(azure_account):
+def ad_lfs(): #azure_account):
     try:
         import adlfs
     except ImportError as e:
@@ -60,7 +60,7 @@ def ad_lfs(azure_account):
     azure_client_secret_key = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
     azure_tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
     return adlfs.AzureBlobFileSystem(
-        account_name=azure_account,
+        # account_name=azure_account,
         tenant_id=azure_tenant_id, 
         client_id=azure_client_id,
         client_secret=azure_client_secret_key,

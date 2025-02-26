@@ -216,7 +216,7 @@ def process_s3_file(run, server, schema, model_name, validate):
 #abfss://spaceman@dhnielseniqdev.dfs.core.windows.net/entity=brand/year=2025/month=02/day=03/brand-2025-02-03_v1.jsonl
 def process_azure_file(run, server, schema, model_name, validate):
     azure_location = server.location
-    azure_account = server.storageAccount
+    # azure_account = server.storageAccount
     if "{model}" in azure_location:  
         azure_location = azure_location.format(model=model_name)
     if "{year}" in azure_location:  
@@ -227,7 +227,7 @@ def process_azure_file(run, server, schema, model_name, validate):
         azure_location = azure_location.format(day=datetime.strftime("%d"))
     json_stream = None
 
-    for file_content in yield_azure_files(azure_location, azure_account): # Replace with yield_azure_files
+    for file_content in yield_azure_files(azure_location): #, azure_account):
         if server.delimiter == "new_line":
             json_stream = read_json_lines_content(file_content)
         elif server.delimiter == "array":
