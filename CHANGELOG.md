@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Azure Storage Account json Check
 - Azure token `{year}, {month}, {day}, {date}, {day-1}, {quarter}`
 
+### Changed
+- Server ODCS add storageAccount mapping
+- add Server() a name property
+
 ### Added
 
 - `datacontract test --output-format junit --output TEST-datacontract.xml` Export CLI test results
