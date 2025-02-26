@@ -7,7 +7,7 @@ from typing import List, Optional
 import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
 
-from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
+from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files, yield_azure_files
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -203,6 +203,36 @@ def process_s3_file(run, server, schema, model_name, validate):
             name="Check that JSON has valid schema",
             result="warning",
             reason=f"Cannot find any file in {s3_location}",
+            engine="datacontract",
+        )
+
+    # Validate the JSON stream and collect exceptions.
+    exceptions = validate_json_stream(schema, model_name, validate, json_stream)
+
+    # Handle all errors from schema validation.
+    process_exceptions(run, exceptions)
+
+#abfss://spaceman@dhnielseniqdev.dfs.core.windows.net/entity=brand/year=2025/month=02/day=03/brand-2025-02-03_v1.jsonl
+def process_azure_file(run, server, schema, model_name, validate):
+    azure_location = server.location
+    # if "{model}" in s3_location:  #dont want model, rather year month day
+    #     s3_location = s3_location.format(model=model_name)
+    json_stream = None
+
+    for file_content in yield_azure_files(azure_location): # Replace with yield_azure_files
+        if server.delimiter == "new_line":
+            json_stream = read_json_lines_content(file_content)
+        elif server.delimiter == "array":
+            json_stream = read_json_array_content(file_content)
+        else:
+            json_stream = read_json_file_content(file_content)
+
+    if json_stream is None:
+        raise DataContractException(
+            type="schema",
+            name="Check that JSON has valid schema",
+            result="warning",
+            reason=f"Cannot find any file in {azure_location}",
             engine="datacontract",
         )
 
