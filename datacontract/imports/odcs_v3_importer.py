@@ -98,6 +98,7 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
             continue
 
         server = Server()
+        server.name = server_name
         server.type = odcs_server.get("type")
         server.description = odcs_server.get("description")
         server.environment = odcs_server.get("environment")
@@ -121,8 +122,9 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
         server.outputPortId = odcs_server.get("outputPortId")
         server.driver = odcs_server.get("driver")
         server.roles = odcs_server.get("roles")
+        server.storageAccount = odcs_server.get("storageAccount")
 
-        servers[server_name] = server
+        servers[server.name] = server
     return servers
 
 

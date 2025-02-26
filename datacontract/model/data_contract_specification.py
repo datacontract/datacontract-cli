@@ -28,6 +28,8 @@ DATACONTRACT_TYPES = [
     "record",
     "struct",
     "null",
+    "geography",
+    "geometry",
 ]
 
 
@@ -50,6 +52,7 @@ class ServerRole(pyd.BaseModel):
 
 
 class Server(pyd.BaseModel):
+    name: str | None = None
     type: str | None = None
     description: str | None = None
     environment: str | None = None

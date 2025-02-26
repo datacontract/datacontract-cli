@@ -2,12 +2,14 @@ import json
 import logging
 import os
 import threading
+from datetime import datetime
 from typing import List, Optional
 
 import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
 
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
+from datacontract.engines.fastjsonschema.az.az_read_files import yield_az_files
 from datacontract.export.jsonschema_converter import to_jsonschema
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
@@ -212,6 +214,55 @@ def process_s3_file(run, server, schema, model_name, validate):
     # Handle all errors from schema validation.
     process_exceptions(run, exceptions)
 
+def process_azure_file(run, server, schema, model_name, validate):
+
+    if server.storageAccount is None:
+         raise DataContractException(
+            type="schema",
+            name="Check that JSON has valid schema",
+            result="warning",
+            reason=f"Cannot retrieve storageAccount in Server config",
+            engine="datacontract",
+        )
+
+    az_storageAccount = server.storageAccount
+    az_location = server.location
+    date = datetime.today()
+
+    if "{model}" in az_location:
+        az_location = az_location.format(model=model_name)
+    if "{year}" in az_location:
+        az_location = az_location.format(year=date.strftime('%Y'))
+    if "{month}" in az_location:
+        az_location = az_location.format(month=date.strftime('%m'))
+    if "{day}" in az_location:
+        az_location = az_location.format(day=date.strftime('%d'))
+    if "{date}" in az_location:
+        az_location = az_location.format(date=date.strftime('%Y-%m-%d'))
+    json_stream = None
+
+    for file_content in yield_az_files(az_storageAccount, az_location):
+        if server.delimiter == "new_line":
+            json_stream = read_json_lines_content(file_content)
+        elif server.delimiter == "array":
+            json_stream = read_json_array_content(file_content)
+        else:
+            json_stream = read_json_file_content(file_content)
+
+    if json_stream is None:
+        raise DataContractException(
+            type="schema",
+            name="Check that JSON has valid schema",
+            result="warning",
+            reason=f"Cannot find any file in {az_location}",
+            engine="datacontract",
+        )
+
+    # Validate the JSON stream and collect exceptions.
+    exceptions = validate_json_stream(schema, model_name, validate, json_stream)
+
+    # Handle all errors from schema validation.
+    process_exceptions(run, exceptions)
 
 def check_jsonschema(run: Run, data_contract: DataContractSpecification, server: Server):
     run.log_info("Running engine jsonschema")
@@ -262,16 +313,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
                 )
             )
         elif server.type == "azure":
-            run.checks.append(
-                Check(
-                    type="schema",
-                    name="Check that JSON has valid schema",
-                    model=model_name,
-                    result=ResultEnum.info,
-                    reason="JSON Schema check skipped for azure, as azure is currently not supported",
-                    engine="jsonschema",
-                )
-            )
+            process_azure_file(run, server, schema, model_name, validate)
         else:
             run.checks.append(
                 Check(
