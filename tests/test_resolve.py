@@ -170,6 +170,7 @@ def test_resolve_data_contract_complex_definition_file():
         )
         assert datacontract.models["orders"].fields["order_id"].type == "int"
 
+
 def test_resolve_data_contract_relative_refrence():
     with tempfile.TemporaryDirectory() as temp_dir:
         # create temp file with content
