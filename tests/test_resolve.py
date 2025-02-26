@@ -176,16 +176,16 @@ def test_resolve_data_contract_relative_refrence():
         # create temp file with content
         with open(f"{temp_dir}/order.yaml", "w") as temp_file:
             temp_file.write("""
-definitions:
-  order_id:
-    title: order id
-    type: text
-    examples:
-      - O1234
-    pii: True
-    classification: restricted
-    tags:
-      - policy
+            definitions:
+              order_id:
+                title: order id
+                type: text
+                examples:
+                  - O1234
+                pii: True
+                classification: restricted
+                tags:
+                  - policy
             """)
             temp_file.flush()
             print(temp_file.name)
