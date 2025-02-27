@@ -63,9 +63,11 @@ models:
     """
     data_contract = resolve.resolve_data_contract(data_contract_str = data_contract_str)
     # this is ok
-    con = get_duckdb_connection(data_contract, data_contract.servers["production"], Run.create_run())
+    run = Run.create_run()
+    con = get_duckdb_connection(data_contract, data_contract.servers["production"], run)
     assert con.table("sample_data").columns == ['field_one', 'field_two', 'field_three']
     assert con.table("sample_data").shape == (10,3)
+    assert any([c.name == 'Column order mismatch' for c in run.checks if c.result == 'warning'])
     # now test
     data_contract = DataContract(data_contract_str=data_contract_str)
     run = data_contract.test()
@@ -104,7 +106,8 @@ models:
     con = get_duckdb_connection(data_contract, data_contract.servers["production"], run)
     assert con.table("sample_data").columns == ['field_one', 'field_two', 'field_three']
     assert con.table("sample_data").shape == (10,3)
-    assert any([v.message == './fixtures/csv/data/sample_data.csv contained unexpected fields: field_two!' for v in run.logs if v.level == 'WARN'])
+    assert any([c.name == 'Column order mismatch' for c in run.checks if c.result == 'warning'])
+    assert any([c.name == 'Dataset contained unexpected fields' for c in run.checks if c.result == 'warning'])
 
     # now test
     data_contract = DataContract(data_contract_str=data_contract_str)

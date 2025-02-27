@@ -1,12 +1,13 @@
 import io
 import os
+import uuid
 
 import duckdb
 
 
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
 from datacontract.export.sql_converter import _escape
-from datacontract.model.run import Run
+from datacontract.model.run import ResultEnum, Run, Check
 
 
 def get_duckdb_connection(data_contract, server, run: Run):
@@ -76,8 +77,30 @@ def get_duckdb_connection(data_contract, server, run: Run):
             if columns is not None and (has_header or has_header is None):
                 csv_columns = sniff_csv_header(model_path, server)
                 difference = set(csv_columns) - set(columns.keys())
+                same_order = list(columns.keys()) == csv_columns[:len(columns)]
+                if same_order == False:
+                    run.checks.append(Check(
+                        id=str(uuid.uuid4()),
+                        model=model_name,
+                        category="schema",
+                        type="fields_are_same",
+                        name="Column order mismatch",
+                        result=ResultEnum.warning,
+                        reason=f"Order of columns in {model_path} does not match the model.",
+                        details=f"Expected: {'|'.join(columns.keys())}\nActual:   {'|'.join(csv_columns)}",
+                        engine="datacontract",
+                    ))
                 if len(difference) > 0:
-                    run.log_warn(f"{model_path} contained unexpected fields: {', '.join(difference)}!")
+                    run.checks.append(Check(
+                        id=str(uuid.uuid4()),
+                        model=model_name,
+                        category="schema",
+                        type="fields_are_same",
+                        name="Dataset contained unexpected fields",
+                        result=ResultEnum.warning,
+                        reason=f"{model_path} contained unexpected fields: {', '.join(difference)}",
+                        engine="datacontract",
+                    ))
                 columns = { k:columns.get(k, 'VARCHAR') for k in csv_columns }
 
             # Add columns if they exist.
