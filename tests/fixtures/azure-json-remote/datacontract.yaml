@@ -21,29 +21,29 @@ server:
     format: json
     delimiter: new_line
 models:
-  SPACEMAN_BRAND:
-      physicalName: SPACEMAN_BRAND
-      logicalType: object
-      physicalType: table
-      description: Table containing the brands in spaceman
-      tags: ['B2B', 'planogram', 'NIELSENIQ'] #to put in other tables
-      properties:
-      - name: KEY_ID
-        logicalType: string
-        physicalType: varchar
-        description: Name of the application that created or updated the record.
-      - name: PLANOGRAM
-        logicalType: string
-        physicalType: varchar
-      - name: BRAND
-        logicalType: string
-        physicalType: varchar
-      - name: skuNumbers
-        logicalType: string
-        physicalType: varchar
-      - name: '# of Products'
-        logicalType: string
-        physicalType: varchar
-      - name: 'total LinealSpace by brand'
-        logicalType: string
-        physicalType: varchar
+  - name: SPACEMAN_BRAND
+    physicalName: SPACEMAN_BRAND
+    logicalType: object
+    physicalType: table
+    description: Table containing the brands in spaceman
+    tags: ['B2B', 'planogram', 'NIELSENIQ'] #to put in other tables
+    properties:
+    - name: KEY_ID
+      logicalType: string
+      physicalType: varchar
+      description: Name of the application that created or updated the record.
+    - name: PLANOGRAM
+      logicalType: string
+      physicalType: varchar
+    - name: BRAND
+      logicalType: string
+      physicalType: varchar
+    - name: skuNumbers
+      logicalType: string
+      physicalType: varchar
+    - name: '# of Products'
+      logicalType: string
+      physicalType: varchar
+    - name: 'total LinealSpace by brand'
+      logicalType: string
+      physicalType: varchar

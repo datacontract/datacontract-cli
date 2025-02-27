@@ -12,8 +12,8 @@ def yield_s3_files(s3_endpoint_url, s3_location):
             logging.info(f"Downloading file {file}")
             yield f.read()
 
-def yield_azure_files(azure_location, azure_account):
-    fs = ad_lfs(azure_account)
+def yield_azure_files(azure_location): # Azure servers do not require endpoint_url
+    fs = ad_lfs()
     files = fs.glob(azure_location)
     for file in files:
         with fs.open(file) as f:
