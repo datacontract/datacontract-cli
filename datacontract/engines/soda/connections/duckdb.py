@@ -1,8 +1,11 @@
+import io
 import os
 
 import duckdb
 
+
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
+from datacontract.export.sql_converter import _escape
 from datacontract.model.run import Run
 
 
@@ -68,6 +71,15 @@ def get_duckdb_connection(data_contract, server, run: Run):
                     else:
                         params.append(f"{read_csv_param}={value}")
 
+            # Sniff out columns, if available:
+            has_header = getattr(server, "header", True)
+            if columns is not None and (has_header or has_header is None):
+                csv_columns = sniff_csv_header(model_path, server)
+                difference = set(csv_columns) - set(columns.keys())
+                if len(difference) > 0:
+                    run.log_warn(f"{model_path} contained unexpected fields: {', '.join(difference)}!")
+                columns = { k:columns.get(k, 'VARCHAR') for k in csv_columns }
+
             # Add columns if they exist.
             if columns is not None:
                 params.append(f"columns={columns}")
@@ -96,6 +108,24 @@ def to_csv_types(model) -> dict:
         columns[field_name] = convert_to_duckdb_csv_type(field)
     return columns
 
+
+def sniff_csv_header(model_path, server):
+    # Define a mapping for CSV parameters: server attribute -> duckdb.read_csv parameter name.
+    # Note! The parameter names in the python calls (read_csv, read_csv_auto, and from_csv_auto)
+    #       are different from those used in the SQL statements.
+    param_mapping = {
+        "delimiter": "delimiter", 
+        "header": "header",
+        "escape": "escapechar",
+        "decimal_separator": "decimal",
+        "quote": "quotechar"
+    }
+    # Remainder params are left out, as we do not care about parsing datatype for just the header.
+    with open(model_path, 'rb') as model_file:
+        header_line = model_file.readline()
+    csv_params = { v: getattr(server, k) for (k,v) in param_mapping.items() if getattr(server, k, None) is not None }
+    # from_csv_auto 
+    return duckdb.from_csv_auto(io.BytesIO(header_line), **csv_params).columns
 
 def setup_s3_connection(con, server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
