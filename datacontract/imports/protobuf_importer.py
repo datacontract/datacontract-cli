@@ -16,19 +16,19 @@ def map_type_from_protobuf(field_type: int):
     protobuf_type_mapping = {
         1: "double",
         2: "float",
-        3: "int64",
-        4: "uint64",
-        5: "int32",
-        6: "fixed64",
-        7: "fixed32",
-        8: "bool",
+        3: "long",
+        4: "long",     # uint64 mapped to long
+        5: "integer",  # int32 mapped to integer
+        6: "string",   # fixed64 mapped to string
+        7: "string",   # fixed32 mapped to string
+        8: "boolean",  
         9: "string",
         12: "bytes",
-        13: "uint32",
-        15: "sfixed32",
-        16: "sfixed64",
-        17: "sint32",
-        18: "sint64"
+        13: "integer", # uint32 mapped to integer
+        15: "integer", # sfixed32 mapped to integer
+        16: "long",    # sfixed64 mapped to long
+        17: "integer", # sint32 mapped to integer
+        18: "long"     # sint64 mapped to long
     }
     return protobuf_type_mapping.get(field_type, "string")
 
