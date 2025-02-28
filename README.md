@@ -949,6 +949,12 @@ The export function converts the logical data types of the datacontract into the
 if a server is selected via the `--server` option (based on the `type` of that server). If no server is selected, the
 logical data types are exported.
 
+#### DBT & DBT-SOURCES
+
+The export funciton converts the datacontract to dbt models in YAML format, with support for SQL dialects.
+If a server is selected via the `--server` option (based on the `type` of that server) then the DBT column `data_types` match the expected data types of the server.
+If no server is selected, then it defaults to `snowflake`.
+
 #### Spark
 
 The export function converts the data contract specification into a StructType Spark schema. The returned value is a Python code picture of the model schemas.
