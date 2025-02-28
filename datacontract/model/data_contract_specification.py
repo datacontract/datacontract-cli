@@ -60,11 +60,11 @@ class Server(pyd.BaseModel):
     delimiter: str | None = None
     header: bool | None = None
     escape: str | None = None
-    all_varchar: bool | None = None
-    allow_quoted_nulls: bool | None = None
+    allVarchar: bool | None = None
+    allowQuotedNulls: bool | None = None
     dateformat: str | None = None
-    decimal_separator: str | None = None
-    new_line: str | None = None
+    decimalSeparator: str | None = None
+    newLine: str | None = None
     timestampformat: str | None = None
     quote: str | None = None
     endpointUrl: str | None = None

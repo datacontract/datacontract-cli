@@ -4,10 +4,8 @@ import uuid
 
 import duckdb
 
-
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
-from datacontract.export.sql_converter import _escape
-from datacontract.model.run import ResultEnum, Run, Check
+from datacontract.model.run import Check, ResultEnum, Run
 
 
 def get_duckdb_connection(data_contract, server, run: Run):
@@ -55,11 +53,11 @@ def get_duckdb_connection(data_contract, server, run: Run):
                 "delimiter": "delim",  # Map server.delimiter to 'delim'
                 "header": "header",
                 "escape": "escape",
-                "all_varchar": "all_varchar",
-                "allow_quoted_nulls": "allow_quoted_nulls",
+                "allVarchar": "all_varchar",
+                "allowQuotedNulls": "allow_quoted_nulls",
                 "dateformat": "dateformat",
-                "decimal_separator": "decimal_separator",
-                "new_line": "new_line",
+                "decimalSeparator": "decimal_separator",
+                "newLine": "new_line",
                 "timestampformat": "timestampformat",
                 "quote": "quote",
             }
@@ -77,31 +75,35 @@ def get_duckdb_connection(data_contract, server, run: Run):
             if columns is not None and (has_header or has_header is None):
                 csv_columns = sniff_csv_header(model_path, server)
                 difference = set(csv_columns) - set(columns.keys())
-                same_order = list(columns.keys()) == csv_columns[:len(columns)]
-                if same_order == False:
-                    run.checks.append(Check(
-                        id=str(uuid.uuid4()),
-                        model=model_name,
-                        category="schema",
-                        type="fields_are_same",
-                        name="Column order mismatch",
-                        result=ResultEnum.warning,
-                        reason=f"Order of columns in {model_path} does not match the model.",
-                        details=f"Expected: {'|'.join(columns.keys())}\nActual:   {'|'.join(csv_columns)}",
-                        engine="datacontract",
-                    ))
+                same_order = list(columns.keys()) == csv_columns[: len(columns)]
+                if not same_order:
+                    run.checks.append(
+                        Check(
+                            id=str(uuid.uuid4()),
+                            model=model_name,
+                            category="schema",
+                            type="fields_are_same",
+                            name="Column order mismatch",
+                            result=ResultEnum.warning,
+                            reason=f"Order of columns in {model_path} does not match the model.",
+                            details=f"Expected: {'|'.join(columns.keys())}\nActual:   {'|'.join(csv_columns)}",
+                            engine="datacontract",
+                        )
+                    )
                 if len(difference) > 0:
-                    run.checks.append(Check(
-                        id=str(uuid.uuid4()),
-                        model=model_name,
-                        category="schema",
-                        type="fields_are_same",
-                        name="Dataset contained unexpected fields",
-                        result=ResultEnum.warning,
-                        reason=f"{model_path} contained unexpected fields: {', '.join(difference)}",
-                        engine="datacontract",
-                    ))
-                columns = { k:columns.get(k, 'VARCHAR') for k in csv_columns }
+                    run.checks.append(
+                        Check(
+                            id=str(uuid.uuid4()),
+                            model=model_name,
+                            category="schema",
+                            type="fields_are_same",
+                            name="Dataset contained unexpected fields",
+                            result=ResultEnum.warning,
+                            reason=f"{model_path} contained unexpected fields: {', '.join(difference)}",
+                            engine="datacontract",
+                        )
+                    )
+                columns = {k: columns.get(k, "VARCHAR") for k in csv_columns}
 
             # Add columns if they exist.
             if columns is not None:
@@ -137,18 +139,19 @@ def sniff_csv_header(model_path, server):
     # Note! The parameter names in the python calls (read_csv, read_csv_auto, and from_csv_auto)
     #       are different from those used in the SQL statements.
     param_mapping = {
-        "delimiter": "delimiter", 
+        "delimiter": "delimiter",
         "header": "header",
         "escape": "escapechar",
         "decimal_separator": "decimal",
-        "quote": "quotechar"
+        "quote": "quotechar",
     }
     # Remainder params are left out, as we do not care about parsing datatype for just the header.
-    with open(model_path, 'rb') as model_file:
+    with open(model_path, "rb") as model_file:
         header_line = model_file.readline()
-    csv_params = { v: getattr(server, k) for (k,v) in param_mapping.items() if getattr(server, k, None) is not None }
-    # from_csv_auto 
+    csv_params = {v: getattr(server, k) for (k, v) in param_mapping.items() if getattr(server, k, None) is not None}
+    # from_csv_auto
     return duckdb.from_csv_auto(io.BytesIO(header_line), **csv_params).columns
+
 
 def setup_s3_connection(con, server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
