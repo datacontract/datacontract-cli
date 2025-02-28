@@ -7,7 +7,7 @@ servers:
   production:
     type: local
     format: csv
-    path: ./tests/fixtures/csv/data/sample_data.csv
+    path: ./fixtures/csv/data/sample_data.csv
     delimiter: ','
 models:
   sample_data:
