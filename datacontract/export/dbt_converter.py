@@ -9,7 +9,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 class DbtExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        return to_dbt_models_yaml(data_contract)
+        return to_dbt_models_yaml(data_contract, server)
 
 
 class DbtSourceExporter(Exporter):
@@ -27,15 +27,16 @@ class DbtStageExporter(Exporter):
         )
 
 
-def to_dbt_models_yaml(data_contract_spec: DataContractSpecification):
+def to_dbt_models_yaml(data_contract_spec: DataContractSpecification, server: str = None):
     dbt = {
         "version": 2,
         "models": [],
     }
+
     for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = _to_dbt_model(model_key, model_value, data_contract_spec)
+        dbt_model = _to_dbt_model(model_key, model_value, data_contract_spec, adapter_type=server)
         dbt["models"].append(dbt_model)
-    return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
+    return yaml.safe_dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name: str, model_value: Model) -> str:
@@ -60,7 +61,7 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
     if data_contract_spec.info.owner is not None:
         source["meta"] = {"owner": data_contract_spec.info.owner}
     if data_contract_spec.info.description is not None:
-        source["description"] = data_contract_spec.info.description
+        source["description"] = data_contract_spec.info.description.strip().replace("\n", " ")
     found_server = data_contract_spec.servers.get(server)
     adapter_type = None
     if found_server is not None:
@@ -87,14 +88,16 @@ def _to_dbt_source_table(
     }
 
     if model_value.description is not None:
-        dbt_model["description"] = model_value.description
+        dbt_model["description"] = model_value.description.strip().replace("\n", " ")
     columns = _to_columns(data_contract_spec, model_value.fields, False, adapter_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
 
 
-def _to_dbt_model(model_key, model_value: Model, data_contract_spec: DataContractSpecification) -> dict:
+def _to_dbt_model(
+    model_key, model_value: Model, data_contract_spec: DataContractSpecification, adapter_type: Optional[str]
+) -> dict:
     dbt_model = {
         "name": model_key,
     }
@@ -108,8 +111,8 @@ def _to_dbt_model(model_key, model_value: Model, data_contract_spec: DataContrac
     if _supports_constraints(model_type):
         dbt_model["config"]["contract"] = {"enforced": True}
     if model_value.description is not None:
-        dbt_model["description"] = model_value.description
-    columns = _to_columns(data_contract_spec, model_value.fields, _supports_constraints(model_type), None)
+        dbt_model["description"] = model_value.description.strip().replace("\n", " ")
+    columns = _to_columns(data_contract_spec, model_value.fields, _supports_constraints(model_type), adapter_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
@@ -171,7 +174,7 @@ def _to_column(
             {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
         )
     if field.description is not None:
-        column["description"] = field.description
+        column["description"] = field.description.strip().replace("\n", " ")
     if field.required:
         if supports_constraints:
             column.setdefault("constraints", []).append({"type": "not_null"})
