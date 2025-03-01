@@ -47,9 +47,9 @@ schema:
             maxLength: 10
             pattern: ^B[0-9]+$
         physicalType: varchar
-        isNullable: false
-        isUnique: true       
-        tags: 
+        nullable: false
+        unique: true
+        tags:
           - "order_id"
         classification: sensitive
         examples:
@@ -66,7 +66,7 @@ schema:
             minimum: 0
             maximum: 1000000
         physicalType: bigint
-        isNullable: false
+        nullable: false
         description: The order_total field
         quality:
           - type: sql
@@ -78,14 +78,14 @@ schema:
       - name: order_status
         logicalType: string
         physicalType: text
-        isNullable: false
+        nullable: false
     quality:
     - type: sql
       description: Row Count
       query: |
         SELECT COUNT(*) AS row_count
         FROM orders
-      mustBeGreaterThan: 1000  
+      mustBeGreaterThan: 1000
     customProperties:
     - property: customModelProperty1
       value: customModelProperty1Value
