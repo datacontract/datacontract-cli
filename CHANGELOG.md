@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (#652)
 - Fix multiline descriptions in the DBT export functionality
 - Incorrectly parsing $ref values in definitions (#664)
+- Better error message when the server configuration is missing in a data contract (#670)
+- Improved default values in ODCS generator to avoid breaking schema validation (#671)
+- Updated ODCS v3 generator to drop the "is" prefix from fields like `isNullable` and `isUnique` (#669)
 
 ## [0.10.22] - 2025-02-20
 
