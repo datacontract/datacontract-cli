@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unicode Encode Error when exporting data contract YAML to HTML
   (#652)
 - Fix multiline descriptions in the DBT export functionality
+- Incorrectly parsing $ref values in definitions (#664)
 
 ## [0.10.22] - 2025-02-20
 

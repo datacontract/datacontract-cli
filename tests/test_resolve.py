@@ -169,3 +169,40 @@ def test_resolve_data_contract_complex_definition_file():
             inline_definitions=True,
         )
         assert datacontract.models["orders"].fields["order_id"].type == "int"
+
+
+def test_resolve_data_contract_relative_refrence():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # create temp file with content
+        with open(f"{temp_dir}/order.yaml", "w") as temp_file:
+            temp_file.write("""
+            definitions:
+              order_id:
+                title: order id
+                type: text
+                examples:
+                  - O1234
+                pii: True
+                classification: restricted
+                tags:
+                  - policy
+            """)
+            temp_file.flush()
+            print(temp_file.name)
+
+        datacontract = resolve_data_contract(
+            data_contract_str=f"""
+        dataContractSpecification: 1.1.0
+        id: my-id
+        info:
+          title: My Title
+          version: 1.0.0
+        models:
+          orders:
+            fields:
+              order_id:
+                $ref: "file://{temp_dir}/order.yaml#/definitions/order_id"
+        """,
+            inline_definitions=True,
+        )
+        assert datacontract.models["orders"].fields["order_id"].type == "text"
