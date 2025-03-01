@@ -74,6 +74,63 @@ models:
     assert result == yaml.safe_load(expected_dbt_model)
 
 
+def test_to_dbt_models_with_server():
+    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    expected_dbt_model = """
+version: 2
+models:
+  - name: orders
+    config:
+      meta:
+        owner: checkout
+        data_contract: orders-unit-test
+      materialized: table
+      contract:
+        enforced: true
+    description: The orders model
+    columns:
+      - name: order_id
+        data_type: STRING
+        constraints:
+          - type: not_null
+          - type: unique
+        data_tests:
+          - dbt_expectations.expect_column_value_lengths_to_be_between:
+              min_value: 8
+              max_value: 10
+          - dbt_expectations.expect_column_values_to_match_regex:
+              regex: ^B[0-9]+$
+        meta:
+          classification: sensitive
+          pii: true
+        tags:
+          - order_id
+      - name: order_total
+        data_type: INT64
+        constraints:
+          - type: not_null
+        description: The order_total field
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+               min_value: 0
+               max_value: 1000000
+      - name: order_status
+        data_type: STRING
+        constraints:
+          - type: not_null
+        data_tests:
+          - accepted_values:
+              values:
+                - 'pending'
+                - 'shipped'
+                - 'delivered'
+"""
+
+    result = yaml.safe_load(to_dbt_models_yaml(data_contract, server="bigquery"))
+
+    assert result == yaml.safe_load(expected_dbt_model)
+
+
 def read_file(file):
     if not os.path.exists(file):
         print(f"The file '{file}' does not exist.")
