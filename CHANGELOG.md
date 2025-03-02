@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test --output-format junit --output TEST-datacontract.xml` Export CLI test results
   to a file, in a standard format (e.g. JUnit) to improve CI/CD experience (#650)
 - `dbt` & `dbt-sources` export formats now support the optional `--server` flag to adapt the DBT column `data_type` to specific SQL dialects
+- Duckdb Connections are now configurable, when used as Python library (#666)
 
 ### Changed
 
