@@ -4,11 +4,21 @@ from typing import Any
 import duckdb
 
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
+from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.run import Run
 
 
-def get_duckdb_connection(data_contract, server, run: Run):
-    con = duckdb.connect(database=":memory:")
+def get_duckdb_connection(
+    data_contract: DataContractSpecification,
+    server: Server,
+    run: Run,
+    duckdb_connection: duckdb.DuckDBPyConnection = None,
+):
+    if duckdb_connection is None:
+        con = duckdb.connect(database=":memory:")
+    else:
+        con = duckdb_connection
+
     path: str = ""
     if server.type == "local":
         path = server.path
