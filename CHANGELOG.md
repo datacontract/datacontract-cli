@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.10.23] - 2025-03-03
+
+### Added
+
 - `datacontract test --output-format junit --output TEST-datacontract.xml` Export CLI test results
   to a file, in a standard format (e.g. JUnit) to improve CI/CD experience (#650)
 
@@ -20,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed Docker base image to python:3.11-bullseye
+- Relax fastparquet dependency
 
 ### Fixed
 
@@ -30,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Better error message when the server configuration is missing in a data contract (#670)
 - Improved default values in ODCS generator to avoid breaking schema validation (#671)
 - Updated ODCS v3 generator to drop the "is" prefix from fields like `isNullable` and `isUnique` (#669)
+- Fix issue when testing databricks server with ODCS format
 
 ## [0.10.22] - 2025-02-20
 
