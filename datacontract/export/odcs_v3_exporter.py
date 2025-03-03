@@ -19,7 +19,7 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
         "name": data_contract_spec.info.title,
         "version": data_contract_spec.info.version,
         "domain": data_contract_spec.info.owner,
-        "status": data_contract_spec.info.status,
+        "status": to_status(data_contract_spec.info.status),
     }
 
     if data_contract_spec.terms is not None:
@@ -217,9 +217,9 @@ def to_property(field_name: str, field: Field) -> dict:
     if field.description is not None:
         property["description"] = field.description
     if field.required is not None:
-        property["isNullable"] = not field.required
+        property["nullable"] = not field.required
     if field.unique is not None:
-        property["isUnique"] = field.unique
+        property["unique"] = field.unique
     if field.classification is not None:
         property["classification"] = field.classification
     if field.examples is not None:
@@ -312,3 +312,22 @@ def to_odcs_quality(quality):
     if quality.implementation is not None:
         quality_dict["implementation"] = quality.implementation
     return quality_dict
+
+
+def to_status(status):
+    """Convert the data contract status to ODCS v3 format."""
+    if status is None:
+        return "draft"  # Default to draft if no status is provided
+
+    # Valid status values according to ODCS v3.0.1 spec
+    valid_statuses = ["proposed", "draft", "active", "deprecated", "retired"]
+
+    # Convert to lowercase for comparison
+    status_lower = status.lower()
+
+    # If status is already valid, return it as is
+    if status_lower in valid_statuses:
+        return status_lower
+
+    # Default to "draft" for any non-standard status
+    return "draft"

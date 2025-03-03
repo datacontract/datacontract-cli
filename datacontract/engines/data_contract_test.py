@@ -29,12 +29,7 @@ def execute_data_contract_test(
             reason="Models block is missing. Skip executing tests.",
             engine="datacontract",
         )
-    check_that_datacontract_contains_valid_server_configuration(run, data_contract_specification, server_name)
-    if server_name:
-        server = data_contract_specification.servers.get(server_name)
-    else:
-        server_name = list(data_contract_specification.servers.keys())[0]
-        server = data_contract_specification.servers.get(server_name)
+    server = get_server(data_contract_specification, server_name)
     run.log_info(f"Running tests for data contract {data_contract_specification.id} with server {server_name}")
     run.dataContractId = data_contract_specification.id
     run.dataContractVersion = data_contract_specification.info.version
@@ -49,3 +44,24 @@ def execute_data_contract_test(
     if server.format == "json" and server.type != "kafka":
         check_jsonschema(run, data_contract_specification, server)
     check_soda_execute(run, data_contract_specification, server, spark)
+
+
+def get_server(data_contract_specification: DataContractSpecification, server_name: str = None):
+    """Get the server configuration from the data contract specification.
+
+    Args:
+        data_contract_specification: The data contract specification
+        server_name: Optional name of the server to use. If not provided, uses the first server.
+
+    Returns:
+        The selected server configuration
+    """
+
+    check_that_datacontract_contains_valid_server_configuration(data_contract_specification, server_name)
+
+    if server_name:
+        server = data_contract_specification.servers.get(server_name)
+    else:
+        server_name = list(data_contract_specification.servers.keys())[0]
+        server = data_contract_specification.servers.get(server_name)
+    return server

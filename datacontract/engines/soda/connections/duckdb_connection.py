@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import duckdb
 
@@ -27,13 +28,13 @@ def get_duckdb_connection(data_contract, server, run: Run):
         run.log_info(f"Creating table {model_name} for {model_path}")
 
         if server.format == "json":
-            format = "auto"
+            json_format = "auto"
             if server.delimiter == "new_line":
-                format = "newline_delimited"
+                json_format = "newline_delimited"
             elif server.delimiter == "array":
-                format = "array"
+                json_format = "array"
             con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{format}', hive_partitioning=1);
+                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);
                         """)
         elif server.format == "parquet":
             con.sql(f"""
@@ -56,7 +57,7 @@ def get_duckdb_connection(data_contract, server, run: Run):
     return con
 
 
-def to_csv_types(model) -> dict:
+def to_csv_types(model) -> dict[Any, str | None] | None:
     if model is None:
         return None
     columns = {}
