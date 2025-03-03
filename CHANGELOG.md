@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.10.23] - 2025-03-03
+
+### Added
+
 - `datacontract test --output-format junit --output TEST-datacontract.xml` Export CLI test results
   to a file, in a standard format (e.g. JUnit) to improve CI/CD experience (#650)
 - `dbt` & `dbt-sources` export formats now support the optional `--server` flag to adapt the DBT column `data_type` to specific SQL dialects
