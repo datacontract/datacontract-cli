@@ -124,7 +124,7 @@ def extract_message_fields_from_fds(fds: descriptor_pb2.FileDescriptorSet, messa
                         enum_values = extract_enum_values_from_fds(fds, enum_name)
                         field_info = {
                             "description": f"Enum field {field.name}",
-                            "type": "enum",
+                            "type": "string",
                             "values": enum_values,
                             "required": (field.label == 2)
                         }
@@ -214,7 +214,7 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
                     enum_values = extract_enum_values_from_fds(fds, enum_name)
                     field_info = {
                         "description": f"Enum field {field.name}",
-                        "type": "enum",
+                        "type": "string",
                         "values": enum_values,
                         "required": (field.label == 2)
                     }
