@@ -51,6 +51,7 @@ class ServerRole(pyd.BaseModel):
 
 class Server(pyd.BaseModel):
     type: str | None = None
+    name: str | None = None
     description: str | None = None
     environment: str | None = None
     format: str | None = None
