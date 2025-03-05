@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added import for `ProtoBuf`
 
 - `dbt` & `dbt-sources` export formats now support the optional `--server` flag to adapt the DBT column `data_type` to specific SQL dialects
+- Duckdb Connections are now configurable, when used as Python library (#666)
 
 
 ### Changed

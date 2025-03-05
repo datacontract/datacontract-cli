@@ -1,5 +1,7 @@
 import typing
 
+from duckdb.duckdb import DuckDBPyConnection
+
 from datacontract.engines.data_contract_checks import create_checks
 
 if typing.TYPE_CHECKING:
@@ -20,6 +22,7 @@ def execute_data_contract_test(
     run: Run,
     server_name: str = None,
     spark: "SparkSession" = None,
+    duckdb_connection: DuckDBPyConnection = None,
 ):
     if data_contract_specification.models is None or len(data_contract_specification.models) == 0:
         raise DataContractException(
@@ -43,7 +46,7 @@ def execute_data_contract_test(
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
         check_jsonschema(run, data_contract_specification, server)
-    check_soda_execute(run, data_contract_specification, server, spark)
+    check_soda_execute(run, data_contract_specification, server, spark, duckdb_connection)
 
 
 def get_server(data_contract_specification: DataContractSpecification, server_name: str = None):
