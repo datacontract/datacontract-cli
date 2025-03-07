@@ -289,19 +289,3 @@ class ProtoBufImporter(Importer):
         # Wrap the source in a list because import_protobuf expects a list of sources.
         return import_protobuf(data_contract_specification, [source], output_dir)
 
-
-###############################################################################
-# Allow running this module as a script
-###############################################################################
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python -m datacontract.imports.protobuf_importer <protobuf_file1> <protobuf_file2> ... [output_directory]")
-        sys.exit(1)
-    protobuf_files = sys.argv[1:-1] if len(sys.argv) > 2 else [sys.argv[1]]
-    output_directory = sys.argv[-1] if len(sys.argv) > 2 else os.getcwd()
-    print(f"Protobuf files: {protobuf_files}")
-    print(f"Output directory: {output_directory}")
-
-    data_contract_spec = DataContractSpecification(models={})
-    import_protobuf(data_contract_spec, protobuf_files, output_directory)
