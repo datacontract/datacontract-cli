@@ -1,8 +1,8 @@
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "ci_test" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "ci_test" ]
   workflow_call:
 
 permissions:
@@ -111,7 +111,7 @@ jobs:
           # duckdb currently does not support linux_arm64_gcc4
           # https://duckdb.org/docs/extensions/working_with_extensions#platforms
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ github.ref == 'refs/heads/ci_test' }}
           tags: datacontract/cli:snapshot-latest
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
