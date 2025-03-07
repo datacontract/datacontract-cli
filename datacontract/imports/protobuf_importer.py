@@ -288,4 +288,3 @@ class ProtoBufImporter(Importer):
         output_dir = import_args.get("output_dir", os.getcwd())
         # Wrap the source in a list because import_protobuf expects a list of sources.
         return import_protobuf(data_contract_specification, [source], output_dir)
-
