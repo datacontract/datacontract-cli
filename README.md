@@ -1154,7 +1154,7 @@ FROM
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bi  The format of the source file.        │
 │                                   gquery|odcs|unity|spark|iceberg|parqu  [default: None]                       │
-│                                   et|csv]                                [required]                            │
+│                                   et|csv|protobuf]                                [required]                            │
 │    --output                       PATH                                   Specify the file path where the Data  │
 │                                                                          Contract will be saved. If no path is │
 │                                                                          provided, the output will be printed  │
@@ -1237,7 +1237,7 @@ Available import options:
 | `spark`            | Import from Spark StructTypes                  | ✅      |
 | `dbml`             | Import from DBML models                        | ✅      |
 | `csv`              | Import from CSV File                           | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | TBD    |
+| `protobuf`         | Import from Protobuf schemas                   | ✅    |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
 | `parquet`          | Import from Parquet File Metadta               | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD    |
@@ -1387,6 +1387,16 @@ Example:
 
 ```bash
 datacontract import --format csv --source "test.csv"
+```
+
+#### protobuf
+
+Importing from protobuf File. Specify file in `source` parameter. 
+
+Example:
+
+```bash
+datacontract import --format protobuf --source "test.proto"
 ```
 
 

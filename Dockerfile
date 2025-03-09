@@ -4,6 +4,9 @@ FROM python:3.11-bullseye
 # the stdout and stderr streams are sent straight to terminal (e.g. your container log) without
 # being first buffered and that you can see the output of your application in real time.
 ENV PYTHONUNBUFFERED=1
+		
+# Install protoc (protobuf-compiler)
+RUN apt-get update && apt-get install -y protobuf-compiler
 
 # copy resources
 COPY pyproject.toml /app/.
