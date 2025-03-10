@@ -1,29 +1,49 @@
-dataContractSpecification: 1.1.0
-id: orders-unit-test
-info:
-  title: Orders Unit Test
-  version: 1.0.0
-servers:
-  production:
+apiVersion: v3.0.1 # Standard version
+kind: DataContract
+
+id: 53581432-6c55-4ba2-a65f-72344a91553a
+name: spaceman-data-contract-id
+version: 1.1.0 # Data Contract Version 
+status: active
+domain: planogram
+dataProduct: spaceman
+tenant: mcKesson
+description:
+  purpose: Data contracts for all spaceman contracts
+  limitations: 'null'
+  usage: 'null'
+tags: ['finance']
+server:
+  adlsbrand:
     type: azure
-    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/topics/inventory/year=2022/month=07/day=13/*/inventory+0+000000*.json
+    storageAccount: dhnielseniqdev
+    location: az://spaceman/entity={model}/year=2025/month=02/day=03/*_v1.jsonl
     format: json
     delimiter: new_line
 models:
-  orders:
-    fields:
-      updated_at:
-        type: varchar
-      available:
-        type: integer
-      location:
-        type: varchar
-        minLength: 2
-        maxLength: 2
-      sku:
-        type: varchar
-quality:
-  type: SodaCL
-  specification:
-    checks for orders:
-      - row_count >= 5000
+  - name: SPACEMAN_BRAND
+    physicalName: SPACEMAN_BRAND
+    logicalType: object
+    physicalType: table
+    description: Table containing the brands in spaceman
+    tags: ['B2B', 'planogram', 'NIELSENIQ'] #to put in other tables
+    properties:
+    - name: KEY_ID
+      logicalType: string
+      physicalType: varchar
+      description: Name of the application that created or updated the record.
+    - name: PLANOGRAM
+      logicalType: string
+      physicalType: varchar
+    - name: BRAND
+      logicalType: string
+      physicalType: varchar
+    - name: skuNumbers
+      logicalType: string
+      physicalType: varchar
+    - name: '# of Products'
+      logicalType: string
+      physicalType: varchar
+    - name: 'total LinealSpace by brand'
+      logicalType: string
+      physicalType: varchar
