@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `dbt` & `dbt-sources` export formats now support the optional `--server` flag to adapt the DBT column `data_type` to specific SQL dialects
 - Duckdb Connections are now configurable, when used as Python library (#666)
-
+- export to avro format add map type
 
 ### Changed
 
@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved default values in ODCS generator to avoid breaking schema validation (#671)
 - Updated ODCS v3 generator to drop the "is" prefix from fields like `isNullable` and `isUnique` (#669)
 - Fix issue when testing databricks server with ODCS format
-
+- avro export fix float format
 ## [0.10.22] - 2025-02-20
 
 ### Added
