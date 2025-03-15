@@ -25,9 +25,19 @@ def test_cli():
 
 
 def test_import_sql():
-    result = DataContract().import_from_source("csv", csv_file_path)
+    source = "fixtures/csv/data/sample_data_5_column.csv"
+    result = DataContract().import_from_source("csv", source)
+    model = result.models["sample_data_5_column"]
+    assert model is not None
+    assert len(model.fields["field_one"].examples) == 5
+    assert len(model.fields["field_two"].examples) > 0
+    assert len(model.fields["field_three"].examples) > 0
+    assert model.fields["field_four"].examples is None
+    assert model.fields["field_five"].examples is None
+    for k in model.fields.keys():
+        model.fields[k].examples = None
 
-    expected = """dataContractSpecification: 1.1.0
+    expected = f"""dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -36,19 +46,33 @@ servers:
   production:
     type: local
     format: csv
-    path: fixtures/csv/data/sample_data.csv
+    path: {source}
     delimiter: ','
 models:
-  sample_data:
-    description: Csv file with encoding ascii
+  sample_data_5_column:
+    description: Generated model of fixtures/csv/data/sample_data_5_column.csv
     type: table
     fields:
       field_one:
         type: string
+        required: true
+        unique: true
       field_two:
         type: integer
+        required: true
+        minimum: 14
+        maximum: 89
       field_three:
+        type: timestamp
+        unique: true
+      field_four:
         type: string
+      field_five:
+        type: boolean
+        required: true
+      field_six:
+        type: string
+        format: email
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
