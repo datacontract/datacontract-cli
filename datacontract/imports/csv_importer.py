@@ -1,10 +1,10 @@
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import duckdb
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Example, Field, Model, Server
+from datacontract.model.data_contract_specification import DataContractSpecification, Model, Server
 
 
 class CsvImporter(Importer):
@@ -46,7 +46,7 @@ def import_csv(
 
     tallies = dict()
     for row in tbl.describe().fetchall():
-        if not row[0] in ["count", "max", "min"]:
+        if row[0] not in ["count", "max", "min"]:
             continue
         for i in range(tbl.shape[1]):
             tallies[(row[0], tbl.columns[i])] = row[i + 1] if row[0] != "count" else int(row[i + 1])
