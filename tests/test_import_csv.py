@@ -24,7 +24,7 @@ def test_cli():
     assert result.exit_code == 0
 
 
-def test_import_sql():
+def test_import_csv():
     source = "fixtures/csv/data/sample_data_5_column.csv"
     result = DataContract().import_from_source("csv", source)
     model = result.models["sample_data_5_column"]

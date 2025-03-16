@@ -25,16 +25,16 @@ def import_csv(
     con.sql(
         f"""CREATE VIEW "{table_name}" AS SELECT * FROM read_csv_auto('{source}', hive_partitioning=1, auto_type_candidates = ['BOOLEAN', 'INTEGER', 'BIGINT', 'DOUBLE', 'VARCHAR']);"""
     )
-    dialect = con.sql(f"FROM sniff_csv('{source}', sample_size = 1000);").fetchone()
+    dialect = con.sql(f"SELECT * FROM sniff_csv('{source}', sample_size = 1000);").fetchnumpy()
     tbl = con.table(table_name)
 
     if data_contract_specification.servers is None:
         data_contract_specification.servers = {}
 
-    delimiter = None if dialect is None else dialect[0]
+    delimiter = None if dialect is None else dialect['Delimiter'][0]
 
     if dialect is not None:
-        dc_types = [map_type_from_duckdb(x["type"]) for x in dialect[7]]
+        dc_types = [map_type_from_duckdb(x["type"]) for x in dialect['Columns'][0]]
     else:
         dc_types = [map_type_from_duckdb(str(x)) for x in tbl.dtypes]
 
