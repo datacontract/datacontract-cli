@@ -1912,6 +1912,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 - [INNOQ](https://innoq.com)
 - [Data Catering](https://data.catering/)
+- [Oliver Wyman](https://www.oliverwyman.com/)
 - And many more. To add your company, please create a pull request.
 
 ## Related Tools
