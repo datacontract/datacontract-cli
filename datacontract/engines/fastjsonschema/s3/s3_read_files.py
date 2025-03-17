@@ -12,7 +12,6 @@ def yield_s3_files(s3_endpoint_url, s3_location):
             logging.info(f"Downloading file {file}")
             yield f.read()
 
-
 def s3_fs(s3_endpoint_url):
     try:
         import s3fs
@@ -21,7 +20,7 @@ def s3_fs(s3_endpoint_url):
             type="schema",
             result="failed",
             name="s3 extra missing",
-            reason="Install the extra datacontract-cli\[s3] to use s3",
+            reason="Install the extra datacontract-cli\\[s3] to use s3",
             engine="datacontract",
             original_exception=e,
         )
