@@ -238,7 +238,6 @@ def import_protobuf(
 
                 all_models[message.name] = {
                     "description": f"Details of {message.name}.",
-                    "type": "table",
                     "fields": fields
                 }
 
