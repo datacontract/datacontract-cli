@@ -238,6 +238,7 @@ def import_protobuf(
 
                 all_models[message.name] = {
                     "description": f"Details of {message.name}.",
+                    "type": "table",
                     "fields": fields
                 }
 
@@ -250,7 +251,7 @@ def import_protobuf(
         # Generic default contract values.
         default_contract_info = {
             "title": "Data Contract",
-            "version": "1.0.0",
+            "version": "0.0.1",
             "status": "active",
             "description": "Data contract generated from the provided protobuf schema.",
             "owner": "",
@@ -258,7 +259,7 @@ def import_protobuf(
         }
         contract_info = import_args.get("contract_info", default_contract_info)
         contract_id = import_args.get("contract_id", "data_contract")
-        data_contract_spec_version = import_args.get("data_contract_specification", "1.0.0")
+        data_contract_spec_version = import_args.get("data_contract_specification", "1.1.0")
 
         contract_structure = {
             "dataContractSpecification": data_contract_spec_version,
