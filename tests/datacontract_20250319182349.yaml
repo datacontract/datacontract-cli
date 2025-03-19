@@ -1,0 +1,73 @@
+dataContractSpecification: 1.0.0
+id: data_contract
+info:
+  contact: {}
+  description: Data contract generated from the provided protobuf schema.
+  owner: ''
+  status: active
+  title: Data Contract
+  version: 1.0.0
+models:
+  Product:
+    description: Details of Product.
+    fields:
+      category:
+        description: Enum field category
+        required: false
+        type: string
+        values:
+          CATEGORY_CLOTHING: 2
+          CATEGORY_ELECTRONICS: 1
+          CATEGORY_HOME_APPLIANCES: 3
+          CATEGORY_UNKNOWN: 0
+      id:
+        description: Field id
+        required: false
+        type: string
+      name:
+        description: Field name
+        required: false
+        type: string
+      price:
+        description: Field price
+        required: false
+        type: double
+      reviews:
+        description: List of Review
+        items:
+          fields:
+            comment:
+              description: Field comment
+              required: false
+              type: string
+            rating:
+              description: Field rating
+              required: false
+              type: integer
+            user:
+              description: Field user
+              required: false
+              type: string
+          type: object
+        type: array
+      tags:
+        description: Field tags
+        required: false
+        type: string
+    type: table
+  Review:
+    description: Details of Review.
+    fields:
+      comment:
+        description: Field comment
+        required: false
+        type: string
+      rating:
+        description: Field rating
+        required: false
+        type: integer
+      user:
+        description: Field user
+        required: false
+        type: string
+    type: table

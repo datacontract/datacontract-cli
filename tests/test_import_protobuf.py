@@ -8,7 +8,6 @@ from datacontract.data_contract import DataContract
 
 protobuf_file_path = "fixtures/protobuf/data/sample_data.proto3.data"
 
-
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(
