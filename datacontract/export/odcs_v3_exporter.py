@@ -301,7 +301,7 @@ def to_odcs_quality(quality):
     if quality.description is not None:
         quality_dict["description"] = quality.description
     if quality.query is not None:
-        quality_dict["query"] = quality.query.strip()
+        quality_dict["query"] = quality.query
     # dialect is not supported in v3.0.0
     if quality.mustBe is not None:
         quality_dict["mustBe"] = quality.mustBe

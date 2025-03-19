@@ -67,6 +67,7 @@ def _get_enum_name(field, field_name: str) -> str:
         return field.get("enum_name", _to_protobuf_message_name(field_name))
     return getattr(field, "enum_name", None) or _to_protobuf_message_name(field_name)
 
+
 def _get_enum_values(field) -> dict:
     """
     Returns the enum values from the field.
@@ -90,6 +91,7 @@ def _get_enum_values(field) -> dict:
                 if key.isupper() and isinstance(getattr(values, key), int)
             }
     return values
+
 
 def _to_protobuf_message_name(name: str) -> str:
     """
