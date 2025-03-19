@@ -16,18 +16,18 @@ def map_type_from_protobuf(field_type: int):
         1: "double",
         2: "float",
         3: "long",
-        4: "long",     # uint64 mapped to long
+        4: "long",  # uint64 mapped to long
         5: "integer",  # int32 mapped to integer
-        6: "string",   # fixed64 mapped to string
-        7: "string",   # fixed32 mapped to string
-        8: "boolean",  
+        6: "string",  # fixed64 mapped to string
+        7: "string",  # fixed32 mapped to string
+        8: "boolean",
         9: "string",
         12: "bytes",
-        13: "integer", # uint32 mapped to integer
-        15: "integer", # sfixed32 mapped to integer
-        16: "long",    # sfixed64 mapped to long
-        17: "integer", # sint32 mapped to integer
-        18: "long"     # sint64 mapped to long
+        13: "integer",  # uint32 mapped to integer
+        15: "integer",  # sfixed32 mapped to integer
+        16: "long",  # sfixed64 mapped to long
+        17: "integer",  # sint32 mapped to integer
+        18: "long",  # sint64 mapped to long
     }
     return protobuf_type_mapping.get(field_type, "string")
 
@@ -107,16 +107,13 @@ def extract_message_fields_from_fds(fds: descriptor_pb2.FileDescriptorSet, messa
                             field_info = {
                                 "description": f"List of {nested_msg_name}",
                                 "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "fields": nested_fields
-                                }
+                                "items": {"type": "object", "fields": nested_fields},
                             }
                         else:
                             field_info = {
                                 "description": f"Nested object of {nested_msg_name}",
                                 "type": "object",
-                                "fields": nested_fields
+                                "fields": nested_fields,
                             }
                     elif field.type == 14:  # TYPE_ENUM
                         enum_name = field.type_name.split(".")[-1]
@@ -125,20 +122,22 @@ def extract_message_fields_from_fds(fds: descriptor_pb2.FileDescriptorSet, messa
                             "description": f"Enum field {field.name}",
                             "type": "string",
                             "values": enum_values,
-                            "required": (field.label == 2)
+                            "required": (field.label == 2),
                         }
                     else:
                         field_info = {
                             "description": f"Field {field.name}",
                             "type": map_type_from_protobuf(field.type),
-                            "required": (field.label == 2)
+                            "required": (field.label == 2),
                         }
                     fields[field.name] = field_info
                 return fields
     return {}
 
 
-def import_protobuf(data_contract_specification: DataContractSpecification, sources: list, output_dir: str) -> DataContractSpecification:
+def import_protobuf(
+    data_contract_specification: DataContractSpecification, sources: list, output_dir: str
+) -> DataContractSpecification:
     """
     Gather all proto files (including those imported), compile them into one descriptor,
     then generate models with nested fields and enums resolved.
@@ -196,16 +195,13 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
                         field_info = {
                             "description": f"List of {nested_msg_name}",
                             "type": "array",
-                            "items": {
-                                "type": "object",
-                                "fields": nested_fields
-                            }
+                            "items": {"type": "object", "fields": nested_fields},
                         }
                     else:
                         field_info = {
                             "description": f"Nested object of {nested_msg_name}",
                             "type": "object",
-                            "fields": nested_fields
+                            "fields": nested_fields,
                         }
                     fields[field.name] = field_info
                 elif field.type == 14:  # TYPE_ENUM
@@ -215,22 +211,18 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
                         "description": f"Enum field {field.name}",
                         "type": "string",
                         "values": enum_values,
-                        "required": (field.label == 2)
+                        "required": (field.label == 2),
                     }
                     fields[field.name] = field_info
                 else:
                     field_info = {
                         "description": f"Field {field.name}",
                         "type": map_type_from_protobuf(field.type),
-                        "required": (field.label == 2)
+                        "required": (field.label == 2),
                     }
                     fields[field.name] = field_info
 
-            all_models[message.name] = {
-                "description": f"Details of {message.name}.",
-                "type": "table",
-                "fields": fields
-            }
+            all_models[message.name] = {"description": f"Details of {message.name}.", "type": "table", "fields": fields}
 
     data_contract_specification.models = all_models
 
@@ -249,15 +241,16 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
             "contact": {
                 "name": "Global Risk Analytics Support",
                 "url": "https://risk.example.com/support",
-                "email": "support@risk.example.com"
-            }
+                "email": "support@risk.example.com",
+            },
         },
-        "models": all_models
+        "models": all_models,
     }
     with open(output_file, "w") as f:
         yaml.dump(contract_structure, f, default_flow_style=False)
     print(f"Data contract file written: {output_file}")
     return data_contract_specification
+
 
 class ProtoBufImporter(Importer):
     def __init__(self, name):

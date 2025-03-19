@@ -59,4 +59,3 @@ message Review {
     result = to_protobuf(data_contract).strip()
 
     assert result == expected_protobuf
-
