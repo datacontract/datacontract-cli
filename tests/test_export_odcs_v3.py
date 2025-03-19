@@ -20,7 +20,7 @@ def test_cli():
 def test_to_odcs():
     data_contract = DataContractSpecification.from_string(read_file("fixtures/export/datacontract.yaml"))
     expected_odcs_model = """
-apiVersion: v3.0.0
+apiVersion: v3.0.1
 kind: DataContract
 id: orders-unit-test
 name: Orders Unit Test

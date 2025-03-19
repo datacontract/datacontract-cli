@@ -5,6 +5,17 @@ import yaml
 from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 
+yaml.SafeDumper.org_represent_str = yaml.SafeDumper.represent_str
+
+
+def repr_str(dumper, data):
+    if "\n" in data:
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+    return dumper.org_represent_str(data)
+
+
+yaml.add_representer(str, repr_str, Dumper=yaml.SafeDumper)
+
 
 class OdcsV3Exporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
@@ -13,12 +24,11 @@ class OdcsV3Exporter(Exporter):
 
 def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
     odcs = {
-        "apiVersion": "v3.0.0",
+        "apiVersion": "v3.0.1",
         "kind": "DataContract",
         "id": data_contract_spec.id,
         "name": data_contract_spec.info.title,
         "version": data_contract_spec.info.version,
-        "domain": data_contract_spec.info.owner,
         "status": to_status(data_contract_spec.info.status),
     }
 
@@ -126,13 +136,15 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
             odcs["servers"] = servers
 
     odcs["customProperties"] = []
+    if data_contract_spec.info.owner is not None:
+        odcs["customProperties"].append({"property": "owner", "value": data_contract_spec.info.owner})
     if data_contract_spec.info.model_extra is not None:
         for key, value in data_contract_spec.info.model_extra.items():
             odcs["customProperties"].append({"property": key, "value": value})
     if len(odcs["customProperties"]) == 0:
         del odcs["customProperties"]
 
-    return yaml.dump(odcs, indent=2, sort_keys=False, allow_unicode=True)
+    return yaml.safe_dump(odcs, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def to_odcs_schema(model_key, model_value: Model) -> dict:
@@ -223,7 +235,7 @@ def to_property(field_name: str, field: Field) -> dict:
     if field.classification is not None:
         property["classification"] = field.classification
     if field.examples is not None:
-        property["examples"] = field.examples
+        property["examples"] = field.examples.copy()
     if field.example is not None:
         property["examples"] = [field.example]
     if field.primaryKey is not None and field.primaryKey:
@@ -289,7 +301,7 @@ def to_odcs_quality(quality):
     if quality.description is not None:
         quality_dict["description"] = quality.description
     if quality.query is not None:
-        quality_dict["query"] = quality.query
+        quality_dict["query"] = quality.query.strip()
     # dialect is not supported in v3.0.0
     if quality.mustBe is not None:
         quality_dict["mustBe"] = quality.mustBe
