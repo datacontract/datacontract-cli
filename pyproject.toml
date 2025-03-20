@@ -33,8 +33,7 @@ dependencies = [
   "boto3>=1.34.41,<1.36.12",
   "Jinja2>=3.1.5",
   "jinja_partials >= 0.2.1",
-  "grpcio-tools>=1.51,<1.52",  # <-- Added dependency for Python-based proto compilation
-
+  
 ]
 
 [project.optional-dependencies]
@@ -111,8 +110,12 @@ api = [
   "uvicorn==0.34.0",
 ]
 
+protobuf = [
+  "grpcio-tools>=1.53",
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf]"
 ]
 
 dev = [

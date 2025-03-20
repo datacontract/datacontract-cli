@@ -254,8 +254,7 @@ def import_protobuf(
             "version": "0.0.1",
             "status": "active",
             "description": "Data contract generated from the provided protobuf schema.",
-            "owner": "",
-            "contact": {}
+            "owner": ""
         }
         contract_info = import_args.get("contract_info", default_contract_info)
         contract_id = import_args.get("contract_id", "data_contract")
