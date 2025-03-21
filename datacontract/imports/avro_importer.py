@@ -91,6 +91,19 @@ def handle_config_avro_custom_properties(field: avro.schema.Field, imported_fiel
             imported_field.config = {}
         imported_field.config["avroDefault"] = field.default
 
+# Mapping for Avro logical types to data contract types
+LOGICAL_TYPE_MAPPING = {
+    "decimal": "decimal",
+    "date": "date",
+    "time-millis": "time",
+    "time-micros": "time",
+    "timestamp-millis": "timestamp_tz",
+    "timestamp-micros": "timestamp_tz",
+    "local-timestamp-micros": "timestamp_tz",
+    "local-timestamp-millis": "timestamp_tz",
+    "duration": "duration",
+    "uuid": "uuid",
+}
 
 def import_record_fields(record_fields: List[avro.schema.Field]) -> Dict[str, Field]:
     """
@@ -137,8 +150,15 @@ def import_record_fields(record_fields: List[avro.schema.Field]) -> Dict[str, Fi
             if not imported_field.config:
                 imported_field.config = {}
             imported_field.config["avroType"] = "enum"
-        else:  # primitive type
-            imported_field.type = map_type_from_avro(field.type.type)
+        else:  
+            logical_type = field.type.get_prop("logicalType")
+            if logical_type in LOGICAL_TYPE_MAPPING:
+                imported_field.type = LOGICAL_TYPE_MAPPING[logical_type]
+                if logical_type == "decimal":
+                    imported_field.precision = field.type.precision
+                    imported_field.scale = field.type.scale
+            else:
+                imported_field.type = map_type_from_avro(field.type.type)
 
         imported_fields[field.name] = imported_field
 

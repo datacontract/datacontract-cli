@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unicode Encode Error when exporting data contract YAML to HTML
   (#652)
 
+- Fix to handle logicalType format wrt avro mentioned in issue #687 
+
 ## [0.10.22] - 2025-02-20
 
 ### Added
