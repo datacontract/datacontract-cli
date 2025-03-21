@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "alert",
+  "fields": [
+    {
+      "name": "currentSelectionLiability",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 25,
+        "scale": 2
+      }
+    },
+    {
+      "name": "raised",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}
