@@ -1,9 +1,7 @@
 import os
 import re
 import tempfile
-import time
 
-import yaml
 from google.protobuf import descriptor_pb2
 from grpc_tools import protoc
 
@@ -144,9 +142,6 @@ def import_protobuf(
 
     The generated data contract uses generic defaults instead of specific hardcoded ones.
     """
-    if import_args is None:
-        import_args = {}
-    output_dir = import_args.get("output_dir", os.getcwd())
 
     # --- Step 1: Gather all proto files (main and imported)
     proto_files_set = set()
@@ -236,30 +231,6 @@ def import_protobuf(
 
         data_contract_specification.models = all_models
 
-        # --- Step 4: Write out the data contract YAML.
-        timestamp = time.strftime("%Y%m%d%H%M%S")
-        output_file = os.path.join(output_dir, f"datacontract_{timestamp}.yaml")
-
-        # Generic default contract values.
-        default_contract_info = {
-            "title": "Data Contract",
-            "version": "0.0.1",
-            "status": "active",
-            "description": "Data contract generated from the provided protobuf schema.",
-            "owner": "",
-        }
-        contract_info = import_args.get("contract_info", default_contract_info)
-        contract_id = import_args.get("contract_id", "data_contract")
-        data_contract_spec_version = import_args.get("data_contract_specification", "1.1.0")
-
-        contract_structure = {
-            "dataContractSpecification": data_contract_spec_version,
-            "id": contract_id,
-            "info": contract_info,
-            "models": all_models,
-        }
-        with open(output_file, "w") as f:
-            yaml.dump(contract_structure, f, default_flow_style=False)
         return data_contract_specification
     finally:
         # Clean up the temporary descriptor file.
