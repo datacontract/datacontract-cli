@@ -4,6 +4,8 @@ import typing
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
+from duckdb.duckdb import DuckDBPyConnection
+
 from datacontract.breaking.breaking import (
     info_breaking_changes,
     models_breaking_changes,
@@ -39,6 +41,7 @@ class DataContract:
         server: str = None,
         publish_url: str = None,
         spark: "SparkSession" = None,
+        duckdb_connection: DuckDBPyConnection = None,
         inline_definitions: bool = True,
         inline_quality: bool = True,
         ssl_verification: bool = True,
@@ -50,6 +53,7 @@ class DataContract:
         self._server = server
         self._publish_url = publish_url
         self._spark = spark
+        self._duckdb_connection = duckdb_connection
         self._inline_definitions = inline_definitions
         self._inline_quality = inline_quality
         self._ssl_verification = ssl_verification
@@ -146,7 +150,7 @@ class DataContract:
                 inline_quality=self._inline_quality,
             )
 
-            execute_data_contract_test(data_contract, run, self._server, self._spark)
+            execute_data_contract_test(data_contract, run, self._server, self._spark, self._duckdb_connection)
 
         except DataContractException as e:
             run.checks.append(

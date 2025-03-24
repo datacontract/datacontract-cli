@@ -231,7 +231,7 @@ A list of available extras:
 | Parquet                 | `pip install datacontract-cli[parquet]`    |
 | RDF                     | `pip install datacontract-cli[rdf]`        |
 | API (run as web server) | `pip install datacontract-cli[api]`        |
-
+| protobuf                | `pip install datacontract-cli[protobuf]`   |
 
 
 ## Documentation
@@ -949,6 +949,12 @@ The export function converts the logical data types of the datacontract into the
 if a server is selected via the `--server` option (based on the `type` of that server). If no server is selected, the
 logical data types are exported.
 
+#### DBT & DBT-SOURCES
+
+The export funciton converts the datacontract to dbt models in YAML format, with support for SQL dialects.
+If a server is selected via the `--server` option (based on the `type` of that server) then the DBT column `data_types` match the expected data types of the server.
+If no server is selected, then it defaults to `snowflake`.
+
 #### Spark
 
 The export function converts the data contract specification into a StructType Spark schema. The returned value is a Python code picture of the model schemas.
@@ -1148,7 +1154,7 @@ FROM
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                       [sql|avro|dbt|dbml|glue|jsonschema|bi  The format of the source file.        │
 │                                   gquery|odcs|unity|spark|iceberg|parqu  [default: None]                       │
-│                                   et|csv]                                [required]                            │
+│                                   et|csv|protobuf]                                [required]                            │
 │    --output                       PATH                                   Specify the file path where the Data  │
 │                                                                          Contract will be saved. If no path is │
 │                                                                          provided, the output will be printed  │
@@ -1231,7 +1237,7 @@ Available import options:
 | `spark`            | Import from Spark StructTypes                  | ✅      |
 | `dbml`             | Import from DBML models                        | ✅      |
 | `csv`              | Import from CSV File                           | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | TBD    |
+| `protobuf`         | Import from Protobuf schemas                   | ✅    |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
 | `parquet`          | Import from Parquet File Metadta               | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD    |
@@ -1381,6 +1387,16 @@ Example:
 
 ```bash
 datacontract import --format csv --source "test.csv"
+```
+
+#### protobuf
+
+Importing from protobuf File. Specify file in `source` parameter. 
+
+Example:
+
+```bash
+datacontract import --format protobuf --source "test.proto"
 ```
 
 
@@ -1896,6 +1912,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 - [INNOQ](https://innoq.com)
 - [Data Catering](https://data.catering/)
+- [Oliver Wyman](https://www.oliverwyman.com/)
 - And many more. To add your company, please create a pull request.
 
 ## Related Tools

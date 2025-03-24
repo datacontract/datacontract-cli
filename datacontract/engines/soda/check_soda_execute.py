@@ -1,9 +1,15 @@
 import logging
+import typing
 import uuid
+
+if typing.TYPE_CHECKING:
+    from pyspark.sql import SparkSession
+
+from duckdb.duckdb import DuckDBPyConnection
 
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 from datacontract.engines.soda.connections.databricks import to_databricks_soda_configuration
-from datacontract.engines.soda.connections.duckdb import get_duckdb_connection
+from datacontract.engines.soda.connections.duckdb_connection import get_duckdb_connection
 from datacontract.engines.soda.connections.kafka import create_spark_session, read_kafka_topic
 from datacontract.engines.soda.connections.postgres import to_postgres_soda_configuration
 from datacontract.engines.soda.connections.snowflake import to_snowflake_soda_configuration
@@ -14,7 +20,13 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
-def check_soda_execute(run: Run, data_contract: DataContractSpecification, server: Server, spark):
+def check_soda_execute(
+    run: Run,
+    data_contract: DataContractSpecification,
+    server: Server,
+    spark: "SparkSession" = None,
+    duckdb_connection: DuckDBPyConnection = None,
+):
     from soda.common.config_helper import ConfigHelper
 
     ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
@@ -30,7 +42,7 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
     if server.type in ["s3", "gcs", "azure", "local"]:
         if server.format in ["json", "parquet", "csv", "delta"]:
             run.log_info(f"Configuring engine soda-core to connect to {server.type} {server.format} with duckdb")
-            con = get_duckdb_connection(data_contract, server, run)
+            con = get_duckdb_connection(data_contract, server, run, duckdb_connection)
             scan.add_duckdb_connection(duckdb_connection=con, data_source_name=server.type)
             scan.set_data_source_name(server.type)
         else:
@@ -62,7 +74,8 @@ def check_soda_execute(run: Run, data_contract: DataContractSpecification, serve
             run.log_info("Connecting to databricks via spark")
             scan.add_spark_session(spark, data_source_name=server.type)
             scan.set_data_source_name(server.type)
-            spark.sql(f"USE {server.catalog}.{server.schema_}")
+            database_name = ".".join(filter(None, [server.catalog, server.schema_]))
+            spark.sql(f"USE {database_name}")
         else:
             run.log_info("Connecting to databricks directly")
             soda_configuration_str = to_databricks_soda_configuration(server)

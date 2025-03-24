@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package example;
+
+// Enum for product category
+enum Category {
+    CATEGORY_UNKNOWN = 0;
+    CATEGORY_ELECTRONICS = 1;
+    CATEGORY_CLOTHING = 2;
+    CATEGORY_HOME_APPLIANCES = 3;
+}
+
+// Message representing product attributes
+message Product {
+    string id = 1;
+    string name = 2;
+    double price = 3;
+    Category category = 4;
+    repeated string tags = 5; 
+    repeated Review reviews = 6; 
+}
+
+// Message representing a review
+message Review {
+    string user = 1;
+    int32 rating = 2;
+    string comment = 3;
+}

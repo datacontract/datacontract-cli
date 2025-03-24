@@ -236,7 +236,7 @@ def import_field_config(odcs_property: Dict[str, Any], server_type=None) -> Dict
             config["redshiftType"] = physical_type
         elif server_type == "sqlserver":
             config["sqlserverType"] = physical_type
-        elif server_type == "databricksType":
+        elif server_type == "databricks":
             config["databricksType"] = physical_type
         else:
             config["physicalType"] = physical_type
