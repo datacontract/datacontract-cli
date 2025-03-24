@@ -55,8 +55,7 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
             engine="datacontract",
             original_exception=e,
         )
-
-    # type record is being used for both the table and the object types in data contract
+  # type record is being used for both the table and the object types in data contract
     # -> CONSTRAINT: one table per .avsc input, all nested records are interpreted as objects
     fields = import_record_fields(avro_schema.fields)
 
@@ -91,20 +90,21 @@ def handle_config_avro_custom_properties(field: avro.schema.Field, imported_fiel
             imported_field.config = {}
         imported_field.config["avroDefault"] = field.default
 
-# Mapping for Avro logical types to data contract types
-LOGICAL_TYPE_MAPPING = {
-    "decimal": "decimal",
-    "date": "date",
-    "time-millis": "time",
-    "time-micros": "time",
-    "timestamp-millis": "timestamp_tz",
-    "timestamp-micros": "timestamp_tz",
-    "local-timestamp-micros": "timestamp_tz",
-    "local-timestamp-millis": "timestamp_tz",
-    "duration": "duration",
-    "uuid": "uuid",
-}
 
+LOGICAL_TYPE_MAPPING = {
+     "decimal": "decimal",
+     "date": "date",
+     "time-millis": "time",
+     "time-micros": "time",
+     "timestamp-millis": "timestamp_tz",
+     "timestamp-micros": "timestamp_tz",
+     "local-timestamp-micros": "timestamp_ntz",
+     "local-timestamp-millis": "timestamp_ntz",
+     "duration": "string",
+     "uuid": "string",
+ }
+    
+  
 def import_record_fields(record_fields: List[avro.schema.Field]) -> Dict[str, Field]:
     """
     Import Avro record fields and convert them to data contract fields.
@@ -151,15 +151,14 @@ def import_record_fields(record_fields: List[avro.schema.Field]) -> Dict[str, Fi
                 imported_field.config = {}
             imported_field.config["avroType"] = "enum"
         else:  
-            logical_type = field.type.get_prop("logicalType")
-            if logical_type in LOGICAL_TYPE_MAPPING:
-                imported_field.type = LOGICAL_TYPE_MAPPING[logical_type]
-                if logical_type == "decimal":
-                    imported_field.precision = field.type.precision
-                    imported_field.scale = field.type.scale
-            else:
-                imported_field.type = map_type_from_avro(field.type.type)
-
+             logical_type = field.type.get_prop("logicalType")
+             if logical_type in LOGICAL_TYPE_MAPPING:
+                 imported_field.type = LOGICAL_TYPE_MAPPING[logical_type]
+                 if logical_type == "decimal":
+                     imported_field.precision = field.type.precision
+                     imported_field.scale = field.type.scale
+             else:
+                 imported_field.type = map_type_from_avro(field.type.type)
         imported_fields[field.name] = imported_field
 
     return imported_fields
@@ -296,6 +295,8 @@ def map_type_from_avro(avro_type_str: str) -> str:
         return "binary"
     elif avro_type_str == "double":
         return "double"
+    elif avro_type_str == "float":
+        return "float"
     elif avro_type_str == "int":
         return "int"
     elif avro_type_str == "long":
