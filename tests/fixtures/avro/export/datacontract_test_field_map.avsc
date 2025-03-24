@@ -1,0 +1,16 @@
+{
+    "type": "record",
+    "name": "row",
+    "namespace": "com.example",
+    "fields": [
+                 {
+                 "name": "field_name",
+                  "type": {
+                          "type": "map",
+                          "values":["string",
+                                    "long"
+                                    ]
+                           }
+                  }
+               ]
+}
