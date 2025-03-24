@@ -1,19 +1,19 @@
 import os
-from typing import Any
+from typing import Any, Dict
 
 import duckdb
 
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
+from datacontract.export.json_type_converter import convert_to_duckdb_json_type
+from datacontract.model.data_contract_specification import DataContractSpecification, Server, Field, Model
 from datacontract.model.run import Run
-
 
 def get_duckdb_connection(
     data_contract: DataContractSpecification,
     server: Server,
     run: Run,
-    duckdb_connection: duckdb.DuckDBPyConnection = None,
-):
+    duckdb_connection: duckdb.DuckDBPyConnection | None = None,
+) -> duckdb.DuckDBPyConnection:
     if duckdb_connection is None:
         con = duckdb.connect(database=":memory:")
     else:
@@ -43,9 +43,16 @@ def get_duckdb_connection(
                 json_format = "newline_delimited"
             elif server.delimiter == "array":
                 json_format = "array"
-            con.sql(f"""
+            columns = to_json_types(model)
+            if columns is None:
+                con.sql(f"""
                         CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);
                         """)
+            else:
+                con.sql(
+                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
+                )
+                add_nested_views(con, model_name, model.fields)
         elif server.format == "parquet":
             con.sql(f"""
                         CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
@@ -76,6 +83,42 @@ def to_csv_types(model) -> dict[Any, str | None] | None:
         columns[field_name] = convert_to_duckdb_csv_type(field)
     return columns
 
+def to_json_types(model: Model) -> dict[Any, str | None] | None:
+    if model is None:
+        return None
+    columns = {}
+    for field_name, field in model.fields.items():
+        columns[field_name] = convert_to_duckdb_json_type(field)
+    return columns
+
+def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, fields: Dict[str, Field] | None):
+    model_name = model_name.strip('"')
+    if fields is None:
+        return
+    for field_name, field in fields.items():
+        if field.type is None or field.type.lower() not in ['array','object']:
+            continue
+        field_type = field.type.lower()
+        if field_type == 'array' and field.items is None:
+            continue
+        elif field_type == 'object' and field.fields is None:
+            continue
+        
+        nested_model_name = f"{model_name}__{field_name}"
+        max_depth = 2 if field_type == 'array' else 1
+        
+        ## if parent field is not required, the nested objects may respolve
+        ## to a row of NULLs -- but if the objects themselves have required
+        ## fields, this will fail the check.
+        where = "" if field.required else f" WHERE {field_name} IS NOT NULL"
+        con.sql( f"""
+            CREATE VIEW IF NOT EXISTS "{nested_model_name}" AS
+            SELECT unnest({field_name}, max_depth := {max_depth}) as {field_name} FROM "{model_name}" {where}
+            """)
+        if field_type == 'array':
+            add_nested_views(con, nested_model_name, field.items.fields)
+        elif field_type == 'object':
+            add_nested_views(con, nested_model_name, field.fields)
 
 def setup_s3_connection(con, server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
