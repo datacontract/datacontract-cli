@@ -100,31 +100,59 @@ def to_sql_ddl(
 
 
 def _to_sql_table(model_name, model, server_type="snowflake"):
-    if server_type == "databricks":
+    result = "init"
+    if server_type in ("databricks","snowflake") and model.type.lower() == "table":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
+        # the same for Snowflake 
+        # https://docs.snowflake.com/en/sql-reference/sql/create-table
         result = f"CREATE OR REPLACE TABLE {model_name} (\n"
-    else:
+    elif model.type.lower() == "table":
         result = f"CREATE TABLE {model_name} (\n"
+    elif server_type == "snowflake" and model.type.lower() == "view":
+        # https://docs.snowflake.com/en/sql-reference/sql/create-view
+        result = f"CREATE OR ALTER VIEW {model_name} (\n"
+
     fields = len(model.fields)
     current_field_index = 1
-    for field_name, field in iter(model.fields.items()):
-        type = convert_to_sql_type(field, server_type)
-        result += f"  {field_name} {type}"
-        if field.required:
-            result += " not null"
-        if field.primaryKey or field.primary:
-            result += " primary key"
-        if server_type == "databricks" and field.description is not None:
-            result += f' COMMENT "{_escape(field.description)}"'
-        if current_field_index < fields:
-            result += ","
-        result += "\n"
-        current_field_index += 1
-    result += ")"
-    if server_type == "databricks" and model.description is not None:
-        result += f' COMMENT "{_escape(model.description)}"'
-    result += ";\n"
+    if model.type.lower() == "table":
+        for field_name, field in iter(model.fields.items()):
+            type = convert_to_sql_type(field, server_type)
+            result += f"  {field_name} {type}"
+            if field.required:
+                result += " not null"
+            if (field.primaryKey or field.primary) and field.c:
+                result += " primary key"
+            if server_type in ("snowflake","databricks") and field.description is not None:
+                result += f' COMMENT "{_escape(field.description)}"'
+            if current_field_index < fields:
+                result += ","
+            result += "\n"
+            current_field_index += 1
+        result += ")"
+    elif model.type.lower() == "view":
+        field_list = ''
+        lineage_list = set()
+        for field_name, field in iter(model.fields.items()):
+            type = convert_to_sql_type(field, server_type)
+            result += f" {field_name}"
+            field_list += f" \n\t\t{field_name},"
+            if server_type in ("databricks","snowflake") and field.description is not None:
+                result += f' COMMENT "{_escape(field.description)}"'
+            if current_field_index < fields:
+                result += ","
+            result += "\n"
+            current_field_index += 1
+            if field.lineages:
+                lineage_list = lineage_list.union(set(field.lineages))
+
+        result += f")"
+        if server_type in ( "snowflake","databricks") and model.description is not None:
+            result +=  f'\nCOMMENT "{_escape(model.description)}"\nAS \n\tSELECT {field_list} \n\tFROM {''.join(lineage_list)}'
+        else:
+             result += f')\nAS \n\tSELECT {field_list} \n\tFROM {''.join(lineage_list)}'
+
+    result += ";\n\n"
     return result
 
 

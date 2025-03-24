@@ -192,7 +192,8 @@ def import_models(odcs_contract: Dict[str, Any]) -> Dict[str, Model]:
         schema_physical_name = odcs_schema.get("physicalName")
         schema_description = odcs_schema.get("description") if odcs_schema.get("description") is not None else ""
         model_name = schema_physical_name if schema_physical_name is not None else schema_name
-        model = Model(description=" ".join(schema_description.splitlines()), type="table")
+        type =  odcs_schema.get("physicalType") if odcs_schema.get("physicalType") is not None else "table"
+        model = Model(description=" ".join(schema_description.splitlines()), type=type)
         model.fields = import_fields(
             odcs_schema.get("properties"), custom_type_mappings, server_type=get_server_type(odcs_contract)
         )
@@ -259,9 +260,11 @@ def import_fields(
 
     for odcs_property in odcs_properties:
         mapped_type = map_type(odcs_property.get("logicalType"), custom_type_mappings)
+
         if mapped_type is not None:
             property_name = odcs_property["name"]
             description = odcs_property.get("description") if odcs_property.get("description") is not None else None
+
             field = Field(
                 description=" ".join(description.splitlines()) if description is not None else None,
                 type=mapped_type,
@@ -278,8 +281,10 @@ def import_fields(
                 tags=odcs_property.get("tags") if odcs_property.get("tags") is not None else None,
                 quality=odcs_property.get("quality") if odcs_property.get("quality") is not None else [],
                 config=import_field_config(odcs_property, server_type),
+                lineages=odcs_property.get("transformSourceObjects") if odcs_property.get("transformSourceObjects") is not None else None,
             )
             result[property_name] = field
+
         else:
             logger.info(
                 f"Can't map {odcs_property.get('column')} to the Datacontract Mapping types, as there is no equivalent or special mapping. Consider introducing a customProperty 'dc_mapping_{odcs_property.get('logicalName')}' that defines your expected type as the 'value'"
