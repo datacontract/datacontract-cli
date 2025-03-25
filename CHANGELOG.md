@@ -37,6 +37,10 @@ Code for proto to datacontract (#696)
 
 - Unicode Encode Error when exporting data contract YAML to HTML
   (#652)
+
+- Fix to handle logicalType format wrt avro mentioned in issue #687 
+
+=======
 - Fix multiline descriptions in the DBT export functionality
 - Incorrectly parsing $ref values in definitions (#664)
 - Better error message when the server configuration is missing in a data contract (#670)
@@ -44,6 +48,7 @@ Code for proto to datacontract (#696)
 - Updated ODCS v3 generator to drop the "is" prefix from fields like `isNullable` and `isUnique` (#669)
 - Fix issue when testing databricks server with ODCS format
 - avro export fix float format
+
 ## [0.10.22] - 2025-02-20
 
 ### Added
