@@ -231,7 +231,11 @@ def import_type_of_optional_field(field: avro.schema.Field) -> str:
     """
     for field_type in field.type.schemas:
         if field_type.type != "null":
-            return map_type_from_avro(field_type.type)
+            logical_type = field_type.get_prop("logicalType")
+            if logical_type and logical_type in LOGICAL_TYPE_MAPPING:
+                return LOGICAL_TYPE_MAPPING[logical_type]
+            else:
+                return map_type_from_avro(field_type.type)
     raise DataContractException(
         type="schema",
         result="failed",

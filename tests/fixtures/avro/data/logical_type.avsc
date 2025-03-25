@@ -17,6 +17,8 @@
         "type": "long",
         "logicalType": "timestamp-millis"
       }
-    }
+    },
+    {"name": "selectionSettledTime",
+    "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }]}
   ]
 }
