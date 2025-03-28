@@ -89,6 +89,9 @@ class Run(BaseModel):
     def pretty(self):
         return self.model_dump_json(indent=2)
 
+    def pretty_logs(self) -> str:
+        return "\n".join(f"[{log.timestamp.isoformat()}] {log.level}: {log.message}" for log in self.logs)
+
     @staticmethod
     def create_run():
         """

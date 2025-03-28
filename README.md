@@ -1841,6 +1841,15 @@ pre-commit run --all-files
 pytest
 ```
 
+### Use uv (recommended)
+
+```bash
+# make sure uv is installed
+uv python pin 3.11
+uv sync --all-extras
+uv run pytest
+```
+
 
 ### Docker Build
 
