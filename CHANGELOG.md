@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `datacontract import --format csv` produces more descriptive output. Replaced
+  using clevercsv with duckdb for loading and sniffing csv file.
+
 ### Fixed
 
 ## [0.10.23] - 2025-03-03
