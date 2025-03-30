@@ -238,6 +238,7 @@ def import_protobuf(
             os.remove(descriptor_file)
 
 
+
 class ProtoBufImporter(Importer):
     def __init__(self, name):
         # 'name' is passed by the importer factory.
@@ -262,3 +263,4 @@ class ProtoBufImporter(Importer):
         """
         # Wrap the source in a list because import_protobuf expects a list of sources.
         return import_protobuf(data_contract_specification, [source], import_args)
+
