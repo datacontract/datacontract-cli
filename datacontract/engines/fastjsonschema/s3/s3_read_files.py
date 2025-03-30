@@ -2,6 +2,7 @@ import logging
 import os
 
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum
 
 
 def yield_s3_files(s3_endpoint_url, s3_location):
@@ -19,9 +20,9 @@ def s3_fs(s3_endpoint_url):
     except ImportError as e:
         raise DataContractException(
             type="schema",
-            result="failed",
+            result=ResultEnum.failed,
             name="s3 extra missing",
-            reason="Install the extra datacontract-cli\[s3] to use s3",
+            reason="Install the extra s3 to use s3",
             engine="datacontract",
             original_exception=e,
         )

@@ -33,7 +33,6 @@ dependencies = [
   "boto3>=1.34.41,<1.36.12",
   "Jinja2>=3.1.5",
   "jinja_partials >= 0.2.1",
-
 ]
 
 [project.optional-dependencies]
@@ -110,8 +109,12 @@ api = [
   "uvicorn==0.34.0",
 ]
 
+protobuf = [
+  "grpcio-tools>=1.53",
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf]"
 ]
 
 dev = [
@@ -120,13 +123,13 @@ dev = [
   "kafka-python",
   "moto==5.0.27",
   "pandas>=2.1.0",
-  "pre-commit>=3.7.1,<4.1.0",
+  "pre-commit>=3.7.1,<4.2.0",
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.2",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.9.0",
-  "trino==0.332.0",
+  "testcontainers[minio,postgres,kafka,mssql]==4.9.2",
+  "trino==0.333.0",
 ]
 
 [project.urls]

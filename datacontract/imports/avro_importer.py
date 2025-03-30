@@ -276,6 +276,8 @@ def map_type_from_avro(avro_type_str: str) -> str:
         return "binary"
     elif avro_type_str == "double":
         return "double"
+    elif avro_type_str == "float":
+        return "float"
     elif avro_type_str == "int":
         return "int"
     elif avro_type_str == "long":

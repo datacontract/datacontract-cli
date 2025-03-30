@@ -231,7 +231,7 @@ A list of available extras:
 | Parquet                 | `pip install datacontract-cli[parquet]`    |
 | RDF                     | `pip install datacontract-cli[rdf]`        |
 | API (run as web server) | `pip install datacontract-cli[api]`        |
-
+| protobuf                | `pip install datacontract-cli[protobuf]`   |
 
 
 ## Documentation
@@ -1899,6 +1899,15 @@ pip install -e '.[dev]'
 pre-commit install
 pre-commit run --all-files
 pytest
+```
+
+### Use uv (recommended)
+
+```bash
+# make sure uv is installed
+uv python pin 3.11
+uv sync --all-extras
+uv run pytest
 ```
 
 
