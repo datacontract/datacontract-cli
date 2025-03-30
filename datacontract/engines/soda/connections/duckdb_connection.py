@@ -13,7 +13,7 @@ def get_duckdb_connection(
     server: Server,
     run: Run,
     duckdb_connection: duckdb.DuckDBPyConnection = None,
-):
+) -> duckdb.DuckDBPyConnection:
     if duckdb_connection is None:
         con = duckdb.connect(database=":memory:")
     else:

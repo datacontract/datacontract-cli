@@ -1,6 +1,10 @@
 import logging
 import typing
 
+import pandas
+
+from datacontract.engines.data_contract_sql import execute_sql
+
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
@@ -184,6 +188,18 @@ class DataContract:
             publish_test_results_to_datamesh_manager(run, self._publish_url, self._ssl_verification)
 
         return run
+
+    def sql(self, query) -> pandas.DataFrame | None:
+        """Execute the SQL query by connecting to the server"""
+        data_contract = resolve.resolve_data_contract(
+            self._data_contract_file,
+            self._data_contract_str,
+            self._data_contract,
+            self._schema_location,
+            inline_definitions=self._inline_definitions,
+            inline_quality=self._inline_quality,
+        )
+        return execute_sql(data_contract, query, self._server, self._spark, self._duckdb_connection)
 
     def breaking(self, other: "DataContract") -> BreakingChanges:
         return self.changelog(other, include_severities=[Severity.ERROR, Severity.WARNING])
