@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix to handle logicalType format wrt avro mentioned in issue #687
+
 ## [0.10.23] - 2025-03-03
 
 ### Added
@@ -37,10 +39,6 @@ Code for proto to datacontract (#696)
 
 - Unicode Encode Error when exporting data contract YAML to HTML
   (#652)
-
-- Fix to handle logicalType format wrt avro mentioned in issue #687 
-
-=======
 - Fix multiline descriptions in the DBT export functionality
 - Incorrectly parsing $ref values in definitions (#664)
 - Better error message when the server configuration is missing in a data contract (#670)
