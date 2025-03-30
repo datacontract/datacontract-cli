@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix to handle logicalType format wrt avro mentioned in issue #687
+
 ## [0.10.23] - 2025-03-03
 
 ### Added
@@ -44,6 +46,7 @@ Code for proto to datacontract (#696)
 - Updated ODCS v3 generator to drop the "is" prefix from fields like `isNullable` and `isUnique` (#669)
 - Fix issue when testing databricks server with ODCS format
 - avro export fix float format
+
 ## [0.10.22] - 2025-02-20
 
 ### Added
