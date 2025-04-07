@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 
 import fastjsonschema
 import yaml
@@ -259,10 +260,25 @@ def _resolve_data_contract_from_str(
 
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
-    if spec.quality and inline_quality:
-        _resolve_quality_ref(spec.quality)
+    ## Suppress DeprecationWarning when accessing spec.quality,
+    ## iif it is in fact *not* used.
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        spec_quality = spec.quality
+    for w in recorded_warnings:
+        if not issubclass(w.category, DeprecationWarning) or spec_quality is not None:
+            warnings.warn_explicit(
+                message=w.message,
+                category=w.category,
+                filename=w.filename,
+                lineno=w.lineno,
+                source=w.source,
+            )
+    if spec_quality and inline_quality:
+        _resolve_quality_ref(spec_quality)
 
     return spec
+
+
 
 
 def _to_yaml(data_contract_str) -> dict:
