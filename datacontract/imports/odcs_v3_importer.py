@@ -133,10 +133,7 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
         server.dataProductId = odcs_server.get("dataProductId")
         server.outputPortId = odcs_server.get("outputPortId")
         server.driver = odcs_server.get("driver")
-        server.roles = [ServerRole(name = role.get("role"),
-                                   description = role.get("description"),
-                                   model_config = role
-                                    ) for role in odcs_server.get("roles")] if odcs_server.get("roles") is not None else None
+        server.roles = import_server_roles(odcs_server.get("roles"))
         server.storageAccount = odcs_server.get("storageAccount")
         servers[server_name] = server
     return servers
@@ -280,7 +277,7 @@ def import_fields(
                 description=" ".join(description.splitlines()) if description is not None else None,
                 type=mapped_type,
                 title=odcs_property.get("businessName"),
-                required= odcs_property.get("required") if odcs_property.get("required") is not None else None,
+                required=odcs_property.get("required") if odcs_property.get("required") is not None else None,
                 primaryKey=odcs_property.get("primaryKey")
                 if not has_composite_primary_key(odcs_properties) and odcs_property.get("primaryKey") is not None
                 else False,
