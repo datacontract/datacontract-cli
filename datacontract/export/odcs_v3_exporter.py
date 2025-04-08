@@ -13,13 +13,12 @@ class OdcsV3Exporter(Exporter):
 
 def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
     odcs = {
-        "apiVersion": "v3.0.0",
+        "apiVersion": "v3.0.1",
         "kind": "DataContract",
         "id": data_contract_spec.id,
         "name": data_contract_spec.info.title,
         "version": data_contract_spec.info.version,
-        "domain": data_contract_spec.info.owner,
-        "status": data_contract_spec.info.status,
+        "status": to_status(data_contract_spec.info.status),
     }
 
     if data_contract_spec.terms is not None:
@@ -126,13 +125,15 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
             odcs["servers"] = servers
 
     odcs["customProperties"] = []
+    if data_contract_spec.info.owner is not None:
+        odcs["customProperties"].append({"property": "owner", "value": data_contract_spec.info.owner})
     if data_contract_spec.info.model_extra is not None:
         for key, value in data_contract_spec.info.model_extra.items():
             odcs["customProperties"].append({"property": key, "value": value})
     if len(odcs["customProperties"]) == 0:
         del odcs["customProperties"]
 
-    return yaml.dump(odcs, indent=2, sort_keys=False, allow_unicode=True)
+    return yaml.safe_dump(odcs, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def to_odcs_schema(model_key, model_value: Model) -> dict:
@@ -219,11 +220,11 @@ def to_property(field_name: str, field: Field) -> dict:
     if field.required is not None:
         property["required"] = field.required
     if field.unique is not None:
-        property["isUnique"] = field.unique
+        property["unique"] = field.unique
     if field.classification is not None:
         property["classification"] = field.classification
     if field.examples is not None:
-        property["examples"] = field.examples
+        property["examples"] = field.examples.copy()
     if field.example is not None:
         property["examples"] = [field.example]
     if field.primaryKey is not None and field.primaryKey:
@@ -312,3 +313,22 @@ def to_odcs_quality(quality):
     if quality.implementation is not None:
         quality_dict["implementation"] = quality.implementation
     return quality_dict
+
+
+def to_status(status):
+    """Convert the data contract status to ODCS v3 format."""
+    if status is None:
+        return "draft"  # Default to draft if no status is provided
+
+    # Valid status values according to ODCS v3.0.1 spec
+    valid_statuses = ["proposed", "draft", "active", "deprecated", "retired"]
+
+    # Convert to lowercase for comparison
+    status_lower = status.lower()
+
+    # If status is already valid, return it as is
+    if status_lower in valid_statuses:
+        return status_lower
+
+    # Default to "draft" for any non-standard status
+    return "draft"

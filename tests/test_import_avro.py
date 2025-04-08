@@ -265,8 +265,8 @@ models:
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
 
 
-def test_import_avro_logicalTypes():
-    result = DataContract().import_from_source("avro", "fixtures/avro/data/logicalTypes.avsc")
+def test_import_avro_logical_types():
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/logical_types.avsc")
 
     expected = """
 dataContractSpecification: 1.1.0
@@ -305,6 +305,11 @@ models:
         required: true
         config:
           avroDefault: false 
+      some_bytes_decimal:
+        type: decimal
+        required: true
+        precision: 25
+        scale: 2                                
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

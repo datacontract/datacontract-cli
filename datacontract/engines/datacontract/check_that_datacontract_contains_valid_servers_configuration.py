@@ -1,12 +1,11 @@
 from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import Run
 
 
 def check_that_datacontract_contains_valid_server_configuration(
-    run: Run, data_contract: DataContractSpecification, server_name: str
+    data_contract: DataContractSpecification, server_name: str | None
 ):
-    if data_contract.servers is None:
+    if data_contract.servers is None or len(data_contract.servers) == 0:
         raise DataContractException(
             type="lint",
             name="Check that data contract contains valid server configuration",

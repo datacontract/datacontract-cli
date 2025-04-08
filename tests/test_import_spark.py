@@ -80,7 +80,7 @@ def spark(tmp_path_factory) -> SparkSession:
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
         .config(
             "spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.spark:spark-avro_2.12:3.5.0",
+            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5,org.apache.spark:spark-avro_2.12:3.5.5",
         )
         .getOrCreate()
     )

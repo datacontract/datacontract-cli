@@ -1,13 +1,24 @@
 import os
+from typing import Any
 
 import duckdb
 
 from datacontract.export.csv_type_converter import convert_to_duckdb_csv_type
+from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.run import Run
 
 
-def get_duckdb_connection(data_contract, server, run: Run):
-    con = duckdb.connect(database=":memory:")
+def get_duckdb_connection(
+    data_contract: DataContractSpecification,
+    server: Server,
+    run: Run,
+    duckdb_connection: duckdb.DuckDBPyConnection = None,
+):
+    if duckdb_connection is None:
+        con = duckdb.connect(database=":memory:")
+    else:
+        con = duckdb_connection
+
     path: str = ""
     if server.type == "local":
         path = server.path
@@ -27,13 +38,13 @@ def get_duckdb_connection(data_contract, server, run: Run):
         run.log_info(f"Creating table {model_name} for {model_path}")
 
         if server.format == "json":
-            format = "auto"
+            json_format = "auto"
             if server.delimiter == "new_line":
-                format = "newline_delimited"
+                json_format = "newline_delimited"
             elif server.delimiter == "array":
-                format = "array"
+                json_format = "array"
             con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{format}', hive_partitioning=1);
+                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);
                         """)
         elif server.format == "parquet":
             con.sql(f"""
@@ -56,7 +67,7 @@ def get_duckdb_connection(data_contract, server, run: Run):
     return con
 
 
-def to_csv_types(model) -> dict:
+def to_csv_types(model) -> dict[Any, str | None] | None:
     if model is None:
         return None
     columns = {}

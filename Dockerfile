@@ -5,16 +5,20 @@ FROM python:3.11-bullseye
 # being first buffered and that you can see the output of your application in real time.
 ENV PYTHONUNBUFFERED=1
 
+# Compiling Python source files to bytecode is typically desirable for production images as it tends
+# to improve startup time (at the cost of increased installation time).
+ENV UV_COMPILE_BYTECODE=1
+
+# install uv
+COPY --from=ghcr.io/astral-sh/uv:0.6.9 /uv /uvx /bin/
+
 # copy resources
 COPY pyproject.toml /app/.
 COPY MANIFEST.in /app/.
 COPY datacontract/ /app/datacontract/
 
 # install requirements
-RUN cd /app && pip3 --no-cache-dir install ".[all]"
-
-# install duckdb httpfs extension
-RUN python -c "import duckdb; duckdb.connect().sql(\"INSTALL httpfs\");"
+RUN cd /app && uv pip --no-cache-dir install --system ".[all]"
 
 RUN mkdir -p /home/datacontract
 WORKDIR /home/datacontract
