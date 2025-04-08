@@ -17,6 +17,7 @@ from datacontract.model.data_contract_specification import (
     Quality,
     Retention,
     Server,
+    ServerRole,
     ServiceLevel,
     Terms,
 )
@@ -121,7 +122,11 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
         server.outputPortId = odcs_server.get("outputPortId")
         server.driver = odcs_server.get("driver")
         server.roles = odcs_server.get("roles")
-
+        server.roles = [ServerRole(name = role.get("role"),
+                                   description = role.get("description"),
+                                   model_config = role
+                                    ) for role in odcs_server.get("roles")] if odcs_server.get("roles") is not None else None
+        server.storageAccount = odcs_server.get("storageAccount")
         servers[server_name] = server
     return servers
 
@@ -264,7 +269,7 @@ def import_fields(
                 description=" ".join(description.splitlines()) if description is not None else None,
                 type=mapped_type,
                 title=odcs_property.get("businessName"),
-                required=not odcs_property.get("nullable") if odcs_property.get("nullable") is not None else False,
+                required= odcs_property.get("required") if odcs_property.get("required") is not None else False,
                 primaryKey=odcs_property.get("primaryKey")
                 if not has_composite_primary_key(odcs_properties) and odcs_property.get("primaryKey") is not None
                 else False,
@@ -275,8 +280,27 @@ def import_fields(
                 else "",
                 tags=odcs_property.get("tags") if odcs_property.get("tags") is not None else None,
                 quality=odcs_property.get("quality") if odcs_property.get("quality") is not None else [],
+                fields=import_fields(odcs_property.get("properties"), custom_type_mappings, server_type) 
+                if odcs_property.get("properties") is not None else {},
                 config=import_field_config(odcs_property, server_type),
+                format=odcs_property.get("format") if odcs_property.get("format") is not None else None,
             )
+            #mapped_type is array
+            if field.type == "array" and odcs_property.get("items") is not None :
+                #nested array object
+                if odcs_property.get("items").get("logicalType") == "object":
+                    field.items= Field(type="object", 
+                            fields=import_fields(odcs_property.get("items").get("properties"), custom_type_mappings, server_type))
+                #array of simple type
+                elif odcs_property.get("items").get("logicalType") is not None:
+                    field.items= Field(type = odcs_property.get("items").get("logicalType"))
+            
+            # enum from quality validValues as enum
+            if field.type is "string":
+                for q in field.quality:
+                    if hasattr(q,"validValues"):
+                        field.enum = q.validValues
+
             result[property_name] = field
         else:
             logger.info(
