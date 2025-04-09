@@ -135,7 +135,7 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
         server.outputPortId = odcs_server.get("outputPortId")
         server.driver = odcs_server.get("driver")
         server.roles = import_server_roles(odcs_server.get("roles"))
-        server.storageAccount = re.search(r"@([^.]+)\.",odcs_server.get("location"),re.IGNORECASE) if server.type == "azure" else None
+        server.storageAccount = re.search(r"(?:@|abfss://)([^.]+)\.",odcs_server.get("location"),re.IGNORECASE) if server.type == "azure" else None
         servers[server_name] = server
     return servers
 
