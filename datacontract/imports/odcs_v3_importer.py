@@ -1,10 +1,11 @@
 import datetime
 import logging
+import re
 from typing import Any, Dict, List
 from venv import logger
 
 import yaml
-import re
+
 
 from datacontract.imports.importer import Importer
 from datacontract.lint.resources import read_resource
@@ -305,7 +306,7 @@ def import_fields(
                     field.items= Field(type = odcs_property.get("items").get("logicalType"))
             
             # enum from quality validValues as enum
-            if field.type is "string":
+            if field.type == "string":
                 for q in field.quality:
                     if hasattr(q,"validValues"):
                         field.enum = q.validValues
