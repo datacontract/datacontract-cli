@@ -6,7 +6,6 @@ from venv import logger
 
 import yaml
 
-
 from datacontract.imports.importer import Importer
 from datacontract.lint.resources import read_resource
 from datacontract.model.data_contract_specification import (
