@@ -218,7 +218,7 @@ def to_property(field_name: str, field: Field) -> dict:
     if field.description is not None:
         property["description"] = field.description
     if field.required is not None:
-        property["nullable"] = not field.required
+        property["required"] = field.required
     if field.unique is not None:
         property["unique"] = field.unique
     if field.classification is not None:

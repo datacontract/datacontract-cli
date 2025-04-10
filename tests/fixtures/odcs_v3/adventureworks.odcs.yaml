@@ -5320,4 +5320,54 @@ schema:
         criticalDataElement: false
         primaryKey: false
         required: false
+      - name: StoreHolidayHours
+        businessName: StoreHolidayHours
+        logicalType: array
+        physicalType: array
+        required: false
+        unique: false
+        items:
+          logicalType: object
+          properties:
+          - name: Date 
+            businessName: Date
+            logicalType: date
+            physicalType: string
+            examples:
+            - "2024-08-13"
+          - name: Close 
+            businessName: Close
+            logicalType: date
+            physicalType: string
+            examples:
+            - "02:00 PM"
+          - name: Open 
+            businessName: Open
+            logicalType: date
+            physicalType: string
+            examples:
+            - "10:00 AM"
+      - name: extendedData
+        businessName: extendedData
+        logicalType: object
+        physicalType: object
+        required: true
+        unique: false
+        properties:
+        - name : pharmacyUUID
+          businessName: pharmacyUUID
+          logicalType: string
+          physicalType: string
+          required: true
+          unique: true
+          examples:
+            - "ec43dd63-c258-4506-8965-88a9e0c130ad"
+      - name: ArrayComments
+        businessName: ArrayComments
+        logicalType: array
+        physicalType: array
+        required: false
+        unique: false
+        items:
+          logicalType: string
 contractCreatedTs: "2023-09-28T20:24:49.331+00:00"

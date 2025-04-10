@@ -1,5 +1,6 @@
 import datetime
 import logging
+import re
 from typing import Any, Dict, List
 from venv import logger
 
@@ -134,7 +135,7 @@ def import_servers(odcs_contract: Dict[str, Any]) -> Dict[str, Server] | None:
         server.outputPortId = odcs_server.get("outputPortId")
         server.driver = odcs_server.get("driver")
         server.roles = import_server_roles(odcs_server.get("roles"))
-
+        server.storageAccount = re.search(r"(?:@|://)([^.]+)\.",odcs_server.get("location"),re.IGNORECASE) if server.type == "azure" else None
         servers[server_name] = server
     return servers
 
@@ -288,8 +289,27 @@ def import_fields(
                 else None,
                 tags=odcs_property.get("tags") if odcs_property.get("tags") is not None else None,
                 quality=odcs_property.get("quality") if odcs_property.get("quality") is not None else [],
+                fields=import_fields(odcs_property.get("properties"), custom_type_mappings, server_type) 
+                if odcs_property.get("properties") is not None else {},
                 config=import_field_config(odcs_property, server_type),
+                format=odcs_property.get("format") if odcs_property.get("format") is not None else None,
             )
+            #mapped_type is array
+            if field.type == "array" and odcs_property.get("items") is not None :
+                #nested array object
+                if odcs_property.get("items").get("logicalType") == "object":
+                    field.items= Field(type="object", 
+                            fields=import_fields(odcs_property.get("items").get("properties"), custom_type_mappings, server_type))
+                #array of simple type
+                elif odcs_property.get("items").get("logicalType") is not None:
+                    field.items= Field(type = odcs_property.get("items").get("logicalType"))
+            
+            # enum from quality validValues as enum
+            if field.type == "string":
+                for q in field.quality:
+                    if hasattr(q,"validValues"):
+                        field.enum = q.validValues
+
             result[property_name] = field
         else:
             logger.info(
