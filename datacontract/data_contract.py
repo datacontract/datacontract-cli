@@ -46,7 +46,7 @@ class DataContract:
         inline_quality: bool = True,
         ssl_verification: bool = True,
     ):
-        self._data_contract_file = data_contract_file
+        self.data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
         self._schema_location = schema_location
@@ -80,7 +80,7 @@ class DataContract:
         try:
             run.log_info("Linting data contract")
             data_contract = resolve.resolve_data_contract(
-                self._data_contract_file,
+                self.data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
@@ -142,7 +142,7 @@ class DataContract:
         try:
             run.log_info("Testing data contract")
             data_contract = resolve.resolve_data_contract(
-                self._data_contract_file,
+                self.data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
@@ -200,7 +200,7 @@ class DataContract:
             info_breaking_changes(
                 old_info=old.info,
                 new_info=new.info,
-                new_path=other._data_contract_file,
+                new_path=other.data_contract_file,
                 include_severities=include_severities,
             )
         )
@@ -209,7 +209,7 @@ class DataContract:
             terms_breaking_changes(
                 old_terms=old.terms,
                 new_terms=new.terms,
-                new_path=other._data_contract_file,
+                new_path=other.data_contract_file,
                 include_severities=include_severities,
             )
         )
@@ -218,7 +218,7 @@ class DataContract:
             quality_breaking_changes(
                 old_quality=old.quality,
                 new_quality=new.quality,
-                new_path=other._data_contract_file,
+                new_path=other.data_contract_file,
                 include_severities=include_severities,
             )
         )
@@ -227,7 +227,7 @@ class DataContract:
             models_breaking_changes(
                 old_models=old.models,
                 new_models=new.models,
-                new_path=other._data_contract_file,
+                new_path=other.data_contract_file,
                 include_severities=include_severities,
             )
         )
@@ -236,7 +236,7 @@ class DataContract:
 
     def get_data_contract_specification(self) -> DataContractSpecification:
         return resolve.resolve_data_contract(
-            data_contract_location=self._data_contract_file,
+            data_contract_location=self.data_contract_file,
             data_contract_str=self._data_contract_str,
             data_contract=self._data_contract,
             schema_location=self._schema_location,
@@ -246,7 +246,7 @@ class DataContract:
 
     def export(self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs) -> str:
         data_contract = resolve.resolve_data_contract(
-            self._data_contract_file,
+            self.data_contract_file,
             self._data_contract_str,
             self._data_contract,
             schema_location=self._schema_location,
