@@ -46,7 +46,7 @@ schema:
             maxLength: 10
             pattern: ^B[0-9]+$
         physicalType: varchar
-        nullable: false
+        required: true
         unique: true
         tags:
           - "order_id"
@@ -65,7 +65,7 @@ schema:
             minimum: 0
             maximum: 1000000
         physicalType: bigint
-        nullable: false
+        required: true
         description: The order_total field
         quality:
           - type: sql
@@ -77,7 +77,7 @@ schema:
       - name: order_status
         logicalType: string
         physicalType: text
-        nullable: false
+        required: true
     quality:
     - type: sql
       description: Row Count
