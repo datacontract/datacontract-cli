@@ -4413,16 +4413,13 @@ models:
         required: false
         primaryKey: false
         unique: false
-        classification: ''
         items:
           type: object
           fields:
             Date:
               title: Date
               type: date
-              required: false
               primaryKey: false
-              classification: ''
               examples:
               - '2024-08-13'
               config:
@@ -4430,9 +4427,7 @@ models:
             Close:
               title: Close
               type: date
-              required: false
               primaryKey: false
-              classification: ''
               examples:
               - 02:00 PM
               config:
@@ -4440,9 +4435,7 @@ models:
             Open:
               title: Open
               type: date
-              required: false
               primaryKey: false
-              classification: ''
               examples:
               - 10:00 AM
               config:
@@ -4455,7 +4448,6 @@ models:
         required: true
         primaryKey: false
         unique: false
-        classification: ''
         fields:
           pharmacyUUID:
             title: pharmacyUUID
@@ -4463,7 +4455,6 @@ models:
             required: true
             primaryKey: false
             unique: true
-            classification: ''
             examples:
             - ec43dd63-c258-4506-8965-88a9e0c130ad
             config:
@@ -4476,7 +4467,6 @@ models:
         required: false
         primaryKey: false
         unique: false
-        classification: ''
         items:
           type: string
         config:
