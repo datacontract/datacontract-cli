@@ -4407,3 +4407,67 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+      StoreHolidayHours:
+        title: StoreHolidayHours
+        type: array
+        required: false
+        primaryKey: false
+        unique: false
+        items:
+          type: object
+          fields:
+            Date:
+              title: Date
+              type: date
+              primaryKey: false
+              examples:
+              - '2024-08-13'
+              config:
+                physicalType: string
+            Close:
+              title: Close
+              type: date
+              primaryKey: false
+              examples:
+              - 02:00 PM
+              config:
+                physicalType: string
+            Open:
+              title: Open
+              type: date
+              primaryKey: false
+              examples:
+              - 10:00 AM
+              config:
+                physicalType: string
+        config:
+          physicalType: array
+      extendedData:
+        title: extendedData
+        type: object
+        required: true
+        primaryKey: false
+        unique: false
+        fields:
+          pharmacyUUID:
+            title: pharmacyUUID
+            type: string
+            required: true
+            primaryKey: false
+            unique: true
+            examples:
+            - ec43dd63-c258-4506-8965-88a9e0c130ad
+            config:
+              physicalType: string
+        config:
+          physicalType: object
+      ArrayComments:
+        title: ArrayComments
+        type: array
+        required: false
+        primaryKey: false
+        unique: false
+        items:
+          type: string
+        config:
+          physicalType: array
