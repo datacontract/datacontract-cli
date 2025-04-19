@@ -19,7 +19,7 @@ def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
     file_without_suffix = file.with_suffix(".html")
     html_filepath = path / file_without_suffix
     html_filepath.parent.mkdir(parents=True, exist_ok=True)
-    with open(html_filepath, "w") as f:
+    with open(html_filepath, "w", encoding="utf-8") as f:
         f.write(html)
     contracts.append(
         DataContractView(
@@ -42,7 +42,7 @@ class DataContractView:
 
 def create_index_html(contracts, path):
     index_filepath = path / "index.html"
-    with open(index_filepath, "w") as f:
+    with open(index_filepath, "w", encoding="utf-8") as f:
         # Load templates from templates folder
         package_loader = PackageLoader("datacontract", "templates")
         env = Environment(

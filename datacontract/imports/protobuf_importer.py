@@ -1,10 +1,9 @@
 import os
 import re
-import subprocess
-import time
+import tempfile
 
-import yaml
 from google.protobuf import descriptor_pb2
+from grpc_tools import protoc
 
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification
@@ -16,18 +15,18 @@ def map_type_from_protobuf(field_type: int):
         1: "double",
         2: "float",
         3: "long",
-        4: "long",     # uint64 mapped to long
+        4: "long",  # uint64 mapped to long
         5: "integer",  # int32 mapped to integer
-        6: "string",   # fixed64 mapped to string
-        7: "string",   # fixed32 mapped to string
-        8: "boolean",  
+        6: "string",  # fixed64 mapped to string
+        7: "string",  # fixed32 mapped to string
+        8: "boolean",
         9: "string",
         12: "bytes",
-        13: "integer", # uint32 mapped to integer
-        15: "integer", # sfixed32 mapped to integer
-        16: "long",    # sfixed64 mapped to long
-        17: "integer", # sint32 mapped to integer
-        18: "long"     # sint64 mapped to long
+        13: "integer",  # uint32 mapped to integer
+        15: "integer",  # sfixed32 mapped to integer
+        16: "long",  # sfixed64 mapped to long
+        17: "integer",  # sint32 mapped to integer
+        18: "long",  # sint64 mapped to long
     }
     return protobuf_type_mapping.get(field_type, "string")
 
@@ -54,21 +53,20 @@ def parse_imports(proto_file: str) -> list:
 
 def compile_proto_to_binary(proto_files: list, output_file: str):
     """
-    Compile the provided proto files into a single descriptor set.
+    Compile the provided proto files into a single descriptor set using grpc_tools.protoc.
     """
     proto_dirs = set(os.path.dirname(proto) for proto in proto_files)
     proto_paths = [f"--proto_path={d}" for d in proto_dirs]
-    command = ["protoc", f"--descriptor_set_out={output_file}"] + proto_paths + proto_files
-    try:
-        subprocess.run(command, check=True)
-        print(f"Compiled proto files to {output_file}")
-    except subprocess.CalledProcessError as e:
+
+    args = [""] + proto_paths + [f"--descriptor_set_out={output_file}"] + proto_files
+    ret = protoc.main(args)
+    if ret != 0:
         raise DataContractException(
             type="schema",
             name="Compile proto files",
-            reason=f"Failed to compile proto files: {e}",
+            reason=f"grpc_tools.protoc failed with exit code {ret}",
             engine="datacontract",
-            original_exception=e,
+            original_exception=None,
         )
 
 
@@ -107,16 +105,13 @@ def extract_message_fields_from_fds(fds: descriptor_pb2.FileDescriptorSet, messa
                             field_info = {
                                 "description": f"List of {nested_msg_name}",
                                 "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "fields": nested_fields
-                                }
+                                "items": {"type": "object", "fields": nested_fields},
                             }
                         else:
                             field_info = {
                                 "description": f"Nested object of {nested_msg_name}",
                                 "type": "object",
-                                "fields": nested_fields
+                                "fields": nested_fields,
                             }
                     elif field.type == 14:  # TYPE_ENUM
                         enum_name = field.type_name.split(".")[-1]
@@ -125,24 +120,29 @@ def extract_message_fields_from_fds(fds: descriptor_pb2.FileDescriptorSet, messa
                             "description": f"Enum field {field.name}",
                             "type": "string",
                             "values": enum_values,
-                            "required": (field.label == 2)
+                            "required": (field.label == 2),
                         }
                     else:
                         field_info = {
                             "description": f"Field {field.name}",
                             "type": map_type_from_protobuf(field.type),
-                            "required": (field.label == 2)
+                            "required": (field.label == 2),
                         }
                     fields[field.name] = field_info
                 return fields
     return {}
 
 
-def import_protobuf(data_contract_specification: DataContractSpecification, sources: list, output_dir: str) -> DataContractSpecification:
+def import_protobuf(
+    data_contract_specification: DataContractSpecification, sources: list, import_args: dict = None
+) -> DataContractSpecification:
     """
     Gather all proto files (including those imported), compile them into one descriptor,
     then generate models with nested fields and enums resolved.
+
+    The generated data contract uses generic defaults instead of specific hardcoded ones.
     """
+
     # --- Step 1: Gather all proto files (main and imported)
     proto_files_set = set()
     queue = list(sources)
@@ -154,110 +154,90 @@ def import_protobuf(data_contract_specification: DataContractSpecification, sour
                 if os.path.exists(imp) and imp not in proto_files_set:
                     queue.append(imp)
     all_proto_files = list(proto_files_set)
-    print("All proto files:", all_proto_files)
 
     # --- Step 2: Compile all proto files into a single descriptor set.
-    os.makedirs(output_dir, exist_ok=True)
-    descriptor_file = os.path.join(output_dir, "descriptor.pb")
-    compile_proto_to_binary(all_proto_files, descriptor_file)
-
-    with open(descriptor_file, "rb") as f:
-        proto_data = f.read()
-    fds = descriptor_pb2.FileDescriptorSet()
+    temp_descriptor = tempfile.NamedTemporaryFile(suffix=".pb", delete=False)
+    descriptor_file = temp_descriptor.name
+    temp_descriptor.close()  # Allow protoc to write to the file
     try:
-        fds.ParseFromString(proto_data)
-    except Exception as e:
-        raise DataContractException(
-            type="schema",
-            name="Parse descriptor set",
-            reason="Failed to parse descriptor set from compiled proto files",
-            engine="datacontract",
-            original_exception=e,
-        )
-    print("File Descriptor Set:", fds)
+        compile_proto_to_binary(all_proto_files, descriptor_file)
 
-    # --- Step 3: Build models from the descriptor set.
-    all_models = {}
-    # Create a set of the main proto file basenames.
-    source_proto_basenames = {os.path.basename(proto) for proto in sources}
+        with open(descriptor_file, "rb") as f:
+            proto_data = f.read()
+        fds = descriptor_pb2.FileDescriptorSet()
+        try:
+            fds.ParseFromString(proto_data)
+        except Exception as e:
+            raise DataContractException(
+                type="schema",
+                name="Parse descriptor set",
+                reason="Failed to parse descriptor set from compiled proto files",
+                engine="datacontract",
+                original_exception=e,
+            )
 
-    for file_descriptor in fds.file:
-        # Only process file descriptors that correspond to your main proto files.
-        if os.path.basename(file_descriptor.name) not in source_proto_basenames:
-            continue
+        # --- Step 3: Build models from the descriptor set.
+        all_models = {}
+        # Create a set of the main proto file basenames.
+        source_proto_basenames = {os.path.basename(proto) for proto in sources}
 
-        for message in file_descriptor.message_type:
-            fields = {}
-            for field in message.field:
-                if field.type == 11:  # TYPE_MESSAGE
-                    nested_msg_name = field.type_name.split(".")[-1]
-                    nested_fields = extract_message_fields_from_fds(fds, nested_msg_name)
-                    if field.label == 3:
-                        field_info = {
-                            "description": f"List of {nested_msg_name}",
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "fields": nested_fields
+        for file_descriptor in fds.file:
+            # Only process file descriptors that correspond to your main proto files.
+            if os.path.basename(file_descriptor.name) not in source_proto_basenames:
+                continue
+
+            for message in file_descriptor.message_type:
+                fields = {}
+                for field in message.field:
+                    if field.type == 11:  # TYPE_MESSAGE
+                        nested_msg_name = field.type_name.split(".")[-1]
+                        nested_fields = extract_message_fields_from_fds(fds, nested_msg_name)
+                        if field.label == 3:
+                            field_info = {
+                                "description": f"List of {nested_msg_name}",
+                                "type": "array",
+                                "items": {"type": "object", "fields": nested_fields},
                             }
+                        else:
+                            field_info = {
+                                "description": f"Nested object of {nested_msg_name}",
+                                "type": "object",
+                                "fields": nested_fields,
+                            }
+                        fields[field.name] = field_info
+                    elif field.type == 14:  # TYPE_ENUM
+                        enum_name = field.type_name.split(".")[-1]
+                        enum_values = extract_enum_values_from_fds(fds, enum_name)
+                        field_info = {
+                            "description": f"Enum field {field.name}",
+                            "type": "string",
+                            "values": enum_values,
+                            "required": (field.label == 2),
                         }
+                        fields[field.name] = field_info
                     else:
                         field_info = {
-                            "description": f"Nested object of {nested_msg_name}",
-                            "type": "object",
-                            "fields": nested_fields
+                            "description": f"Field {field.name}",
+                            "type": map_type_from_protobuf(field.type),
+                            "required": (field.label == 2),
                         }
-                    fields[field.name] = field_info
-                elif field.type == 14:  # TYPE_ENUM
-                    enum_name = field.type_name.split(".")[-1]
-                    enum_values = extract_enum_values_from_fds(fds, enum_name)
-                    field_info = {
-                        "description": f"Enum field {field.name}",
-                        "type": "string",
-                        "values": enum_values,
-                        "required": (field.label == 2)
-                    }
-                    fields[field.name] = field_info
-                else:
-                    field_info = {
-                        "description": f"Field {field.name}",
-                        "type": map_type_from_protobuf(field.type),
-                        "required": (field.label == 2)
-                    }
-                    fields[field.name] = field_info
+                        fields[field.name] = field_info
 
-            all_models[message.name] = {
-                "description": f"Details of {message.name}.",
-                "type": "table",
-                "fields": fields
-            }
+                all_models[message.name] = {
+                    "description": f"Details of {message.name}.",
+                    "type": "table",
+                    "fields": fields,
+                }
 
-    data_contract_specification.models = all_models
+        data_contract_specification.models = all_models
 
-    # --- Step 4: Write out the data contract YAML.
-    timestamp = time.strftime("%Y%m%d%H%M%S")
-    output_file = os.path.join(output_dir, f"datacontract_{timestamp}.yaml")
-    contract_structure = {
-        "dataContractSpecification": "1.1.0",
-        "id": "resolved_alerts",
-        "info": {
-            "title": "Alerts Data Contract",
-            "version": "0.0.1",
-            "status": "active",
-            "description": "Data contract for alerts based on the provided protobuf schema.",
-            "owner": "Global Risk Analytics Team",
-            "contact": {
-                "name": "Global Risk Analytics Support",
-                "url": "https://risk.example.com/support",
-                "email": "support@risk.example.com"
-            }
-        },
-        "models": all_models
-    }
-    with open(output_file, "w") as f:
-        yaml.dump(contract_structure, f, default_flow_style=False)
-    print(f"Data contract file written: {output_file}")
-    return data_contract_specification
+        return data_contract_specification
+    finally:
+        # Clean up the temporary descriptor file.
+        if os.path.exists(descriptor_file):
+            os.remove(descriptor_file)
+
+
 
 class ProtoBufImporter(Importer):
     def __init__(self, name):
@@ -271,8 +251,7 @@ class ProtoBufImporter(Importer):
         import_args: dict = None,
     ) -> DataContractSpecification:
         """
-        Import a protobuf file (and its imports) into the given
-        DataContractSpecification.
+        Import a protobuf file (and its imports) into the given DataContractSpecification.
 
         Parameters:
           - data_contract_specification: the initial specification to update.
@@ -282,8 +261,6 @@ class ProtoBufImporter(Importer):
         Returns:
           The updated DataContractSpecification.
         """
-        if import_args is None:
-            import_args = {}
-        output_dir = import_args.get("output_dir", os.getcwd())
         # Wrap the source in a list because import_protobuf expects a list of sources.
-        return import_protobuf(data_contract_specification, [source], output_dir)
+        return import_protobuf(data_contract_specification, [source], import_args)
+

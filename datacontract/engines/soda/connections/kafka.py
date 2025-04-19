@@ -6,6 +6,7 @@ import tempfile
 from datacontract.export.avro_converter import to_avro_schema_json
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Server
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum
 
 
 def create_spark_session():
@@ -16,7 +17,7 @@ def create_spark_session():
     except ImportError as e:
         raise DataContractException(
             type="schema",
-            result="failed",
+            result=ResultEnum.failed,
             name="pyspark is missing",
             reason="Install the extra datacontract-cli[kafka] to use kafka",
             engine="datacontract",
@@ -33,7 +34,7 @@ def create_spark_session():
         .config("spark.ui.enabled", "false")
         .config(
             "spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.2,org.apache.spark:spark-avro_2.12:3.5.2",
+            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5,org.apache.spark:spark-avro_2.12:3.5.5",
         )
         .getOrCreate()
     )

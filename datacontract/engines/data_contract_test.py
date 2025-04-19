@@ -12,7 +12,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
 
@@ -32,6 +32,12 @@ def execute_data_contract_test(
             reason="Models block is missing. Skip executing tests.",
             engine="datacontract",
         )
+    if (
+        server_name is None
+        and data_contract_specification.servers is not None
+        and len(data_contract_specification.servers) > 0
+    ):
+        server_name = list(data_contract_specification.servers.keys())[0]
     server = get_server(data_contract_specification, server_name)
     run.log_info(f"Running tests for data contract {data_contract_specification.id} with server {server_name}")
     run.dataContractId = data_contract_specification.id
@@ -49,7 +55,7 @@ def execute_data_contract_test(
     check_soda_execute(run, data_contract_specification, server, spark, duckdb_connection)
 
 
-def get_server(data_contract_specification: DataContractSpecification, server_name: str = None):
+def get_server(data_contract_specification: DataContractSpecification, server_name: str = None) -> Server | None:
     """Get the server configuration from the data contract specification.
 
     Args:
@@ -62,7 +68,7 @@ def get_server(data_contract_specification: DataContractSpecification, server_na
 
     check_that_datacontract_contains_valid_server_configuration(data_contract_specification, server_name)
 
-    if server_name:
+    if server_name is not None:
         server = data_contract_specification.servers.get(server_name)
     else:
         server_name = list(data_contract_specification.servers.keys())[0]

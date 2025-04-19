@@ -11,7 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `datacontract import --format csv` produces more descriptive output. Replaced
+  using clevercsv with duckdb for loading and sniffing csv file.
+- Updated dependencies
+
 ### Fixed
+
+- Fix to handle logicalType format wrt avro mentioned in issue (#687)
+- Fix field type from TIME to DATETIME in BigQuery converter and schema (#728)
+- Fix encoding issues. (#712)
+- ODCS: Fix required in export and added item and fields format (#724)
+
+### Removed
+
+- Deprecated QualityLinter is now removed
 
 ## [0.10.23] - 2025-03-03
 
@@ -21,10 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to a file, in a standard format (e.g. JUnit) to improve CI/CD experience (#650)
 
 - Added import for `ProtoBuf`
+Code for proto to datacontract (#696)
+
 
 - `dbt` & `dbt-sources` export formats now support the optional `--server` flag to adapt the DBT column `data_type` to specific SQL dialects
 - Duckdb Connections are now configurable, when used as Python library (#666)
-
+- export to avro format add map type
 
 ### Changed
 
@@ -41,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved default values in ODCS generator to avoid breaking schema validation (#671)
 - Updated ODCS v3 generator to drop the "is" prefix from fields like `isNullable` and `isUnique` (#669)
 - Fix issue when testing databricks server with ODCS format
+- avro export fix float format
 
 ## [0.10.22] - 2025-02-20
 

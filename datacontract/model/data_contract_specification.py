@@ -320,8 +320,8 @@ class DataContractSpecification(pyd.BaseModel):
         return DataContractSpecification(**data)
 
     def to_yaml(self):
-        return yaml.dump(
-            self.model_dump(exclude_defaults=True, exclude_none=True, by_alias=True),
+        return yaml.safe_dump(
+            self.model_dump(mode="json", exclude_defaults=True, exclude_none=True, by_alias=True),
             sort_keys=False,
             allow_unicode=True,
         )
