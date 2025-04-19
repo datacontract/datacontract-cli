@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix encoding issues. (#712)
 - ODCS: Fix required in export and added item and fields format (#724)
 
+### Removed
+
+- Deprecated QualityLinter is now removed
+
 ## [0.10.23] - 2025-03-03
 
 ### Added
