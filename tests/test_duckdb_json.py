@@ -1,11 +1,7 @@
-import pytest
-from typer.testing import CliRunner
-
-from datacontract.cli import app
-from datacontract.data_contract import DataContract
 from datacontract.engines.soda.connections.duckdb_connection import get_duckdb_connection
 from datacontract.lint import resolve
 from datacontract.model.run import Run
+
 
 def test_nested_json():
     data_contract_str = """
@@ -53,26 +49,29 @@ models:
     run = Run.create_run()
     con = get_duckdb_connection(data_contract, data_contract.servers["sample"], run)
     tbl = con.table("sample_data")
-    assert tbl.columns == [ 'id', 'tags', 'name' ]
-    assert [ x[1].lower() for x in tbl.description ] == [ 'number', 'list', 'dict' ]
+    assert tbl.columns == ["id", "tags", "name"]
+    assert [x[1].lower() for x in tbl.description] == ["number", "list", "dict"]
     # test that duckdb correct unpacked the nested structures.
-    assert tbl.fetchone() == (1, [{"foo": "bar", "arr": [ 1, 2, 3 ]}, {"foo": "lap", "arr": [ 4 ]}], {"first": "John","last": "Doe"} )
-    assert tbl.fetchone() == (2, [{"foo": "zap", "arr": [  ]}], None )
-    assert tbl.fetchone() == None
+    assert tbl.fetchone() == (
+        1,
+        [{"foo": "bar", "arr": [1, 2, 3]}, {"foo": "lap", "arr": [4]}],
+        {"first": "John", "last": "Doe"},
+    )
+    assert tbl.fetchone() == (2, [{"foo": "zap", "arr": []}], None)
+    assert tbl.fetchone() is None
     ## check nested tables
     tbl = con.table("sample_data__tags")
-    assert tbl.columns == ['foo','arr']
-    assert [ x[1].lower() for x in tbl.description ] == [ 'string','list' ]
-    assert tbl.fetchone() == ('bar', [1, 2, 3])
-    assert tbl.fetchone() == ('lap', [4])
-    assert tbl.fetchone() == ('zap', [])
-    assert tbl.fetchone() == None
+    assert tbl.columns == ["foo", "arr"]
+    assert [x[1].lower() for x in tbl.description] == ["string", "list"]
+    assert tbl.fetchone() == ("bar", [1, 2, 3])
+    assert tbl.fetchone() == ("lap", [4])
+    assert tbl.fetchone() == ("zap", [])
+    assert tbl.fetchone() is None
     tbl = con.table("sample_data__tags__arr")
-    assert tbl.columns == ['arr']
-    assert [ x[1].lower() for x in tbl.description ] == [ 'number' ]
-    assert tbl.fetchall() == [ (1, ), (2, ), (3, ), (4, )]
+    assert tbl.columns == ["arr"]
+    assert [x[1].lower() for x in tbl.description] == ["number"]
+    assert tbl.fetchall() == [(1,), (2,), (3,), (4,)]
     tbl = con.table("sample_data__name")
-    assert tbl.columns == ['first', 'last']
-    assert [ x[1].lower() for x in tbl.description ] == [ 'string', 'string' ]
-    assert tbl.fetchall() == [ ('John', 'Doe') ]
-
+    assert tbl.columns == ["first", "last"]
+    assert [x[1].lower() for x in tbl.description] == ["string", "string"]
+    assert tbl.fetchall() == [("John", "Doe")]
