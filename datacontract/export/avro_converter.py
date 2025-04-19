@@ -91,7 +91,9 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
         if field.precision is not None:
             typeVal["precision"] = field.precision
         return typeVal
-    elif field.type in ["float", "double"]:
+    elif field.type in ["float"]:
+        return "float"
+    elif field.type in ["double"]:
         return "double"
     elif field.type in ["integer", "int"]:
         return "int"
@@ -107,6 +109,11 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
         return {"type": "int", "logicalType": "date"}
     elif field.type in ["time"]:
         return "long"
+    elif field.type in ["map"]:
+        if field.config is not None and "values" in field.config:
+            return {"type": "map", "values": field.config["values"]}
+        else:
+            return "bytes"
     elif field.type in ["object", "record", "struct"]:
         if field.config is not None and "namespace" in field.config:
             return to_avro_record(field_name, field.fields, field.description, field.config["namespace"])

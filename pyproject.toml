@@ -22,18 +22,17 @@ dependencies = [
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet>=2024.5.0,<2025.0.0",
   "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
-  "python-multipart==0.0.20",
-  "rich>=13.7,<13.10",
+  "python-multipart>=0.0.20,<1.0.0",
+  "rich>=13.7,<14.0",
   "sqlglot>=26.6.0,<27.0.0",
   "duckdb>=1.0.0,<2.0.0",
-  "soda-core-duckdb>=3.3.20,<3.5.0",
+  "soda-core-duckdb>=3.3.20,<3.6.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
-  "python-dotenv~=1.0.0",
-  "boto3>=1.34.41,<1.36.12",
-  "Jinja2>=3.1.5",
-  "jinja_partials >= 0.2.1",
-
+  "python-dotenv>=1.0.0,<2.0.0",
+  "boto3>=1.34.41,<2.0.0",
+  "Jinja2>=3.1.5,<4.0.0",
+  "jinja_partials>=0.2.1,<1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -43,7 +42,7 @@ avro = [
 ]
 
 bigquery = [
-  "soda-core-bigquery>=3.3.20,<3.4.0",
+  "soda-core-bigquery>=3.3.20,<3.6.0",
 ]
 
 csv = [
@@ -52,10 +51,10 @@ csv = [
 ]
 
 databricks = [
-  "soda-core-spark-df>=3.3.20,<3.4.0",
-  "soda-core-spark[databricks]>=3.3.20,<3.4.0",
-  "databricks-sql-connector>=3.7.0,<3.8.0",
-  "databricks-sdk<0.45.0",
+  "soda-core-spark-df>=3.3.20,<3.6.0",
+  "soda-core-spark[databricks]>=3.3.20,<3.6.0",
+  "databricks-sql-connector>=3.7.0,<4.1.0",
+  "databricks-sdk<0.50.0",
 ]
 
 iceberg = [
@@ -64,11 +63,11 @@ iceberg = [
 
 kafka = [
   "datacontract-cli[avro]",
-  "soda-core-spark-df>=3.3.20,<3.4.0"
+  "soda-core-spark-df>=3.3.20,<3.6.0"
 ]
 
 postgres = [
-  "soda-core-postgres>=3.3.20,<3.4.0"
+  "soda-core-postgres>=3.3.20,<3.6.0"
 ]
 
 s3 = [
@@ -77,16 +76,16 @@ s3 = [
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<3.14",
-  "soda-core-snowflake>=3.3.20,<3.5.0"
+  "snowflake-connector-python[pandas]>=3.6,<3.15",
+  "soda-core-snowflake>=3.3.20,<3.6.0"
 ]
 
 sqlserver = [
-  "soda-core-sqlserver>=3.3.20,<3.4.0"
+  "soda-core-sqlserver>=3.3.20,<3.6.0"
 ]
 
 trino = [
-  "soda-core-trino>=3.3.20,<3.4.0"
+  "soda-core-trino>=3.3.20,<3.6.0"
 ]
 
 dbt = [
@@ -106,27 +105,31 @@ rdf = [
 ]
 
 api = [
-  "fastapi==0.115.11",
+  "fastapi==0.115.12",
   "uvicorn==0.34.0",
 ]
 
+protobuf = [
+  "grpcio-tools>=1.53",
+]
+
 all = [
-  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api]"
+  "datacontract-cli[kafka,bigquery,csv,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf]"
 ]
 
 dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
   "kafka-python",
-  "moto==5.0.27",
+  "moto==5.1.3",
   "pandas>=2.1.0",
-  "pre-commit>=3.7.1,<4.1.0",
+  "pre-commit>=3.7.1,<4.3.0",
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.2",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.9.0",
-  "trino==0.332.0",
+  "testcontainers[minio,postgres,kafka,mssql]==4.9.2",
+  "trino==0.333.0",
 ]
 
 [project.urls]

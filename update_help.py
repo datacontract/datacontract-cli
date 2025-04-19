@@ -18,7 +18,7 @@ commands = [
     "breaking",
     "changelog",
     "diff",
-    "serve",
+    "api",
 ]
 
 
