@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `datacontract test` with DuckDB: Deep nesting of json objects in duckdb (#681)
+
 ### Changed
 
 - `datacontract import --format csv` produces more descriptive output. Replaced
