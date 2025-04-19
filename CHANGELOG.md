@@ -11,9 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated dependencies
+
 ### Fixed
 
-- Fix to handle logicalType format wrt avro mentioned in issue #687
+- Fix to handle logicalType format wrt avro mentioned in issue (#687)
+- Fix field type from TIME to DATETIME in BigQuery converter and schema (#728)
+- Fix encoding issues. (#712)
+- ODCS: Fix required in export and added item and fields format (#724)
 
 ## [0.10.23] - 2025-03-03
 
