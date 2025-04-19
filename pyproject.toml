@@ -46,7 +46,6 @@ bigquery = [
 ]
 
 csv = [
-  "clevercsv >= 0.8.2",
   "pandas >= 2.0.0",
 ]
 
