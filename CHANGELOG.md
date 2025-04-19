@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.10.24] - 2025-04-19
+
 ### Added
 
 - `datacontract test` with DuckDB: Deep nesting of json objects in duckdb (#681)
