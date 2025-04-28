@@ -143,7 +143,6 @@ def model_to_expectations(fields: Dict[str, Field], engine: str | None, sql_serv
     for field_name, field in fields.items():
         add_field_expectations(field_name, field, expectations, engine, sql_server_type)
         expectations.extend(get_quality_checks(field.quality, field_name))
-        # Add field quality here
     return expectations
 
 

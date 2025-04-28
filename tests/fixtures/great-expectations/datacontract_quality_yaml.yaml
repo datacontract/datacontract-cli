@@ -16,9 +16,6 @@ models:
       order_id:
         type: string
         required: true
-      processed_timestamp:
-        type: timestamp
-        required: true
     quality:
       - type: custom
         engine: great-expectations
