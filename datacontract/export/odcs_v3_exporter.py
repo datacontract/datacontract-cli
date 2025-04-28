@@ -210,6 +210,16 @@ def to_physical_type(type: str) -> str | None:
 
 def to_property(field_name: str, field: Field) -> dict:
     property = {"name": field_name}
+    if field.fields:
+        properties = []
+        for field_name_, field_ in field.fields.items():
+            property_ = to_property(field_name_, field_)
+            properties.append(property_)
+        property["properties"]=properties
+    if field.items:
+        items = to_property(field_name, field.items)
+        del items["name"]
+        property["items"]=items
     if field.title is not None:
         property["businessName"] = field.title
     if field.type is not None:
