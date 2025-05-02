@@ -812,6 +812,29 @@ models:
 | `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
 
 
+#### Local
+
+Data Contract CLI can test local files in parquet, json, csv, or delta format.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  local:
+    type: local
+    path: ./*.parquet
+    format: parquet
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+      my_column_2: # corresponds to a column
+        type: string
+```
+
 
 ### export
 ```
