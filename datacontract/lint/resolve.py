@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 
 import fastjsonschema
 import yaml
@@ -16,6 +17,7 @@ from datacontract.model.data_contract_specification import (
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.odcs import is_open_data_contract_standard
+from datacontract.model.run import ResultEnum
 
 
 def resolve_data_contract(
@@ -37,7 +39,7 @@ def resolve_data_contract(
     else:
         raise DataContractException(
             type="lint",
-            result="failed",
+            result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason="Data contract needs to be provided",
             engine="datacontract",
@@ -58,7 +60,7 @@ def resolve_data_contract_dict(
     else:
         raise DataContractException(
             type="lint",
-            result="failed",
+            result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason="Data contract needs to be provided",
             engine="datacontract",
@@ -152,7 +154,7 @@ def _resolve_definition_ref(ref, spec) -> Definition:
     else:
         raise DataContractException(
             type="lint",
-            result="failed",
+            result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason=f"Cannot resolve reference {ref}",
             engine="datacontract",
@@ -165,7 +167,7 @@ def _find_by_path_in_spec(definition_path: str, spec: DataContractSpecification)
     if definition_key not in spec.definitions:
         raise DataContractException(
             type="lint",
-            result="failed",
+            result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason=f"Cannot resolve definition {definition_key}",
             engine="datacontract",
@@ -195,7 +197,7 @@ def _fetch_file(path) -> str:
     if not os.path.exists(path):
         raise DataContractException(
             type="export",
-            result="failed",
+            result=ResultEnum.failed,
             name="Check that data contract definition is valid",
             reason=f"Cannot resolve reference {path}",
             engine="datacontract",
@@ -230,7 +232,7 @@ def _get_quality_ref_file(quality_spec: str | object) -> str | object:
         if not os.path.exists(ref):
             raise DataContractException(
                 type="export",
-                result="failed",
+                result=ResultEnum.failed,
                 name="Check that data contract quality is valid",
                 reason=f"Cannot resolve reference {ref}",
                 engine="datacontract",
@@ -259,8 +261,21 @@ def _resolve_data_contract_from_str(
 
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
-    if spec.quality and inline_quality:
-        _resolve_quality_ref(spec.quality)
+    ## Suppress DeprecationWarning when accessing spec.quality,
+    ## iif it is in fact *not* used.
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        spec_quality = spec.quality
+    for w in recorded_warnings:
+        if not issubclass(w.category, DeprecationWarning) or spec_quality is not None:
+            warnings.warn_explicit(
+                message=w.message,
+                category=w.category,
+                filename=w.filename,
+                lineno=w.lineno,
+                source=w.source,
+            )
+    if spec_quality and inline_quality:
+        _resolve_quality_ref(spec_quality)
 
     return spec
 

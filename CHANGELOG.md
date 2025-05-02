@@ -7,13 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.10.24] - 2025-04-19
+
 ### Added
+
+- `datacontract test` with DuckDB: Deep nesting of json objects in duckdb (#681)
 
 ### Changed
 
+- `datacontract import --format csv` produces more descriptive output. Replaced
+  using clevercsv with duckdb for loading and sniffing csv file.
+- Updated dependencies
+
 ### Fixed
 
-- Fix to handle logicalType format wrt avro mentioned in issue #687
+- Fix to handle logicalType format wrt avro mentioned in issue (#687)
+- Fix field type from TIME to DATETIME in BigQuery converter and schema (#728)
+- Fix encoding issues. (#712)
+- ODCS: Fix required in export and added item and fields format (#724)
+
+### Removed
+
+- Deprecated QualityLinter is now removed
 
 ## [0.10.23] - 2025-03-03
 

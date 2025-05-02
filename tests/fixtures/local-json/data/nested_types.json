@@ -1,0 +1,28 @@
+[
+    {
+        "id": 1,
+        "tags": [
+            {
+                "foo": "bar",
+                "arr": [ 1, 2, 3 ]
+            },
+            {
+                "foo": "lap",
+                "arr": [ 4 ]
+            }
+        ],
+        "name": {
+            "first": "John",
+            "last": "Doe"
+        }
+    },
+    {
+        "id": 2,
+        "tags": [
+            {
+                "foo": "zap",
+                "arr": [ ]
+            }
+        ]
+    }
+]
