@@ -19,6 +19,7 @@ from datacontract.export.spark_converter import to_spark_data_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
+    DeprecatedQuality,
     Field,
     Quality,
 )
@@ -91,8 +92,14 @@ def to_great_expectations(
             model_key=model_key, contract_version=data_contract_spec.info.version
         )
     model_value = data_contract_spec.models.get(model_key)
-    quality_checks = get_quality_checks(data_contract_spec.quality)
+
+    # Support for Deprecated Quality
+    quality_checks = get_deprecated_quality_checks(data_contract_spec.quality)
+
+    expectations.extend(get_quality_checks(model_value.quality))
+
     expectations.extend(model_to_expectations(model_value.fields, engine, sql_server_type))
+
     expectations.extend(checks_to_expectations(quality_checks, model_key))
     model_expectation_suite = to_suite(expectations, expectation_suite_name)
 
@@ -135,6 +142,7 @@ def model_to_expectations(fields: Dict[str, Field], engine: str | None, sql_serv
     add_column_order_exp(fields, expectations)
     for field_name, field in fields.items():
         add_field_expectations(field_name, field, expectations, engine, sql_server_type)
+        expectations.extend(get_quality_checks(field.quality, field_name))
     return expectations
 
 
@@ -173,6 +181,8 @@ def add_field_expectations(
         expectations.append(to_column_length_exp(field_name, field.minLength, field.maxLength))
     if field.minimum is not None or field.maximum is not None:
         expectations.append(to_column_min_max_exp(field_name, field.minimum, field.maximum))
+    if field.enum is not None and len(field.enum) != 0:
+        expectations.append(to_column_enum_exp(field_name, field.enum))
 
     return expectations
 
@@ -266,7 +276,24 @@ def to_column_min_max_exp(field_name, minimum, maximum) -> Dict[str, Any]:
     }
 
 
-def get_quality_checks(quality: Quality) -> Dict[str, Any]:
+def to_column_enum_exp(field_name, enum_list: List[str]) -> Dict[str, Any]:
+    """Creates a expect_column_values_to_be_in_set expectation.
+
+    Args:
+        field_name (str): The name of the field.
+        enum_list (Set[str]): enum list of value.
+
+    Returns:
+        Dict[str, Any]: Column value in set expectation.
+    """
+    return {
+        "expectation_type": "expect_column_values_to_be_in_set",
+        "kwargs": {"column": field_name, "value_set": enum_list},
+        "meta": {},
+    }
+
+
+def get_deprecated_quality_checks(quality: DeprecatedQuality) -> Dict[str, Any]:
     """Retrieves quality checks defined in a data contract.
 
     Args:
@@ -285,6 +312,26 @@ def get_quality_checks(quality: Quality) -> Dict[str, Any]:
         quality_specification = yaml.safe_load(quality.specification)
     else:
         quality_specification = quality.specification
+    return quality_specification
+
+
+def get_quality_checks(qualities: List[Quality], field_name: str | None = None) -> List[Dict[str, Any]]:
+    """Retrieves quality checks defined in a data contract.
+
+    Args:
+        qualities (List[Quality]): List of quality object from the model specification.
+        field_name (str | None): field name if the quality list is attached to a specific field
+
+    Returns:
+        Dict[str, Any]: Dictionary of quality checks.
+    """
+    quality_specification = []
+    for quality in qualities:
+        if quality is not None and quality.engine is not None and quality.engine.lower() == "great-expectations":
+            ge_expectation = quality.implementation
+            if field_name is not None:
+                ge_expectation["column"] = field_name
+            quality_specification.append(ge_expectation)
     return quality_specification
 
 

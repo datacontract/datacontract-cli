@@ -89,6 +89,22 @@ def data_contract_great_expectations_quality_file() -> DataContractSpecification
 
 
 @pytest.fixture
+def data_contract_great_expectations_quality_yaml() -> DataContractSpecification:
+    return resolve.resolve_data_contract_from_location(
+        "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
+        inline_quality=True,
+    )
+
+
+@pytest.fixture
+def data_contract_great_expectations_quality_column() -> DataContractSpecification:
+    return resolve.resolve_data_contract_from_location(
+        "./fixtures/great-expectations/datacontract_quality_column.yaml",
+        inline_quality=True,
+    )
+
+
+@pytest.fixture
 def expected_json_suite() -> Dict[str, Any]:
     return {
         "data_asset_type": "null",
@@ -113,6 +129,66 @@ def expected_json_suite() -> Dict[str, Any]:
                 "expectation_type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
                 "meta": {},
+            },
+        ],
+        "meta": {},
+    }
+
+
+@pytest.fixture
+def expected_json_suite_table_quality() -> Dict[str, Any]:
+    return {
+        "data_asset_type": "null",
+        "expectation_suite_name": "orders.1.0.0",
+        "expectations": [
+            {"expectation_type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 10}, "meta": {}},
+            {
+                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "kwargs": {"column_list": ["order_id"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "string"},
+                "meta": {},
+            },
+        ],
+        "meta": {},
+    }
+
+
+@pytest.fixture
+def expected_json_suite_with_enum() -> Dict[str, Any]:
+    return {
+        "data_asset_type": "null",
+        "expectation_suite_name": "orders.1.1.1",
+        "expectations": [
+            {
+                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "kwargs": {"column_list": ["id", "type"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "id", "type_": "string"},
+                "meta": {},
+            },
+            {"expectation_type": "expect_column_values_to_be_unique", "kwargs": {"column": "id"}, "meta": {}},
+            {
+                "expectation_type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "type", "type_": "string"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_in_set",
+                "kwargs": {"column": "type", "value_set": ["A", "B", "C", "D", "E"]},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_value_lengths_to_equal",
+                "kwargs": {"value": 1},
+                "meta": {"notes": "Ensures that column length is 1."},
+                "column": "type",
             },
         ],
         "meta": {},
@@ -288,6 +364,11 @@ def test_to_great_expectation(data_contract_basic: DataContractSpecification):
             {
                 "expectation_type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_status", "type_": "text"},
+                "meta": {},
+            },
+            {
+                "expectation_type": "expect_column_values_to_be_in_set",
+                "kwargs": {"column": "order_status", "value_set": ["pending", "shipped", "delivered"]},
                 "meta": {},
             },
         ],
@@ -602,3 +683,25 @@ def test_to_great_expectation_missing_quality_json_file():
         assert False
     except DataContractException as dataContractException:
         assert dataContractException.reason == "Cannot resolve reference ./fixtures/great-expectations/missing.json"
+
+
+def test_to_great_expectation_quality_yaml(
+    data_contract_great_expectations_quality_yaml: DataContractSpecification,
+    expected_json_suite_table_quality: Dict[str, Any],
+):
+    """
+    Test with Quality definition in a model quality list
+    """
+    result = to_great_expectations(data_contract_great_expectations_quality_yaml, "orders")
+    assert result == json.dumps(expected_json_suite_table_quality, indent=2)
+
+
+def test_to_great_expectation_quality_column(
+    data_contract_great_expectations_quality_column: DataContractSpecification,
+    expected_json_suite_with_enum: Dict[str, Any],
+):
+    """
+    Test with quality definition in a field quality list
+    """
+    result = to_great_expectations(data_contract_great_expectations_quality_column, "orders")
+    assert result == json.dumps(expected_json_suite_with_enum, indent=2)
