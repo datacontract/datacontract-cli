@@ -244,7 +244,7 @@ def import_(
     ] = None,
     source: Annotated[
         Optional[str],
-        typer.Option(help="The path to the file or Glue Database that should be imported."),
+        typer.Option(help="The path to the file that should be imported."),
     ] = None,
     dialect: Annotated[
         Optional[str],
