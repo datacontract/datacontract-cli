@@ -156,3 +156,6 @@ line-length = 120
 extend-select = [
     "I",   # re-order imports in alphabetic order
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
