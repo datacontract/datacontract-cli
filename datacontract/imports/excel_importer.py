@@ -4,7 +4,9 @@ from typing import Any, Dict, List, Optional
 
 import openpyxl
 from open_data_contract_standard.model import (
+    AuthoritativeDefinition,
     CustomProperty,
+    DataQuality,
     OpenDataContractStandard,
     Role,
     SchemaObject,
@@ -196,10 +198,9 @@ def import_schemas(workbook) -> Optional[List[SchemaObject]]:
 def get_cell_value_by_name_in_sheet(sheet, name: str) -> Optional[str]:
     """Get the value of a named cell within a specific sheet"""
     try:
-        workbook = sheet.parent
-        for named_range in workbook.defined_names.definedName:
-            if named_range.name == name:
-                destinations = named_range.destinations
+        for named_range in sheet.defined_names:
+            if named_range == name:
+                destinations = sheet.defined_names[named_range].destinations
                 for sheet_title, coordinate in destinations:
                     if sheet_title == sheet.title:
                         cell = sheet[coordinate]
@@ -229,6 +230,8 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
 
         # Process property rows
         for row_idx in range(properties_range[0], properties_range[1]):
+            if len(list(sheet.rows)) < row_idx + 1:
+                break
             row = list(sheet.rows)[row_idx]
 
             # Skip empty rows or header row
@@ -255,17 +258,32 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
                 transformLogic=get_cell_value(row, headers.get("transform logic")),
                 transformDescription=get_cell_value(row, headers.get("transform description")),
                 encryptedName=get_cell_value(row, headers.get("encrypted name")),
-                authoritativeDefinitions=None,
                 properties=None,
-                quality=None,
-                customProperties=None,
                 items=None,
+                tags=get_property_tags(headers, row),
             )
 
-            # Tags
-            tags_value = get_cell_value(row, headers.get("tags"))
-            if tags_value:
-                property_obj.tags = [tag.strip() for tag in tags_value.split(",") if tag.strip()]
+            # Authoritative definitions
+            authoritative_definition_url = get_cell_value(row, headers.get("authoritative definition url"))
+            authoritative_definition_type = get_cell_value(row, headers.get("authoritative definition type"))
+            if authoritative_definition_url and authoritative_definition_type:
+                property_obj.authoritativeDefinitions = [
+                    AuthoritativeDefinition(
+                        url=authoritative_definition_url,
+                        type=authoritative_definition_type,
+                    )
+                ]
+
+            # Quality
+            quality_type = get_cell_value(row, headers.get("quality type"))
+            quality_description = get_cell_value(row, headers.get("quality description"))
+            if quality_type and quality_description:
+                property_obj.quality = [
+                    DataQuality(
+                        type=quality_type,
+                        description=quality_description,
+                    )
+                ]
 
             # Transform sources
             transform_sources = get_cell_value(row, headers.get("transform sources"))
@@ -282,10 +300,17 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
             # Add property to list
             properties.append(property_obj)
     except Exception as e:
-        logger.debug(f"Error importing properties: {str(e)}")
+        logger.warning(f"Error importing properties: {str(e)}")
         return None
 
     return properties if properties else None
+
+
+def get_property_tags(headers, row):
+    tags_value = get_cell_value(row, headers.get("tags"))
+    if tags_value:
+        tag = [tag.strip() for tag in tags_value.split(",") if tag.strip()]
+    return tag
 
 
 def parse_boolean(value):
@@ -309,10 +334,9 @@ def parse_integer(value):
 def find_range_by_name(sheet, name: str) -> Optional[tuple]:
     """Find the range (start_row, end_row) of a named range in a sheet"""
     try:
-        workbook = sheet.parent
-        for named_range in workbook.defined_names.definedName:
-            if named_range.name == name:
-                destinations = named_range.destinations
+        for named_range in sheet.defined_names:
+            if named_range == name:
+                destinations = sheet.defined_names[named_range].destinations
                 for sheet_title, range_address in destinations:
                     if sheet_title == sheet.title:
                         # For named ranges that refer to entire rows or multiple rows
