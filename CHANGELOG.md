@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Extracted the DataContractSpecification and the OpenDataContractSpecification in separate pip modules and use them in the CLI.
-
+- `datacontract import --format excel`: Import from Excel
+  template https://github.com/datacontract/open-data-contract-standard-excel-template (#742)
 
 ## [0.10.24] - 2025-04-19
 
