@@ -1,0 +1,230 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: fulfillment_shipments_v1
+name: Shipments
+version: 1.0.0
+domain: sales-team
+status: draft
+tenant: company-A
+tags:
+- datalocation:EU
+description:
+  purpose: This data can be used for analytical purposes
+  usage: Use this to analyze shipments
+  limitations: Not suitable for real-time use cases
+  authoritativeDefinitions:
+  - type: Data Guidelines
+    url: https://example.com/data-guidelines.html
+  customProperties:
+  - property: github_link
+    value: https://github.example.com/shipment-specification.yaml
+customProperties:
+- property: additionalField
+  value: some value
+- property: owner
+  value: controlling-team
+schema:
+- name: shipments
+  physicalType: table
+  physicalName: shipments_v1
+  businessName: Shipments
+  description: "This table contains shipment data, including details about shipment IDs, associated orders, delivery dates, carriers, tracking numbers, statuses, and additional shipment information in JSON format."
+  dataGranularityDescription: Not Aggregated
+  tags:
+  - pii
+  quality:
+  - type: sql
+    description: Table shall contain at least 1 row
+    query: SELECT COUNT(*) FROM shipments
+    thresholdType: mustBeGreaterThanOrEqualTo
+    mustBeGreaterThanOrEqualTo: 1
+  properties:
+  - name: shipment_id
+    businessName: Shipment ID
+    physicalName: sid
+    logicalType: string
+    description: Unique identifier for each shipment.
+    required: false
+    unique: false
+    physicalType: uuid
+    primaryKey: true
+    partitioned: false
+    classification: internal
+    examples:
+    - 123e4567-e89b-12d3-a456-426614174000
+    criticalDataElement: false
+    quality: []
+    tags:
+    - businesskey
+    authoritativeDefinitions:
+    - type: businessDefinition
+      url: https://example.com/definitions/shipment_id
+  - name: order_id
+    businessName: Order ID
+    physicalName: oid
+    logicalType: string
+    logicalTypeOptions:
+      minLength: 8
+      maxLength: 10
+    description: Identifier for the order associated with the shipment.
+    required: true
+    unique: false
+    physicalType: text
+    primaryKey: false
+    partitioned: false
+    classification: internal
+    examples:
+    - ORD12345
+    criticalDataElement: false
+  - name: delivery_date
+    businessName: Delivery Date
+    logicalType: date
+    description: The actual or expected delivery date of the shipment.
+    required: false
+    unique: false
+    physicalType: timestamp_tz
+    primaryKey: false
+    partitioned: false
+    classification: internal
+    examples:
+    - 2023-10-01T10:00:00Z
+    criticalDataElement: false
+    quality: []
+  - name: carrier
+    businessName: Carrier
+    logicalType: string
+    description: The shipping carrier used for the delivery.
+    required: false
+    unique: false
+    physicalType: text
+    primaryKey: false
+    partitioned: false
+    classification: internal
+    examples:
+    - FedEx
+    - UPS
+    criticalDataElement: false
+    quality: []
+  - name: tracking_number
+    businessName: Tracking Number
+    logicalType: string
+    description: Tracking number provided by the carrier.
+    required: false
+    unique: false
+    physicalType: text
+    primaryKey: false
+    partitioned: false
+    classification: restricted
+    examples:
+    - 1Z999AA10123456784
+    criticalDataElement: false
+    quality: []
+    customProperties:
+    - property: external
+      value: "true"
+  - name: status
+    businessName: Status
+    logicalType: string
+    description: Current status of the shipment.
+    required: false
+    unique: false
+    physicalType: text
+    primaryKey: false
+    partitioned: false
+    classification: internal
+    examples:
+    - Delivered
+    - In Transit
+    criticalDataElement: false
+    quality: []
+  - name: inline_object_definition
+    businessName: Inline Object Definition
+    logicalType: object
+    description: A JSON representation of additional shipment info
+    required: false
+    unique: false
+    physicalType: json
+    primaryKey: false
+    partitioned: false
+    partitionKeyPosition: -1
+    classification: internal
+    examples:
+    - "{\"destination\": \"New York\"}"
+    criticalDataElement: false
+    quality:
+    - type: text
+      description: "{field} must contain the field \"destination\""
+  - name: address
+    businessName: Shipment Address
+    logicalType: object
+    description: Shipping address details.
+    required: true
+    physicalType: JSON
+    classification: restricted
+    properties:
+    - name: street
+      businessName: Street
+      logicalType: string
+      description: Street address.
+      required: true
+      unique: false
+      physicalType: text
+      primaryKey: false
+      partitioned: false
+      classification: restricted
+      examples:
+      - Marienplatz 1
+    - name: city
+      businessName: City
+      logicalType: string
+      description: City of the shipping address.
+      required: true
+      unique: false
+      physicalType: text
+      primaryKey: false
+      partitioned: false
+      classification: restricted
+      examples:
+      - Munich
+    - name: country
+      businessName: Country
+      logicalType: string
+      description: Country of the shipping address.
+      required: true
+      physicalType: text
+      primaryKey: false
+      partitioned: false
+      classification: restricted
+      examples:
+      - DE
+servers:
+- server: production
+  type: bigquery
+  environment: production
+  dataset: shipments_v1
+  project: acme_shipments_prod
+support:
+- channel: slackname
+  url: http://find.me.here
+  tool: slack
+  scope: interactive
+authoritativeDefinitions:
+- type: Guidelines
+  url: https://example.com/guidelines
+price:
+  priceAmount: 1
+  priceCurrency: EUR
+  priceUnit: Per 1000 requests
+team:
+- username: vimportant
+  role: administrator
+  dateIn: 2020-01-01
+- username: nimportant
+  role: reader
+  dateIn: 2020-01-01
+  dateOut: 2024-10-10
+slaProperties:
+- property: availability
+  value: 95%
+  unit: '%'
+  driver: operational
