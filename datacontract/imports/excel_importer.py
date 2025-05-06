@@ -140,23 +140,6 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
         workbook.close()
 
 
-def get_cell_value_by_name(workbook: Workbook, name: str) -> Optional[str]:
-    """Get the value of a named cell"""
-    try:
-        for named_range in workbook.defined_names:
-            if named_range == name:
-                # Named ranges are in the format SheetName!A1
-                destinations = workbook.defined_names[named_range].destinations
-                for sheet_title, coordinate in destinations:
-                    sheet = workbook[sheet_title]
-                    cell = sheet[coordinate]
-                    if cell.value is not None:
-                        return str(cell.value)
-    except Exception as e:
-        logger.warning(f"Error getting cell value by name {name}: {str(e)}")
-    return None
-
-
 def import_schemas(workbook) -> Optional[List[SchemaObject]]:
     """Extract schema information from sheets starting with 'Schema '"""
     schemas = []
@@ -194,27 +177,11 @@ def import_schemas(workbook) -> Optional[List[SchemaObject]]:
     return schemas if schemas else None
 
 
-def get_cell_value_by_name_in_sheet(sheet, name: str) -> Optional[str]:
-    """Get the value of a named cell within a specific sheet"""
-    try:
-        for named_range in sheet.defined_names:
-            if named_range == name:
-                destinations = sheet.defined_names[named_range].destinations
-                for sheet_title, coordinate in destinations:
-                    if sheet_title == sheet.title:
-                        cell = sheet[coordinate]
-                        if cell.value is not None:
-                            return str(cell.value)
-    except Exception as e:
-        logger.warning(f"Error getting cell value by name {name} in sheet {sheet.title}: {str(e)}")
-    return None
-
-
 def import_properties(sheet) -> Optional[List[SchemaProperty]]:
     """Extract properties from the schema sheet"""
     try:
         # Find the properties table
-        properties_range = find_range_by_name(sheet, "schema.properties")
+        properties_range = get_range_by_name_in_sheet(sheet, "schema.properties")
         if not properties_range:
             return None
 
@@ -393,7 +360,7 @@ def parse_integer(value):
         return None
 
 
-def find_range_by_name_in_workbook(workbook: Workbook, name: str) -> Optional[tuple]:
+def get_range_by_name_in_workbook(workbook: Workbook, name: str) -> tuple | None:
     """Find the range (start_row, end_row) of a named range in a workbook"""
     try:
         for named_range in workbook.defined_names:
@@ -415,7 +382,7 @@ def find_range_by_name_in_workbook(workbook: Workbook, name: str) -> Optional[tu
     return None
 
 
-def find_range_by_name(sheet, name: str) -> Optional[tuple]:
+def get_range_by_name_in_sheet(sheet: Worksheet, name: str) -> tuple | None:
     """Find the range (start_row, end_row) of a named range in a sheet"""
     try:
         for named_range in sheet.defined_names:
@@ -439,6 +406,48 @@ def find_range_by_name(sheet, name: str) -> Optional[tuple]:
     return None
 
 
+def get_cell_by_name_in_workbook(workbook: Workbook, name: str) -> Cell | None:
+    """Find a cell by name within a workbook"""
+    try:
+        for named_range in workbook.defined_names:
+            if named_range == name:
+                destinations = workbook.defined_names[named_range].destinations
+                for sheet_title, coordinate in destinations:
+                    sheet = workbook[sheet_title]
+                    if sheet_title == sheet.title:
+                        return sheet[coordinate]
+    except Exception as e:
+        logger.warning(f"Error finding cell by name {name}: {str(e)}")
+    return None
+
+
+def get_cell_value_by_name(workbook: Workbook, name: str) -> str | None:
+    """Get the value of a named cell"""
+    try:
+        cell = get_cell_by_name_in_workbook(workbook, name)
+        if cell.value is not None:
+            return str(cell.value)
+    except Exception as e:
+        logger.warning(f"Error getting cell value by name {name}: {str(e)}")
+    return None
+
+
+def get_cell_value_by_name_in_sheet(sheet: Worksheet, name: str) -> str | None:
+    """Get the value of a named cell within a specific sheet"""
+    try:
+        for named_range in sheet.defined_names:
+            if named_range == name:
+                destinations = sheet.defined_names[named_range].destinations
+                for sheet_title, coordinate in destinations:
+                    if sheet_title == sheet.title:
+                        cell = sheet[coordinate]
+                        if cell.value is not None:
+                            return str(cell.value)
+    except Exception as e:
+        logger.warning(f"Error getting cell value by name {name} in sheet {sheet.title}: {str(e)}")
+    return None
+
+
 def get_cell_value(row, col_idx):
     """Safely get cell value from a row by column index"""
     if col_idx is None:
@@ -450,6 +459,16 @@ def get_cell_value(row, col_idx):
         return None
 
 
+def get_cell_value_by_position(sheet, row_idx, col_idx):
+    """Get cell value by row and column indices (0-based)"""
+    try:
+        cell = sheet.cell(row=row_idx + 1, column=col_idx + 1)  # Convert to 1-based indices
+        return str(cell.value) if cell.value is not None else None
+    except Exception as e:
+        logger.warning(f"Error getting cell value by position ({row_idx}, {col_idx}): {str(e)}")
+        return None
+
+
 def import_support(workbook: Workbook) -> Optional[List[Support]]:
     """Extract support information from the Support sheet"""
     try:
@@ -457,7 +476,7 @@ def import_support(workbook: Workbook) -> Optional[List[Support]]:
         if not support_sheet:
             return None
 
-        support_range = find_range_by_name_in_workbook(workbook, "support")
+        support_range = get_range_by_name_in_workbook(workbook, "support")
         if not support_range:
             return None
 
@@ -501,7 +520,7 @@ def import_team(workbook: Workbook) -> Optional[List[Team]]:
         if not team_sheet:
             return None
 
-        team_range = find_range_by_name_in_workbook(workbook, "team")
+        team_range = get_range_by_name_in_workbook(workbook, "team")
         if not team_range:
             return None
 
@@ -549,7 +568,7 @@ def import_roles(workbook: Workbook) -> Optional[List[Role]]:
         if not roles_sheet:
             return None
 
-        roles_range = find_range_by_name(roles_sheet, "roles")
+        roles_range = get_range_by_name_in_sheet(roles_sheet, "roles")
         if not roles_range:
             return None
 
@@ -591,7 +610,7 @@ def import_sla_properties(workbook: Workbook) -> Optional[List[ServiceLevelAgree
         if not sla_sheet:
             return None
 
-        sla_range = find_range_by_name(sla_sheet, "slaProperties")
+        sla_range = get_range_by_name_in_sheet(sla_sheet, "slaProperties")
         if not sla_range:
             return None
 
@@ -636,7 +655,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
             return None
 
         # Find the server cells
-        server_cell = find_cell_by_name(workbook, "servers.server")
+        server_cell = get_cell_by_name_in_workbook(workbook, "servers.server")
         if not server_cell:
             return None
 
@@ -738,7 +757,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
 def get_server_cell_value(workbook: Workbook, sheet: Worksheet, name: str, col_offset: int):
     """Get cell value for server properties (arranged horizontally)"""
     try:
-        cell = find_cell_by_name(workbook, name)
+        cell = get_cell_by_name_in_workbook(workbook, name)
         if not cell:
             return None
 
@@ -747,31 +766,6 @@ def get_server_cell_value(workbook: Workbook, sheet: Worksheet, name: str, col_o
         return get_cell_value_by_position(sheet, row, col)
     except Exception as e:
         logger.warning(f"Error getting server cell value for {name}: {str(e)}")
-        return None
-
-
-def find_cell_by_name(workbook: Workbook, name: str) -> Cell | None:
-    """Find a cell by name within a workbook"""
-    try:
-        for named_range in workbook.defined_names:
-            if named_range == name:
-                destinations = workbook.defined_names[named_range].destinations
-                for sheet_title, coordinate in destinations:
-                    sheet = workbook[sheet_title]
-                    if sheet_title == sheet.title:
-                        return sheet[coordinate]
-    except Exception as e:
-        logger.warning(f"Error finding cell by name {name}: {str(e)}")
-    return None
-
-
-def get_cell_value_by_position(sheet, row_idx, col_idx):
-    """Get cell value by row and column indices (0-based)"""
-    try:
-        cell = sheet.cell(row=row_idx + 1, column=col_idx + 1)  # Convert to 1-based indices
-        return str(cell.value) if cell.value is not None else None
-    except Exception as e:
-        logger.warning(f"Error getting cell value by position ({row_idx}, {col_idx}): {str(e)}")
         return None
 
 
@@ -815,7 +809,7 @@ def import_custom_properties(workbook: Workbook) -> List[CustomProperty]:
         # Get other custom properties
         custom_properties_sheet = workbook["Custom Properties"]
         if custom_properties_sheet:
-            custom_properties_range = find_range_by_name_in_workbook(workbook, "CustomProperties")
+            custom_properties_range = get_range_by_name_in_workbook(workbook, "CustomProperties")
             if custom_properties_range:
                 # Skip header row
                 for row_idx in range(custom_properties_range[0], custom_properties_range[1]):
