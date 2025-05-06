@@ -16,7 +16,9 @@ from open_data_contract_standard.model import (
     Support,
     Team,
 )
+from openpyxl.cell.cell import Cell
 from openpyxl.workbook.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_v3_importer import import_from_odcs_model
@@ -74,9 +76,6 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
         )
 
     try:
-        # Get basic information
-        owner = get_cell_value_by_name(workbook, "owner")
-
         # Get description values
         purpose = get_cell_value_by_name(workbook, "description.purpose")
         limitations = get_cell_value_by_name(workbook, "description.limitations")
@@ -101,7 +100,7 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
         sla_properties = import_sla_properties(workbook)
         servers = import_servers(workbook)
         price = import_price(workbook)
-        custom_properties = import_custom_properties(owner, workbook)
+        custom_properties = import_custom_properties(workbook)
 
         # Create the ODCS object with proper object creation
         odcs = OpenDataContractStandard(
@@ -154,7 +153,7 @@ def get_cell_value_by_name(workbook: Workbook, name: str) -> Optional[str]:
                     if cell.value is not None:
                         return str(cell.value)
     except Exception as e:
-        logger.debug(f"Error getting cell value by name {name}: {str(e)}")
+        logger.warning(f"Error getting cell value by name {name}: {str(e)}")
     return None
 
 
@@ -207,14 +206,12 @@ def get_cell_value_by_name_in_sheet(sheet, name: str) -> Optional[str]:
                         if cell.value is not None:
                             return str(cell.value)
     except Exception as e:
-        logger.debug(f"Error getting cell value by name {name} in sheet {sheet.title}: {str(e)}")
+        logger.warning(f"Error getting cell value by name {name} in sheet {sheet.title}: {str(e)}")
     return None
 
 
 def import_properties(sheet) -> Optional[List[SchemaProperty]]:
     """Extract properties from the schema sheet"""
-    properties = []
-
     try:
         # Find the properties table
         properties_range = find_range_by_name(sheet, "schema.properties")
@@ -229,6 +226,9 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
                 headers[cell.value.lower()] = i
 
         # Process property rows
+        property_lookup = {}  # Dictionary to keep track of properties by name for nesting
+
+        # First, create all properties
         for row_idx in range(properties_range[0], properties_range[1]):
             if len(list(sheet.rows)) < row_idx + 1:
                 break
@@ -243,6 +243,7 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
             property_obj = SchemaProperty(
                 name=property_name,
                 logicalType=get_cell_value(row, headers.get("logical type")),
+                logicalTypeOptions=import_logical_type_options(row, headers),
                 physicalType=get_cell_value(row, headers.get("physical type")),
                 physicalName=get_cell_value(row, headers.get("physical name")),
                 description=get_cell_value(row, headers.get("description")),
@@ -297,20 +298,81 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
             if examples:
                 property_obj.examples = [ex.strip() for ex in examples.split(",") if ex.strip()]
 
-            # Add property to list
-            properties.append(property_obj)
+            # Add to lookup dictionary
+            property_lookup[property_name] = property_obj
+
+        # Now organize nested properties
+        root_properties = []
+        for name, prop in property_lookup.items():
+            if "." in name:
+                # This is a nested property
+                parent_name = name.rsplit(".", 1)[0]
+                child_name = name.rsplit(".", 1)[1]
+
+                if parent_name in property_lookup:
+                    parent_prop = property_lookup[parent_name]
+                    # Update the property name to be just the child part
+                    prop.name = child_name
+
+                    # If parent is an array, set as items
+                    if parent_prop.logicalType == "array":
+                        parent_prop.items = prop
+                    else:
+                        # Otherwise add to properties list
+                        if parent_prop.properties is None:
+                            parent_prop.properties = []
+                        parent_prop.properties.append(prop)
+            else:
+                # This is a root property
+                root_properties.append(prop)
+
+        return root_properties if root_properties else None
     except Exception as e:
         logger.warning(f"Error importing properties: {str(e)}")
         return None
 
-    return properties if properties else None
+
+def import_logical_type_options(row, headers):
+    """Import logical type options from property row"""
+
+    required_props = get_cell_value(row, headers.get("required properties"))
+
+    required_props_list = None
+    if required_props:
+        required_props_list = [prop.strip() for prop in required_props.split(",") if prop.strip()]
+
+    logical_type_options_dict = {
+        "minLength": parse_integer(get_cell_value(row, headers.get("minimum length"))),
+        "maxLength": parse_integer(get_cell_value(row, headers.get("maximum length"))),
+        "pattern": get_cell_value(row, headers.get("pattern")),
+        "format": get_cell_value(row, headers.get("format")),
+        "exclusiveMaximum": parse_boolean(get_cell_value(row, headers.get("exclusive maximum"))),
+        "exclusiveMinimum": parse_boolean(get_cell_value(row, headers.get("exclusive minimum"))),
+        "minimum": get_cell_value(row, headers.get("minimum")),
+        "maximum": get_cell_value(row, headers.get("maximum")),
+        "multipleOf": get_cell_value(row, headers.get("multiple of")),
+        "minItems": parse_integer(get_cell_value(row, headers.get("minimum items"))),
+        "maxItems": parse_integer(get_cell_value(row, headers.get("maximum items"))),
+        "uniqueItems": parse_boolean(get_cell_value(row, headers.get("unique items"))),
+        "maxProperties": parse_integer(get_cell_value(row, headers.get("maximum properties"))),
+        "minProperties": parse_integer(get_cell_value(row, headers.get("minimum properties"))),
+        "required": required_props_list,
+    }
+
+    for dict_key in list(logical_type_options_dict.keys()):
+        if logical_type_options_dict[dict_key] is None:
+            del logical_type_options_dict[dict_key]
+
+    if len(logical_type_options_dict) == 0:
+        return None
+    return logical_type_options_dict
 
 
 def get_property_tags(headers, row):
     tags_value = get_cell_value(row, headers.get("tags"))
     if tags_value:
-        tag = [tag.strip() for tag in tags_value.split(",") if tag.strip()]
-    return tag
+        return [tag.strip() for tag in tags_value.split(",") if tag.strip()]
+    return None
 
 
 def parse_boolean(value):
@@ -329,6 +391,28 @@ def parse_integer(value):
         return int(value)
     except (ValueError, TypeError):
         return None
+
+
+def find_range_by_name_in_workbook(workbook: Workbook, name: str) -> Optional[tuple]:
+    """Find the range (start_row, end_row) of a named range in a workbook"""
+    try:
+        for named_range in workbook.defined_names:
+            if named_range == name:
+                destinations = workbook.defined_names[named_range].destinations
+                for sheet_title, range_address in destinations:
+                    if ":" in range_address:
+                        # Convert Excel range to row numbers
+                        start_ref, end_ref = range_address.split(":")
+                        start_row = int("".join(filter(str.isdigit, start_ref)))
+                        end_row = int("".join(filter(str.isdigit, end_ref)))
+                        return start_row, end_row
+                    else:
+                        # Single cell
+                        row = int("".join(filter(str.isdigit, range_address)))
+                        return (row, row)
+    except Exception as e:
+        logger.warning(f"Error finding range by name {name}: {str(e)}")
+    return None
 
 
 def find_range_by_name(sheet, name: str) -> Optional[tuple]:
@@ -351,7 +435,7 @@ def find_range_by_name(sheet, name: str) -> Optional[tuple]:
                             row = int("".join(filter(str.isdigit, range_address)))
                             return (row, row)
     except Exception as e:
-        logger.debug(f"Error finding range by name {name}: {str(e)}")
+        logger.warning(f"Error finding range by name {name}: {str(e)}")
     return None
 
 
@@ -366,14 +450,14 @@ def get_cell_value(row, col_idx):
         return None
 
 
-def import_support(workbook) -> Optional[List[Support]]:
+def import_support(workbook: Workbook) -> Optional[List[Support]]:
     """Extract support information from the Support sheet"""
     try:
-        support_sheet = workbook.get("Support")
+        support_sheet = workbook["Support"]
         if not support_sheet:
             return None
 
-        support_range = find_range_by_name(support_sheet, "support")
+        support_range = find_range_by_name_in_workbook(workbook, "support")
         if not support_range:
             return None
 
@@ -385,6 +469,8 @@ def import_support(workbook) -> Optional[List[Support]]:
 
         support_channels = []
         for row_idx in range(support_range[0], support_range[1]):
+            if len(list(support_sheet.rows)) < row_idx + 1:
+                break
             row = list(support_sheet.rows)[row_idx]
 
             channel = get_cell_value(row, headers.get("channel"))
@@ -402,20 +488,20 @@ def import_support(workbook) -> Optional[List[Support]]:
 
             support_channels.append(support_channel)
     except Exception as e:
-        logger.debug(f"Error importing support: {str(e)}")
+        logger.warning(f"Error importing support: {str(e)}")
         return None
 
     return support_channels if support_channels else None
 
 
-def import_team(workbook) -> Optional[List[Team]]:
+def import_team(workbook: Workbook) -> Optional[List[Team]]:
     """Extract team information from the Team sheet"""
     try:
-        team_sheet = workbook.get("Team")
+        team_sheet = workbook["Team"]
         if not team_sheet:
             return None
 
-        team_range = find_range_by_name(team_sheet, "team")
+        team_range = find_range_by_name_in_workbook(workbook, "team")
         if not team_range:
             return None
 
@@ -427,6 +513,8 @@ def import_team(workbook) -> Optional[List[Team]]:
 
         team_members = []
         for row_idx in range(team_range[0], team_range[1]):
+            if len(list(team_sheet.rows)) < row_idx + 1:
+                break
             row = list(team_sheet.rows)[row_idx]
 
             username = get_cell_value(row, headers.get("username"))
@@ -448,16 +536,16 @@ def import_team(workbook) -> Optional[List[Team]]:
 
             team_members.append(team_member)
     except Exception as e:
-        logger.debug(f"Error importing team: {str(e)}")
+        logger.warning(f"Error importing team: {str(e)}")
         return None
 
     return team_members if team_members else None
 
 
-def import_roles(workbook) -> Optional[List[Role]]:
+def import_roles(workbook: Workbook) -> Optional[List[Role]]:
     """Extract roles information from the Roles sheet"""
     try:
-        roles_sheet = workbook.get("Roles")
+        roles_sheet = workbook["Roles"]
         if not roles_sheet:
             return None
 
@@ -490,16 +578,16 @@ def import_roles(workbook) -> Optional[List[Role]]:
 
             roles_list.append(role)
     except Exception as e:
-        logger.debug(f"Error importing roles: {str(e)}")
+        logger.warning(f"Error importing roles: {str(e)}")
         return None
 
     return roles_list if roles_list else None
 
 
-def import_sla_properties(workbook) -> Optional[List[ServiceLevelAgreementProperty]]:
+def import_sla_properties(workbook: Workbook) -> Optional[List[ServiceLevelAgreementProperty]]:
     """Extract SLA properties from the SLA sheet"""
     try:
-        sla_sheet = workbook.get("SLA")
+        sla_sheet = workbook["SLA"]
         if not sla_sheet:
             return None
 
@@ -515,6 +603,8 @@ def import_sla_properties(workbook) -> Optional[List[ServiceLevelAgreementProper
 
         sla_properties = []
         for row_idx in range(sla_range[0], sla_range[1]):
+            if len(list(sla_sheet.rows)) < row_idx + 1:
+                break
             row = list(sla_sheet.rows)[row_idx]
 
             property_name = get_cell_value(row, headers.get("property"))
@@ -532,7 +622,7 @@ def import_sla_properties(workbook) -> Optional[List[ServiceLevelAgreementProper
 
             sla_properties.append(sla_property)
     except Exception as e:
-        logger.debug(f"Error importing SLA properties: {str(e)}")
+        logger.warning(f"Error importing SLA properties: {str(e)}")
         return None
 
     return sla_properties if sla_properties else None
@@ -541,19 +631,12 @@ def import_sla_properties(workbook) -> Optional[List[ServiceLevelAgreementProper
 def import_servers(workbook) -> Optional[List[Server]]:
     """Extract server information from the Servers sheet"""
     try:
-        servers_sheet = workbook.get("Servers")
-        if not servers_sheet:
+        sheet = workbook["Servers"]
+        if not sheet:
             return None
 
         # Find the server cells
-        server_cell = None
-        for named_range in workbook.defined_names.definedName:
-            if named_range.name == "servers.server":
-                for sheet_title, coordinate in named_range.destinations:
-                    if sheet_title == "Servers":
-                        server_cell = servers_sheet[coordinate]
-                        break
-
+        server_cell = find_cell_by_name(workbook, "servers.server")
         if not server_cell:
             return None
 
@@ -564,66 +647,98 @@ def import_servers(workbook) -> Optional[List[Server]]:
 
         index = 0
         while True:
-            server_name = get_cell_value_by_position(servers_sheet, row_idx, col_idx + index)
+            server_name = get_cell_value_by_position(sheet, row_idx, col_idx + index)
             if not server_name:
                 break
 
             server = Server(
                 server=server_name,
-                description=get_server_cell_value(servers_sheet, "servers.description", index),
-                environment=get_server_cell_value(servers_sheet, "servers.environment", index),
-                type=get_server_cell_value(servers_sheet, "servers.type", index),
-                project=None,
-                dataset=None,
-                location=None,
-                delimiter=None,
-                endpointUrl=None,
-                account=None,
-                database=None,
-                schema=None,
-                warehouse=None,
-                table=None,
-                view=None,
-                catalog=None,
-                port=None,
-                host=None,
-                topic=None,
-                path=None,
-                format=None,
-                stagingDir=None,
-                roles=None,
-                customProperties=None,
+                description=get_server_cell_value(workbook, sheet, "servers.description", index),
+                environment=get_server_cell_value(workbook, sheet, "servers.environment", index),
+                type=get_server_cell_value(workbook, sheet, "servers.type", index),
             )
 
             # Get type-specific fields
             server_type = server.type
             if server_type:
                 if server_type == "azure":
-                    server.location = get_server_cell_value(servers_sheet, "servers.azure.location", index)
-                    server.format = get_server_cell_value(servers_sheet, "servers.azure.format", index)
-                    server.delimiter = get_server_cell_value(servers_sheet, "servers.azure.delimiter", index)
+                    server.location = get_server_cell_value(workbook, sheet, "servers.azure.location", index)
+                    server.format = get_server_cell_value(workbook, sheet, "servers.azure.format", index)
+                    server.delimiter = get_server_cell_value(workbook, sheet, "servers.azure.delimiter", index)
                 elif server_type == "bigquery":
-                    server.project = get_server_cell_value(servers_sheet, "servers.bigquery.project", index)
-                    server.dataset = get_server_cell_value(servers_sheet, "servers.bigquery.dataset", index)
+                    server.project = get_server_cell_value(workbook, sheet, "servers.bigquery.project", index)
+                    server.dataset = get_server_cell_value(workbook, sheet, "servers.bigquery.dataset", index)
                 elif server_type == "databricks":
-                    server.catalog = get_server_cell_value(servers_sheet, "servers.databricks.catalog", index)
-                    server.host = get_server_cell_value(servers_sheet, "servers.databricks.host", index)
-                    server.schema = get_server_cell_value(servers_sheet, "servers.databricks.schema", index)
-                # Add other server types as needed
+                    server.catalog = get_server_cell_value(workbook, sheet, "servers.databricks.catalog", index)
+                    server.host = get_server_cell_value(workbook, sheet, "servers.databricks.host", index)
+                    server.schema = get_server_cell_value(workbook, sheet, "servers.databricks.schema", index)
+                elif server_type == "glue":
+                    server.account = get_server_cell_value(workbook, sheet, "servers.glue.account", index)
+                    server.database = get_server_cell_value(workbook, sheet, "servers.glue.database", index)
+                    server.format = get_server_cell_value(workbook, sheet, "servers.glue.format", index)
+                    server.location = get_server_cell_value(workbook, sheet, "servers.glue.location", index)
+                elif server_type == "kafka":
+                    server.format = get_server_cell_value(workbook, sheet, "servers.kafka.format", index)
+                    server.host = get_server_cell_value(workbook, sheet, "servers.kafka.host", index)
+                    server.topic = get_server_cell_value(workbook, sheet, "servers.kafka.topic", index)
+                elif server_type == "postgres":
+                    server.database = get_server_cell_value(workbook, sheet, "servers.postgres.database", index)
+                    server.host = get_server_cell_value(workbook, sheet, "servers.postgres.host", index)
+                    server.port = get_server_cell_value(workbook, sheet, "servers.postgres.port", index)
+                    server.schema = get_server_cell_value(workbook, sheet, "servers.postgres.schema", index)
+                elif server_type == "s3":
+                    server.delimiter = get_server_cell_value(workbook, sheet, "servers.s3.delimiter", index)
+                    server.endpointUrl = get_server_cell_value(workbook, sheet, "servers.s3.endpointUrl", index)
+                    server.format = get_server_cell_value(workbook, sheet, "servers.s3.format", index)
+                    server.location = get_server_cell_value(workbook, sheet, "servers.s3.location", index)
+                elif server_type == "snowflake":
+                    server.account = get_server_cell_value(workbook, sheet, "servers.snowflake.account", index)
+                    server.database = get_server_cell_value(workbook, sheet, "servers.snowflake.database", index)
+                    server.host = get_server_cell_value(workbook, sheet, "servers.snowflake.host", index)
+                    server.port = get_server_cell_value(workbook, sheet, "servers.snowflake.port", index)
+                    server.schema = get_server_cell_value(workbook, sheet, "servers.snowflake.schema", index)
+                    server.warehouse = get_server_cell_value(workbook, sheet, "servers.snowflake.warehouse", index)
+                elif server_type == "sqlserver":
+                    server.database = get_server_cell_value(workbook, sheet, "servers.sqlserver.database", index)
+                    server.host = get_server_cell_value(workbook, sheet, "servers.sqlserver.host", index)
+                    server.port = get_server_cell_value(workbook, sheet, "servers.sqlserver.port", index)
+                    server.schema = get_server_cell_value(workbook, sheet, "servers.sqlserver.schema", index)
+                else:
+                    # Custom server type - grab all possible fields
+                    server.account = get_server_cell_value(workbook, sheet, "servers.custom.account", index)
+                    server.catalog = get_server_cell_value(workbook, sheet, "servers.custom.catalog", index)
+                    server.database = get_server_cell_value(workbook, sheet, "servers.custom.database", index)
+                    server.dataset = get_server_cell_value(workbook, sheet, "servers.custom.dataset", index)
+                    server.delimiter = get_server_cell_value(workbook, sheet, "servers.custom.delimiter", index)
+                    server.endpointUrl = get_server_cell_value(workbook, sheet, "servers.custom.endpointUrl", index)
+                    server.format = get_server_cell_value(workbook, sheet, "servers.custom.format", index)
+                    server.host = get_server_cell_value(workbook, sheet, "servers.custom.host", index)
+                    server.location = get_server_cell_value(workbook, sheet, "servers.custom.location", index)
+                    server.path = get_server_cell_value(workbook, sheet, "servers.custom.path", index)
+                    server.port = get_server_cell_value(workbook, sheet, "servers.custom.port", index)
+                    server.project = get_server_cell_value(workbook, sheet, "servers.custom.project", index)
+                    server.schema = get_server_cell_value(workbook, sheet, "servers.custom.schema", index)
+                    server.stagingDir = get_server_cell_value(workbook, sheet, "servers.custom.stagingDir", index)
+                    server.table = get_server_cell_value(workbook, sheet, "servers.custom.table", index)
+                    server.view = get_server_cell_value(workbook, sheet, "servers.custom.view", index)
+                    server.warehouse = get_server_cell_value(workbook, sheet, "servers.custom.warehouse", index)
+                    server.region = get_server_cell_value(workbook, sheet, "servers.custom.region", index)
+                    server.regionName = get_server_cell_value(workbook, sheet, "servers.custom.regionName", index)
+                    server.serviceName = get_server_cell_value(workbook, sheet, "servers.custom.serviceName", index)
 
             servers.append(server)
             index += 1
     except Exception as e:
-        logger.debug(f"Error importing servers: {str(e)}")
+        logger.warning(f"Error importing servers: {str(e)}")
         return None
 
     return servers if servers else None
 
 
-def get_server_cell_value(sheet, name, col_offset):
+def get_server_cell_value(workbook: Workbook, sheet: Worksheet, name: str, col_offset: int):
     """Get cell value for server properties (arranged horizontally)"""
     try:
-        cell = find_cell_by_name(sheet, name)
+        cell = find_cell_by_name(workbook, name)
         if not cell:
             return None
 
@@ -631,21 +746,22 @@ def get_server_cell_value(sheet, name, col_offset):
         col = cell.column - 1 + col_offset  # 0-based
         return get_cell_value_by_position(sheet, row, col)
     except Exception as e:
-        logger.debug(f"Error getting server cell value for {name}: {str(e)}")
+        logger.warning(f"Error getting server cell value for {name}: {str(e)}")
         return None
 
 
-def find_cell_by_name(sheet, name):
-    """Find a cell by name within a sheet"""
+def find_cell_by_name(workbook: Workbook, name: str) -> Cell | None:
+    """Find a cell by name within a workbook"""
     try:
-        workbook = sheet.parent
-        for named_range in workbook.defined_names.definedName:
-            if named_range.name == name:
-                for sheet_title, coordinate in named_range.destinations:
+        for named_range in workbook.defined_names:
+            if named_range == name:
+                destinations = workbook.defined_names[named_range].destinations
+                for sheet_title, coordinate in destinations:
+                    sheet = workbook[sheet_title]
                     if sheet_title == sheet.title:
                         return sheet[coordinate]
     except Exception as e:
-        logger.debug(f"Error finding cell by name {name}: {str(e)}")
+        logger.warning(f"Error finding cell by name {name}: {str(e)}")
     return None
 
 
@@ -655,7 +771,7 @@ def get_cell_value_by_position(sheet, row_idx, col_idx):
         cell = sheet.cell(row=row_idx + 1, column=col_idx + 1)  # Convert to 1-based indices
         return str(cell.value) if cell.value is not None else None
     except Exception as e:
-        logger.debug(f"Error getting cell value by position ({row_idx}, {col_idx}): {str(e)}")
+        logger.warning(f"Error getting cell value by position ({row_idx}, {col_idx}): {str(e)}")
         return None
 
 
@@ -676,13 +792,15 @@ def import_price(workbook) -> Optional[Dict[str, Any]]:
             "priceUnit": price_unit,
         }
     except Exception as e:
-        logger.debug(f"Error importing price: {str(e)}")
+        logger.warning(f"Error importing price: {str(e)}")
         return None
 
 
-def import_custom_properties(owner, workbook) -> List[CustomProperty]:
+def import_custom_properties(workbook: Workbook) -> List[CustomProperty]:
     """Extract custom properties"""
     custom_properties = []
+
+    owner = get_cell_value_by_name(workbook, "owner")
 
     # Add owner as a custom property
     if owner:
@@ -695,9 +813,9 @@ def import_custom_properties(owner, workbook) -> List[CustomProperty]:
 
     try:
         # Get other custom properties
-        custom_properties_sheet = workbook.get("Custom Properties")
+        custom_properties_sheet = workbook["Custom Properties"]
         if custom_properties_sheet:
-            custom_properties_range = find_range_by_name(custom_properties_sheet, "customProperties")
+            custom_properties_range = find_range_by_name_in_workbook(workbook, "CustomProperties")
             if custom_properties_range:
                 # Skip header row
                 for row_idx in range(custom_properties_range[0], custom_properties_range[1]):
@@ -709,14 +827,45 @@ def import_custom_properties(owner, workbook) -> List[CustomProperty]:
                         continue
 
                     property_value = get_cell_value_by_position(custom_properties_sheet, row_idx, 1)
+                    parsed_value = parse_property_value(property_value)
 
                     custom_properties.append(
                         CustomProperty(
                             property=property_name,
-                            value=property_value,
+                            value=parsed_value,
                         )
                     )
     except Exception as e:
-        logger.debug(f"Error importing custom properties: {str(e)}")
+        logger.warning(f"Error importing custom properties: {str(e)}")
 
     return custom_properties
+
+
+def parse_property_value(value: str) -> Any:
+    """Parse a property value into the appropriate type based on Excel values"""
+    if value is None:
+        return None
+
+    # Try to convert to boolean (simple case)
+    if isinstance(value, str):
+        value_lower = value.lower().strip()
+        if value_lower == "true":
+            return True
+        if value_lower == "false":
+            return False
+
+    # Try numeric conversions
+    try:
+        # Check if it's an integer
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+
+        # Try float conversion
+        float_val = float(value)
+        # If it's a whole number, return as int
+        if float_val.is_integer():
+            return int(float_val)
+        return float_val
+    except (ValueError, TypeError, AttributeError):
+        # If conversion fails, return original string
+        return value

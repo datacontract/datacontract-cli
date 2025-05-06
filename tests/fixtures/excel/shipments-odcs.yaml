@@ -13,10 +13,10 @@ description:
   usage: Use this to analyze shipments
   limitations: Not suitable for real-time use cases
 customProperties:
-  - property: additionalField
-    value: some value
   - property: owner
     value: controlling-team
+  - property: additionalField
+    value: some value
 schema:
   - name: shipments
     logicalType: object
@@ -27,12 +27,6 @@ schema:
     dataGranularityDescription: Not Aggregated
     tags:
       - pii
-    quality:
-      - type: sql
-        description: Table shall contain at least 1 row
-        query: SELECT COUNT(*) FROM shipments
-        thresholdType: mustBeGreaterThanOrEqualTo
-        mustBeGreaterThanOrEqualTo: 1
     properties:
       - name: shipment_id
         businessName: Shipment ID
@@ -60,7 +54,6 @@ schema:
         required: true
         physicalType: text
         primaryKey: false
-        partitioned: false
         classification: internal
         examples:
           - ORD12345
@@ -68,20 +61,17 @@ schema:
         businessName: Delivery Date
         logicalType: date
         description: The actual or expected delivery date of the shipment.
-        required: false
         physicalType: timestamp_tz
         primaryKey: false
         classification: internal
         examples:
-          - 2023-10-01T10:00:00Z
+          - "2023-10-01T10:00:00Z"
       - name: carrier
         businessName: Carrier
         logicalType: string
         description: The shipping carrier used for the delivery.
-        required: false
         physicalType: text
         primaryKey: false
-        partitioned: false
         classification: internal
         examples:
           - FedEx
@@ -90,19 +80,15 @@ schema:
         businessName: Tracking Number
         logicalType: string
         description: Tracking number provided by the carrier.
-        required: false
         physicalType: text
         primaryKey: false
         classification: restricted
         examples:
           - 1Z999AA10123456784
-        criticalDataElement: false
-        quality: [ ]
       - name: status
         businessName: Status
         logicalType: string
         description: Current status of the shipment.
-        required: false
         physicalType: text
         primaryKey: false
         classification: internal
@@ -113,7 +99,6 @@ schema:
         businessName: Inline Object Definition
         logicalType: object
         description: A JSON representation of additional shipment info
-        required: false
         physicalType: json
         primaryKey: false
         partitionKeyPosition: -1
@@ -136,7 +121,6 @@ schema:
             logicalType: string
             description: Street address.
             required: true
-            unique: false
             physicalType: text
             primaryKey: false
             classification: restricted
@@ -147,7 +131,6 @@ schema:
             logicalType: string
             description: City of the shipping address.
             required: true
-            unique: false
             physicalType: text
             primaryKey: false
             classification: restricted
@@ -181,11 +164,11 @@ price:
 team:
   - username: vimportant
     role: administrator
-    dateIn: 2020-01-01
+    dateIn: "2020-01-01"
   - username: nimportant
     role: reader
-    dateIn: 2020-01-01
-    dateOut: 2024-10-10
+    dateIn: "2020-01-01"
+    dateOut: "2024-10-10"
 slaProperties:
   - property: availability
     value: 95%

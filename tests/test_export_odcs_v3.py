@@ -27,7 +27,6 @@ name: Orders Unit Test
 version: 1.0.0
 status: active
 description:
-  purpose: null
   limitations: Not intended to use in production
   usage: This data contract serves to demo datacontract CLI export.
 
