@@ -409,7 +409,7 @@ def find_range_by_name_in_workbook(workbook: Workbook, name: str) -> Optional[tu
                     else:
                         # Single cell
                         row = int("".join(filter(str.isdigit, range_address)))
-                        return (row, row)
+                        return row, row
     except Exception as e:
         logger.warning(f"Error finding range by name {name}: {str(e)}")
     return None
