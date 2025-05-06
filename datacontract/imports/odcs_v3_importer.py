@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, List
 from venv import logger
 
+from datacontract_specification.model import Quality
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
@@ -15,7 +16,6 @@ from datacontract.model.data_contract_specification import (
     Field,
     Info,
     Model,
-    Quality,
     Retention,
     Server,
     ServerRole,
@@ -203,14 +203,74 @@ def import_models(odcs: Any) -> Dict[str, Model]:
         model = Model(description=" ".join(schema_description.splitlines()) if schema_description else "", type="table")
         model.fields = import_fields(odcs_schema.properties, custom_type_mappings, server_type=get_server_type(odcs))
         if odcs_schema.quality is not None:
-            # convert dict to pydantic model
-            model.quality = [Quality.model_validate(q.model_dump(exclude_none=True)) for q in odcs_schema.quality]
+            model.quality = convert_quality_list(odcs_schema.quality)
         model.title = schema_name
         if odcs_schema.dataGranularityDescription is not None:
             model.config = {"dataGranularityDescription": odcs_schema.dataGranularityDescription}
         result[model_name] = model
 
     return result
+
+
+def convert_quality_list(odcs_quality_list):
+    """Convert a list of ODCS DataQuality objects to datacontract Quality objects"""
+    quality_list = []
+
+    if odcs_quality_list is not None:
+        for odcs_quality in odcs_quality_list:
+            quality = Quality(type=odcs_quality.type)
+
+            if odcs_quality.description is not None:
+                quality.description = odcs_quality.description
+            if odcs_quality.query is not None:
+                quality.query = odcs_quality.query
+            if odcs_quality.mustBe is not None:
+                quality.mustBe = odcs_quality.mustBe
+            if odcs_quality.mustNotBe is not None:
+                quality.mustNotBe = odcs_quality.mustNotBe
+            if odcs_quality.mustBeGreaterThan is not None:
+                quality.mustBeGreaterThan = odcs_quality.mustBeGreaterThan
+            if odcs_quality.mustBeGreaterOrEqualTo is not None:
+                quality.mustBeGreaterThanOrEqualTo = odcs_quality.mustBeGreaterOrEqualTo
+            if odcs_quality.mustBeLessThan is not None:
+                quality.mustBeLessThan = odcs_quality.mustBeLessThan
+            if odcs_quality.mustBeLessOrEqualTo is not None:
+                quality.mustBeLessThanOrEqualTo = odcs_quality.mustBeLessOrEqualTo
+            if odcs_quality.mustBeBetween is not None:
+                quality.mustBeBetween = odcs_quality.mustBeBetween
+            if odcs_quality.mustNotBeBetween is not None:
+                quality.mustNotBeBetween = odcs_quality.mustNotBeBetween
+            if odcs_quality.engine is not None:
+                quality.engine = odcs_quality.engine
+            if odcs_quality.implementation is not None:
+                quality.implementation = odcs_quality.implementation
+            if odcs_quality.businessImpact is not None:
+                quality.model_extra["businessImpact"] = odcs_quality.businessImpact
+            if odcs_quality.dimension is not None:
+                quality.model_extra["dimension"] = odcs_quality.dimension
+            if odcs_quality.rule is not None:
+                quality.model_extra["rule"] = odcs_quality.rule
+            if odcs_quality.schedule is not None:
+                quality.model_extra["schedule"] = odcs_quality.schedule
+            if odcs_quality.scheduler is not None:
+                quality.model_extra["scheduler"] = odcs_quality.scheduler
+            if odcs_quality.severity is not None:
+                quality.model_extra["severity"] = odcs_quality.severity
+            if odcs_quality.method is not None:
+                quality.model_extra["method"] = odcs_quality.method
+            if odcs_quality.customProperties is not None:
+                quality.model_extra["customProperties"] = []
+                for item in odcs_quality.customProperties:
+                    quality.model_extra["customProperties"].append(
+                        {
+                            "property": item.property,
+                            "value": item.value,
+                        }
+                    )
+
+            quality_list.append(quality)
+
+    return quality_list
 
 
 def import_field_config(odcs_property: SchemaProperty, server_type=None) -> Dict[str, Any]:
@@ -279,7 +339,7 @@ def import_fields(
                 examples=odcs_property.examples if odcs_property.examples is not None else None,
                 classification=odcs_property.classification if odcs_property.classification is not None else None,
                 tags=odcs_property.tags if odcs_property.tags is not None else None,
-                quality=odcs_property.quality if odcs_property.quality is not None else [],
+                quality=convert_quality_list(odcs_property.quality),
                 fields=import_fields(odcs_property.properties, custom_type_mappings, server_type)
                 if odcs_property.properties is not None
                 else {},
