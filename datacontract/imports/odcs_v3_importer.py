@@ -4,6 +4,8 @@ import re
 from typing import Any, Dict, List
 from venv import logger
 
+from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
+
 from datacontract.imports.importer import Importer
 from datacontract.lint.resources import read_resource
 from datacontract.model.data_contract_specification import (
@@ -38,8 +40,6 @@ def import_odcs_v3(data_contract_specification: DataContractSpecification, sourc
 def import_odcs_v3_from_str(
     data_contract_specification: DataContractSpecification, source_str: str
 ) -> DataContractSpecification:
-    from open_data_contract_standard.model import OpenDataContractStandard
-
     try:
         odcs = OpenDataContractStandard.from_string(source_str)
     except Exception as e:
@@ -101,7 +101,7 @@ def import_server_roles(roles: List[Dict]) -> List[ServerRole] | None:
         result.append(server_role)
 
 
-def import_servers(odcs: Any) -> Dict[str, Server] | None:
+def import_servers(odcs: OpenDataContractStandard) -> Dict[str, Server] | None:
     if odcs.servers is None:
         return None
     servers = {}
@@ -128,11 +128,9 @@ def import_servers(odcs: Any) -> Dict[str, Server] | None:
         server.host = odcs_server.host
         server.port = odcs_server.port
         server.catalog = odcs_server.catalog
-        server.topic = odcs_server.topic
+        server.topic = getattr(odcs_server, "topic", None)
         server.http_path = getattr(odcs_server, "http_path", None)
         server.token = getattr(odcs_server, "token", None)
-        server.dataProductId = getattr(odcs_server, "dataProductId", None)
-        server.outputPortId = getattr(odcs_server, "outputPortId", None)
         server.driver = getattr(odcs_server, "driver", None)
         server.roles = import_server_roles(odcs_server.roles)
         server.storageAccount = (
@@ -182,7 +180,7 @@ def import_servicelevels(odcs: Any) -> ServiceLevel:
         return None
 
 
-def get_server_type(odcs: Any) -> str | None:
+def get_server_type(odcs: OpenDataContractStandard) -> str | None:
     servers = import_servers(odcs)
     if servers is None or len(servers) == 0:
         return None
@@ -215,7 +213,7 @@ def import_models(odcs: Any) -> Dict[str, Model]:
     return result
 
 
-def import_field_config(odcs_property: Any, server_type=None) -> Dict[str, Any]:
+def import_field_config(odcs_property: SchemaProperty, server_type=None) -> Dict[str, Any]:
     config = {}
     if odcs_property.criticalDataElement is not None:
         config["criticalDataElement"] = odcs_property.criticalDataElement
@@ -250,12 +248,14 @@ def import_field_config(odcs_property: Any, server_type=None) -> Dict[str, Any]:
     return config
 
 
-def has_composite_primary_key(odcs_properties) -> bool:
+def has_composite_primary_key(odcs_properties: List[SchemaProperty]) -> bool:
     primary_keys = [prop for prop in odcs_properties if prop.primaryKey is not None and prop.primaryKey]
     return len(primary_keys) > 1
 
 
-def import_fields(odcs_properties: List[Any], custom_type_mappings: Dict[str, str], server_type) -> Dict[str, Field]:
+def import_fields(
+    odcs_properties: List[SchemaProperty], custom_type_mappings: Dict[str, str], server_type
+) -> Dict[str, Field]:
     logger = logging.getLogger(__name__)
     result = {}
 
@@ -275,7 +275,7 @@ def import_fields(odcs_properties: List[Any], custom_type_mappings: Dict[str, st
                 primaryKey=odcs_property.primaryKey
                 if not has_composite_primary_key(odcs_properties) and odcs_property.primaryKey is not None
                 else False,
-                unique=odcs_property.unique,
+                unique=odcs_property.unique if odcs_property.unique else None,
                 examples=odcs_property.examples if odcs_property.examples is not None else None,
                 classification=odcs_property.classification if odcs_property.classification is not None else None,
                 tags=odcs_property.tags if odcs_property.tags is not None else None,
@@ -325,7 +325,7 @@ def map_type(odcs_type: str, custom_mappings: Dict[str, str]) -> str | None:
         return None
 
 
-def get_custom_type_mappings(odcs_custom_properties: List[Any]) -> Dict[str, str]:
+def get_custom_type_mappings(odcs_custom_properties: List[CustomProperty]) -> Dict[str, str]:
     result = {}
     if odcs_custom_properties is not None:
         for prop in odcs_custom_properties:
@@ -337,7 +337,7 @@ def get_custom_type_mappings(odcs_custom_properties: List[Any]) -> Dict[str, str
     return result
 
 
-def get_owner(odcs_custom_properties: List[Any]) -> str | None:
+def get_owner(odcs_custom_properties: List[CustomProperty]) -> str | None:
     if odcs_custom_properties is not None:
         for prop in odcs_custom_properties:
             if prop.property == "owner":
@@ -346,7 +346,7 @@ def get_owner(odcs_custom_properties: List[Any]) -> str | None:
     return None
 
 
-def import_tags(odcs) -> List[str] | None:
+def import_tags(odcs: OpenDataContractStandard) -> List[str] | None:
     if odcs.tags is None:
         return None
     return odcs.tags
