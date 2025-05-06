@@ -23,9 +23,7 @@ class DescriptionLinter(Linter):
                 result = result.with_error(f"Model '{model_name}' has empty description.")
             for field_name, field in model.fields.items():
                 if not field.description:
-                    result = result.with_error(
-                        f"Field '{field_name}' in model '{model_name}'" f" has empty description."
-                    )
+                    result = result.with_error(f"Field '{field_name}' in model '{model_name}' has empty description.")
         for definition_name, definition in contract.definitions.items():
             if not definition.description:
                 result = result.with_error(f"Definition '{definition_name}' has empty description.")

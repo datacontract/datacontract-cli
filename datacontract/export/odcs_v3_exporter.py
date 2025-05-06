@@ -215,11 +215,11 @@ def to_property(field_name: str, field: Field) -> dict:
         for field_name_, field_ in field.fields.items():
             property_ = to_property(field_name_, field_)
             properties.append(property_)
-        property["properties"]=properties
+        property["properties"] = properties
     if field.items:
         items = to_property(field_name, field.items)
         del items["name"]
-        property["items"]=items
+        property["items"] = items
     if field.title is not None:
         property["businessName"] = field.title
     if field.type is not None:

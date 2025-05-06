@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Extracted the DataContractSpecification and the OpenDataContractSpecification in separate pip modules and use them in the CLI.
+
+
 ## [0.10.24] - 2025-04-19
 
 ### Added
