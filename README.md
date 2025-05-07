@@ -1305,20 +1305,21 @@ Available import options:
 
 | Type               | Description                                    | Status |
 |--------------------|------------------------------------------------|--------|
-| `sql`              | Import from SQL DDL                            | ✅      |
 | `avro`             | Import from AVRO schemas                       | ✅      |
-| `glue`             | Import from AWS Glue DataCatalog               | ✅      |
-| `jsonschema`       | Import from JSON Schemas                       | ✅      |
 | `bigquery`         | Import from BigQuery Schemas                   | ✅      |
-| `unity`            | Import from Databricks Unity Catalog           | partial |
-| `dbt`              | Import from dbt models                         | ✅      |
-| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
-| `spark`            | Import from Spark StructTypes                  | ✅      |
-| `dbml`             | Import from DBML models                        | ✅      |
 | `csv`              | Import from CSV File                           | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | ✅    |
+| `dbml`             | Import from DBML models                        | ✅      |
+| `dbt`              | Import from dbt models                         | ✅      |
+| `excel`            | Import from ODCS Excel Template                | ✅      |
+| `glue`             | Import from AWS Glue DataCatalog               | ✅      |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
-| `parquet`          | Import from Parquet File Metadta               | ✅      |
+| `jsonschema`       | Import from JSON Schemas                       | ✅      |
+| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
+| `parquet`          | Import from Parquet File Metadata              | ✅      |
+| `protobuf`         | Import from Protobuf schemas                   | ✅    |
+| `spark`            | Import from Spark StructTypes                  | ✅      |
+| `sql`              | Import from SQL DDL                            | ✅      |
+| `unity`            | Import from Databricks Unity Catalog           | partial |
 | Missing something? | Please create an issue on GitHub               | TBD    |
 
 
@@ -1388,6 +1389,17 @@ datacontract import --format dbt --source <manifest_path> --dbt-model <model_nam
 ```bash
 # Example import from dbt manifest importing all tables in the database
 datacontract import --format dbt --source <manifest_path>
+```
+
+### Excel
+
+Importing from [ODCS Excel Template](https://github.com/datacontract/open-data-contract-standard-excel-template).
+
+Examples:
+
+```bash
+# Example import from ODCS Excel Template
+datacontract import --format excel --source odcs.xlsx
 ```
 
 #### Glue
