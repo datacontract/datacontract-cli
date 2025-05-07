@@ -1906,7 +1906,8 @@ pytest
 ```bash
 # make sure uv is installed
 uv python pin 3.11
-uv sync --all-extras
+uv pip install -e '.[dev]'
+uv run ruff check
 uv run pytest
 ```
 

@@ -41,10 +41,10 @@ class NoticePeriodLinter(Linter):
         if not period:
             return LinterResult.cautious("No notice period defined.")
         if not period.startswith("P"):
-            return LinterResult.erroneous(f"Notice period '{period}' is not a valid" "ISO8601 duration.")
+            return LinterResult.erroneous(f"Notice period '{period}' is not a valid ISO8601 duration.")
         if period == "P":
             return LinterResult.erroneous(
-                "Notice period 'P' is not a valid" "ISO8601 duration, requires at least one" "duration to be specified."
+                "Notice period 'P' is not a valid ISO8601 duration, requires at least one duration to be specified."
             )
         if (
             not self.simple.fullmatch(period)

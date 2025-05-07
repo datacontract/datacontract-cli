@@ -34,8 +34,7 @@ class FieldReferenceLinter(Linter):
 
                     if ref_model not in contract.models:
                         result = result.with_error(
-                            f"Field '{field_name}' in model '{model_name}'"
-                            f" references non-existing model '{ref_model}'."
+                            f"Field '{field_name}' in model '{model_name}' references non-existing model '{ref_model}'."
                         )
                     else:
                         ref_model_obj = contract.models[ref_model]

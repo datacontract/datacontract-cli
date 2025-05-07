@@ -31,10 +31,10 @@ def import_csv(
     if data_contract_specification.servers is None:
         data_contract_specification.servers = {}
 
-    delimiter = None if dialect is None else dialect['Delimiter'][0]
+    delimiter = None if dialect is None else dialect["Delimiter"][0]
 
     if dialect is not None:
-        dc_types = [map_type_from_duckdb(x["type"]) for x in dialect['Columns'][0]]
+        dc_types = [map_type_from_duckdb(x["type"]) for x in dialect["Columns"][0]]
     else:
         dc_types = [map_type_from_duckdb(str(x)) for x in tbl.dtypes]
 

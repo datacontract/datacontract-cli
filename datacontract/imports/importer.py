@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import OpenDataContractStandard
 
 
 class Importer(ABC):
@@ -14,7 +15,7 @@ class Importer(ABC):
         data_contract_specification: DataContractSpecification,
         source: str,
         import_args: dict,
-    ) -> DataContractSpecification:
+    ) -> DataContractSpecification | OpenDataContractStandard:
         pass
 
 
@@ -33,6 +34,7 @@ class ImportFormat(str, Enum):
     parquet = "parquet"
     csv = "csv"
     protobuf = "protobuf"
+    excel = "excel"
 
     @classmethod
     def get_supported_formats(cls):

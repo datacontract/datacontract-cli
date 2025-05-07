@@ -27,7 +27,6 @@ name: Orders Unit Test
 version: 1.0.0
 status: active
 description:
-  purpose: null
   limitations: Not intended to use in production
   usage: This data contract serves to demo datacontract CLI export.
 
@@ -96,7 +95,7 @@ servers:
     database: my-database
     schema: my-schema
     roles:
-      - name: analyst_us
+      - role: analyst_us
         description: Access to the data for US region
 
 support:
@@ -114,7 +113,16 @@ customProperties:
 
     odcs = to_odcs_v3_yaml(data_contract)
 
-    assert yaml.safe_load(odcs) == yaml.safe_load(expected_odcs_model)
+    assert_equals_odcs_yaml_str(expected_odcs_model, odcs)
+
+
+def assert_equals_odcs_yaml_str(expected, actual):
+    from open_data_contract_standard.model import OpenDataContractStandard
+
+    expected_yaml = OpenDataContractStandard.from_string(expected).to_yaml()
+    print(expected_yaml)
+    assert expected_yaml == actual
+    assert yaml.safe_load(actual) == yaml.safe_load(expected)
 
 
 def read_file(file):

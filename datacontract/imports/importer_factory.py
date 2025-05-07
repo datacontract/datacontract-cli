@@ -114,3 +114,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.protobuf_importer",
     class_name="ProtoBufImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.excel,
+    module_path="datacontract.imports.excel_importer",
+    class_name="ExcelImporter",
+)
