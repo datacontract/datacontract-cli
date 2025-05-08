@@ -25,7 +25,7 @@ class BreakingChange(BaseModel):
     location: Location
 
     def __str__(self) -> str:
-        return f"""{self.severity}\t\[{self.check_name}] at {self.location.path}
+        return f"""{self.severity}\t[{self.check_name}] at {self.location.path}
         in {str.join(".", self.location.composition)}
             {self.description}"""
 
