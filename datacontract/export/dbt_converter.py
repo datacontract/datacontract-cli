@@ -9,7 +9,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 class DbtExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        return to_dbt_models_yaml(data_contract, server, export_args)
+        return to_dbt_models_yaml(data_contract, server)
 
 
 class DbtSourceExporter(Exporter):
@@ -27,9 +27,7 @@ class DbtStageExporter(Exporter):
         )
 
 
-def to_dbt_models_yaml(
-    data_contract_spec: DataContractSpecification, server: str = None, export_args: dict = None
-) -> str:
+def to_dbt_models_yaml(data_contract_spec: DataContractSpecification, server: str = None) -> str:
     dbt = {
         "version": 2,
         "models": [],
