@@ -1,0 +1,91 @@
+dataContractSpecification: 1.1.0
+id: orders-unit-test
+info:
+  title: Orders Unit Test
+  version: 1.0.0
+  status: active
+  owner: checkout
+  description: The orders data contract
+  contact:
+    email: team-orders@example.com
+    url: https://wiki.example.com/teams/checkout
+  otherField: otherValue
+terms:
+  usage: This data contract serves to demo datacontract CLI export.
+  limitations: Not intended to use in production
+  billing: free
+  noticePeriod: P3M
+servers:
+  production:
+    type: snowflake
+    environment: production
+    account: my-account
+    database: my-database
+    schema: my-schema
+    roles:
+      - name: analyst_us
+        description: Access to the data for US region
+models:
+  orders:
+    title: Webshop Orders
+    description: The orders model
+    primaryKey:
+    - order_id
+    - order_status
+    customModelProperty1: customModelProperty1Value
+    fields:
+      order_id:
+        title: Order ID
+        type: varchar
+        unique: true
+        required: true
+        minLength: 8
+        maxLength: 10
+        pii: true
+        classification: sensitive
+        tags:
+          - order_id
+        pattern: ^B[0-9]+$
+        examples:
+          - B12345678
+          - B12345679
+        customFieldProperty1: customFieldProperty1Value
+      order_total:
+        type: bigint
+        required: true
+        description: The order_total field
+        minimum: 0
+        maximum: 1000000
+        quality:
+          - type: sql
+            description: 95% of all order total values are expected to be between 10 and 499 EUR.
+            query: |
+              SELECT quantile_cont(order_total, 0.95) AS percentile_95
+              FROM orders
+            mustBeBetween: [1000, 49900]
+      order_status:
+        type: text
+        required: true
+        enum:
+          - pending
+          - shipped
+          - delivered
+    quality:
+      - type: sql
+        description: Row Count
+        query: |
+          SELECT COUNT(*) AS row_count
+          FROM orders
+        mustBeGreaterThan: 1000
+definitions:
+  customer_id:
+    title: Customer ID
+    type: string
+    format: uuid
+    description: Unique identifier for the customer.
+    examples:
+      - acbd1a47-9dca-4cb8-893e-87aa0aa0f243
+      - 5742637f-bb8b-4f0c-8ed1-afb1a91300a9
+    tags:
+      - features
+      - pii
