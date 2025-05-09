@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Fixed DBT export behaviour of constraints to default to data tests when no model type is specified in the datacontract model
+
 ## [0.10.25] - 2025-05-07
 
 ### Added
