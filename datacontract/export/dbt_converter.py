@@ -9,7 +9,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 class DbtExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        return to_dbt_models_yaml(data_contract, server)
+        return to_dbt_models_yaml(data_contract, server, export_args)
 
 
 class DbtSourceExporter(Exporter):
@@ -27,7 +27,9 @@ class DbtStageExporter(Exporter):
         )
 
 
-def to_dbt_models_yaml(data_contract_spec: DataContractSpecification, server: str = None):
+def to_dbt_models_yaml(
+    data_contract_spec: DataContractSpecification, server: str = None, export_args: dict = None
+) -> str:
     dbt = {
         "version": 2,
         "models": [],
@@ -102,8 +104,11 @@ def _to_dbt_model(
         "name": model_key,
     }
     model_type = _to_dbt_model_type(model_value.type)
+
     dbt_model["config"] = {"meta": {"data_contract": data_contract_spec.id}}
-    dbt_model["config"]["materialized"] = model_type
+
+    if model_type:
+        dbt_model["config"]["materialized"] = model_type
 
     if data_contract_spec.info.owner is not None:
         dbt_model["config"]["meta"]["owner"] = data_contract_spec.info.owner
@@ -123,7 +128,7 @@ def _to_dbt_model_type(model_type):
     # Allowed values: table, view, incremental, ephemeral, materialized view
     # Custom values also possible
     if model_type is None:
-        return "table"
+        return None
     if model_type.lower() == "table":
         return "table"
     if model_type.lower() == "view":
