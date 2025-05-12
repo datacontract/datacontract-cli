@@ -35,6 +35,7 @@ class ImportFormat(str, Enum):
     csv = "csv"
     protobuf = "protobuf"
     excel = "excel"
+    
 
     @classmethod
     def get_supported_formats(cls):
