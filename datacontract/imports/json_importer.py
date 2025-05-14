@@ -84,14 +84,8 @@ def import_json(
             "examples": [json_data] if include_examples and field_type != "boolean" else None
         }
     
-    model_name = models[base_model_name]
-    data_contract_specification.models[base_model_name] = Model(
-        type=model_name.pop("type"),
-        description=model_name.pop("description"),
-        **model_name
-    )
+    
     for model_name, model_def in models.items():
-        print(model_name)
         model_type = model_def.pop("type")
         data_contract_specification.models[model_name] = Model(
             type=model_type,
@@ -107,6 +101,7 @@ def generate_field_definition(
     """Generate a field definition for a JSON value, creating nested models as needed."""
     if isinstance(value, dict):
         # Object field
+        # Always inline objects instead of creating separate models
         fields = {}
         for key, nested_value in value.items():
             fields[key] = generate_field_definition(nested_value, key, parent_model, models)
@@ -124,7 +119,7 @@ def generate_field_definition(
         if all(isinstance(item, dict) for item in value[:5]):
             # Array of objects - inline them instead of creating a separate model
             fields = {}
-            for item in value[:5]: # we only check the first 5 items
+            for item in value[:5]:  # Sample first 5 items
                 for key, nested_value in item.items():
                     field_def = generate_field_definition(nested_value, key, parent_model, models)
                     if key in fields:
@@ -151,7 +146,7 @@ def generate_field_definition(
                 "items": items_def
             }
             
-            # Add examples if necessayry
+            # Add examples if appropriate
             if item_type not in ["boolean", "string", "null"]:
                 sample_values = [item for item in value[:5] if item is not None]
                 if sample_values:
@@ -171,7 +166,6 @@ def generate_field_definition(
             field_def["examples"] = [value]
         
         return field_def
-
 
 
 def infer_array_type(array: List) -> Tuple[str, Optional[str]]:
@@ -244,12 +238,7 @@ def determine_type_and_format(value: Any) -> Tuple[str, Optional[str]]:
 
 def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> Dict[str, Any]:
     """Merge two field definitions, reconciling type differences."""
-    # If one is a reference and one isn't, prefer the reference
-    if "$ref" in field1:
-        return field1
-    if "$ref" in field2:
-        return field2
-    
+
     result = field1.copy()
     
     # Handle type differences
@@ -267,9 +256,7 @@ def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> D
         elif all(t in ["string", "integer", "number", "boolean", "null"] for t in [type1, type2]):
             common_type = "string"
             common_format = None
-        else:
-            common_type = "string"
-            common_format = None
+
         
         result["type"] = common_type
         if common_format:
