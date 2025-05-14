@@ -152,6 +152,27 @@
         "mode": "NULLABLE",
         "name": "JSON_Field",
         "type": "JSON"
+      }, 
+      {
+        "description": "an array of objects that has multiple fields that should carry through",
+        "fields": [
+          {
+            "name": "Id", 
+            "type": "INTEGER",
+            "mode": "NULLABLE", 
+            "description": "an id field"
+          }, 
+          {
+            "name": "Name", 
+            "type": "STRING",
+            "mode": "NULLABLE", 
+            "description": "a name field"
+
+          }
+        ],
+        "mode": "REPEATED", 
+        "name": "Array_of_struct_col", 
+        "type": "RECORD"
       }
     ]
   },

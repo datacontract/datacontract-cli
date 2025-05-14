@@ -51,11 +51,11 @@ models:
         required: false
         description: A Date field
       Time_Field:
-        type: timestamp_ntz
+        type: timestamp_tz
         required: false
         description: A time field
       Datetime_Field:
-        type: timestamp
+        type: timestamp_ntz
         required: false
         description: A Datetime field
       Numeric_Field:
@@ -80,7 +80,7 @@ models:
             required: false
             description: subfield 1 of type string
           subfield_2:
-            type: int
+            type: bigint
             required: false
             description: Subfield 2 of type integer
       Range_field:
@@ -88,12 +88,32 @@ models:
         required: false
         description: a datetime range
         items:
-          type: timestamp
+          type: timestamp_ntz
       Geography_Field:
         type: object
         required: false
         description: a geography field
+        config: 
+          bigqueryType: GEOGRAPHY
       JSON_Field:
         type: object
         required: false
         description: a json field
+        config: 
+          bigqueryType: JSON
+      Array_of_struct_col:
+        type: array
+        required: false
+        description: an array of objects that has multiple fields that should carry through
+        items: 
+          type: record
+          fields: 
+            Id: 
+              type: bigint
+              required: false
+              description: an id field
+            Name: 
+              type: string
+              required: false
+              description: a name field
+      

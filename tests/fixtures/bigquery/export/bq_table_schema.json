@@ -100,9 +100,9 @@
       },
       {
         "name": "timestamp_tz_field",
-        "type": "TIMESTAMP",
+        "type": "TIME",
         "mode": "NULLABLE",
-        "description": "a simple timestamp_tz field"
+        "description": "a simple time field"
       },
       {
         "name": "timestamp_ntz_field",
@@ -225,7 +225,7 @@
       },
       {
         "name": "int_array_field",
-        "type": "INTEGER",
+        "type": "INT64",
         "mode": "REPEATED",
         "description": "an int array"
       },

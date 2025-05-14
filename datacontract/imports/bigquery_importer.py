@@ -127,7 +127,7 @@ def convert_bigquery_schema(
     return data_contract_specification
 
 
-def import_table_fields(table_fields):
+def import_table_fields(table_fields, in_array=False):
     imported_fields = {}
     for field in table_fields:
         field_name = field.get("name")
@@ -136,20 +136,38 @@ def import_table_fields(table_fields):
         imported_fields[field_name].description = field.get("description")
 
         if field.get("type") == "RECORD":
-            imported_fields[field_name].type = "object"
-            imported_fields[field_name].fields = import_table_fields(field.get("fields"))
+            if field.get("mode") == "REPEATED":
+                imported_fields[field_name].type = "array"
+                imported_fields[field_name].items = Field(
+                type="record", fields= import_table_fields(field.get("fields"), in_array=True))
+            else:
+                imported_fields[field_name].type = "object"
+                imported_fields[field_name].fields = import_table_fields(field.get("fields"), in_array=True)
+
         elif field.get("type") == "STRUCT":
             imported_fields[field_name].type = "struct"
-            imported_fields[field_name].fields = import_table_fields(field.get("fields"))
+            imported_fields[field_name].fields = import_table_fields(field.get("fields"), in_array=in_array)
         elif field.get("type") == "RANGE":
             # This is a range of date/datetime/timestamp but multiple values
             # So we map it to an array
             imported_fields[field_name].type = "array"
             imported_fields[field_name].items = Field(
-                type=map_type_from_bigquery(field["rangeElementType"].get("type"))
+                type=map_type_from_bigquery(field["rangeElementType"].get("type"), in_array=True)
             )
-        else:  # primitive type
-            imported_fields[field_name].type = map_type_from_bigquery(field.get("type"))
+        elif field.get("type") == "GEOGRAPHY":
+            imported_fields[field_name].type = map_type_from_bigquery(field.get("type"), in_array=in_array)
+            imported_fields[field_name].config = {"bigqueryType": "GEOGRAPHY"}
+        elif field.get("type") == "JSON":
+            imported_fields[field_name].type = map_type_from_bigquery(field.get("type"), in_array=in_array)
+            imported_fields[field_name].config = {"bigqueryType": "JSON"}
+
+        else:
+            if field.get("type") == "REPEATED": # not a type record meaning type ARRAY<STRING> ARRAY<INTEGER>
+                imported_fields[field_name].type = "array"
+                imported_fields[field_name].items = Field(
+                type= map_type_from_bigquery(field.get("type"), in_array=True))
+            else: # primitive type
+                imported_fields[field_name].type = map_type_from_bigquery(field.get("type"), in_array=in_array)
 
         if field.get("type") == "STRING":
             # in bigquery both string and bytes have maxLength but in the datacontracts
@@ -167,13 +185,13 @@ def import_table_fields(table_fields):
     return imported_fields
 
 
-def map_type_from_bigquery(bigquery_type_str: str):
+def map_type_from_bigquery(bigquery_type_str: str, in_array=False):
     if bigquery_type_str == "STRING":
         return "string"
     elif bigquery_type_str == "BYTES":
         return "bytes"
     elif bigquery_type_str == "INTEGER":
-        return "int"
+        return "bigint" if in_array else "int"
     elif bigquery_type_str == "INT64":
         return "bigint"
     elif bigquery_type_str == "FLOAT":
@@ -187,9 +205,9 @@ def map_type_from_bigquery(bigquery_type_str: str):
     elif bigquery_type_str == "DATE":
         return "date"
     elif bigquery_type_str == "TIME":
-        return "timestamp_ntz"
+        return "timestamp_tz"
     elif bigquery_type_str == "DATETIME":
-        return "timestamp"
+        return "timestamp_ntz"
     elif bigquery_type_str == "NUMERIC":
         return "numeric"
     elif bigquery_type_str == "BIGNUMERIC":
