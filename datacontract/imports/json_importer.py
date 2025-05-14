@@ -173,23 +173,6 @@ def generate_field_definition(
         return field_def
 
 
-def is_complex_object(obj: Dict) -> bool:
-    """Determine if an object is complex enough to warrant its own model."""
-    if not isinstance(obj, dict):
-        return False
-    
-    # If it has many fields, it's complex
-    if len(obj) > 5:
-        return True
-    
-    # If it has nested objects or arrays, it's complex
-    for value in obj.values():
-        if isinstance(value, (dict, list)):
-            return True
-    
-    # Otherwise, it's simple
-    return False
-
 
 def infer_array_type(array: List) -> Tuple[str, Optional[str]]:
     """Infer the common type of items in an array."""
