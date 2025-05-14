@@ -1,0 +1,48 @@
+dataContractSpecification: 1.1.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+servers:
+  production:
+    type: local
+    format: csv
+    path: .\fixtures\csv\data\sample_data.csv
+    delimiter: ','
+models:
+  sample_data:
+    description: Generated model of .\fixtures\csv\data\sample_data.csv
+    type: table
+    fields:
+      field_one:
+        type: string
+        required: true
+        unique: true
+        examples:
+        - FK-230-KZ
+        - CX-263-DU
+        - ZE-172-FP
+        - ID-840-EG
+        - MT-939-FH
+      field_two:
+        type: integer
+        required: true
+        unique: true
+        minimum: 14.0
+        maximum: 89.0
+        examples:
+        - 64
+        - 22
+        - 47
+        - 63
+        - 89
+      field_three:
+        type: timestamp
+        required: true
+        unique: true
+        examples:
+        - '2023-09-08 20:08:43'
+        - '2023-06-16 13:12:56'
+        - '2023-10-02 17:17:58'
+        - '2023-05-16 01:08:22'
+        - '2023-03-15 05:15:21'
