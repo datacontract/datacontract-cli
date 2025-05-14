@@ -107,7 +107,6 @@ def generate_field_definition(
     """Generate a field definition for a JSON value, creating nested models as needed."""
     if isinstance(value, dict):
         # Object field
-        # Always inline objects instead of creating separate models
         fields = {}
         for key, nested_value in value.items():
             fields[key] = generate_field_definition(nested_value, key, parent_model, models)
@@ -125,7 +124,7 @@ def generate_field_definition(
         if all(isinstance(item, dict) for item in value[:5]):
             # Array of objects - inline them instead of creating a separate model
             fields = {}
-            for item in value[:5]:  # Sample first 5 items
+            for item in value[:5]: # we only check the first 5 items
                 for key, nested_value in item.items():
                     field_def = generate_field_definition(nested_value, key, parent_model, models)
                     if key in fields:
