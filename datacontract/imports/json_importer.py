@@ -54,7 +54,7 @@ def import_json(
                 "examples": json_data[:3] if include_examples else None
             }
         else:
-            # Simple array of primitives or mixed types
+            # Simple array 
             item_type, item_format = infer_array_type(json_data[:20])
             models[base_model_name] = {
                 "type": "array",
@@ -84,8 +84,14 @@ def import_json(
             "examples": [json_data] if include_examples and field_type != "boolean" else None
         }
     
-    # Add all generated models to data contract
+    model_name = models[base_model_name]
+    data_contract_specification.models[base_model_name] = Model(
+        type=model_name.pop("type"),
+        description=model_name.pop("description"),
+        **model_name
+    )
     for model_name, model_def in models.items():
+        print(model_name)
         model_type = model_def.pop("type")
         data_contract_specification.models[model_name] = Model(
             type=model_type,
@@ -146,7 +152,7 @@ def generate_field_definition(
                 "items": items_def
             }
             
-            # Add examples if appropriate
+            # Add examples if necessayry
             if item_type not in ["boolean", "string", "null"]:
                 sample_values = [item for item in value[:5] if item is not None]
                 if sample_values:
