@@ -100,8 +100,6 @@ def generate_field_definition(
 ) -> Dict[str, Any]:
     """Generate a field definition for a JSON value, creating nested models as needed."""
     if isinstance(value, dict):
-        # Object field
-        # Always inline objects instead of creating separate models
         fields = {}
         for key, nested_value in value.items():
             fields[key] = generate_field_definition(nested_value, key, parent_model, models)
