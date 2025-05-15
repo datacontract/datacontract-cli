@@ -133,7 +133,7 @@ def generate_field_definition(
                 }
             }
         else:
-            # Array of simple types
+            # array of simple types
             item_type, item_format = infer_array_type(value[:20])
             items_def = {"type": item_type}
             if item_format:
