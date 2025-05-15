@@ -98,7 +98,7 @@ def import_json(
 def generate_field_definition(
     value: Any, field_name: str, parent_model: str, models: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Any]:
-    """Generate a field definition for a JSON value, creating nested models as needed."""
+    """Generate a field definition for a JSON value, creating nested models."""
     if isinstance(value, dict):
         fields = {}
         for key, nested_value in value.items():
