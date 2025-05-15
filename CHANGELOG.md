@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Changed
+
+- ODCS export: Export physical type if the physical type is configured in config object
+
 ## [0.10.25] - 2025-05-07
 
 ### Added
