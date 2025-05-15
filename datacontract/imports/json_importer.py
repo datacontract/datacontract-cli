@@ -115,7 +115,7 @@ def generate_field_definition(
             return {"type": "array", "items": {"type": "string"}}
         
         if all(isinstance(item, dict) for item in value[:5]):
-            # Array of objects - inline them instead of creating a separate model
+            # array of objects 
             fields = {}
             for item in value[:5]:  # Sample first 5 items
                 for key, nested_value in item.items():
@@ -224,7 +224,6 @@ def determine_type_and_format(value: Any) -> Tuple[str, Optional[str]]:
             else:
                 return "string", None
         except re.error:
-            # If any regex error occurs, just treat as regular string
             return "string", None
     elif isinstance(value, dict):
         return "object", None
@@ -239,12 +238,10 @@ def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> D
 
     result = field1.copy()
     
-    # Handle type differences
     if field1.get("type") != field2.get("type"):
         type1, format1 = field1.get("type", "string"), field1.get("format")
         type2, format2 = field2.get("type", "string"), field2.get("format")
         
-        # Determine common type
         if type1 == "integer" and type2 == "number" or type1 == "number" and type2 == "integer":
             common_type = "number"
             common_format = None
@@ -262,12 +259,11 @@ def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> D
         elif "format" in result:
             del result["format"]
     
-    # Merge examples
+    # merge examples
     if "examples" in field2:
         if "examples" in result:
-            # Combine examples without duplicates
             combined = result["examples"] + [ex for ex in field2["examples"] if ex not in result["examples"]]
-            result["examples"] = combined[:5]  # Limit to 5 examples
+            result["examples"] = combined[:5]  # limit to 5 examples
         else:
             result["examples"] = field2["examples"]
     
