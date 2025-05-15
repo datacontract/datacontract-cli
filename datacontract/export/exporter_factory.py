@@ -90,6 +90,12 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
+    name=ExportFormat.mermaid,
+    module_path="datacontract.export.mermaid_export",
+    class_name="MermaidExporter",
+)
+
+exporter_factory.register_lazy_exporter(
     name=ExportFormat.dbt_sources,
     module_path="datacontract.export.dbt_converter",
     class_name="DbtSourceExporter",

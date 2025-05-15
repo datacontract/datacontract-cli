@@ -5,6 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {# <script src="https://cdn.tailwindcss.com"></script> #}
+  <script src="https://unpkg.com/@panzoom/panzoom@4.6.0/dist/panzoom.min.js"></script>
+
   <style>
     {{ style | safe }}
   </style>
@@ -29,6 +31,48 @@
       </div>
     </div>
   </nav>
+
+<!-- Section pour le diagramme Mermaid -->
+<div class="diagram-section my-8">
+  <h2 class="text-xl font-bold mb-4">Entity Relationship Diagram</h2>
+  <div class="flex items-center gap-x-4">
+    <div class="diagram-container border rounded p-4" id="diagram-container" style="overflow: hidden; width: 100%; height: 500px;">
+      <pre class="mermaid">
+        {{ datacontract.to_mermaid() }}
+      </pre>
+    </div>
+  </div>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      startOnLoad: false,
+      theme: 'neutral'
+    });
+    await mermaid.run({
+      querySelector: '.mermaid',
+      postRenderCallback: (id) => {
+        const container = document.getElementById("diagram-container");
+        const svgElement = container.querySelector("svg");
+        
+        if (svgElement) {
+          // Initialize Panzoom
+          const panzoomInstance = Panzoom(svgElement, {
+            maxScale: 5,
+            minScale: 0.5,
+            step: 0.1,
+          });
+
+          // Mouse wheel zoom
+          container.addEventListener("wheel", (event) => {
+            event.preventDefault();
+            panzoomInstance.zoomWithWheel(event);
+          });
+        }
+      }
+    });
+  </script>
+</div>
+
 
   <main class="pb-7">
 
