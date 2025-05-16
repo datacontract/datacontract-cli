@@ -188,7 +188,6 @@ def process_s3_file(run, server, schema, model_name, validate):
     if "{model}" in s3_location:
         s3_location = s3_location.format(model=model_name)
     json_stream = None
-
     for file_content in yield_s3_files(s3_endpoint_url, s3_location):
         if server.delimiter == "new_line":
             json_stream = read_json_lines_content(file_content)
@@ -214,6 +213,8 @@ def process_s3_file(run, server, schema, model_name, validate):
 
 
 def check_jsonschema(run: Run, data_contract: DataContractSpecification, server: Server):
+    print("check_jsonschema")
+    
     run.log_info("Running engine jsonschema")
 
     # Early exit conditions

@@ -102,7 +102,29 @@ def generate_field_definition(
     if isinstance(value, dict):
         fields = {}
         for key, nested_value in value.items():
-            fields[key] = generate_field_definition(nested_value, key, parent_model, models)
+            if isinstance(nested_value, list):
+                # for list field that contains arrays
+                if nested_value and all(isinstance(item, list) for item in nested_value[:5]):
+                    # for array of arrays
+                    fields[key] = {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    }
+                # for any list that contains null values
+                elif any(item is None for item in nested_value):
+                    fields[key] = {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                else:
+                    # normal field definition
+                    fields[key] = generate_field_definition(nested_value, key, parent_model, models)
+            else:
+                # normal field definition for non-list types
+                fields[key] = generate_field_definition(nested_value, key, parent_model, models)
         
         return {
             "type": "object",
@@ -114,6 +136,51 @@ def generate_field_definition(
         if not value:
             return {"type": "array", "items": {"type": "string"}}
         
+        # Generic handling for arrays of arrays
+        if all(isinstance(item, list) for item in value[:5]):
+            # Check the inner arrays
+            inner_item_types = set()
+            for inner_array in value[:5]:
+                for item in inner_array:
+                    if item is not None:
+                        inner_item_types.add(type(item).__name__)
+            
+            # If inner items are all the same type (or empty)
+            if len(inner_item_types) <= 1:
+                inner_type = "string"  # Default
+                if inner_item_types:
+                    type_name = next(iter(inner_item_types))
+                    if type_name == "dict":
+                        inner_type = "object"
+                    elif type_name == "list":
+                        inner_type = "array"
+                    # else keep string
+                
+                return {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {"type": inner_type}
+                    }
+                }
+        
+        # Generic handling for arrays with null values
+        if any(item is None for item in value):
+            non_null_items = [item for item in value if item is not None]
+            if not non_null_items:
+                return {"type": "array", "items": {"type": "string"}}
+            
+            # Determine type from non-null items
+            item_type, item_format = infer_array_type(non_null_items)
+            items_def = {"type": item_type}
+            if item_format:
+                items_def["format"] = item_format
+            
+            return {
+                "type": "array",
+                "items": items_def
+            }
+            
         if all(isinstance(item, dict) for item in value[:5]):
             # array of objects 
             fields = {}
