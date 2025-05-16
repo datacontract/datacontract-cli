@@ -105,3 +105,40 @@ def test_simple_product_json_import():
     
     data_contract = DataContract(data_contract_str=yaml_output)
     assert data_contract.lint(enabled_linters="none").has_passed()
+    
+def test_json_expected():
+    # Get the expected and actual dictionaries
+    expected_data_contract_file = "fixtures/import/productsimple-datacontract.yaml"
+    with open(expected_data_contract_file) as file:
+        expected_json = file.read()
+    expected_dict = yaml.safe_load(expected_json)
+    
+    json_file = "fixtures/import/product_simple.json"
+    actual = DataContract().import_from_source("json", json_file).to_yaml()
+    actual_dict = yaml.safe_load(actual)
+    
+    # normalize paths in both dictionaries to use forward slashes and remove any ./tests/ prefix
+    if 'servers' in expected_dict and 'production' in expected_dict['servers']:
+        if 'path' in expected_dict['servers']['production']:
+            expected_dict['servers']['production']['path'] = expected_dict['servers']['production']['path'].replace('\\', '/').replace('./tests/', '')
+    
+    if 'models' in expected_dict and 'product_simple' in expected_dict['models']:
+        if 'description' in expected_dict['models']['product_simple']:
+            expected_dict['models']['product_simple']['description'] = expected_dict['models']['product_simple']['description'].replace('\\', '/').replace('./tests/', '')
+    
+    if 'servers' in actual_dict and 'production' in actual_dict['servers']:
+        if 'path' in actual_dict['servers']['production']:
+            actual_dict['servers']['production']['path'] = actual_dict['servers']['production']['path'].replace('\\', '/').replace('./tests/', '')
+    
+    if 'models' in actual_dict and 'product_simple' in actual_dict['models']:
+        if 'description' in actual_dict['models']['product_simple']:
+            actual_dict['models']['product_simple']['description'] = actual_dict['models']['product_simple']['description'].replace('\\', '/').replace('./tests/', '')
+    
+    # compare the normalized dictionaries
+    print("Expected Dict:", expected_dict)
+    print("Actual Dict:", actual_dict)
+    assert actual_dict == expected_dict
+    
+    # making sure the data contract is correct
+    data_contract = DataContract(data_contract_str=actual)
+    assert data_contract.lint(enabled_linters="none").has_passed()

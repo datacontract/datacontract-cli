@@ -1,0 +1,317 @@
+dataContractSpecification: 1.1.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+servers:
+  production:
+    type: local
+    format: json
+    path: .\tests\fixtures\import\product_simple.json
+models:
+  product_simple:
+    description: Generated from JSON object in .\tests\fixtures\import\product_simple.json
+    type: object
+    fields:
+      identification:
+        type: object
+        fields:
+          productType:
+            type: string
+            examples:
+            - EA
+          gtin:
+            type: string
+            examples:
+            - '056500371706'
+          gtin14:
+            type: string
+            examples:
+            - '00056500371706'
+          targetMarketCountryCode:
+            type: string
+            examples:
+            - '124'
+          catalogueGln:
+            type: string
+            examples:
+            - 0068780060324
+          dataProviderName:
+            type: string
+            examples:
+            - Bayer Inc. Consumer Health
+          gpc:
+            type: string
+            examples:
+            - '10000856'
+          gpcDescription:
+            type: string
+            examples:
+            - General/Multi-use Pain Relief
+          baseGln:
+            type: string
+            examples:
+            - 0056500000019
+      pharmaceuticalContent:
+        type: array
+        items:
+          type: object
+          fields:
+            extendedDescriptionEnglish:
+              type: string
+              examples:
+              - Aleve Back and Body Pain 220mg, 30s
+            shortDescriptionEnglish:
+              type: string
+              examples:
+              - Aleve Back & Body 30s
+            productLabelType:
+              type: string
+              examples:
+              - CS
+            dateAvailable:
+              type: string
+              format: date
+              examples:
+              - '2021-02-01'
+            shapeDescriptionEnglish:
+              type: string
+              examples:
+              - Oval
+            shapeDescriptionFrench:
+              type: string
+              examples:
+              - Ovale
+            markingDirectEnglish:
+              type: string
+              examples:
+              - Aleve
+            markingDirectFrench:
+              type: string
+              examples:
+              - Aleve
+            drugType:
+              type: string
+              examples:
+              - T1
+            controlledDrug:
+              type: string
+              examples:
+              - CON4
+            narcotic:
+              type: string
+              examples:
+              - NAR4
+            targetedSubstance:
+              type: string
+              examples:
+              - N
+            federalReportable:
+              type: string
+              examples:
+              - N
+            precursorStatus:
+              type: string
+              examples:
+              - PN
+            tempControlRangeMin:
+              type: string
+              examples:
+              - '15'
+            tempControlRangeMax:
+              type: string
+              examples:
+              - '25'
+            tempControlRangeUOM:
+              type: string
+              examples:
+              - CE
+            labelStorageConditionsEnglish:
+              type: string
+              examples:
+              - Store between 15C and 25C
+            labelStorageConditionsFrench:
+              type: string
+              examples:
+              - Conserver entre 15C et 25C
+            sterile:
+              type: string
+              examples:
+              - N
+            shakable:
+              type: string
+              examples:
+              - N
+            colourDescriptionEnglish:
+              type: string
+              examples:
+              - Blue
+            colourDescriptionFrench:
+              type: string
+              examples:
+              - Bleu
+            flavourDescriptionEnglish:
+              type: string
+              examples:
+              - n/a
+            flavourDescriptionFrench:
+              type: string
+              examples:
+              - n/a
+            dateEffective:
+              type: string
+              format: date
+              examples:
+              - '2021-02-01'
+            totalUnits:
+              type: string
+              examples:
+              - '1'
+            length:
+              type: string
+              examples:
+              - '5.59'
+            lengthUOM:
+              type: string
+              examples:
+              - CM
+            width:
+              type: string
+              examples:
+              - '9.91'
+            widthUOM:
+              type: string
+              examples:
+              - CM
+            height:
+              type: string
+              examples:
+              - '5.59'
+            heightUOM:
+              type: string
+              examples:
+              - CM
+            volume:
+              type: string
+              examples:
+              - '310'
+            volumeUOM:
+              type: string
+              examples:
+              - CC
+            grossWeight:
+              type: string
+              examples:
+              - '0.09'
+            grossWeightUOM:
+              type: string
+              examples:
+              - K
+            packagingFormQual:
+              type: string
+              examples:
+              - BOX
+            packagingMaterialQual:
+              type: string
+              examples:
+              - '31'
+            size:
+              type: string
+              examples:
+              - '30'
+            sizeUOM:
+              type: string
+              examples:
+              - EA
+            originOfProductCountry:
+              type: string
+              examples:
+              - US
+            gpcClassificationCode:
+              type: string
+              examples:
+              - '10000856'
+            barcodeSymbologyMulti:
+              type: array
+              items:
+                type: string
+            unspsc:
+              type: string
+              examples:
+              - '51384533'
+            productType:
+              type: string
+              examples:
+              - EA
+            hazardRatingSystemWHMISclassCode:
+              type: array
+              items:
+                type: string
+            rxDosageForm:
+              type: string
+              examples:
+              - CAPU
+            rxRouteOfAdministration:
+              type: string
+              examples:
+              - OR
+            anatomicalTherapeuticChemical:
+              type: string
+              examples:
+              - M01AE02
+            markingLotNumber:
+              type: string
+              examples:
+              - Y
+            drugMerchandising:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingBC:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingMB:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingNB:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingNF:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingNS:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingNT:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingNU:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingON:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingPE:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingQC:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingSK:
+              type: string
+              examples:
+              - OT
+            drugMerchandisingYT:
+              type: string
+              examples:
+              - OT
