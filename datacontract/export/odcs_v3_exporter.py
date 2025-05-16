@@ -202,6 +202,8 @@ def to_logical_type(type: str) -> str | None:
         return "array"
     if type.lower() in ["array"]:
         return "array"
+    if type.lower() in ["variant"]:
+        return "variant"
     if type.lower() in ["null"]:
         return None
     return None

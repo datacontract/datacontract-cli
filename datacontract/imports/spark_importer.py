@@ -154,5 +154,7 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
         return "null"
     elif isinstance(spark_type, types.VarcharType):
         return "varchar"
+    elif isinstance(spark_type, types.VariantType):
+        return "variant"
     else:
         raise ValueError(f"Unsupported Spark type: {spark_type}")

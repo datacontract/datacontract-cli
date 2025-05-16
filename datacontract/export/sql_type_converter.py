@@ -197,6 +197,8 @@ def convert_to_databricks(field: Field) -> None | str:
     if type.lower() in ["array"]:
         item_type = convert_to_databricks(field.items)
         return f"ARRAY<{item_type}>"
+    if type.lower() in ["variant"]:
+        return "VARIANT"
     return None
 
 
