@@ -270,6 +270,15 @@ class DataContract:
     ) -> DataContractSpecification:
         data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
+        # Set owner and id if provided
+        if kwargs.get("owner"):
+            if data_contract_specification_initial.info is None:
+                data_contract_specification_initial.info = {}
+            data_contract_specification_initial.info.owner = kwargs["owner"]
+
+        if kwargs.get("id"):
+            data_contract_specification_initial.id = kwargs["id"]
+
         return importer_factory.create(format).import_source(
             data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
         )
