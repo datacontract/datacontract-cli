@@ -44,7 +44,6 @@ schema:
             minLength: 8
             maxLength: 10
             pattern: ^B[0-9]+$
-        physicalType: varchar
         required: true
         unique: true
         tags:
@@ -63,7 +62,6 @@ schema:
         logicalTypeOptions:
             minimum: 0
             maximum: 1000000
-        physicalType: bigint
         required: true
         description: The order_total field
         quality:
@@ -75,7 +73,6 @@ schema:
             mustBeBetween: [1000, 49900]
       - name: order_status
         logicalType: string
-        physicalType: text
         required: true
     quality:
     - type: sql
