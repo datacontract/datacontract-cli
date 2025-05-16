@@ -7,10 +7,10 @@ servers:
   production:
     type: local
     format: json
-    path: ./tests\fixtures\import\product_detail.json
+    path: .\tests\fixtures\import\product_detail.json
 models:
   product_detail:
-    description: Generated from JSON object in ./tests\fixtures\import\product_detail.json
+    description: Generated from JSON object in .\tests\fixtures\import\product_detail.json
     type: object
     fields:
       identification:
