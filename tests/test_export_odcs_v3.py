@@ -39,8 +39,8 @@ schema:
     properties:
       - name: order_id
         businessName: Order ID
-        physicalType: varchar
         logicalType: string
+        physicalType: varchar
         logicalTypeOptions:
             minLength: 8
             maxLength: 10
@@ -59,8 +59,8 @@ schema:
         - property: pii
           value: true
       - name: order_total
-        physicalType: bigint
         logicalType: integer
+        physicalType: bigint
         logicalTypeOptions:
             minimum: 0
             maximum: 1000000
@@ -74,8 +74,8 @@ schema:
               FROM orders
             mustBeBetween: [1000, 49900]
       - name: order_status
-        physicalType: text
         logicalType: string
+        physicalType: text
         required: true
     quality:
     - type: sql
