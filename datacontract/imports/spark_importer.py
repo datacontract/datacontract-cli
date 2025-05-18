@@ -70,7 +70,7 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Mod
     table_comment = None
     try:
         table_comment = spark.catalog.getTable(source).description
-    except Exception as e:
+    except Exception:
         rows = spark.sql(f"DESCRIBE TABLE EXTENDED {source}").collect()
         for row in rows:
             if row.col_name == "Comment": # Table level comment
