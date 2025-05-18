@@ -46,22 +46,37 @@ def import_spark(data_contract_specification: DataContractSpecification, source:
     for temp_view in source.split(","):
         temp_view = temp_view.strip()
         df = spark.read.table(temp_view)
-        data_contract_specification.models[temp_view] = import_from_spark_df(df)
+        data_contract_specification.models[temp_view] = import_from_spark_df(spark, source, df)
     return data_contract_specification
 
 
-def import_from_spark_df(df: DataFrame) -> Model:
+def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Model:
     """
     Converts a Spark DataFrame into a Model.
 
     Args:
+        spark: SparkSession
+        source: A comma-separated string of Spark temporary views to read.
         df: The Spark DataFrame to convert.
 
     Returns:
         Model: The generated data contract model.
     """
+    
     model = Model()
     schema = df.schema
+
+    # Get table-level comments
+    table_comment = None
+    try:
+        table_comment = spark.catalog.getTable(source).description
+    except Exception as e:
+        rows = spark.sql(f"DESCRIBE TABLE EXTENDED {source}").collect()
+        for row in rows:
+            if row.col_name == "Comment": # Table level comment
+                table_comment = row.data_type # Table comment is stored in data_type
+    
+    model.description = table_comment
 
     for field in schema:
         model.fields[field.name] = _field_from_struct_type(field)
