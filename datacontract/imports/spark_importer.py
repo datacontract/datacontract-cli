@@ -5,7 +5,7 @@ from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Field,
     Model,
-    Server,
+    Server
 )
 
 
