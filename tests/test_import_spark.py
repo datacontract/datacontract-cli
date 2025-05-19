@@ -17,6 +17,7 @@ servers:
     type: dataframe
 models:
   users:
+    description: Test description for users model.
     fields:
       id:
         type: string
