@@ -1,5 +1,4 @@
 from databricks.sdk import WorkspaceClient
-
 from pyspark.sql import DataFrame, SparkSession, types
 
 from datacontract.imports.importer import Importer
