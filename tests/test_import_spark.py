@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-expected = """
+expected = '''
 dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
@@ -17,7 +17,7 @@ servers:
     type: dataframe
 models:
   users:
-    description: null
+    description: ""
     fields:
       id:
         type: string
@@ -66,7 +66,7 @@ models:
             source:
               type: string
               required: false
-    """
+    '''
 
 
 @pytest.fixture(scope="session")
