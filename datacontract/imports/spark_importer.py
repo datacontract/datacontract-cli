@@ -189,7 +189,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
         current_schema = spark.sql("SELECT current_database()").collect()[0][0]
 
     # Get table comment if it exists
-    table_comment = ''
+    table_comment = None
     source = f"{current_catalog}.{current_schema}.{source}"
     try:
         # Initialize WorkspaceClient for Unity Catalog API calls
