@@ -1,5 +1,5 @@
 from pyspark.sql import DataFrame, SparkSession, types
-
+from databricks.sdk import WorkspaceClient
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
@@ -65,18 +65,8 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Mod
     
     model = Model()
     schema = df.schema
-
-    # Get table-level comments
-    table_comment = None
-    try:
-        table_comment = spark.catalog.getTable(source).description
-    except Exception:
-        rows = spark.sql(f"DESCRIBE TABLE EXTENDED {source}").collect()
-        for row in rows:
-            if row.col_name == "Comment": # Table level comment
-                table_comment = row.data_type # Table comment is stored in data_type
     
-    model.description = table_comment
+    model.description = _table_comment_from_spark(spark, source)
 
     for field in schema:
         model.fields[field.name] = _field_from_struct_type(field)
@@ -173,3 +163,60 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
         return "variant"
     else:
         raise ValueError(f"Unsupported Spark type: {spark_type}")
+
+
+def _table_comment_from_spark(spark: SparkSession, source: str):
+    """
+    Attempts to retrieve the table-level comment from a Spark table using multiple fallback methods.
+    
+    Args:
+        spark (SparkSession): The active Spark session.
+        source (str): The name of the table (without catalog or schema).
+        
+    Returns:
+        str or None: The table-level comment, if found.
+    """
+
+    # Initialize WorkspaceClient for Unity Catalog API calls
+    workspace_client = WorkspaceClient()
+
+    # Get Current Catalog and Schema from Spark Session
+    try:
+        current_catalog = spark.sql("SELECT current_catalog()").collect()[0][0]
+    except Exception:
+        current_catalog = "hive_metastore"  # Fallback for non-Unity Catalog clusters
+    try:
+        current_schema = spark.catalog.currentDatabase()
+    except Exception:
+        current_schema = spark.sql("SELECT current_database()").collect()[0][0]
+    print(f"current_catalog: {current_catalog} and current_schema: {current_schema}")
+
+    # Get table comment if it exists
+    table_comment = None
+    source = f"{current_catalog}.{current_schema}.{source}"
+    try:
+        if table_comment is None:
+            created_table = workspace_client.tables.get(full_name=f"{source}")
+            table_comment = created_table.comment
+    except Exception as e:
+        print(f"'WorkspaceClient.tables.get({source})' failed: {e}\n")
+
+    # Fallback to Spark Catalog API for Hive Metastore or Non-UC Tables
+    try:
+        if table_comment is None:
+            table_comment = spark.catalog.getTable(f"{source}").description
+    except Exception as e:
+        print(f"'spark.catalog.getTable({source}).description' failed: {e}\n")
+
+    # Final Fallback Using DESCRIBE TABLE EXTENDED
+    try:
+        if table_comment is None:
+            rows = spark.sql(f"DESCRIBE TABLE EXTENDED {source}").collect()
+            for row in rows:
+                if row.col_name.strip().lower() == "comment":
+                    table_comment = row.data_type
+                    break
+    except Exception as e:
+        print(f"'DESCRIBE TABLE EXTENDED {source}' failed: {e}\n")
+
+    return "" if table_comment is None else table_comment
