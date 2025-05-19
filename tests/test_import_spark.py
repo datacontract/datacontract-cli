@@ -17,7 +17,7 @@ servers:
     type: dataframe
 models:
   users:
-    description: Test description for users model.
+    description: Test description for users model
     fields:
       id:
         type: string
@@ -90,7 +90,15 @@ def spark(tmp_path_factory) -> SparkSession:
     return spark
 
 
-def test_cli(spark: SparkSession):
+@pytest.fixture
+def mock_table_comment(monkeypatch):
+    monkeypatch.setattr(
+        "datacontract.imports.spark_importer._table_comment_from_spark",
+        lambda *args, **kwargs: "Test description for users model",
+    )
+
+
+def test_cli(spark: SparkSession, mock_table_comment):
     df_user = spark.createDataFrame(
         data=[
             {
@@ -179,7 +187,7 @@ def test_table_not_exists():
     assert result.exit_code == 1
 
 
-def test_prog(spark: SparkSession):
+def test_prog(spark: SparkSession, mock_table_comment):
     df_user = spark.createDataFrame(
         data=[
             {
