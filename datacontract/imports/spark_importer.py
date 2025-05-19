@@ -177,9 +177,6 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
     Returns:
         str or None: The table-level comment, if found.
     """
-
-    # Initialize WorkspaceClient for Unity Catalog API calls
-    workspace_client = WorkspaceClient()
     
     # Get Current Catalog and Schema from Spark Session
     try:
@@ -195,6 +192,8 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
     table_comment = ""
     source = f"{current_catalog}.{current_schema}.{source}"
     try:
+        # Initialize WorkspaceClient for Unity Catalog API calls
+        workspace_client = WorkspaceClient()
         created_table = workspace_client.tables.get(full_name=f"{source}")
         table_comment = created_table.comment
         print(f"'{source}' table comment retrieved using 'WorkspaceClient.tables.get({source})'")
