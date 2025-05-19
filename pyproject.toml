@@ -134,7 +134,7 @@ dev = [
   "pytest-xdist",
   "pymssql==2.3.4",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.9.2",
+  "testcontainers[minio,postgres,kafka,mssql]==4.10.0",
   "trino==0.333.0",
 ]
 
