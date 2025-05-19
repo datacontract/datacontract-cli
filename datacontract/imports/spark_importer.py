@@ -197,18 +197,18 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
     try:
         created_table = workspace_client.tables.get(full_name=f"{source}")
         table_comment = created_table.comment
-        print(f"'{source}' table comment retrieved: {table_comment}")
+        print(f"'{source}' table comment retrieved using 'WorkspaceClient.tables.get({source})'")
         return table_comment
     except Exception:
-        print(f"'WorkspaceClient.tables.get({source})' FAILED --> Trying next method 'spark.catalog.getTable({source}).description'")
+        pass
 
     # Fallback to Spark Catalog API for Hive Metastore or Non-UC Tables
     try:
         table_comment = spark.catalog.getTable(f"{source}").description
-        print(f"'{source}' table comment retrieved: {table_comment}")
+        print(f"'{source}' table comment retrieved using 'spark.catalog.getTable({source}).description'")
         return table_comment
     except Exception:
-        print(f"'spark.catalog.getTable({source}).description' FAILED --> Trying next method 'DESCRIBE TABLE EXTENDED {source}'")
+        pass
 
     # Final Fallback Using DESCRIBE TABLE EXTENDED
     try:
@@ -217,9 +217,10 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
             if row.col_name.strip().lower() == "comment":
                 table_comment = row.data_type
                 break
-        print(f"'{source}' table comment retrieved: {table_comment}")
+        print(f"'{source}' table comment retrieved using 'DESCRIBE TABLE EXTENDED {source}'")
         return table_comment
     except Exception:
-        print(f"'DESCRIBE TABLE EXTENDED {source}' FAILED --> table_comment could not be fetched...")
-   
+        pass
+    
+    print(f"{source} table comment could not be retrieved")
     return table_comment
