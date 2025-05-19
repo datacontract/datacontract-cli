@@ -77,7 +77,7 @@ postgres = [
 ]
 
 s3 = [
-  "s3fs==2025.2.0",
+  "s3fs>=2025.2.0,<2026.0.0",
   "aiobotocore>=2.17.0,<2.23.0",
 ]
 
@@ -123,6 +123,7 @@ all = [
   "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf]"
 ]
 
+# for development, we pin all libraries to an exact version
 dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
