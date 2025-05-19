@@ -17,7 +17,7 @@ servers:
     type: dataframe
 models:
   users:
-    description: ""
+    description: ''
     fields:
       id:
         type: string
