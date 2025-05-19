@@ -180,7 +180,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
 
     # Initialize WorkspaceClient for Unity Catalog API calls
     workspace_client = WorkspaceClient()
-
+    
     # Get Current Catalog and Schema from Spark Session
     try:
         current_catalog = spark.sql("SELECT current_catalog()").collect()[0][0]
@@ -190,34 +190,36 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
         current_schema = spark.catalog.currentDatabase()
     except Exception:
         current_schema = spark.sql("SELECT current_database()").collect()[0][0]
-    print(f"current_catalog: {current_catalog} and current_schema: {current_schema}")
 
     # Get table comment if it exists
-    table_comment = None
+    table_comment = ""
     source = f"{current_catalog}.{current_schema}.{source}"
     try:
-        if table_comment is None:
-            created_table = workspace_client.tables.get(full_name=f"{source}")
-            table_comment = created_table.comment
+        created_table = workspace_client.tables.get(full_name=f"{source}")
+        table_comment = created_table.comment
+        print(f"'{source}' table comment retrieved: {table_comment}")
+        return table_comment
     except Exception as e:
-        print(f"'WorkspaceClient.tables.get({source})' failed: {e}\n")
+        print(f"'WorkspaceClient.tables.get({source})' FAILED --> Trying next method 'spark.catalog.getTable({source}).description'")
 
     # Fallback to Spark Catalog API for Hive Metastore or Non-UC Tables
     try:
-        if table_comment is None:
-            table_comment = spark.catalog.getTable(f"{source}").description
+        table_comment = spark.catalog.getTable(f"{source}").description
+        print(f"'{source}' table comment retrieved: {table_comment}")
+        return table_comment
     except Exception as e:
-        print(f"'spark.catalog.getTable({source}).description' failed: {e}\n")
+        print(f"'spark.catalog.getTable({source}).description' FAILED --> Trying next method 'DESCRIBE TABLE EXTENDED {source}'")
 
     # Final Fallback Using DESCRIBE TABLE EXTENDED
     try:
-        if table_comment is None:
-            rows = spark.sql(f"DESCRIBE TABLE EXTENDED {source}").collect()
-            for row in rows:
-                if row.col_name.strip().lower() == "comment":
-                    table_comment = row.data_type
-                    break
+        rows = spark.sql(f"DESCRIBE TABLE EXTENDED {source}").collect()
+        for row in rows:
+            if row.col_name.strip().lower() == "comment":
+                table_comment = row.data_type
+                break
+        print(f"'{source}' table comment retrieved: {table_comment}")
+        return table_comment
     except Exception as e:
-        print(f"'DESCRIBE TABLE EXTENDED {source}' failed: {e}\n")
-
-    return "" if table_comment is None else table_comment
+        print(f"'DESCRIBE TABLE EXTENDED {source}' FAILED --> table_comment could not be fetched...")
+   
+    return table_comment
