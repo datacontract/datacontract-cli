@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-expected = '''
+expected = """
 dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
@@ -17,7 +17,7 @@ servers:
     type: dataframe
 models:
   users:
-    description: ""
+    description: "Description for User table"
     fields:
       id:
         type: string
@@ -66,7 +66,7 @@ models:
             source:
               type: string
               required: false
-    '''
+    """
 
 
 @pytest.fixture(scope="session")
@@ -94,7 +94,7 @@ def spark(tmp_path_factory) -> SparkSession:
 def mock_table_comment(monkeypatch):
     monkeypatch.setattr(
         "datacontract.imports.spark_importer._table_comment_from_spark",
-        lambda *args, **kwargs: "",
+        lambda *args, **kwargs: "Description for User table",
     )
     
 
