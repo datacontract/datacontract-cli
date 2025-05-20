@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-- `datacontract export --format mermaid` Export to [Mermaid](https://mermaid-js.github.io/mermaid/#/) format (#769)
+- `datacontract export --format mermaid` Export to [Mermaid](https://mermaid-js.github.io/mermaid/#/) 
 
 ## Changed
-
-- Adding the mermaid figure to the html export (#769)
+- Adding the mermaid figure to the html export 
+- ODCS export: Export physical type if the physical type is configured in config object
 
 ## [0.10.25] - 2025-05-07
 
