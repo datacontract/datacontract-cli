@@ -858,7 +858,7 @@ models:
 │                      |sql-query|html|go|bigquer                              │
 │                      y|dbml|spark|sqlalchemy|da                              │
 │                      ta-caterer|dcs|markdown|ic                              │
-│                      eberg|custom]                                           │
+│                      eberg|mermaid|custom]                                   │
 │    --output          PATH                        Specify the file path where │
 │                                                  the exported data will be   │
 │                                                  saved. If no path is        │
