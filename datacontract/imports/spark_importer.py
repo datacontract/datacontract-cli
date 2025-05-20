@@ -1,3 +1,5 @@
+import logging
+
 from databricks.sdk import WorkspaceClient
 from pyspark.sql import DataFrame, SparkSession, types
 
@@ -8,6 +10,8 @@ from datacontract.model.data_contract_specification import (
     Model,
     Server,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SparkImporter(Importer):
@@ -65,7 +69,7 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Mod
     """
     model = Model()
     schema = df.schema
-    
+
     model.description = _table_comment_from_spark(spark, source)
 
     for field in schema:
@@ -168,15 +172,15 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
 def _table_comment_from_spark(spark: SparkSession, source: str):
     """
     Attempts to retrieve the table-level comment from a Spark table using multiple fallback methods.
-    
+
     Args:
         spark (SparkSession): The active Spark session.
         source (str): The name of the table (without catalog or schema).
-        
+
     Returns:
         str or None: The table-level comment, if found.
     """
-    
+
     # Get Current Catalog and Schema from Spark Session
     try:
         current_catalog = spark.sql("SELECT current_catalog()").collect()[0][0]
@@ -219,6 +223,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
         return table_comment
     except Exception:
         pass
-    
-    print(f"{source} table comment could not be retrieved")
-    return table_comment
+
+    logger.info(f"{source} table comment could not be retrieved")
+
+    return None
