@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
-- Adding the mermaid to the html export (#769)
+- Adding the mermaid figure to the html export (#769)
 
 ## [0.10.25] - 2025-05-07
 
