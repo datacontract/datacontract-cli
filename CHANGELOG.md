@@ -6,10 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- `datacontract export --format mermaid` Export to [Mermaid](https://mermaid-js.github.io/mermaid/#/) format (#769)
 
 ## Changed
 
-- ODCS export: Export physical type if the physical type is configured in config object
+- Adding the mermaid to the html export (#769)
 
 ## [0.10.25] - 2025-05-07
 

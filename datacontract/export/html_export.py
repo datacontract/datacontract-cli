@@ -18,6 +18,7 @@ class HtmlExporter(Exporter):
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:
     from datacontract.export.mermaid_export import to_mermaid
+
     # Load templates from templates folder
     package_loader = PackageLoader("datacontract", "templates")
     env = Environment(
@@ -58,7 +59,6 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     # Obtenir le diagramme Mermaid
     mermaid_diagram = to_mermaid(data_contract_spec)
 
-
     # Render the template with necessary data
     html_string = template.render(
         datacontract=data_contract_spec,
@@ -67,8 +67,7 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
         datacontract_yaml=datacontract_yaml,
         formatted_date=formatted_date,
         datacontract_cli_version=datacontract_cli_version,
-        mermaid_diagram=mermaid_diagram,  
-
+        mermaid_diagram=mermaid_diagram,
     )
 
     return html_string
