@@ -160,7 +160,7 @@ def test_cli(spark: SparkSession):
 
     output = result.stdout
     assert result.exit_code == 0
-    assert yaml.safe_load(output) == yaml.safe_load(expected)
+    assert yaml.safe_load(output.strip()) == yaml.safe_load(expected.strip())
 
 
 def test_table_not_exists():
