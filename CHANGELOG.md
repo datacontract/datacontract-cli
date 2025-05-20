@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.26] - 2025-05-16
 
 ### Changed
-
 - Databricks: Add support for Variant type (#758)
 - `datacontract export --format odcs`: Export physical type if the physical type is configured in
   config object (#757)

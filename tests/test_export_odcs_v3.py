@@ -40,6 +40,7 @@ schema:
       - name: order_id
         businessName: Order ID
         logicalType: string
+        physicalType: varchar
         logicalTypeOptions:
             minLength: 8
             maxLength: 10
@@ -59,6 +60,7 @@ schema:
           value: true
       - name: order_total
         logicalType: integer
+        physicalType: bigint
         logicalTypeOptions:
             minimum: 0
             maximum: 1000000
@@ -73,6 +75,7 @@ schema:
             mustBeBetween: [1000, 49900]
       - name: order_status
         logicalType: string
+        physicalType: text
         required: true
     quality:
     - type: sql
