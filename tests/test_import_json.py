@@ -17,7 +17,7 @@ def test_cli_import_product_json():
             "--format",
             "json",
             "--source",
-            "fixtures/import/product_detail.json",
+            "fixtures/import/json/product_detail.json",
         ],
     )
     assert result.exit_code == 0
@@ -32,7 +32,7 @@ def test_cli_import_product_json_with_output(tmp_path: Path):
             "--format",
             "json",
             "--source",
-            "fixtures/import/product_detail.json",
+            "fixtures/import/json/product_detail.json",
             "--output",
             tmp_path / "datacontract.yaml",
         ],
@@ -58,7 +58,7 @@ def test_cli_import_product_json_with_output(tmp_path: Path):
 
 
 def test_direct_api_import_product_json():
-    result = DataContract().import_from_source("json", "fixtures/import/product_detail.json")
+    result = DataContract().import_from_source("json", "fixtures/import/json/product_detail.json")
 
     # convert to YAML and validate structure
     yaml_output = result.to_yaml()
@@ -93,7 +93,7 @@ def test_direct_api_import_product_json():
 
 
 def test_simple_product_json_import():
-    result = DataContract().import_from_source("json", "fixtures/import/product_simple.json")
+    result = DataContract().import_from_source("json", "fixtures/import/json/product_simple.json")
 
     # verify the data contract was created successfully
     assert result is not None
@@ -109,12 +109,12 @@ def test_simple_product_json_import():
 
 def test_json_expected():
     # Get the expected and actual dictionaries
-    expected_data_contract_file = "fixtures/import/productsimple.datacontract.yaml"
+    expected_data_contract_file = "fixtures/import/json/productsimple.datacontract.yaml"
     with open(expected_data_contract_file) as file:
         expected_json = file.read()
     expected_dict = yaml.safe_load(expected_json)
 
-    json_file = "fixtures/import/product_simple.json"
+    json_file = "fixtures/import/json/product_simple.json"
     actual = DataContract().import_from_source("json", json_file).to_yaml()
     actual_dict = yaml.safe_load(actual)
 
