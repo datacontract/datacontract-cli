@@ -6,11 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- `datacontract import --format json`: Import from JSON files
 
 ## [0.10.25] - 2025-05-07
 
 ### Added
-- `datacontract import --format json`: Import from JSON files
 - Extracted the DataContractSpecification and the OpenDataContractSpecification in separate pip modules and use them in the CLI.
 - `datacontract import --format excel`: Import from Excel
   template https://github.com/datacontract/open-data-contract-standard-excel-template (#742)
