@@ -17,7 +17,7 @@ servers:
     type: dataframe
 models:
   users:
-    description: "Description for User table"
+    description: Description for User table
     fields:
       id:
         type: string
