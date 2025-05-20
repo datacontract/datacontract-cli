@@ -109,7 +109,7 @@ def test_simple_product_json_import():
 
 def test_json_expected():
     # Get the expected and actual dictionaries
-    expected_data_contract_file = "fixtures/import/productsimple-datacontract.yaml"
+    expected_data_contract_file = "fixtures/import/productsimple.datacontract.yaml"
     with open(expected_data_contract_file) as file:
         expected_json = file.read()
     expected_dict = yaml.safe_load(expected_json)

@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Server
@@ -14,15 +14,49 @@ class JsonImporter(Importer):
         return import_json(data_contract_specification, source)
 
 
+def is_ndjson(file_path: str) -> bool:
+    """Check if a file contains newline-delimited JSON."""
+    with open(file_path, "r") as file:
+        # Read first few lines
+        sample = ""
+        for _ in range(5):
+            line = file.readline().strip()
+            if not line:
+                continue
+            sample += line
+            try:
+                # Try to parse each line as JSON
+                json.loads(line)
+                # If successful, check next line
+                return True
+            except json.JSONDecodeError:
+                # If it fails, it might be a regular JSON file
+                break
+    return False
+
+
 def import_json(
     data_contract_specification: DataContractSpecification, source: str, include_examples: bool = False
 ) -> DataContractSpecification:
     # use the file name as base model name
     base_model_name = os.path.splitext(os.path.basename(source))[0]
 
-    # load JSON data
-    with open(source, "r") as file:
-        json_data = json.load(file)
+    # Check if file is newline-delimited JSON
+    if is_ndjson(source):
+        # Load NDJSON data
+        json_data = []
+        with open(source, "r") as file:
+            for line in file:
+                line = line.strip()
+                if line:  # Skip empty lines
+                    try:
+                        json_data.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue  # Skip invalid lines
+    else:
+        # load regular JSON data
+        with open(source, "r") as file:
+            json_data = json.load(file)
 
     if data_contract_specification.servers is None:
         data_contract_specification.servers = {}
@@ -221,8 +255,8 @@ def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> D
     result = field1.copy()
 
     if field1.get("type") != field2.get("type"):
-        type1, format1 = field1.get("type", "string"), field1.get("format")
-        type2, format2 = field2.get("type", "string"), field2.get("format")
+        type1, _ = field1.get("type", "string"), field1.get("format")
+        type2, _ = field2.get("type", "string"), field2.get("format")
 
         if type1 == "integer" and type2 == "number" or type1 == "number" and type2 == "integer":
             common_type = "number"
