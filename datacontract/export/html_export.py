@@ -56,7 +56,7 @@ def to_html(data_contract_spec: DataContractSpecification) -> str:
     formatted_date = now.strftime("%d %b %Y %H:%M:%S UTC")
     datacontract_cli_version = get_version()
 
-    # Obtenir le diagramme Mermaid
+    # Get the mermaid diagram
     mermaid_diagram = to_mermaid(data_contract_spec)
 
     # Render the template with necessary data
