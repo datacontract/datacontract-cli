@@ -154,6 +154,9 @@ def import_table_fields(table_fields, in_array=False):
             imported_fields[field_name].items = Field(
                 type=map_type_from_bigquery(field["rangeElementType"].get("type"), in_array=True)
             )
+        elif field.get("type") == "TIME":
+            imported_fields[field_name].type = map_type_from_bigquery(field.get("type"), in_array=in_array)
+            imported_fields[field_name].config = {"bigqueryType": "TIME"}
         elif field.get("type") == "GEOGRAPHY":
             imported_fields[field_name].type = map_type_from_bigquery(field.get("type"), in_array=in_array)
             imported_fields[field_name].config = {"bigqueryType": "GEOGRAPHY"}
@@ -205,7 +208,7 @@ def map_type_from_bigquery(bigquery_type_str: str, in_array=False):
     elif bigquery_type_str == "DATE":
         return "date"
     elif bigquery_type_str == "TIME":
-        return "timestamp_tz"
+        return "object"
     elif bigquery_type_str == "DATETIME":
         return "timestamp_ntz"
     elif bigquery_type_str == "NUMERIC":

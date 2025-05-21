@@ -98,12 +98,10 @@ def map_type_to_bigquery(field: Field) -> str:
         return "FLOAT64"
     elif field_type.lower() == "boolean":
         return "BOOL"
-    elif field_type.lower() in "timestamp":
+    elif field_type.lower() in ["timestamp", "timestamp_tz"]:
         return "TIMESTAMP"
     elif field_type.lower() == "date":
         return "DATE"
-    elif field_type.lower() ==  "timestamp_tz":
-        return "TIME"
     elif field_type.lower() == "timestamp_ntz":
         return "DATETIME"
     elif field_type.lower() in ["number", "decimal", "numeric"]:

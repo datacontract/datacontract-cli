@@ -51,9 +51,11 @@ models:
         required: false
         description: A Date field
       Time_Field:
-        type: timestamp_tz
+        type: object
         required: false
         description: A time field
+        config: 
+          bigqueryType: TIME       
       Datetime_Field:
         type: timestamp_ntz
         required: false

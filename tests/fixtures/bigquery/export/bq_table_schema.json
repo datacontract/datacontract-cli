@@ -100,21 +100,39 @@
       },
       {
         "name": "timestamp_tz_field",
-        "type": "TIME",
+        "type": "TIMESTAMP",
         "mode": "NULLABLE",
-        "description": "a simple time field"
+        "description": "a simple timestamp_tz field"
       },
       {
-        "name": "timestamp_ntz_field",
+        "name": "datetime_field",
         "type": "DATETIME",
         "mode": "NULLABLE",
-        "description": "a simple timestamp_ntz field"
+        "description": "a simple timestamp_ntz field (bq datetime)"
       },
       {
         "name": "date_field",
         "type": "DATE",
         "mode": "NULLABLE",
         "description": "a simple date field"
+      },
+      {
+        "name": "time_field",
+        "type": "TIME",
+        "mode": "NULLABLE",
+        "description": "a time field"
+      },
+      {
+        "name": "geography_field",
+        "type": "GEOGRAPHY",
+        "mode": "NULLABLE",
+        "description": "a geography field"
+      },
+      {
+        "name": "json_field",
+        "type": "JSON",
+        "mode": "NULLABLE",
+        "description": "a json field"
       },
       {
         "name": "number_field",

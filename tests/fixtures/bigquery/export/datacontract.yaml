@@ -78,15 +78,33 @@ models:
       timestamp_tz_field:
         type: timestamp_tz
         required: false
-        description: a simple time field
-      timestamp_ntz_field:
+        description: a simple timestamp_tz field
+      datetime_field:
         type: timestamp_ntz
         required: false
-        description: a simple timestamp_ntz field
+        description: a simple timestamp_ntz field (bq datetime)
       date_field:
         type: date
         required: false
         description: a simple date field
+      time_field:
+        type: object
+        required: false
+        description: a time field  
+        config:
+          bigqueryType: TIME
+      geography_field: 
+        type: object
+        required: false
+        description: a geography field    
+        config:
+          bigqueryType: GEOGRAPHY
+      json_field: 
+        type: object
+        required: false
+        description: a json field
+        config: 
+          bigqueryType: JSON
       number_field:
         type: number
         required: false
