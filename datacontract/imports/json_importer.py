@@ -121,7 +121,9 @@ def generate_field_definition(
     value: Any, field_name: str, parent_model: str, models: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Any]:
     """Generate a field definition for a JSON value, creating nested models."""
+
     if isinstance(value, dict):
+        # Handle object fields
         fields = {}
         for key, nested_value in value.items():
             fields[key] = generate_field_definition(nested_value, key, parent_model, models)
@@ -129,47 +131,66 @@ def generate_field_definition(
         return {"type": "object", "fields": fields}
 
     elif isinstance(value, list):
-        # array field
+        # Handle array fields
         if not value:
             return {"type": "array", "items": {"type": "string"}}
 
-        if all(isinstance(item, dict) for item in value[:5]):
-            # array of objects
+        if all(isinstance(item, dict) for item in value):
+            # Array of objects
             fields = {}
-            for item in value[:5]:  # sample first 5 items
+            for item in value:
                 for key, nested_value in item.items():
                     field_def = generate_field_definition(nested_value, key, parent_model, models)
                     if key in fields:
+                        if key == "featuresAndBenefits":
+                            print(f"Processing nested field in object: {key}, Value: {nested_value}")
+                            print(
+                                f"We merged the field definition for {key} in {parent_model} with {field_def} and {fields[key]}"
+                            )
                         fields[key] = merge_field_definitions(fields[key], field_def)
+                        if key == "featuresAndBenefits":
+                            print(f"After merging, the field definition for {key} in {parent_model} is {fields[key]}")
                     else:
                         fields[key] = field_def
 
             return {"type": "array", "items": {"type": "object", "fields": fields}}
+
+        elif all(isinstance(item, list) for item in value):
+            # Array of arrays
+            inner_type, inner_format = infer_array_type(value[0])
+            return {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": {"type": inner_type, "format": inner_format} if inner_format else {"type": inner_type},
+                },
+                "examples": value[:5],  # Include examples for nested arrays
+            }
+
         else:
-            # array of simple types
-            item_type, item_format = infer_array_type(value[:20])
+            # Array of simple or mixed types
+            item_type, item_format = infer_array_type(value)
             items_def = {"type": item_type}
             if item_format:
                 items_def["format"] = item_format
 
             field_def = {"type": "array", "items": items_def}
 
-            # add examples if appropriate
-            if item_type not in ["boolean", "string", "null"]:
-                sample_values = [item for item in value[:5] if item is not None]
-                if sample_values:
-                    field_def["examples"] = [sample_values]
+            # Add examples if appropriate
+            sample_values = [item for item in value[:5] if item is not None]
+            if sample_values:
+                field_def["examples"] = sample_values
 
             return field_def
 
     else:
-        # primitive type
+        # Handle primitive types
         field_type, field_format = determine_type_and_format(value)
         field_def = {"type": field_type}
         if field_format:
             field_def["format"] = field_format
 
-        # add examples
+        # Add examples
         if value is not None and field_type != "boolean":
             field_def["examples"] = [value]
 
@@ -244,10 +265,13 @@ def determine_type_and_format(value: Any) -> Tuple[str, Optional[str]]:
 
 
 def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> Dict[str, Any]:
-    """Merge two field definitions, reconciling type differences."""
-
+    """Merge two field definitions."""
     result = field1.copy()
-
+    if field1.get("type") == "object" and field2.get("type") != "object":
+        return field1
+    if field2.get("type") == "object" and field1.get("type") != "object":
+        return field2
+    # Handle type differences
     if field1.get("type") != field2.get("type"):
         type1, _ = field1.get("type", "string"), field1.get("format")
         type2, _ = field2.get("type", "string"), field2.get("format")
@@ -261,6 +285,22 @@ def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> D
         elif all(t in ["string", "integer", "number", "boolean", "null"] for t in [type1, type2]):
             common_type = "string"
             common_format = None
+        elif type1 == "array" and type2 == "array":
+            # Handle mixed array types
+            items1 = field1.get("items", {})
+            items2 = field2.get("items", {})
+            if items1.get("type") == "object" or items2.get("type") == "object":
+                if items1.get("type") == "object" and items2.get("type") == "object":
+                    merged_items = merge_field_definitions(items1, items2)
+                else:
+                    merged_items = items1 if items1.get("type") == "object" else items2
+                return {"type": "array", "items": merged_items}
+            else:
+                merged_items = merge_field_definitions(items1, items2)
+                return {"type": "array", "items": merged_items}
+        else:
+            common_type = "array" if "array" in [type1, type2] else "object"
+            common_format = None
 
         result["type"] = common_type
         if common_format:
@@ -268,19 +308,19 @@ def merge_field_definitions(field1: Dict[str, Any], field2: Dict[str, Any]) -> D
         elif "format" in result:
             del result["format"]
 
-    # merge examples
+    # Merge examples
     if "examples" in field2:
         if "examples" in result:
             combined = result["examples"] + [ex for ex in field2["examples"] if ex not in result["examples"]]
-            result["examples"] = combined[:5]  # limit to 5 examples
+            result["examples"] = combined[:5]  # Limit to 5 examples
         else:
             result["examples"] = field2["examples"]
 
-    # handle nested structures
+    # Handle nested structures
     if result.get("type") == "array" and "items" in field1 and "items" in field2:
         result["items"] = merge_field_definitions(field1["items"], field2["items"])
     elif result.get("type") == "object" and "fields" in field1 and "fields" in field2:
-        # merge fields from both objects
+        # Merge fields from both objects
         merged_fields = field1["fields"].copy()
         for key, field_def in field2["fields"].items():
             if key in merged_fields:
