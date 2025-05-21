@@ -3,6 +3,7 @@ import yaml
 from datacontract.engines.data_contract_checks import create_checks
 from datacontract.export.exporter import Exporter
 from datacontract.model.run import Run
+from datacontract.engines.data_contract_test import get_server
 
 
 class SodaExporter(Exporter):
