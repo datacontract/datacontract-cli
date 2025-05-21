@@ -103,6 +103,18 @@ models:
         description: a json field
         config: 
           bigqueryType: JSON
+      Array_of_string:
+        type: array
+        required: false
+        description: an array of string
+        items: 
+          type: string      
+      Array_of_int:
+        type: array
+        required: false
+        description: an array of int
+        items: 
+          type: bigint
       Array_of_struct_col:
         type: array
         required: false

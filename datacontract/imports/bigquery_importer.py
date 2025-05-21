@@ -165,7 +165,7 @@ def import_table_fields(table_fields, in_array=False):
             imported_fields[field_name].config = {"bigqueryType": "JSON"}
 
         else:
-            if field.get("type") == "REPEATED": # not a type record meaning type ARRAY<STRING> ARRAY<INTEGER>
+            if field.get("mode") == "REPEATED": # not a type record meaning type ARRAY<STRING> ARRAY<INTEGER>
                 imported_fields[field_name].type = "array"
                 imported_fields[field_name].items = Field(
                 type= map_type_from_bigquery(field.get("type"), in_array=True))

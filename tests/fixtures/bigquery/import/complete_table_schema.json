@@ -152,6 +152,18 @@
         "mode": "NULLABLE",
         "name": "JSON_Field",
         "type": "JSON"
+      },
+      {
+        "description": "an array of string",
+        "mode": "REPEATED", 
+        "name": "Array_of_string", 
+        "type": "STRING"
+      },
+            {
+        "description": "an array of int",
+        "mode": "REPEATED", 
+        "name": "Array_of_int", 
+        "type": "INTEGER"
       }, 
       {
         "description": "an array of objects that has multiple fields that should carry through",
