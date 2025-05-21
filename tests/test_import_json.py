@@ -144,8 +144,6 @@ def test_json_expected():
             )
 
     # compare the normalized dictionaries
-    print("Expected Dict:", expected_dict)
-    print("Actual Dict:", actual_dict)
     assert actual_dict == expected_dict
 
     # making sure the data contract is correct
