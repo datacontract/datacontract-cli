@@ -73,7 +73,7 @@ models:
         precision: 8
         scale: 4
       Record_field:
-        type: object
+        type: struct
         required: false
         description: A record field with two subfields
         fields:

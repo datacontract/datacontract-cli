@@ -140,6 +140,9 @@ def import_table_fields(table_fields, in_array=False):
                 imported_fields[field_name].type = "array"
                 imported_fields[field_name].items = Field(
                 type="record", fields= import_table_fields(field.get("fields"), in_array=True))
+            elif field.get("mode") == "NULLABLE":
+                imported_fields[field_name].type = "struct"
+                imported_fields[field_name].fields = import_table_fields(field.get("fields"), in_array=True)
             else:
                 imported_fields[field_name].type = "object"
                 imported_fields[field_name].fields = import_table_fields(field.get("fields"), in_array=True)

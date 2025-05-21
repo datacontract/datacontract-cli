@@ -212,7 +212,13 @@
             "type": "DATE",
             "mode": "NULLABLE",
             "description": "a non required date field"
-          }
+          },
+          {
+            "name": "subfield_3",
+            "type": "INT64",
+            "mode": "NULLABLE",
+            "description": "an integer field"
+          } 
         ]
       },
       {
@@ -229,7 +235,7 @@
           },
           {
             "name": "subfield_2",
-            "type": "INTEGER",
+            "type": "INT64",
             "mode": "NULLABLE",
             "description": "a non required int field"
           }

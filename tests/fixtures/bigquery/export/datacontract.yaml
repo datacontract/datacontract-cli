@@ -159,6 +159,10 @@ models:
             type: date
             required: false
             description: a non required date field
+          subfield_3:
+            type: bigint
+            required: false
+            description: an integer field
       struct_field:
         type: struct
         required: false
@@ -169,7 +173,7 @@ models:
             required: true
             description: a required bytes field
           subfield_2:
-            type: int
+            type: bigint
             required: false
             description: a non required int field
       string_array_field:
