@@ -32,18 +32,18 @@ def test_to_sql_ddl_snowflake():
 -- Data Contract: urn:datacontract:checkout:snowflake_orders_pii_v2
 -- SQL Dialect: snowflake
 CREATE TABLE orders (
-  ORDER_ID TEXT not null,
-  ORDER_TIMESTAMP TIMESTAMP_TZ not null,
-  ORDER_TOTAL NUMBER not null,
-  CUSTOMER_ID TEXT,
-  CUSTOMER_EMAIL_ADDRESS TEXT not null,
-  PROCESSING_TIMESTAMP TIMESTAMP_LTZ not null
-);
+  ORDER_ID TEXT not null COMMENT 'An internal ID that identifies an order in the online shop.',
+  ORDER_TIMESTAMP TIMESTAMP_TZ not null COMMENT 'The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.',
+  ORDER_TOTAL NUMBER not null COMMENT 'Total amount the smallest monetary unit (e.g., cents).',
+  CUSTOMER_ID TEXT COMMENT 'Unique identifier for the customer.',
+  CUSTOMER_EMAIL_ADDRESS TEXT not null COMMENT 'The email address, as entered by the customer. The email address was not verified.',
+  PROCESSING_TIMESTAMP TIMESTAMP_LTZ not null COMMENT 'The processing timestamp in the current session’s time zone.'
+) COMMENT='One record per order. Includes cancelled and deleted orders.';
 CREATE TABLE line_items (
-  LINE_ITEM_ID TEXT not null,
-  ORDER_ID TEXT,
-  SKU TEXT
-);
+  LINE_ITEM_ID TEXT not null COMMENT 'Primary key of the lines_item_id table',
+  ORDER_ID TEXT COMMENT 'An internal ID that identifies an order in the online shop.',
+  SKU TEXT COMMENT 'The purchased article number'
+) COMMENT='A single article that is part of an order.';
 """.strip()
     assert actual == expected
 

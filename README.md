@@ -1369,8 +1369,9 @@ datacontract import --format unity --source my_unity_table.json
 
 ```bash
 # Example import single table from Unity Catalog via HTTP endpoint
-export DATABRICKS_IMPORT_INSTANCE="https://xyz.cloud.databricks.com"
-export DATABRICKS_IMPORT_ACCESS_TOKEN=<token>
+export DATACONTRACT_DATABRICKS_SERVER_HOSTNAME="https://xyz.cloud.databricks.com"
+export DATACONTRACT_DATABRICKS_HTTP_PATH="/sql/1.0/warehouses/b053a331fa014fb4"
+export DATACONTRACT_DATABRICKS_TOKEN=<token>
 datacontract import --format unity --unity-table-full-name <table_full_name>
 ```
 
