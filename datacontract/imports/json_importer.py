@@ -142,14 +142,7 @@ def generate_field_definition(
                 for key, nested_value in item.items():
                     field_def = generate_field_definition(nested_value, key, parent_model, models)
                     if key in fields:
-                        if key == "featuresAndBenefits":
-                            print(f"Processing nested field in object: {key}, Value: {nested_value}")
-                            print(
-                                f"We merged the field definition for {key} in {parent_model} with {field_def} and {fields[key]}"
-                            )
                         fields[key] = merge_field_definitions(fields[key], field_def)
-                        if key == "featuresAndBenefits":
-                            print(f"After merging, the field definition for {key} in {parent_model} is {fields[key]}")
                     else:
                         fields[key] = field_def
 

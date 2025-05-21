@@ -235,6 +235,8 @@ models:
               type: array
               items:
                 type: string
+              examples:
+              - '34'
             unspsc:
               type: string
               examples:
@@ -247,6 +249,8 @@ models:
               type: array
               items:
                 type: string
+              examples:
+              - N
             rxDosageForm:
               type: string
               examples:

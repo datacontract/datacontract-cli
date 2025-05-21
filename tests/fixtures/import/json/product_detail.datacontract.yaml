@@ -7,10 +7,10 @@ servers:
   production:
     type: local
     format: json
-    path: .\tests\fixtures\import\product_detail.json
+    path: .\tests\fixtures\import\json\product_detail.json
 models:
   product_detail:
-    description: Generated from JSON object in .\tests\fixtures\import\product_detail.json
+    description: Generated from JSON object in .\tests\fixtures\import\json\product_detail.json
     type: object
     fields:
       identification:
@@ -242,6 +242,8 @@ models:
               type: array
               items:
                 type: string
+              examples:
+              - '34'
             unspsc:
               type: string
               examples:
@@ -254,6 +256,8 @@ models:
               type: array
               items:
                 type: string
+              examples:
+              - N
             rxDosageForm:
               type: string
               examples:
@@ -371,6 +375,8 @@ models:
                     type: array
                     items:
                       type: string
+                    examples:
+                    - 28:08.04.92
                   drugAndHealthProductNumber:
                     type: string
                     examples:
@@ -1025,7 +1031,17 @@ models:
             featuresAndBenefits:
               type: array
               items:
-                type: string
+                type: object
+                fields:
+                  featuresandBenefitsEnglish:
+                    type: string
+                    examples:
+                    - Fast relief of backache joint muscle and arthritis pain headache
+                  featuresandBenefitsFrench:
+                    type: string
+                    examples:
+                    - Soulagement rapide du mal de dos de la douleur musculaire articulaire
+                      et arthritique du mal de tÃªte
             imageGroup:
               type: array
               items:
@@ -1037,6 +1053,7 @@ models:
                     - N
                     - C
                     - L
+                    - R
                   facing:
                     type: string
                     examples:
@@ -1132,12 +1149,23 @@ models:
                         type: array
                         items:
                           type: string
+                        examples:
+                        - (Per capsule)
+                        - Purpose
+                        - Active ingredient (per capsule)
                       rows:
                         type: array
                         items:
                           type: array
                           items:
                             type: string
+                        examples:
+                        - - Active ingredient
+                        - - Naproxen sodium (NSAID)*
+                          - 220 mg
+                          - Pain reliever/fever reducer
+                        - - Naproxen sodium 220 mg (NSAID)*
+                          - Pain reliever/Fever reducer
                   nutritionCustomGridFrench:
                     type: object
                     fields:
@@ -1145,12 +1173,23 @@ models:
                         type: array
                         items:
                           type: string
+                        examples:
+                        - (Dans chaque capsule)
+                        - UtilitÃ©
+                        - IngrÃ©dient actif (dans chaque capsule)
                       rows:
                         type: array
                         items:
                           type: array
                           items:
                             type: string
+                        examples:
+                        - - IngrÃ©dient actif
+                        - - NaproxÃ¨ne sodique, (AINS)*
+                          - 220 mg
+                          - AnalgÃ©sique/antipyrÃ©tique
+                        - - Naproxene sodique, 220 mg (AINS)*
+                          - AnalgÃ©sique/antipyrÃ©tique
             otherCertifications:
               type: array
               items:
@@ -1488,6 +1527,8 @@ models:
               type: array
               items:
                 type: string
+              examples:
+              - '34'
             claim:
               type: array
               items:
@@ -1576,6 +1617,8 @@ models:
               type: array
               items:
                 type: string
+              examples:
+              - N
             rxDosageForm:
               type: string
               examples:
@@ -1741,6 +1784,7 @@ models:
                     type: string
                     examples:
                     - JPG
+                    - TGA
                   digitalAssetGDTIPlanogram:
                     type: string
                     examples:
@@ -1785,6 +1829,8 @@ models:
                     type: array
                     items:
                       type: string
+                    examples:
+                    - 28:08.04.92
                   drugAndHealthProductNumber:
                     type: string
                     examples:
@@ -1979,6 +2025,7 @@ models:
                     type: string
                     examples:
                     - JPG
+                    - TGA
                   digitalAssetGDTIPlanogram:
                     type: string
                     examples:
