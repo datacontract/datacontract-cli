@@ -159,7 +159,11 @@ def convert_to_dataframe(field: Field) -> None | str:
 # https://docs.databricks.com/en/sql/language-manual/sql-ref-datatypes.html
 def convert_to_databricks(field: Field) -> None | str:
     type = field.type
-    if field.config and "databricksType" in field.config and type.lower() not in ["array", "object", "record", "struct"]:
+    if (
+        field.config
+        and "databricksType" in field.config
+        and type.lower() not in ["array", "object", "record", "struct"]
+    ):
         return field.config["databricksType"]
     if type is None:
         return None

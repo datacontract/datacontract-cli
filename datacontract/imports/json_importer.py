@@ -17,7 +17,7 @@ class JsonImporter(Importer):
 def is_ndjson(file_path: str) -> bool:
     """Check if a file contains newline-delimited JSON."""
     with open(file_path, "r") as file:
-        for _ in range(5): # 5 because 
+        for _ in range(5):  # 5 because
             line = file.readline().strip()
             if not line:
                 continue
