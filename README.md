@@ -828,10 +828,10 @@ models:
 │ *  --format          [jsonschema|pydantic-model|sodacl|db  The export format. [default: None]    │
 │                      t|dbt-sources|dbt-staging-sql|odcs|r  [required]                            │
 │                      df|avro|protobuf|great-expectations|                                        │
-│                      terraform|avro-idl|sql|sql-query|htm                                        │
-│                      l|go|bigquery|dbml|spark|sqlalchemy|                                        │
-│                      data-caterer|dcs|markdown|iceberg|cu                                        │
-│                      stom]                                                                       │
+│                      terraform|avro-idl|sql|sql-query|mer                                        │
+│                      maid|html|go|bigquery|dbml|spark|sql                                        │
+│                      alchemy|data-caterer|dcs|markdown|ic                                        │
+│                      eberg|custom]                                                               │
 │    --output          PATH                                  Specify the file path where the       │
 │                                                            exported data will be saved. If no    │
 │                                                            path is provided, the output will be  │
