@@ -1200,7 +1200,7 @@ FROM
                                                                                 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ *  --format                     [sql|avro|dbt|dbml|gl  The format of the     │
-│                                 ue|jsonschema|bigquer  source file.          │
+│                                 ue|json|jsonschema|bigquer  source file.          │
 │                                 y|odcs|unity|spark|ic  [default: None]       │
 │                                 eberg|parquet|csv|pro  [required]            │
 │                                 tobuf]                                       │

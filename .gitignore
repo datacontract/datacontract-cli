@@ -4,6 +4,7 @@
 datacontract.sh
 /cli
 tmp
+/venv
 /contracts/
 /quality/
 db.duckdb
