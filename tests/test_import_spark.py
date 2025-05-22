@@ -88,6 +88,7 @@ def spark(tmp_path_factory) -> SparkSession:
     print(f"Using PySpark version {spark.version}")
     return spark
 
+    
 
 def test_cli(spark: SparkSession):
     df_user = spark.createDataFrame(
