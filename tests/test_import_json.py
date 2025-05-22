@@ -150,6 +150,7 @@ def test_json_expected():
     data_contract = DataContract(data_contract_str=actual)
     assert data_contract.lint(enabled_linters="none").has_passed()
 
+
 def test_ndjson_import():
     result = DataContract().import_from_source("json", "fixtures/import/json/inventory_ndjson.json")
 
@@ -161,7 +162,8 @@ def test_ndjson_import():
     assert "models" in data
     data_contract = DataContract(data_contract_str=yaml_output)
     assert data_contract.lint(enabled_linters="none").has_passed()
-    
+
+
 def test_ndjson_expected():
     # Get the expected and actual dictionaries
     expected_data_contract_file = "fixtures/import/json/inventory_ndjson.datacontract.yaml"
