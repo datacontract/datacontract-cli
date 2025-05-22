@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.10.27] - 2025-05-22
+
+### Added
+
 - `datacontract export --format mermaid` Export
   to [Mermaid](https://mermaid-js.github.io/mermaid/#/) (#767, #725)
 
