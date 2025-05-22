@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- `datacontract export --format mermaid` Export to [Mermaid](https://mermaid-js.github.io/mermaid/#/) 
+
+### Changed
+- Adding the mermaid figure to the html export 
+- ODCS export: Export physical type if the physical type is configured in config object
 
 ### Changed
 =======
@@ -23,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.26] - 2025-05-16
 
 ### Changed
-
 - Databricks: Add support for Variant type (#758)
 - `datacontract export --format odcs`: Export physical type if the physical type is configured in
   config object (#757)
