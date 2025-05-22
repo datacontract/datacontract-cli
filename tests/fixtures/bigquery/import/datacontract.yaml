@@ -22,6 +22,8 @@ models:
         required: true
         description: A required String field with a maximum length
         maxLength: 42
+        config: 
+          bigqueryType: STRING(42)
       Bytes field:
         type: bytes
         required: false
@@ -66,12 +68,16 @@ models:
         description: A Numeric field with precision 5 and scale 3
         precision: 5
         scale: 3
+        config: 
+          bigqueryType: NUMERIC(5, 3)
       Bignumeric_field:
         type: double
         required: false
         description: A bignumeric field with precision 8 and sclae 4
         precision: 8
         scale: 4
+        config: 
+          bigqueryType: BIGNUMERIC(8, 4)
       Record_field:
         type: struct
         required: false

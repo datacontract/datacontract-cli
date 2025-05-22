@@ -180,6 +180,7 @@ def import_table_fields(table_fields, in_array=False):
             # spec it is only valid for strings
             if field.get("maxLength") is not None:
                 imported_fields[field_name].maxLength = int(field.get("maxLength"))
+                imported_fields[field_name].config = {"bigqueryType": f"STRING({field.get('maxLength')})"}
 
         if field.get("type") == "NUMERIC" or field.get("type") == "BIGNUMERIC":
             if field.get("precision") is not None:
@@ -187,6 +188,8 @@ def import_table_fields(table_fields, in_array=False):
 
             if field.get("scale") is not None:
                 imported_fields[field_name].scale = int(field.get("scale"))
+            if field.get("precision") is not None and field.get("scale") is not None:
+                imported_fields[field_name].config = {"bigqueryType": f"{ field.get('type')}({field.get('precision')}, {field.get('scale')})"}
 
     return imported_fields
 
