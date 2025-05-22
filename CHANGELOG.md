@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `datacontract import --format spark`: Added support for spark importer table level comments (#761)
+- `datacontract import` respects `--owner` and `--id` flags (#753)
 
 ### Fixed
 

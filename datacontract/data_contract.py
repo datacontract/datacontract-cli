@@ -25,7 +25,7 @@ from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
 from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
 from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
 from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.model.data_contract_specification import DataContractSpecification, Info
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -270,6 +270,16 @@ class DataContract:
     ) -> DataContractSpecification:
         data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
-        return importer_factory.create(format).import_source(
+        imported_data_contract_specification = importer_factory.create(format).import_source(
             data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
         )
+
+        # Set id and owner if provided
+        if kwargs.get("id"):
+            data_contract_specification_initial.id = kwargs["id"]
+        if kwargs.get("owner"):
+            if data_contract_specification_initial.info is None:
+                data_contract_specification_initial.info = Info()
+            data_contract_specification_initial.info.owner = kwargs["owner"]
+
+        return imported_data_contract_specification
