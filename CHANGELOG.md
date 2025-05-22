@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `datacontract import --format spark`: Added support for spark importer table level comments (#761)
 
+### Fixed
+
+- `datacontract export --format sodacl`: Fix resolving server when using `--server` flag (#768)
+
 ## [0.10.26] - 2025-05-16
 
 ### Changed
