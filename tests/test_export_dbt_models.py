@@ -131,6 +131,57 @@ models:
     assert result == yaml.safe_load(expected_dbt_model)
 
 
+def test_to_dbt_models_with_no_model_type():
+    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract_no_model_type.yaml")
+    expected_dbt_model = """
+version: 2
+models:
+- name: orders
+  config:
+    meta:
+      data_contract: orders-unit-test
+      owner: checkout
+  description: The orders model
+  columns:
+  - name: order_id
+    data_tests:
+    - not_null
+    - unique
+    - dbt_expectations.expect_column_value_lengths_to_be_between:
+        min_value: 8
+        max_value: 10
+    - dbt_expectations.expect_column_values_to_match_regex:
+        regex: ^B[0-9]+$
+    data_type: VARCHAR
+    meta:
+      pii: true
+      classification: sensitive
+    tags:
+    - order_id
+  - name: order_total
+    data_tests:
+    - not_null
+    - dbt_expectations.expect_column_values_to_be_between:
+        min_value: 0
+        max_value: 1000000
+    data_type: NUMBER
+    description: The order_total field
+  - name: order_status
+    data_tests:
+    - not_null
+    - accepted_values:
+        values:
+        - pending
+        - shipped
+        - delivered
+    data_type: TEXT
+"""
+
+    result = yaml.safe_load(to_dbt_models_yaml(data_contract))
+
+    assert result == yaml.safe_load(expected_dbt_model)
+
+
 def read_file(file):
     if not os.path.exists(file):
         print(f"The file '{file}' does not exist.")
