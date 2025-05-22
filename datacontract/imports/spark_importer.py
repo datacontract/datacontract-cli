@@ -1,3 +1,6 @@
+import logging
+
+from databricks.sdk import WorkspaceClient
 from pyspark.sql import DataFrame, SparkSession, types
 
 from datacontract.imports.importer import Importer
@@ -7,6 +10,8 @@ from datacontract.model.data_contract_specification import (
     Model,
     Server,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SparkImporter(Importer):
@@ -46,15 +51,17 @@ def import_spark(data_contract_specification: DataContractSpecification, source:
     for temp_view in source.split(","):
         temp_view = temp_view.strip()
         df = spark.read.table(temp_view)
-        data_contract_specification.models[temp_view] = import_from_spark_df(df)
+        data_contract_specification.models[temp_view] = import_from_spark_df(spark, source, df)
     return data_contract_specification
 
 
-def import_from_spark_df(df: DataFrame) -> Model:
+def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Model:
     """
     Converts a Spark DataFrame into a Model.
 
     Args:
+        spark: SparkSession
+        source: A comma-separated string of Spark temporary views to read.
         df: The Spark DataFrame to convert.
 
     Returns:
@@ -62,6 +69,8 @@ def import_from_spark_df(df: DataFrame) -> Model:
     """
     model = Model()
     schema = df.schema
+
+    model.description = _table_comment_from_spark(spark, source)
 
     for field in schema:
         model.fields[field.name] = _field_from_struct_type(field)
@@ -154,5 +163,67 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
         return "null"
     elif isinstance(spark_type, types.VarcharType):
         return "varchar"
+    elif isinstance(spark_type, types.VariantType):
+        return "variant"
     else:
         raise ValueError(f"Unsupported Spark type: {spark_type}")
+
+
+def _table_comment_from_spark(spark: SparkSession, source: str):
+    """
+    Attempts to retrieve the table-level comment from a Spark table using multiple fallback methods.
+
+    Args:
+        spark (SparkSession): The active Spark session.
+        source (str): The name of the table (without catalog or schema).
+
+    Returns:
+        str or None: The table-level comment, if found.
+    """
+
+    # Get Current Catalog and Schema from Spark Session
+    try:
+        current_catalog = spark.sql("SELECT current_catalog()").collect()[0][0]
+    except Exception:
+        current_catalog = "hive_metastore"  # Fallback for non-Unity Catalog clusters
+    try:
+        current_schema = spark.catalog.currentDatabase()
+    except Exception:
+        current_schema = spark.sql("SELECT current_database()").collect()[0][0]
+
+    # Get table comment if it exists
+    table_comment = ""
+    source = f"{current_catalog}.{current_schema}.{source}"
+    try:
+        # Initialize WorkspaceClient for Unity Catalog API calls
+        workspace_client = WorkspaceClient()
+        created_table = workspace_client.tables.get(full_name=f"{source}")
+        table_comment = created_table.comment
+        print(f"'{source}' table comment retrieved using 'WorkspaceClient.tables.get({source})'")
+        return table_comment
+    except Exception:
+        pass
+
+    # Fallback to Spark Catalog API for Hive Metastore or Non-UC Tables
+    try:
+        table_comment = spark.catalog.getTable(f"{source}").description
+        print(f"'{source}' table comment retrieved using 'spark.catalog.getTable({source}).description'")
+        return table_comment
+    except Exception:
+        pass
+
+    # Final Fallback Using DESCRIBE TABLE EXTENDED
+    try:
+        rows = spark.sql(f"DESCRIBE TABLE EXTENDED {source}").collect()
+        for row in rows:
+            if row.col_name.strip().lower() == "comment":
+                table_comment = row.data_type
+                break
+        print(f"'{source}' table comment retrieved using 'DESCRIBE TABLE EXTENDED {source}'")
+        return table_comment
+    except Exception:
+        pass
+
+    logger.info(f"{source} table comment could not be retrieved")
+
+    return None
