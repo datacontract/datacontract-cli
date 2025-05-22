@@ -17,7 +17,7 @@ class HtmlExporter(Exporter):
 
 
 def to_html(data_contract_spec: DataContractSpecification) -> str:
-    from datacontract.export.mermaid_export import to_mermaid
+    from datacontract.export.mermaid_exporter import to_mermaid
 
     # Load templates from templates folder
     package_loader = PackageLoader("datacontract", "templates")

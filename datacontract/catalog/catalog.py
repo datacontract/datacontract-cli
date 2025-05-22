@@ -6,7 +6,7 @@ import pytz
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from datacontract.data_contract import DataContract
-from datacontract.export.html_export import get_version
+from datacontract.export.html_exporter import get_version
 from datacontract.model.data_contract_specification import DataContractSpecification
 
 

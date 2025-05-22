@@ -1,5 +1,3 @@
-import logging
-
 from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import DataContractSpecification
 
@@ -23,7 +21,7 @@ def to_mermaid(data_contract_spec: DataContractSpecification) -> str | None:
                         + "}o--{ ||"
                         + f'"📑{model_name}"'
                     )
-            mmd_entity += f'\t"📑{model_name}"' + "{\n" + entity_block + "}\n"
+            mmd_entity += f'\t"**{model_name}**"' + "{\n" + entity_block + "}\n"
 
         if mmd_entity == "":
             return None
