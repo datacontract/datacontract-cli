@@ -24,7 +24,7 @@ commands = [
 
 def fetch_help(command: str) -> str:
     print(f"Fetching help text for command: {command}")
-    env = {"COLUMNS": "80"}  # Set terminal width to 80 columns (or your preferred width)
+    env = {"COLUMNS": "100"}  # Set terminal width to 100 columns (or your preferred width)
     result = subprocess.run(
         ["datacontract", command, "--help"],
         capture_output=True,
