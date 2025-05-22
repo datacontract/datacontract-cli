@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `datacontract import --format spark`: Added support for spark importer table level comments (#761)
+
 ## [0.10.26] - 2025-05-16
 
 ### Changed
