@@ -1375,7 +1375,9 @@ datacontract import --format glue --source <database_name>
 
 #### Spark
 
-Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.  Another way to run importing from spark is to specify a third keyword argument parameter `dataframe` that is equal to the Spark dataframe object.  `Source` is equivalent to the table name in this context.
+Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.  
+
+Another way to run importing from spark is to specify a third keyword argument `dataframe` that is equal to the Spark dataframe object.  `Source` is equivalent to the table name in this context.
 
 Example:
 
