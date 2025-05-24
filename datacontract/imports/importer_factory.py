@@ -87,6 +87,11 @@ importer_factory.register_lazy_importer(
     class_name="SparkImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.spark_dataframe,
+    module_path="datacontract.imports.spark_dataframe_importer",
+    class_name="SparkDataframeImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.dbt, module_path="datacontract.imports.dbt_importer", class_name="DbtManifestImporter"
 )
 importer_factory.register_lazy_importer(

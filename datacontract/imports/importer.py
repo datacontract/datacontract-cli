@@ -30,6 +30,7 @@ class ImportFormat(str, Enum):
     odcs = "odcs"
     unity = "unity"
     spark = "spark"
+    spark_dataframe = "spark_dataframe"
     iceberg = "iceberg"
     parquet = "parquet"
     csv = "csv"

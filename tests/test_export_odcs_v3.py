@@ -89,7 +89,7 @@ schema:
       value: customModelProperty1Value
 servers:
   - server: production
-    type: snowflake
+    type: snowflakeq+
     environment: production
     account: my-account
     database: my-database
