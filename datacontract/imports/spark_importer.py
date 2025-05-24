@@ -29,7 +29,7 @@ class SparkImporter(Importer):
             data_contract_specification: The data contract specification object.
             source: The source string indicating the Spark tables to read.
             import_args: Additional arguments for the import process.
-
+            kwargs: Keyword arguments for the import process.
         Returns:
             dict: The updated data contract specification.
         """
@@ -37,7 +37,7 @@ class SparkImporter(Importer):
         return import_spark(data_contract_specification, source, dataframe)
 
 
-def import_spark(data_contract_specification: DataContractSpecification, source: str, dataframe) -> DataContractSpecification:
+def import_spark(data_contract_specification: DataContractSpecification, source: str, dataframe: DataFrame) -> DataContractSpecification:
     """
     Reads Spark tables and updates the data contract specification with their schemas.
 
@@ -54,7 +54,7 @@ def import_spark(data_contract_specification: DataContractSpecification, source:
     if isinstance(dataframe, DataFrame):
         df = dataframe
         data_contract_specification.models[source] = import_from_spark_df(spark, source, df)
-    elif isinstance(source, str):
+    elif isinstance(source, str) and dataframe == None:
         for temp_view in source.split(","):
             temp_view = temp_view.strip()
             df = spark.read.table(temp_view)
