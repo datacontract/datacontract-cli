@@ -20,6 +20,7 @@ class SparkImporter(Importer):
         data_contract_specification: DataContractSpecification,
         source: str,
         import_args: dict,
+        **kwargs,
     ) -> DataContractSpecification:
         """
         Imports data from a Spark source into the data contract specification.
@@ -32,10 +33,11 @@ class SparkImporter(Importer):
         Returns:
             dict: The updated data contract specification.
         """
-        return import_spark(data_contract_specification, source)
+        dataframe = kwargs.get("dataframe", None)
+        return import_spark(data_contract_specification, source, dataframe)
 
 
-def import_spark(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
+def import_spark(data_contract_specification: DataContractSpecification, source: str, dataframe) -> DataContractSpecification:
     """
     Reads Spark tables and updates the data contract specification with their schemas.
 
@@ -48,10 +50,15 @@ def import_spark(data_contract_specification: DataContractSpecification, source:
     """
     spark = SparkSession.builder.getOrCreate()
     data_contract_specification.servers["local"] = Server(type="dataframe")
-    for temp_view in source.split(","):
-        temp_view = temp_view.strip()
-        df = spark.read.table(temp_view)
-        data_contract_specification.models[temp_view] = import_from_spark_df(spark, source, df)
+    
+    if isinstance(dataframe, DataFrame):
+        df = dataframe
+        data_contract_specification.models[source] = import_from_spark_df(spark, source, df)
+    elif isinstance(source, str):
+        for temp_view in source.split(","):
+            temp_view = temp_view.strip()
+            df = spark.read.table(temp_view)
+            data_contract_specification.models[temp_view] = import_from_spark_df(spark, source, df)
     return data_contract_specification
 
 
