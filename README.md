@@ -1375,7 +1375,7 @@ datacontract import --format glue --source <database_name>
 
 #### Spark
 
-Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.  
+Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.  If the `source` tables are registered as tables in Databricks, and they have a table-level description that will also be added to the Data Contract Specification.
 
 Example:
 
@@ -1383,7 +1383,7 @@ Example:
 datacontract import --format spark --source "users,orders"
 ```
 
-Another way to run importing from spark is to specify a third keyword argument `dataframe` that is equal to the Spark dataframe object.  `Source` is equivalent to the table name in this context.
+Another way to run importing from spark is to specify a third keyword argument `dataframe` that is equal to the Spark dataframe object.  `Source` is equivalent to the table name in this context.  This method only works with a single `source` and `dataframe`.
 
 Example:
 
