@@ -1382,7 +1382,7 @@ Importing from Spark table or view these must be created or accessible in the Sp
 datacontract import --format spark --source "users,orders"
 ```
 
-Another method to run importing from spark is to specify a keyword argument `dataframe` that is equal to the Spark dataframe object.  `Source` is equivalent to the table name.  The `description` keyword argument is optional. This method **ONLY** works with a **SINGLE** `source` and `dataframe`.
+Another method to run importing from spark is to specify a keyword argument `dataframe` that is equal to the Spark dataframe object.  `Source` is equivalent to the table name.  The `description` keyword argument is optional. This method **ONLY** works with a single `source` and `dataframe`.
 
 ```bash
 # Example: Import Spark dataframe from Spark context
