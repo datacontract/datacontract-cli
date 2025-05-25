@@ -164,7 +164,7 @@ def test_cli(spark: SparkSession):
 
 @pytest.fixture
 def user_datacontract():
-    with open("fixtures/import/user_datacontract.yml", "r") as f:
+    with open("fixtures/spark/import/user_datacontract.yml", "r") as f:
         return yaml.safe_load(f)
 
 
