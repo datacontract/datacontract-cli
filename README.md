@@ -1389,6 +1389,7 @@ Example:
 
 ```bash
 datacontract import --format spark --source "users" --dataframe users_df
+datacontract import --format spark --source "users" --dataframe users_df --description "table of users information"
 ```
 
 #### DBML
