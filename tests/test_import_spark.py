@@ -1,5 +1,6 @@
 import pytest
 import yaml
+from pathlib import Path
 from pyspark.sql import SparkSession, types
 from typer.testing import CliRunner
 
@@ -91,7 +92,8 @@ def spark(tmp_path_factory) -> SparkSession:
 
 @pytest.fixture()
 def user_datacontract():
-    with open("tests/fixtures/spark/import/user_datacontract.yml", "r") as f:
+    file_path = Path(__file__).parent / "fixtures/spark/import/user_datacontract.yml"
+    with file_path.open() as f:
         return yaml.safe_load(f)
 
 

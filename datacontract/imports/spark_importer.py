@@ -20,7 +20,6 @@ class SparkImporter(Importer):
         data_contract_specification: DataContractSpecification,
         source: str,
         import_args: dict,
-        **kwargs,
     ) -> DataContractSpecification:
         """
         Imports data from a Spark source into the data contract specification.
