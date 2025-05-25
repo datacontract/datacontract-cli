@@ -904,6 +904,20 @@ Available export options:
 | `custom`             | Export to Custom format with Jinja                      | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
+#### SQL
+
+The `export` function converts a given data contract into a SQL data definition language (DDL).
+
+```shell
+datacontract export datacontract.yaml --format sql
+```
+
+If the data contract has `variant` data types for some of the data contract schema columns append `variant` to DATACONTRACT_TYPES in order to have the variant columns included in the SQL DDL.  If this step is skipped the `variant` columns will be excluded.
+
+```shell
+from datacontract.model import data_contract_specification
+data_contract_specification.DATACONTRACT_TYPES.append(“variant”)
+```
 
 #### Great Expectations
 
@@ -911,7 +925,7 @@ The `export` function transforms a specified data contract into a comprehensive 
 If the contract includes multiple models, you need to specify the names of the model you wish to export.
 
 ```shell
-datacontract  export datacontract.yaml --format great-expectations --model orders
+datacontract export datacontract.yaml --format great-expectations --model orders
 ```
 
 The export creates a list of expectations by utilizing:
@@ -936,7 +950,7 @@ To further customize the export, the following optional arguments are available:
 
 #### RDF
 
-The export function converts a given data contract into a RDF representation. You have the option to
+The `export` function converts a given data contract into a RDF representation. You have the option to
 add a base_url which will be used as the default prefix to resolve relative IRIs inside the document.
 
 ```shell
