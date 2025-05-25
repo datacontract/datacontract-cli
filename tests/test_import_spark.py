@@ -234,8 +234,6 @@ def test_cli_with_df_obj(spark: SparkSession, user_datacontract):
             "users",
             "--dataframe",
             df_user,
-            "--description",
-            "description",
         ],
     )
 
@@ -260,7 +258,7 @@ def test_table_not_exists():
     assert result.exit_code == 1
 
 
-def test_prog(spark: SparkSession):
+def test_prog(spark: SparkSession, user_datacontract):
     df_user = spark.createDataFrame(
         data=[
             {
@@ -316,6 +314,9 @@ def test_prog(spark: SparkSession):
     )
 
     df_user.createOrReplaceTempView("users")
-    result = DataContract().import_from_source("spark", "users")
-
-    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    
+    result1 = DataContract().import_from_source("spark", "users")
+    assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected)
+    
+    result2 = DataContract().import_from_source("spark", "user", dataframe = df_user, description = "description")
+    assert yaml.safe_load(result2.to_yaml()) == user_datacontract
