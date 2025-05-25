@@ -100,7 +100,7 @@ def user_datacontract_desc():
 def user_datacontract_no_desc():
     with open("fixtures/spark/import/users_datacontract_no_desc.yml", "r") as f:
         data_contract_str = f.read()
-    return data_contract_str
+    return yaml.safe_load(data_contract_str)
 
 
 def test_cli(spark: SparkSession, user_datacontract_no_desc):
