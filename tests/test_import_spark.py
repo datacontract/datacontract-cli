@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 import yaml
 from pyspark.sql import SparkSession, types
@@ -93,20 +91,16 @@ def spark(tmp_path_factory) -> SparkSession:
 
 @pytest.fixture()
 def user_datacontract_desc():
-    file_path = "../tests/fixtures/spark/import/users_datacontract_desc.yml"
-    assert file_path.exists(), f"Missing fixture: {file_path}"
-    print(f"Loading: {file_path}")
-    with file_path.open() as f:
-        return yaml.safe_load(f)
+    with open("fixtures/spark/import/users_datacontract_desc.yml", "r") as f:
+        data_contract_str = f.read()
+    return yaml.safe_load(data_contract_str)
 
 
 @pytest.fixture()
 def user_datacontract_no_desc():
-    file_path = "../tests/fixtures/spark/import/users_datacontract_no_desc.yml"
-    assert file_path.exists(), f"Missing fixture: {file_path}"
-    print(f"Loading: {file_path}")
-    with file_path.open() as f:
-        return yaml.safe_load(f)
+    with open("fixtures/spark/import/users_datacontract_no_desc.yml", "r") as f:
+        data_contract_str = f.read()
+    return yaml.safe_load(data_contract_str)
 
 
 def test_cli(spark: SparkSession, user_datacontract_no_desc):
