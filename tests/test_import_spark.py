@@ -3,6 +3,7 @@ import yaml
 from pyspark.sql import SparkSession, types
 from typer.testing import CliRunner
 
+
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
@@ -89,7 +90,6 @@ def spark(tmp_path_factory) -> SparkSession:
     return spark
 
     
-
 def test_cli(spark: SparkSession):
     df_user = spark.createDataFrame(
         data=[
@@ -162,6 +162,88 @@ def test_cli(spark: SparkSession):
     assert result.exit_code == 0
     assert output.strip() == expected.strip()
 
+
+@pytest.fixture
+def user_datacontract():
+    with open("fixtures/import/user_datacontract.yml", "r") as f:
+        return yaml.safe_load(f)
+
+
+def test_cli_with_df_obj(spark: SparkSession, user_datacontract):
+    df_user = spark.createDataFrame(
+        data=[
+            {
+                "id": "1",
+                "name": "John Doe",
+                "address": {
+                    "number": 123,
+                    "street": "Maple Street",
+                    "city": "Anytown",
+                },
+                "tags": ["tag1", "tag2"],
+                "metadata": {
+                    "my-source-metadata": {
+                        "value": "1234567890",
+                        "type": "STRING",
+                        "timestamp": 1646053400,
+                        "source": "my-source",
+                    }
+                },
+            }
+        ],
+        schema=types.StructType(
+            [
+                types.StructField("id", types.StringType()),
+                types.StructField("name", types.StringType()),
+                types.StructField(
+                    "address",
+                    types.StructType(
+                        [
+                            types.StructField("number", types.IntegerType()),
+                            types.StructField("street", types.StringType()),
+                            types.StructField("city", types.StringType()),
+                        ]
+                    ),
+                ),
+                types.StructField("tags", types.ArrayType(types.StringType())),
+                types.StructField(
+                    "metadata",
+                    types.MapType(
+                        keyType=types.StringType(),
+                        valueType=types.StructType(
+                            [
+                                types.StructField("value", types.StringType()),
+                                types.StructField("type", types.StringType()),
+                                types.StructField("timestamp", types.LongType()),
+                                types.StructField("source", types.StringType()),
+                            ]
+                        ),
+                    ),
+                ),
+            ]
+        ),
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "import",
+            "--format",
+            "spark",
+            "--source",
+            "users",
+            "--dataframe",
+            df_user,
+            "--description",
+            "description",
+        ],
+    )
+
+    output = result.stdout
+    assert result.exit_code == 0
+    assert output.strip() == user_datacontract.strip()
+    
 
 def test_table_not_exists():
     runner = CliRunner()
