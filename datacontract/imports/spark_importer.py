@@ -212,7 +212,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
         workspace_client = WorkspaceClient()
         created_table = workspace_client.tables.get(full_name=f"{source}")
         table_comment = created_table.comment
-        print(f"'{source}' table comment retrieved using 'WorkspaceClient.tables.get({source})'")
+        logger.info(f"'{source}' table comment retrieved using 'WorkspaceClient.tables.get({source})'")
         return table_comment
     except Exception:
         pass
@@ -220,7 +220,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
     # Fallback to Spark Catalog API for Hive Metastore or Non-UC Tables
     try:
         table_comment = spark.catalog.getTable(f"{source}").description
-        print(f"'{source}' table comment retrieved using 'spark.catalog.getTable({source}).description'")
+        logger.info(f"'{source}' table comment retrieved using 'spark.catalog.getTable({source}).description'")
         return table_comment
     except Exception:
         pass
@@ -232,7 +232,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
             if row.col_name.strip().lower() == "comment":
                 table_comment = row.data_type
                 break
-        print(f"'{source}' table comment retrieved using 'DESCRIBE TABLE EXTENDED {source}'")
+        logger.info(f"'{source}' table comment retrieved using 'DESCRIBE TABLE EXTENDED {source}'")
         return table_comment
     except Exception:
         pass
