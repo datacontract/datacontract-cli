@@ -909,7 +909,7 @@ Available export options:
 The `export` function converts a given data contract into a SQL data definition language (DDL).
 
 ```shell
-datacontract export datacontract.yaml --format sql
+datacontract export datacontract.yaml --format sql --output output.sql
 ```
 
 If the data contract has the `variant` data type for some of the data contract schema columns append `variant` to DATACONTRACT_TYPES in order to have the variant columns included in the SQL DDL.  If this step is skipped the `variant` columns will be excluded.
