@@ -42,60 +42,69 @@ def user_datacontract_no_desc():
     return data_contract_str
 
 
-def test_cli(spark: SparkSession, user_datacontract_no_desc):
-    df_user = spark.createDataFrame(
-        data=[
-            {
-                "id": "1",
-                "name": "John Doe",
-                "address": {
-                    "number": 123,
-                    "street": "Maple Street",
-                    "city": "Anytown",
-                },
-                "tags": ["tag1", "tag2"],
-                "metadata": {
-                    "my-source-metadata": {
-                        "value": "1234567890",
-                        "type": "STRING",
-                        "timestamp": 1646053400,
-                        "source": "my-source",
-                    }
-                },
+@pytest.fixture()
+def user_row():
+    return {
+        "id": "1",
+        "name": "John Doe",
+        "address": {
+            "number": 123,
+            "street": "Maple Street",
+            "city": "Anytown",
+        },
+        "tags": ["tag1", "tag2"],
+        "metadata": {
+            "my-source-metadata": {
+                "value": "1234567890",
+                "type": "STRING",
+                "timestamp": 1646053400,
+                "source": "my-source",
             }
-        ],
-        schema=types.StructType(
-            [
-                types.StructField("id", types.StringType()),
-                types.StructField("name", types.StringType()),
-                types.StructField(
-                    "address",
-                    types.StructType(
+        },
+    }
+
+
+@pytest.fixture()
+def user_schema():
+    return types.StructType(
+        [
+            types.StructField("id", types.StringType()),
+            types.StructField("name", types.StringType()),
+            types.StructField(
+                "address",
+                types.StructType(
+                    [
+                        types.StructField("number", types.IntegerType()),
+                        types.StructField("street", types.StringType()),
+                        types.StructField("city", types.StringType()),
+                    ]
+                ),
+            ),
+            types.StructField("tags", types.ArrayType(types.StringType())),
+            types.StructField(
+                "metadata",
+                types.MapType(
+                    keyType=types.StringType(),
+                    valueType=types.StructType(
                         [
-                            types.StructField("number", types.IntegerType()),
-                            types.StructField("street", types.StringType()),
-                            types.StructField("city", types.StringType()),
+                            types.StructField("value", types.StringType()),
+                            types.StructField("type", types.StringType()),
+                            types.StructField("timestamp", types.LongType()),
+                            types.StructField("source", types.StringType()),
                         ]
                     ),
                 ),
-                types.StructField("tags", types.ArrayType(types.StringType())),
-                types.StructField(
-                    "metadata",
-                    types.MapType(
-                        keyType=types.StringType(),
-                        valueType=types.StructType(
-                            [
-                                types.StructField("value", types.StringType()),
-                                types.StructField("type", types.StringType()),
-                                types.StructField("timestamp", types.LongType()),
-                                types.StructField("source", types.StringType()),
-                            ]
-                        ),
-                    ),
-                ),
-            ]
-        ),
+            ),
+        ]
     )
+
+
+@pytest.fixture()
+def df_user(spark: SparkSession, user_row, user_schema):
+    return spark.createDataFrame(data=[user_row], schema=user_schema)
+
+
+def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc):
 
     df_user.write.mode("overwrite").saveAsTable("users")
 
@@ -133,62 +142,10 @@ def test_table_not_exists():
     assert result.exit_code == 1
 
 
-def test_prog(spark: SparkSession, user_datacontract_no_desc, user_datacontract_desc):
-    df_user = spark.createDataFrame(
-        data=[
-            {
-                "id": "1",
-                "name": "John Doe",
-                "address": {
-                    "number": 123,
-                    "street": "Maple Street",
-                    "city": "Anytown",
-                },
-                "tags": ["tag1", "tag2"],
-                "metadata": {
-                    "my-source-metadata": {
-                        "value": "1234567890",
-                        "type": "STRING",
-                        "timestamp": 1646053400,
-                        "source": "my-source",
-                    }
-                },
-            }
-        ],
-        schema=types.StructType(
-            [
-                types.StructField("id", types.StringType()),
-                types.StructField("name", types.StringType()),
-                types.StructField(
-                    "address",
-                    types.StructType(
-                        [
-                            types.StructField("number", types.IntegerType()),
-                            types.StructField("street", types.StringType()),
-                            types.StructField("city", types.StringType()),
-                        ]
-                    ),
-                ),
-                types.StructField("tags", types.ArrayType(types.StringType())),
-                types.StructField(
-                    "metadata",
-                    types.MapType(
-                        keyType=types.StringType(),
-                        valueType=types.StructType(
-                            [
-                                types.StructField("value", types.StringType()),
-                                types.StructField("type", types.StringType()),
-                                types.StructField("timestamp", types.LongType()),
-                                types.StructField("source", types.StringType()),
-                            ]
-                        ),
-                    ),
-                ),
-            ]
-        ),
-    )
+def test_prog(spark: SparkSession, df_user, user_datacontract_no_desc, user_datacontract_desc):
 
     df_user.write.mode("overwrite").saveAsTable("users")
+
     expected_desc = user_datacontract_desc
     expected_no_desc = user_datacontract_no_desc    
     
