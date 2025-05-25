@@ -151,7 +151,8 @@ def test_cli(spark: SparkSession):
         ),
     )
 
-    df_user.createOrReplaceTempView("users")
+    df_user.write.mode("overwrite").saveAsTable("users")
+    #df_user.createOrReplaceTempView("users")
     runner = CliRunner()
     result = runner.invoke(
         app,
@@ -164,6 +165,7 @@ def test_cli(spark: SparkSession):
         ],
     )
 
+    spark.sql("DROP TABLE IF EXISTS users")  # cleanup
     output = result.stdout
     assert result.exit_code == 0
     assert output.strip() == expected.strip()
@@ -240,7 +242,8 @@ def test_prog(spark: SparkSession, user_datacontract):
         ),
     )
 
-    df_user.createOrReplaceTempView("users")
+    df_user.write.mode("overwrite").saveAsTable("users")
+    #df_user.createOrReplaceTempView("users")
     
     result1 = DataContract().import_from_source("spark", "users")
     assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected)
