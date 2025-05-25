@@ -93,8 +93,7 @@ def spark(tmp_path_factory) -> SparkSession:
 
 @pytest.fixture()
 def user_datacontract_desc():
-    root = Path(__file__).resolve().parents[2]  # go from datacontract/imports/ → your-repo-root/
-    file_path = root / "tests/fixtures/spark/import/users_datacontract_desc.yml"
+    file_path = "../tests/fixtures/spark/import/users_datacontract_desc.yml"
     assert file_path.exists(), f"Missing fixture: {file_path}"
     print(f"Loading: {file_path}")
     with file_path.open() as f:
@@ -103,8 +102,7 @@ def user_datacontract_desc():
 
 @pytest.fixture()
 def user_datacontract_no_desc():
-    root = Path(__file__).resolve().parents[2]
-    file_path = root / "tests/fixtures/spark/import/users_datacontract_no_desc.yml"
+    file_path = "../tests/fixtures/spark/import/users_datacontract_no_desc.yml"
     assert file_path.exists(), f"Missing fixture: {file_path}"
     print(f"Loading: {file_path}")
     with file_path.open() as f:
@@ -261,7 +259,7 @@ def test_prog(spark: SparkSession, user_datacontract_desc):
     #df_user.createOrReplaceTempView("users")
     
     result1 = DataContract().import_from_source("spark", "users")
-    assert yaml.safe_load(result1.to_yaml()) == user_datacontract_desc
+    assert yaml.safe_load(result1.to_yaml()) == user_datacontract_no_desc
         
     # result2 = DataContract().import_from_source("spark", "user", dataframe = df_user, description = "description")
     # assert yaml.safe_load(result2.to_yaml()) == user_datacontract
