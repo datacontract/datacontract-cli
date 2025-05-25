@@ -137,6 +137,7 @@ dev = [
   "ruff",
   "testcontainers[minio,postgres,kafka,mssql]==4.10.0",
   "trino==0.333.0",
+  "pyspark==3.5.0",
 ]
 
 [project.urls]

@@ -165,7 +165,7 @@ def test_cli(spark: SparkSession):
         ],
     )
 
-    spark.sql("DROP TABLE IF EXISTS users")  # cleanup
+    #spark.sql("DROP TABLE IF EXISTS users")  # cleanup
     output = result.stdout
     assert result.exit_code == 0
     assert output.strip() == expected.strip()
