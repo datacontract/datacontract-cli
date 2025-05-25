@@ -1289,11 +1289,11 @@ Available import options:
 | `jsonschema`       | Import from JSON Schemas                       | ✅      |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | `parquet`          | Import from Parquet File Metadata              | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | ✅    |
-| `spark`            | Import from Spark StructTypes, Variants        | ✅      |
+| `protobuf`         | Import from Protobuf schemas                   | ✅      |
+| `spark`            | Import from Spark StructTypes, Variant         | ✅      |
 | `sql`              | Import from SQL DDL                            | ✅      |
 | `unity`            | Import from Databricks Unity Catalog           | partial |
-| Missing something? | Please create an issue on GitHub               | TBD    |
+| Missing something? | Please create an issue on GitHub               | TBD     |
 
 
 #### ODCS
