@@ -6,67 +6,6 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-# expected = """
-# dataContractSpecification: 1.1.0
-# id: my-data-contract-id
-# info:
-#   title: My Data Contract
-#   version: 0.0.1
-# servers:
-#   local:
-#     type: dataframe
-# models:
-#   users:
-#     fields:
-#       id:
-#         type: string
-#         required: false
-#       name:
-#         type: string
-#         required: false
-#       address:
-#         type: struct
-#         required: false
-#         fields:
-#           number:
-#             type: integer
-#             required: false
-#           street:
-#             type: string
-#             required: false
-#           city:
-#             type: string
-#             required: false
-#       tags:
-#         type: array
-#         required: false
-#         items:
-#           type: string
-#           required: false
-#       metadata:
-#         type: map
-#         required: false
-#         keys:
-#           type: string
-#           required: true
-#         values:
-#           type: struct
-#           required: false
-#           fields:
-#             value:
-#               type: string
-#               required: false
-#             type:
-#               type: string
-#               required: false
-#             timestamp:
-#               type: long
-#               required: false
-#             source:
-#               type: string
-#               required: false
-#     """
-
 
 @pytest.fixture(scope="session")
 def spark(tmp_path_factory) -> SparkSession:
@@ -93,7 +32,7 @@ def spark(tmp_path_factory) -> SparkSession:
 def user_datacontract_desc():
     with open("fixtures/spark/import/users_datacontract_desc.yml", "r") as f:
         data_contract_str = f.read()
-    return yaml.safe_load(data_contract_str)
+    return data_contract_str
 
 
 @pytest.fixture()
