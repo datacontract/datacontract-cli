@@ -912,17 +912,12 @@ The `export` function converts a given data contract into a SQL data definition 
 datacontract export datacontract.yaml --format sql --output output.sql
 ```
 
-If the data contract has the `variant` data type for some of the data contract schema columns append `variant` to DATACONTRACT_TYPES in order to have the variant columns included in the SQL DDL.  If this step is skipped the `variant` columns will be excluded.
-
-```shell
-from datacontract.model import data_contract_specification
-data_contract_specification.DATACONTRACT_TYPES.append(“variant”)
-```
-
-If using Databricks, and an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following property.
+If using Databricks, and an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following properties.
 
 ```shell
 spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
+from datacontract.model import data_contract_specification
+data_contract_specification.DATACONTRACT_TYPES.append(“variant”)
 ```
 
 #### Great Expectations
@@ -1400,14 +1395,17 @@ Importing from Spark table or view these must be created or accessible in the Sp
 ```bash
 # Example: Import Spark table(s) from Spark context
 datacontract import --format spark --source "users,orders"
-```
 
-Another method to run importing from spark is to specify a keyword argument `dataframe` that is equal to the Spark dataframe object.  `Source` is equivalent to the table name.  The table `description` keyword argument is optional. This method **ONLY** works with a single `source` and `dataframe`.
-
-```bash
 # Example: Import Spark dataframe from Spark context
 datacontract import --format spark --source "users" --dataframe users_df
 datacontract import --format spark --source "users" --dataframe users_df --description "description"
+```
+
+```bash
+# Example: Import Spark dataframe object from Spark context
+DataContract().import_from_source("spark", "users", dataframe = df_user)
+DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user)
+DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
 #### DBML
