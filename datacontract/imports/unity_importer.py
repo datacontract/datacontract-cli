@@ -7,7 +7,7 @@ from databricks.sdk.service.catalog import ColumnInfo, TableInfo
 from pyspark.sql import types
 
 from datacontract.imports.importer import Importer
-from datacontract.imports.spark_dataframe_importer import _field_from_struct_type
+from datacontract.imports.spark_importer import _field_from_struct_type
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.model.exceptions import DataContractException
 

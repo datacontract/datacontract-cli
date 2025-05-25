@@ -3,7 +3,6 @@ import yaml
 from pyspark.sql import SparkSession, types
 from typer.testing import CliRunner
 
-
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
