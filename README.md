@@ -919,6 +919,12 @@ from datacontract.model import data_contract_specification
 data_contract_specification.DATACONTRACT_TYPES.append(“variant”)
 ```
 
+If using Databricks, and an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following property.
+
+```shell
+spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
+```
+
 #### Great Expectations
 
 The `export` function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
