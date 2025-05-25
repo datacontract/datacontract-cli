@@ -56,7 +56,7 @@ def import_spark(data_contract_specification: DataContractSpecification, source:
     if isinstance(dataframe, DataFrame):
         df = dataframe
         data_contract_specification.models[source] = import_from_spark_df(spark, source, df, description)
-    elif isinstance(source, str) and dataframe == None:
+    elif isinstance(source, str) and dataframe is None:
         for temp_view in source.split(","):
             temp_view = temp_view.strip()
             df = spark.read.table(temp_view)
@@ -82,7 +82,8 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, descri
 
     if description is None:
         model.description = _table_comment_from_spark(spark, source)
-    else: model.description = description
+    else: 
+        model.description = description
 
     for field in schema:
         model.fields[field.name] = _field_from_struct_type(field)
