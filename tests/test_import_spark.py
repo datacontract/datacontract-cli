@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 import yaml
 from pyspark.sql import SparkSession, types
@@ -6,66 +8,66 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 
-expected = """
-dataContractSpecification: 1.1.0
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-servers:
-  local:
-    type: dataframe
-models:
-  users:
-    fields:
-      id:
-        type: string
-        required: false
-      name:
-        type: string
-        required: false
-      address:
-        type: struct
-        required: false
-        fields:
-          number:
-            type: integer
-            required: false
-          street:
-            type: string
-            required: false
-          city:
-            type: string
-            required: false
-      tags:
-        type: array
-        required: false
-        items:
-          type: string
-          required: false
-      metadata:
-        type: map
-        required: false
-        keys:
-          type: string
-          required: true
-        values:
-          type: struct
-          required: false
-          fields:
-            value:
-              type: string
-              required: false
-            type:
-              type: string
-              required: false
-            timestamp:
-              type: long
-              required: false
-            source:
-              type: string
-              required: false
-    """
+# expected = """
+# dataContractSpecification: 1.1.0
+# id: my-data-contract-id
+# info:
+#   title: My Data Contract
+#   version: 0.0.1
+# servers:
+#   local:
+#     type: dataframe
+# models:
+#   users:
+#     fields:
+#       id:
+#         type: string
+#         required: false
+#       name:
+#         type: string
+#         required: false
+#       address:
+#         type: struct
+#         required: false
+#         fields:
+#           number:
+#             type: integer
+#             required: false
+#           street:
+#             type: string
+#             required: false
+#           city:
+#             type: string
+#             required: false
+#       tags:
+#         type: array
+#         required: false
+#         items:
+#           type: string
+#           required: false
+#       metadata:
+#         type: map
+#         required: false
+#         keys:
+#           type: string
+#           required: true
+#         values:
+#           type: struct
+#           required: false
+#           fields:
+#             value:
+#               type: string
+#               required: false
+#             type:
+#               type: string
+#               required: false
+#             timestamp:
+#               type: long
+#               required: false
+#             source:
+#               type: string
+#               required: false
+#     """
 
 
 @pytest.fixture(scope="session")
@@ -89,14 +91,27 @@ def spark(tmp_path_factory) -> SparkSession:
     return spark
 
 
-# @pytest.fixture()
-# def user_datacontract():
-#     file_path = Path(__file__).parent / "fixtures/spark/import/user_datacontract.yml"
-#     with file_path.open() as f:
-#         return yaml.safe_load(f)
+@pytest.fixture()
+def user_datacontract_desc():
+    root = Path(__file__).resolve().parents[2]  # go from datacontract/imports/ → your-repo-root/
+    file_path = root / "tests/fixtures/spark/import/users_datacontract_desc.yml"
+    assert file_path.exists(), f"Missing fixture: {file_path}"
+    print(f"Loading: {file_path}")
+    with file_path.open() as f:
+        return yaml.safe_load(f)
 
 
-def test_cli(spark: SparkSession):
+@pytest.fixture()
+def user_datacontract_no_desc():
+    root = Path(__file__).resolve().parents[2]
+    file_path = root / "tests/fixtures/spark/import/users_datacontract_no_desc.yml"
+    assert file_path.exists(), f"Missing fixture: {file_path}"
+    print(f"Loading: {file_path}")
+    with file_path.open() as f:
+        return yaml.safe_load(f)
+
+
+def test_cli(spark: SparkSession, user_datacontract_no_desc):
     df_user = spark.createDataFrame(
         data=[
             {
@@ -168,7 +183,7 @@ def test_cli(spark: SparkSession):
     #spark.sql("DROP TABLE IF EXISTS users")  # cleanup
     output = result.stdout
     assert result.exit_code == 0
-    assert output.strip() == expected.strip()
+    assert output.strip() == user_datacontract_no_desc
     
 
 def test_table_not_exists():
@@ -187,7 +202,7 @@ def test_table_not_exists():
     assert result.exit_code == 1
 
 
-def test_prog(spark: SparkSession):
+def test_prog(spark: SparkSession, user_datacontract_desc):
     df_user = spark.createDataFrame(
         data=[
             {
@@ -246,7 +261,7 @@ def test_prog(spark: SparkSession):
     #df_user.createOrReplaceTempView("users")
     
     result1 = DataContract().import_from_source("spark", "users")
-    assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected)
+    assert yaml.safe_load(result1.to_yaml()) == user_datacontract_desc
         
     # result2 = DataContract().import_from_source("spark", "user", dataframe = df_user, description = "description")
     # assert yaml.safe_load(result2.to_yaml()) == user_datacontract
