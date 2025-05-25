@@ -172,10 +172,10 @@ def test_cli(spark: SparkSession, user_datacontract_no_desc):
         ],
     )
 
-    #spark.sql("DROP TABLE IF EXISTS users")  # cleanup
+    expected = user_datacontract_no_desc
     output = result.stdout
     assert result.exit_code == 0
-    assert output.strip() == user_datacontract_no_desc.strip()
+    assert output.strip() == expected.strip()
     
 
 def test_table_not_exists():
@@ -194,7 +194,7 @@ def test_table_not_exists():
     assert result.exit_code == 1
 
 
-def test_prog(spark: SparkSession, user_datacontract_no_desc):
+def test_prog(spark: SparkSession, user_datacontract_no_desc, user_datacontract_desc):
     df_user = spark.createDataFrame(
         data=[
             {
@@ -252,9 +252,10 @@ def test_prog(spark: SparkSession, user_datacontract_no_desc):
     df_user.write.mode("overwrite").saveAsTable("users")
     #df_user.createOrReplaceTempView("users")
     
-    expected = user_datacontract_no_desc
+    expected1 = user_datacontract_no_desc
     result1 = DataContract().import_from_source("spark", "users")
-    assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected)
-        
-    # result2 = DataContract().import_from_source("spark", "user", dataframe = df_user, description = "description")
-    # assert yaml.safe_load(result2.to_yaml()) == user_datacontract
+    assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected1)
+    
+    expected2 = user_datacontract_desc
+    result2 = DataContract().import_from_source("spark", "user", dataframe = df_user, description = "description")
+    assert yaml.safe_load(result2.to_yaml()) == yaml.safe_load(expected2)
