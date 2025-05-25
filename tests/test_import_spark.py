@@ -93,14 +93,14 @@ def spark(tmp_path_factory) -> SparkSession:
 def user_datacontract_desc():
     with open("fixtures/spark/import/users_datacontract_desc.yml", "r") as f:
         data_contract_str = f.read()
-    return data_contract_str
+    return yaml.safe_load(data_contract_str)
 
 
 @pytest.fixture()
 def user_datacontract_no_desc():
     with open("fixtures/spark/import/users_datacontract_no_desc.yml", "r") as f:
         data_contract_str = f.read()
-    return yaml.safe_load(data_contract_str)
+    return data_contract_str
 
 
 def test_cli(spark: SparkSession, user_datacontract_no_desc):
@@ -253,7 +253,7 @@ def test_prog(spark: SparkSession, user_datacontract_desc):
     #df_user.createOrReplaceTempView("users")
     
     result1 = DataContract().import_from_source("spark", "users")
-    assert yaml.safe_load(result1.to_yaml()) == user_datacontract_no_desc
+    assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(user_datacontract_no_desc)
         
     # result2 = DataContract().import_from_source("spark", "user", dataframe = df_user, description = "description")
     # assert yaml.safe_load(result2.to_yaml()) == user_datacontract
