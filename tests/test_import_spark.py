@@ -194,7 +194,7 @@ def test_table_not_exists():
     assert result.exit_code == 1
 
 
-def test_prog(spark: SparkSession, user_datacontract_desc):
+def test_prog(spark: SparkSession, user_datacontract_no_desc):
     df_user = spark.createDataFrame(
         data=[
             {
@@ -252,8 +252,11 @@ def test_prog(spark: SparkSession, user_datacontract_desc):
     df_user.write.mode("overwrite").saveAsTable("users")
     #df_user.createOrReplaceTempView("users")
     
+    # Serialize the loaded fixture dict to YAML
+    expected = yaml.dump(user_datacontract_no_desc)
+    
     result1 = DataContract().import_from_source("spark", "users")
-    assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(user_datacontract_no_desc)
+    assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected)
         
     # result2 = DataContract().import_from_source("spark", "user", dataframe = df_user, description = "description")
     # assert yaml.safe_load(result2.to_yaml()) == user_datacontract
