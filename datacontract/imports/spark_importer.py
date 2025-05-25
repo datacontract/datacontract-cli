@@ -36,7 +36,7 @@ class SparkImporter(Importer):
         return import_spark(data_contract_specification, source, dataframe, description)
 
 
-def import_spark(data_contract_specification: DataContractSpecification, source: str, dataframe: DataFrame, description: str) -> DataContractSpecification:
+def import_spark(data_contract_specification: DataContractSpecification, source: str, dataframe, description: str) -> DataContractSpecification:
     """
     Reads Spark tables and updates the data contract specification with their schemas.
 
@@ -52,10 +52,11 @@ def import_spark(data_contract_specification: DataContractSpecification, source:
     spark = SparkSession.builder.getOrCreate()
     data_contract_specification.servers["local"] = Server(type="dataframe")
     
-    if isinstance(dataframe, DataFrame):
-        df = dataframe
-        data_contract_specification.models[source] = import_from_spark_df(spark, source, df, description)
-    elif isinstance(source, str) and dataframe is None:
+    if dataframe is not None:
+        if isinstance(dataframe, DataFrame):
+            df = dataframe
+            data_contract_specification.models[source] = import_from_spark_df(spark, source, df, description)
+    elif isinstance(source, str):
         for temp_view in source.split(","):
             temp_view = temp_view.strip()
             df = spark.read.table(temp_view)
