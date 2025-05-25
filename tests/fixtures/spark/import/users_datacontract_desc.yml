@@ -7,7 +7,7 @@ servers:
   local:
     type: dataframe
 models:
-  user:
+  users:
     description: description
     fields:
       id:
