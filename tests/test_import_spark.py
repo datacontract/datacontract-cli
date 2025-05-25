@@ -252,9 +252,7 @@ def test_prog(spark: SparkSession, user_datacontract_no_desc):
     df_user.write.mode("overwrite").saveAsTable("users")
     #df_user.createOrReplaceTempView("users")
     
-    # Serialize the loaded fixture dict to YAML
-    expected = yaml.dump(user_datacontract_no_desc)
-    
+    expected = user_datacontract_no_desc
     result1 = DataContract().import_from_source("spark", "users")
     assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected)
         
