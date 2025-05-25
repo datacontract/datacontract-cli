@@ -77,7 +77,6 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, descri
     Returns:
         Model: The generated data contract model.
     """
-    
     model = Model()
     schema = df.schema
 
