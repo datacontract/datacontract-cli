@@ -912,7 +912,7 @@ The `export` function converts a given data contract into a SQL data definition 
 datacontract export datacontract.yaml --format sql
 ```
 
-If the data contract has `variant` data types for some of the data contract schema columns append `variant` to DATACONTRACT_TYPES in order to have the variant columns included in the SQL DDL.  If this step is skipped the `variant` columns will be excluded.
+If the data contract has the `variant` data type for some of the data contract schema columns append `variant` to DATACONTRACT_TYPES in order to have the variant columns included in the SQL DDL.  If this step is skipped the `variant` columns will be excluded.
 
 ```shell
 from datacontract.model import data_contract_specification
