@@ -93,14 +93,14 @@ def spark(tmp_path_factory) -> SparkSession:
 def user_datacontract_desc():
     with open("fixtures/spark/import/users_datacontract_desc.yml", "r") as f:
         data_contract_str = f.read()
-    return yaml.safe_load(data_contract_str)
+    return data_contract_str
 
 
 @pytest.fixture()
 def user_datacontract_no_desc():
     with open("fixtures/spark/import/users_datacontract_no_desc.yml", "r") as f:
         data_contract_str = f.read()
-    return yaml.safe_load(data_contract_str)
+    return data_contract_str
 
 
 def test_cli(spark: SparkSession, user_datacontract_no_desc):
@@ -175,7 +175,7 @@ def test_cli(spark: SparkSession, user_datacontract_no_desc):
     #spark.sql("DROP TABLE IF EXISTS users")  # cleanup
     output = result.stdout
     assert result.exit_code == 0
-    assert output.strip() == user_datacontract_no_desc
+    assert output.strip() == user_datacontract_no_desc.strip()
     
 
 def test_table_not_exists():
