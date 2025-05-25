@@ -8,7 +8,6 @@ servers:
     type: dataframe
 models:
   user:
-    description: description
     fields:
       id:
         type: string
