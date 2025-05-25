@@ -239,7 +239,7 @@ def test_cli_with_df_obj(spark: SparkSession, user_datacontract):
 
     output = result.stdout
     assert result.exit_code == 0
-    assert output.strip() == user_datacontract.strip()
+    assert output.strip() == expected.strip()
     
 
 def test_table_not_exists():
