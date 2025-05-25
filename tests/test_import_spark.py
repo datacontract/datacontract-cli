@@ -89,9 +89,9 @@ def spark(tmp_path_factory) -> SparkSession:
     return spark
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def user_datacontract():
-    with open("./fixtures/spark/import/user_datacontract.yml", "r") as f:
+    with open("tests/fixtures/spark/import/user_datacontract.yml", "r") as f:
         return yaml.safe_load(f)
 
 
