@@ -1,7 +1,7 @@
 from pathlib import Path
+
 import pytest
 import yaml
-
 from pyspark.sql import SparkSession, types
 from typer.testing import CliRunner
 
