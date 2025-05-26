@@ -36,32 +36,46 @@ class SparkImporter(Importer):
         return import_spark(data_contract_specification, source, dataframe, description)
 
 
-def import_spark(data_contract_specification: DataContractSpecification, source: str, dataframe, description: str) -> DataContractSpecification:
+def import_spark(
+    data_contract_specification: DataContractSpecification,
+    source: str,
+    dataframe: DataFrame | None = None,
+    description: str | None = None,
+) -> DataContractSpecification:
     """
-    Reads Spark tables and updates the data contract specification with their schemas.
+    Imports schema(s) from Spark into a Data Contract Specification.
 
     Args:
-        data_contract_specification: The data contract specification to update.
-        source: A comma-separated string of Spark temporary views to read.
-        dataframe: Spark dataframe object
-        description: Table level comment
+        data_contract_specification (DataContractSpecification): The contract spec to update.
+        source (str): Comma-separated Spark table/view names.
+        dataframe (DataFrame | None): Optional Spark DataFrame to import.
+        description (str | None): Optional table-level description.
 
     Returns:
-        DataContractSpecification: The updated data contract specification.
+        DataContractSpecification: The updated contract spec with imported models.
     """
     spark = SparkSession.builder.getOrCreate()
     data_contract_specification.servers["local"] = Server(type="dataframe")
-    
+
     if dataframe is not None:
-        if isinstance(dataframe, DataFrame):
-            df = dataframe
-            data_contract_specification.models[source] = import_from_spark_df(spark, source, df, description)
-    elif isinstance(source, str):
-        for temp_view in source.split(","):
-            temp_view = temp_view.strip()
-            df = spark.read.table(temp_view)
-            data_contract_specification.models[temp_view] = import_from_spark_df(spark, source, df, description)
+        if not isinstance(dataframe, DataFrame):
+            raise TypeError("Expected 'dataframe' to be a pyspark.sql.DataFrame")
+        data_contract_specification.models[source] = import_from_spark_df(
+            spark, source, dataframe, description
+        )
+        return data_contract_specification
+
+    if not source:
+        raise ValueError("Either 'dataframe' or a valid 'source' must be provided")
+
+    for table_name in map(str.strip, source.split(",")):
+        df = spark.read.table(table_name)
+        data_contract_specification.models[table_name] = import_from_spark_df(
+            spark, table_name, df, description
+        )
+
     return data_contract_specification
+
 
 
 def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, description: str) -> Model:
