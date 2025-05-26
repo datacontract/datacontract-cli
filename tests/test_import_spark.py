@@ -111,8 +111,8 @@ def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc, user_datac
     expected_desc = user_datacontract_desc
     expected_no_desc = user_datacontract_no_desc   
 
-    runner1 = CliRunner()
-    result1 = runner1.invoke(
+    runner = CliRunner()
+    result1 = runner.invoke(
         app,
         [
             "import",
@@ -127,8 +127,7 @@ def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc, user_datac
     assert result1.exit_code == 0
     assert output1.strip() == expected_no_desc.strip()
 
-    runner2 = CliRunner()
-    result2 = runner2.invoke(
+    result2 = runner.invoke(
         app,
         [
             "import",
@@ -136,8 +135,6 @@ def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc, user_datac
             "spark",
             "--source",
             "users",
-            "--dataframe",
-            df_user,
             "--description",
             "description",
         ],
