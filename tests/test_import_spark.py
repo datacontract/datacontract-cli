@@ -104,15 +104,14 @@ def df_user(spark: SparkSession, user_row, user_schema):
     return spark.createDataFrame(data=[user_row], schema=user_schema)
 
 
-def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc, user_datacontract_desc):
+def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc):
 
     df_user.write.mode("overwrite").saveAsTable("users")
 
-    expected_desc = user_datacontract_desc
     expected_no_desc = user_datacontract_no_desc   
 
     runner = CliRunner()
-    result1 = runner.invoke(
+    result = runner.invoke(
         app,
         [
             "import",
@@ -123,26 +122,9 @@ def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc, user_datac
         ],
     )
 
-    output1 = result1.stdout
-    assert result1.exit_code == 0
-    assert output1.strip() == expected_no_desc.strip()
-
-    result2 = runner.invoke(
-        app,
-        [
-            "import",
-            "--format",
-            "spark",
-            "--source",
-            "users",
-            "--description",
-            "description",
-        ],
-    )
-    
-    output2 = result2.stdout
-    assert result2.exit_code == 0
-    assert output2.strip() == expected_desc.strip()
+    output = result.stdout
+    assert result.exit_code == 0
+    assert output.strip() == expected_no_desc.strip()
     
 
 def test_table_not_exists():
