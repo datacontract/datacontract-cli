@@ -1395,16 +1395,23 @@ Importing from Spark table or view these must be created or accessible in the Sp
 ```bash
 # Example: Import Spark table(s) from Spark context
 datacontract import --format spark --source "users,orders"
-
-# Example: Import Spark dataframe from Spark context
-datacontract import --format spark --source "users" --dataframe users_df
-datacontract import --format spark --source "users" --dataframe users_df --description "description"
 ```
 
 ```bash
-# Example: Import Spark dataframe object from Spark context
+# Example: Import Spark table
+DataContract().import_from_source("spark", "users")
+DataContract().import_from_source(format = "spark", source = "users")
+
+# Example: Import Spark dataframe
 DataContract().import_from_source("spark", "users", dataframe = df_user)
 DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user)
+
+# Example: Import Spark table + table description
+DataContract().import_from_source("spark", "users", description = "description") 
+DataContract().import_from_source(format = "spark", source = "users", description = "description")
+
+# Example: Import Spark dataframe + table description
+DataContract().import_from_source("spark", "users", dataframe = df_user, description = "description")
 DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
