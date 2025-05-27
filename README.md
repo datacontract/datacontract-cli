@@ -904,6 +904,21 @@ Available export options:
 | `custom`             | Export to Custom format with Jinja                      | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
+#### SQL
+
+The `export` function converts a given data contract into a SQL data definition language (DDL).
+
+```shell
+datacontract export datacontract.yaml --format sql --output output.sql
+```
+
+If using Databricks, and an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following properties.
+
+```shell
+spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
+from datacontract.model import data_contract_specification
+data_contract_specification.DATACONTRACT_TYPES.append(“variant”)
+```
 
 #### Great Expectations
 
@@ -911,7 +926,7 @@ The `export` function transforms a specified data contract into a comprehensive 
 If the contract includes multiple models, you need to specify the names of the model you wish to export.
 
 ```shell
-datacontract  export datacontract.yaml --format great-expectations --model orders
+datacontract export datacontract.yaml --format great-expectations --model orders
 ```
 
 The export creates a list of expectations by utilizing:
@@ -936,7 +951,7 @@ To further customize the export, the following optional arguments are available:
 
 #### RDF
 
-The export function converts a given data contract into a RDF representation. You have the option to
+The `export` function converts a given data contract into a RDF representation. You have the option to
 add a base_url which will be used as the default prefix to resolve relative IRIs inside the document.
 
 ```shell
@@ -1269,11 +1284,11 @@ Available import options:
 | `jsonschema`       | Import from JSON Schemas                       | ✅      |
 | `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
 | `parquet`          | Import from Parquet File Metadata              | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | ✅    |
-| `spark`            | Import from Spark StructTypes                  | ✅      |
+| `protobuf`         | Import from Protobuf schemas                   | ✅      |
+| `spark`            | Import from Spark StructTypes, Variant         | ✅      |
 | `sql`              | Import from SQL DDL                            | ✅      |
 | `unity`            | Import from Databricks Unity Catalog           | partial |
-| Missing something? | Please create an issue on GitHub               | TBD    |
+| Missing something? | Please create an issue on GitHub               | TBD     |
 
 
 #### ODCS
@@ -1375,12 +1390,29 @@ datacontract import --format glue --source <database_name>
 
 #### Spark
 
-Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.
-
-Example:
+Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.  If the `source` tables are registered as tables in Databricks, and they have a table-level descriptions they will also be added to the Data Contract Specification.
 
 ```bash
+# Example: Import Spark table(s) from Spark context
 datacontract import --format spark --source "users,orders"
+```
+
+```bash
+# Example: Import Spark table
+DataContract().import_from_source("spark", "users")
+DataContract().import_from_source(format = "spark", source = "users")
+
+# Example: Import Spark dataframe
+DataContract().import_from_source("spark", "users", dataframe = df_user)
+DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user)
+
+# Example: Import Spark table + table description
+DataContract().import_from_source("spark", "users", description = "description") 
+DataContract().import_from_source(format = "spark", source = "users", description = "description")
+
+# Example: Import Spark dataframe + table description
+DataContract().import_from_source("spark", "users", dataframe = df_user, description = "description")
+DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
 #### DBML

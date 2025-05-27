@@ -28,34 +28,57 @@ class SparkImporter(Importer):
             data_contract_specification: The data contract specification object.
             source: The source string indicating the Spark tables to read.
             import_args: Additional arguments for the import process.
-
         Returns:
             dict: The updated data contract specification.
         """
-        return import_spark(data_contract_specification, source)
+        dataframe = import_args.get("dataframe", None)
+        description = import_args.get("description", None)
+        return import_spark(data_contract_specification, source, dataframe, description)
 
 
-def import_spark(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
+def import_spark(
+    data_contract_specification: DataContractSpecification,
+    source: str,
+    dataframe: DataFrame | None = None,
+    description: str | None = None,
+) -> DataContractSpecification:
     """
-    Reads Spark tables and updates the data contract specification with their schemas.
+    Imports schema(s) from Spark into a Data Contract Specification.
 
     Args:
-        data_contract_specification: The data contract specification to update.
-        source: A comma-separated string of Spark temporary views to read.
+        data_contract_specification (DataContractSpecification): The contract spec to update.
+        source (str): Comma-separated Spark table/view names.
+        dataframe (DataFrame | None): Optional Spark DataFrame to import.
+        description (str | None): Optional table-level description.
 
     Returns:
-        DataContractSpecification: The updated data contract specification.
+        DataContractSpecification: The updated contract spec with imported models.
     """
     spark = SparkSession.builder.getOrCreate()
     data_contract_specification.servers["local"] = Server(type="dataframe")
-    for temp_view in source.split(","):
-        temp_view = temp_view.strip()
-        df = spark.read.table(temp_view)
-        data_contract_specification.models[temp_view] = import_from_spark_df(spark, source, df)
+
+    if dataframe is not None:
+        if not isinstance(dataframe, DataFrame):
+            raise TypeError("Expected 'dataframe' to be a pyspark.sql.DataFrame")
+        data_contract_specification.models[source] = import_from_spark_df(
+            spark, source, dataframe, description
+        )
+        return data_contract_specification
+
+    if not source:
+        raise ValueError("Either 'dataframe' or a valid 'source' must be provided")
+
+    for table_name in map(str.strip, source.split(",")):
+        df = spark.read.table(table_name)
+        data_contract_specification.models[table_name] = import_from_spark_df(
+            spark, table_name, df, description
+        )
+
     return data_contract_specification
 
 
-def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Model:
+
+def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, description: str) -> Model:
     """
     Converts a Spark DataFrame into a Model.
 
@@ -63,6 +86,7 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Mod
         spark: SparkSession
         source: A comma-separated string of Spark temporary views to read.
         df: The Spark DataFrame to convert.
+        description: Table level comment
 
     Returns:
         Model: The generated data contract model.
@@ -70,7 +94,10 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame) -> Mod
     model = Model()
     schema = df.schema
 
-    model.description = _table_comment_from_spark(spark, source)
+    if description is None:
+        model.description = _table_comment_from_spark(spark, source)
+    else: 
+        model.description = description
 
     for field in schema:
         model.fields[field.name] = _field_from_struct_type(field)
@@ -199,7 +226,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
         workspace_client = WorkspaceClient()
         created_table = workspace_client.tables.get(full_name=f"{source}")
         table_comment = created_table.comment
-        print(f"'{source}' table comment retrieved using 'WorkspaceClient.tables.get({source})'")
+        logger.info(f"'{source}' table comment retrieved using 'WorkspaceClient.tables.get({source})'")
         return table_comment
     except Exception:
         pass
@@ -207,7 +234,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
     # Fallback to Spark Catalog API for Hive Metastore or Non-UC Tables
     try:
         table_comment = spark.catalog.getTable(f"{source}").description
-        print(f"'{source}' table comment retrieved using 'spark.catalog.getTable({source}).description'")
+        logger.info(f"'{source}' table comment retrieved using 'spark.catalog.getTable({source}).description'")
         return table_comment
     except Exception:
         pass
@@ -219,7 +246,7 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
             if row.col_name.strip().lower() == "comment":
                 table_comment = row.data_type
                 break
-        print(f"'{source}' table comment retrieved using 'DESCRIBE TABLE EXTENDED {source}'")
+        logger.info(f"'{source}' table comment retrieved using 'DESCRIBE TABLE EXTENDED {source}'")
         return table_comment
     except Exception:
         pass
