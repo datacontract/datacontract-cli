@@ -23,11 +23,10 @@ def test_cli():
     assert result.exit_code == 0
 
 
-
 def test_json_simple():
     # Get the expected and actual dictionaries
     expected_data_contract_file = "fixtures/import/json/product_simple.datacontract.yaml"
-    with open(expected_data_contract_file, encoding='utf-8') as file:
+    with open(expected_data_contract_file, encoding="utf-8") as file:
         expected_json = file.read()
     expected_dict = yaml.safe_load(expected_json)
 
@@ -67,10 +66,11 @@ def test_json_simple():
     data_contract = DataContract(data_contract_str=actual)
     assert data_contract.lint(enabled_linters="none").has_passed()
 
+
 def test_json_complex():
     # Get the expected and actual dictionaries
     expected_data_contract_file = "fixtures/import/json/product_detail.datacontract.yaml"
-    with open(expected_data_contract_file, encoding='utf-8') as file:
+    with open(expected_data_contract_file, encoding="utf-8") as file:
         expected_json = file.read()
     expected_dict = yaml.safe_load(expected_json)
 
@@ -114,7 +114,7 @@ def test_json_complex():
 def test_ndjson():
     # Get the expected and actual dictionaries
     expected_data_contract_file = "fixtures/import/json/inventory_ndjson.datacontract.yaml"
-    with open(expected_data_contract_file,encoding='utf-8') as file:
+    with open(expected_data_contract_file, encoding="utf-8") as file:
         expected_json = file.read()
     expected_dict = yaml.safe_load(expected_json)
 
