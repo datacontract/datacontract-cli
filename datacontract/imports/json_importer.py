@@ -16,7 +16,7 @@ class JsonImporter(Importer):
 
 def is_ndjson(file_path: str) -> bool:
     """Check if a file contains newline-delimited JSON."""
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         for _ in range(5):
             line = file.readline().strip()
             if not line:
@@ -39,7 +39,7 @@ def import_json(
     if is_ndjson(source):
         # load NDJSON data
         json_data = []
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
                 if line:
@@ -49,7 +49,7 @@ def import_json(
                         continue
     else:
         # load regular JSON data
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             json_data = json.load(file)
 
     if data_contract_specification.servers is None:
