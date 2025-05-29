@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 from open_data_contract_standard.model import (
     CustomProperty,
@@ -202,13 +202,31 @@ def to_logical_type(type: str) -> str | None:
         return "array"
     if type.lower() in ["array"]:
         return "array"
+    if type.lower() in ["variant"]:
+        return "variant"
     if type.lower() in ["null"]:
         return None
     return None
 
 
-def to_physical_type(type: str) -> str | None:
-    return type
+def to_physical_type(config: Dict[str, Any]) -> str | None:
+    if config is None:
+        return None
+    if "postgresType" in config:
+        return config["postgresType"]
+    elif "bigqueryType" in config:
+        return config["bigqueryType"]
+    elif "snowflakeType" in config:
+        return config["snowflakeType"]
+    elif "redshiftType" in config:
+        return config["redshiftType"]
+    elif "sqlserverType" in config:
+        return config["sqlserverType"]
+    elif "databricksType" in config:
+        return config["databricksType"]
+    elif "physicalType" in config:
+        return config["physicalType"]
+    return None
 
 
 def to_property(field_name: str, field: Field) -> SchemaProperty:
@@ -231,7 +249,7 @@ def to_property(field_name: str, field: Field) -> SchemaProperty:
 
     if field.type is not None:
         property.logicalType = to_logical_type(field.type)
-        property.physicalType = to_physical_type(field.type)
+        property.physicalType = to_physical_type(field.config) or field.type
 
     if field.description is not None:
         property.description = field.description

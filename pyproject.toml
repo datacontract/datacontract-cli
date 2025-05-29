@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.25"
+version = "0.10.27"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -16,14 +16,14 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
   "typer>=0.15.1,<0.16",
-  "pydantic>=2.8.2,<2.11.0",
+  "pydantic>=2.8.2,<2.12.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
   "fastjsonschema>=2.19.1,<2.22.0",
   "fastparquet>=2024.5.0,<2025.0.0",
   "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
   "python-multipart>=0.0.20,<1.0.0",
-  "rich>=13.7,<14.0",
+  "rich>=13.7,<15.0",
   "sqlglot>=26.6.0,<27.0.0",
   "duckdb>=1.0.0,<2.0.0",
   "soda-core-duckdb>=3.3.20,<3.6.0",
@@ -60,7 +60,8 @@ databricks = [
   "soda-core-spark-df>=3.3.20,<3.6.0",
   "soda-core-spark[databricks]>=3.3.20,<3.6.0",
   "databricks-sql-connector>=3.7.0,<4.1.0",
-  "databricks-sdk<0.51.0",
+  "databricks-sdk<0.55.0",
+  "pyspark==3.5.5",
 ]
 
 iceberg = [
@@ -69,7 +70,8 @@ iceberg = [
 
 kafka = [
   "datacontract-cli[avro]",
-  "soda-core-spark-df>=3.3.20,<3.6.0"
+  "soda-core-spark-df>=3.3.20,<3.6.0",
+  "pyspark==3.5.5",
 ]
 
 postgres = [
@@ -77,8 +79,8 @@ postgres = [
 ]
 
 s3 = [
-  "s3fs==2025.2.0",
-  "aiobotocore>=2.17.0,<2.20.0",
+  "s3fs>=2025.2.0,<2026.0.0",
+  "aiobotocore>=2.17.0,<2.23.0",
 ]
 
 snowflake = [
@@ -123,18 +125,19 @@ all = [
   "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf]"
 ]
 
+# for development, we pin all libraries to an exact version
 dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
   "kafka-python",
-  "moto==5.1.3",
+  "moto==5.1.5",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.3.0",
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.4",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.9.2",
+  "testcontainers[minio,postgres,kafka,mssql]==4.10.0",
   "trino==0.333.0",
 ]
 

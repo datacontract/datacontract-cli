@@ -40,11 +40,11 @@ schema:
       - name: order_id
         businessName: Order ID
         logicalType: string
+        physicalType: varchar
         logicalTypeOptions:
             minLength: 8
             maxLength: 10
             pattern: ^B[0-9]+$
-        physicalType: varchar
         required: true
         unique: true
         tags:
@@ -60,10 +60,10 @@ schema:
           value: true
       - name: order_total
         logicalType: integer
+        physicalType: bigint
         logicalTypeOptions:
             minimum: 0
             maximum: 1000000
-        physicalType: bigint
         required: true
         description: The order_total field
         quality:

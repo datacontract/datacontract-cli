@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.10.27] - 2025-05-22
+
+### Added
+
+- `datacontract export --format mermaid` Export
+  to [Mermaid](https://mermaid-js.github.io/mermaid/#/) (#767, #725)
+
+### Changed
+
+- `datacontract export --format html`: Adding the mermaid figure to the html export
+- `datacontract export --format odcs`: Export physical type to ODCS if the physical type is
+  configured in config object
+- `datacontract import --format spark`: Added support for spark importer table level comments (#761)
+- `datacontract import` respects `--owner` and `--id` flags (#753)
+
+### Fixed
+
+- `datacontract export --format sodacl`: Fix resolving server when using `--server` flag (#768)
+- `datacontract export --format dbt`: Fixed DBT export behaviour of constraints to default to data tests when no model type is specified in the datacontract model
+
+
+## [0.10.26] - 2025-05-16
+
+### Changed
+- Databricks: Add support for Variant type (#758)
+- `datacontract export --format odcs`: Export physical type if the physical type is configured in
+  config object (#757)
+- `datacontract export --format sql` Include datacontract descriptions in the Snowflake sql export (
+  #756)
+
 ## [0.10.25] - 2025-05-07
 
 ### Added
