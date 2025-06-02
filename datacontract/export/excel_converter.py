@@ -278,73 +278,73 @@ class Pricing():
 @dataclass
 class Fundamentals():
     kind: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 4, "Kind"),
+        header_cell=CellValue(1, 4, "Kind"),
         layout="row",
         cells=[],
     ))
 
     api_version: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 5, "apiVersion"),
+        header_cell=CellValue(1, 5, "apiVersion"),
         layout="row",
         cells=[],
     ))
     id: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 7, "ID"),
+        header_cell=CellValue(1, 7, "ID"),
         layout="row",
         cells=[],
     ))
     name: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 8, "Name"),
+        header_cell=CellValue(1, 8, "Name"),
         layout="row",
         cells=[],
     ))
     version: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 9, "Version"),
+        header_cell=CellValue(1, 9, "Version"),
         layout="row",
         cells=[],
     ))
     status: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 10, "Status"),
+        header_cell=CellValue(1, 10, "Status"),
         layout="row",
         cells=[],
     ))
     owner: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 12, "Owner"),
+        header_cell=CellValue(1, 12, "Owner"),
         layout="row",
         cells=[],
     ))
     domain: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 13, "Domain"),
+        header_cell=CellValue(1, 14, "Domain"),
         layout="row",
         cells=[],
     ))
     data_product: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 13, "Data Product"),
+        header_cell=CellValue(1, 15, "Data Product"),
         layout="row",
         cells=[],
     ))
     tenant: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 16, "Tenant"),
+        header_cell=CellValue(1, 16, "Tenant"),
         layout="row",
         cells=[],
     ))
     description_purpose: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 19, "Purpose"),
+        header_cell=CellValue(2, 19, "Purpose"),
         layout="row",
         cells=[],
     ))
     description_limitation: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 20, "Limitations"),
+        header_cell=CellValue(2, 20, "Limitations"),
         layout="row",
         cells=[],
     ))
     description_usage: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 21, "Usage"),
+        header_cell=CellValue(2, 21, "Usage"),
         layout="row",
         cells=[],
     ))
     tags: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(3, 23, "Tags"),
+        header_cell=CellValue(2, 23, "Tags"),
         layout="row",
         cells=[],
     ))
@@ -352,32 +352,32 @@ class Fundamentals():
 @dataclass
 class Support():
     channel: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(1, 5, "Channel"),
+        header_cell=CellValue(1, 4, "Channel"),
         layout="column",
         cells=[],
     ))
     channel_url: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(2, 5, "Channel URL"),
+        header_cell=CellValue(2, 4, "Channel URL"),
         layout="column",
         cells=[],
     ))
     description: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue( 3, 5, "Description"),
+        header_cell=CellValue( 3, 4, "Description"),
         layout="column",
         cells=[],
     ))
     tool: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(4, 5, "Tool"),
+        header_cell=CellValue(4, 4, "Tool"),
         layout="column",
         cells=[],
     ))
     scope: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(5, 5, "Scope"),
+        header_cell=CellValue(5, 4, "Scope"),
         layout="column",
         cells=[],
     ))
     invitation_url: ContractElements  = field(default_factory=lambda: ContractElements(
-        header_cell=CellValue(6, 5, "Invitation URL"),
+        header_cell=CellValue(6, 4, "Invitation URL"),
         layout="column",
         cells=[],
     ))
@@ -404,7 +404,10 @@ def to_excel(data_contract_spec: DataContractSpecification):
 
     info = getattr(data_contract_spec, "info", None)
     contact = getattr(info, "contact", None) if info else None
-    _create_support_worksheet(wb, wb["Support"], model_name, contact)
+    _create_support_worksheet(wb, wb["Support"], contact)
+    _create_fundamentals_worksheet(
+        wb, wb["Fundamentals"], data_contract_spec.terms
+    )
     wb.save("excel_export.xlsx")
 
     return wb
@@ -423,7 +426,7 @@ def _create_schema_worksheet(wb, ws_template_schema, model_name: str, model):
     if model.fields:
         _populate_schema_detailed_info(ws_schema, model.fields)
 
-def _create_support_worksheet(wb, ws_template_support, model_name: str, contact: Optional[Contact]):
+def _create_support_worksheet(wb, ws_template_support, contact: Optional[Contact]):
     """Create and populate a support worksheet for a given model."""
     # Create new worksheet from template
     ws_support = ws_template_support
@@ -521,6 +524,47 @@ def _populate_schema_field_data(schema_detailed_info, field, counter: int):
             value
         ))
 
+def _create_fundamentals_worksheet(wb, ws_fundamentals_schema, terms, make_copy=False):
+    """Create and populate a fundamentals worksheet for a given model."""
+    # Create new worksheet from template
+
+    ws_fundamentals = wb.copy_worksheet(ws_fundamentals_schema) if make_copy else ws_fundamentals_schema
+    ws_fundamentals = ws_fundamentals_schema
+    ws_fundamentals.title = f"Fundamentals"
+
+    # Populate fundamentals information
+    _populate_fundamentals_info(ws_fundamentals, terms, 1)
+
+def _populate_fundamentals_info(ws_fundamentals, terms, counter: int):
+    """Populate fundamentals information in the worksheet."""
+    fundamentals_info = Fundamentals()
+    fundamentals_mappings = [
+        (fundamentals_info.kind, getattr(terms, "kind", "")),
+        (fundamentals_info.api_version, getattr(terms, "apiVersion", "")),
+        (fundamentals_info.id, getattr(terms, "id", "")),
+        (fundamentals_info.name, getattr(terms, "name", "")),
+        (fundamentals_info.version, getattr(terms, "version", "")),
+        (fundamentals_info.status, getattr(terms, "status", "")),
+        (fundamentals_info.owner, getattr(terms, "owner", "")),
+        (fundamentals_info.domain, getattr(terms, "domain", "")),
+        (fundamentals_info.data_product, getattr(terms, "dataProduct", "")),
+        (fundamentals_info.tenant, getattr(terms, "tenant", "")),
+        (fundamentals_info.description_purpose, getattr(terms, "purpose", "")),
+        (fundamentals_info.description_limitation, getattr(terms, "limitations", "")),
+        (fundamentals_info.description_usage, getattr(terms, "usage", "")),
+        (fundamentals_info.tags, ", ".join(getattr(terms, "tags", []) or []))
+    ]
+
+    # Populate all field data
+    for field_info, value in fundamentals_mappings:
+        field_info.cells.append(CellValue(
+            field_info.header_cell.column_position - 1,
+            field_info.header_cell.row_position + counter,
+            value
+        ))
+        write_to_sheet(fundamentals_info, ws_fundamentals)
+
+
 def _populate_support_info(ws_schema, info):
     """Populate detailed field information in the worksheet."""
     if not info:
@@ -528,8 +572,8 @@ def _populate_support_info(ws_schema, info):
 
     support_info = Support()
 
-    for counter, (field_name, field) in enumerate(info.items(), start=1):
-        _populate_support_field_info(support_info, field, counter)
+    # for counter, (field_name, field) in enumerate(info, start=1):
+    _populate_support_field_info(support_info, info, 1)
 
     write_to_sheet(support_info, ws_schema)
 
@@ -549,9 +593,8 @@ def _populate_support_field_info(
         (support_field_info.description,    _safe_getattr(info_field, "description")),
         (support_field_info.tool,           _safe_getattr(info_field, "tool")),
         (support_field_info.scope,          _safe_getattr(info_field, "scope")),
-        (support_field_info.invitation_url, _safe_getattr(info_field, "invitation_url")),
+        (support_field_info.invitation_url, _safe_getattr(info_field, "invitationUrl")),
     ]
-    print(f"Populating support info with mappings: {info_field}")
 
     for elem, val in mappings:
         elem.cells.append(
@@ -583,42 +626,6 @@ def _safe_str_getattr(obj, attr: str, default=""):
     if value is None:
         return default
     return str(value)
-
-    # if data_contract_spec.info:
-    #     if data_contract_spec.info.contact:
-    #         support_info = Support(
-    #             channel=getattr(data_contract_spec.info.contact, "name", ""),
-    #             channel_url=getattr(data_contract_spec.info.contact, "url", ""),
-    #             description=getattr(data_contract_spec.info.contact, "description", ""),
-    #             tool=getattr(data_contract_spec.info.contact, "tool", ""),
-    #             scope=getattr(data_contract_spec.info.contact, "scope", ""),
-    #             invitation_url=getattr(
-    #                 data_contract_spec.info.contact, "invitation_url", ""
-    #             ),
-    #         )
-    #         write_to_sheet(support_info, ws_support)
-
-    # if data_contract_spec.terms:
-    #     fundamentals_info = Fundamentals(
-    #         kind=getattr(data_contract_spec.terms, "kind", ""),
-    #         api_version=getattr(data_contract_spec.terms, "api_version", ""),
-    #         id=getattr(data_contract_spec.terms, "id", ""),
-    #         name=getattr(data_contract_spec.terms, "name", ""),
-    #         version=getattr(data_contract_spec.terms, "version", ""),
-    #         status=getattr(data_contract_spec.terms, "status", ""),
-    #         owner=getattr(data_contract_spec.terms, "owner", ""),
-    #         domain=getattr(data_contract_spec.terms, "domain", ""),
-    #         data_product=getattr(data_contract_spec.terms, "data_product", ""),
-    #         tenant=getattr(data_contract_spec.terms, "tenant", ""),
-    #         description=getattr(data_contract_spec.terms, "description", ""),
-    #         description_purpose=getattr(data_contract_spec.terms, "purpose", ""),
-    #         description_limitation=getattr(data_contract_spec.terms, "limitations", ""),
-    #         description_usage=getattr(data_contract_spec.terms, "usage", ""),
-    #         tags=", ".join(getattr(data_contract_spec.terms, "tags", []) or []),
-    #     )
-    #     write_to_sheet(fundamentals_info, ws_fundamentals)
-
-
 
 def to_camel_case(text: str) -> str:
     words = text.split()
