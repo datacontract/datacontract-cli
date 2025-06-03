@@ -80,6 +80,7 @@
                   data-search="{{
     contract.spec.info.title|lower|e }} {{
     contract.spec.info.owner|lower|e if contract.spec.info.owner else '' }} {{
+    contract.spec.info.version|lower|e if contract.spec.info.version else '' }} {{
     contract.spec.info.description|lower|e }} {%
     for model_name, model in contract.spec.models.items() %}
       {{ model.description|lower|e }} {%
@@ -94,6 +95,7 @@
                       <div class="flex items-center space-x-3">
                         <h3 class="truncate text-sm font-medium text-gray-900">{{contract.spec.info.title}}</h3>
                       </div>
+                      <p class="mt-1 text-sm text-gray-400">{{ contract.spec.info.version }}</p>
                       <div class="flex flex-wrap mt-1 text-sm text-gray-500 gap-1">
                         {% if contract.spec.info.owner %}
                         <div class="flex items-center text-sm text-gray-500">
