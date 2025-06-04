@@ -31,8 +31,11 @@ logger = logging.getLogger(__name__)
 
 class ExcelImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+        self,
+        data_contract_specification: DataContractSpecification | OpenDataContractStandard,
+        source: str,
+        import_args: dict,
+    ) -> DataContractSpecification | OpenDataContractStandard:
         return import_excel_as_odcs(source)
 
 

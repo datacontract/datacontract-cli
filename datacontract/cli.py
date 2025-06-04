@@ -11,7 +11,7 @@ from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat
+from datacontract.imports.importer import DataContractFormat, ImportFormat
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
@@ -246,6 +246,10 @@ def import_(
         Optional[str],
         typer.Option(help="The path to the file that should be imported."),
     ] = None,
+    datacontract_format: Annotated[
+        DataContractFormat,
+        typer.Option(help="The format of the data contract to import. "),
+    ] = DataContractFormat.data_contract_specification,
     dialect: Annotated[
         Optional[str],
         typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
@@ -265,7 +269,7 @@ def import_(
         ),
     ] = None,
     unity_table_full_name: Annotated[
-        Optional[str], typer.Option(help="Full name of a table in the unity catalog")
+        Optional[List[str]], typer.Option(help="Full name of a table in the unity catalog")
     ] = None,
     dbt_model: Annotated[
         Optional[List[str]],
@@ -312,6 +316,7 @@ def import_(
     result = DataContract().import_from_source(
         format=format,
         source=source,
+        datacontract_format=datacontract_format,
         template=template,
         schema=schema,
         dialect=dialect,

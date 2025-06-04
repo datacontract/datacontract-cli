@@ -54,7 +54,7 @@ def import_odcs_v3_from_str(
     return import_from_odcs_model(data_contract_specification, odcs)
 
 
-def import_from_odcs_model(data_contract_specification, odcs):
+def import_from_odcs_model(data_contract_specification: DataContractSpecification, odcs: OpenDataContractStandard):
     data_contract_specification.id = odcs.id
     data_contract_specification.info = import_info(odcs)
     data_contract_specification.servers = import_servers(odcs)

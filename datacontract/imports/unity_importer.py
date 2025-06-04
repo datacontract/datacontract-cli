@@ -1,9 +1,10 @@
 import json
 import os
-from typing import List, Optional
+from typing import List
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
+from open_data_contract_standard.model import OpenDataContractStandard
 from pyspark.sql import types
 
 from datacontract.imports.importer import Importer
@@ -18,8 +19,11 @@ class UnityImporter(Importer):
     """
 
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
+        self,
+        data_contract_specification: DataContractSpecification | OpenDataContractStandard,
+        source: str,
+        import_args: dict,
+    ) -> DataContractSpecification | OpenDataContractStandard:
         """
         Import data contract specification from a source.
 
@@ -35,15 +39,14 @@ class UnityImporter(Importer):
         if source is not None:
             data_contract_specification = import_unity_from_json(data_contract_specification, source)
         else:
-            data_contract_specification = import_unity_from_api(
-                data_contract_specification, import_args.get("unity_table_full_name")
-            )
+            unity_table_full_name_list = import_args.get("unity_table_full_name")
+            data_contract_specification = import_unity_from_api(data_contract_specification, unity_table_full_name_list)
         return data_contract_specification
 
 
 def import_unity_from_json(
-    data_contract_specification: DataContractSpecification, source: str
-) -> DataContractSpecification:
+    data_contract_specification: DataContractSpecification | OpenDataContractStandard, source: str
+) -> DataContractSpecification | OpenDataContractStandard:
     """
     Import data contract specification from a JSON file.
 
@@ -71,39 +74,66 @@ def import_unity_from_json(
 
 
 def import_unity_from_api(
-    data_contract_specification: DataContractSpecification, unity_table_full_name: Optional[str] = None
+    data_contract_specification: DataContractSpecification, unity_table_full_name_list: List[str] = None
 ) -> DataContractSpecification:
     """
     Import data contract specification from Unity Catalog API.
 
     :param data_contract_specification: The data contract specification to be imported.
     :type data_contract_specification: DataContractSpecification
-    :param unity_table_full_name: The full name of the Unity table.
-    :type unity_table_full_name: Optional[str]
+    :param unity_table_full_name_list: The full name of the Unity table.
+    :type unity_table_full_name_list: list[str]
     :return: The imported data contract specification.
     :rtype: DataContractSpecification
     :raises DataContractException: If there is an error retrieving the schema from the API.
     """
     try:
-        workspace_client = WorkspaceClient()
-        unity_schema: TableInfo = workspace_client.tables.get(unity_table_full_name)
+        # print(f"Retrieving Unity Catalog schema for table: {unity_table_full_name}")
+        host, token = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
+        # print(f"Databricks host: {host}, token: {'***' if token else 'not set'}")
+        if not host:
+            raise DataContractException(
+                type="configuration",
+                name="Databricks configuration",
+                reason="DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set",
+                engine="datacontract",
+            )
+        if not token:
+            raise DataContractException(
+                type="configuration",
+                name="Databricks configuration",
+                reason="DATACONTRACT_DATABRICKS_TOKEN environment variable is not set",
+                engine="datacontract",
+            )
+        workspace_client = WorkspaceClient(host=host, token=token)
     except Exception as e:
         raise DataContractException(
             type="schema",
             name="Retrieve unity catalog schema",
-            reason=f"Failed to retrieve unity catalog schema from databricks profile: {os.getenv('DATABRICKS_CONFIG_PROFILE')}",
+            reason="Failed to connect to unity catalog schema",
             engine="datacontract",
             original_exception=e,
         )
 
-    convert_unity_schema(data_contract_specification, unity_schema)
+    for unity_table_full_name in unity_table_full_name_list:
+        try:
+            unity_schema: TableInfo = workspace_client.tables.get(unity_table_full_name)
+        except Exception as e:
+            raise DataContractException(
+                type="schema",
+                name="Retrieve unity catalog schema",
+                reason=f"Unity table {unity_table_full_name} not found",
+                engine="datacontract",
+                original_exception=e,
+            )
+        data_contract_specification = convert_unity_schema(data_contract_specification, unity_schema)
 
     return data_contract_specification
 
 
 def convert_unity_schema(
-    data_contract_specification: DataContractSpecification, unity_schema: TableInfo
-) -> DataContractSpecification:
+    data_contract_specification: DataContractSpecification | OpenDataContractStandard, unity_schema: TableInfo
+) -> DataContractSpecification | OpenDataContractStandard:
     """
     Convert Unity schema to data contract specification.
 
