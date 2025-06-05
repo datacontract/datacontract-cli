@@ -568,6 +568,8 @@ def import_roles(workbook: Workbook) -> Optional[List[Role]]:
 
         roles_list = []
         for row_idx in range(roles_range[0], roles_range[1]):
+            if len(list(roles_sheet.rows)) < row_idx + 1:
+                break
             row = list(roles_sheet.rows)[row_idx]
 
             role_name = get_cell_value(row, headers.get("role"))
