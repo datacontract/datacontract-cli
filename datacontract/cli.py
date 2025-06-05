@@ -469,8 +469,9 @@ def diff(
     console.print(result.changelog_str())
 
 
-@app.command()
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def api(
+    ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],    
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
     host: Annotated[
         str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
@@ -488,14 +489,28 @@ def api(
 
     To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in
     https://cli.datacontract.com/#test
+
+    It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.:
+    `datacontract api --port 1234 --root_path /datacontract`.
     """
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
 
     log_config = LOGGING_CONFIG
     log_config["root"] = {"level": "INFO"}
-
-    uvicorn.run(app="datacontract.api:app", port=port, host=host, reload=True, log_config=LOGGING_CONFIG)
+    # Default Datacontract uvicorn arguments
+    default_args = {
+        "app": "datacontract.api:app",
+        "port": port,
+        "host": host,
+        "reload": True,
+        "log_config": log_config,
+    }
+    # Add extra arguments to the default args, remove the leading --
+    trimmed_keys = list(map(lambda x : str(x).replace("--", ""),ctx.args[::2]))
+    uvicorn_args = default_args | dict(zip(trimmed_keys, ctx.args[1::2]))
+    # Run uvicorn
+    uvicorn.run(**uvicorn_args)
 
 
 def _print_logs(run):

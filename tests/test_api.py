@@ -21,7 +21,7 @@ def test_lint():
 
 
 def test_export_jsonschema():
-    with open("fixtures/local-json/datacontract.yaml", "r") as f:
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
     response = client.post(
         url="/export?format=jsonschema",
