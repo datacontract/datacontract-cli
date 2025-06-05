@@ -42,6 +42,7 @@ class DataContract:
         data_contract_file: str = None,
         data_contract_str: str = None,
         data_contract: DataContractSpecification = None,
+        odcs: OpenDataContractStandard = None,
         schema_location: str = None,
         server: str = None,
         publish_url: str = None,
@@ -55,6 +56,7 @@ class DataContract:
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
+        self._odcs = odcs
         self._schema_location = schema_location
         self._server = server
         self._publish_url = publish_url
@@ -271,10 +273,10 @@ class DataContract:
     def import_from_source(
         self,
         format: str,
-        datacontract_format: DataContractFormat = DataContractFormat.data_contract_specification,
         source: typing.Optional[str] = None,
         template: typing.Optional[str] = None,
         schema: typing.Optional[str] = None,
+        datacontract_format: DataContractFormat = DataContractFormat.data_contract_specification,
         **kwargs,
     ) -> DataContractSpecification | OpenDataContractStandard:
         id = kwargs.get("id")

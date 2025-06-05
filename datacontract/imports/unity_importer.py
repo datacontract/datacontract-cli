@@ -207,5 +207,7 @@ def _to_field(column: ColumnInfo) -> Field:
     field.config = {
         physical_type_key: sql_type,
     }
+    field.required = column.nullable is None or not column.nullable
+    field.description = column.comment if column.comment else None
 
     return field
