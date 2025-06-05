@@ -8,7 +8,7 @@ set -e
 # 4. Update release notes in Github
 
 # pip install toml-cli
-VERSION=$(toml get --toml-path pyproject.toml project.version)
+VERSION=$(uvx --from toml-cli toml get --toml-path pyproject.toml project.version)
 TAG_VERSION=v$VERSION
 
 echo "Checking that everything is committed"
