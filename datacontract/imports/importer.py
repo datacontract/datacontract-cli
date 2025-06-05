@@ -41,9 +41,9 @@ class ImportFormat(str, Enum):
         return list(map(lambda c: c.value, cls))
 
 
-class DataContractFormat(str, Enum):
-    data_contract_specification = "data_contract_specification"
-    open_data_contract_standard = "open_data_contract_standard"
+class Spec(str, Enum):
+    datacontract_specification = "datacontract_specification"
+    odcs = "odcs"
 
     @classmethod
     def get_supported_types(cls):

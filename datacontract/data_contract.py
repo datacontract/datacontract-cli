@@ -4,7 +4,7 @@ import typing
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard
 
 from datacontract.export.odcs_v3_exporter import to_odcs_v3
-from datacontract.imports.importer import DataContractFormat
+from datacontract.imports.importer import Spec
 from datacontract.imports.odcs_v3_importer import import_from_odcs
 
 if typing.TYPE_CHECKING:
@@ -294,13 +294,13 @@ class DataContract:
         source: typing.Optional[str] = None,
         template: typing.Optional[str] = None,
         schema: typing.Optional[str] = None,
-        datacontract_format: DataContractFormat = DataContractFormat.data_contract_specification,
+        spec: Spec = Spec.datacontract_specification,
         **kwargs,
     ) -> DataContractSpecification | OpenDataContractStandard:
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        if datacontract_format == DataContractFormat.open_data_contract_standard:
+        if spec == Spec.odcs:
             data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
             odcs_imported = importer_factory.create(format).import_source(
@@ -315,7 +315,7 @@ class DataContract:
             self._overwrite_owner_in_odcs(odcs_imported, owner)
 
             return odcs_imported
-        elif datacontract_format == DataContractFormat.data_contract_specification:
+        elif spec == Spec.datacontract_specification:
             data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
             data_contract_specification_imported = importer_factory.create(format).import_source(
@@ -337,7 +337,7 @@ class DataContract:
                 type="general",
                 result=ResultEnum.error,
                 name="Import Data Contract",
-                reason=f"Unsupported data contract format: {datacontract_format}",
+                reason=f"Unsupported data contract format: {spec}",
                 engine="datacontract",
             )
 
