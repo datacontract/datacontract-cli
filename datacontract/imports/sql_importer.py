@@ -105,7 +105,7 @@ def to_dialect(import_args: dict) -> Dialects | None:
     return None
 
 
-def to_physical_type_key(dialect: Dialects | None) -> str:
+def to_physical_type_key(dialect: Dialects | str | None) -> str:
     dialect_map = {
         Dialects.TSQL: "sqlserverType",
         Dialects.POSTGRES: "postgresType",
@@ -116,6 +116,8 @@ def to_physical_type_key(dialect: Dialects | None) -> str:
         Dialects.MYSQL: "mysqlType",
         Dialects.DATABRICKS: "databricksType",
     }
+    if isinstance(dialect, str):
+        dialect = Dialects[dialect.upper()] if dialect.upper() in Dialects.__members__ else None
     return dialect_map.get(dialect, "physicalType")
 
 
@@ -198,7 +200,7 @@ def get_precision_scale(column):
     return None, None
 
 
-def map_type_from_sql(sql_type: str):
+def map_type_from_sql(sql_type: str) -> str | None:
     if sql_type is None:
         return None
 

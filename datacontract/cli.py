@@ -11,7 +11,7 @@ from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat
+from datacontract.imports.importer import ImportFormat, Spec
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
@@ -126,7 +126,8 @@ def test(
             "servers (default)."
         ),
     ] = "all",
-    publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
+    publish_test_results: Annotated[bool, typer.Option(help="Publish the results after the test")] = False,
+    publish: Annotated[str, typer.Option(help="DEPRECATED. The url to publish the results after the test.")] = None,
     output: Annotated[
         Path,
         typer.Option(
@@ -149,6 +150,7 @@ def test(
     run = DataContract(
         data_contract_file=location,
         schema_location=schema,
+        publish_test_results=publish_test_results,
         publish_url=publish,
         server=server,
         ssl_verification=ssl_verification,
@@ -246,6 +248,10 @@ def import_(
         Optional[str],
         typer.Option(help="The path to the file that should be imported."),
     ] = None,
+    spec: Annotated[
+        Spec,
+        typer.Option(help="The format of the data contract to import. "),
+    ] = Spec.datacontract_specification,
     dialect: Annotated[
         Optional[str],
         typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
@@ -265,7 +271,7 @@ def import_(
         ),
     ] = None,
     unity_table_full_name: Annotated[
-        Optional[str], typer.Option(help="Full name of a table in the unity catalog")
+        Optional[List[str]], typer.Option(help="Full name of a table in the unity catalog")
     ] = None,
     dbt_model: Annotated[
         Optional[List[str]],
@@ -312,6 +318,7 @@ def import_(
     result = DataContract().import_from_source(
         format=format,
         source=source,
+        spec=spec,
         template=template,
         schema=schema,
         dialect=dialect,

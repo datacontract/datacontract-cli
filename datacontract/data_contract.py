@@ -1,6 +1,12 @@
 import logging
 import typing
 
+from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard
+
+from datacontract.export.odcs_v3_exporter import to_odcs_v3
+from datacontract.imports.importer import Spec
+from datacontract.imports.odcs_v3_importer import import_from_odcs
+
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
@@ -44,6 +50,7 @@ class DataContract:
         inline_definitions: bool = True,
         inline_quality: bool = True,
         ssl_verification: bool = True,
+        publish_test_results: bool = False,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -51,6 +58,7 @@ class DataContract:
         self._schema_location = schema_location
         self._server = server
         self._publish_url = publish_url
+        self._publish_test_results = publish_test_results
         self._spark = spark
         self._duckdb_connection = duckdb_connection
         self._inline_definitions = inline_definitions
@@ -178,7 +186,7 @@ class DataContract:
 
         run.finish()
 
-        if self._publish_url is not None:
+        if self._publish_url is not None or self._publish_test_results:
             publish_test_results_to_datamesh_manager(run, self._publish_url, self._ssl_verification)
 
         return run
@@ -243,43 +251,128 @@ class DataContract:
         )
 
     def export(self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs) -> str:
-        data_contract = resolve.resolve_data_contract(
-            self._data_contract_file,
-            self._data_contract_str,
-            self._data_contract,
-            schema_location=self._schema_location,
-            inline_definitions=self._inline_definitions,
-            inline_quality=self._inline_quality,
-        )
+        if export_format == ExportFormat.html or export_format == ExportFormat.mermaid:
+            data_contract = resolve.resolve_data_contract_v2(
+                self._data_contract_file,
+                self._data_contract_str,
+                self._data_contract,
+                schema_location=self._schema_location,
+                inline_definitions=self._inline_definitions,
+                inline_quality=self._inline_quality,
+            )
 
-        return exporter_factory.create(export_format).export(
-            data_contract=data_contract,
-            model=model,
-            server=self._server,
-            sql_server_type=sql_server_type,
-            export_args=kwargs,
-        )
+            return exporter_factory.create(export_format).export(
+                data_contract=data_contract,
+                model=model,
+                server=self._server,
+                sql_server_type=sql_server_type,
+                export_args=kwargs,
+            )
+        else:
+            data_contract = resolve.resolve_data_contract(
+                self._data_contract_file,
+                self._data_contract_str,
+                self._data_contract,
+                schema_location=self._schema_location,
+                inline_definitions=self._inline_definitions,
+                inline_quality=self._inline_quality,
+            )
 
+            return exporter_factory.create(export_format).export(
+                data_contract=data_contract,
+                model=model,
+                server=self._server,
+                sql_server_type=sql_server_type,
+                export_args=kwargs,
+            )
+
+    # REFACTOR THIS
+    # could be a class method, not using anything from the instance
     def import_from_source(
         self,
         format: str,
         source: typing.Optional[str] = None,
         template: typing.Optional[str] = None,
         schema: typing.Optional[str] = None,
+        spec: Spec = Spec.datacontract_specification,
         **kwargs,
-    ) -> DataContractSpecification:
-        data_contract_specification_initial = DataContract.init(template=template, schema=schema)
+    ) -> DataContractSpecification | OpenDataContractStandard:
+        id = kwargs.get("id")
+        owner = kwargs.get("owner")
 
-        imported_data_contract_specification = importer_factory.create(format).import_source(
-            data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
-        )
+        if spec == Spec.odcs:
+            data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
-        # Set id and owner if provided
-        if kwargs.get("id"):
-            data_contract_specification_initial.id = kwargs["id"]
-        if kwargs.get("owner"):
-            if data_contract_specification_initial.info is None:
-                data_contract_specification_initial.info = Info()
-            data_contract_specification_initial.info.owner = kwargs["owner"]
+            odcs_imported = importer_factory.create(format).import_source(
+                data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
+            )
 
-        return imported_data_contract_specification
+            if isinstance(odcs_imported, DataContractSpecification):
+                # convert automatically
+                odcs_imported = to_odcs_v3(odcs_imported)
+
+            self._overwrite_id_in_odcs(odcs_imported, id)
+            self._overwrite_owner_in_odcs(odcs_imported, owner)
+
+            return odcs_imported
+        elif spec == Spec.datacontract_specification:
+            data_contract_specification_initial = DataContract.init(template=template, schema=schema)
+
+            data_contract_specification_imported = importer_factory.create(format).import_source(
+                data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
+            )
+
+            if isinstance(data_contract_specification_imported, OpenDataContractStandard):
+                # convert automatically
+                data_contract_specification_imported = import_from_odcs(
+                    data_contract_specification_initial, data_contract_specification_imported
+                )
+
+            self._overwrite_id_in_data_contract_specification(data_contract_specification_imported, id)
+            self._overwrite_owner_in_data_contract_specification(data_contract_specification_imported, owner)
+
+            return data_contract_specification_imported
+        else:
+            raise DataContractException(
+                type="general",
+                result=ResultEnum.error,
+                name="Import Data Contract",
+                reason=f"Unsupported data contract format: {spec}",
+                engine="datacontract",
+            )
+
+    def _overwrite_id_in_data_contract_specification(
+        self, data_contract_specification: DataContractSpecification, id: str | None
+    ):
+        if not id:
+            return
+
+        data_contract_specification.id = id
+
+    def _overwrite_owner_in_data_contract_specification(
+        self, data_contract_specification: DataContractSpecification, owner: str | None
+    ):
+        if not owner:
+            return
+
+        if data_contract_specification.info is None:
+            data_contract_specification.info = Info()
+        data_contract_specification.info.owner = owner
+
+    def _overwrite_owner_in_odcs(self, odcs: OpenDataContractStandard, owner: str | None):
+        if not owner:
+            return
+
+        if odcs.customProperties is None:
+            odcs.customProperties = []
+        for customProperty in odcs.customProperties:
+            if customProperty.name == "owner":
+                customProperty.value = owner
+                return
+        odcs.customProperties.append(CustomProperty(property="owner", value=owner))
+
+    def _overwrite_id_in_odcs(self, odcs: OpenDataContractStandard, id: str | None):
+        if not id:
+            return
+
+        odcs.id = id

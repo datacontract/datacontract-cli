@@ -502,11 +502,13 @@ def prepare_query(quality: Quality, model_name: str, field_name: str = None) -> 
     query = quality.query
 
     query = query.replace("{model}", model_name)
+    query = query.replace("{schema}", model_name)
     query = query.replace("{table}", model_name)
 
     if field_name is not None:
         query = query.replace("{field}", field_name)
         query = query.replace("{column}", field_name)
+        query = query.replace("{property}", field_name)
 
     return query
 

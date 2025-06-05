@@ -29,17 +29,18 @@ class OdcsImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
     ) -> DataContractSpecification:
-        return import_odcs_v3(data_contract_specification, source)
+        return import_odcs_v3_as_dcs(data_contract_specification, source)
 
 
-def import_odcs_v3(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
-    source_str = read_resource(source)
-    return import_odcs_v3_from_str(data_contract_specification, source_str)
-
-
-def import_odcs_v3_from_str(
-    data_contract_specification: DataContractSpecification, source_str: str
+def import_odcs_v3_as_dcs(
+    data_contract_specification: DataContractSpecification, source: str
 ) -> DataContractSpecification:
+    source_str = read_resource(source)
+    odcs = parse_odcs_v3_from_str(source_str)
+    return import_from_odcs(data_contract_specification, odcs)
+
+
+def parse_odcs_v3_from_str(source_str):
     try:
         odcs = OpenDataContractStandard.from_string(source_str)
     except Exception as e:
@@ -50,11 +51,10 @@ def import_odcs_v3_from_str(
             engine="datacontract",
             original_exception=e,
         )
+    return odcs
 
-    return import_from_odcs_model(data_contract_specification, odcs)
 
-
-def import_from_odcs_model(data_contract_specification, odcs):
+def import_from_odcs(data_contract_specification: DataContractSpecification, odcs: OpenDataContractStandard):
     data_contract_specification.id = odcs.id
     data_contract_specification.info = import_info(odcs)
     data_contract_specification.servers = import_servers(odcs)

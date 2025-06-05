@@ -41,6 +41,10 @@
               Data Contract</h2>
             <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
               {{ datacontract.id }}
+
+              <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 mr-1">
+                <span>Data Contract Specification v{{ datacontract.dataContractSpecification }}</span>
+              </span>
             </div>
             <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
               {% if datacontract.tags %}

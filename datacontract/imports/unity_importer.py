@@ -1,14 +1,14 @@
 import json
 import os
-from typing import List, Optional
+from typing import List
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
-from pyspark.sql import types
+from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
-from datacontract.imports.spark_importer import _field_from_struct_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
+from datacontract.imports.sql_importer import map_type_from_sql, to_physical_type_key
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
 from datacontract.model.exceptions import DataContractException
 
 
@@ -18,8 +18,11 @@ class UnityImporter(Importer):
     """
 
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
+        self,
+        data_contract_specification: DataContractSpecification | OpenDataContractStandard,
+        source: str,
+        import_args: dict,
+    ) -> DataContractSpecification | OpenDataContractStandard:
         """
         Import data contract specification from a source.
 
@@ -35,15 +38,14 @@ class UnityImporter(Importer):
         if source is not None:
             data_contract_specification = import_unity_from_json(data_contract_specification, source)
         else:
-            data_contract_specification = import_unity_from_api(
-                data_contract_specification, import_args.get("unity_table_full_name")
-            )
+            unity_table_full_name_list = import_args.get("unity_table_full_name")
+            data_contract_specification = import_unity_from_api(data_contract_specification, unity_table_full_name_list)
         return data_contract_specification
 
 
 def import_unity_from_json(
-    data_contract_specification: DataContractSpecification, source: str
-) -> DataContractSpecification:
+    data_contract_specification: DataContractSpecification | OpenDataContractStandard, source: str
+) -> DataContractSpecification | OpenDataContractStandard:
     """
     Import data contract specification from a JSON file.
 
@@ -71,39 +73,66 @@ def import_unity_from_json(
 
 
 def import_unity_from_api(
-    data_contract_specification: DataContractSpecification, unity_table_full_name: Optional[str] = None
+    data_contract_specification: DataContractSpecification, unity_table_full_name_list: List[str] = None
 ) -> DataContractSpecification:
     """
     Import data contract specification from Unity Catalog API.
 
     :param data_contract_specification: The data contract specification to be imported.
     :type data_contract_specification: DataContractSpecification
-    :param unity_table_full_name: The full name of the Unity table.
-    :type unity_table_full_name: Optional[str]
+    :param unity_table_full_name_list: The full name of the Unity table.
+    :type unity_table_full_name_list: list[str]
     :return: The imported data contract specification.
     :rtype: DataContractSpecification
     :raises DataContractException: If there is an error retrieving the schema from the API.
     """
     try:
-        workspace_client = WorkspaceClient()
-        unity_schema: TableInfo = workspace_client.tables.get(unity_table_full_name)
+        # print(f"Retrieving Unity Catalog schema for table: {unity_table_full_name}")
+        host, token = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
+        # print(f"Databricks host: {host}, token: {'***' if token else 'not set'}")
+        if not host:
+            raise DataContractException(
+                type="configuration",
+                name="Databricks configuration",
+                reason="DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set",
+                engine="datacontract",
+            )
+        if not token:
+            raise DataContractException(
+                type="configuration",
+                name="Databricks configuration",
+                reason="DATACONTRACT_DATABRICKS_TOKEN environment variable is not set",
+                engine="datacontract",
+            )
+        workspace_client = WorkspaceClient(host=host, token=token)
     except Exception as e:
         raise DataContractException(
             type="schema",
             name="Retrieve unity catalog schema",
-            reason=f"Failed to retrieve unity catalog schema from databricks profile: {os.getenv('DATABRICKS_CONFIG_PROFILE')}",
+            reason="Failed to connect to unity catalog schema",
             engine="datacontract",
             original_exception=e,
         )
 
-    convert_unity_schema(data_contract_specification, unity_schema)
+    for unity_table_full_name in unity_table_full_name_list:
+        try:
+            unity_schema: TableInfo = workspace_client.tables.get(unity_table_full_name)
+        except Exception as e:
+            raise DataContractException(
+                type="schema",
+                name="Retrieve unity catalog schema",
+                reason=f"Unity table {unity_table_full_name} not found",
+                engine="datacontract",
+                original_exception=e,
+            )
+        data_contract_specification = convert_unity_schema(data_contract_specification, unity_schema)
 
     return data_contract_specification
 
 
 def convert_unity_schema(
-    data_contract_specification: DataContractSpecification, unity_schema: TableInfo
-) -> DataContractSpecification:
+    data_contract_specification: DataContractSpecification | OpenDataContractStandard, unity_schema: TableInfo
+) -> DataContractSpecification | OpenDataContractStandard:
     """
     Convert Unity schema to data contract specification.
 
@@ -116,6 +145,21 @@ def convert_unity_schema(
     """
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
+
+    if data_contract_specification.servers is None:
+        data_contract_specification.servers = {}
+
+    # Configure databricks server with catalog and schema from Unity table info
+    schema_name = unity_schema.schema_name
+    catalog_name = unity_schema.catalog_name
+    if catalog_name and schema_name:
+        server_name = "myserver"  # Default server name
+
+        data_contract_specification.servers[server_name] = Server(
+            type="databricks",
+            catalog=catalog_name,
+            schema=schema_name,
+        )
 
     fields = import_table_fields(unity_schema.columns)
 
@@ -149,25 +193,21 @@ def import_table_fields(columns: List[ColumnInfo]) -> dict[str, Field]:
     imported_fields = {}
 
     for column in columns:
-        struct_field: types.StructField = _type_json_to_spark_field(column.type_json)
-        imported_fields[column.name] = _field_from_struct_type(struct_field)
+        imported_fields[column.name] = _to_field(column)
 
     return imported_fields
 
 
-def _type_json_to_spark_field(type_json: str) -> types.StructField:
-    """
-    Parses a JSON string representing a Spark field and returns a StructField object.
+def _to_field(column: ColumnInfo) -> Field:
+    field = Field()
+    if column.type_name is not None:
+        sql_type = str(column.type_text)
+        field.type = map_type_from_sql(sql_type)
+    physical_type_key = to_physical_type_key("databricks")
+    field.config = {
+        physical_type_key: sql_type,
+    }
+    field.required = column.nullable is None or not column.nullable
+    field.description = column.comment if column.comment else None
 
-    The reason we do this is to leverage the Spark JSON schema parser to handle the
-    complexity of the Spark field types. The field `type_json` in the Unity API is
-    the output of a `StructField.jsonValue()` call.
-
-    :param type_json: The JSON string representing the Spark field.
-    :type type_json: str
-
-    :return: The StructField object.
-    :rtype: types.StructField
-    """
-    type_dict = json.loads(type_json)
-    return types.StructField.fromJson(type_dict)
+    return field

@@ -12,7 +12,7 @@ class Importer(ABC):
     @abstractmethod
     def import_source(
         self,
-        data_contract_specification: DataContractSpecification,
+        data_contract_specification: DataContractSpecification | OpenDataContractStandard,
         source: str,
         import_args: dict,
     ) -> DataContractSpecification | OpenDataContractStandard:
@@ -38,4 +38,13 @@ class ImportFormat(str, Enum):
 
     @classmethod
     def get_supported_formats(cls):
+        return list(map(lambda c: c.value, cls))
+
+
+class Spec(str, Enum):
+    datacontract_specification = "datacontract_specification"
+    odcs = "odcs"
+
+    @classmethod
+    def get_supported_types(cls):
         return list(map(lambda c: c.value, cls))
