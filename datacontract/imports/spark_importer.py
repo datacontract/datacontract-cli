@@ -60,9 +60,7 @@ def import_spark(
     if dataframe is not None:
         if not isinstance(dataframe, DataFrame):
             raise TypeError("Expected 'dataframe' to be a pyspark.sql.DataFrame")
-        data_contract_specification.models[source] = import_from_spark_df(
-            spark, source, dataframe, description
-        )
+        data_contract_specification.models[source] = import_from_spark_df(spark, source, dataframe, description)
         return data_contract_specification
 
     if not source:
@@ -70,12 +68,9 @@ def import_spark(
 
     for table_name in map(str.strip, source.split(",")):
         df = spark.read.table(table_name)
-        data_contract_specification.models[table_name] = import_from_spark_df(
-            spark, table_name, df, description
-        )
+        data_contract_specification.models[table_name] = import_from_spark_df(spark, table_name, df, description)
 
     return data_contract_specification
-
 
 
 def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, description: str) -> Model:
@@ -96,7 +91,7 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, descri
 
     if description is None:
         model.description = _table_comment_from_spark(spark, source)
-    else: 
+    else:
         model.description = description
 
     for field in schema:

@@ -105,10 +105,9 @@ def df_user(spark: SparkSession, user_row, user_schema):
 
 
 def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc):
-
     df_user.write.mode("overwrite").saveAsTable("users")
 
-    expected_no_desc = user_datacontract_no_desc   
+    expected_no_desc = user_datacontract_no_desc
 
     runner = CliRunner()
     result = runner.invoke(
@@ -125,7 +124,7 @@ def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc):
     output = result.stdout
     assert result.exit_code == 0
     assert output.strip() == expected_no_desc.strip()
-    
+
 
 def test_table_not_exists():
     runner = CliRunner()
@@ -144,24 +143,23 @@ def test_table_not_exists():
 
 
 def test_prog(spark: SparkSession, df_user, user_datacontract_no_desc, user_datacontract_desc):
-
     df_user.write.mode("overwrite").saveAsTable("users")
 
     expected_desc = user_datacontract_desc
-    expected_no_desc = user_datacontract_no_desc    
-    
+    expected_no_desc = user_datacontract_no_desc
+
     # does not include a table level description (table method)
     result1 = DataContract().import_from_source("spark", "users")
     assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected_no_desc)
 
     # does include a table level description (table method)
-    result2 = DataContract().import_from_source("spark", "users", description = "description")
+    result2 = DataContract().import_from_source("spark", "users", description="description")
     assert yaml.safe_load(result2.to_yaml()) == yaml.safe_load(expected_desc)
 
     # does not include a table level description (dataframe object method)
-    result3 = DataContract().import_from_source("spark", "users", dataframe = df_user)
+    result3 = DataContract().import_from_source("spark", "users", dataframe=df_user)
     assert yaml.safe_load(result3.to_yaml()) == yaml.safe_load(expected_no_desc)
-    
+
     # does include a table level description (dataframe object method)
-    result4 = DataContract().import_from_source("spark", "users", dataframe = df_user, description = "description")
+    result4 = DataContract().import_from_source("spark", "users", dataframe=df_user, description="description")
     assert yaml.safe_load(result4.to_yaml()) == yaml.safe_load(expected_desc)
