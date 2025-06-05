@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [0.10.28] - 2025-06-05
+
+### Added
 - Much better ODCS support
     - Import anything to ODCS via the `import --spec odcs` flag
     - Export to HTML with an ODCS native template via `export --format html`
