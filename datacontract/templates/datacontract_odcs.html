@@ -61,6 +61,11 @@
               </div>
               {% endif %}
               <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                {% if datacontract.version %}
+                <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                  {{ datacontract.version }}
+                </span>
+                {% endif %}
                 {% if datacontract.status %}
                 <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
                   {% if datacontract.status == 'active' %}bg-green-100 text-green-800{% elif datacontract.status == 'draft' %}bg-yellow-100 text-yellow-800{% elif datacontract.status == 'deprecated' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
@@ -285,36 +290,12 @@
               <p class="text-sm text-gray-500">Infrastructure servers of the data contract</p>
             </div>
 
-            <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
-              <table class="min-w-full divide-y divide-gray-300">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Server</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Host</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Database/Schema</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
-                  {% for server in datacontract.servers %}
-                  <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ server.server }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ server.type }}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ server.host or "-" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {% if server.database %}{{ server.database }}{% endif %}
-                      {% if server.schema_ %}/{{ server.schema_ }}{% endif %}
-                      {% if not server.database and not server.schema_ %}-{% endif %}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ server.port or "-" }}</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
+            <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+              {% for server in datacontract.servers %}
+                {{ render_partial('partials/server.html', server_name = server.server, server = server) }}
+              {% endfor %}
+            </ul>
+
           </section>
           {% endif %}
 
@@ -501,57 +482,6 @@
             </div>
             {% endfor %}
           </section>
-
-          {% if datacontract.definitions %}
-          <section id="definitions">
-            <div class="px-4 sm:px-0">
-              <h1 class="text-base font-semibold leading-6 text-gray-900">Definitions</h1>
-              <p class="text-sm text-gray-500">Domain specific definitions in the data contract</p>
-            </div>
-
-            {% for definition_name, definition in datacontract.definitions.items() %}
-            {{ render_partial('partials/definition.html', definition_name = definition_name, definition = definition)}}
-            {% endfor %}
-          </section>
-          {% endif %}
-
-          {% if datacontract.examples %}
-          <section id="examples">
-            <div class="px-4 sm:px-0">
-              <h1 class="text-base font-semibold leading-6 text-gray-900">Examples</h1>
-              <p class="text-sm text-gray-500">Examples for models in the data contract</p>
-            </div>
-            {% for example in datacontract.examples %}
-              {{ render_partial('partials/example.html', example = example) }}
-            {% endfor %}
-          </section>
-          {% endif %}
-
-          {% if datacontract.servicelevels %}
-          <section id="servicelevels">
-            {{ render_partial('partials/datacontract_servicelevels.html', datacontract = datacontract ) }}
-          </section>
-          {% endif %}
-
-          {% if quality_specification %}
-            <section id="quality">
-              <div class="px-4 sm:px-0">
-                <h1 class="text-base font-semibold leading-6 text-gray-900">
-                  Quality
-                </h1>
-                <p class="text-sm text-gray-500">
-                  <span>{{ datacontract.quality.type }}</span>
-                </p>
-              </div>
-              <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
-                <div class="px-4 py-5 sm:px-6">
-                  <div id="schema-specification" >
-                      <pre><code class="text-sm">{{ quality_specification }}</code></pre>
-                  </div>
-                </div>
-              </div>
-            </section>
-          {% endif %}
 
           {% if datacontract.customProperties %}
           <section id="custom-properties">
