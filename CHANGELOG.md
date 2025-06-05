@@ -8,10 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- Support for importing to ODCS using the `--datacontract-format open_data_contract_standard` flag
-- Support for exporting to ODCS html which an ODCS native template, including mermaid support
+- Much better ODCS support
+    - Import anything to ODCS via the `import --datacontract-format open_data_contract_standard` flag
+    - Export to HTML with an ODCS native template via `export --format html`
+    - Export to Mermaid with an ODCS native mapping via `export --format mermaid`
 - The databricks `unity` importer now supports more than a single table. You can use `--unity-table-full-name` multiple times to import multiple tables. And it will automatically add a server with the catalog and schema name.
-
 
 ### Changed
 - `datacontract catalog [OPTIONS]`: Added version to contract cards in `index.html` of the catalog (enabled search by version)
