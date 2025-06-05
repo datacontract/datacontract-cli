@@ -18,52 +18,62 @@ def to_mermaid(data_contract_spec: DataContractSpecification | OpenDataContractS
         return None
 
 
-def dcs_to_mermaid(data_contract_spec):
-    mmd_entity = "erDiagram\n\t"
-    mmd_references = []
+def dcs_to_mermaid(data_contract_spec: DataContractSpecification) -> str | None:
     try:
+        if not data_contract_spec.models:
+            return None
+
+        mmd_entity = "erDiagram\n"
+        mmd_references = []
+
         for model_name, model in data_contract_spec.models.items():
             entity_block = ""
+
             for field_name, field in model.fields.items():
-                entity_block += f"\t{field_name.replace('#', 'Nb').replace(' ', '_').replace('/', 'by')}{'🔑' if field.primaryKey or (field.unique and field.required) else ''}{'⌘' if field.references else ''} {field.type}\n"
+                clean_name = _sanitize_name(field_name)
+                indicators = ""
+
+                if field.primaryKey or (field.unique and field.required):
+                    indicators += "🔑"
                 if field.references:
-                    mmd_references.append(
-                        f'"📑{field.references.split(".")[0] if "." in field.references else ""}"'
-                        + "}o--{ ||"
-                        + f'"📑{model_name}"'
-                    )
+                    indicators += "⌘"
+
+                field_type = field.type or "unknown"
+                entity_block += f"\t{clean_name}{indicators} {field_type}\n"
+
+                if field.references:
+                    referenced_model = field.references.split(".")[0] if "." in field.references else ""
+                    if referenced_model:
+                        mmd_references.append(f'"📑{referenced_model}"' + "}o--{ ||" + f'"📑{model_name}"')
+
             mmd_entity += f'\t"**{model_name}**"' + "{\n" + entity_block + "}\n"
 
-        if mmd_entity == "":
-            return None
-        else:
-            return f"{mmd_entity}\n"
+        if mmd_references:
+            mmd_entity += "\n" + "\n".join(mmd_references)
+
+        return f"{mmd_entity}\n"
+
     except Exception as e:
-        print(f"error : {e}")
+        print(f"Error generating DCS mermaid diagram: {e}")
         return None
 
 
 def odcs_to_mermaid(data_contract_spec: OpenDataContractStandard) -> str | None:
-    """
-    Convert OpenDataContractStandard to Mermaid ER diagram.
-    ODCS uses schema_ (array) instead of models (dict) and properties instead of fields.
-    """
-    mmd_entity = "erDiagram\n\t"
-    mmd_references = []
     try:
         if not data_contract_spec.schema_:
             return None
 
+        mmd_entity = "erDiagram\n"
+
         for schema in data_contract_spec.schema_:
-            entity_block = ""
             schema_name = schema.name or schema.physicalName
+            entity_block = ""
 
             if schema.properties:
                 for prop in schema.properties:
-                    prop_name = prop.name.replace("#", "Nb").replace(" ", "_").replace("/", "by")
-
-                    # Add key indicators
+                    clean_name = _sanitize_name(prop.name)
                     indicators = ""
+
                     if prop.primaryKey:
                         indicators += "🔑"
                     if getattr(prop, "partitioned", False):
@@ -71,24 +81,17 @@ def odcs_to_mermaid(data_contract_spec: OpenDataContractStandard) -> str | None:
                     if getattr(prop, "criticalDataElement", False):
                         indicators += "⚠️"
 
-                    # Use logicalType or physicalType
                     prop_type = prop.logicalType or prop.physicalType or "unknown"
-
-                    entity_block += f"\t{prop_name}{indicators} {prop_type}\n"
-
-                    # Handle references if they exist (ODCS doesn't have direct references like DCS)
-                    # You could potentially add this if ODCS properties have reference information
+                    entity_block += f"\t{clean_name}{indicators} {prop_type}\n"
 
             mmd_entity += f'\t"**{schema_name}**"' + "{\n" + entity_block + "}\n"
 
-        if mmd_entity.strip() == "erDiagram":
-            return None
-        else:
-            # Add any references
-            if mmd_references:
-                mmd_entity += "\n" + "\n".join(mmd_references)
-            return f"{mmd_entity}\n"
+        return f"{mmd_entity}\n"
 
     except Exception as e:
-        print(f"error generating ODCS mermaid diagram: {e}")
+        print(f"Error generating ODCS mermaid diagram: {e}")
         return None
+
+
+def _sanitize_name(name: str) -> str:
+    return name.replace("#", "Nb").replace(" ", "_").replace("/", "by")
