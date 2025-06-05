@@ -45,6 +45,7 @@ class DataContract:
         schema_location: str = None,
         server: str = None,
         publish_url: str = None,
+        publish_test_results: bool = False,
         spark: "SparkSession" = None,
         duckdb_connection: DuckDBPyConnection = None,
         inline_definitions: bool = True,
@@ -57,6 +58,7 @@ class DataContract:
         self._schema_location = schema_location
         self._server = server
         self._publish_url = publish_url
+        self._publish_test_results = publish_test_results
         self._spark = spark
         self._duckdb_connection = duckdb_connection
         self._inline_definitions = inline_definitions
@@ -184,7 +186,7 @@ class DataContract:
 
         run.finish()
 
-        if self._publish_url is not None:
+        if self._publish_url is not None or self._publish:
             publish_test_results_to_datamesh_manager(run, self._publish_url, self._ssl_verification)
 
         return run

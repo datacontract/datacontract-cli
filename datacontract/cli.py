@@ -126,7 +126,8 @@ def test(
             "servers (default)."
         ),
     ] = "all",
-    publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
+    publish_test_results: Annotated[bool, typer.Option(help="Publish the results after the test")] = False,
+    publish: Annotated[str, typer.Option(help="DEPRECATED. The url to publish the results after the test.")] = None,
     output: Annotated[
         Path,
         typer.Option(
@@ -149,6 +150,7 @@ def test(
     run = DataContract(
         data_contract_file=location,
         schema_location=schema,
+        publish_test_results=publish_test_results,
         publish_url=publish,
         server=server,
         ssl_verification=ssl_verification,

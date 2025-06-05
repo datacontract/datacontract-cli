@@ -5,11 +5,10 @@ from typing import List
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
 from open_data_contract_standard.model import OpenDataContractStandard
-from pyspark.sql import types
 
 from datacontract.imports.importer import Importer
-from datacontract.imports.spark_importer import _field_from_struct_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
+from datacontract.imports.sql_importer import map_type_from_sql, to_physical_type_key
+from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
 from datacontract.model.exceptions import DataContractException
 
 
@@ -147,6 +146,21 @@ def convert_unity_schema(
     if data_contract_specification.models is None:
         data_contract_specification.models = {}
 
+    if data_contract_specification.servers is None:
+        data_contract_specification.servers = {}
+
+    # Configure databricks server with catalog and schema from Unity table info
+    schema_name = unity_schema.schema_name
+    catalog_name = unity_schema.catalog_name
+    if catalog_name and schema_name:
+        server_name = "myserver"  # Default server name
+
+        data_contract_specification.servers[server_name] = Server(
+            type="databricks",
+            catalog=catalog_name,
+            schema=schema_name,
+        )
+
     fields = import_table_fields(unity_schema.columns)
 
     table_id = unity_schema.name or unity_schema.table_id
@@ -179,25 +193,19 @@ def import_table_fields(columns: List[ColumnInfo]) -> dict[str, Field]:
     imported_fields = {}
 
     for column in columns:
-        struct_field: types.StructField = _type_json_to_spark_field(column.type_json)
-        imported_fields[column.name] = _field_from_struct_type(struct_field)
+        imported_fields[column.name] = _to_field(column)
 
     return imported_fields
 
 
-def _type_json_to_spark_field(type_json: str) -> types.StructField:
-    """
-    Parses a JSON string representing a Spark field and returns a StructField object.
+def _to_field(column: ColumnInfo) -> Field:
+    field = Field()
+    if column.type_name is not None:
+        sql_type = str(column.type_text)
+        field.type = map_type_from_sql(sql_type)
+    physical_type_key = to_physical_type_key("databricks")
+    field.config = {
+        physical_type_key: sql_type,
+    }
 
-    The reason we do this is to leverage the Spark JSON schema parser to handle the
-    complexity of the Spark field types. The field `type_json` in the Unity API is
-    the output of a `StructField.jsonValue()` call.
-
-    :param type_json: The JSON string representing the Spark field.
-    :type type_json: str
-
-    :return: The StructField object.
-    :rtype: types.StructField
-    """
-    type_dict = json.loads(type_json)
-    return types.StructField.fromJson(type_dict)
+    return field
