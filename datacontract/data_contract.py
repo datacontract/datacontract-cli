@@ -42,16 +42,16 @@ class DataContract:
         data_contract_file: str = None,
         data_contract_str: str = None,
         data_contract: DataContractSpecification = None,
-        odcs: OpenDataContractStandard = None,
         schema_location: str = None,
         server: str = None,
         publish_url: str = None,
-        publish_test_results: bool = False,
         spark: "SparkSession" = None,
         duckdb_connection: DuckDBPyConnection = None,
         inline_definitions: bool = True,
         inline_quality: bool = True,
         ssl_verification: bool = True,
+        publish_test_results: bool = False,
+        odcs: OpenDataContractStandard = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
