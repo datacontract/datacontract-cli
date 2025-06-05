@@ -45,7 +45,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_ver
 
         location_html = response.headers.get(RESPONSE_HEADER_LOCATION_HTML)
         if location_html is not None and len(location_html) > 0:
-            print(f"Published test results to {location_html}")
+            print(f"🚀 Open {location_html}")
 
     except Exception as e:
         run.log_error(f"Failed publishing test results. Error: {str(e)}")
