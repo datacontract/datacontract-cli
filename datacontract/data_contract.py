@@ -5,7 +5,7 @@ from open_data_contract_standard.model import CustomProperty, OpenDataContractSt
 
 from datacontract.export.odcs_v3_exporter import to_odcs_v3
 from datacontract.imports.importer import DataContractFormat
-from datacontract.imports.odcs_v3_importer import import_from_odcs_model
+from datacontract.imports.odcs_v3_importer import import_from_odcs
 
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
@@ -51,12 +51,10 @@ class DataContract:
         inline_quality: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
-        odcs: OpenDataContractStandard = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
-        self._odcs = odcs
         self._schema_location = schema_location
         self._server = server
         self._publish_url = publish_url
@@ -253,23 +251,43 @@ class DataContract:
         )
 
     def export(self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs) -> str:
-        data_contract = resolve.resolve_data_contract(
-            self._data_contract_file,
-            self._data_contract_str,
-            self._data_contract,
-            schema_location=self._schema_location,
-            inline_definitions=self._inline_definitions,
-            inline_quality=self._inline_quality,
-        )
+        if export_format == ExportFormat.html:
+            data_contract = resolve.resolve_data_contract_v2(
+                self._data_contract_file,
+                self._data_contract_str,
+                self._data_contract,
+                schema_location=self._schema_location,
+                inline_definitions=self._inline_definitions,
+                inline_quality=self._inline_quality,
+            )
 
-        return exporter_factory.create(export_format).export(
-            data_contract=data_contract,
-            model=model,
-            server=self._server,
-            sql_server_type=sql_server_type,
-            export_args=kwargs,
-        )
+            return exporter_factory.create(export_format).export(
+                data_contract=data_contract,
+                model=model,
+                server=self._server,
+                sql_server_type=sql_server_type,
+                export_args=kwargs,
+            )
+        else:
+            data_contract = resolve.resolve_data_contract(
+                self._data_contract_file,
+                self._data_contract_str,
+                self._data_contract,
+                schema_location=self._schema_location,
+                inline_definitions=self._inline_definitions,
+                inline_quality=self._inline_quality,
+            )
 
+            return exporter_factory.create(export_format).export(
+                data_contract=data_contract,
+                model=model,
+                server=self._server,
+                sql_server_type=sql_server_type,
+                export_args=kwargs,
+            )
+
+    # REFACTOR THIS
+    # could be a class method, not using anything from the instance
     def import_from_source(
         self,
         format: str,
@@ -306,7 +324,7 @@ class DataContract:
 
             if isinstance(data_contract_specification_imported, OpenDataContractStandard):
                 # convert automatically
-                data_contract_specification_imported = import_from_odcs_model(
+                data_contract_specification_imported = import_from_odcs(
                     data_contract_specification_initial, data_contract_specification_imported
                 )
 

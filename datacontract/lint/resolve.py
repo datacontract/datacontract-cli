@@ -5,8 +5,9 @@ import warnings
 import fastjsonschema
 import yaml
 from fastjsonschema import JsonSchemaValueException
+from open_data_contract_standard.model import OpenDataContractStandard
 
-from datacontract.imports.odcs_v3_importer import import_odcs_v3_from_str
+from datacontract.imports.odcs_v3_importer import import_from_odcs, parse_odcs_v3_from_str
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.lint.urls import fetch_resource
@@ -46,6 +47,34 @@ def resolve_data_contract(
         )
 
 
+def resolve_data_contract_v2(
+    data_contract_location: str = None,
+    data_contract_str: str = None,
+    data_contract: DataContractSpecification | OpenDataContractStandard = None,
+    schema_location: str = None,
+    inline_definitions: bool = False,
+    inline_quality: bool = False,
+) -> DataContractSpecification | OpenDataContractStandard:
+    if data_contract_location is not None:
+        return resolve_data_contract_from_location_v2(
+            data_contract_location, schema_location, inline_definitions, inline_quality
+        )
+    elif data_contract_str is not None:
+        return _resolve_data_contract_from_str_v2(
+            data_contract_str, schema_location, inline_definitions, inline_quality
+        )
+    elif data_contract is not None:
+        return data_contract
+    else:
+        raise DataContractException(
+            type="lint",
+            result=ResultEnum.failed,
+            name="Check that data contract YAML is valid",
+            reason="Data contract needs to be provided",
+            engine="datacontract",
+        )
+
+
 def resolve_data_contract_dict(
     data_contract_location: str = None,
     data_contract_str: str = None,
@@ -65,6 +94,13 @@ def resolve_data_contract_dict(
             reason="Data contract needs to be provided",
             engine="datacontract",
         )
+
+
+def resolve_data_contract_from_location_v2(
+    location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
+) -> DataContractSpecification | OpenDataContractStandard:
+    data_contract_str = read_resource(location)
+    return _resolve_data_contract_from_str_v2(data_contract_str, schema_location, inline_definitions, inline_quality)
 
 
 def resolve_data_contract_from_location(
@@ -242,6 +278,21 @@ def _get_quality_ref_file(quality_spec: str | object) -> str | object:
     return quality_spec
 
 
+def _resolve_data_contract_from_str_v2(
+    data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
+) -> DataContractSpecification | OpenDataContractStandard:
+    yaml_dict = _to_yaml(data_contract_str)
+
+    if is_open_data_contract_standard(yaml_dict):
+        logging.info("Importing ODCS v3")
+        # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
+        odcs = parse_odcs_v3_from_str(data_contract_str)
+        return odcs
+
+    logging.info("Importing DCS")
+    return _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_location, yaml_dict)
+
+
 def _resolve_data_contract_from_str(
     data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
 ) -> DataContractSpecification:
@@ -250,15 +301,19 @@ def _resolve_data_contract_from_str(
     if is_open_data_contract_standard(yaml_dict):
         logging.info("Importing ODCS v3")
         # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
-        data_contract_specification = DataContractSpecification(dataContractSpecification="1.1.0")
-        return import_odcs_v3_from_str(data_contract_specification, source_str=data_contract_str)
-    else:
-        logging.info("Importing DCS")
+        odcs = parse_odcs_v3_from_str(data_contract_str)
 
+        data_contract_specification = DataContractSpecification(dataContractSpecification="1.1.0")
+        return import_from_odcs(data_contract_specification, odcs)
+
+    logging.info("Importing DCS")
+    return _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_location, yaml_dict)
+
+
+def _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_location, yaml_dict):
     _validate_data_contract_specification_schema(yaml_dict, schema_location)
     data_contract_specification = yaml_dict
     spec = DataContractSpecification(**data_contract_specification)
-
     if inline_definitions:
         inline_definitions_into_data_contract(spec)
     ## Suppress DeprecationWarning when accessing spec.quality,
@@ -276,7 +331,6 @@ def _resolve_data_contract_from_str(
             )
     if spec_quality and inline_quality:
         _resolve_quality_ref(spec_quality)
-
     return spec
 
 
