@@ -186,7 +186,7 @@ class DataContract:
 
         run.finish()
 
-        if self._publish_url is not None or self._publish:
+        if self._publish_url is not None or self._publish_test_results:
             publish_test_results_to_datamesh_manager(run, self._publish_url, self._ssl_verification)
 
         return run
