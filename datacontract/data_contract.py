@@ -251,7 +251,7 @@ class DataContract:
         )
 
     def export(self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs) -> str:
-        if export_format == ExportFormat.html:
+        if export_format == ExportFormat.html or export_format == ExportFormat.mermaid:
             data_contract = resolve.resolve_data_contract_v2(
                 self._data_contract_file,
                 self._data_contract_str,
