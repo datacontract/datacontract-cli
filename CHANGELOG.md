@@ -10,8 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- `datacontract api [OPTIONS]`: Added option to pass extra arguments for `uvicorn.run()`
 
 ### Fixed
+- `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
 
 ## [0.10.28] - 2025-06-05
 
