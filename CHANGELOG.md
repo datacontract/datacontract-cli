@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
-- `./lint/resolve/py` Pydantic Deprecation warning: fixed by using the Class in stead of the instance on line 97
 
 ## [0.10.28] - 2025-06-05
 
