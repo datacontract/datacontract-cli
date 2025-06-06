@@ -130,7 +130,7 @@ def inline_definition_into_field(field, spec):
         return
 
     definition = _resolve_definition_ref(field.ref, spec)
-    for field_name in type(field).model_fields.keys():
+    for field_name in field.model_fields.keys():
         if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
             setattr(field, field_name, getattr(definition, field_name))
     # extras
