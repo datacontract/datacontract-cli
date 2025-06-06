@@ -469,6 +469,23 @@ def diff(
     console.print(result.changelog_str())
 
 
+def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict:
+    """
+    Take the default datacontract uvicorn arguments and merge them with the
+    extra arguments passed to the command to start the API.
+    """
+    default_args = {
+        "app": "datacontract.api:app",
+        "port": port,
+        "host": host,
+        "reload": True,
+    }
+
+    # Create a list of the extra arguments, remove the leading -- from the cli arguments
+    trimmed_keys = list(map(lambda x : str(x).replace("--", ""),context.args[::2]))
+    # Merge the two dicts and return them as one dict
+    return default_args | dict(zip(trimmed_keys, context.args[1::2]))
+
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def api(
     ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],    
@@ -498,17 +515,10 @@ def api(
 
     log_config = LOGGING_CONFIG
     log_config["root"] = {"level": "INFO"}
-    # Default Datacontract uvicorn arguments
-    default_args = {
-        "app": "datacontract.api:app",
-        "port": port,
-        "host": host,
-        "reload": True,
-        "log_config": log_config,
-    }
-    # Add extra arguments to the default args, remove the leading --
-    trimmed_keys = list(map(lambda x : str(x).replace("--", ""),ctx.args[::2]))
-    uvicorn_args = default_args | dict(zip(trimmed_keys, ctx.args[1::2]))
+
+    uvicorn_args = _get_uvicorn_arguments(port, host, ctx)
+    # Add the log config
+    uvicorn_args["log_config"] = log_config
     # Run uvicorn
     uvicorn.run(**uvicorn_args)
 
