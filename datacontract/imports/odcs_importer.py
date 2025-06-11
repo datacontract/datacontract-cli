@@ -48,9 +48,9 @@ def import_odcs(data_contract_specification: DataContractSpecification, source: 
             engine="datacontract",
         )
     elif odcs_api_version.startswith("v3."):
-        from datacontract.imports.odcs_v3_importer import import_odcs_v3
+        from datacontract.imports.odcs_v3_importer import import_odcs_v3_as_dcs
 
-        return import_odcs_v3(data_contract_specification, source)
+        return import_odcs_v3_as_dcs(data_contract_specification, source)
     else:
         raise DataContractException(
             type="schema",

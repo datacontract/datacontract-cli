@@ -1,7 +1,7 @@
 {
   "name": "test_table",
-  "catalog_name": "string",
-  "schema_name": "string",
+  "catalog_name": "mycatalog",
+  "schema_name": "myschema",
   "table_type": "MANAGED",
   "data_source_format": "DELTA",
   "columns": [

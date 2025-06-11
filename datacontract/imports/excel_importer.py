@@ -31,8 +31,11 @@ logger = logging.getLogger(__name__)
 
 class ExcelImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+        self,
+        data_contract_specification: DataContractSpecification | OpenDataContractStandard,
+        source: str,
+        import_args: dict,
+    ) -> DataContractSpecification | OpenDataContractStandard:
         return import_excel_as_odcs(source)
 
 
@@ -565,6 +568,8 @@ def import_roles(workbook: Workbook) -> Optional[List[Role]]:
 
         roles_list = []
         for row_idx in range(roles_range[0], roles_range[1]):
+            if len(list(roles_sheet.rows)) < row_idx + 1:
+                break
             row = list(roles_sheet.rows)[row_idx]
 
             role_name = get_cell_value(row, headers.get("role"))
