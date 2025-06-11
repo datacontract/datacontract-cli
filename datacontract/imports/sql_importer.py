@@ -21,30 +21,30 @@ class SqlImporter(Importer):
 def import_sql(
     data_contract_specification: DataContractSpecification, format: str, source: str, import_args: dict = None
 ) -> DataContractSpecification:
-    
     dialect = to_dialect(import_args)
 
     server_type: str | None = to_server_type(source, dialect)
     if server_type is not None:
         data_contract_specification.servers[server_type] = Server(type=server_type)
 
-    sql = read_file(source)   
+    sql = read_file(source)
 
     parsed = None
 
     try:
-        parsed = sqlglot.parse_one(sql=sql, read=dialect.lower())       
-        
+        parsed = sqlglot.parse_one(sql=sql, read=dialect.lower())
+
         tables = parsed.find_all(sqlglot.expressions.Table)
 
     except Exception as e:
+        logging.error(f"Error parsing sqlglot: {str(e)}")
         # Second try with simple-ddl-parser
-        ddl = parse_from_file(source, group_by_type=True, encoding = "cp1252", output_mode = dialect.lower() )
+        ddl = parse_from_file(source, group_by_type=True, encoding="cp1252", output_mode=dialect.lower())
 
         tables = ddl["tables"]
 
     except Exception as e:
-        logging.error(f"Error parsing SQL: {str(e)}")
+        logging.error(f"Error simple-dd-parser SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
@@ -56,10 +56,10 @@ def import_sql(
     for table in tables:
         if data_contract_specification.models is None:
             data_contract_specification.models = {}
-        
-        if hasattr(table, 'this'): # sqlglot
+
+        if hasattr(table, "this"):  # sqlglot
             table_name, fields, table_description, table_tags = sqlglot_model_wrapper(table, parsed, dialect)
-        else:   # simple-ddl-parser
+        else:  # simple-ddl-parser
             table_name, fields, table_description, table_tags = simple_ddl_model_wrapper(table, dialect)
 
         data_contract_specification.models[table_name] = Model(
@@ -70,6 +70,7 @@ def import_sql(
         )
 
     return data_contract_specification
+
 
 def sqlglot_model_wrapper(table, parsed, dialect):
     table_name = table.this.name
@@ -100,6 +101,7 @@ def sqlglot_model_wrapper(table, parsed, dialect):
 
     return table_name, fields, None, None
 
+
 def simple_ddl_model_wrapper(table, dialect):
     table_name = table["table_name"]
 
@@ -115,10 +117,10 @@ def simple_ddl_model_wrapper(table, dialect):
         }
 
         if not column["nullable"]:
-            field.required =  True
+            field.required = True
         if column["unique"]:
             field.unique = True
-        
+
         if column["size"] is not None and column["size"] and not isinstance(column["size"], tuple):
             field.maxLength = column["size"]
         elif isinstance(column["size"], tuple):
@@ -126,45 +128,51 @@ def simple_ddl_model_wrapper(table, dialect):
             field.scale = column["size"][1]
 
         field.description = column["comment"][1:-1].strip() if column.get("comment") else None
-    
+
         if column.get("with_tag"):
             field.tags = column["with_tag"]
         if column.get("with_masking_policy"):
-            field.classification = ", ".join(column["with_masking_policy"]) 
+            field.classification = ", ".join(column["with_masking_policy"])
         if column.get("generated"):
             field.examples = str(column["generated"])
-        
+
         fields[column["name"]] = field
-        
+
         if table.get("constraints"):
-            if table["constraints"].get("primary_key"):                   
+            if table["constraints"].get("primary_key"):
                 for primary_key in table["constraints"]["primary_key"]["columns"]:
                     if primary_key in fields:
                         fields[primary_key].unique = True
                         fields[primary_key].required = True
                         fields[primary_key].primaryKey = True
 
-    table_description = table["comment"][1:-1] if  table.get("comment") else None
-    table_tags = table["with_tag"][1:-1] if  table.get("with_tag") else None
+    table_description = table["comment"][1:-1] if table.get("comment") else None
+    table_tags = table["with_tag"][1:-1] if table.get("with_tag") else None
 
     return table_name, fields, table_description, table_tags
-    
+
+
 def map_physical_type(column, dialect) -> str | None:
     autoincrement = ""
-    if column.get("autoincrement") == True and dialect == Dialects.SNOWFLAKE:
-        autoincrement = " AUTOINCREMENT" \
-                        + " START " + str(column.get("start")) if column.get("start") else ""
+    if column.get("autoincrement") and dialect == Dialects.SNOWFLAKE:
+        autoincrement = " AUTOINCREMENT" + " START " + str(column.get("start")) if column.get("start") else ""
         autoincrement += " INCREMENT " + str(column.get("increment")) if column.get("increment") else ""
-        autoincrement += " NOORDER" if column.get("increment_order") == False else ""
-    elif column.get("autoincrement") == True:
+        autoincrement += " NOORDER" if not column.get("increment_order") else ""
+    elif column.get("autoincrement"):
         autoincrement = " IDENTITY"
-        
+
     if column.get("size") and isinstance(column.get("size"), tuple):
-        return  column.get("type") + "(" + str(column.get("size")[0]) + "," + str(column.get("size")[1]) + ")" \
-                + autoincrement
+        return (
+            column.get("type")
+            + "("
+            + str(column.get("size")[0])
+            + ","
+            + str(column.get("size")[1])
+            + ")"
+            + autoincrement
+        )
     elif column.get("size"):
-        return column.get("type") + "(" + str(column.get("size")) + ")" \
-                + autoincrement
+        return column.get("type") + "(" + str(column.get("size")) + ")" + autoincrement
     else:
         return column.get("type") + autoincrement
 
@@ -308,16 +316,14 @@ def map_type_from_sql(sql_type: str) -> str | None:
     elif sql_type_normed.startswith("ntext"):
         return "string"
     elif sql_type_normed.startswith("int"):
-        return "int"    
+        return "int"
     elif sql_type_normed.startswith("tinyint"):
         return "int"
     elif sql_type_normed.startswith("smallint"):
         return "int"
     elif sql_type_normed.startswith("bigint"):
         return "long"
-    elif (sql_type_normed.startswith("float")
-        or sql_type_normed.startswith("double")
-        or sql_type_normed == "real"):
+    elif sql_type_normed.startswith("float") or sql_type_normed.startswith("double") or sql_type_normed == "real":
         return "float"
     elif sql_type_normed.startswith("number"):
         return "decimal"

@@ -6,10 +6,9 @@ sql_file_path = "fixtures/snowflake/import/ddl.sql"
 
 
 def test_import_sql_snowflake():
-  
-  result = DataContract().import_from_source("sql", sql_file_path, dialect="snowflake")
+    result = DataContract().import_from_source("sql", sql_file_path, dialect="snowflake")
 
-  expected = """
+    expected = """
 dataContractSpecification: 1.1.0
 id: my-data-contract-id
 info:
@@ -185,8 +184,8 @@ models:
         description: JSON  ( Stored as text)
         config:
           snowflakeType: OBJECT"""
-  
-  print("Result", result.to_yaml())
-  assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-  # Disable linters so we don't get "missing description" warnings
-  assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+
+    print("Result", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    # Disable linters so we don't get "missing description" warnings
+    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
