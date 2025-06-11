@@ -197,7 +197,7 @@ def to_dialect(import_args: dict) -> Dialects | None:
         return Dialects.TSQL
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
-    return None
+    return "None"
 
 
 def to_physical_type_key(dialect: Dialects | str | None) -> str:
