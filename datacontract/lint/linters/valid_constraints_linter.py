@@ -40,7 +40,7 @@ class ValidFieldConstraintsLinter(Linter):
         ):
             case (True, True, _, _) if min > max:
                 return LinterResult.erroneous(
-                    f"Minimum {min} is greater than maximum {max} on " f"field '{field_name}' in model '{model_name}'."
+                    f"Minimum {min} is greater than maximum {max} on field '{field_name}' in model '{model_name}'."
                 )
             case (_, _, True, True) if xmin >= xmax:
                 return LinterResult.erroneous(
@@ -68,11 +68,11 @@ class ValidFieldConstraintsLinter(Linter):
         result = LinterResult()
         if field.minLength and field.maxLength and field.minLength > field.maxLength:
             result = result.with_error(
-                f"Minimum length is greater that maximum length on" f" field '{field_name}' in model '{model_name}'."
+                f"Minimum length is greater that maximum length on field '{field_name}' in model '{model_name}'."
             )
         if field.pattern and field.format:
             result = result.with_error(
-                f"Both a pattern and a format are defined for field" f" '{field_name}' in model '{model_name}'."
+                f"Both a pattern and a format are defined for field '{field_name}' in model '{model_name}'."
             )
         return result
 

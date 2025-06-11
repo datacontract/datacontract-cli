@@ -158,9 +158,13 @@ def convert_to_dataframe(field: Field) -> None | str:
 # databricks data types:
 # https://docs.databricks.com/en/sql/language-manual/sql-ref-datatypes.html
 def convert_to_databricks(field: Field) -> None | str:
-    if field.config and "databricksType" in field.config:
-        return field.config["databricksType"]
     type = field.type
+    if (
+        field.config
+        and "databricksType" in field.config
+        and type.lower() not in ["array", "object", "record", "struct"]
+    ):
+        return field.config["databricksType"]
     if type is None:
         return None
     if type.lower() in ["string", "varchar", "text"]:
@@ -197,6 +201,8 @@ def convert_to_databricks(field: Field) -> None | str:
     if type.lower() in ["array"]:
         item_type = convert_to_databricks(field.items)
         return f"ARRAY<{item_type}>"
+    if type.lower() in ["variant"]:
+        return "VARIANT"
     return None
 
 

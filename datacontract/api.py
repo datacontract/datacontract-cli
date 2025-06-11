@@ -162,7 +162,7 @@ async def test(
     server: Annotated[
         str | None,
         Query(
-            example="production",
+            examples=["production"],
             description="The server name to test. Optional, if there is only one server.",
         ),
     ] = None,
@@ -191,7 +191,7 @@ async def lint(
     schema: Annotated[
         str | None,
         Query(
-            example="https://datacontract.com/datacontract.schema.json",
+            examples=["https://datacontract.com/datacontract.schema.json"],
             description="The schema to use for validation. This must be a URL.",
         ),
     ] = None,
@@ -220,7 +220,7 @@ def export(
     server: Annotated[
         str | None,
         Query(
-            example="production",
+            examples=["production"],
             description="The server name to export. Optional, if there is only one server.",
         ),
     ] = None,

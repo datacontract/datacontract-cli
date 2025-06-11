@@ -106,7 +106,7 @@
       },
       {
         "name": "timestamp_ntz_field",
-        "type": "TIME",
+        "type": "DATETIME",
         "mode": "NULLABLE",
         "description": "a simple timestamp_ntz field"
       },

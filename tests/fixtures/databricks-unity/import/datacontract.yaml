@@ -10,24 +10,42 @@ models:
     title: test_table
     fields:
       id:
-        type: integer
+        type: int
         required: true
+        config:
+          databricksType: int
       name:
-        type: varchar
+        type: string
         required: false
+        config:
+          databricksType: varchar(255)
       age:
-        type: integer
+        type: int
         required: false
+        config:
+          databricksType: smallint
       salary:
         type: decimal
         required: false
+        config:
+          databricksType: decimal(10,2)
       join_date:
         type: date
         required: false
+        config:
+          databricksType: date
       updated_at:
-        type: timestamp
+        type: timestamp_ntz
         required: false
+        config:
+          databricksType: timestamp
       is_active:
         type: boolean
         required: false
-
+        config:
+          databricksType: boolean
+servers:
+  myserver:
+    type: databricks
+    catalog: mycatalog
+    schema: myschema

@@ -4,6 +4,9 @@ import requests
 
 from datacontract.model.run import Run
 
+# used to retrieve the HTML location of the published data contract or test results
+RESPONSE_HEADER_LOCATION_HTML = "location-html"
+
 
 def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_verification: bool):
     try:
@@ -38,7 +41,12 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_ver
         if response.status_code != 200:
             run.log_error(f"Error publishing test results to Data Mesh Manager: {response.text}")
             return
-        run.log_info(f"Published test results to {url}")
+        run.log_info("Published test results successfully")
+
+        location_html = response.headers.get(RESPONSE_HEADER_LOCATION_HTML)
+        if location_html is not None and len(location_html) > 0:
+            print(f"🚀 Open {location_html}")
+
     except Exception as e:
         run.log_error(f"Failed publishing test results. Error: {str(e)}")
 
@@ -67,6 +75,12 @@ def publish_data_contract_to_datamesh_manager(data_contract_dict: dict, ssl_veri
         if response.status_code != 200:
             print(f"Error publishing data contract to Data Mesh Manager: {response.text}")
             exit(1)
-        print(f"Published data contract to {url}")
+
+        print("✅ Published data contract successfully")
+
+        location_html = response.headers.get(RESPONSE_HEADER_LOCATION_HTML)
+        if location_html is not None and len(location_html) > 0:
+            print(f"🚀 Open {location_html}")
+
     except Exception as e:
         print(f"Failed publishing data contract. Error: {str(e)}")

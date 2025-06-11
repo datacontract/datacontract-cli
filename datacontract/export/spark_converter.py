@@ -175,7 +175,7 @@ def print_schema(dtype: types.DataType) -> str:
         Returns:
             str: The indented text.
         """
-        return "\n".join([f'{"    " * level}{line}' for line in text.split("\n")])
+        return "\n".join([f"{'    ' * level}{line}" for line in text.split("\n")])
 
     def repr_column(column: types.StructField) -> str:
         """

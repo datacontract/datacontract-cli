@@ -4407,3 +4407,81 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+      StoreHolidayHours:
+        title: StoreHolidayHours
+        type: array
+        required: false
+        primaryKey: false
+        items:
+          type: object
+          fields:
+            Date:
+              title: Date
+              type: date
+              required: false
+              primaryKey: false
+              examples:
+              - '2024-08-13'
+              config:
+                criticalDataElement: false
+                partitioned: false
+                physicalType: string
+            Close:
+              title: Close
+              type: date
+              required: false
+              primaryKey: false
+              examples:
+              - 02:00 PM
+              config:
+                criticalDataElement: false
+                partitioned: false
+                physicalType: string
+            Open:
+              title: Open
+              type: date
+              required: false
+              primaryKey: false
+              examples:
+              - 10:00 AM
+              config:
+                criticalDataElement: false
+                partitioned: false
+                physicalType: string
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: array
+      extendedData:
+        title: extendedData
+        type: object
+        required: true
+        primaryKey: false
+        fields:
+          pharmacyUUID:
+            title: pharmacyUUID
+            type: string
+            required: true
+            primaryKey: false
+            unique: true
+            examples:
+            - ec43dd63-c258-4506-8965-88a9e0c130ad
+            config:
+              criticalDataElement: false
+              partitioned: false
+              physicalType: string
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: object
+      ArrayComments:
+        title: ArrayComments
+        type: array
+        required: false
+        primaryKey: false
+        items:
+          type: string
+        config:
+          criticalDataElement: false
+          partitioned: false
+          physicalType: array

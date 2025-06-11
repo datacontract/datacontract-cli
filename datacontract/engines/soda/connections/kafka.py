@@ -27,6 +27,7 @@ def create_spark_session():
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract-cli-spark")
     atexit.register(tmp_dir.cleanup)
 
+    pyspark_version = "3.5.5"  # MUST be the same as in the pyproject.toml
     spark = (
         SparkSession.builder.appName("datacontract")
         .config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
@@ -34,7 +35,7 @@ def create_spark_session():
         .config("spark.ui.enabled", "false")
         .config(
             "spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5,org.apache.spark:spark-avro_2.12:3.5.5",
+            f"org.apache.spark:spark-sql-kafka-0-10_2.12:{pyspark_version},org.apache.spark:spark-avro_2.12:{pyspark_version}",
         )
         .getOrCreate()
     )

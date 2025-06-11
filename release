@@ -1,8 +1,14 @@
 #!/bin/bash
 set -e
 
+# Release steps:
+# 1. Update release version in pyproject.toml
+# 2. Update CHANGELOG.md header
+# 3. Run ./release
+# 4. Update release notes in Github
+
 # pip install toml-cli
-VERSION=$(toml get --toml-path pyproject.toml project.version)
+VERSION=$(uvx --from toml-cli toml get --toml-path pyproject.toml project.version)
 TAG_VERSION=v$VERSION
 
 echo "Checking that everything is committed"

@@ -27,7 +27,6 @@ name: Orders Unit Test
 version: 1.0.0
 status: active
 description:
-  purpose: null
   limitations: Not intended to use in production
   usage: This data contract serves to demo datacontract CLI export.
 
@@ -41,12 +40,12 @@ schema:
       - name: order_id
         businessName: Order ID
         logicalType: string
+        physicalType: varchar
         logicalTypeOptions:
             minLength: 8
             maxLength: 10
             pattern: ^B[0-9]+$
-        physicalType: varchar
-        nullable: false
+        required: true
         unique: true
         tags:
           - "order_id"
@@ -61,11 +60,11 @@ schema:
           value: true
       - name: order_total
         logicalType: integer
+        physicalType: bigint
         logicalTypeOptions:
             minimum: 0
             maximum: 1000000
-        physicalType: bigint
-        nullable: false
+        required: true
         description: The order_total field
         quality:
           - type: sql
@@ -77,7 +76,7 @@ schema:
       - name: order_status
         logicalType: string
         physicalType: text
-        nullable: false
+        required: true
     quality:
     - type: sql
       description: Row Count
@@ -96,7 +95,7 @@ servers:
     database: my-database
     schema: my-schema
     roles:
-      - name: analyst_us
+      - role: analyst_us
         description: Access to the data for US region
 
 support:
@@ -114,7 +113,16 @@ customProperties:
 
     odcs = to_odcs_v3_yaml(data_contract)
 
-    assert yaml.safe_load(odcs) == yaml.safe_load(expected_odcs_model)
+    assert_equals_odcs_yaml_str(expected_odcs_model, odcs)
+
+
+def assert_equals_odcs_yaml_str(expected, actual):
+    from open_data_contract_standard.model import OpenDataContractStandard
+
+    expected_yaml = OpenDataContractStandard.from_string(expected).to_yaml()
+    print(expected_yaml)
+    assert expected_yaml == actual
+    assert yaml.safe_load(actual) == yaml.safe_load(expected)
 
 
 def read_file(file):

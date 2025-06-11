@@ -13,7 +13,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix to handle logicalType format wrt avro mentioned in issue #687
+## [0.10.28] - 2025-06-05
+
+### Added
+- Much better ODCS support
+    - Import anything to ODCS via the `import --spec odcs` flag
+    - Export to HTML with an ODCS native template via `export --format html`
+    - Export to Mermaid with an ODCS native mapping via `export --format mermaid`
+- The databricks `unity` importer now supports more than a single table. You can use `--unity-table-full-name` multiple times to import multiple tables. And it will automatically add a server with the catalog and schema name.
+
+### Changed
+- `datacontract catalog [OPTIONS]`: Added version to contract cards in `index.html` of the catalog (enabled search by version)
+- The type mapping of the `unity` importer no uses the native databricks types instead of relying on spark types. This allows for better type mapping and more accurate data contracts.
+
+### Fixed
+
+## [0.10.27] - 2025-05-22
+
+### Added
+
+- `datacontract export --format mermaid` Export
+  to [Mermaid](https://mermaid-js.github.io/mermaid/#/) (#767, #725)
+
+### Changed
+
+- `datacontract export --format html`: Adding the mermaid figure to the html export
+- `datacontract export --format odcs`: Export physical type to ODCS if the physical type is
+  configured in config object
+- `datacontract import --format spark`: Added support for spark importer table level comments (#761)
+- `datacontract import` respects `--owner` and `--id` flags (#753)
+
+### Fixed
+
+- `datacontract export --format sodacl`: Fix resolving server when using `--server` flag (#768)
+- `datacontract export --format dbt`: Fixed DBT export behaviour of constraints to default to data tests when no model type is specified in the datacontract model
+
+
+## [0.10.26] - 2025-05-16
+
+### Changed
+- Databricks: Add support for Variant type (#758)
+- `datacontract export --format odcs`: Export physical type if the physical type is configured in
+  config object (#757)
+- `datacontract export --format sql` Include datacontract descriptions in the Snowflake sql export (
+  #756)
+
+## [0.10.25] - 2025-05-07
+
+### Added
+- Extracted the DataContractSpecification and the OpenDataContractSpecification in separate pip modules and use them in the CLI.
+- `datacontract import --format excel`: Import from Excel
+  template https://github.com/datacontract/open-data-contract-standard-excel-template (#742)
+
+## [0.10.24] - 2025-04-19
+
+### Added
+
+- `datacontract test` with DuckDB: Deep nesting of json objects in duckdb (#681)
+
+### Changed
+
+- `datacontract import --format csv` produces more descriptive output. Replaced
+  using clevercsv with duckdb for loading and sniffing csv file.
+- Updated dependencies
+
+### Fixed
+
+- Fix to handle logicalType format wrt avro mentioned in issue (#687)
+- Fix field type from TIME to DATETIME in BigQuery converter and schema (#728)
+- Fix encoding issues. (#712)
+- ODCS: Fix required in export and added item and fields format (#724)
+
+### Removed
+
+- Deprecated QualityLinter is now removed
 
 ## [0.10.23] - 2025-03-03
 
