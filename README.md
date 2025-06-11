@@ -618,6 +618,13 @@ run = data_contract.test()
 run.result
 ```
 
+If you data contract has variant column types set the following properties to include those columns in data quality testing:
+
+```python
+from datacontract.model import data_contract_specification
+data_contract_specification.DATACONTRACT_TYPES.append("variant")
+```
+
 #### Dataframe (programmatic)
 
 Works with Spark DataFrames.
