@@ -8,7 +8,7 @@ from simple_ddl_parser import parse_from_file
 from datacontract.imports.importer import Importer
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import ResultEnum
+from datacontract.model.run        import ResultEnum
 
 
 class SqlImporter(Importer):
