@@ -1097,7 +1097,6 @@
         "object",
         "record",
         "struct",
-        "variant",
         "bytes",
         "null"
       ]
