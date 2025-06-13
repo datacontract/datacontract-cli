@@ -211,10 +211,14 @@ def to_col_type_normalized(column):
 
 
 def get_description(column: sqlglot.expressions.ColumnDef) -> str | None:
-    description = column.find(sqlglot.expressions.CommentColumnConstraint)
-    if not description:
-        return 
-    return description.this.this
+    if column.comments is None:
+        description = column.find(sqlglot.expressions.CommentColumnConstraint)
+        if description:
+            return description.this.this
+        else:
+            return None
+    return " ".join(comment.strip() for comment in column.comments)    
+    
 
 def get_tags(column: sqlglot.expressions.ColumnDef) -> str | None:
     tags = column.find(sqlglot.expressions.Tags)
