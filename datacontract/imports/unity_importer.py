@@ -200,7 +200,8 @@ def import_table_fields(columns: List[ColumnInfo]) -> dict[str, Field]:
 
 def _to_field(column: ColumnInfo) -> Field:
     field = Field()
-    if column.type_name is not None:
+    # The second condition evaluates for complex types (e.g. variant)
+    if column.type_name is not None or (column.type_name is None and column.type_text is not None):
         sql_type = str(column.type_text)
         field.type = map_type_from_sql(sql_type)
     physical_type_key = to_physical_type_key("databricks")

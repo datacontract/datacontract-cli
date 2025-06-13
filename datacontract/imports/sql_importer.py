@@ -230,6 +230,8 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "int"
     elif sql_type_normed.startswith("float"):
         return "float"
+    elif sql_type_normed.startswith("double"):
+        return "double"
     elif sql_type_normed.startswith("decimal"):
         return "decimal"
     elif sql_type_normed.startswith("numeric"):
