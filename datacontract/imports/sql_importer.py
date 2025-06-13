@@ -1,14 +1,19 @@
 import logging
 import os
+import re
 
 import sqlglot
 from sqlglot.dialects.dialect import Dialects
-from simple_ddl_parser import parse_from_file
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
+from datacontract.model.data_contract_specification import (
+    DataContractSpecification,
+    Field,
+    Model,
+    Server,
+)
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run        import ResultEnum
+from datacontract.model.run import ResultEnum
 
 
 class SqlImporter(Importer):
@@ -19,7 +24,10 @@ class SqlImporter(Importer):
 
 
 def import_sql(
-    data_contract_specification: DataContractSpecification, format: str, source: str, import_args: dict = None
+    data_contract_specification: DataContractSpecification,
+    format: str,
+    source: str,
+    import_args: dict = None,
 ) -> DataContractSpecification:
     dialect = to_dialect(import_args)
 
@@ -37,13 +45,6 @@ def import_sql(
         tables = parsed.find_all(sqlglot.expressions.Table)
 
     except Exception as e:
-        logging.error(f"Error parsing sqlglot: {str(e)}")
-        # Second try with simple-ddl-parser
-        ddl = parse_from_file(source, group_by_type=True, encoding="cp1252", output_mode=dialect.lower())
-
-        tables = ddl["tables"]
-
-    except Exception as e:
         logging.error(f"Error simple-dd-parser SQL: {str(e)}")
         raise DataContractException(
             type="import",
@@ -57,10 +58,7 @@ def import_sql(
         if data_contract_specification.models is None:
             data_contract_specification.models = {}
 
-        if hasattr(table, "this"):  # sqlglot
-            table_name, fields, table_description, table_tags = sqlglot_model_wrapper(table, parsed, dialect)
-        else:  # simple-ddl-parser
-            table_name, fields, table_description, table_tags = simple_ddl_model_wrapper(table, dialect)
+        table_name, fields, table_description, table_tags = sqlglot_model_wrapper(table, parsed, dialect)
 
         data_contract_specification.models[table_name] = Model(
             type="table",
@@ -73,7 +71,21 @@ def import_sql(
 
 
 def sqlglot_model_wrapper(table, parsed, dialect):
+    table_description = None
+    table_tag = None
+
     table_name = table.this.name
+
+    table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+    if table_comment_property:
+        table_description = table_comment_property.this.this
+
+    prop = parsed.find(sqlglot.expressions.Properties) 
+    if prop:
+        tags = prop.find(sqlglot.expressions.Tags)
+        if tags:
+            tag_enum = tags.find(sqlglot.expressions.Property)
+            table_tag = [str(t) for t in tag_enum]
 
     fields = {}
     for column in parsed.find_all(sqlglot.exp.ColumnDef):
@@ -93,63 +105,14 @@ def sqlglot_model_wrapper(table, parsed, dialect):
         field.primaryKey = get_primary_key(column)
         field.required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
         physical_type_key = to_physical_type_key(dialect)
+        field.tags = get_tags(column)
         field.config = {
             physical_type_key: col_type,
         }
 
         fields[col_name] = field
 
-    return table_name, fields, None, None
-
-
-def simple_ddl_model_wrapper(table, dialect):
-    table_name = table["table_name"]
-
-    fields = {}
-
-    for column in table["columns"]:
-        field = Field()
-        field.type = map_type_from_sql(column["type"])
-        physical_type_key = to_physical_type_key(dialect)
-        datatype = map_physical_type(column, dialect)
-        field.config = {
-            physical_type_key: datatype,
-        }
-
-        if not column["nullable"]:
-            field.required = True
-        if column["unique"]:
-            field.unique = True
-
-        if column["size"] is not None and column["size"] and not isinstance(column["size"], tuple):
-            field.maxLength = column["size"]
-        elif isinstance(column["size"], tuple):
-            field.precision = column["size"][0]
-            field.scale = column["size"][1]
-
-        field.description = column["comment"][1:-1].strip() if column.get("comment") else None
-
-        if column.get("with_tag"):
-            field.tags = column["with_tag"]
-        if column.get("with_masking_policy"):
-            field.classification = ", ".join(column["with_masking_policy"])
-        if column.get("generated"):
-            field.examples = str(column["generated"])
-
-        fields[column["name"]] = field
-
-        if table.get("constraints"):
-            if table["constraints"].get("primary_key"):
-                for primary_key in table["constraints"]["primary_key"]["columns"]:
-                    if primary_key in fields:
-                        fields[primary_key].unique = True
-                        fields[primary_key].required = True
-                        fields[primary_key].primaryKey = True
-
-    table_description = table["comment"][1:-1] if table.get("comment") else None
-    table_tags = table["with_tag"][1:-1] if table.get("with_tag") else None
-
-    return table_name, fields, table_description, table_tags
+    return table_name, fields, table_description, table_tag
 
 
 def map_physical_type(column, dialect) -> str | None:
@@ -248,10 +211,19 @@ def to_col_type_normalized(column):
 
 
 def get_description(column: sqlglot.expressions.ColumnDef) -> str | None:
-    if column.comments is None:
-        return None
-    return " ".join(comment.strip() for comment in column.comments)
+    description = column.find(sqlglot.expressions.CommentColumnConstraint)
+    if not description:
+        return 
+    return description.this.this
 
+def get_tags(column: sqlglot.expressions.ColumnDef) -> str | None:
+    tags = column.find(sqlglot.expressions.Tags)
+    if tags:
+        tag_enum = tags.find(sqlglot.expressions.Property)
+        return [str(t) for t in tag_enum]
+    else:
+        return None
+            
 
 def get_max_length(column: sqlglot.expressions.ColumnDef) -> int | None:
     col_type = to_col_type_normalized(column)
@@ -383,4 +355,5 @@ def read_file(path):
         )
     with open(path, "r") as file:
         file_content = file.read()
-    return file_content
+
+    return re.sub(r'\$\{(\w+)\}', r'\1', file_content)

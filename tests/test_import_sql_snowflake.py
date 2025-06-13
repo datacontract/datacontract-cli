@@ -29,11 +29,10 @@ models:
         precision: 38
         scale: 0
         config:
-          snowflakeType: NUMBER(38,0) AUTOINCREMENT START 1 INCREMENT 1 NOORDER
+          snowflakeType: DECIMAL(38, 0)
       field_not_null:
         type: int
         required: true
-        unique: true
         description: Not null
         config:
           snowflakeType: INT
@@ -48,7 +47,7 @@ models:
         description: Fixed-length string
         maxLength: 10
         config:
-          snowflakeType: CHARACTER(10)
+          snowflakeType: CHAR(10)
       field_varchar:
         type: string
         description: Variable-length string
@@ -65,30 +64,30 @@ models:
         type: string
         description: Large variable-length Unicode string
         config:
-          snowflakeType: STRING
+          snowflakeType: TEXT
       field_tinyint:
         type: int
-        description: Integer  ( 0-255)
+        description: Integer (0-255)
         config:
           snowflakeType: TINYINT
       field_smallint:
         type: int
-        description: Integer  ( -32 , 768 to 32 , 767)
+        description: Integer (-32,768 to 32,767)
         config:
           snowflakeType: SMALLINT
       field_int:
         type: int
-        description: Integer  ( -2.1B to 2.1B)
+        description: Integer (-2.1B to 2.1B)
         config:
           snowflakeType: INT
       field_integer:
         type: int
-        description: Integer full name ( -2.1B to 2.1B)
+        description: Integer full name(-2.1B to 2.1B)
         config:
-          snowflakeType: INTEGER
+          snowflakeType: INT
       field_bigint:
         type: long
-        description: Large integer  ( -9 quintillion to 9 quintillion)
+        description: Large integer (-9 quintillion to 9 quintillion)
         config:
           snowflakeType: BIGINT
       field_decimal:
@@ -97,14 +96,14 @@ models:
         precision: 10
         scale: 2
         config:
-          snowflakeType: DECIMAL(10,2)
+          snowflakeType: DECIMAL(10, 2)
       field_numeric:
         type: decimal
         description: Same as DECIMAL
         precision: 10
         scale: 2
         config:
-          snowflakeType: NUMERIC(10,2)
+          snowflakeType: DECIMAL(10, 2)
       field_float:
         type: float
         description: Approximate floating-point
@@ -114,30 +113,30 @@ models:
         type: float
         description: Approximate floating-point 4
         config:
-          snowflakeType: FLOAT4
+          snowflakeType: FLOAT
       field_float8:
         type: float
         description: Approximate floating-point 8
         config:
-          snowflakeType: FLOAT8
+          snowflakeType: DOUBLE
       field_real:
         type: float
         description: Smaller floating-point
         config:
-          snowflakeType: REAL
+          snowflakeType: FLOAT
       field_boulean:
         type: boolean
-        description: Boolean-like  ( 0 or 1)
+        description: Boolean-like (0 or 1)
         config:
           snowflakeType: BOOLEAN
       field_date:
         type: date
-        description: Date only  ( YYYY-MM-DD)
+        description: Date only (YYYY-MM-DD)
         config:
           snowflakeType: DATE
       field_time:
         type: string
-        description: Time only  ( HH:MM:SS)
+        description: Time only (HH:MM:SS)
         config:
           snowflakeType: TIME
       field_timestamp:
@@ -146,32 +145,28 @@ models:
         config:
           snowflakeType: TIMESTAMP
       field_timestamp_ltz:
-        type: timestamp_tz
-        description: More precise datetime with local time zone; time zone ,  if provided
-          ,  isn`t stored.
+        type: object
+        description: More precise datetime with local time zone; time zone, if provided, isn`t stored.
         config:
-          snowflakeType: TIMESTAMP_LTZ
+          snowflakeType: TIMESTAMPLTZ
       field_timestamp_ntz:
         type: timestamp_ntz
-        description: More precise datetime with no time zone; time zone ,  if provided
-          ,  isn`t stored.
+        description: More precise datetime with no time zone; time zone, if provided, isn`t stored.
         config:
-          snowflakeType: TIMESTAMP_NTZ
+          snowflakeType: TIMESTAMPNTZ
       field_timestamp_tz:
         type: timestamp_tz
         description: More precise datetime with time zone.
         config:
-          snowflakeType: TIMESTAMP_TZ
+          snowflakeType: TIMESTAMPTZ
       field_binary:
         type: bytes
         description: Fixed-length binary
-        maxLength: 16
         config:
           snowflakeType: BINARY(16)
       field_varbinary:
         type: bytes
         description: Variable-length binary
-        maxLength: 100
         config:
           snowflakeType: VARBINARY(100)
       field_variant:
@@ -181,7 +176,7 @@ models:
           snowflakeType: VARIANT
       field_json:
         type: object
-        description: JSON  ( Stored as text)
+        description: JSON (Stored as text)
         config:
           snowflakeType: OBJECT"""
 

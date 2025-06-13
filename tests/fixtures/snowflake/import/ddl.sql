@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS  ${database_name}.PUBLIC.my_table (
   -- https://docs.snowflake.com/en/sql-reference/intro-summary-data-types
-  field_primary_key      NUMBER(38,0) NOT NULL autoincrement start 1 increment 1 noorder COMMENT 'Primary key',
+  field_primary_key      NUMBER(38,0) NOT NULL autoincrement start 1 increment 1 COMMENT 'Primary key',
   field_not_null         INT NOT NULL     COMMENT 'Not null',
   field_char             CHAR(10)         COMMENT 'Fixed-length string',
   field_character        CHARACTER(10)    COMMENT 'Fixed-length string',
