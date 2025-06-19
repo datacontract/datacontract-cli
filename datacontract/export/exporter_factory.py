@@ -22,7 +22,9 @@ class ExporterFactory:
             raise ValueError(f"The '{name}' format is not supported.")
         exporter_class = exporters[name]
         if type(exporters[name]) is tuple:
-            exporter_class = load_module_class(module_path=exporters[name][0], class_name=exporters[name][1])
+            exporter_class = load_module_class(
+                module_path=exporters[name][0], class_name=exporters[name][1]
+            )
         if not exporter_class:
             raise ValueError(f"Module {name} could not be loaded.")
         return exporter_class(name)
@@ -120,6 +122,12 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
+    name=ExportFormat.excel,
+    module_path="datacontract.export.excel_converter",
+    class_name="ExcelExporter",
+)
+
+exporter_factory.register_lazy_exporter(
     name=ExportFormat.go,
     module_path="datacontract.export.go_converter",
     class_name="GoExporter",
@@ -198,9 +206,13 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.iceberg, module_path="datacontract.export.iceberg_converter", class_name="IcebergExporter"
+    name=ExportFormat.iceberg,
+    module_path="datacontract.export.iceberg_converter",
+    class_name="IcebergExporter",
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.custom, module_path="datacontract.export.custom_converter", class_name="CustomExporter"
+    name=ExportFormat.custom,
+    module_path="datacontract.export.custom_converter",
+    class_name="CustomExporter",
 )
