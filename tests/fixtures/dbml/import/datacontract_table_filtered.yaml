@@ -22,7 +22,7 @@ models:
         description: The business timestamp in UTC when the order was successfully
           registered in the source system and the payment was successful.
       order_total:
-        type: variant
+        type: object
         required: true
         primaryKey: false
         unique: false

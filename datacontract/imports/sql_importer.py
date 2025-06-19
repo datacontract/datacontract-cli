@@ -1,11 +1,17 @@
 import logging
 import os
+import re
 
 import sqlglot
 from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
+from datacontract.model.data_contract_specification import (
+    DataContractSpecification,
+    Field,
+    Model,
+    Server,
+)
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
@@ -18,16 +24,28 @@ class SqlImporter(Importer):
 
 
 def import_sql(
-    data_contract_specification: DataContractSpecification, format: str, source: str, import_args: dict = None
+    data_contract_specification: DataContractSpecification,
+    format: str,
+    source: str,
+    import_args: dict = None,
 ) -> DataContractSpecification:
-    sql = read_file(source)
-
     dialect = to_dialect(import_args)
 
+    server_type: str | None = to_server_type(source, dialect)
+    if server_type is not None:
+        data_contract_specification.servers[server_type] = Server(type=server_type)
+
+    sql = read_file(source)
+
+    parsed = None
+
     try:
-        parsed = sqlglot.parse_one(sql=sql, read=dialect)
+        parsed = sqlglot.parse_one(sql=sql, read=dialect.lower())
+
+        tables = parsed.find_all(sqlglot.expressions.Table)
+
     except Exception as e:
-        logging.error(f"Error parsing SQL: {str(e)}")
+        logging.error(f"Error simple-dd-parser SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
@@ -36,48 +54,90 @@ def import_sql(
             result=ResultEnum.error,
         )
 
-    server_type: str | None = to_server_type(source, dialect)
-    if server_type is not None:
-        data_contract_specification.servers[server_type] = Server(type=server_type)
-
-    tables = parsed.find_all(sqlglot.expressions.Table)
-
     for table in tables:
         if data_contract_specification.models is None:
             data_contract_specification.models = {}
 
-        table_name = table.this.name
-
-        fields = {}
-        for column in parsed.find_all(sqlglot.exp.ColumnDef):
-            if column.parent.this.name != table_name:
-                continue
-
-            field = Field()
-            col_name = column.this.name
-            col_type = to_col_type(column, dialect)
-            field.type = map_type_from_sql(col_type)
-            col_description = get_description(column)
-            field.description = col_description
-            field.maxLength = get_max_length(column)
-            precision, scale = get_precision_scale(column)
-            field.precision = precision
-            field.scale = scale
-            field.primaryKey = get_primary_key(column)
-            field.required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
-            physical_type_key = to_physical_type_key(dialect)
-            field.config = {
-                physical_type_key: col_type,
-            }
-
-            fields[col_name] = field
+        table_name, fields, table_description, table_tags = sqlglot_model_wrapper(table, parsed, dialect)
 
         data_contract_specification.models[table_name] = Model(
             type="table",
+            description=table_description,
+            tags=table_tags,
             fields=fields,
         )
 
     return data_contract_specification
+
+
+def sqlglot_model_wrapper(table, parsed, dialect):
+    table_description = None
+    table_tag = None
+
+    table_name = table.this.name
+
+    table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+    if table_comment_property:
+        table_description = table_comment_property.this.this
+
+    prop = parsed.find(sqlglot.expressions.Properties) 
+    if prop:
+        tags = prop.find(sqlglot.expressions.Tags)
+        if tags:
+            tag_enum = tags.find(sqlglot.expressions.Property)
+            table_tag = [str(t) for t in tag_enum]
+
+    fields = {}
+    for column in parsed.find_all(sqlglot.exp.ColumnDef):
+        if column.parent.this.name != table_name:
+            continue
+
+        field = Field()
+        col_name = column.this.name
+        col_type = to_col_type(column, dialect)
+        field.type = map_type_from_sql(col_type)
+        col_description = get_description(column)
+        field.description = col_description
+        field.maxLength = get_max_length(column)
+        precision, scale = get_precision_scale(column)
+        field.precision = precision
+        field.scale = scale
+        field.primaryKey = get_primary_key(column)
+        field.required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+        physical_type_key = to_physical_type_key(dialect)
+        field.tags = get_tags(column)
+        field.config = {
+            physical_type_key: col_type,
+        }
+
+        fields[col_name] = field
+
+    return table_name, fields, table_description, table_tag
+
+
+def map_physical_type(column, dialect) -> str | None:
+    autoincrement = ""
+    if column.get("autoincrement") and dialect == Dialects.SNOWFLAKE:
+        autoincrement = " AUTOINCREMENT" + " START " + str(column.get("start")) if column.get("start") else ""
+        autoincrement += " INCREMENT " + str(column.get("increment")) if column.get("increment") else ""
+        autoincrement += " NOORDER" if not column.get("increment_order") else ""
+    elif column.get("autoincrement"):
+        autoincrement = " IDENTITY"
+
+    if column.get("size") and isinstance(column.get("size"), tuple):
+        return (
+            column.get("type")
+            + "("
+            + str(column.get("size")[0])
+            + ","
+            + str(column.get("size")[1])
+            + ")"
+            + autoincrement
+        )
+    elif column.get("size"):
+        return column.get("type") + "(" + str(column.get("size")) + ")" + autoincrement
+    else:
+        return column.get("type") + autoincrement
 
 
 def get_primary_key(column) -> bool | None:
@@ -100,9 +160,7 @@ def to_dialect(import_args: dict) -> Dialects | None:
         return Dialects.TSQL
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
-    if dialect == "sqlserver":
-        return Dialects.TSQL
-    return None
+    return "None"
 
 
 def to_physical_type_key(dialect: Dialects | str | None) -> str:
@@ -154,9 +212,22 @@ def to_col_type_normalized(column):
 
 def get_description(column: sqlglot.expressions.ColumnDef) -> str | None:
     if column.comments is None:
-        return None
-    return " ".join(comment.strip() for comment in column.comments)
+        description = column.find(sqlglot.expressions.CommentColumnConstraint)
+        if description:
+            return description.this.this
+        else:
+            return None
+    return " ".join(comment.strip() for comment in column.comments)    
+    
 
+def get_tags(column: sqlglot.expressions.ColumnDef) -> str | None:
+    tags = column.find(sqlglot.expressions.Tags)
+    if tags:
+        tag_enum = tags.find(sqlglot.expressions.Property)
+        return [str(t) for t in tag_enum]
+    else:
+        return None
+            
 
 def get_max_length(column: sqlglot.expressions.ColumnDef) -> int | None:
     col_type = to_col_type_normalized(column)
@@ -222,17 +293,19 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "string"
     elif sql_type_normed.startswith("int"):
         return "int"
-    elif sql_type_normed.startswith("bigint"):
-        return "long"
     elif sql_type_normed.startswith("tinyint"):
         return "int"
     elif sql_type_normed.startswith("smallint"):
         return "int"
-    elif sql_type_normed.startswith("float"):
+    elif sql_type_normed.startswith("bigint"):
+        return "long"
+    elif sql_type_normed.startswith("float") or sql_type_normed.startswith("double") or sql_type_normed == "real":
         return "float"
-    elif sql_type_normed.startswith("decimal"):
+    elif sql_type_normed.startswith("number"):
         return "decimal"
     elif sql_type_normed.startswith("numeric"):
+        return "decimal"
+    elif sql_type_normed.startswith("decimal"):
         return "decimal"
     elif sql_type_normed.startswith("bool"):
         return "boolean"
@@ -252,6 +325,7 @@ def map_type_from_sql(sql_type: str) -> str | None:
         sql_type_normed == "timestamptz"
         or sql_type_normed == "timestamp_tz"
         or sql_type_normed == "timestamp with time zone"
+        or sql_type_normed == "timestamp_ltz"
     ):
         return "timestamp_tz"
     elif sql_type_normed == "timestampntz" or sql_type_normed == "timestamp_ntz":
@@ -271,7 +345,7 @@ def map_type_from_sql(sql_type: str) -> str | None:
     elif sql_type_normed == "xml":  # tsql
         return "string"
     else:
-        return "variant"
+        return "object"
 
 
 def read_file(path):
@@ -285,4 +359,5 @@ def read_file(path):
         )
     with open(path, "r") as file:
         file_content = file.read()
-    return file_content
+
+    return re.sub(r'\$\{(\w+)\}', r'\1', file_content)
