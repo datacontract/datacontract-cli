@@ -59,7 +59,7 @@ CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.orders (
   order_total BIGINT not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
   customer_id STRING COMMENT "Unique identifier for the customer.",
   customer_email_address STRING not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
-  discounts ARRAY<STRUCT<discount_code STRING, discount_amount BIGINT>> COMMENT "This is an array of records"
+  discounts ARRAY<STRUCT<discount_code:STRING,discount_amount:BIGINT>> COMMENT "This is an array of records"
 ) COMMENT "One record per order. Includes cancelled and deleted orders.";
 CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.line_items (
   lines_item_id STRING not null COMMENT "Primary key of the lines_item_id table",
@@ -83,7 +83,7 @@ CREATE OR REPLACE TABLE datacontract_staging.orders_latest.orders (
   order_total BIGINT not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
   customer_id STRING COMMENT "Unique identifier for the customer.",
   customer_email_address STRING not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
-  discounts ARRAY<STRUCT<discount_code STRING, discount_amount BIGINT>> COMMENT "This is an array of records"
+  discounts ARRAY<STRUCT<discount_code:STRING,discount_amount:BIGINT>> COMMENT "This is an array of records"
 ) COMMENT "One record per order. Includes cancelled and deleted orders.";
 CREATE OR REPLACE TABLE datacontract_staging.orders_latest.line_items (
   lines_item_id STRING not null COMMENT "Primary key of the lines_item_id table",
