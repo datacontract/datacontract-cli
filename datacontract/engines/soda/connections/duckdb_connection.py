@@ -132,10 +132,10 @@ def setup_s3_connection(con, server):
     use_ssl = "true"
     url_style = "vhost"
     if server.endpointUrl is not None:
+        url_style = "path"
         s3_endpoint = server.endpointUrl.removeprefix("http://").removeprefix("https://")
         if server.endpointUrl.startswith("http://"):
             use_ssl = "false"
-            url_style = "path"
 
     if s3_access_key_id is not None:
         if s3_session_token is not None:
