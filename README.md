@@ -1192,9 +1192,9 @@ FROM
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                       [sql|avro|dbt|dbml|glue|jsonsc  The format of the source file. │
-│                                   hema|bigquery|odcs|unity|spark  [default: None]                │
-│                                   |iceberg|parquet|csv|protobuf|  [required]                     │
-│                                   excel]                                                         │
+│                                   hema|json|bigquery|odcs|unity|  [default: None]                │
+│                                   spark|iceberg|parquet|csv|prot  [required]                     │
+│                                   obuf|excel]                                                    │
 │    --output                       PATH                            Specify the file path where    │
 │                                                                   the Data Contract will be      │
 │                                                                   saved. If no path is provided, │
@@ -1618,6 +1618,8 @@ datacontract catalog --files "*.odcs.yaml"
  information.                                                                                       
  To connect to servers (such as a Snowflake data source), set the credentials as environment        
  variables as documented in https://cli.datacontract.com/#test                                      
+ It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.: 
+ `datacontract api --port 1234 --root_path /datacontract`.                                          
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --port        INTEGER  Bind socket to this port. [default: 4242]                                 │
@@ -2000,6 +2002,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 - [INNOQ](https://innoq.com)
 - [Data Catering](https://data.catering/)
 - [Oliver Wyman](https://www.oliverwyman.com/)
+- [dmTECH](https://www.dmtech.tech/de)
 - And many more. To add your company, please create a pull request.
 
 ## Related Tools
