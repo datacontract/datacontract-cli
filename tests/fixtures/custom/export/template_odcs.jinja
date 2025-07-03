@@ -1,0 +1,13 @@
+{{ spec }} detected!
+
+{% if spec == 'odcs' -%}
+ID: {{ data_contract.id }}
+Data product: {{ data_contract.dataProduct }}
+Description:
+    purpose: {{ data_contract.description.purpose }}
+    limitations: {{ data_contract.description.limitations }}
+    usage: {{ data_contract.description.usage }}
+{%- else -%}
+ID: {{ data_contract.id }}
+Title: {{ data_contract.info.title }}
+{%- endif %}

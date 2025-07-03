@@ -1122,6 +1122,25 @@ datacontract export --format custom --template template.txt datacontract.yaml
 
 ##### Jinja variables
 
+You can directly use the Data Contract Specification (or Open Data Contract Standard object) as template variables using the `data_contract` variable.
+
+Additionally, a boolean variable `is_odcs_spec` is available in the template context. This variable will be `True` if the input data contract is an Open Data Contract Standard (ODCS) object, and `False` if it's a standard Data Contract Specification (DCS) object. You can use this to adapt your template logic.
+
+Example:
+```jinja
+{% if is_odcs_spec %}
+    <h1>Open Data Contract: {{ data_contract.name }}</h1>
+    <p>Version: {{ data_contract.version }} (Status: {{ data_contract.status }})</p>
+{% else %}
+    <h1>Data Contract: {{ data_contract.info.title }}</h1>
+    <p>Version: {{ data_contract.info.version }}</p>
+{% endif %}
+
+{# Common processing for models/schema regardless of type can follow #}
+{# For DCS: data_contract.models #}
+{# For ODCS: data_contract.schema_ #}
+```
+
 You can directly use the Data Contract Specification as template variables.
 
 ```shell

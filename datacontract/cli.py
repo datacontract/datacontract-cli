@@ -212,19 +212,30 @@ def export(
         Optional[Path],
         typer.Option(help="[custom] The file path of Jinja template."),
     ] = None,
+    spec: Annotated[
+        Optional[Spec],
+        Spec,
+        typer.Option(help="The format of the data contract to import. "),
+    ] = Spec.datacontract_specification,
 ):
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
+
     # TODO exception handling
-    result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
-        export_format=format,
-        model=model,
-        server=server,
-        rdf_base=rdf_base,
-        sql_server_type=sql_server_type,
-        engine=engine,
-        template=template,
+    result = DataContract(
+        data_contract_file=location,
+        schema_location=schema,
+        server=server
+        ).export(
+            export_format=format,
+            model=model,
+            server=server,
+            rdf_base=rdf_base,
+            sql_server_type=sql_server_type,
+            engine=engine,
+            template=template,
+            spec=spec
     )
     # Don't interpret console markup in output.
     if output is None:

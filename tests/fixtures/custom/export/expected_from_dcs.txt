@@ -1,0 +1,4 @@
+datacontract_specification detected!
+
+ID: urn:datacontract:checkout:orders-latest
+Title: Orders Latest
