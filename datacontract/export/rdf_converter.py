@@ -93,7 +93,7 @@ def add_example(contract, example, graph, dc, dcx):
     an_example = BNode()
     graph.add((contract, dc["example"], an_example))
     graph.add((an_example, RDF.type, URIRef(dc + "Example")))
-    for example_property in example.model_fields:
+    for example_property in type(example).model_fields:
         add_triple(sub=an_example, pred=example_property, obj=example, graph=graph, dc=dc, dcx=dcx)
 
 
@@ -119,7 +119,7 @@ def add_model(contract, model, model_name, graph, dc, dcx):
         graph.add((a_model, dc["field"], a_field))
         graph.add((a_field, RDF.type, URIRef(dc + "Field")))
         graph.add((a_field, dc["name"], Literal(field_name)))
-        for field_property in field.model_fields:
+        for field_property in type(field).model_fields:
             add_triple(sub=a_field, pred=field_property, obj=field, graph=graph, dc=dc, dcx=dcx)
 
 
@@ -127,7 +127,7 @@ def add_server(contract, server, server_name, graph, dc, dcx):
     a_server = URIRef(server_name)
     graph.add((contract, dc.server, a_server))
     graph.add((a_server, RDF.type, URIRef(dc + "Server")))
-    for server_property_name in server.model_fields:
+    for server_property_name in type(server).model_fields:
         add_triple(sub=a_server, pred=server_property_name, obj=server, graph=graph, dc=dc, dcx=dcx)
 
 
@@ -135,7 +135,7 @@ def add_terms(contract, terms, graph, dc, dcx):
     bnode_terms = BNode()
     graph.add((contract, dc.terms, bnode_terms))
     graph.add((bnode_terms, RDF.type, URIRef(dc + "Terms")))
-    for term_name in terms.model_fields:
+    for term_name in type(terms).model_fields:
         add_triple(sub=bnode_terms, pred=term_name, obj=terms, graph=graph, dc=dc, dcx=dcx)
 
 
@@ -155,7 +155,7 @@ def add_info(contract, info, graph, dc, dcx):
     contact = BNode()
     graph.add((bnode_info, dc.contact, contact))
     graph.add((contact, RDF.type, URIRef(dc + "Contact")))
-    for contact_property in info.contact.model_fields:
+    for contact_property in type(info.contact).model_fields:
         add_triple(sub=contact, pred=contact_property, obj=info.contact, graph=graph, dc=dc, dcx=dcx)
 
 

@@ -81,7 +81,7 @@ def _get_enum_values(field) -> dict:
     if not isinstance(values, dict):
         # If values is a BaseModel (or similar) with a .dict() method, use it.
         if hasattr(values, "dict") and callable(values.dict):
-            values_dict = values.dict()
+            values_dict = values.model_dump()
             return {k: v for k, v in values_dict.items() if k.isupper() and isinstance(v, int)}
         else:
             # Otherwise, iterate over attributes that look like enums.
