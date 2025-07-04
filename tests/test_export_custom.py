@@ -60,6 +60,22 @@ def test_cli_dcs():
     )
     assert result.exit_code == 0
 
+def test_cli_spec():
+    """Test that --spec is not allowed with other formats than custom."""
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "./fixtures/custom/export/full-example.odcs.yaml",
+            "--format",
+            "dbt",
+            "--spec",
+            "odcs",
+        ],
+    )
+    assert result.exit_code == 2
+    
 def test_to_custom():
     data_contract = DataContractSpecification.from_file("fixtures/custom/export/datacontract.yaml")
     template = Path("fixtures/custom/export/template.sql")
