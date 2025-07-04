@@ -14,7 +14,7 @@ def test_valid_cli():
 
     result = runner.invoke(app, ["test", "./fixtures/local-delta/datacontract.yaml"])
     assert result.exit_code == 0
-    assert "Testing ./tests/fixtures/local-delta/datacontract.yaml" in result.stdout
+    assert "Testing ./fixtures/local-delta/datacontract.yaml" in result.stdout
 
 
 def test_valid():
