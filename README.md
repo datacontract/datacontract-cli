@@ -1905,7 +1905,7 @@ models:
 ```
 ## Development Setup
 
-Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).
+Python base interpreter should be 3.11.x (unless working on 3.12 release candidate). A running Docker daemon is required for executing the tests.
 
 ```bash
 # create venv
