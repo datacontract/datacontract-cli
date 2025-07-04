@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 from open_data_contract_standard.model import OpenDataContractStandard
+
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Model,

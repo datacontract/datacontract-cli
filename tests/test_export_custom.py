@@ -1,12 +1,12 @@
 from pathlib import Path
 
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
-from datacontract.export.exporter import Spec
 
 from datacontract.cli import app
 from datacontract.export.custom_converter import to_custom
+from datacontract.export.exporter import Spec
 from datacontract.model.data_contract_specification import DataContractSpecification
-from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 

@@ -1,12 +1,13 @@
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
+from open_data_contract_standard.model import OpenDataContractStandard
+
 from datacontract.export.exporter import Exporter, Spec
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Model,
 )
-from open_data_contract_standard.model import OpenDataContractStandard
 
 
 class CustomExporter(Exporter):
