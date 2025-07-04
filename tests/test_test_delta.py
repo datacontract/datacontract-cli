@@ -12,14 +12,14 @@ def test_valid_cli():
     current_file_path = os.path.abspath(__file__)
     print("DEBUG Current file path:" + current_file_path)
 
-    result = runner.invoke(app, ["test", "./tests/fixtures/local-delta/datacontract.yaml"])
+    result = runner.invoke(app, ["test", "./fixtures/local-delta/datacontract.yaml"])
     assert result.exit_code == 0
     assert "Testing ./tests/fixtures/local-delta/datacontract.yaml" in result.stdout
 
 
 def test_valid():
     data_contract = DataContract(
-        data_contract_file="./tests/fixtures/local-delta/datacontract.yaml",
+        data_contract_file="./fixtures/local-delta/datacontract.yaml",
         # publish=True,
     )
     run = data_contract.test()
