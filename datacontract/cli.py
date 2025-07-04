@@ -213,16 +213,17 @@ def export(
         typer.Option(help="[custom] The file path of Jinja template."),
     ] = None,
     spec: Annotated[
+        Optional[Spec],
         Spec,
         typer.Option(help="The format of the data contract to import. "),
-    ] = Spec.datacontract_specification,
+    ] = None,
 ):
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
 
-    if spec is not None and format != ExportFormat.custom:
-        raise typer.BadParameter("--spec is only allowed with --format custom.")
+    if spec == Spec.odcs and format != ExportFormat.custom:
+        raise typer.BadParameter("'--spec odcs' is only allowed with '--format custom'.")
 
     result = DataContract(
         data_contract_file=location,
