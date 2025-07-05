@@ -6,7 +6,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 def test_export_sodacl():
     data_contract_specification_str = """
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 models:
   orders:
     description: test
