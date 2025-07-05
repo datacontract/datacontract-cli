@@ -20,8 +20,7 @@ Order may be linked and joined by other tables
 Data may not be used to identify individual customers.
 Max data processing per day: 10 TiB
 
-- **policies:
-  ** [{'url': 'https://example.com/privacy-policy', 'name': 'privacy-policy'}, {'description': 'External data is licensed under agreement 1234.', 'url': 'https://example.com/license/1234', 'name': 'license'}]
+- **policies:** [{'url': 'https://example.com/privacy-policy', 'name': 'privacy-policy'}, {'description': 'External data is licensed under agreement 1234.', 'url': 'https://example.com/license/1234', 'name': 'license'}]
 - **billing:** 5000 USD per month
 - **noticePeriod:** P3M
 
