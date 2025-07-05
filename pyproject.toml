@@ -138,7 +138,7 @@ dev = [
   "pymssql==2.3.6",
   "ruff",
   "testcontainers[minio,postgres,kafka,mssql]==4.10.0",
-  "trino==0.334.0",
+  "trino==0.335.0",
 ]
 
 [project.urls]
