@@ -1,0 +1,46 @@
+dataContractSpecification: 1.2.0
+id: warehouses
+info:
+  title: Warehouses
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  gcs-url:
+    type: gcs
+    location: gs://datacontract-test-inventory/warehouses.csv
+    format: csv
+  s3-style:
+    type: s3
+    endpointUrl: https://storage.googleapis.com
+    location: s3://datacontract-test-inventory/warehouses.csv
+    format: csv
+models:
+  warehouses:
+    type: table
+    fields:
+      warehouse_id:
+        type: integer
+        examples:
+          - 1
+      name:
+        type: string
+        examples:
+          - "Warehouse One"
+      address:
+        type: string
+        examples:
+          - "123 Warehouse St"
+      postal_code:
+        type: string
+        examples:
+          - "12345"
+      city:
+        type: string
+        examples:
+          - "Warehouse City"
+      country_iso_code:
+        type: string
+        enum:
+          - "US"
+          - "DE"
+

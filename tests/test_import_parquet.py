@@ -24,7 +24,7 @@ def test_cli():
 def test_import_parquet():
     result = DataContract().import_from_source(format="parquet", source=parquet_file_path)
 
-    expected = """dataContractSpecification: 1.1.0
+    expected = """dataContractSpecification: 1.2.0
 id: my-data-contract-id
 info:
   title: My Data Contract
