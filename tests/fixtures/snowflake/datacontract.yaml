@@ -1,4 +1,4 @@
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: urn:datacontract:checkout:snowflake_orders_pii_v2
 info:
   title: Orders

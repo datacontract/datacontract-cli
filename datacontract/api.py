@@ -10,7 +10,7 @@ from fastapi.security.api_key import APIKeyHeader
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.run import Run
 
-DATA_CONTRACT_EXAMPLE_PAYLOAD = """dataContractSpecification: 1.1.0
+DATA_CONTRACT_EXAMPLE_PAYLOAD = """dataContractSpecification: 1.2.0
 id: urn:datacontract:checkout:orders-latest
 info:
   title: Orders Latest

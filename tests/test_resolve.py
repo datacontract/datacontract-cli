@@ -8,7 +8,7 @@ from datacontract.lint.resolve import resolve_data_contract
 def test_resolve_data_contract_simple_definition():
     datacontract = resolve_data_contract(
         data_contract_str="""
-    dataContractSpecification: 1.1.0
+    dataContractSpecification: 1.2.0
     id: my-id
     info:
       title: My Title
@@ -31,7 +31,7 @@ def test_resolve_data_contract_simple_definition():
 def test_resolve_data_contract_complex_definition():
     datacontract = resolve_data_contract(
         data_contract_str="""
-    dataContractSpecification: 1.1.0
+    dataContractSpecification: 1.2.0
     id: my-id
     info:
       title: My Title
@@ -57,7 +57,7 @@ def test_resolve_data_contract_complex_definition():
 def test_resolve_data_contract_array_definition():
     datacontract = resolve_data_contract(
         data_contract_str="""
-    dataContractSpecification: 1.1.0
+    dataContractSpecification: 1.2.0
     id: my-id
     info:
       title: My Title
@@ -87,7 +87,7 @@ def test_resolve_data_contract_array_definition():
 def test_resolve_data_contract_nested_definition():
     datacontract = resolve_data_contract(
         data_contract_str="""
-    dataContractSpecification: 1.1.0
+    dataContractSpecification: 1.2.0
     id: my-id
     info:
       title: My Title
@@ -124,7 +124,7 @@ def test_resolve_data_contract_simple_definition_file():
 
         datacontract = resolve_data_contract(
             data_contract_str=f"""
-        dataContractSpecification: 1.1.0
+        dataContractSpecification: 1.2.0
         id: my-id
         info:
           title: My Title
@@ -155,7 +155,7 @@ def test_resolve_data_contract_complex_definition_file():
 
         datacontract = resolve_data_contract(
             data_contract_str=f"""
-        dataContractSpecification: 1.1.0
+        dataContractSpecification: 1.2.0
         id: my-id
         info:
           title: My Title
@@ -192,7 +192,7 @@ def test_resolve_data_contract_relative_refrence():
 
         datacontract = resolve_data_contract(
             data_contract_str=f"""
-        dataContractSpecification: 1.1.0
+        dataContractSpecification: 1.2.0
         id: my-id
         info:
           title: My Title

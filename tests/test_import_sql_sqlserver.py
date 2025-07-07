@@ -9,7 +9,7 @@ def test_import_sql_sqlserver():
     result = DataContract().import_from_source("sql", sql_file_path, dialect="sqlserver")
 
     expected = """
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: my-data-contract-id
 info:
   title: My Data Contract
