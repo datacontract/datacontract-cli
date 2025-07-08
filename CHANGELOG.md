@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Use `&#x2007;` instead of `&numsp;` for tab in Markdown export.
+
 ## [0.10.29] - 2025-07-06
 
 ### Added
