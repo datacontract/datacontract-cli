@@ -4,8 +4,8 @@ It includes definitions for exporting different types of data (pandas, Spark, SQ
 Great Expectations expectations format.
 """
 
-import json
 from enum import Enum
+import json
 from typing import Any, Dict, List
 
 import yaml
@@ -14,7 +14,6 @@ from datacontract.export.exporter import (
     Exporter,
     _check_models_for_export,
 )
-
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     DeprecatedQuality,
