@@ -2,7 +2,6 @@ import logging
 import os
 import re
 
-
 import sqlglot
 from sqlglot.dialects.dialect import Dialects
 
