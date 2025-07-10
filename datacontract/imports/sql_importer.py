@@ -45,7 +45,7 @@ def import_sql(
         tables = parsed.find_all(sqlglot.expressions.Table)
 
     except Exception as e:
-        logging.error(f"Error simple-dd-parser SQL: {str(e)}")
+        logging.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
