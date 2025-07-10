@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.28"
+version = "0.10.29"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -15,7 +15,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "typer>=0.15.1,<0.16",
+  "typer>=0.15.1,<0.17",
   "pydantic>=2.8.2,<2.12.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
@@ -33,7 +33,7 @@ dependencies = [
   "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
-  "datacontract-specification>=1.1.1,<2.0.0",
+  "datacontract-specification>=1.2.0,<2.0.0",
   "open-data-contract-standard>=3.0.4,<4.0.0",
 ]
 
@@ -80,7 +80,7 @@ postgres = [
 
 s3 = [
   "s3fs>=2025.2.0,<2026.0.0",
-  "aiobotocore>=2.17.0,<2.24.0",
+  "aiobotocore>=2.17.0,<2.23.0",
 ]
 
 snowflake = [
@@ -113,8 +113,8 @@ rdf = [
 ]
 
 api = [
-  "fastapi==0.115.13",
-  "uvicorn==0.34.3",
+  "fastapi==0.115.14",
+  "uvicorn==0.35.0",
 ]
 
 protobuf = [
@@ -135,10 +135,10 @@ dev = [
   "pre-commit>=3.7.1,<4.3.0",
   "pytest",
   "pytest-xdist",
-  "pymssql==2.3.4",
+  "pymssql==2.3.6",
   "ruff",
   "testcontainers[minio,postgres,kafka,mssql]==4.10.0",
-  "trino==0.334.0",
+  "trino==0.335.0",
 ]
 
 [project.urls]

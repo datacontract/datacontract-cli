@@ -303,7 +303,7 @@ def _resolve_data_contract_from_str(
         # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
         odcs = parse_odcs_v3_from_str(data_contract_str)
 
-        data_contract_specification = DataContractSpecification(dataContractSpecification="1.1.0")
+        data_contract_specification = DataContractSpecification(dataContractSpecification="1.2.0")
         return import_from_odcs(data_contract_specification, odcs)
 
     logging.info("Importing DCS")
