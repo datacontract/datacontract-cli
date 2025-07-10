@@ -194,8 +194,8 @@ def convert_to_databricks(field: Field) -> None | str:
         nested_fields = []
         for nested_field_name, nested_field in field.fields.items():
             nested_field_type = convert_to_databricks(nested_field)
-            nested_fields.append(f"{nested_field_name} {nested_field_type}")
-        return f"STRUCT<{', '.join(nested_fields)}>"
+            nested_fields.append(f"{nested_field_name}:{nested_field_type}")
+        return f"STRUCT<{','.join(nested_fields)}>"
     if type.lower() in ["bytes"]:
         return "BINARY"
     if type.lower() in ["array"]:
