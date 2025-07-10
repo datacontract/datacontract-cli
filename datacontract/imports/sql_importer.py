@@ -2,6 +2,7 @@ import logging
 import os
 import re
 
+
 import sqlglot
 from sqlglot.dialects.dialect import Dialects
 
@@ -58,34 +59,27 @@ def import_sql(
         if data_contract_specification.models is None:
             data_contract_specification.models = {}
 
-        table_name, fields, table_description, table_tags = sqlglot_model_wrapper(table, parsed, dialect)
-
-        data_contract_specification.models[table_name] = Model(
-            type="table",
-            description=table_description,
-            tags=table_tags,
-            fields=fields,
+        data_contract_specification.models[table.this.name] = get_model_from_parsed(
+            table_name=table.this.name, parsed=parsed, dialect=dialect
         )
 
     return data_contract_specification
 
 
-def sqlglot_model_wrapper(table, parsed, dialect):
+def get_model_from_parsed(table_name, parsed, dialect) -> Model:
     table_description = None
-    table_tag = None
-
-    table_name = table.this.name
+    table_tags = None
 
     table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
     if table_comment_property:
         table_description = table_comment_property.this.this
 
-    prop = parsed.find(sqlglot.expressions.Properties) 
+    prop = parsed.find(sqlglot.expressions.Properties)
     if prop:
         tags = prop.find(sqlglot.expressions.Tags)
         if tags:
             tag_enum = tags.find(sqlglot.expressions.Property)
-            table_tag = [str(t) for t in tag_enum]
+            table_tags = [str(t) for t in tag_enum]
 
     fields = {}
     for column in parsed.find_all(sqlglot.exp.ColumnDef):
@@ -112,7 +106,12 @@ def sqlglot_model_wrapper(table, parsed, dialect):
 
         fields[col_name] = field
 
-    return table_name, fields, table_description, table_tag
+    return Model(
+        type="table",
+        description=table_description,
+        tags=table_tags,
+        fields=fields,
+    )
 
 
 def map_physical_type(column, dialect) -> str | None:
@@ -217,8 +216,8 @@ def get_description(column: sqlglot.expressions.ColumnDef) -> str | None:
             return description.this.this
         else:
             return None
-    return " ".join(comment.strip() for comment in column.comments)    
-    
+    return " ".join(comment.strip() for comment in column.comments)
+
 
 def get_tags(column: sqlglot.expressions.ColumnDef) -> str | None:
     tags = column.find(sqlglot.expressions.Tags)
@@ -227,7 +226,7 @@ def get_tags(column: sqlglot.expressions.ColumnDef) -> str | None:
         return [str(t) for t in tag_enum]
     else:
         return None
-            
+
 
 def get_max_length(column: sqlglot.expressions.ColumnDef) -> int | None:
     col_type = to_col_type_normalized(column)
@@ -360,4 +359,4 @@ def read_file(path):
     with open(path, "r") as file:
         file_content = file.read()
 
-    return re.sub(r'\$\{(\w+)\}', r'\1', file_content)
+    return re.sub(r"\$\{(\w+)\}", r"\1", file_content)
