@@ -13,7 +13,9 @@ class Exporter(ABC):
         self.export_format = export_format
 
     @abstractmethod
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict | str:
+    def export(
+        self, data_contract, model, server, sql_server_type, export_args
+    ) -> dict | str:
         pass
 
 
@@ -44,6 +46,7 @@ class ExportFormat(str, Enum):
     dcs = "dcs"
     markdown = "markdown"
     iceberg = "iceberg"
+    excel = "excel"
     custom = "custom"
 
     @classmethod
@@ -55,7 +58,9 @@ def _check_models_for_export(
     data_contract: DataContractSpecification, model: str, export_format: str
 ) -> typing.Tuple[str, Model]:
     if data_contract.models is None:
-        raise RuntimeError(f"Export to {export_format} requires models in the data contract.")
+        raise RuntimeError(
+            f"Export to {export_format} requires models in the data contract."
+        )
 
     model_names = list(data_contract.models.keys())
 
@@ -70,18 +75,26 @@ def _check_models_for_export(
         model_name = model
         model_value = data_contract.models.get(model_name)
         if model_value is None:
-            raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+            raise RuntimeError(
+                f"Model {model_name} not found in the data contract. Available models: {model_names}"
+            )
 
     return model_name, model_value
 
 
-def _determine_sql_server_type(data_contract: DataContractSpecification, sql_server_type: str, server: str = None):
+def _determine_sql_server_type(
+    data_contract: DataContractSpecification, sql_server_type: str, server: str = None
+):
     if sql_server_type == "auto":
         if data_contract.servers is None or len(data_contract.servers) == 0:
-            raise RuntimeError("Export with server_type='auto' requires servers in the data contract.")
+            raise RuntimeError(
+                "Export with server_type='auto' requires servers in the data contract."
+            )
 
         if server is None:
-            server_types = set([server.type for server in data_contract.servers.values()])
+            server_types = set(
+                [server.type for server in data_contract.servers.values()]
+            )
         else:
             server_types = {data_contract.servers[server].type}
 
