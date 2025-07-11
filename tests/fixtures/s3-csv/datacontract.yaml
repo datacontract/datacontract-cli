@@ -26,3 +26,7 @@ models:
         minimum: 10
       field_three:
         type: timestamp
+    quality:
+      - type: sql
+        query: "SELECT count(*) FROM my_table"
+        mustBeGreaterThan: 0
