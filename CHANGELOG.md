@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Fix: Excel Import should return ODCS YAML (#829)
+
 ### Changed
 - Use `&#x2007;` instead of `&numsp;` for tab in Markdown export.
 
