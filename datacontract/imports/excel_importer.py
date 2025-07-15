@@ -680,7 +680,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
                 elif server_type == "databricks":
                     server.catalog = get_server_cell_value(workbook, sheet, "servers.databricks.catalog", index)
                     server.host = get_server_cell_value(workbook, sheet, "servers.databricks.host", index)
-                    server.schema = get_server_cell_value(workbook, sheet, "servers.databricks.schema", index)
+                    server.schema_ = get_server_cell_value(workbook, sheet, "servers.databricks.schema", index)
                 elif server_type == "glue":
                     server.account = get_server_cell_value(workbook, sheet, "servers.glue.account", index)
                     server.database = get_server_cell_value(workbook, sheet, "servers.glue.database", index)
@@ -694,7 +694,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
                     server.database = get_server_cell_value(workbook, sheet, "servers.postgres.database", index)
                     server.host = get_server_cell_value(workbook, sheet, "servers.postgres.host", index)
                     server.port = get_server_cell_value(workbook, sheet, "servers.postgres.port", index)
-                    server.schema = get_server_cell_value(workbook, sheet, "servers.postgres.schema", index)
+                    server.schema_ = get_server_cell_value(workbook, sheet, "servers.postgres.schema", index)
                 elif server_type == "s3":
                     server.delimiter = get_server_cell_value(workbook, sheet, "servers.s3.delimiter", index)
                     server.endpointUrl = get_server_cell_value(workbook, sheet, "servers.s3.endpointUrl", index)
@@ -705,13 +705,13 @@ def import_servers(workbook) -> Optional[List[Server]]:
                     server.database = get_server_cell_value(workbook, sheet, "servers.snowflake.database", index)
                     server.host = get_server_cell_value(workbook, sheet, "servers.snowflake.host", index)
                     server.port = get_server_cell_value(workbook, sheet, "servers.snowflake.port", index)
-                    server.schema = get_server_cell_value(workbook, sheet, "servers.snowflake.schema", index)
+                    server.schema_ = get_server_cell_value(workbook, sheet, "servers.snowflake.schema", index)
                     server.warehouse = get_server_cell_value(workbook, sheet, "servers.snowflake.warehouse", index)
                 elif server_type == "sqlserver":
                     server.database = get_server_cell_value(workbook, sheet, "servers.sqlserver.database", index)
                     server.host = get_server_cell_value(workbook, sheet, "servers.sqlserver.host", index)
                     server.port = get_server_cell_value(workbook, sheet, "servers.sqlserver.port", index)
-                    server.schema = get_server_cell_value(workbook, sheet, "servers.sqlserver.schema", index)
+                    server.schema_ = get_server_cell_value(workbook, sheet, "servers.sqlserver.schema", index)
                 else:
                     # Custom server type - grab all possible fields
                     server.account = get_server_cell_value(workbook, sheet, "servers.custom.account", index)
@@ -726,7 +726,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
                     server.path = get_server_cell_value(workbook, sheet, "servers.custom.path", index)
                     server.port = get_server_cell_value(workbook, sheet, "servers.custom.port", index)
                     server.project = get_server_cell_value(workbook, sheet, "servers.custom.project", index)
-                    server.schema = get_server_cell_value(workbook, sheet, "servers.custom.schema", index)
+                    server.schema_ = get_server_cell_value(workbook, sheet, "servers.custom.schema", index)
                     server.stagingDir = get_server_cell_value(workbook, sheet, "servers.custom.stagingDir", index)
                     server.table = get_server_cell_value(workbook, sheet, "servers.custom.table", index)
                     server.view = get_server_cell_value(workbook, sheet, "servers.custom.view", index)
