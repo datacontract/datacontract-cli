@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [0.10.30] - 2025-07-15
+
 ### Fixed
 - Excel Import should return ODCS YAML (#829)
 - Excel Import: Missing server section when the server included a schema property (#823)
