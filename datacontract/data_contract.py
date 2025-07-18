@@ -4,7 +4,7 @@ import typing
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard
 
 from datacontract.export.odcs_v3_exporter import to_odcs_v3
-from datacontract.imports.importer import Spec
+from datacontract.imports.importer import ImportFormat, Spec
 from datacontract.imports.odcs_v3_importer import import_from_odcs
 
 if typing.TYPE_CHECKING:
@@ -300,7 +300,7 @@ class DataContract:
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        if spec == Spec.odcs:
+        if spec == Spec.odcs or format == ImportFormat.excel:
             data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
             odcs_imported = importer_factory.create(format).import_source(

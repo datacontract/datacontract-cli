@@ -153,7 +153,7 @@ def field_to_markdown(field_name: str, field: Field, level: int = 0) -> str:
     Returns:
         str: A Markdown table rows for the field.
     """
-    tabs = "&numsp;" * level
+    tabs = "&#x2007;" * level
     arrow = "&#x21b3;" if level > 0 else ""
     column_name = f"{tabs}{arrow} {field_name}"
 

@@ -6,10 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-### Added
-- `datacontract import --format json`: Import from JSON files
+
+
+## [0.10.30] - 2025-07-15
+
+### Fixed
+- Excel Import should return ODCS YAML (#829)
+- Excel Import: Missing server section when the server included a schema property (#823)
+
+### Changed
+- Use `&#x2007;` instead of `&numsp;` for tab in Markdown export.
+
+## [0.10.29] - 2025-07-06
 
 ### Added
+- Support for Data Contract Specification v1.2.0
+- `datacontract import --format json`: Import from JSON files
 
 ### Changed
 - `datacontract api [OPTIONS]`: Added option to pass extra arguments for `uvicorn.run()`

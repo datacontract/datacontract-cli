@@ -8,7 +8,7 @@ from datacontract.imports.iceberg_importer import load_and_validate_iceberg_sche
 from datacontract.model.exceptions import DataContractException
 
 expected = """
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: my-data-contract-id
 info:
   title: My Data Contract

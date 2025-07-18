@@ -1893,7 +1893,7 @@ if __name__ == "__main__":
 Output
 
 ```yaml
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: uuid-custom
 info:
   title: my_custom_imported_data
@@ -1912,22 +1912,9 @@ models:
 ```
 ## Development Setup
 
-Python base interpreter should be 3.11.x (unless working on 3.12 release candidate).
-
-```bash
-# create venv
-python3.11 -m venv venv
-source venv/bin/activate
-
-# Install Requirements
-pip install --upgrade pip setuptools wheel
-pip install -e '.[dev]'
-pre-commit install
-pre-commit run --all-files
-pytest
-```
-
-### Use uv (recommended)
+- Install [uv](https://docs.astral.sh/uv/)
+- Python base interpreter should be 3.11.x .
+- Docker engine must be running to execute the tests.
 
 ```bash
 # make sure uv is installed

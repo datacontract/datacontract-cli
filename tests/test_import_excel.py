@@ -23,6 +23,7 @@ def test_cli():
         ],
     )
     assert result.exit_code == 0
+    assert "kind: DataContract" in result.stdout
 
 
 def test_import_excel_odcs():
