@@ -22,6 +22,8 @@ models:
         required: true
         description: A required String field with a maximum length
         maxLength: 42
+        config: 
+          bigqueryType: STRING(42)
       Bytes field:
         type: bytes
         required: false
@@ -51,11 +53,13 @@ models:
         required: false
         description: A Date field
       Time_Field:
-        type: timestamp_ntz
+        type: object
         required: false
         description: A time field
+        config: 
+          bigqueryType: TIME       
       Datetime_Field:
-        type: timestamp
+        type: timestamp_ntz
         required: false
         description: A Datetime field
       Numeric_Field:
@@ -64,14 +68,18 @@ models:
         description: A Numeric field with precision 5 and scale 3
         precision: 5
         scale: 3
+        config: 
+          bigqueryType: NUMERIC(5, 3)
       Bignumeric_field:
         type: double
         required: false
         description: A bignumeric field with precision 8 and sclae 4
         precision: 8
         scale: 4
+        config: 
+          bigqueryType: BIGNUMERIC(8, 4)
       Record_field:
-        type: object
+        type: struct
         required: false
         description: A record field with two subfields
         fields:
@@ -80,7 +88,7 @@ models:
             required: false
             description: subfield 1 of type string
           subfield_2:
-            type: int
+            type: bigint
             required: false
             description: Subfield 2 of type integer
       Range_field:
@@ -88,12 +96,44 @@ models:
         required: false
         description: a datetime range
         items:
-          type: timestamp
+          type: timestamp_ntz
       Geography_Field:
         type: object
         required: false
         description: a geography field
+        config: 
+          bigqueryType: GEOGRAPHY
       JSON_Field:
         type: object
         required: false
         description: a json field
+        config: 
+          bigqueryType: JSON
+      Array_of_string:
+        type: array
+        required: false
+        description: an array of string
+        items: 
+          type: string      
+      Array_of_int:
+        type: array
+        required: false
+        description: an array of int
+        items: 
+          type: bigint
+      Array_of_struct_col:
+        type: array
+        required: false
+        description: an array of objects that has multiple fields that should carry through
+        items: 
+          type: record
+          fields: 
+            Id: 
+              type: bigint
+              required: false
+              description: an id field
+            Name: 
+              type: string
+              required: false
+              description: a name field
+      
