@@ -329,3 +329,6 @@ fabric.properties
 
 # Generated test files
 **/.tmp
+
+# Devcontainer setup
+.devcontainer/
