@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.10.31] - 2025-07-18
+
+### Added
+- Added support for Variant with Spark exporter, data_contract.test(), and import as source unity catalog (#792)
+
 
 ## [0.10.30] - 2025-07-15
 

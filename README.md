@@ -924,8 +924,6 @@ If using Databricks, and an error is thrown when trying to deploy the SQL DDLs w
 
 ```shell
 spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
-from datacontract.model import data_contract_specification
-data_contract_specification.DATACONTRACT_TYPES.append(“variant”)
 ```
 
 #### Great Expectations
@@ -1989,7 +1987,6 @@ We are happy to receive your contributions. Propose your change in an issue or d
 - [INNOQ](https://innoq.com)
 - [Data Catering](https://data.catering/)
 - [Oliver Wyman](https://www.oliverwyman.com/)
-- [dmTECH](https://www.dmtech.tech/de)
 - And many more. To add your company, please create a pull request.
 
 ## Related Tools
