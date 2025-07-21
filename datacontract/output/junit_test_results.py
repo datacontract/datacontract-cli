@@ -56,19 +56,19 @@ def write_junit_test_results(run: Run, console, output_path: Path):
                 type=check.category if check.category else "General",
             )
             error.text = to_failure_text(check)
-        elif check.result is ResultEnum.warning:
+        elif check.result == ResultEnum.warning:
             skipped = ET.SubElement(
                 testcase,
                 "skipped",
                 message=check.reason if check.reason else "Warning",
                 type=check.category if check.category else "General",
             )
-            skipped.skipped = to_failure_text(check)
+            skipped.text = to_failure_text(check)
         else:
             ET.SubElement(
                 testcase,
                 "skipped",
-                message=check.reason if check.reason else "None",
+                message=check.reason if check.reason else "Skipped",
                 type=check.category if check.category else "General",
             )
 
