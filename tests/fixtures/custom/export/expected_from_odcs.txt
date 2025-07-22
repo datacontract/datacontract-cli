@@ -1,0 +1,8 @@
+odcs detected!
+
+ID: 53581432-6c55-4ba2-a65f-72344a91553a
+Data product: my quantum
+Description:
+    purpose: Views built on top of the seller tables.
+    limitations: Data based on seller perspective, no buyer information
+    usage: Predict sales over time

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Excel Import: Missing server section when the server included a schema property (#823)
 
 ### Changed
+- `datacontract export [OPTIONS]`: Export to custom format with an ODCS native template via `export --format custom --spec odcs` 
 - Use `&#x2007;` instead of `&numsp;` for tab in Markdown export.
 
 ## [0.10.29] - 2025-07-06

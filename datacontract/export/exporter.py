@@ -2,6 +2,8 @@ import typing
 from abc import ABC, abstractmethod
 from enum import Enum
 
+from open_data_contract_standard.model import OpenDataContractStandard
+
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Model,
@@ -13,7 +15,13 @@ class Exporter(ABC):
         self.export_format = export_format
 
     @abstractmethod
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict | str:
+    def export(
+        self,
+        data_contract: DataContractSpecification | OpenDataContractStandard, 
+        model, 
+        server,
+        sql_server_type, 
+        export_args) -> dict | str:
         pass
 
 
@@ -96,3 +104,11 @@ def _determine_sql_server_type(data_contract: DataContractSpecification, sql_ser
             return "snowflake"
     else:
         return sql_server_type
+
+class Spec(str, Enum):
+    datacontract_specification = "datacontract_specification"
+    odcs = "odcs"
+
+    @classmethod
+    def get_supported_types(cls):
+        return list(map(lambda c: c.value, cls))

@@ -1112,13 +1112,22 @@ to limit your contract export to a single model.
 
 #### Custom
 
-The export function converts the data contract specification into the custom format with Jinja. You can specify the path to a Jinja template with the `--template` argument, allowing you to output files in any format.
+The export function converts the data contract specification into a custom format using Jinja templates. You must specify the path to a Jinja template with the `--template` argument, and you can use the `--spec` option to explicitly define the data contract specification ("`datacontract_specification`" or "`odcs`").
+
 
 ```shell
+# Custom export uses Data Contract Specification by default
 datacontract export --format custom --template template.txt datacontract.yaml
+
+# Custom export from Open Data Contract Standard
+datacontract export --format custom --template template.txt --spec odcs contract.odcs.yaml
 ```
 
 ##### Jinja variables
+
+The following variables are directly available as template variables :
+- `data_contract` : the data contract object, either DCS or ODCS
+- `spec` : string that represents the data contract specification (`"datacontract_specification"` ou `"odcs"`)
 
 You can directly use the Data Contract Specification as template variables.
 
@@ -1128,6 +1137,19 @@ title: {{ data_contract.info.title }}
 
 $ datacontract export --format custom --template template.txt datacontract.yaml
 title: Orders Latest
+```
+
+Using `spec` allow you to apply conditional formatting logic in your templates, based on the data contract specification.
+
+Example:
+```jinja
+{% if spec == "odcs" %}
+    <h1>Open Data Contract: {{ data_contract.name }}</h1>
+    <p>Version: {{ data_contract.version }} (Status: {{ data_contract.status }})</p>
+{% else %}
+    <h1>Data Contract: {{ data_contract.info.title }}</h1>
+    <p>Version: {{ data_contract.info.version }}</p>
+{% endif %}
 ```
 
 ##### Example Jinja Templates
