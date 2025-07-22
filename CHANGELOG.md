@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- JUnit Test Report: Fixed incorrect syntax on handling warning test report. (#833)
+
 ## [0.10.31] - 2025-07-18
 
 ### Added
