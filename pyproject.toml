@@ -60,7 +60,7 @@ databricks = [
   "soda-core-spark-df>=3.3.20,<3.6.0",
   "soda-core-spark[databricks]>=3.3.20,<3.6.0",
   "databricks-sql-connector>=3.7.0,<4.1.0",
-  "databricks-sdk<0.59.0",
+  "databricks-sdk<0.60.0",
   "pyspark>=3.5.5,<4.0.0",
 ]
 
