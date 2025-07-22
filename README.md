@@ -910,7 +910,7 @@ Available export options:
 | `markdown`           | Export to Markdown                                      | ✅      |
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
 | `custom`             | Export to Custom format with Jinja                      | ✅      |
-| Missing something?   | Please create an issue on GitHub                        | TBD    |
+| Missing something?   | Please create an issue on GitHub                        | TBD     |
 
 #### SQL
 
@@ -939,6 +939,38 @@ The export creates a list of expectations by utilizing:
 
 - The data from the Model definition with a fixed mapping
 - The expectations provided in the quality field for each model (find here the expectations gallery: [Great Expectations Gallery](https://greatexpectations.io/expectations/))
+
+#### Markdown
+
+The `export` function converts a given data contract into a Markdown document.
+
+```shell
+datacontract export datacontract.yaml --format markdown --output output.md
+```
+
+For compatibility reasons, the Markdown exporter makes a couple design decisions.
+
+1. Structures that will normally be bulletpoints in Markdown, begin with a newline, thus ensuring the output document will render on all renderers correctly.
+
+So instead of generating:
+
+```
+Text
+- bulletpoint
+- bulletpoint 2
+```
+
+The exporter will generate the following:
+
+```
+Text
+
+- bulletpoint
+
+- bulletpoint 2
+```
+
+2. When handling server tables and model tables, table cells with multiple lines delimited by HTML break tag will not be generated. This is a GitLab Flavor Markdown feature, and it will not render correctly on renderers that only support CommonMark. Instead, the table will be expanded with additional columns to accomodate all attributes.
 
 ##### Additional Arguments
 
