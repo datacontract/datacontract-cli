@@ -346,6 +346,13 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "object"
 
 
+def remove_variable_tokens(sql_script: str) -> str:
+    ## to cleanse sql statement's script token like $(...) in sqlcmd for T-SQL langage and/or ${...} for liquibase
+    ## https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-use-scripting-variables?view=sql-server-ver17#b-use-the-setvar-command-interactively
+    ## https://docs.liquibase.com/concepts/changelogs/property-substitution.html
+    return re.sub(r"\$\((\w+)\)|\$\{(\w+)\}", r"\1", sql_script)
+
+
 def read_file(path):
     if not os.path.exists(path):
         raise DataContractException(
@@ -358,4 +365,4 @@ def read_file(path):
     with open(path, "r") as file:
         file_content = file.read()
 
-    return re.sub(r"\$\{(\w+)\}", r"\1", file_content)
+    return remove_variable_tokens(file_content)
