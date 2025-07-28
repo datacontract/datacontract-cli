@@ -415,7 +415,8 @@ def get_cell_value_by_name(workbook: Workbook, name: str) -> str | None:
     try:
         cell = get_cell_by_name_in_workbook(workbook, name)
         if cell.value is not None:
-            return str(cell.value)
+            value = str(cell.value).strip()
+            return value if value else None
     except Exception as e:
         logger.warning(f"Error getting cell value by name {name}: {str(e)}")
     return None
@@ -431,7 +432,8 @@ def get_cell_value_by_name_in_sheet(sheet: Worksheet, name: str) -> str | None:
                     if sheet_title == sheet.title:
                         cell = sheet[coordinate]
                         if cell.value is not None:
-                            return str(cell.value)
+                            value = str(cell.value).strip()
+                            return value if value else None
     except Exception as e:
         logger.warning(f"Error getting cell value by name {name} in sheet {sheet.title}: {str(e)}")
     return None
@@ -443,7 +445,10 @@ def get_cell_value(row, col_idx):
         return None
     try:
         cell = row[col_idx]
-        return str(cell.value) if cell.value is not None else None
+        if cell.value is not None:
+            value = str(cell.value).strip()
+            return value if value else None
+        return None
     except (IndexError, AttributeError):
         return None
 
@@ -452,7 +457,10 @@ def get_cell_value_by_position(sheet, row_idx, col_idx):
     """Get cell value by row and column indices (0-based)"""
     try:
         cell = sheet.cell(row=row_idx + 1, column=col_idx + 1)  # Convert to 1-based indices
-        return str(cell.value) if cell.value is not None else None
+        if cell.value is not None:
+            value = str(cell.value).strip()
+            return value if value else None
+        return None
     except Exception as e:
         logger.warning(f"Error getting cell value by position ({row_idx}, {col_idx}): {str(e)}")
         return None
@@ -823,7 +831,7 @@ def import_custom_properties(workbook: Workbook) -> List[CustomProperty]:
     except Exception as e:
         logger.warning(f"Error importing custom properties: {str(e)}")
 
-    return custom_properties
+    return custom_properties if custom_properties else None
 
 
 def parse_property_value(value: str) -> Any:

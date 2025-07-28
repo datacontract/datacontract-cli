@@ -216,6 +216,13 @@ def export(
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
+    # Validate that Excel format requires an output file path
+    if format == ExportFormat.excel and output is None:
+        console.print("❌ Error: Excel export requires an output file path.")
+        console.print("💡 Hint: Use --output to specify where to save the Excel file, e.g.:")
+        console.print("   datacontract export --format excel --output datacontract.xlsx")
+        raise typer.Exit(code=1)
+
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=format,
