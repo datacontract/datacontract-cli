@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- JUnit Test Report: Fixed incorrect syntax on handling warning test report. (#833)
+
+## [0.10.31] - 2025-07-18
+
+### Added
+- Added support for Variant with Spark exporter, data_contract.test(), and import as source unity catalog (#792)
+
+
+## [0.10.30] - 2025-07-15
+
+### Fixed
+- Excel Import should return ODCS YAML (#829)
+- Excel Import: Missing server section when the server included a schema property (#823)
+
 ### Changed
 - Use `&#x2007;` instead of `&numsp;` for tab in Markdown export.
 
