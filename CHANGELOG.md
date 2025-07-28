@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [0.10.32] - 2025-07-28
+
+### Added
+- Import from Excel: Support the new quality sheet
+
 ### Fixed
 - JUnit Test Report: Fixed incorrect syntax on handling warning test report. (#833)
 
