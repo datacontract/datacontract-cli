@@ -41,7 +41,7 @@ class ExcelExporter(Exporter):
             model: Model name (not used for Excel export)
             server: Server name (not used for Excel export)
             sql_server_type: SQL server type (not used for Excel export)
-            export_args: Additional export arguments
+            export_args: Additional export arguments (template can be specified here)
 
         Returns:
             Excel file as bytes
@@ -53,20 +53,27 @@ class ExcelExporter(Exporter):
             odcs = OpenDataContractStandard.from_string(yaml_content)
         else:
             odcs = data_contract
-        return export_to_excel_bytes(odcs)
+
+        # Get template from export_args if provided, otherwise use default
+        template = export_args.get("template") if export_args else None
+        return export_to_excel_bytes(odcs, template)
 
 
-def export_to_excel_bytes(odcs: OpenDataContractStandard) -> bytes:
+def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optional[str] = None) -> bytes:
     """
     Export ODCS to Excel format using the official template and return as bytes
 
     Args:
         odcs: OpenDataContractStandard object to export
+        template_path: Optional path/URL to custom Excel template. If None, uses default template.
 
     Returns:
         Excel file as bytes
     """
-    workbook = create_workbook_from_template_url(ODCS_EXCEL_TEMPLATE_URL)
+    if template_path:
+        workbook = create_workbook_from_template(template_path)
+    else:
+        workbook = create_workbook_from_template(ODCS_EXCEL_TEMPLATE_URL)
 
     try:
         fill_fundamentals(workbook, odcs)
@@ -99,17 +106,29 @@ def export_to_excel_bytes(odcs: OpenDataContractStandard) -> bytes:
         workbook.close()
 
 
-def create_workbook_from_template_url(template_url: str) -> Workbook:
-    """Download and load the ODCS Excel template"""
+def create_workbook_from_template(template_path: str) -> Workbook:
+    """Load Excel template from file path or URL"""
     try:
-        response = requests.get(template_url, timeout=30)
-        response.raise_for_status()
-        template_bytes = response.content
+        # Convert Path object to string if needed
+        template_path_str = str(template_path)
+        logger.info(f"Processing template path: {template_path_str}")
 
-        workbook = openpyxl.load_workbook(io.BytesIO(template_bytes))
+        # Check if it's a URL
+        if template_path_str.startswith(("http://", "https://")):
+            logger.info(f"Identified as URL, downloading from: {template_path_str}")
+            # Download from URL
+            response = requests.get(template_path_str, timeout=30)
+            response.raise_for_status()
+            template_bytes = response.content
+            workbook = openpyxl.load_workbook(io.BytesIO(template_bytes))
+        else:
+            logger.info(f"Identified as local file: {template_path_str}")
+            # Load from local file
+            workbook = openpyxl.load_workbook(template_path_str)
+
         return workbook
     except Exception as e:
-        logger.error(f"Failed to download or parse Excel template from {template_url}: {e}")
+        logger.error(f"Failed to load Excel template from {template_path}: {e}")
         raise RuntimeError(f"Failed to load Excel template: {e}")
 
 

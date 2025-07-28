@@ -210,7 +210,9 @@ def export(
     # TODO: this should be a subcommand
     template: Annotated[
         Optional[Path],
-        typer.Option(help="[custom] The file path of Jinja template."),
+        typer.Option(
+            help="The file path or URL of a template. For Excel format: path/URL to custom Excel template. For custom format: path to Jinja template."
+        ),
     ] = None,
 ):
     """
