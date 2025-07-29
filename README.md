@@ -120,8 +120,14 @@ $ datacontract export --format odcs datacontract.yaml --output odcs.yaml
 # import ODCS to data contract
 $ datacontract import --format odcs odcs.yaml --output datacontract.yaml
 
-# import sql (other formats: avro, glue, bigquery, jsonschema ...)
+# import sql (other formats: avro, glue, bigquery, jsonschema, excel ...)
 $ datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
+
+# import from Excel template
+$ datacontract import --format excel --source odcs.xlsx --output datacontract.yaml
+
+# export to Excel template  
+$ datacontract export --format excel --output odcs.xlsx datacontract.yaml
 
 # find differences between two data contracts
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
@@ -839,7 +845,7 @@ models:
 │                      terraform|avro-idl|sql|sql-query|mer                                        │
 │                      maid|html|go|bigquery|dbml|spark|sql                                        │
 │                      alchemy|data-caterer|dcs|markdown|ic                                        │
-│                      eberg|custom]                                                               │
+│                      eberg|custom|excel]                                                         │
 │    --output          PATH                                  Specify the file path where the       │
 │                                                            exported data will be saved. If no    │
 │                                                            path is provided, the output will be  │
@@ -909,6 +915,7 @@ Available export options:
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
 | `markdown`           | Export to Markdown                                      | ✅      |
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
+| `excel`              | Export to ODCS Excel Template                           | ✅      |
 | `custom`             | Export to Custom format with Jinja                      | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
@@ -1180,6 +1187,22 @@ FROM
   {{ ref('orders') }}
 ```
 
+#### ODCS Excel Templace
+
+The `export` function converts a data contract into an ODCS (Open Data Contract Standard) Excel template. This creates a user-friendly Excel spreadsheet that can be used for authoring, sharing, and managing data contracts using the familiar Excel interface.
+
+```shell
+datacontract export --format excel --output datacontract.xlsx datacontract.yaml
+```
+
+The Excel format enables:
+- **User-friendly authoring**: Create and edit data contracts in Excel's familiar interface
+- **Easy sharing**: Distribute data contracts as standard Excel files
+- **Collaboration**: Enable non-technical stakeholders to contribute to data contract definitions
+- **Round-trip conversion**: Import Excel templates back to YAML data contracts
+
+For more information about the Excel template structure, visit the [ODCS Excel Template repository](https://github.com/datacontract/open-data-contract-standard-excel-template).
+
 ### import
 ```
                                                                                                     
@@ -1298,6 +1321,7 @@ Available import options:
 | `spark`            | Import from Spark StructTypes, Variant         | ✅      |
 | `sql`              | Import from SQL DDL                            | ✅      |
 | `unity`            | Import from Databricks Unity Catalog           | partial |
+| `excel`            | Import from ODCS Excel Template                | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD     |
 
 
