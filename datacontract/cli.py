@@ -210,12 +210,21 @@ def export(
     # TODO: this should be a subcommand
     template: Annotated[
         Optional[Path],
-        typer.Option(help="[custom] The file path of Jinja template."),
+        typer.Option(
+            help="The file path or URL of a template. For Excel format: path/URL to custom Excel template. For custom format: path to Jinja template."
+        ),
     ] = None,
 ):
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
+    # Validate that Excel format requires an output file path
+    if format == ExportFormat.excel and output is None:
+        console.print("❌ Error: Excel export requires an output file path.")
+        console.print("💡 Hint: Use --output to specify where to save the Excel file, e.g.:")
+        console.print("   datacontract export --format excel --output datacontract.xlsx")
+        raise typer.Exit(code=1)
+
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=format,
@@ -230,8 +239,13 @@ def export(
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
     else:
-        with output.open(mode="w", encoding="utf-8") as f:
-            f.write(result)
+        if isinstance(result, bytes):
+            # If the result is bytes, we assume it's a binary file (e.g., Excel, PDF)
+            with output.open(mode="wb") as f:
+                f.write(result)
+        else:
+            with output.open(mode="w", encoding="utf-8") as f:
+                f.write(result)
         console.print(f"Written result to {output}")
 
 
@@ -482,13 +496,14 @@ def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict
     }
 
     # Create a list of the extra arguments, remove the leading -- from the cli arguments
-    trimmed_keys = list(map(lambda x : str(x).replace("--", ""),context.args[::2]))
+    trimmed_keys = list(map(lambda x: str(x).replace("--", ""), context.args[::2]))
     # Merge the two dicts and return them as one dict
     return default_args | dict(zip(trimmed_keys, context.args[1::2]))
 
+
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def api(
-    ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],    
+    ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
     host: Annotated[
         str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
