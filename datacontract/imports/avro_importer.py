@@ -130,13 +130,23 @@ def import_record_fields(record_fields: List[avro.schema.Field]) -> Dict[str, Fi
             imported_field.fields = import_record_fields(field.type.fields)
         elif field.type.type == "union":
             imported_field.required = False
-            type = import_type_of_optional_field(field)
-            imported_field.type = type
-            if type == "record":
-                imported_field.fields = import_record_fields(get_record_from_union_field(field).fields)
-            elif type == "array":
-                imported_field.type = "array"
-                imported_field.items = import_avro_array_items(get_array_from_union_field(field))
+            # Check for enum in union first, since it needs special handling
+            enum_schema = get_enum_from_union_field(field)
+            if enum_schema:
+                imported_field.type = "string"
+                imported_field.enum = enum_schema.symbols
+                imported_field.title = enum_schema.name
+                if not imported_field.config:
+                    imported_field.config = {}
+                imported_field.config["avroType"] = "enum"
+            else:
+                type = import_type_of_optional_field(field)
+                imported_field.type = type
+                if type == "record":
+                    imported_field.fields = import_record_fields(get_record_from_union_field(field).fields)
+                elif type == "array":
+                    imported_field.type = "array"
+                    imported_field.items = import_avro_array_items(get_array_from_union_field(field))
         elif field.type.type == "array":
             imported_field.type = "array"
             imported_field.items = import_avro_array_items(field.type)
@@ -273,6 +283,22 @@ def get_array_from_union_field(field: avro.schema.Field) -> avro.schema.ArraySch
     """
     for field_type in field.type.schemas:
         if field_type.type == "array":
+            return field_type
+    return None
+
+
+def get_enum_from_union_field(field: avro.schema.Field) -> avro.schema.EnumSchema | None:
+    """
+    Get the enum schema from a union field.
+
+    Args:
+        field: The Avro field with a union type.
+
+    Returns:
+        The enum schema if found, None otherwise.
+    """
+    for field_type in field.type.schemas:
+        if field_type.type == "enum":
             return field_type
     return None
 
