@@ -53,7 +53,7 @@ def _setup_datacontract():
     with open(datacontract) as data_contract_file:
         data_contract_str = data_contract_file.read()
     port = sql_server.get_exposed_port(SQL_SERVER_PORT)
-    data_contract_str = data_contract_str.replace("__PORT__", port)
+    data_contract_str = data_contract_str.replace("__PORT__", str(port))
     return data_contract_str
 
 
