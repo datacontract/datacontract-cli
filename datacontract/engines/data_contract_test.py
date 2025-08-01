@@ -89,8 +89,17 @@ def process_api_response(run, server):
     headers = {}
     if os.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION") is not None:
         headers["Authorization"] = os.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION")
-    response = requests.get(server.location, headers=headers)
-    response.raise_for_status()
+    try:
+        response = requests.get(server.location, headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise DataContractException(
+            type="connection",
+            name="API server connection error",
+            result=ResultEnum.error,
+            reason=f"Failed to fetch API response from {server.location}: {e}",
+            engine="datacontract",
+        )
     with open(f"{tmp_dir.name}/api_response.json", "w") as f:
         f.write(response.text)
     run.log_info(f"Saved API response to {tmp_dir.name}/api_response.json")
