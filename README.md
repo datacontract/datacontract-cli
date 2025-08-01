@@ -376,6 +376,7 @@ Supported server types:
 - [kafka](#kafka)
 - [postgres](#postgres)
 - [trino](#trino)
+- [api](#api)
 - [local](#local)
 
 Supported formats:
@@ -800,6 +801,38 @@ models:
 |-------------------------------|--------------------|-------------|
 | `DATACONTRACT_TRINO_USERNAME` | `trino`            | Username    |
 | `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
+
+
+#### API
+
+Data Contract CLI can test APIs that return data in JSON format. 
+Currently, only GET requests are supported.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  api:
+    type: "api"
+    location: "https://api.example.com/path"
+    delimiter: none # new_line, array, or none (default)
+
+models:
+  my_object: # corresponds to the root element of the JSON response
+    type: object
+    fields:
+      field1: 
+        type: string
+      fields2: 
+        type: number
+```
+
+##### Environment Variables
+
+| Environment Variable                    | Example          | Description                                       |
+|-----------------------------------------|------------------|---------------------------------------------------|
+| `DATACONTRACT_API_HEADER_AUTHORIZATION` | `Bearer <token>` | The value for the `authorization` header. Optional. |
 
 
 #### Local
