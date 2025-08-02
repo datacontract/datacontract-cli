@@ -15,6 +15,7 @@ from datacontract.model.data_contract_specification import (
 TAB = "&#x2007;"
 ARROW = "&#x21b3;"
 
+
 class MarkdownExporter(Exporter):
     """Exporter implementation for converting data contracts to Markdown."""
 
@@ -81,7 +82,7 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
         if value
     ]
     description = f"*{description_to_markdown(description_value)}*"
-    extra = ["### Extra", extra_to_markdown(obj)] if obj.model_extra else []
+    extra = [extra_to_markdown(obj)] if obj.model_extra else []
     return newline_char.join([description] + attributes + extra)
 
 
@@ -211,6 +212,7 @@ def service_level_to_markdown(service_level: ServiceLevel | None) -> str:
 def description_to_markdown(description: str | None) -> str:
     return (description or "No description.").replace("\n", "<br>")
 
+
 def array_of_dict_to_markdown(array: List[Dict[str, str]]) -> str:
     """
     Convert a list of dictionaries to a Markdown table.
@@ -228,7 +230,7 @@ def array_of_dict_to_markdown(array: List[Dict[str, str]]) -> str:
 
     for item in array:
         headers += item.keys()
-    headers = list(dict.fromkeys(headers)) # Preserve order and remove duplicates
+    headers = list(dict.fromkeys(headers))  # Preserve order and remove duplicates
 
     markdown_parts = [
         "| " + " | ".join(headers) + " |",
@@ -238,10 +240,15 @@ def array_of_dict_to_markdown(array: List[Dict[str, str]]) -> str:
     for row in array:
         element = row
         markdown_parts.append(
-            "| " + " | ".join(f"{str(element.get(header, ''))}".replace('\n', '<br>').replace('\t', TAB) for header in headers) + " |"
+            "| "
+            + " | ".join(
+                f"{str(element.get(header, ''))}".replace("\n", "<br>").replace("\t", TAB) for header in headers
+            )
+            + " |"
         )
 
     return "\n".join(markdown_parts) + "\n"
+
 
 def array_to_markdown(array: List[str]) -> str:
     """
@@ -256,6 +263,7 @@ def array_to_markdown(array: List[str]) -> str:
     if not array:
         return ""
     return "\n".join(f"- {item}" for item in array) + "\n"
+
 
 def dict_to_markdown(dictionary: Dict[str, str]) -> str:
     """
@@ -284,6 +292,7 @@ def dict_to_markdown(dictionary: Dict[str, str]) -> str:
             markdown_parts.append(f"- {key}: {value}")
     return "\n".join(markdown_parts) + "\n"
 
+
 def extra_to_markdown(obj: BaseModel) -> str:
     """
     Convert the extra attributes of a data contract to Markdown format.
@@ -296,7 +305,7 @@ def extra_to_markdown(obj: BaseModel) -> str:
     extra = obj.model_extra
     if extra:
         for key_extra, value_extra in extra.items():
-            markdown_part += f"#### {key_extra.capitalize()}\n"
+            markdown_part += f"\n### {key_extra.capitalize()}\n"
             if isinstance(value_extra, list) and len(value_extra):
                 if isinstance(value_extra[0], dict):
                     markdown_part += array_of_dict_to_markdown(value_extra)

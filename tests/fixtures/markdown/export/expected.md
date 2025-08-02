@@ -23,20 +23,23 @@ Max data processing per day: 10 TiB
 - **policies:** [{'url': 'https://example.com/privacy-policy', 'name': 'privacy-policy'}, {'description': 'External data is licensed under agreement 1234.', 'url': 'https://example.com/license/1234', 'name': 'license'}]
 - **billing:** 5000 USD per month
 - **noticePeriod:** P3M
-### Extra
-#### Supporthours
+
+### Supporthours
 9am to 5pm EST on business days
-#### Peakmonths
+
+### Peakmonths
 - January
 - November
 - December
-#### Potentialusecase
+
+### Potentialusecase
 - name: Customer Order Analysis
 - description: Analyze customer orders to understand purchasing behavior,
 identify trends, and optimize inventory management.
 This can help improve customer satisfaction and increase sales.
 
-#### Metrics
+
+### Metrics
 | name | description | sql_query |
 | --- | --- | --- |
 | Number of orders last month | The number of orders placed in the last month. | SELECT COUNT(*) AS order_count<br>FROM orders<br>WHERE order_timestamp >= DATEADD(month, -1, CURRENT_TIMESTAMP)<br> |
