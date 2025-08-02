@@ -314,3 +314,41 @@ models:
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+
+def test_import_avro_optional_enum():
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/optional_enum.avsc")
+
+    expected = """
+dataContractSpecification: 1.2.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  TestRecord:
+    fields:
+      required_enum:
+        title: Color
+        type: string
+        required: true
+        enum:
+        - RED
+        - GREEN
+        - BLUE
+        config:
+          avroType: enum
+      optional_enum:
+        title: Status
+        type: string
+        required: false
+        enum:
+        - ACTIVE
+        - INACTIVE
+        - PENDING
+        config:
+          avroType: enum
+"""
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()

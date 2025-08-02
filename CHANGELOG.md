@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `datacontract test` now supports testing HTTP APIs.
 
+### Fixed
+
+- Avro Importer: Optional and required enum types are now supported (#804)
+
 
 ## [0.10.33] - 2025-07-29
 
