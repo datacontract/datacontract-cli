@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `datacontract test` now supports testing HTTP APIs.
+
 ### Fixed
 
 - Avro Improter: Default enums avro are now supported (#804)
