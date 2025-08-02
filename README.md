@@ -2008,6 +2008,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 ## Companies using this tool
 
+- [Entropy Data](https://www.entropy-data.com)
 - [INNOQ](https://innoq.com)
 - [Data Catering](https://data.catering/)
 - [Oliver Wyman](https://www.oliverwyman.com/)
@@ -2026,7 +2027,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 ## Credits
 
-Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/) and [Jochen Christ](https://www.linkedin.com/in/jochenchrist/).
+Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/), [Jochen Christ](https://www.linkedin.com/in/jochenchrist/), and [Simon Harrer]().
 
 
 
