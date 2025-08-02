@@ -1,0 +1,328 @@
+version: "1.0.0"
+kind: "DataContract"
+apiVersion: "v3.0.2"
+id: "weather-data-berlin-hourly-001"
+name: "Berlin Weather Data - Hourly Forecast"
+status: "active"
+tenant: "weather-services"
+domain: "meteorology"
+dataProduct: "Weather Analytics Platform"
+
+description:
+  purpose: "Provides hourly weather forecast data for Berlin, Germany including temperature, humidity, and wind speed measurements for operational and analytical purposes"
+  usage: "This dataset is intended for weather analysis, forecasting models, and operational decision making. Data should be refreshed hourly for accurate predictions."
+  limitations: "Data accuracy depends on meteorological conditions and sensor reliability. Historical data beyond 7 days may have reduced accuracy. Use appropriate error handling for missing data points."
+
+servers:
+  - server: "weather-api-prod"
+    type: "api"
+    location: "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m"
+    description: "Open-Meteo Weather API production server"
+    environment: "prod"
+
+tags: ["weather", "forecast", "meteorology", "berlin", "germany", "temperature", "humidity", "wind", "hourly"]
+
+team:
+  - username: "weather-team@company.com"
+    name: "Weather Data Team"
+    role: "owner"
+    description: "Responsible for weather data ingestion, quality, and availability"
+
+support:
+  - channel: "weather-data-support"
+    url: "mailto:weather-team@company.com"
+    tool: "email"
+    scope: "issues"
+    description: "Technical support for weather data issues"
+
+schema:
+  - name: "weather_forecast"
+    physicalType: "api"
+    logicalType: "object"
+    description: "Complete weather forecast response containing location, current conditions, and hourly predictions"
+    dataGranularityDescription: "Hourly weather measurements for Berlin, Germany with 7-day forecast horizon"
+    properties:
+      - name: "latitude"
+        logicalType: "number"
+        description: "Latitude coordinate in decimal degrees"
+        required: true
+        logicalTypeOptions:
+          minimum: -90
+          maximum: 90
+        examples: [52.52]
+
+      - name: "longitude"
+        logicalType: "number"
+        description: "Longitude coordinate in decimal degrees"
+        required: true
+        logicalTypeOptions:
+          minimum: -180
+          maximum: 180
+        examples: [13.419998]
+
+      - name: "generationtime_ms"
+        physicalType: "FLOAT"
+        logicalType: "number"
+        description: "API response generation time in milliseconds"
+        required: false
+        logicalTypeOptions:
+          minimum: 0
+        examples: [0.141263008117676]
+
+      - name: "utc_offset_seconds"
+        physicalType: "INTEGER"
+        logicalType: "integer"
+        description: "UTC offset in seconds"
+        required: true
+        examples: [0]
+
+      - name: "timezone"
+        physicalType: "VARCHAR(50)"
+        logicalType: "string"
+        description: "Timezone identifier"
+        required: true
+        logicalTypeOptions:
+          maxLength: 50
+        examples: ["GMT"]
+
+      - name: "timezone_abbreviation"
+        physicalType: "VARCHAR(10)"
+        logicalType: "string"
+        description: "Timezone abbreviation"
+        required: true
+        logicalTypeOptions:
+          maxLength: 10
+        examples: ["GMT"]
+
+      - name: "elevation"
+        physicalType: "INTEGER"
+        logicalType: "integer"
+        description: "Elevation above sea level in meters"
+        required: true
+        logicalTypeOptions:
+          minimum: -500
+          maximum: 9000
+        examples: [38]
+
+      - name: "current_units"
+        physicalType: "OBJECT"
+        logicalType: "object"
+        description: "Units of measurement for current weather data"
+        required: true
+        properties:
+          - name: "time"
+            physicalType: "VARCHAR(20)"
+            logicalType: "string"
+            description: "Time format specification"
+            required: true
+            examples: ["iso8601"]
+
+          - name: "interval"
+            physicalType: "VARCHAR(20)"
+            logicalType: "string"
+            description: "Time interval unit"
+            required: true
+            examples: ["seconds"]
+
+          - name: "temperature_2m"
+            physicalType: "VARCHAR(5)"
+            logicalType: "string"
+            description: "Temperature unit"
+            required: true
+            examples: ["°C"]
+
+          - name: "wind_speed_10m"
+            physicalType: "VARCHAR(10)"
+            logicalType: "string"
+            description: "Wind speed unit"
+            required: true
+            examples: ["km/h"]
+
+      - name: "current"
+        physicalType: "OBJECT"
+        logicalType: "object"
+        description: "Current weather conditions"
+        required: true
+        properties:
+          - name: "time"
+            physicalType: "string"
+            logicalType: "string"
+            description: "Current observation time in ISO8601 format"
+            required: true
+#            logicalTypeOptions:
+#              format: "yyyy-MM-ddTHH:mm:ss"
+            examples: ["2025-08-01T11:15"]
+
+          - name: "interval"
+            physicalType: "INTEGER"
+            logicalType: "integer"
+            description: "Measurement interval in seconds"
+            required: true
+            examples: [900]
+
+          - name: "temperature_2m"
+            physicalType: "FLOAT"
+            logicalType: "number"
+            description: "Air temperature at 2 meters above ground in Celsius"
+            required: true
+            logicalTypeOptions:
+              minimum: -50
+              maximum: 60
+              format: "f32"
+            examples: [19.1]
+
+          - name: "wind_speed_10m"
+            physicalType: "FLOAT"
+            logicalType: "number"
+            description: "Wind speed at 10 meters above ground in km/h"
+            required: true
+            logicalTypeOptions:
+              minimum: 0
+              maximum: 200
+              format: "f32"
+            examples: [11.1]
+
+      - name: "hourly_units"
+        physicalType: "OBJECT"
+        logicalType: "object"
+        description: "Units of measurement for hourly weather data"
+        required: true
+        properties:
+          - name: "time"
+            physicalType: "VARCHAR(20)"
+            logicalType: "string"
+            description: "Time format specification"
+            required: true
+            examples: ["iso8601"]
+
+          - name: "temperature_2m"
+            physicalType: "VARCHAR(5)"
+            logicalType: "string"
+            description: "Temperature unit"
+            required: true
+            examples: ["°C"]
+
+          - name: "relative_humidity_2m"
+            physicalType: "VARCHAR(5)"
+            logicalType: "string"
+            description: "Humidity unit"
+            required: true
+            examples: ["%"]
+
+          - name: "wind_speed_10m"
+            physicalType: "VARCHAR(10)"
+            logicalType: "string"
+            description: "Wind speed unit"
+            required: true
+            examples: ["km/h"]
+
+      - name: "hourly"
+        physicalType: "OBJECT"
+        logicalType: "object"
+        description: "Hourly weather forecast data"
+        required: true
+        properties:
+          - name: "time"
+            physicalType: "ARRAY"
+            logicalType: "array"
+            description: "Array of hourly timestamps in ISO8601 format"
+            required: true
+            logicalTypeOptions:
+              minItems: 1
+              maxItems: 168
+            items:
+              logicalType: "string"
+              physicalType: "string"
+              examples: ["2025-08-01T00:00", "2025-08-01T01:00"]
+
+          - name: "temperature_2m"
+            physicalType: "ARRAY"
+            logicalType: "array"
+            description: "Hourly air temperature at 2 meters above ground in Celsius"
+            required: true
+            logicalTypeOptions:
+              minItems: 1
+              maxItems: 168
+            items:
+              logicalType: "number"
+              logicalTypeOptions:
+                minimum: -50
+                maximum: 60
+              examples: [16.3, 16.2, 16.2]
+
+          - name: "relative_humidity_2m"
+            physicalType: "ARRAY"
+            logicalType: "array"
+            description: "Hourly relative humidity at 2 meters above ground in percentage"
+            required: true
+            logicalTypeOptions:
+              minItems: 1
+              maxItems: 168
+            items:
+              logicalType: "integer"
+              logicalTypeOptions:
+                minimum: 0
+                maximum: 100
+              examples: [81, 83, 88]
+
+          - name: "wind_speed_10m"
+            physicalType: "ARRAY"
+            logicalType: "array"
+            description: "Hourly wind speed at 10 meters above ground in km/h"
+            required: true
+            logicalTypeOptions:
+              minItems: 1
+              maxItems: 168
+            items:
+              logicalType: "number"
+              logicalTypeOptions:
+                minimum: 0
+                maximum: 200
+                format: "f32"
+              examples: [6.2, 6.9, 7.0]
+
+#    quality:
+#      - name: "array_length_consistency"
+#        description: "All hourly arrays must have matching lengths"
+#        dimension: "consistency"
+#        type: "sql"
+#        query: |
+#          SELECT
+#            CASE
+#            WHEN
+#              len(hourly -> 'time') = len(hourly -> 'temperature_2m')
+#              AND len(hourly -> 'temperature_2m') = len(hourly -> 'relative_humidity_2m')
+#              AND len(hourly -> 'relative_humidity_2m') = len(hourly -> 'wind_speed_10m')
+#            THEN 1
+#            ELSE 0
+#            END AS arrays_equal
+#            FROM {model}
+#        mustBe: 1
+#        severity: "error"
+
+slaProperties:
+  - property: "availability"
+    value: 99.5
+    unit: "percent"
+    element: "weather_forecast"
+    driver: "operational"
+
+  - property: "retention"
+    value: 90
+    unit: "days"
+    element: "weather_forecast"
+    driver: "operational"
+
+  - property: "freshness"
+    value: 15
+    unit: "minutes"
+    element: "weather_forecast.current"
+    driver: "operational"
+
+  - property: "latency"
+    value: 500
+    unit: "ms"
+    element: "weather_forecast"
+    driver: "operational"
+
+contractCreatedTs: "2025-08-01T11:15:00Z"

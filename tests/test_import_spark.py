@@ -10,8 +10,10 @@ from datacontract.data_contract import DataContract
 @pytest.fixture(scope="session")
 def spark(tmp_path_factory) -> SparkSession:
     """Create and configure a Spark session."""
+
     spark = (
         SparkSession.builder.appName("datacontract-dataframe-unittest")
+        .master("local[*]")  # always force a new session
         .config(
             "spark.sql.warehouse.dir",
             f"{tmp_path_factory.mktemp('spark')}/spark-warehouse",
