@@ -1,176 +1,174 @@
-apiVersion: v3.0.0
+version: 1.0.1
 kind: DataContract
+apiVersion: v3.0.0
 id: fulfillment_shipments_v1
 name: Shipments
-version: 1.0.0
-domain: sales-team
-status: draft
 tenant: company-A
 tags:
-  - datalocation:EU
-description:
-  purpose: This data can be used for analytical purposes
-  usage: Use this to analyze shipments
-  limitations: Not suitable for real-time use cases
-customProperties:
-  - property: owner
-    value: controlling-team
-  - property: additionalField
-    value: some value
-schema:
-  - name: shipments
-    logicalType: object
-    physicalType: table
-    physicalName: shipments_v1
-    businessName: Shipments
-    description: "This table contains shipment data, including details about shipment IDs, associated orders, delivery dates, carriers, tracking numbers, statuses, and additional shipment information in JSON format."
-    dataGranularityDescription: Not Aggregated
-    tags:
-      - pii
-    properties:
-      - name: shipment_id
-        businessName: Shipment ID
-        physicalName: sid
-        logicalType: string
-        description: Unique identifier for each shipment.
-        physicalType: uuid
-        primaryKey: true
-        classification: internal
-        examples:
-          - 123e4567-e89b-12d3-a456-426614174000
-        tags:
-          - businesskey
-        authoritativeDefinitions:
-          - type: businessDefinition
-            url: https://example.com/definitions/shipment_id
-      - name: order_id
-        businessName: Order ID
-        physicalName: oid
-        logicalType: string
-        logicalTypeOptions:
-          minLength: 8
-          maxLength: 10
-        description: Identifier for the order associated with the shipment.
-        required: true
-        physicalType: text
-        primaryKey: false
-        classification: internal
-        examples:
-          - ORD12345
-      - name: delivery_date
-        businessName: Delivery Date
-        logicalType: date
-        description: The actual or expected delivery date of the shipment.
-        physicalType: timestamp_tz
-        primaryKey: false
-        classification: internal
-        examples:
-          - "2023-10-01T10:00:00Z"
-      - name: carrier
-        businessName: Carrier
-        logicalType: string
-        description: The shipping carrier used for the delivery.
-        physicalType: text
-        primaryKey: false
-        classification: internal
-        examples:
-          - FedEx
-          - UPS
-      - name: tracking_number
-        businessName: Tracking Number
-        logicalType: string
-        description: Tracking number provided by the carrier.
-        physicalType: text
-        primaryKey: false
-        classification: restricted
-        examples:
-          - 1Z999AA10123456784
-      - name: status
-        businessName: Status
-        logicalType: string
-        description: Current status of the shipment.
-        physicalType: text
-        primaryKey: false
-        classification: internal
-        examples:
-          - Delivered
-          - In Transit
-      - name: inline_object_definition
-        businessName: Inline Object Definition
-        logicalType: object
-        description: A JSON representation of additional shipment info
-        physicalType: json
-        primaryKey: false
-        partitionKeyPosition: -1
-        classification: internal
-        examples:
-          - "{\"destination\": \"New York\"}"
-        quality:
-          - type: text
-            description: "{field} must contain the field \"destination\""
-      - name: address
-        businessName: Shipment Address
-        logicalType: object
-        description: Shipping address details.
-        required: true
-        physicalType: JSON
-        classification: restricted
-        properties:
-          - name: street
-            businessName: Street
-            logicalType: string
-            description: Street address.
-            required: true
-            physicalType: text
-            primaryKey: false
-            classification: restricted
-            examples:
-              - Marienplatz 1
-          - name: city
-            businessName: City
-            logicalType: string
-            description: City of the shipping address.
-            required: true
-            physicalType: text
-            primaryKey: false
-            classification: restricted
-            examples:
-              - Munich
-          - name: country
-            businessName: Country
-            logicalType: string
-            description: Country of the shipping address.
-            required: true
-            physicalType: text
-            primaryKey: false
-            classification: restricted
-            examples:
-              - DE
+- datalocation:EU
+status: draft
 servers:
-  - server: production
-    type: bigquery
-    environment: production
-    dataset: shipments_v1
-    project: acme_shipments_prod
+- server: production
+  type: bigquery
+  environment: production
+  dataset: shipments_v1
+  project: acme_shipments_prod
+description:
+  usage: Use this to analyze shipments
+  purpose: This data can be used for analytical purposes
+  limitations: Not suitable for real-time use cases
+schema:
+- name: shipments
+  physicalType: table
+  description: This table contains shipment data, including details about shipment
+    IDs, associated orders, delivery dates, carriers, tracking numbers, statuses,
+    and additional shipment information in JSON format.
+  businessName: Shipments
+  tags:
+  - pii
+  logicalType: object
+  physicalName: shipments_v1
+  dataGranularityDescription: Not Aggregated
+  properties:
+  - name: shipment_id
+    physicalType: uuid
+    physicalName: sid
+    description: Unique identifier for each shipment.
+    businessName: Shipment ID
+    authoritativeDefinitions:
+    - url: http://localhost:8080/demo203502625092/definitions/fulfillment/shipment_id
+      type: definition
+    tags:
+    - businesskey
+    primaryKey: true
+    logicalType: string
+    classification: internal
+    examples:
+    - 123e4567-e89b-12d3-a456-426614174000
+  - name: order_id
+    physicalType: text
+    physicalName: oid
+    authoritativeDefinitions:
+    - url: http://localhost:8080/demo203502625092/definitions/sales/order_id
+      type: definition
+    primaryKey: false
+  - name: delivery_date
+    physicalType: timestamp_tz
+    description: The actual or expected delivery date of the shipment.
+    businessName: Delivery Date
+    primaryKey: false
+    logicalType: date
+    classification: internal
+    examples:
+    - '2023-10-01T10:00:00Z'
+  - name: carrier
+    physicalType: text
+    description: The shipping carrier used for the delivery.
+    businessName: Carrier
+    primaryKey: false
+    logicalType: string
+    classification: internal
+    examples:
+    - FedEx
+    - UPS
+  - name: tracking_number
+    physicalType: text
+    description: Tracking number provided by the carrier.
+    businessName: Tracking Number
+    primaryKey: false
+    logicalType: string
+    classification: restricted
+    examples:
+    - 1Z999AA10123456784
+  - name: status
+    physicalType: text
+    description: Current status of the shipment.
+    businessName: Status
+    primaryKey: false
+    logicalType: string
+    classification: internal
+    examples:
+    - Delivered
+    - In Transit
+  - name: inline_object_definition
+    physicalType: json
+    description: A JSON representation of additional shipment info
+    businessName: Inline Object Definition
+    primaryKey: false
+    logicalType: object
+    partitionKeyPosition: -1
+    classification: internal
+    examples:
+    - '{"destination": "New York"}'
+    quality:
+    - description: '{field} must contain the field "destination"'
+      type: text
+  - name: address
+    physicalType: JSON
+    description: Shipping address details.
+    businessName: Shipment Address
+    logicalType: object
+    required: true
+    classification: restricted
+    properties:
+    - name: street
+      physicalType: text
+      description: Street address.
+      businessName: Street
+      primaryKey: false
+      logicalType: string
+      required: true
+      classification: restricted
+      examples:
+      - Marienplatz 1
+    - name: city
+      physicalType: text
+      description: City of the shipping address.
+      businessName: City
+      primaryKey: false
+      logicalType: string
+      required: true
+      classification: restricted
+      examples:
+      - Munich
+    - name: country
+      physicalType: text
+      description: Country of the shipping address.
+      businessName: Country
+      primaryKey: false
+      logicalType: string
+      required: true
+      classification: restricted
+      examples:
+      - DE
+  quality:
+  - description: Table shall contain at least 1 row
+    type: sql
+    query: SELECT COUNT(*) FROM shipments
 support:
-  - channel: slackname
-    url: http://find.me.here
-    tool: slack
-    scope: interactive
+- channel: slackname
+  url: http://find.me.here
+  tool: slack
+  scope: interactive
 price:
   priceAmount: 1.0
   priceCurrency: EUR
   priceUnit: Per 1000 requests
 team:
-  - username: vimportant
-    role: administrator
-    dateIn: "2020-01-01"
-  - username: nimportant
-    role: reader
-    dateIn: "2020-01-01"
-    dateOut: "2024-10-10"
+- username: vimportant
+  role: administrator
+  dateIn: '2020-01-01'
+- username: nimportant
+  role: reader
+  dateIn: '2020-01-01'
+  dateOut: '2024-10-10'
 slaProperties:
-  - property: availability
-    value: 95%
-    unit: '%'
-    driver: operational
+- property: availability
+  value: 95%
+  unit: '%'
+  driver: operational
+customProperties:
+- property: owner
+  value: fulfillment
+- property: additionalField
+  value: We added an addition field - b

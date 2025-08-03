@@ -204,3 +204,7 @@ exporter_factory.register_lazy_exporter(
 exporter_factory.register_lazy_exporter(
     name=ExportFormat.custom, module_path="datacontract.export.custom_converter", class_name="CustomExporter"
 )
+
+exporter_factory.register_lazy_exporter(
+    name=ExportFormat.excel, module_path="datacontract.export.excel_exporter", class_name="ExcelExporter"
+)

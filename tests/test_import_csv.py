@@ -37,7 +37,7 @@ def test_import_csv():
     for k in model.fields.keys():
         model.fields[k].examples = None
 
-    expected = f"""dataContractSpecification: 1.1.0
+    expected = f"""dataContractSpecification: 1.2.0
 id: my-data-contract-id
 info:
   title: My Data Contract

@@ -1,4 +1,4 @@
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: urn:datacontract:checkout:orders-latest
 info:
   title: Orders Latest

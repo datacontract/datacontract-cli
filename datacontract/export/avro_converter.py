@@ -44,12 +44,18 @@ def to_avro_field(field, field_name):
     avro_type = to_avro_type(field, field_name)
     avro_field["type"] = avro_type if is_required_avro else ["null", avro_type]
 
-    if avro_field["type"] == "enum":
-        avro_field["type"] = {
+    # Handle enum types - both required and optional
+    if avro_type == "enum" or (isinstance(avro_field["type"], list) and "enum" in avro_field["type"]):
+        enum_def = {
             "type": "enum",
             "name": field.title,
             "symbols": field.enum,
         }
+        if is_required_avro:
+            avro_field["type"] = enum_def
+        else:
+            # Replace "enum" with the full enum definition in the union
+            avro_field["type"] = ["null", enum_def]
 
     if field.config:
         if "avroDefault" in field.config:
@@ -76,6 +82,10 @@ def to_avro_type(field: Field, field_name: str) -> str | dict:
                 return {"type": "int", "logicalType": field.config["avroLogicalType"]}
         if "avroType" in field.config:
             return field.config["avroType"]
+
+    # Check for enum fields based on presence of enum list and avroType config
+    if field.enum and field.config and field.config.get("avroType") == "enum":
+        return "enum"
 
     if field.type is None:
         return "null"

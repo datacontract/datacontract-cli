@@ -31,12 +31,12 @@ def test_to_rdf():
     file_content = read_file(data_contract_file=data_contract_file)
     data_contract = DataContractSpecification.from_string(file_content)
     expected_rdf = """
-@prefix dc1: <https://datacontract.com/DataContractSpecification/1.1.0/> .
-@prefix dcx: <https://datacontract.com/DataContractSpecification/1.1.0/Extension/> .
+@prefix dc1: <https://datacontract.com/DataContractSpecification/1.2.0/> .
+@prefix dcx: <https://datacontract.com/DataContractSpecification/1.2.0/Extension/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <https://example.com/orders-unit-test> a dc1:DataContract ;
-    dc1:dataContractSpecification "1.1.0" ;
+    dc1:dataContractSpecification "1.2.0" ;
     dc1:id "orders-unit-test" ;
     dc1:info [ a dc1:Info ;
             dc1:contact [ a dc1:Contact ;
@@ -98,12 +98,12 @@ def test_to_rdf_complex():
     data_contract = DataContractSpecification.from_string(file_content)
     expected_rdf = """
 @base <http://test.com/> .
-@prefix dc1: <https://datacontract.com/DataContractSpecification/1.1.0/> .
-@prefix dcx: <https://datacontract.com/DataContractSpecification/1.1.0/Extension/> .
+@prefix dc1: <https://datacontract.com/DataContractSpecification/1.2.0/> .
+@prefix dcx: <https://datacontract.com/DataContractSpecification/1.2.0/Extension/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <orders-latest> a dc1:DataContract ;
-    dc1:dataContractSpecification "1.1.0" ;
+    dc1:dataContractSpecification "1.2.0" ;
     dc1:example [ a dc1:Example ;
             dc1:data \"\"\"order_id,order_timestamp,order_total
 "1001","2023-09-09T08:30:00Z",2500

@@ -57,8 +57,8 @@ def to_rdf(data_contract_spec: DataContractSpecification, base) -> Graph:
     else:
         g = Graph(base=Namespace(""))
 
-    dc = Namespace("https://datacontract.com/DataContractSpecification/1.1.0/")
-    dcx = Namespace("https://datacontract.com/DataContractSpecification/1.1.0/Extension/")
+    dc = Namespace("https://datacontract.com/DataContractSpecification/1.2.0/")
+    dcx = Namespace("https://datacontract.com/DataContractSpecification/1.2.0/Extension/")
 
     g.bind("dc", dc)
     g.bind("dcx", dcx)

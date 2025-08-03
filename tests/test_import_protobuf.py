@@ -27,7 +27,7 @@ def test_cli():
 def test_import_protobuf():
     result = DataContract().import_from_source("protobuf", protobuf_file_path)
 
-    expected = """dataContractSpecification: 1.1.0
+    expected = """dataContractSpecification: 1.2.0
 id: my-data-contract-id
 info:
   title: My Data Contract

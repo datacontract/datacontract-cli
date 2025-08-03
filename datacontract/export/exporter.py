@@ -45,6 +45,7 @@ class ExportFormat(str, Enum):
     markdown = "markdown"
     iceberg = "iceberg"
     custom = "custom"
+    excel = "excel"
 
     @classmethod
     def get_supported_formats(cls):

@@ -39,7 +39,7 @@ curl -X 'POST' \
   'http://localhost:4242/test?server=production' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/yaml' \
-  -d 'dataContractSpecification: 1.1.0
+  -d 'dataContractSpecification: 1.2.0
 id: urn:datacontract:checkout:orders-latest
 info:
   title: Orders Latest
