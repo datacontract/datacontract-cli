@@ -9,7 +9,7 @@ def test_export_complex_data_contract():
     """
     data_contract = DataContract(
         data_contract_str="""
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: urn:datacontract:checkout:orders-latest
 info:
   title: Orders Latest

@@ -8,7 +8,7 @@ import requests
 
 from datacontract.model.exceptions import DataContractException
 
-DEFAULT_DATA_CONTRACT_SCHEMA = "datacontract-1.1.0.schema.json"
+DEFAULT_DATA_CONTRACT_SCHEMA = "datacontract-1.2.0.schema.json"
 
 
 def fetch_schema(location: str = None) -> Dict[str, Any]:

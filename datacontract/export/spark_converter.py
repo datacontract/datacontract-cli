@@ -126,6 +126,8 @@ def to_spark_data_type(field: Field) -> types.DataType:
         return types.StructType(to_struct_type(field.fields))
     if field_type == "map":
         return types.MapType(to_spark_data_type(field.keys), to_spark_data_type(field.values))
+    if field_type == "variant":
+        return types.VariantType()
     if field_type in ["string", "varchar", "text"]:
         return types.StringType()
     if field_type in ["number", "decimal", "numeric"]:
@@ -150,7 +152,7 @@ def to_spark_data_type(field: Field) -> types.DataType:
         return types.DateType()
     if field_type == "bytes":
         return types.BinaryType()
-    return types.BinaryType()
+    return types.StringType() # default if no condition is met
 
 
 def print_schema(dtype: types.DataType) -> str:

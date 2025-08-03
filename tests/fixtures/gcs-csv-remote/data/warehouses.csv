@@ -1,0 +1,11 @@
+warehouse_id,name,address,postal_code,city,country_iso_code
+1,Warehouse One,123 Warehouse St,12345,Warehouse City,US
+2,Central Depot,456 Central Ave,23456,Springfield,US
+3,East Hub,789 East Rd,34567,Boston,US
+4,West Storage,321 West Blvd,45678,San Francisco,US
+5,North Facility,654 North St,56789,Chicago,US
+6,South Distribution,987 South Pkwy,67890,Miami,US
+7,Berlin Center,12 Lagerstrasse,10115,Berlin,DE
+8,Hamburg Hub,34 Speicherweg,20095,Hamburg,DE
+9,Frankfurt Depot,56 Mainzer Landstrasse,60329,Frankfurt,DE
+10,Leipzig Storage,78 Logistikallee,04109,Leipzig,DE

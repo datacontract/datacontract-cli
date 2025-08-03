@@ -1,4 +1,4 @@
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: s3-csv
 info:
   title: s30-csv
@@ -26,3 +26,7 @@ models:
         minimum: 10
       field_three:
         type: timestamp
+    quality:
+      - type: sql
+        query: "SELECT count(*) FROM my_table"
+        mustBeGreaterThan: 0
