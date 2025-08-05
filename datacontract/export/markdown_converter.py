@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -11,6 +11,9 @@ from datacontract.model.data_contract_specification import (
     Server,
     ServiceLevel,
 )
+
+TAB = "&#x2007;"
+ARROW = "&#x21b3;"
 
 
 class MarkdownExporter(Exporter):
@@ -70,7 +73,8 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
     else:
         bullet_char = "-"
         newline_char = "\n"
-    obj_model = obj.model_dump(exclude_unset=True, exclude=excluded_fields)
+    model_attributes_to_include = set(obj.__class__.model_fields.keys())
+    obj_model = obj.model_dump(exclude_unset=True, include=model_attributes_to_include, exclude=excluded_fields)
     description_value = obj_model.pop("description", None)
     attributes = [
         (f"{bullet_char} `{attr}`" if value is True else f"{bullet_char} **{attr}:** {value}")
@@ -78,7 +82,8 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
         if value
     ]
     description = f"*{description_to_markdown(description_value)}*"
-    return newline_char.join([description] + attributes)
+    extra = [extra_to_markdown(obj)] if obj.model_extra else []
+    return newline_char.join([description] + attributes + extra)
 
 
 def servers_to_markdown(servers: Dict[str, Server]) -> str:
@@ -153,8 +158,8 @@ def field_to_markdown(field_name: str, field: Field, level: int = 0) -> str:
     Returns:
         str: A Markdown table rows for the field.
     """
-    tabs = "&#x2007;" * level
-    arrow = "&#x21b3;" if level > 0 else ""
+    tabs = TAB * level
+    arrow = ARROW if level > 0 else ""
     column_name = f"{tabs}{arrow} {field_name}"
 
     attributes = obj_attributes_to_markdown(field, {"type", "fields", "items", "keys", "values"}, True)
@@ -206,3 +211,108 @@ def service_level_to_markdown(service_level: ServiceLevel | None) -> str:
 
 def description_to_markdown(description: str | None) -> str:
     return (description or "No description.").replace("\n", "<br>")
+
+
+def array_of_dict_to_markdown(array: List[Dict[str, str]]) -> str:
+    """
+    Convert a list of dictionaries to a Markdown table.
+
+    Args:
+        array (List[Dict[str, str]]): A list of dictionaries where each dictionary represents a row in the table.
+
+    Returns:
+        str: A Markdown formatted table.
+    """
+    if not array:
+        return ""
+
+    headers = []
+
+    for item in array:
+        headers += item.keys()
+    headers = list(dict.fromkeys(headers))  # Preserve order and remove duplicates
+
+    markdown_parts = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(["---"] * len(headers)) + " |",
+    ]
+
+    for row in array:
+        element = row
+        markdown_parts.append(
+            "| "
+            + " | ".join(
+                f"{str(element.get(header, ''))}".replace("\n", "<br>").replace("\t", TAB) for header in headers
+            )
+            + " |"
+        )
+
+    return "\n".join(markdown_parts) + "\n"
+
+
+def array_to_markdown(array: List[str]) -> str:
+    """
+    Convert a list of strings to a Markdown formatted list.
+
+    Args:
+        array (List[str]): A list of strings to convert.
+
+    Returns:
+        str: A Markdown formatted list.
+    """
+    if not array:
+        return ""
+    return "\n".join(f"- {item}" for item in array) + "\n"
+
+
+def dict_to_markdown(dictionary: Dict[str, str]) -> str:
+    """
+    Convert a dictionary to a Markdown formatted list.
+
+    Args:
+        dictionary (Dict[str, str]): A dictionary where keys are item names and values are item descriptions.
+
+    Returns:
+        str: A Markdown formatted list of items.
+    """
+    if not dictionary:
+        return ""
+
+    markdown_parts = []
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            markdown_parts.append(f"- {key}")
+            nested_markdown = dict_to_markdown(value)
+            if nested_markdown:
+                nested_lines = nested_markdown.split("\n")
+                for line in nested_lines:
+                    if line.strip():
+                        markdown_parts.append(f"  {line}")
+        else:
+            markdown_parts.append(f"- {key}: {value}")
+    return "\n".join(markdown_parts) + "\n"
+
+
+def extra_to_markdown(obj: BaseModel) -> str:
+    """
+    Convert the extra attributes of a data contract to Markdown format.
+    Args:
+        obj (BaseModel): The data contract object containing extra attributes.
+    Returns:
+        str: A Markdown formatted string representing the extra attributes of the data contract.
+    """
+    markdown_part = ""
+    extra = obj.model_extra
+    if extra:
+        for key_extra, value_extra in extra.items():
+            markdown_part += f"\n### {key_extra.capitalize()}\n"
+            if isinstance(value_extra, list) and len(value_extra):
+                if isinstance(value_extra[0], dict):
+                    markdown_part += array_of_dict_to_markdown(value_extra)
+                elif isinstance(value_extra[0], str):
+                    markdown_part += array_to_markdown(value_extra)
+            elif isinstance(value_extra, dict):
+                markdown_part += dict_to_markdown(value_extra)
+            else:
+                markdown_part += f"{str(value_extra)}\n"
+    return markdown_part

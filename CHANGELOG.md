@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `datacontract test` now supports testing HTTP APIs.
+
+### Fixed
+
+- Avro Importer: Optional and required enum types are now supported (#804)
+
+
+## [0.10.33] - 2025-07-29
+
+### Added
+- Export to Excel: Convert ODCS YAML to Excel https://github.com/datacontract/open-data-contract-standard-excel-template (#742)
+- Extra properties in Markdown export. (#842)
+
+
+## [0.10.32] - 2025-07-28
+
+### Added
+- Import from Excel: Support the new quality sheet
+
 ### Fixed
 - JUnit Test Report: Fixed incorrect syntax on handling warning test report. (#833)
 

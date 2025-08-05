@@ -159,6 +159,14 @@ def process_json_file(run, schema, model_name, validate, file, delimiter):
 
 def process_local_file(run, server, schema, model_name, validate):
     path = server.path
+    if not path:
+        raise DataContractException(
+            type="schema",
+            name="Check that JSON has valid schema",
+            result=ResultEnum.warning,
+            reason="For server with type 'local', a 'path' must be defined.",
+            engine="datacontract",
+        )
     if "{model}" in path:
         path = path.format(model=model_name)
 

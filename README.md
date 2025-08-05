@@ -120,8 +120,14 @@ $ datacontract export --format odcs datacontract.yaml --output odcs.yaml
 # import ODCS to data contract
 $ datacontract import --format odcs odcs.yaml --output datacontract.yaml
 
-# import sql (other formats: avro, glue, bigquery, jsonschema ...)
+# import sql (other formats: avro, glue, bigquery, jsonschema, excel ...)
 $ datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
+
+# import from Excel template
+$ datacontract import --format excel --source odcs.xlsx --output datacontract.yaml
+
+# export to Excel template  
+$ datacontract export --format excel --output odcs.xlsx datacontract.yaml
 
 # find differences between two data contracts
 $ datacontract diff datacontract-v1.yaml datacontract-v2.yaml
@@ -370,6 +376,7 @@ Supported server types:
 - [kafka](#kafka)
 - [postgres](#postgres)
 - [trino](#trino)
+- [api](#api)
 - [local](#local)
 
 Supported formats:
@@ -796,6 +803,38 @@ models:
 | `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
 
 
+#### API
+
+Data Contract CLI can test APIs that return data in JSON format. 
+Currently, only GET requests are supported.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  api:
+    type: "api"
+    location: "https://api.example.com/path"
+    delimiter: none # new_line, array, or none (default)
+
+models:
+  my_object: # corresponds to the root element of the JSON response
+    type: object
+    fields:
+      field1: 
+        type: string
+      fields2: 
+        type: number
+```
+
+##### Environment Variables
+
+| Environment Variable                    | Example          | Description                                       |
+|-----------------------------------------|------------------|---------------------------------------------------|
+| `DATACONTRACT_API_HEADER_AUTHORIZATION` | `Bearer <token>` | The value for the `authorization` header. Optional. |
+
+
 #### Local
 
 Data Contract CLI can test local files in parquet, json, csv, or delta format.
@@ -839,7 +878,7 @@ models:
 │                      terraform|avro-idl|sql|sql-query|mer                                        │
 │                      maid|html|go|bigquery|dbml|spark|sql                                        │
 │                      alchemy|data-caterer|dcs|markdown|ic                                        │
-│                      eberg|custom]                                                               │
+│                      eberg|custom|excel]                                                         │
 │    --output          PATH                                  Specify the file path where the       │
 │                                                            exported data will be saved. If no    │
 │                                                            path is provided, the output will be  │
@@ -909,6 +948,7 @@ Available export options:
 | `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
 | `markdown`           | Export to Markdown                                      | ✅      |
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
+| `excel`              | Export to ODCS Excel Template                           | ✅      |
 | `custom`             | Export to Custom format with Jinja                      | ✅      |
 | Missing something?   | Please create an issue on GitHub                        | TBD    |
 
@@ -1180,6 +1220,22 @@ FROM
   {{ ref('orders') }}
 ```
 
+#### ODCS Excel Templace
+
+The `export` function converts a data contract into an ODCS (Open Data Contract Standard) Excel template. This creates a user-friendly Excel spreadsheet that can be used for authoring, sharing, and managing data contracts using the familiar Excel interface.
+
+```shell
+datacontract export --format excel --output datacontract.xlsx datacontract.yaml
+```
+
+The Excel format enables:
+- **User-friendly authoring**: Create and edit data contracts in Excel's familiar interface
+- **Easy sharing**: Distribute data contracts as standard Excel files
+- **Collaboration**: Enable non-technical stakeholders to contribute to data contract definitions
+- **Round-trip conversion**: Import Excel templates back to YAML data contracts
+
+For more information about the Excel template structure, visit the [ODCS Excel Template repository](https://github.com/datacontract/open-data-contract-standard-excel-template).
+
 ### import
 ```
                                                                                                     
@@ -1298,6 +1354,7 @@ Available import options:
 | `spark`            | Import from Spark StructTypes, Variant         | ✅      |
 | `sql`              | Import from SQL DDL                            | ✅      |
 | `unity`            | Import from Databricks Unity Catalog           | partial |
+| `excel`            | Import from ODCS Excel Template                | ✅      |
 | Missing something? | Please create an issue on GitHub               | TBD     |
 
 
@@ -1984,6 +2041,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 ## Companies using this tool
 
+- [Entropy Data](https://www.entropy-data.com)
 - [INNOQ](https://innoq.com)
 - [Data Catering](https://data.catering/)
 - [Oliver Wyman](https://www.oliverwyman.com/)
@@ -2002,7 +2060,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 ## Credits
 
-Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/) and [Jochen Christ](https://www.linkedin.com/in/jochenchrist/).
+Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/), [Jochen Christ](https://www.linkedin.com/in/jochenchrist/), and [Simon Harrer]().
 
 
 

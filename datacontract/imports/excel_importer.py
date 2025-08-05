@@ -1,5 +1,6 @@
 import logging
 import os
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import openpyxl
@@ -80,8 +81,16 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
         if tags_str:
             tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
 
-        # Import other components
+        # Import quality data first (standalone from schemas)
+        quality_map = import_quality(workbook)
+
+        # Import schemas
         schemas = import_schemas(workbook)
+
+        # Attach quality to schemas and properties
+        schemas_with_quality = attach_quality_to_schemas(schemas, quality_map)
+
+        # Import other components
         support = import_support(workbook)
         team = import_team(workbook)
         roles = import_roles(workbook)
@@ -103,7 +112,7 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
             tenant=get_cell_value_by_name(workbook, "tenant"),
             description=description,
             tags=tags,
-            schema=schemas,
+            schema=schemas_with_quality,
             support=support,
             price=price,
             team=team,
@@ -150,7 +159,7 @@ def import_schemas(workbook) -> Optional[List[SchemaObject]]:
                 dataGranularityDescription=get_cell_value_by_name_in_sheet(sheet, "schema.dataGranularityDescription"),
                 authoritativeDefinitions=None,
                 properties=import_properties(sheet),
-                quality=None,
+                quality=None,  # Quality will be attached later
                 customProperties=None,
                 tags=None,
             )
@@ -230,16 +239,8 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
                     )
                 ]
 
-            # Quality
-            quality_type = get_cell_value(row, headers.get("quality type"))
-            quality_description = get_cell_value(row, headers.get("quality description"))
-            if quality_type and quality_description:
-                property_obj.quality = [
-                    DataQuality(
-                        type=quality_type,
-                        description=quality_description,
-                    )
-                ]
+            # Quality will be attached later via quality_map
+            property_obj.quality = None
 
             # Transform sources
             transform_sources = get_cell_value(row, headers.get("transform sources"))
@@ -414,7 +415,8 @@ def get_cell_value_by_name(workbook: Workbook, name: str) -> str | None:
     try:
         cell = get_cell_by_name_in_workbook(workbook, name)
         if cell.value is not None:
-            return str(cell.value)
+            value = str(cell.value).strip()
+            return value if value else None
     except Exception as e:
         logger.warning(f"Error getting cell value by name {name}: {str(e)}")
     return None
@@ -430,7 +432,8 @@ def get_cell_value_by_name_in_sheet(sheet: Worksheet, name: str) -> str | None:
                     if sheet_title == sheet.title:
                         cell = sheet[coordinate]
                         if cell.value is not None:
-                            return str(cell.value)
+                            value = str(cell.value).strip()
+                            return value if value else None
     except Exception as e:
         logger.warning(f"Error getting cell value by name {name} in sheet {sheet.title}: {str(e)}")
     return None
@@ -442,7 +445,10 @@ def get_cell_value(row, col_idx):
         return None
     try:
         cell = row[col_idx]
-        return str(cell.value) if cell.value is not None else None
+        if cell.value is not None:
+            value = str(cell.value).strip()
+            return value if value else None
+        return None
     except (IndexError, AttributeError):
         return None
 
@@ -451,7 +457,10 @@ def get_cell_value_by_position(sheet, row_idx, col_idx):
     """Get cell value by row and column indices (0-based)"""
     try:
         cell = sheet.cell(row=row_idx + 1, column=col_idx + 1)  # Convert to 1-based indices
-        return str(cell.value) if cell.value is not None else None
+        if cell.value is not None:
+            value = str(cell.value).strip()
+            return value if value else None
+        return None
     except Exception as e:
         logger.warning(f"Error getting cell value by position ({row_idx}, {col_idx}): {str(e)}")
         return None
@@ -822,7 +831,7 @@ def import_custom_properties(workbook: Workbook) -> List[CustomProperty]:
     except Exception as e:
         logger.warning(f"Error importing custom properties: {str(e)}")
 
-    return custom_properties
+    return custom_properties if custom_properties else None
 
 
 def parse_property_value(value: str) -> Any:
@@ -853,3 +862,250 @@ def parse_property_value(value: str) -> Any:
     except (ValueError, TypeError, AttributeError):
         # If conversion fails, return original string
         return value
+
+
+def import_quality(workbook: Workbook) -> Dict[str, List[DataQuality]]:
+    """
+    Import quality data from Quality sheet and organize by schema.property key
+
+    Returns:
+        Dictionary mapping schema.property keys to lists of DataQuality objects
+    """
+    try:
+        quality_sheet = workbook["Quality"]
+        if not quality_sheet:
+            return {}
+    except KeyError:
+        logger.warning("Quality sheet not found")
+        return {}
+
+    try:
+        quality_range = get_range_by_name_in_workbook(workbook, "quality")
+        if not quality_range:
+            logger.warning("Quality range not found")
+            return {}
+
+        quality_header_row_index = quality_range[0] - 1
+        headers = get_headers_from_header_row(quality_sheet, quality_header_row_index)
+
+        quality_map = {}
+
+        for row_idx in range(quality_range[0], quality_range[1]):
+            if len(list(quality_sheet.rows)) < row_idx + 1:
+                break
+            row = list(quality_sheet.rows)[row_idx]
+
+            # Extract quality fields from row
+            schema_name = get_cell_value(row, headers.get("schema"))
+            property_name = get_cell_value(row, headers.get("property"))
+            quality_type = get_cell_value(row, headers.get("quality type"))
+            description = get_cell_value(row, headers.get("description"))
+            rule = get_cell_value(row, headers.get("rule (library)"))
+            query = get_cell_value(row, headers.get("query (sql)"))
+            engine = get_cell_value(row, headers.get("quality engine (custom)"))
+            implementation = get_cell_value(row, headers.get("implementation (custom)"))
+            severity = get_cell_value(row, headers.get("severity"))
+            scheduler = get_cell_value(row, headers.get("scheduler"))
+            schedule = get_cell_value(row, headers.get("schedule"))
+            threshold_operator = get_cell_value(row, headers.get("threshold operator"))
+            threshold_value = get_cell_value(row, headers.get("threshold value"))
+
+            # Skip if no schema name or insufficient quality data
+            if not schema_name or (not quality_type and not description and not rule):
+                continue
+
+            # Parse threshold values based on operator
+            threshold_dict = parse_threshold_values(threshold_operator, threshold_value)
+
+            # Create DataQuality object with parsed thresholds
+            quality = DataQuality(
+                name=None,
+                description=description,
+                type=quality_type,
+                rule=rule,
+                unit=None,
+                validValues=None,
+                query=query,
+                engine=engine,
+                implementation=implementation,
+                dimension=None,
+                method=None,
+                severity=severity,
+                businessImpact=None,
+                customProperties=None,
+                authoritativeDefinitions=None,
+                tags=None,
+                scheduler=scheduler,
+                schedule=schedule,
+                **threshold_dict,  # Unpack threshold values
+            )
+
+            # Create key for mapping - use schema.property format
+            key = schema_name if not property_name else f"{schema_name}.{property_name}"
+
+            if key not in quality_map:
+                quality_map[key] = []
+            quality_map[key].append(quality)
+
+    except Exception as e:
+        logger.warning(f"Error importing quality: {str(e)}")
+        return {}
+
+    return quality_map
+
+
+def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dict[str, Any]:
+    """
+    Parse threshold operator and value into DataQuality threshold fields
+
+    Args:
+        threshold_operator: The threshold operator (e.g., "mustBe", "mustBeBetween")
+        threshold_value: The threshold value (string representation)
+
+    Returns:
+        Dictionary with appropriate threshold fields set
+    """
+    threshold_dict = {}
+
+    if not threshold_operator or not threshold_value:
+        return threshold_dict
+
+    # Parse threshold values based on operator
+    if threshold_operator in ["mustBeBetween", "mustNotBeBetween"]:
+        # Parse "[value1, value2]" format
+        if threshold_value.startswith("[") and threshold_value.endswith("]"):
+            content = threshold_value[1:-1]  # Remove brackets
+            try:
+                values = [Decimal(v.strip()) for v in content.split(",") if v.strip()]
+                if len(values) >= 2:
+                    threshold_dict[threshold_operator] = values[:2]  # Take first two values
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Failed to parse between values: {threshold_value}, error: {e}")
+    else:
+        # Single value for other operators
+        try:
+            # Try to parse as number
+            if threshold_value.replace(".", "").replace("-", "").isdigit():
+                value = Decimal(threshold_value)
+                threshold_dict[threshold_operator] = value
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse threshold value: {threshold_value}, error: {e}")
+
+    return threshold_dict
+
+
+def attach_quality_to_schemas(
+    schemas: Optional[List[SchemaObject]], quality_map: Dict[str, List[DataQuality]]
+) -> Optional[List[SchemaObject]]:
+    """
+    Attach quality attributes to schemas and their properties based on quality_map
+
+    Args:
+        schemas: List of schema objects
+        quality_map: Dictionary mapping schema.property keys to quality lists
+
+    Returns:
+        List of schema objects with quality attached
+    """
+    if not schemas:
+        return None
+
+    updated_schemas = []
+
+    for schema in schemas:
+        schema_name = schema.name
+        if not schema_name:
+            updated_schemas.append(schema)
+            continue
+
+        # Get schema-level quality attributes
+        schema_quality = quality_map.get(schema_name)
+        if schema_quality:
+            schema.quality = schema_quality
+
+        # Attach quality to properties
+        if schema.properties:
+            schema.properties = attach_quality_to_properties(schema.properties, schema_name, quality_map)
+
+        updated_schemas.append(schema)
+
+    return updated_schemas
+
+
+def attach_quality_to_properties(
+    properties: List[SchemaProperty], schema_name: str, quality_map: Dict[str, List[DataQuality]], prefix: str = ""
+) -> List[SchemaProperty]:
+    """
+    Recursively attach quality attributes to properties and nested properties
+
+    Args:
+        properties: List of property objects
+        schema_name: Name of the parent schema
+        quality_map: Dictionary mapping schema.property keys to quality lists
+        prefix: Current property path prefix for nested properties
+
+    Returns:
+        List of property objects with quality attached
+    """
+    updated_properties = []
+
+    for prop in properties:
+        property_name = prop.name
+        if not property_name:
+            updated_properties.append(prop)
+            continue
+
+        # Build full property path
+        full_property_name = f"{prefix}.{property_name}" if prefix else property_name
+        quality_key = f"{schema_name}.{full_property_name}"
+
+        # Get quality for this property
+        property_quality = quality_map.get(quality_key)
+        if property_quality:
+            prop.quality = property_quality
+
+        # Handle nested properties
+        if prop.properties:
+            prop.properties = attach_quality_to_properties(
+                prop.properties, schema_name, quality_map, full_property_name
+            )
+
+        # Handle array items
+        if prop.items:
+            items_quality_key = f"{schema_name}.{full_property_name}.items"
+            items_quality = quality_map.get(items_quality_key)
+            if items_quality:
+                prop.items.quality = items_quality
+
+            # Handle nested properties in array items
+            if prop.items.properties:
+                prop.items.properties = attach_quality_to_properties(
+                    prop.items.properties, schema_name, quality_map, f"{full_property_name}.items"
+                )
+
+        updated_properties.append(prop)
+
+    return updated_properties
+
+
+def get_headers_from_header_row(sheet: Worksheet, header_row_index: int) -> Dict[str, int]:
+    """
+    Get headers from the first row and map them to column indices
+
+    Args:
+        sheet: The worksheet
+        header_row_index: 0-based row index of the header row
+
+    Returns:
+        Dictionary mapping header names (lowercase) to column indices
+    """
+    headers = {}
+    try:
+        header_row = list(sheet.rows)[header_row_index]
+        for i, cell in enumerate(header_row):
+            if cell.value:
+                headers[str(cell.value).lower().strip()] = i
+    except (IndexError, AttributeError) as e:
+        logger.warning(f"Error getting headers from row {header_row_index}: {e}")
+
+    return headers

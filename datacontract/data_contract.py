@@ -250,8 +250,14 @@ class DataContract:
             inline_quality=self._inline_quality,
         )
 
-    def export(self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs) -> str:
-        if export_format == ExportFormat.html or export_format == ExportFormat.mermaid:
+    def export(
+        self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs
+    ) -> str | bytes:
+        if (
+            export_format == ExportFormat.html
+            or export_format == ExportFormat.mermaid
+            or export_format == ExportFormat.excel
+        ):
             data_contract = resolve.resolve_data_contract_v2(
                 self._data_contract_file,
                 self._data_contract_str,
