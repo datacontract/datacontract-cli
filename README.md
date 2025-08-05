@@ -950,7 +950,7 @@ Available export options:
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
 | `excel`              | Export to ODCS Excel Template                           | ✅      |
 | `custom`             | Export to Custom format with Jinja                      | ✅      |
-| Missing something?   | Please create an issue on GitHub                        | TBD    |
+| Missing something?   | Please create an issue on GitHub                        | TBD     |
 
 #### SQL
 
@@ -979,6 +979,15 @@ The export creates a list of expectations by utilizing:
 
 - The data from the Model definition with a fixed mapping
 - The expectations provided in the quality field for each model (find here the expectations gallery: [Great Expectations Gallery](https://greatexpectations.io/expectations/))
+
+#### Markdown
+
+The `export` function converts a given data contract into a Markdown document.
+
+```shell
+datacontract export datacontract.yaml --format markdown --output output.md
+```
+
 
 ##### Additional Arguments
 
