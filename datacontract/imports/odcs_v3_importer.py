@@ -137,8 +137,9 @@ def import_servers(odcs: OpenDataContractStandard) -> Dict[str, Server] | None:
         server.driver = getattr(odcs_server, "driver", None)
         server.roles = import_server_roles(odcs_server.roles)
         server.storageAccount = (
-            re.search(r"(?:@|://)([^.]+)\.", odcs_server.location, re.IGNORECASE) if server.type == "azure" else None
+            azure_storage_account(odcs_server.location) if server.type == "azure" and "://" in server.location else None
         )
+
         servers[server_name] = server
     return servers
 
@@ -413,3 +414,14 @@ def import_tags(odcs: OpenDataContractStandard) -> List[str] | None:
     if odcs.tags is None:
         return None
     return odcs.tags
+
+
+def azure_storage_account(location: str) -> str | None:
+    # to catch protocol://containerName@storageAccountName. pattern from location
+    match = re.search(r"(?<=@)([^.]*)", location, re.IGNORECASE)
+    if match:
+        return match.group()
+    else:
+        # to catch protocol://storageAccountName. pattern from location
+        match = re.search(r"(?<=//)(?!@)([^.]*)", location, re.IGNORECASE)
+    return match.group() if match else None
