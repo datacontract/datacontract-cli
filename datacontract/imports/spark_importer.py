@@ -1,4 +1,6 @@
+import atexit
 import logging
+import tempfile
 
 from databricks.sdk import WorkspaceClient
 from pyspark.sql import DataFrame, SparkSession, types
@@ -54,7 +56,16 @@ def import_spark(
     Returns:
         DataContractSpecification: The updated contract spec with imported models.
     """
-    spark = SparkSession.builder.getOrCreate()
+
+    tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract-cli-spark")
+    atexit.register(tmp_dir.cleanup)
+
+    spark = (
+        SparkSession.builder.config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
+        .config("spark.streaming.stopGracefullyOnShutdown", "true")
+        .config("spark.ui.enabled", "false")
+        .getOrCreate()
+    )
     data_contract_specification.servers["local"] = Server(type="dataframe")
 
     if dataframe is not None:

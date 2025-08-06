@@ -14,9 +14,6 @@ from datacontract.export.exporter import (
     Exporter,
     _check_models_for_export,
 )
-from datacontract.export.pandas_type_converter import convert_to_pandas_type
-from datacontract.export.spark_converter import to_spark_data_type
-from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     DeprecatedQuality,
@@ -167,10 +164,16 @@ def add_field_expectations(
     """
     if field.type is not None:
         if engine == GreatExpectationsEngine.spark.value:
+            from datacontract.export.spark_converter import to_spark_data_type
+
             field_type = to_spark_data_type(field).__class__.__name__
         elif engine == GreatExpectationsEngine.pandas.value:
+            from datacontract.export.pandas_type_converter import convert_to_pandas_type
+
             field_type = convert_to_pandas_type(field)
         elif engine == GreatExpectationsEngine.sql.value:
+            from datacontract.export.sql_type_converter import convert_to_sql_type
+
             field_type = convert_to_sql_type(field, sql_server_type)
         else:
             field_type = field.type

@@ -4,7 +4,7 @@ import typing
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard
 
 from datacontract.export.odcs_v3_exporter import to_odcs_v3
-from datacontract.imports.importer import Spec
+from datacontract.imports.importer import ImportFormat, Spec
 from datacontract.imports.odcs_v3_importer import import_from_odcs
 
 if typing.TYPE_CHECKING:
@@ -250,8 +250,14 @@ class DataContract:
             inline_quality=self._inline_quality,
         )
 
-    def export(self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs) -> str:
-        if export_format == ExportFormat.html or export_format == ExportFormat.mermaid:
+    def export(
+        self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs
+    ) -> str | bytes:
+        if (
+            export_format == ExportFormat.html
+            or export_format == ExportFormat.mermaid
+            or export_format == ExportFormat.excel
+        ):
             data_contract = resolve.resolve_data_contract_v2(
                 self._data_contract_file,
                 self._data_contract_str,
@@ -300,7 +306,7 @@ class DataContract:
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        if spec == Spec.odcs:
+        if spec == Spec.odcs or format == ImportFormat.excel:
             data_contract_specification_initial = DataContract.init(template=template, schema=schema)
 
             odcs_imported = importer_factory.create(format).import_source(

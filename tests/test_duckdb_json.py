@@ -5,7 +5,7 @@ from datacontract.model.run import Run
 
 def test_nested_json():
     data_contract_str = """
-dataContractSpecification: 1.1.0
+dataContractSpecification: 1.2.0
 id: "61111-0002"
 info:
   title: Sample data of nested types

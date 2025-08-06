@@ -301,7 +301,13 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "long"
     elif sql_type_normed.startswith("float") or sql_type_normed.startswith("double") or sql_type_normed == "real":
         return "float"
+<<<<<<< HEAD
     elif sql_type_normed.startswith("number"):
+=======
+    elif sql_type_normed.startswith("double"):
+        return "double"
+    elif sql_type_normed.startswith("decimal"):
+>>>>>>> 44e458d8f16a8c46917d73e9b61a58109f4faa7d
         return "decimal"
     elif sql_type_normed.startswith("numeric"):
         return "decimal"

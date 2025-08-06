@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "TestRecord",
+  "fields": [
+    {
+      "name": "required_enum",
+      "type": {
+        "type": "enum",
+        "name": "Color",
+        "symbols": ["RED", "GREEN", "BLUE"]
+      }
+    },
+    {
+      "name": "optional_enum",
+      "type": [
+        "null",
+        {
+          "type": "enum",
+          "name": "Status",
+          "symbols": ["ACTIVE", "INACTIVE", "PENDING"]
+        }
+      ]
+    }
+  ]
+}

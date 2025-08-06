@@ -33,6 +33,7 @@ def test_test_s3_csv(minio_container, monkeypatch):
     print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
+    assert 8 == len(run.checks), "Expected 5 checks to be executed"
 
 
 def _prepare_s3_files(minio_container):
