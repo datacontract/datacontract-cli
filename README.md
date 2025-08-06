@@ -222,6 +222,7 @@ A list of available extras:
 
 | Dependency              | Installation Command                       |
 |-------------------------|--------------------------------------------|
+| Amazon Athena           | `pip install datacontract-cli[athena]`     |
 | Avro Support            | `pip install datacontract-cli[avro]`       |
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration  | `pip install datacontract-cli[databricks]` |
@@ -366,6 +367,7 @@ Credentials are provided with environment variables.
 Supported server types:
 
 - [s3](#S3)
+- [athena](#athena)
 - [bigquery](#bigquery)
 - [azure](#azure)
 - [sqlserver](#sqlserver)
@@ -435,6 +437,41 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+
+#### Athena
+
+Data Contract CLI can test data in AWS Athena stored in S3.
+Supports different file formats, such as Iceberg, Parquet, JSON, CSV...
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  athena:
+    type: athena
+    catalog: awsdatacatalog # awsdatacatalog is the default setting
+    schema: icebergdemodb   # in Athena, this is called "database"
+    regionName: eu-central-1
+    stagingDir: s3://my-bucket/athena-results/
+models:
+  my_table: # corresponds to a table of view name
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: string
+        config:
+          physicalType: varchar
+```
+
+##### Environment Variables
+
+| Environment Variable                | Example                         | Description                            |
+|-------------------------------------|---------------------------------|----------------------------------------|
+| `DATACONTRACT_S3_REGION`            | `eu-central-1`                  | Region of Athena service               |
+| `DATACONTRACT_S3_ACCESS_KEY_ID`     | `AKIAXV5Q5QABCDEFGH`            | AWS Access Key ID                      |
+| `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
+| `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
 
 #### Google Cloud Storage (GCS)
@@ -898,8 +935,10 @@ models:
 │    --engine          TEXT                                  [engine] The engine used for great    │
 │                                                            expection run.                        │
 │                                                            [default: None]                       │
-│    --template        PATH                                  [custom] The file path of Jinja       │
-│                                                            template.                             │
+│    --template        PATH                                  The file path or URL of a template.   │
+│                                                            For Excel format: path/URL to custom  │
+│                                                            Excel template. For custom format:    │
+│                                                            path to Jinja template.               │
 │                                                            [default: None]                       │
 │    --help                                                  Show this message and exit.           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
