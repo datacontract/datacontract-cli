@@ -3,6 +3,9 @@ from datacontract.model.data_contract_specification import Field
 
 
 def convert_to_sql_type(field: Field, server_type: str) -> str:
+    if field.config and "physicalType" in field.config:
+        return field.config["physicalType"]
+
     if server_type == "snowflake":
         return convert_to_snowflake(field)
     elif server_type == "postgres":
@@ -19,6 +22,7 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_bigquery(field)
     elif server_type == "trino":
         return convert_type_to_trino(field)
+
     return field.type
 
 
