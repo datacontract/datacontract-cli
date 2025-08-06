@@ -131,6 +131,7 @@ def import_servers(odcs: OpenDataContractStandard) -> Dict[str, Server] | None:
         server.host = odcs_server.host
         server.port = odcs_server.port
         server.catalog = odcs_server.catalog
+        server.stagingDir = odcs_server.stagingDir
         server.topic = getattr(odcs_server, "topic", None)
         server.http_path = getattr(odcs_server, "http_path", None)
         server.token = getattr(odcs_server, "token", None)
