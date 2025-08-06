@@ -161,6 +161,14 @@ if not run.has_passed():
 
 Choose the most appropriate installation method for your needs:
 
+### uv
+
+If you have [uv](https://docs.astral.sh/uv/) installed, you can run datacontract-cli directly without installing:
+
+```
+uv run --with 'datacontract-cli[all]' datacontract --version
+```
+
 ### pip
 Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
 
