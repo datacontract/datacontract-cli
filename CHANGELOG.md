@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
 ### Added
 
-- `datacontract test` now supports testing HTTP APIs.
 - Export to DQX : datacontract export --format dqx
+
+
+## [0.10.34] - 2025-08-06
+
+### Added
+
+- `datacontract test` now supports HTTP APIs.
+- `datacontract test` now supports Athena.
 
 ### Fixed
 

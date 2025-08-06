@@ -2,6 +2,8 @@ import logging
 import typing
 import uuid
 
+from datacontract.engines.soda.connections.athena import to_athena_soda_configuration
+
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
@@ -104,6 +106,10 @@ def check_soda_execute(
         scan.set_data_source_name(server.type)
     elif server.type == "trino":
         soda_configuration_str = to_trino_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        scan.set_data_source_name(server.type)
+    elif server.type == "athena":
+        soda_configuration_str = to_athena_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
 
