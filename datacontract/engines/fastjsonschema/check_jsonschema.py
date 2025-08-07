@@ -172,16 +172,18 @@ def process_local_file(run, server, schema, model_name, validate):
         path = path.format(model=model_name)
 
     all_files = []
-    for file_path in glob.glob(path, recursive=True):
-        if os.path.isfile(file_path):
-            if file_path.endswith(".json"):
-                all_files.append(file_path)
-        else:
-            # Fetch all JSONs in the directory
-            for root, _, files in os.walk(file_path):
-                for file in files:
-                    if file.endswith(".json"):
-                        all_files.append(os.path.join(root, file))
+    if os.path.isdir(path):
+        # Fetch all JSONs in the directory
+        for root, _, files in os.walk(path):
+            for file in files:
+                if file.endswith(".json"):
+                    all_files.append(os.path.join(root, file))
+    else:
+        # Use glob to fetch all JSONs
+        for file_path in glob.glob(path, recursive=True):
+            if os.path.isfile(file_path):
+                if file_path.endswith(".json"):
+                    all_files.append(file_path)
 
     if not all_files:
         raise DataContractException(
