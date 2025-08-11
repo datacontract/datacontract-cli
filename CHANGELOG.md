@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- JSON Schema Check: Add globbing support for local JSON files
+
 
 ## [0.10.34] - 2025-08-06
 
