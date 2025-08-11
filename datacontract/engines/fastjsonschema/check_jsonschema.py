@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import threading
-from typing import List, Optional
+from typing import Any, Callable, Generator, List, Optional
 
 import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
@@ -86,7 +86,7 @@ def process_exceptions(run, exceptions: List[DataContractException]):
 
 
 def validate_json_stream(
-    schema: dict, model_name: str, validate: callable, json_stream: list[dict]
+    schema: dict, model_name: str, validate: Callable, json_stream: Generator[Any, Any, None]
 ) -> List[DataContractException]:
     logging.info(f"Validating JSON stream for model: '{model_name}'.")
     exceptions: List[DataContractException] = []
@@ -100,7 +100,7 @@ def validate_json_stream(
                 DataContractException(
                     type="schema",
                     name="Check that JSON has valid schema",
-                    result="failed",
+                    result=ResultEnum.failed,
                     reason=f"{f'#{primary_key_value}: ' if primary_key_value is not None else ''}{e.message}",
                     model=model_name,
                     engine="jsonschema",
@@ -219,7 +219,7 @@ def process_s3_file(run, server, schema, model_name, validate):
         raise DataContractException(
             type="schema",
             name="Check that JSON has valid schema",
-            result="warning",
+            result=ResultEnum.warning,
             reason=f"Cannot find any file in {s3_location}",
             engine="datacontract",
         )
@@ -240,7 +240,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
             Check(
                 type="schema",
                 name="Check that JSON has valid schema",
-                result="warning",
+                result=ResultEnum.warning,
                 reason="Server format is not 'json'. Skip validating jsonschema.",
                 engine="jsonschema",
             )
