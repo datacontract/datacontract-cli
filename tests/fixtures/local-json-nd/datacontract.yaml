@@ -1,0 +1,35 @@
+dataContractSpecification: 1.2.0
+id: my-data-contract-local
+info:
+  title: My Data Contract Local
+  version: 0.0.1
+  description: My Data Contract Description
+servers:
+  test:
+    type: local
+    path: ./fixtures/local-json-nd/**/*.json
+    format: json
+    delimiter: new_line
+models:
+  flights:
+    description: My model description
+    type: object
+    fields:
+      FL_DATE:
+        type: string
+        required: true
+      DEP_DELAY:
+        type: float
+      ARR_DELAY:
+        type: float
+      DEP_TIME:
+        type: float
+    quality:
+      - type: sql
+        description: Row-count using SQL
+        query: SELECT COUNT(*) FROM flights
+        mustBeGreaterThan: 10
+      - type: sql
+        description: Average delay difference should be in expected range
+        query: SELECT AVG(ARR_DELAY - DEP_DELAY) FROM flights
+        mustBeBetween: [-50, 50]
