@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- API `/test` endpoint now supports `publish_url` parameter to publish test results to a URL. (#853)
+
 ### Fixed
+
+- Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
 - JSON Schema Check: Add globbing support for local JSON files
 
 

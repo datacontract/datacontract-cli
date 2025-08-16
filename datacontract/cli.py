@@ -126,8 +126,10 @@ def test(
             "servers (default)."
         ),
     ] = "all",
-    publish_test_results: Annotated[bool, typer.Option(help="Publish the results after the test")] = False,
-    publish: Annotated[str, typer.Option(help="DEPRECATED. The url to publish the results after the test.")] = None,
+    publish_test_results: Annotated[
+        bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
+    ] = False,
+    publish: Annotated[str, typer.Option(help="The url to publish the results after the test.")] = None,
     output: Annotated[
         Path,
         typer.Option(

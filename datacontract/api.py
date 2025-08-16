@@ -162,15 +162,22 @@ async def test(
     server: Annotated[
         str | None,
         Query(
-            examples=["production"],
             description="The server name to test. Optional, if there is only one server.",
+            examples=["production"],
+        ),
+    ] = None,
+    publish_url: Annotated[
+        str | None,
+        Query(
+            description="URL to publish test results. Optional, if you want to publish the test results to a Data Mesh Manager or Data Contract Manager. Example: https://api.datamesh-manager.com/api/test-results",
+            examples=["https://api.datamesh-manager.com/api/test-results"],
         ),
     ] = None,
 ) -> Run:
     check_api_key(api_key)
     logging.info("Testing data contract...")
     logging.info(body)
-    return DataContract(data_contract_str=body, server=server).test()
+    return DataContract(data_contract_str=body, server=server, publish_url=publish_url).test()
 
 
 @app.post(
