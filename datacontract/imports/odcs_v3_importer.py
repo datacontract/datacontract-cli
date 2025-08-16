@@ -138,7 +138,9 @@ def import_servers(odcs: OpenDataContractStandard) -> Dict[str, Server] | None:
         server.driver = getattr(odcs_server, "driver", None)
         server.roles = import_server_roles(odcs_server.roles)
         server.storageAccount = (
-            azure_storage_account(odcs_server.location) if server.type == "azure" and "://" in server.location else None
+            to_azure_storage_account(odcs_server.location)
+            if server.type == "azure" and "://" in server.location
+            else None
         )
 
         servers[server_name] = server
@@ -417,7 +419,21 @@ def import_tags(odcs: OpenDataContractStandard) -> List[str] | None:
     return odcs.tags
 
 
-def azure_storage_account(location: str) -> str | None:
+def to_azure_storage_account(location: str) -> str | None:
+    """
+    Converts a storage location string to extract the storage account name.
+    ODCS v3.0 has no explicit field for the storage account. It uses the location field, which is a URI.
+
+    This function parses a storage location string to identify and return the
+    storage account name. It handles two primary patterns:
+    1. Protocol://containerName@storageAccountName
+    2. Protocol://storageAccountName
+
+    :param location: The storage location string to parse, typically following
+                     the format protocol://containerName@storageAccountName. or
+                     protocol://storageAccountName.
+    :return: The extracted storage account name if found, otherwise None
+    """
     # to catch protocol://containerName@storageAccountName. pattern from location
     match = re.search(r"(?<=@)([^.]*)", location, re.IGNORECASE)
     if match:
