@@ -923,7 +923,7 @@ models:
 │                      terraform|avro-idl|sql|sql-query|mer                                        │
 │                      maid|html|go|bigquery|dbml|spark|sql                                        │
 │                      alchemy|data-caterer|dcs|markdown|ic                                        │
-│                      eberg|custom|excel]                                                         │
+│                      eberg|custom|excel|dqx]                                                         │
 │    --output          PATH                                  Specify the file path where the       │
 │                                                            exported data will be saved. If no    │
 │                                                            path is provided, the output will be  │
@@ -969,35 +969,36 @@ datacontract export --format html --output datacontract.html
 
 Available export options:
 
-| Type                 | Description                                             | Status |
-|----------------------|---------------------------------------------------------|--------|
-| `html`               | Export to HTML                                          | ✅      |
-| `jsonschema`         | Export to JSON Schema                                   | ✅      |
-| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
-| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
-| `dbt`                | Export to dbt models in YAML format                     | ✅      |
-| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅      |
-| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅      |
-| `rdf`                | Export data contract to RDF representation in N3 format | ✅      |
-| `avro`               | Export to AVRO models                                   | ✅      |
-| `protobuf`           | Export to Protobuf                                      | ✅      |
-| `terraform`          | Export to terraform resources                           | ✅      |
-| `sql`                | Export to SQL DDL                                       | ✅      |
-| `sql-query`          | Export to SQL Query                                     | ✅      |
-| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
-| `bigquery`           | Export to BigQuery Schemas                              | ✅      |
-| `go`                 | Export to Go types                                      | ✅      |
-| `pydantic-model`     | Export to pydantic models                               | ✅      |
-| `DBML`               | Export to a DBML Diagram description                    | ✅      |
-| `spark`              | Export to a Spark StructType                            | ✅      |
-| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
-| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
-| `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
-| `markdown`           | Export to Markdown                                      | ✅      |
+| Type                 | Description                                             | Status  |
+|----------------------|---------------------------------------------------------|---------|
+| `html`               | Export to HTML                                          | ✅       |
+| `jsonschema`         | Export to JSON Schema                                   | ✅       |
+| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅       |
+| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅       |
+| `dbt`                | Export to dbt models in YAML format                     | ✅       |
+| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅       |
+| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅       |
+| `rdf`                | Export data contract to RDF representation in N3 format | ✅       |
+| `avro`               | Export to AVRO models                                   | ✅       |
+| `protobuf`           | Export to Protobuf                                      | ✅       |
+| `terraform`          | Export to terraform resources                           | ✅       |
+| `sql`                | Export to SQL DDL                                       | ✅       |
+| `sql-query`          | Export to SQL Query                                     | ✅       |
+| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅       |
+| `bigquery`           | Export to BigQuery Schemas                              | ✅       |
+| `go`                 | Export to Go types                                      | ✅       |
+| `pydantic-model`     | Export to pydantic models                               | ✅       |
+| `DBML`               | Export to a DBML Diagram description                    | ✅       |
+| `spark`              | Export to a Spark StructType                            | ✅       |
+| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅       |
+| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅       |
+| `dcs`                | Export to Data Contract Specification in YAML format    | ✅       |
+| `markdown`           | Export to Markdown                                      | ✅       |
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
-| `excel`              | Export to ODCS Excel Template                           | ✅      |
-| `custom`             | Export to Custom format with Jinja                      | ✅      |
-| Missing something?   | Please create an issue on GitHub                        | TBD    |
+| `excel`              | Export to ODCS Excel Template                           | ✅       |
+| `custom`             | Export to Custom format with Jinja                      | ✅       |
+| `dqx`                | Export to DQX in YAML format                            | ✅       |
+| Missing something?   | Please create an issue on GitHub                        | TBD     |
 
 #### SQL
 

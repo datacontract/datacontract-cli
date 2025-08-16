@@ -152,7 +152,7 @@ def to_spark_data_type(field: Field) -> types.DataType:
         return types.DateType()
     if field_type == "bytes":
         return types.BinaryType()
-    return types.StringType() # default if no condition is met
+    return types.StringType()  # default if no condition is met
 
 
 def print_schema(dtype: types.DataType) -> str:

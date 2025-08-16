@@ -198,6 +198,12 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
+    name=ExportFormat.dqx,
+    module_path="datacontract.export.dqx_converter",
+    class_name="DqxExporter",
+)
+
+exporter_factory.register_lazy_exporter(
     name=ExportFormat.iceberg, module_path="datacontract.export.iceberg_converter", class_name="IcebergExporter"
 )
 
