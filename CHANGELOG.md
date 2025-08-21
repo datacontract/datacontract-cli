@@ -75,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
+- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly 
 
 ## [0.10.28] - 2025-06-05
 

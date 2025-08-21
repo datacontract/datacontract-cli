@@ -27,31 +27,33 @@ def dcs_to_mermaid(data_contract_spec: DataContractSpecification) -> str | None:
         mmd_references = []
 
         for model_name, model in data_contract_spec.models.items():
+            clean_model = _sanitize_name(model_name)
             entity_block = ""
 
             for field_name, field in model.fields.items():
                 clean_name = _sanitize_name(field_name)
-                indicators = ""
-
-                if field.primaryKey or (field.unique and field.required):
-                    indicators += "🔑"
-                if field.references:
-                    indicators += "⌘"
-
                 field_type = field.type or "unknown"
-                entity_block += f"\t{clean_name}{indicators} {field_type}\n"
+
+                is_pk = bool(field.primaryKey or (field.unique and field.required))
+                is_fk = bool(field.references)
+
+                entity_block += _field_line(clean_name, field_type, pk=is_pk, uk=bool(field.unique), fk=is_fk)
 
                 if field.references:
-                    referenced_model = field.references.split(".")[0] if "." in field.references else ""
+                    references = field.references.replace(".", "·")
+                    parts = references.split("·")
+                    referenced_model = _sanitize_name(parts[0]) if len(parts) > 0 else ""
+                    referenced_field = _sanitize_name(parts[1]) if len(parts) > 1 else ""
                     if referenced_model:
-                        mmd_references.append(f'"📑{referenced_model}"' + "}o--{ ||" + f'"📑{model_name}"')
+                        label = referenced_field or clean_name
+                        mmd_references.append(f'"**{referenced_model}**" ||--o{{ "**{clean_model}**" : {label}')
 
-            mmd_entity += f'\t"**{model_name}**"' + "{\n" + entity_block + "}\n"
+            mmd_entity += f'\t"**{clean_model}**" {{\n{entity_block}}}\n'
 
         if mmd_references:
             mmd_entity += "\n" + "\n".join(mmd_references)
 
-        return f"{mmd_entity}\n"
+        return mmd_entity + "\n"
 
     except Exception as e:
         print(f"Error generating DCS mermaid diagram: {e}")
@@ -95,3 +97,14 @@ def odcs_to_mermaid(data_contract_spec: OpenDataContractStandard) -> str | None:
 
 def _sanitize_name(name: str) -> str:
     return name.replace("#", "Nb").replace(" ", "_").replace("/", "by")
+
+
+def _field_line(name: str, field_type: str, pk: bool = False, uk: bool = False, fk: bool = False) -> str:
+    indicators = ""
+    if pk:
+        indicators += "🔑"
+    if uk:
+        indicators += "🔒"
+    if fk:
+        indicators += "⌘"
+    return f"\t{name}{indicators} {field_type}\n"
