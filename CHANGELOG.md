@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added yaml language server support for `datacontract init` for linting and auto-completion in data contract files
+
+### Added
+
 - API `/test` endpoint now supports `publish_url` parameter to publish test results to a URL. (#853)
 
 ### Fixed
@@ -16,11 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
 - JSON Schema Check: Add globbing support for local JSON files
 
-
 ### Added
 
 - Export to DQX : datacontract export --format dqx
-
 
 ## [0.10.34] - 2025-08-06
 
@@ -33,60 +35,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Avro Importer: Optional and required enum types are now supported (#804)
 
-
 ## [0.10.33] - 2025-07-29
 
 ### Added
-- Export to Excel: Convert ODCS YAML to Excel https://github.com/datacontract/open-data-contract-standard-excel-template (#742)
-- Extra properties in Markdown export. (#842)
 
+- Export to Excel: Convert ODCS YAML to Excel <https://github.com/datacontract/open-data-contract-standard-excel-template> (#742)
+- Extra properties in Markdown export. (#842)
 
 ## [0.10.32] - 2025-07-28
 
 ### Added
+
 - Import from Excel: Support the new quality sheet
 
 ### Fixed
+
 - JUnit Test Report: Fixed incorrect syntax on handling warning test report. (#833)
 
 ## [0.10.31] - 2025-07-18
 
 ### Added
-- Added support for Variant with Spark exporter, data_contract.test(), and import as source unity catalog (#792)
 
+- Added support for Variant with Spark exporter, data_contract.test(), and import as source unity catalog (#792)
 
 ## [0.10.30] - 2025-07-15
 
 ### Fixed
+
 - Excel Import should return ODCS YAML (#829)
 - Excel Import: Missing server section when the server included a schema property (#823)
 
 ### Changed
+
 - Use `&#x2007;` instead of `&numsp;` for tab in Markdown export.
 
 ## [0.10.29] - 2025-07-06
 
 ### Added
+
 - Support for Data Contract Specification v1.2.0
 - `datacontract import --format json`: Import from JSON files
 
 ### Changed
+
 - `datacontract api [OPTIONS]`: Added option to pass extra arguments for `uvicorn.run()`
 
 ### Fixed
+
 - `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
-- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly 
+- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly
 
 ## [0.10.28] - 2025-06-05
 
 ### Added
+
 - Much better ODCS support
-    - Import anything to ODCS via the `import --spec odcs` flag
-    - Export to HTML with an ODCS native template via `export --format html`
-    - Export to Mermaid with an ODCS native mapping via `export --format mermaid`
+  - Import anything to ODCS via the `import --spec odcs` flag
+  - Export to HTML with an ODCS native template via `export --format html`
+  - Export to Mermaid with an ODCS native mapping via `export --format mermaid`
 - The databricks `unity` importer now supports more than a single table. You can use `--unity-table-full-name` multiple times to import multiple tables. And it will automatically add a server with the catalog and schema name.
 
 ### Changed
+
 - `datacontract catalog [OPTIONS]`: Added version to contract cards in `index.html` of the catalog (enabled search by version)
 - The type mapping of the `unity` importer no uses the native databricks types instead of relying on spark types. This allows for better type mapping and more accurate data contracts.
 
@@ -112,10 +122,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export --format sodacl`: Fix resolving server when using `--server` flag (#768)
 - `datacontract export --format dbt`: Fixed DBT export behaviour of constraints to default to data tests when no model type is specified in the datacontract model
 
-
 ## [0.10.26] - 2025-05-16
 
 ### Changed
+
 - Databricks: Add support for Variant type (#758)
 - `datacontract export --format odcs`: Export physical type if the physical type is configured in
   config object (#757)
@@ -125,9 +135,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.25] - 2025-05-07
 
 ### Added
+
 - Extracted the DataContractSpecification and the OpenDataContractSpecification in separate pip modules and use them in the CLI.
 - `datacontract import --format excel`: Import from Excel
-  template https://github.com/datacontract/open-data-contract-standard-excel-template (#742)
+  template <https://github.com/datacontract/open-data-contract-standard-excel-template> (#742)
 
 ## [0.10.24] - 2025-04-19
 
@@ -161,7 +172,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added import for `ProtoBuf`
 Code for proto to datacontract (#696)
-
 
 - `dbt` & `dbt-sources` export formats now support the optional `--server` flag to adapt the DBT column `data_type` to specific SQL dialects
 - Duckdb Connections are now configurable, when used as Python library (#666)
@@ -247,6 +257,7 @@ Code for proto to datacontract (#696)
 - Option to separate physical table name for a model via config option (#270)
 
 ### Changed
+
 - JSON Schemas are now bundled with the application (#598)
 - datacontract export --format html: The model title is now shown if it is different to the model
   name (#585)
@@ -256,6 +267,7 @@ Code for proto to datacontract (#696)
 - datacontract export --format sql: Create arrays and struct for Databricks (#467)
 
 ### Fixed
+
 - datacontract lint: Linter 'Field references existing field' too many values to unpack (expected
   2) (#586)
 - datacontract test (Azure): Error querying delta tables from azure storage. (#458)
@@ -267,6 +279,7 @@ Code for proto to datacontract (#696)
 ## [0.10.18] - 2025-01-18
 
 ### Fixed
+
 - Fixed an issue when resolving project's dependencies when all extras are installed.
 - Definitions referenced by nested fields are not validated correctly (#595)
 - Replaced deprecated `primary` field with `primaryKey` in exporters, importers, examples, and Jinja templates for backward compatibility. Fixes [#518](https://github.com/your-repo/your-project/issues/518).
@@ -275,6 +288,7 @@ Code for proto to datacontract (#696)
 ## [0.10.17] - 2025-01-16
 
 ### Added
+
 - added export format **markdown**: `datacontract export --format markdown` (#545)
 - When importing in dbt format, add the dbt unique information as a datacontract unique field (#558)
 - When importing in dbt format, add the dbt primary key information as a datacontract primaryKey field (#562)
@@ -283,28 +297,34 @@ Code for proto to datacontract (#696)
 - Add serve command on README (#592)
 
 ### Changed
+
 - Primary and example fields have been deprecated in Data Contract Specification v1.1.0 (#561)
 - Define primaryKey and examples for model to follow the changes in datacontract-specification v1.1.0 (#559)
 
 ### Fixed
+
 - SQL Server: cannot escape reserved word on model (#557)
-- Export dbt-staging-sql error on multi models contracts (#587) 
+- Export dbt-staging-sql error on multi models contracts (#587)
 
 ### Removed
+
 - OpenTelemetry publisher, as it was hardly used
 
 ## [0.10.16] - 2024-12-19
 
 ### Added
+
 - Support for exporting a Data Contract to an Iceberg schema definition.
 - When importing in dbt format, add the dbt `not_null` information as a datacontract `required` field (#547)
 
 ### Changed
+
 - Type conversion when importing contracts into dbt and exporting contracts from dbt (#534)
 - Ensure 'name' is the first column when exporting in dbt format, considering column attributes (#541)
 - Rename dbt's `tests` to `data_tests` (#548)
 
 ### Fixed
+
 - Modify the arguments to narrow down the import target with `--dbt-model` (#532)
 - SodaCL: Prevent `KeyError: 'fail'` from happening when testing with SodaCL
 - fix: populate database and schema values for bigquery in exported dbt sources (#543)
@@ -314,6 +334,7 @@ Code for proto to datacontract (#696)
 ## [0.10.15] - 2024-12-02
 
 ### Added
+
 - Support for model import from parquet file metadata.
 - Great Expectation export: add optional args (#496)
   - `suite_name` the name of the expectation suite to export
@@ -325,11 +346,13 @@ Code for proto to datacontract (#696)
 - fixes issue where records with no fields create an invalid bq schema.
 
 ### Changed
+
 - Changelog support for custom extension keys in `Models` and `Fields` blocks.
 - `datacontract catalog --files '*.yaml'` now checks also any subfolders for such files.
 - Optimize test output table on console if tests fail
 
 ### Fixed
+
 - raise valid exception in DataContractSpecification.from_file if file does not exist
 - Fix importing JSON Schemas containing deeply nested objects without `required` array
 - SodaCL: Only add data quality tests for executable queries
@@ -339,6 +362,7 @@ Code for proto to datacontract (#696)
 Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 
 ### Added
+
 - `datacontract test` now also supports ODCS v3 data contract format
 - `datacontract export --format odcs_v3`: Export to Open Data Contract Standard v3.0.0 (#460)
 - `datacontract test` now also supports ODCS v3 anda Data Contract SQL quality checks on field and model level
@@ -347,25 +371,29 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - Support for custom Trino types
 
 ### Changed
+
 - `datacontract import --format odcs`: Now supports ODSC v3.0.0 files (#474)
 - `datacontract export --format odcs`: Now creates v3.0.0 Open Data Contract Standard files (alias to odcs_v3). Old versions are still available as format `odcs_v2`. (#460)
 
 ### Fixed
-- fix timestamp serialization from parquet -> duckdb (#472)
 
+- fix timestamp serialization from parquet -> duckdb (#472)
 
 ## [0.10.13] - 2024-09-20
 
 ### Added
+
 - `datacontract export --format data-caterer`: Export to [Data Caterer YAML](https://data.catering/setup/guide/scenario/data-generation/)
 
 ### Changed
+
 - `datacontract export --format jsonschema` handle optional and nullable fields (#409)
 - `datacontract import --format unity` handle nested and complex fields (#420)
 - `datacontract import --format spark` handle field descriptions (#420)
 - `datacontract export --format bigquery` handle bigqueryType (#422)
 
 ### Fixed
+
 - use correct float type with bigquery (#417)
 - Support DATACONTRACT_MANAGER_API_KEY
 - Some minor bug fixes
@@ -373,6 +401,7 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 ## [0.10.12] - 2024-09-08
 
 ### Added
+
 - Support for import of DBML Models (#379)
 - `datacontract export --format sqlalchemy`: Export to [SQLAlchemy ORM models](https://docs.sqlalchemy.org/en/20/orm/quickstart.html) (#399)
 - Support of varchar max length in Glue import (#351)
@@ -383,10 +412,12 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - Support of enum title on avro import
 
 ### Changed
+
 - Deltalake is now using DuckDB's native deltalake support (#258). Extra deltalake removed.
 - When dumping to YAML (import) the alias name is used instead of the pythonic name. (#373)
 
 ### Fixed
+
 - Fix an issue where the datacontract cli fails if installed without any extras (#400)
 - Fix an issue where Glue database without a location creates invalid data contract (#351)
 - Fix bigint -> long data type mapping (#351)
@@ -395,7 +426,6 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - Fix a failed to connect to S3 Server (#384)
 - Fix a model bug mismatching with the specification (`definitions.fields`) (#375)
 - Fix array type management in Spark import (#408)
-
 
 ## [0.10.11] - 2024-08-08
 
@@ -418,22 +448,24 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - Fix an issue where the JSON schema validation fails for a field with type `string` and format `uuid`
 - Fix an issue where common DBML renderers may not be able to parse parts of an exported file
 
-
 ## [0.10.10] - 2024-07-18
 
 ### Added
+
 - Add support for dbt manifest file (#104)
 - Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)
 - Adds support for referencing fields within a definition (#322)
 - Add `map` and `enum` type for Avro schema import (#311)
 
 ### Fixed
+
 - Fix import of pyspark for type-checking when pyspark isn't required as a module (#312)- `datacontract import --format spark`: Import from Spark tables (#326)
 - Fix an issue where specifying `glue_table` as parameter did not filter the tables and instead returned all tables from `source` database (#333)
 
 ## [0.10.9] - 2024-07-03
 
 ### Added
+
 - Add support for Trino (#278)
 - Spark export: add Spark StructType exporter (#277)
 - add `--schema` option for the `catalog` and `export` command to provide the schema also locally
@@ -442,20 +474,24 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - Add support for AWS SESSION_TOKEN (#309)
 
 ### Changed
+
 - Added array management on HTML export (#299)
 
 ### Fixed
+
 - Fix `datacontract import --format jsonschema` when description is missing (#300)
 - Fix `datacontract test` with case-sensitive Postgres table names (#310)
 
 ## [0.10.8] - 2024-06-19
 
 ### Added
+
 - `datacontract serve` start a local web server to provide a REST-API for the commands
 - Provide server for sql export for the appropriate schema (#153)
 - Add struct and array management to Glue export (#271)
 
 ### Changed
+
 - Introduced optional dependencies/extras for significantly faster installation times. (#213)
 - Added delta-lake as an additional optional dependency
 - support `GOOGLE_APPLICATION_CREDENTIALS` as variable for connecting to bigquery in `datacontract test`
@@ -464,14 +500,17 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - added the importer factory. This refactoring aims to make it easier to create new importers and consequently the growth and maintainability of the project. (#273)
 
 ### Fixed
+
 - `datacontract export --format avro` fixed array structure (#243)
 
 ## [0.10.7] - 2024-05-31
 
 ### Added
+
 - Test data contract against dataframes / temporary views (#175)
 
 ### Fixed
+
 - AVRO export: Logical Types should be nested (#233)
 
 ## [0.10.6] - 2024-05-29
@@ -483,6 +522,7 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 ## [0.10.5] - 2024-05-29
 
 ### Added
+
 - Added support for `sqlserver` (#196)
 - `datacontract export --format dbml`: Export to [Database Markup Language (DBML)](https://dbml.dbdiagram.io/home/) (#135)
 - `datacontract export --format avro`: Now supports config map on field level for logicalTypes and default values [Custom Avro Properties](./README.md#custom-avro-properties)
@@ -513,6 +553,7 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 ## [0.10.3] - 2024-05-05
 
 ### Fixed
+
 - datacontract catalog: Add index.html to manifest
 
 ## [0.10.2] - 2024-05-05
@@ -526,8 +567,8 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 - Added field format information to HTML export
 
 ### Fixed
-- RDF Export: Fix error if owner is not a URI/URN
 
+- RDF Export: Fix error if owner is not a URI/URN
 
 ## [0.10.1] - 2024-04-19
 
@@ -586,7 +627,6 @@ Data Contract CLI now supports the Open Data Contract Standard (ODCS) v3.0.0.
 
 - Fixed a bug where the export to YAML always escaped the unicode characters.
 
-
 ## [0.9.6-2] - 2024-03-04
 
 ### Added
@@ -600,6 +640,7 @@ This is a huge step forward, we now support testing Kafka messages.
 We start with JSON messages and avro, and Protobuf will follow.
 
 ### Added
+
 - test kafka for JSON messages
 - added import format **sql**: `datacontract import --format sql` (#51)
 - added export format **dbt-sources**: `datacontract export --format dbt-sources`
@@ -610,6 +651,7 @@ We start with JSON messages and avro, and Protobuf will follow.
 ## [0.9.5] - 2024-02-22
 
 ### Added
+
 - export to dbt models (#37).
 - export to ODCS (#49).
 - test - show a test summary table.
@@ -618,12 +660,14 @@ We start with JSON messages and avro, and Protobuf will follow.
 ## [0.9.4] - 2024-02-18
 
 ### Added
+
 - Support for Postgres
 - Support for Databricks
 
 ## [0.9.3] - 2024-02-10
 
 ### Added
+
 - Support for BigQuery data connection
 - Support for multiple models with S3
 
@@ -634,6 +678,7 @@ We start with JSON messages and avro, and Protobuf will follow.
 ## [0.9.2] - 2024-01-31
 
 ### Added
+
 - Publish to Docker Hub
 
 ## [0.9.0] - 2024-01-26 - BREAKING
@@ -643,15 +688,18 @@ The project migrated from Golang to Python.
 The Golang version can be found at [cli-go](https://github.com/datacontract/cli-go)
 
 ### Added
+
 - `test` Support to directly run tests and connect to data sources defined in servers section.
 - `test` generated schema tests from the model definition.
 - `test --publish URL` Publish test results to a server URL.
 - `export` now exports the data contract so format jsonschema and sodacl.
 
 ### Changed
+
 - The `--file` option removed in favor of a direct argument.: Use `datacontract test datacontract.yaml` instead of `datacontract test --file datacontract.yaml`.
 
 ### Removed
+
 - `model` is now part of `export`
 - `quality` is now part of `export`
 - Temporary Removed: `diff` needs to be migrated to Python.
@@ -659,29 +707,40 @@ The Golang version can be found at [cli-go](https://github.com/datacontract/cli-
 - Temporary Removed: `inline` needs to be migrated to Python.
 
 ## [0.6.0]
+
 ### Added
+
 - Support local json schema in lint command.
 - Update to specification 0.9.2.
 
 ## [0.5.3]
+
 ### Fixed
+
 - Fix format flag bug in model (print) command.
 
 ## [0.5.2]
+
 ### Changed
+
 - Log to STDOUT.
 - Rename `model` command parameter, `type` -> `format`.
 
 ## [0.5.1]
+
 ### Removed
+
 - Remove `schema` command.
 
 ### Fixed
+
 - Fix documentation.
 - Security update of x/sys.
 
 ## [0.5.0]
+
 ### Added
+
 - Adapt Data Contract Specification in version 0.9.2.
 - Use `models` section for `diff`/`breaking`.
 - Add `model` command.
@@ -689,22 +748,31 @@ The Golang version can be found at [cli-go](https://github.com/datacontract/cli-
 - Let `quality` write input from STDIN if present.
 
 ## [0.4.0]
+
 ### Added
+
 - Basic implementation of `test` command for Soda Core.
 
 ### Changed
+
 - Change package structure to allow usage as library.
 
 ## [0.3.2]
+
 ### Fixed
+
 - Fix field parsing for dbt models, affects stability of `diff`/`breaking`.
 
 ## [0.3.1]
+
 ### Fixed
+
 - Fix comparing order of contracts in `diff`/`breaking`.
 
 ## [0.3.0]
+
 ### Added
+
 - Handle non-existent schema specification when using `diff`/`breaking`.
 - Resolve local and remote resources such as schema specifications when using "$ref: ..." notation.
 - Implement `schema` command: prints your schema.
@@ -712,23 +780,31 @@ The Golang version can be found at [cli-go](https://github.com/datacontract/cli-
 - Implement the `inline` command: resolves all references using the "$ref: ..." notation and writes them to your data contract.
 
 ### Changed
+
 - Allow remote and local location for all data contract inputs (`--file`, `--with`).
 
 ## [0.2.0]
+
 ### Added
+
 - Add `diff` command for dbt schema specification.
 - Add `breaking` command for dbt schema specification.
 
 ### Changed
+
 - Suggest a fix during `init` when the file already exists.
 - Rename `validate` command to `lint`.
 
 ### Removed
+
 - Remove `check-compatibility` command.
 
 ### Fixed
+
 - Improve usage documentation.
 
 ## [0.1.1]
+
 ### Added
+
 - Initial release.
