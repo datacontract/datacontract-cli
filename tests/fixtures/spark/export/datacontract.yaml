@@ -55,6 +55,7 @@ models:
         type: int
       name:
         type: string
+        description: First and last name of the customer
       metadata:
         type: map
         required: false

@@ -71,7 +71,7 @@ def user_schema():
     return types.StructType(
         [
             types.StructField("id", types.StringType()),
-            types.StructField("name", types.StringType()),
+            types.StructField("name", types.StringType(), True, {"comment": "First and last name of the customer"}),
             types.StructField(
                 "address",
                 types.StructType(
