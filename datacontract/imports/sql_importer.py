@@ -305,6 +305,8 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "decimal"
     elif sql_type_normed.startswith("decimal"):
         return "decimal"
+    elif sql_type_normed.startswith("money"):
+        return "decimal"
     elif sql_type_normed.startswith("bool"):
         return "boolean"
     elif sql_type_normed.startswith("bit"):
