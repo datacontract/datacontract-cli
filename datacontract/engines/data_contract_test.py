@@ -5,6 +5,7 @@ import typing
 
 import requests
 from duckdb.duckdb import DuckDBPyConnection
+from soda.scan import Scan
 
 from datacontract.engines.data_contract_checks import create_checks
 
@@ -27,6 +28,7 @@ def execute_data_contract_test(
     server_name: str = None,
     spark: "SparkSession" = None,
     duckdb_connection: DuckDBPyConnection = None,
+    scan = Scan(),
 ):
     if data_contract_specification.models is None or len(data_contract_specification.models) == 0:
         raise DataContractException(
@@ -59,7 +61,7 @@ def execute_data_contract_test(
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
         check_jsonschema(run, data_contract_specification, server)
-    check_soda_execute(run, data_contract_specification, server, spark, duckdb_connection)
+    check_soda_execute(run, data_contract_specification, server, spark, duckdb_connection, scan)
 
 
 def get_server(data_contract_specification: DataContractSpecification, server_name: str = None) -> Server | None:

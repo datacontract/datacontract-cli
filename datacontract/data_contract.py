@@ -2,6 +2,7 @@ import logging
 import typing
 
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard
+from soda.scan import Scan
 
 from datacontract.export.odcs_v3_exporter import to_odcs_v3
 from datacontract.imports.importer import ImportFormat, Spec
@@ -51,6 +52,7 @@ class DataContract:
         inline_quality: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
+        scan = Scan(),
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -71,6 +73,7 @@ class DataContract:
             ValidFieldConstraintsLinter(),
             DescriptionLinter(),
         }
+        self._scan = scan
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> DataContractSpecification:
@@ -156,7 +159,8 @@ class DataContract:
                 inline_quality=self._inline_quality,
             )
 
-            execute_data_contract_test(data_contract, run, self._server, self._spark, self._duckdb_connection)
+            execute_data_contract_test(
+                data_contract, run, self._server, self._spark, self._duckdb_connection, self._scan)
 
         except DataContractException as e:
             run.checks.append(

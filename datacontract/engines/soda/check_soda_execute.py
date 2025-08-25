@@ -20,6 +20,7 @@ from datacontract.engines.soda.connections.trino import to_trino_soda_configurat
 from datacontract.export.sodacl_converter import to_sodacl_yaml
 from datacontract.model.data_contract_specification import DataContractSpecification, Server
 from datacontract.model.run import Check, Log, ResultEnum, Run
+from soda.scan import Scan
 
 
 def check_soda_execute(
@@ -28,18 +29,17 @@ def check_soda_execute(
     server: Server,
     spark: "SparkSession" = None,
     duckdb_connection: DuckDBPyConnection = None,
+    scan = Scan(),
 ):
     from soda.common.config_helper import ConfigHelper
 
     ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
-    from soda.scan import Scan
 
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
         return
 
     run.log_info("Running engine soda-core")
-    scan = Scan()
 
     if server.type in ["s3", "gcs", "azure", "local"]:
         if server.format in ["json", "parquet", "csv", "delta"]:
