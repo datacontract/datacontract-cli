@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The Spark importer and exporter now also exports the description of columns via the additional metadata of StructFields
+
+### Added
+
 - API `/test` endpoint now supports `publish_url` parameter to publish test results to a URL. (#853)
 
 ### Fixed

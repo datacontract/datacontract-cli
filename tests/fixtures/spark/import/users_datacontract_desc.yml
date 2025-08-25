@@ -16,6 +16,7 @@ models:
       name:
         type: string
         required: false
+        description: First and last name of the customer
       address:
         type: struct
         required: false
