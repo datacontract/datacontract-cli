@@ -7,23 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
-
-- The Spark importer and exporter now also exports the description of columns via the additional metadata of StructFields
+## [0.10.35] - 2025-08-25
 
 ### Added
 
+- Export to DQX : datacontract export --format dqx (#846)
 - API `/test` endpoint now supports `publish_url` parameter to publish test results to a URL. (#853)
+- The Spark importer and exporter now also exports the description of columns via the additional metadata of StructFields (#868)
 
 ### Fixed
 
 - Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
 - JSON Schema Check: Add globbing support for local JSON files
-
-
-### Added
-
-- Export to DQX : datacontract export --format dqx
 
 
 ## [0.10.34] - 2025-08-06
