@@ -349,10 +349,11 @@ def map_type_from_sql(sql_type: str) -> str | None:
 
 
 def remove_variable_tokens(sql_script: str) -> str:
-    ## to cleanse sql statement's script token like $(...) in sqlcmd for T-SQL langage and/or ${...} for liquibase
+    ## to cleanse sql statement's script token like $(...) in sqlcmd for T-SQL langage,  ${...} for liquibase,  {{}} as Jinja
     ## https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-use-scripting-variables?view=sql-server-ver17#b-use-the-setvar-command-interactively
     ## https://docs.liquibase.com/concepts/changelogs/property-substitution.html
-    return re.sub(r"\$\((\w+)\)|\$\{(\w+)\}", r"\1", sql_script)
+    ## https://docs.getdbt.com/guides/using-jinja?step=1 
+    return re.sub(r"\$\((\w+)\)|\$\{(\w+)\}|\{\{(\w+)\}\}", r"\1", sql_script)
 
 
 def read_file(path):
