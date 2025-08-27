@@ -29,7 +29,7 @@ def check_soda_execute(
     server: Server,
     spark: "SparkSession" = None,
     duckdb_connection: DuckDBPyConnection = None,
-    scan = Scan(),
+    scan=Scan(),
 ):
     from soda.common.config_helper import ConfigHelper
 

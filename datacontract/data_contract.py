@@ -52,7 +52,7 @@ class DataContract:
         inline_quality: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
-        scan = Scan(),
+        scan=Scan(),
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -160,7 +160,8 @@ class DataContract:
             )
 
             execute_data_contract_test(
-                data_contract, run, self._server, self._spark, self._duckdb_connection, self._scan)
+                data_contract, run, self._server, self._spark, self._duckdb_connection, self._scan
+            )
 
         except DataContractException as e:
             run.checks.append(

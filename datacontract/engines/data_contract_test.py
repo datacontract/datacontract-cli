@@ -28,7 +28,7 @@ def execute_data_contract_test(
     server_name: str = None,
     spark: "SparkSession" = None,
     duckdb_connection: DuckDBPyConnection = None,
-    scan = Scan(),
+    scan=Scan(),
 ):
     if data_contract_specification.models is None or len(data_contract_specification.models) == 0:
         raise DataContractException(
