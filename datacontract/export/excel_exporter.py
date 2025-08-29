@@ -307,7 +307,7 @@ def fill_single_property_template(
     set_by_header("Classification", property.classification)
     set_by_header("Tags", ",".join(property.tags) if property.tags else "")
     set_by_header(
-        "Example(s)", ",".join(property.examples) if property.examples else ""
+        "Example(s)", ",".join(map(str, property.examples)) if property.examples else ""
     )  # Note: using "Example(s)" as in template
     set_by_header("Encrypted Name", property.encryptedName)
     set_by_header(
