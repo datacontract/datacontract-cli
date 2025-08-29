@@ -283,7 +283,7 @@ def fill_single_property_template(
     sheet: Worksheet, row_index: int, prefix: str, property: SchemaProperty, header_map: dict
 ) -> int:
     """Fill a single property row using the template's column structure"""
-    property_name = f"{prefix}{"." + property.name if property.name else ""}" if prefix else property.name
+    property_name = f"{prefix}{'.' + property.name if property.name else ''}" if prefix else property.name
 
     # Helper function to set cell value by header name
     def set_by_header(header_name: str, value: Any):
@@ -404,7 +404,7 @@ def fill_properties_quality(
         if not property.name:
             continue
 
-        full_property_name = f"{prefix}{"." + property.name if property.name else ""}" if prefix else property.name
+        full_property_name = f"{prefix}{'.' + property.name if property.name else ''}" if prefix else property.name
 
         # Add quality attributes for this property
         if property.quality:
