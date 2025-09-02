@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Export to DQX: Correct DQX format for global-level quality check of data contract export. (#877)
+
 ## [0.10.35] - 2025-08-25
 
 ### Added
