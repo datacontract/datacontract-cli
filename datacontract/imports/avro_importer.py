@@ -194,6 +194,8 @@ def import_avro_array_items(array_schema: avro.schema.ArraySchema) -> Field:
     elif array_schema.items.type == "array":
         items.type = "array"
         items.items = import_avro_array_items(array_schema.items)
+    elif array_schema.items.type == "union":
+        items.type = import_type_from_union_schema(array_schema.items)
     else:  # primitive type
         items.type = map_type_from_avro(array_schema.items.type)
 
@@ -227,25 +229,28 @@ def import_avro_map_values(map_schema: avro.schema.MapSchema) -> Field:
 
 
 def import_type_of_optional_field(field: avro.schema.Field) -> str:
+    return import_type_from_union_schema(field.type)
+
+def import_type_from_union_schema(union_schema: avro.schema.UnionSchema) -> str:
     """
-    Determine the type of optional field in an Avro union.
+    Extract the first non-null type from a union schema and map it to data contract type.
 
     Args:
-        field: The Avro field with a union type.
+        union_schema (avro.schema.UnionSchema): The Avro union schema.
 
     Returns:
-        str: The mapped type of the non-null field in the union.
+        str: The mapped type of the first non-null field in the union.
 
     Raises:
         DataContractException: If no non-null type is found in the union.
     """
-    for field_type in field.type.schemas:
-        if field_type.type != "null":
-            logical_type = field_type.get_prop("logicalType")
+    for schema_type in union_schema.schemas:
+        if schema_type.type != "null":
+            logical_type = schema_type.get_prop("logicalType")
             if logical_type and logical_type in LOGICAL_TYPE_MAPPING:
                 return LOGICAL_TYPE_MAPPING[logical_type]
             else:
-                return map_type_from_avro(field_type.type)
+                return map_type_from_avro(schema_type.type)
     raise DataContractException(
         type="schema",
         result="failed",

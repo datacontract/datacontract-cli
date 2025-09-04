@@ -352,3 +352,63 @@ models:
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+
+def test_import_avro_nullable_array_items():
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/nullable_array_items.avsc")
+
+    expected = """
+dataContractSpecification: 1.2.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  TestNullableArrayItems:
+    description: Test record with nullable unions in array items
+    fields:
+      id:
+        type: string
+        required: true
+        description: Required field - works fine
+      nullable_string:
+        type: string
+        required: false
+        description: Simple nullable field
+      media_urls:
+        type: array
+        required: false
+        description: 'Nullable array with nullable string items '
+        items:
+          type: string
+"""
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+
+
+def test_import_avro_non_nullable_union():
+    result = DataContract().import_from_source("avro", "fixtures/avro/data/non_nullable_union.avsc")
+
+    expected = """
+dataContractSpecification: 1.2.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+models:
+  TestNonNullableUnion:
+    description: Test record with non-nullable union types
+    fields:
+      id:
+        type: string
+        required: true
+        description: Required field
+      multi_type_field:
+        type: string
+        required: false
+        description: Field with multiple types takes first non-null type
+"""
+    print("Result:\n", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
