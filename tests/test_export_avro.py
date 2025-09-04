@@ -101,3 +101,25 @@ def test_to_field_float():
     result = to_avro_schema_json(model_name, model)
 
     assert json.loads(result) == json.loads(expected_avro_schema)
+
+
+def test_export_avro_nullable_array_items():
+    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_nullable_array_items.yaml")
+    with open("fixtures/avro/export/datacontract_nullable_array_items.avsc") as file:
+        expected_avro_schema = file.read()
+
+    model_name, model = next(iter(data_contract.models.items()))
+    result = to_avro_schema_json(model_name, model)
+
+    assert json.loads(result) == json.loads(expected_avro_schema)
+
+
+def test_export_avro_non_nullable_union():
+    data_contract = DataContractSpecification.from_file("fixtures/avro/export/datacontract_non_nullable_union.yaml")
+    with open("fixtures/avro/export/datacontract_non_nullable_union.avsc") as file:
+        expected_avro_schema = file.read()
+
+    model_name, model = next(iter(data_contract.models.items()))
+    result = to_avro_schema_json(model_name, model)
+
+    assert json.loads(result) == json.loads(expected_avro_schema)

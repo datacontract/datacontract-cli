@@ -1,0 +1,23 @@
+dataContractSpecification: 1.2.0
+id: nullable-array-items
+info:
+  title: Test Nullable Array Items
+  version: 0.0.1
+models:
+  TestNullableArrayItems:
+    description: Test record with nullable unions in array items
+    fields:
+      id:
+        type: string
+        required: true
+        description: Required field
+      nullable_string:
+        type: string
+        required: false
+        description: Simple nullable fields
+      media_urls:
+        type: array
+        required: false
+        description: Nullable array with nullable string items
+        items:
+          type: string

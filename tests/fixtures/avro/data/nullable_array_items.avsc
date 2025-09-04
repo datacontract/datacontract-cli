@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "TestNullableArrayItems",
+  "doc": "Test record with nullable unions in array items",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Required field - works fine"
+    },
+    {
+      "name": "nullable_string", 
+      "type": ["null", "string"],
+      "doc": "Simple nullable field",
+      "default": null
+    },
+    {
+      "name": "media_urls",
+      "type": [
+        "null",
+        {
+          "type": "array",
+          "items": [
+            "null",
+            "string"
+          ]
+        }
+      ],
+      "default": null,
+      "doc": "Nullable array with nullable string items "
+    }
+  ]
+}
