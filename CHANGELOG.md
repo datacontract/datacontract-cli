@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
 - JSON Schema Check: Add globbing support for local JSON files
+- Avro Importer: Optional and required enum types now work for arrays
 
 
 ## [0.10.34] - 2025-08-06
