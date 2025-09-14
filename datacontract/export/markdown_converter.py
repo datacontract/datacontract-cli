@@ -302,31 +302,40 @@ def extra_to_markdown(obj: BaseModel, is_in_table_cell: bool = False) -> str:
     Returns:
         str: A Markdown formatted string representing the extra attributes of the data contract.
     """
-    markdown_part = ""
     extra = obj.model_extra
 
+    if not extra:
+        return ""
+
     bullet_char = "•"
-    new_line_char = "\n" if not is_in_table_cell else ""
-    new_line_in_tab = "<br>"
-    if extra:
-        for key_extra, value_extra in extra.items():
-            if not value_extra:
-                continue
-            if is_in_table_cell:
-                markdown_part += f"{bullet_char} **{key_extra}:** "
-            else:
-                markdown_part += f"\n### {key_extra.capitalize()}\n"
+    value_line_ending = "" if is_in_table_cell else "\n"
+    row_suffix = "<br>" if is_in_table_cell else ""
 
-            if isinstance(value_extra, list) and len(value_extra):
-                if isinstance(value_extra[0], dict):
-                    markdown_part += array_of_dict_to_markdown(value_extra)
-                elif isinstance(value_extra[0], str):
-                    markdown_part += array_to_markdown(value_extra)
-            elif isinstance(value_extra, dict):
-                markdown_part += dict_to_markdown(value_extra)
-            else:
-                markdown_part += f"{str(value_extra)}{new_line_char}"
+    def render_header(key: str) -> str:
+        return (
+            f"{bullet_char} **{key}:** "
+            if is_in_table_cell
+            else f"\n### {key.capitalize()}\n"
+        )
 
-            if is_in_table_cell:
-                markdown_part += new_line_in_tab
-    return markdown_part
+    parts: list[str] = []
+    for key_extra, value_extra in extra.items():
+        if not value_extra:
+            continue
+
+        parts.append(render_header(key_extra))
+
+        if isinstance(value_extra, list) and len(value_extra):
+            if isinstance(value_extra[0], dict):
+                parts.append(array_of_dict_to_markdown(value_extra))
+            elif isinstance(value_extra[0], str):
+                parts.append(array_to_markdown(value_extra))
+        elif isinstance(value_extra, dict):
+            parts.append(dict_to_markdown(value_extra))
+        else:
+            parts.append(f"{str(value_extra)}{value_line_ending}")
+
+        if row_suffix:
+            parts.append(row_suffix)
+
+    return "".join(parts)
