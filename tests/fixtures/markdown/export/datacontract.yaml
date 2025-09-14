@@ -24,6 +24,18 @@ servers:
         description: Access to the data for US region
       - name: analyst_cn
         description: Access to the data for China region
+  development:
+    type: s3
+    environment: dev
+    location: s3://datacontract-example-orders-latest/v2/{model}/*.json
+    format: json
+    delimiter: new_line
+    description: "One folder per model. One file per day."
+    roles:
+      - name: analyst_us
+        description: Access to the data for US region
+      - name: analyst_cn
+        description: Access to the data for China region
 terms:
   usage: |
     Data can be used for reports, analytics and machine learning use cases.
