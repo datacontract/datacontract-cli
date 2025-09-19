@@ -1444,17 +1444,21 @@ datacontract import --format bigquery --bigquery-project <project_id> --bigquery
 ```
 
 #### Unity Catalog
-
 ```bash
 # Example import from a Unity Catalog JSON file
 datacontract import --format unity --source my_unity_table.json
 ```
 
 ```bash
-# Example import single table from Unity Catalog via HTTP endpoint
+# Example import single table from Unity Catalog via HTTP endpoint using PAT
 export DATACONTRACT_DATABRICKS_SERVER_HOSTNAME="https://xyz.cloud.databricks.com"
-export DATACONTRACT_DATABRICKS_HTTP_PATH="/sql/1.0/warehouses/b053a331fa014fb4"
 export DATACONTRACT_DATABRICKS_TOKEN=<token>
+datacontract import --format unity --unity-table-full-name <table_full_name>
+```
+ Please Refer to  [Databricks documentation](https://docs.databricks.com/aws/en/dev-tools/auth/unified-auth) on how to set up a profile
+```bash
+# Example import single table from Unity Catalog via HTTP endpoint using Profile
+export DATACONTRACT_DATABRICKS_PROFILE="my-profile"
 datacontract import --format unity --unity-table-full-name <table_full_name>
 ```
 
