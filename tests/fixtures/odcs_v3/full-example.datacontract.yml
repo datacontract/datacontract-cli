@@ -23,6 +23,7 @@ models:
     title: tbl
     description: Provides core payment metrics
     type: table
+    tags: [ "table" ]
     fields:
       txn_ref_dt:
         title: transaction reference date
@@ -30,6 +31,7 @@ models:
         required: false
         primaryKey: false
         description: Reference date for transaction
+        tags: [ "column" ]
         examples:
           - "2022-10-03"
           - "2020-01-28"
