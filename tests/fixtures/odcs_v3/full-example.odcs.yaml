@@ -33,7 +33,7 @@ schema:
         type: businessDefinition
       - url: https://youtu.be/jbY1BKFj9ec
         type: videoTutorial
-    tags: [ ]
+    tags: [ "table" ]
     dataGranularityDescription: Aggregation on columns txn_ref_dt, pmt_txn_id
     properties:
       - name: txn_ref_dt
@@ -47,7 +47,7 @@ schema:
         partitioned: true
         partitionKeyPosition: 1
         criticalDataElement: false
-        tags: [ ]
+        tags: [ "column" ]
         classification: public
         transformSourceObjects:
           - table_name_1

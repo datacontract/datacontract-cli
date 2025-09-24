@@ -207,7 +207,11 @@ def import_models(odcs: Any) -> Dict[str, Model]:
         schema_physical_name = odcs_schema.physicalName
         schema_description = odcs_schema.description if odcs_schema.description is not None else ""
         model_name = schema_physical_name if schema_physical_name is not None else schema_name
-        model = Model(description=" ".join(schema_description.splitlines()) if schema_description else "", type="table")
+        model = Model(
+            description=" ".join(schema_description.splitlines()) if schema_description else "",
+            type="table",
+            tags=odcs_schema.tags if odcs_schema.tags is not None else None,
+        )
         model.fields = import_fields(odcs_schema.properties, custom_type_mappings, server_type=get_server_type(odcs))
         if odcs_schema.quality is not None:
             model.quality = convert_quality_list(odcs_schema.quality)
