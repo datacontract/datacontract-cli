@@ -231,6 +231,8 @@ def convert_quality_list(odcs_quality_list):
                 quality.description = odcs_quality.description
             if odcs_quality.query is not None:
                 quality.query = odcs_quality.query
+            if odcs_quality.rule is not None:
+                quality.metric = odcs_quality.rule
             if odcs_quality.mustBe is not None:
                 quality.mustBe = odcs_quality.mustBe
             if odcs_quality.mustNotBe is not None:
@@ -238,11 +240,11 @@ def convert_quality_list(odcs_quality_list):
             if odcs_quality.mustBeGreaterThan is not None:
                 quality.mustBeGreaterThan = odcs_quality.mustBeGreaterThan
             if odcs_quality.mustBeGreaterOrEqualTo is not None:
-                quality.mustBeGreaterThanOrEqualTo = odcs_quality.mustBeGreaterOrEqualTo
+                quality.mustBeGreaterOrEqualTo = odcs_quality.mustBeGreaterOrEqualTo
             if odcs_quality.mustBeLessThan is not None:
                 quality.mustBeLessThan = odcs_quality.mustBeLessThan
             if odcs_quality.mustBeLessOrEqualTo is not None:
-                quality.mustBeLessThanOrEqualTo = odcs_quality.mustBeLessOrEqualTo
+                quality.mustBeLessOrEqualTo = odcs_quality.mustBeLessOrEqualTo
             if odcs_quality.mustBeBetween is not None:
                 quality.mustBeBetween = odcs_quality.mustBeBetween
             if odcs_quality.mustNotBeBetween is not None:
@@ -255,8 +257,6 @@ def convert_quality_list(odcs_quality_list):
                 quality.model_extra["businessImpact"] = odcs_quality.businessImpact
             if odcs_quality.dimension is not None:
                 quality.model_extra["dimension"] = odcs_quality.dimension
-            if odcs_quality.rule is not None:
-                quality.model_extra["rule"] = odcs_quality.rule
             if odcs_quality.schedule is not None:
                 quality.model_extra["schedule"] = odcs_quality.schedule
             if odcs_quality.scheduler is not None:

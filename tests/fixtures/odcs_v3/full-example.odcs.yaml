@@ -96,7 +96,8 @@ schema:
             type: implementation
         encryptedName: rcvr_cntry_code_encrypted
         quality:
-          - rule: nullCheck
+          - rule: nullValues
+            mustBe: 0
             description: column should not contain null values
             dimension: completeness # dropdown 7 values
             type: library
@@ -112,7 +113,8 @@ schema:
               - property: COMPARISON_TYPE
                 value: Greater than
     quality:
-      - rule: countCheck
+      - rule: rowCount
+        mustBeGreaterThan: 1000
         type: library
         description: Ensure row count is within expected volume range
         dimension: completeness

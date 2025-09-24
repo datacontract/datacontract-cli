@@ -1,4 +1,4 @@
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: integer-unit-test
 info:
   title: Integer Unit Test
