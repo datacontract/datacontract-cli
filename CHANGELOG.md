@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
+
 ### Fixed
 
 - Import the table tags from a open data contract spec v3
+
 
 ## [0.10.35] - 2025-08-25
 
@@ -23,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
 - JSON Schema Check: Add globbing support for local JSON files
-
+- Fixed server section rendering for markdown exporter
 
 ## [0.10.34] - 2025-08-06
 

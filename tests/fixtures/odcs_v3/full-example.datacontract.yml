@@ -1,4 +1,4 @@
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: 53581432-6c55-4ba2-a65f-72344a91553a
 info:
   title: ''
@@ -63,7 +63,8 @@ models:
         classification: public
         quality:
           - type: library
-            rule: nullCheck
+            metric: nullValues
+            mustBe: 0
             description: column should not contain null values
             dimension: completeness
             severity: error
@@ -86,7 +87,8 @@ models:
     quality:
     - type: library
       description: Ensure row count is within expected volume range
-      rule: countCheck
+      metric: rowCount
+      mustBeGreaterThan: 1000
       dimension: completeness
       method: reconciliation
       severity: error
