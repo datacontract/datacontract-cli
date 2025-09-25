@@ -563,10 +563,14 @@ def to_sodacl_threshold(quality: Quality) -> str | None:
         return f"!= {quality.mustNotBe}"
     if quality.mustBeGreaterThan is not None:
         return f"> {quality.mustBeGreaterThan}"
+    if quality.mustBeGreaterOrEqualTo is not None:
+        return f">= {quality.mustBeGreaterOrEqualTo}"
     if quality.mustBeGreaterThanOrEqualTo is not None:
         return f">= {quality.mustBeGreaterThanOrEqualTo}"
     if quality.mustBeLessThan is not None:
         return f"< {quality.mustBeLessThan}"
+    if quality.mustBeLessOrEqualTo is not None:
+        return f"<= {quality.mustBeLessOrEqualTo}"
     if quality.mustBeLessThanOrEqualTo is not None:
         return f"<= {quality.mustBeLessThanOrEqualTo}"
     if quality.mustBeBetween is not None:
