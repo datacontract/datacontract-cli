@@ -382,6 +382,7 @@ Supported server types:
 - [databricks](#databricks)
 - [databricks (programmatic)](#databricks-programmatic)
 - [dataframe (programmatic)](#dataframe-programmatic)
+- [dataframe with failed rows handling (programmatic)](#programmatic-with-failed-rows-handling)
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
@@ -705,6 +706,56 @@ run = data_contract.test()
 assert run.result == "passed"
 ```
 
+#### Programmatic with failed rows handling
+
+In the example below we defined a custom Scan object with a CustomSampler to handle failed rows.
+##### Example
+```python
+from datacontract.data_contract import DataContract
+from soda.sampler.sample_context import SampleContext
+from soda.sampler.sampler import Sampler
+from soda.scan import Scan
+
+
+class CustomSampler(Sampler):
+
+    def store_sample(self, sample_context: SampleContext):
+        print(sample_context.sample.get_rows())
+
+scan = Scan()
+scan.sampler = CustomSampler()
+scan._configuration.samples_limit = 50
+scan._configuration.exclude_columns = {
+    'test_table': ['valid_from'],
+}
+
+data_contract = DataContract(
+    spark=spark,
+    scan=Scan,
+    data_contract_str="""
+    dataContractSpecification: 1.2.0
+    id: test
+    info:
+      title: Test
+      version: "0.0.1"
+    servers:
+      df:
+        type: dataframe
+        catalog: test_catalog
+    models:
+      test_table:
+        fields:
+          id:
+            type: string
+            required: true
+          valid_from:
+            type: date
+    """
+)
+
+data_contract.test()
+
+```
 
 #### Snowflake
 

@@ -10,11 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
+- Support for custom SODA Scan() objects (can be used for failed rows handling)
 
 ### Fixed
 
 - Import the table tags from a open data contract spec v3 (#895)
-
 
 ## [0.10.35] - 2025-08-25
 
