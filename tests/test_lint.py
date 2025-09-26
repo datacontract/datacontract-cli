@@ -72,3 +72,12 @@ def test_lint_with_references():
     run = data_contract.lint()
 
     assert run.result == "passed"
+
+
+def test_lint_valid_field_constraints():
+    data_contract_file = "fixtures/lint/datacontract_valid_field_constraints.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.lint()
+    
+    assert run.result == "passed"
