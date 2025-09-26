@@ -33,7 +33,7 @@ dependencies = [
   "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
-  "datacontract-specification>=1.2.0,<2.0.0",
+  "datacontract-specification>=1.2.3,<2.0.0",
   "open-data-contract-standard>=3.0.4,<4.0.0",
 ]
 
@@ -134,7 +134,7 @@ dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
   "kafka-python",
-  "moto==5.1.11",
+  "moto==5.1.13",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.4.0",
   "pytest",
