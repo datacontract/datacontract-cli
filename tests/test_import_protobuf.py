@@ -98,7 +98,10 @@ models:
         required: false
 """
 
-    print("Result", result.to_yaml())
+    print("Result", type(yaml.safe_load(result.to_yaml())))
+    print(yaml.safe_load(result.to_yaml()))
+    print("Expected", type(yaml.safe_load(expected)))
+    print(yaml.safe_load(expected))
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings
     assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
