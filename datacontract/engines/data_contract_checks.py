@@ -468,6 +468,212 @@ def check_field_regex(model_name: str, field_name: str, pattern: str, quoting_co
     )
 
 
+def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()):
+    check_type = "row_count"
+    check_key = f"{model_name}__{check_type}"
+    sodacl_check_dict = {
+        checks_for(model_name, quoting_config.quote_model_name): [
+            {
+                f"row_count {threshold}": {"name": check_key},
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="schema",
+        type=check_type,
+        name=f"Check that model {model_name} has row_count {threshold}",
+        model=model_name,
+        field=None,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
+def check_model_duplicate_values(
+    model_name: str, cols: list[str], threshold: str, quoting_config: QuotingConfig = QuotingConfig()
+):
+    check_type = "model_duplicate_values"
+    check_key = f"{model_name}__{check_type}"
+    col_joined = ", ".join(cols)
+    sodacl_check_dict = {
+        checks_for(model_name, quoting_config.quote_model_name): [
+            {
+                f"duplicate_count({col_joined}) {threshold}": {"name": check_key},
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="quality",
+        type=check_type,
+        name=f"Check that model {model_name} has duplicate_count {threshold} for columns {col_joined}",
+        model=model_name,
+        field=None,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
+def check_field_duplicate_values(
+    model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
+):
+    if quoting_config.quote_field_name:
+        field_name_for_soda = f'"{field_name}"'
+    else:
+        field_name_for_soda = field_name
+
+    check_type = "field_duplicate_values"
+    check_key = f"{model_name}__{field_name}__{check_type}"
+    sodacl_check_dict = {
+        checks_for(model_name, quoting_config.quote_model_name): [
+            {
+                f"duplicate_count({field_name_for_soda}) {threshold}": {
+                    "name": check_key,
+                },
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="quality",
+        type=check_type,
+        name=f"Check that field {field_name} has duplicate_count {threshold}",
+        model=model_name,
+        field=field_name,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
+def check_field_null_values(
+    model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
+):
+    if quoting_config.quote_field_name:
+        field_name_for_soda = f'"{field_name}"'
+    else:
+        field_name_for_soda = field_name
+
+    check_type = "field_null_values"
+    check_key = f"{model_name}__{field_name}__{check_type}"
+    sodacl_check_dict = {
+        checks_for(model_name, quoting_config.quote_model_name): [
+            {
+                f"missing_count({field_name_for_soda}) {threshold}": {
+                    "name": check_key,
+                },
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="quality",
+        type=check_type,
+        name=f"Check that field {field_name} has missing_count {threshold}",
+        model=model_name,
+        field=field_name,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
+def check_field_invalid_values(
+    model_name: str,
+    field_name: str,
+    threshold: str,
+    valid_values: list = None,
+    quoting_config: QuotingConfig = QuotingConfig(),
+):
+    if quoting_config.quote_field_name:
+        field_name_for_soda = f'"{field_name}"'
+    else:
+        field_name_for_soda = field_name
+
+    check_type = "field_invalid_values"
+    check_key = f"{model_name}__{field_name}__{check_type}"
+
+    sodacl_check_config = {
+        "name": check_key,
+    }
+
+    if valid_values is not None:
+        sodacl_check_config["valid values"] = valid_values
+
+    sodacl_check_dict = {
+        checks_for(model_name, quoting_config.quote_model_name): [
+            {
+                f"invalid_count({field_name_for_soda}) {threshold}": sodacl_check_config,
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="quality",
+        type=check_type,
+        name=f"Check that field {field_name} has invalid_count {threshold}",
+        model=model_name,
+        field=field_name,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
+def check_field_missing_values(
+    model_name: str,
+    field_name: str,
+    threshold: str,
+    missing_values: list = None,
+    quoting_config: QuotingConfig = QuotingConfig(),
+):
+    if quoting_config.quote_field_name:
+        field_name_for_soda = f'"{field_name}"'
+    else:
+        field_name_for_soda = field_name
+
+    check_type = "field_missing_values"
+    check_key = f"{model_name}__{field_name}__{check_type}"
+
+    sodacl_check_config = {
+        "name": check_key,
+    }
+
+    if missing_values is not None:
+        # Filter out null/None values as SodaCL handles these automatically
+        filtered_missing_values = [v for v in missing_values if v is not None]
+        if filtered_missing_values:
+            sodacl_check_config["missing values"] = filtered_missing_values
+
+    sodacl_check_dict = {
+        checks_for(model_name, quoting_config.quote_model_name): [
+            {
+                f"missing_count({field_name_for_soda}) {threshold}": sodacl_check_config,
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="quality",
+        type=check_type,
+        name=f"Check that field {field_name} has missing_count {threshold}",
+        model=model_name,
+        field=field_name,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
 def check_quality_list(
     model_name, field_name, quality_list: List[Quality], quoting_config: QuotingConfig = QuotingConfig()
 ) -> List[Check]:
@@ -519,6 +725,49 @@ def check_quality_list(
                     implementation=yaml.dump(sodacl_check_dict),
                 )
             )
+        elif quality.metric is not None:
+            threshold = to_sodacl_threshold(quality)
+
+            if threshold is None:
+                logger.warning(f"Quality metric {quality.metric} has no valid threshold")
+                continue
+
+            if quality.metric == "rowCount":
+                checks.append(check_row_count(model_name, threshold, quoting_config))
+            elif quality.metric == "duplicateValues":
+                if field_name is None:
+                    # TODO check that quality.arguments.get("properties") is a list of strings and contains at lease one property
+                    checks.append(
+                        check_model_duplicate_values(
+                            model_name, quality.arguments.get("properties"), threshold, quoting_config
+                        )
+                    )
+                else:
+                    checks.append(check_field_duplicate_values(model_name, field_name, threshold, quoting_config))
+            elif quality.metric == "nullValues":
+                if field_name is not None:
+                    checks.append(check_field_null_values(model_name, field_name, threshold, quoting_config))
+                else:
+                    logger.warning("Quality check nullValues is only supported at field level")
+            elif quality.metric == "invalidValues":
+                if field_name is not None:
+                    valid_values = quality.arguments.get("validValues") if quality.arguments else None
+                    checks.append(
+                        check_field_invalid_values(model_name, field_name, threshold, valid_values, quoting_config)
+                    )
+                else:
+                    logger.warning("Quality check invalidValues is only supported at field level")
+            elif quality.metric == "missingValues":
+                if field_name is not None:
+                    missing_values = quality.arguments.get("missingValues") if quality.arguments else None
+                    checks.append(
+                        check_field_missing_values(model_name, field_name, threshold, missing_values, quoting_config)
+                    )
+                else:
+                    logger.warning("Quality check missingValues is only supported at field level")
+            else:
+                logger.warning(f"Quality check {quality.metric} is not yet supported")
+
         count += 1
 
     return checks

@@ -29,7 +29,7 @@ models:
           - type: library
             metric: invalidValues
             arguments:
-              invalidValues: ['1234567890']
+              validValues: ['CX-263-DU', 'IK-894-MN', 'ER-399-JY', 'MT-939-FH', 'LV-849-MI', 'VS-079-OH', 'DN-297-XY', 'ZE-172-FP', 'ID-840-EG', 'FK-230-KZ']
             mustBe: 0
       field_two:
         type: integer
@@ -64,7 +64,8 @@ models:
           SELECT count(*) as row_count
           FROM {model}
         mustBeGreaterThan: 5
-      - type: library
+      - name: rowCount must be greater than 0
+        type: library
         metric: rowCount
         description: Row Count 2
-        mustBeGreaterThan: 5
+        mustBeGreaterThan: 9
