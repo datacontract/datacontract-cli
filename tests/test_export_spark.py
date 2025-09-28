@@ -92,7 +92,8 @@ customers = StructType([
     ),
     StructField("name",
         StringType(),
-        True
+        True,
+        {"comment": "First and last name of the customer"}
     ),
     StructField("metadata",
         MapType(
@@ -157,7 +158,7 @@ expected_dict = {
     "customers": types.StructType(
         [
             types.StructField("id", types.IntegerType(), True),
-            types.StructField("name", types.StringType(), True),
+            types.StructField("name", types.StringType(), True, {"comment": "First and last name of the customer"}),
             types.StructField(
                 "metadata",
                 types.MapType(

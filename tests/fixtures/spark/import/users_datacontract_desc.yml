@@ -1,4 +1,4 @@
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -16,6 +16,7 @@ models:
       name:
         type: string
         required: false
+        description: First and last name of the customer
       address:
         type: struct
         required: false

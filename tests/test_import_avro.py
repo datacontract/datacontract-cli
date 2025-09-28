@@ -26,7 +26,7 @@ def test_import_avro_schema():
     result = DataContract().import_from_source("avro", "fixtures/avro/data/orders.avsc")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -123,7 +123,7 @@ def test_import_avro_arrays_of_records_and_nested_arrays():
     result = DataContract().import_from_source("avro", "fixtures/avro/data/arrays.avsc")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -174,7 +174,7 @@ def test_import_avro_nested_records():
     result = DataContract().import_from_source("avro", "fixtures/avro/data/nested.avsc")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -203,7 +203,7 @@ def test_import_avro_nested_records_with_arrays():
     result = DataContract().import_from_source("avro", "fixtures/avro/data/nested_with_arrays.avsc")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -269,7 +269,7 @@ def test_import_avro_logical_types():
     result = DataContract().import_from_source("avro", "fixtures/avro/data/logical_types.avsc")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -320,7 +320,7 @@ def test_import_avro_optional_enum():
     result = DataContract().import_from_source("avro", "fixtures/avro/data/optional_enum.avsc")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract

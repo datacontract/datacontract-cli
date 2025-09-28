@@ -9,18 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
+
+### Fixed
+
+- Export to DQX: Correct DQX format for global-level quality check of data contract export. (#877)
+- Import the table tags from a open data contract spec v3 (#895)
+
+## [0.10.35] - 2025-08-25
+
+### Added
+
+- Export to DQX : datacontract export --format dqx (#846)
 - API `/test` endpoint now supports `publish_url` parameter to publish test results to a URL. (#853)
+- The Spark importer and exporter now also exports the description of columns via the additional metadata of StructFields (#868)
 
 ### Fixed
 
 - Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
 - JSON Schema Check: Add globbing support for local JSON files
-
-
-### Added
-
-- Export to DQX : datacontract export --format dqx
-
+- Fixed server section rendering for markdown exporter
 
 ## [0.10.34] - 2025-08-06
 
@@ -75,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
+- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly 
 
 ## [0.10.28] - 2025-06-05
 
