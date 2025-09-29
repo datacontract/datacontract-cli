@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Any, Generator
 
 import pytest
 from dotenv import load_dotenv
@@ -24,7 +25,7 @@ load_dotenv(override=True)
 
 
 @pytest.fixture(scope="session")
-def spark(tmp_path_factory, request) -> SparkSession:
+def spark(tmp_path_factory, request) -> Generator[SparkSession, Any, None]:
     """Create and configure a Spark session."""
     spark = (
         SparkSession.builder.appName("datacontract-dataframe-unittest")
@@ -45,8 +46,8 @@ def spark(tmp_path_factory, request) -> SparkSession:
     spark.sparkContext.setLogLevel("WARN")
     print(f"Using PySpark version {spark.version}")
 
-    request.addfinalizer(lambda: spark.stop())
-    return spark
+    yield spark
+    spark.stop()
 
 
 # TODO this test conflicts with the test_test_kafka.py test
