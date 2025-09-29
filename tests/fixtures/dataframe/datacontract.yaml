@@ -28,6 +28,8 @@ models:
       field_five:
         type: decimal
         precision: 4
+      field_six:
+        type: decimal
       field_array_of_strings:
         type: array
         items:

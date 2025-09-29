@@ -84,6 +84,7 @@ schema = StructType(
         StructField("field_three", TimestampType(), nullable=True),
         StructField("field_four", DecimalType(4, 2), nullable=True),
         StructField("field_five", DecimalType(4), nullable=True),
+        StructField("field_six", DecimalType(38, 0), nullable=True),
         StructField("field_array_of_strings", ArrayType(StringType()), nullable=True),
         StructField(
             "field_array_of_structs",
@@ -108,6 +109,7 @@ def _prepare_dataframe(spark):
             field_three=datetime.strptime("2024-01-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
             field_four=Decimal(12.34),
             field_five=Decimal(12.34),
+            field_six=Decimal(12.34),
             field_array_of_strings=["string1", "string2"],
             field_array_of_structs=[
                 Row(inner_field_string="string1", inner_field_int=1),
@@ -120,6 +122,7 @@ def _prepare_dataframe(spark):
             field_three=datetime.strptime("2024-02-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
             field_four=Decimal(56.78),
             field_five=Decimal(56.78),
+            field_six=Decimal(56.78),
             field_array_of_strings=["string3", "string4"],
             field_array_of_structs=[
                 Row(inner_field_string="string3", inner_field_int=3),
@@ -142,6 +145,7 @@ def _prepare_fail_dataframe(spark):
             field_three=datetime.strptime("2024-01-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
             field_four=Decimal(12.34),
             field_five=Decimal(12.34),
+            field_six=Decimal(12.34),
             field_array_of_strings=["string1", "string2"],
             field_array_of_structs=[
                 Row(inner_field_string="string1", inner_field_int=1),
@@ -154,6 +158,7 @@ def _prepare_fail_dataframe(spark):
             field_three=datetime.strptime("2024-01-01 12:00:00", "%Y-%m-%d %H:%M:%S"),
             field_four=Decimal(12.34),
             field_five=Decimal(12.34),
+            field_six=Decimal(12.34),
             field_array_of_strings=["string1", "string2"],
             field_array_of_structs=[
                 Row(inner_field_string="string1", inner_field_int=1),
