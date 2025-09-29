@@ -6,11 +6,12 @@ from dotenv import load_dotenv
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.types import (
     ArrayType,
+    DecimalType,
     IntegerType,
     StringType,
     StructField,
     StructType,
-    TimestampType, DecimalType,
+    TimestampType,
 )
 
 from datacontract.data_contract import DataContract
@@ -57,7 +58,7 @@ def test_test_dataframe(spark: SparkSession):
     run = data_contract.test()
 
     print(run.pretty())
-    assert run.has_passed() == True
+    assert run.has_passed()
     assert all(check.result == "passed" for check in run.checks)
 
 
@@ -71,7 +72,7 @@ def test_test_dataframe_fail(spark: SparkSession):
     run = data_contract.test()
 
     print(run.pretty())
-    assert run.has_passed() == False
+    assert not run.has_passed()
     failed = [check for check in run.checks if check.result == "failed"]
     assert len(failed) == 3
 
