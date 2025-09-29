@@ -133,8 +133,9 @@ def convert_to_dataframe(field: Field) -> None | str:
     if type.lower() in ["time"]:
         return "STRING"
     if type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "DECIMAL"
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return f"DECIMAL({precision},{scale})"
     if type.lower() in ["float"]:
         return "FLOAT"
     if type.lower() in ["double"]:
@@ -182,8 +183,9 @@ def convert_to_databricks(field: Field) -> None | str:
     if type.lower() in ["time"]:
         return "STRING"
     if type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "DECIMAL"
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return f"DECIMAL({precision},{scale})"
     if type.lower() in ["float"]:
         return "FLOAT"
     if type.lower() in ["double"]:
