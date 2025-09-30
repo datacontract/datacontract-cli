@@ -398,9 +398,7 @@ def map_type(odcs_type: str, custom_mappings: Dict[str, str]) -> str | None:
         return None
 
 
-def build_array_field(
-    odcs_property: SchemaProperty, custom_type_mappings: Dict[str, str], server_type
-) -> Field:
+def build_array_field(odcs_property: SchemaProperty, custom_type_mappings: Dict[str, str], server_type) -> Field:
     logger = logging.getLogger(__name__)
 
     if not isinstance(odcs_property, SchemaProperty):
@@ -411,8 +409,8 @@ def build_array_field(
     if mapped_type is None:
         logger.warning(
             f"Can't map {odcs_property.name} to the Datacontract Mapping types, as there is no equivalent or special mapping. Consider introducing a customProperty 'dc_mapping_{odcs_property.logicalType}' that defines your expected type as the 'value'"
-            )
-        return Field(type="string") # fallback type
+        )
+        return Field(type="string")  # fallback type
 
     if mapped_type == "array":
         if odcs_property.items is None:
