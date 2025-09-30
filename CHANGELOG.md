@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for nested arrays for Databricks in odcs v3 importer
+
+### Added
+
 - Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
 
 ### Fixed
