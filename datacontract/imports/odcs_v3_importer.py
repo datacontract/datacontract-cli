@@ -51,7 +51,6 @@ def parse_odcs_v3_from_str(source_str):
             engine="datacontract",
             original_exception=e,
         )
-
     return odcs
 
 
@@ -333,7 +332,6 @@ def import_fields(
 
     if odcs_properties is None:
         return result
-
 
     for odcs_property in odcs_properties:
         mapped_type = map_type(odcs_property.logicalType, custom_type_mappings)
