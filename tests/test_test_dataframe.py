@@ -25,7 +25,7 @@ load_dotenv(override=True)
 
 
 @pytest.fixture(scope="session")
-def spark(tmp_path_factory, request) -> Generator[SparkSession, Any, None]:
+def spark(tmp_path_factory) -> Generator[SparkSession, Any, None]:
     """Create and configure a Spark session."""
     spark = (
         SparkSession.builder.appName("datacontract-dataframe-unittest")
