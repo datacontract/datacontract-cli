@@ -51,6 +51,7 @@ def parse_odcs_v3_from_str(source_str):
             engine="datacontract",
             original_exception=e,
         )
+
     return odcs
 
 
@@ -333,6 +334,7 @@ def import_fields(
     if odcs_properties is None:
         return result
 
+
     for odcs_property in odcs_properties:
         mapped_type = map_type(odcs_property.logicalType, custom_type_mappings)
         if mapped_type is not None:
@@ -365,6 +367,8 @@ def import_fields(
                         type="object",
                         fields=import_fields(odcs_property.items.properties, custom_type_mappings, server_type),
                     )
+                elif odcs_property.items.logicalType == "array":
+                    field.items = build_array_field(odcs_property.items, custom_type_mappings, server_type)
                 # array of simple type
                 elif odcs_property.items.logicalType is not None:
                     field.items = Field(type=odcs_property.items.logicalType)
@@ -394,6 +398,46 @@ def map_type(odcs_type: str, custom_mappings: Dict[str, str]) -> str | None:
         return custom_mappings.get(t)
     else:
         return None
+
+
+def build_array_field(
+    odcs_property: SchemaProperty, custom_type_mappings: Dict[str, str], server_type
+) -> Field:
+    logger = logging.getLogger(__name__)
+
+    if not isinstance(odcs_property, SchemaProperty):
+        odcs_property = SchemaProperty.model_validate(odcs_property)
+
+    mapped_type = map_type(odcs_property.logicalType, custom_type_mappings)
+
+    if mapped_type is None:
+        logger.warning(
+            f"Can't map {odcs_property.name} to the Datacontract Mapping types, as there is no equivalent or special mapping. Consider introducing a customProperty 'dc_mapping_{odcs_property.logicalType}' that defines your expected type as the 'value'"
+            )
+        return Field(type="string") # fallback type
+
+    if mapped_type == "array":
+        if odcs_property.items is None:
+            logger.warning("Nested array items missing 'items': %s", odcs_property)
+            return Field(type="array")
+        return Field(
+            type="array",
+            items=build_array_field(odcs_property.items, custom_type_mappings, server_type),
+        )
+
+    # Array of objects
+    if mapped_type == "object":
+        # Build an object Field with its nested fields
+        return Field(
+            type="object",
+            fields=import_fields(
+                odcs_property.properties,
+                custom_type_mappings,
+                server_type,
+            ),
+        )
+
+    return Field(type=mapped_type)
 
 
 def get_custom_type_mappings(odcs_custom_properties: List[CustomProperty]) -> Dict[str, str]:
