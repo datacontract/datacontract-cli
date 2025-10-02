@@ -1514,20 +1514,20 @@ datacontract import --format spark --source "users,orders"
 
 ```bash
 # Example: Import Spark table
-DataContract().import_from_source("spark", "users")
-DataContract().import_from_source(format = "spark", source = "users")
+DataContract.import_from_source("spark", "users")
+DataContract.import_from_source(format = "spark", source = "users")
 
 # Example: Import Spark dataframe
-DataContract().import_from_source("spark", "users", dataframe = df_user)
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user)
+DataContract.import_from_source("spark", "users", dataframe = df_user)
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user)
 
 # Example: Import Spark table + table description
-DataContract().import_from_source("spark", "users", description = "description") 
-DataContract().import_from_source(format = "spark", source = "users", description = "description")
+DataContract.import_from_source("spark", "users", description = "description") 
+DataContract.import_from_source(format = "spark", source = "users", description = "description")
 
 # Example: Import Spark dataframe + table description
-DataContract().import_from_source("spark", "users", dataframe = df_user, description = "description")
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
+DataContract.import_from_source("spark", "users", dataframe = df_user, description = "description")
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
 #### DBML

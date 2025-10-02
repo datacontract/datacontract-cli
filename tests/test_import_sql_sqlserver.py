@@ -6,7 +6,7 @@ sql_file_path = "fixtures/sqlserver/import/ddl.sql"
 
 
 def test_import_sql_sqlserver():
-    result = DataContract().import_from_source("sql", sql_file_path, dialect="sqlserver")
+    result = DataContract.import_from_source("sql", sql_file_path, dialect="sqlserver")
 
     expected = """
 dataContractSpecification: 1.2.1

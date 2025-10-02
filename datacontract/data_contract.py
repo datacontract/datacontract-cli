@@ -1,5 +1,6 @@
 import logging
 import typing
+import warnings
 
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard
 
@@ -292,10 +293,9 @@ class DataContract:
                 export_args=kwargs,
             )
 
-    # REFACTOR THIS
-    # could be a class method, not using anything from the instance
+    @classmethod
     def import_from_source(
-        self,
+        cls,
         format: str,
         source: typing.Optional[str] = None,
         template: typing.Optional[str] = None,
@@ -317,8 +317,8 @@ class DataContract:
                 # convert automatically
                 odcs_imported = to_odcs_v3(odcs_imported)
 
-            self._overwrite_id_in_odcs(odcs_imported, id)
-            self._overwrite_owner_in_odcs(odcs_imported, owner)
+            DataContract._overwrite_id_in_odcs(odcs_imported, id)
+            DataContract._overwrite_owner_in_odcs(odcs_imported, owner)
 
             return odcs_imported
         elif spec == Spec.datacontract_specification:
@@ -334,8 +334,8 @@ class DataContract:
                     data_contract_specification_initial, data_contract_specification_imported
                 )
 
-            self._overwrite_id_in_data_contract_specification(data_contract_specification_imported, id)
-            self._overwrite_owner_in_data_contract_specification(data_contract_specification_imported, owner)
+            DataContract._overwrite_id_in_data_contract_specification(data_contract_specification_imported, id)
+            DataContract._overwrite_owner_in_data_contract_specification(data_contract_specification_imported, owner)
 
             return data_contract_specification_imported
         else:
@@ -347,16 +347,40 @@ class DataContract:
                 engine="datacontract",
             )
 
+    def import_from_source(  # noqa: F811
+        self,
+        format: str,
+        source: typing.Optional[str] = None,
+        template: typing.Optional[str] = None,
+        schema: typing.Optional[str] = None,
+        spec: Spec = Spec.datacontract_specification,
+        **kwargs,
+    ) -> DataContractSpecification | OpenDataContractStandard:
+        """
+        DEPRECATED: This method is deprecated. Use DataContract.import_from_source() as a class method instead.
+        """
+        warnings.warn(
+            "DataContract.import_from_source() as an instance method is deprecated. "
+            "Use DataContract.import_from_source() as a class method instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return DataContract.import_from_source(
+            format=format, source=source, template=template, schema=schema, spec=spec, **kwargs
+        )
+
+    @staticmethod
     def _overwrite_id_in_data_contract_specification(
-        self, data_contract_specification: DataContractSpecification, id: str | None
+        data_contract_specification: DataContractSpecification, id: str | None
     ):
         if not id:
             return
 
         data_contract_specification.id = id
 
+    @staticmethod
     def _overwrite_owner_in_data_contract_specification(
-        self, data_contract_specification: DataContractSpecification, owner: str | None
+        data_contract_specification: DataContractSpecification, owner: str | None
     ):
         if not owner:
             return
@@ -365,7 +389,8 @@ class DataContract:
             data_contract_specification.info = Info()
         data_contract_specification.info.owner = owner
 
-    def _overwrite_owner_in_odcs(self, odcs: OpenDataContractStandard, owner: str | None):
+    @staticmethod
+    def _overwrite_owner_in_odcs(odcs: OpenDataContractStandard, owner: str | None):
         if not owner:
             return
 
@@ -377,7 +402,8 @@ class DataContract:
                 return
         odcs.customProperties.append(CustomProperty(property="owner", value=owner))
 
-    def _overwrite_id_in_odcs(self, odcs: OpenDataContractStandard, id: str | None):
+    @staticmethod
+    def _overwrite_id_in_odcs(odcs: OpenDataContractStandard, id: str | None):
         if not id:
             return
 
