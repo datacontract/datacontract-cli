@@ -10,7 +10,7 @@ servers:
     project: datameshexample-product
     dataset: datacontract_cli
 models:
-  complex_table:
+  1_complex_table:
     type: table
     fields:
       some_string:
