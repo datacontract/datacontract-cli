@@ -15,6 +15,7 @@ from datacontract.model.run import Check
 class QuotingConfig:
     quote_field_name: bool = False
     quote_model_name: bool = False
+    bq_flexible_model_name: bool = False
 
 
 def create_checks(data_contract_spec: DataContractSpecification, server: Server) -> List[Check]:
@@ -38,12 +39,13 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
     quoting_config = QuotingConfig(
         quote_field_name=server_type in ["postgres", "sqlserver"],
         quote_model_name=server_type in ["postgres", "sqlserver"],
+        bq_flexible_model_name=server_type == "bigquery",
     )
 
     for field_name, field in fields.items():
         checks.append(check_field_is_present(model_name, field_name, quoting_config))
         if check_types and field.type is not None:
-            sql_type = convert_to_sql_type(field, server_type)
+            sql_type: str = convert_to_sql_type(field, server_type)
             checks.append(check_field_type(model_name, field_name, sql_type, quoting_config))
         if field.required:
             checks.append(check_field_required(model_name, field_name, quoting_config))
@@ -82,9 +84,11 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
     return checks
 
 
-def checks_for(model_name, quote_model_name: bool):
-    if quote_model_name:
+def checks_for(model_name: str, quoting_config: QuotingConfig, check_type: str) -> str:  # quote_model_name: bool
+    if quoting_config.quote_model_name:
         return f'checks for "{model_name}"'
+    elif quoting_config.bq_flexible_model_name and check_type not in ["field_is_present", "field_type"]:
+        return f"checks for `{model_name}`"
     return f"checks for {model_name}"
 
 
@@ -114,7 +118,7 @@ def check_field_is_present(model_name, field_name, quoting_config: QuotingConfig
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 "schema": {
                     "name": check_key,
@@ -145,7 +149,7 @@ def check_field_type(
     check_type = "field_type"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 "schema": {
                     "name": check_key,
@@ -181,7 +185,7 @@ def check_field_required(model_name: str, field_name: str, quoting_config: Quoti
     check_type = "field_required"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"missing_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -212,7 +216,7 @@ def check_field_unique(model_name: str, field_name: str, quoting_config: Quoting
     check_type = "field_unique"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"duplicate_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -245,7 +249,7 @@ def check_field_min_length(
     check_type = "field_min_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -279,7 +283,7 @@ def check_field_max_length(
     check_type = "field_max_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -313,7 +317,7 @@ def check_field_minimum(
     check_type = "field_minimum"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -347,7 +351,7 @@ def check_field_maximum(
     check_type = "field_maximum"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -381,7 +385,7 @@ def check_field_not_equal(
     check_type = "field_not_equal"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -413,7 +417,7 @@ def check_field_enum(model_name: str, field_name: str, enum: list, quoting_confi
     check_type = "field_enum"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -445,7 +449,7 @@ def check_field_regex(model_name: str, field_name: str, pattern: str, quoting_co
     check_type = "field_regex"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -472,7 +476,7 @@ def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConf
     check_type = "row_count"
     check_key = f"{model_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"row_count {threshold}": {"name": check_key},
             }
@@ -499,7 +503,7 @@ def check_model_duplicate_values(
     check_key = f"{model_name}__{check_type}"
     col_joined = ", ".join(cols)
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"duplicate_count({col_joined}) {threshold}": {"name": check_key},
             }
@@ -530,7 +534,7 @@ def check_field_duplicate_values(
     check_type = "field_duplicate_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"duplicate_count({field_name_for_soda}) {threshold}": {
                     "name": check_key,
@@ -563,7 +567,7 @@ def check_field_null_values(
     check_type = "field_null_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"missing_count({field_name_for_soda}) {threshold}": {
                     "name": check_key,
@@ -608,7 +612,7 @@ def check_field_invalid_values(
         sodacl_check_config["valid values"] = valid_values
 
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) {threshold}": sodacl_check_config,
             }
@@ -654,7 +658,7 @@ def check_field_missing_values(
             sodacl_check_config["missing values"] = filtered_missing_values
 
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config.quote_model_name): [
+        checks_for(model_name, quoting_config, check_type): [
             {
                 f"missing_count({field_name_for_soda}) {threshold}": sodacl_check_config,
             }
@@ -790,6 +794,8 @@ def prepare_query(
 
     if quoting_config.quote_model_name:
         model_name_for_soda = f'"{model_name}"'
+    elif quoting_config.bq_flexible_model_name:
+        model_name_for_soda = f"`{model_name}`"
     else:
         model_name_for_soda = model_name
 
@@ -892,7 +898,7 @@ def to_servicelevel_freshness_check(data_contract_spec: DataContractSpecificatio
     check_key = "servicelevel_freshness"
 
     sodacl_check_dict = {
-        checks_for(model_name, False): [
+        checks_for(model_name, False, check_type): [
             {
                 f"freshness({field_name}) < {threshold}": {
                     "name": check_key,
@@ -944,7 +950,7 @@ def to_servicelevel_retention_check(data_contract_spec) -> Check | None:
     check_type = "servicelevel_retention"
     check_key = "servicelevel_retention"
     sodacl_check_dict = {
-        checks_for(model_name, False): [
+        checks_for(model_name, False, check_type): [
             {
                 f"orders_servicelevel_retention < {period_in_seconds}": {
                     "orders_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({field_name}), CURRENT_TIMESTAMP)",
