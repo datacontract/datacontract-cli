@@ -330,6 +330,3 @@ fabric.properties
 # Generated test files
 **/.tmp
 /.claude/settings.local.json
-
-# Temp for testing
-data_contract_odcs.yaml
