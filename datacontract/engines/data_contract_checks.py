@@ -87,7 +87,7 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
 def checks_for(model_name: str, quoting_config: QuotingConfig, check_type: str) -> str:
     if quoting_config.quote_model_name:
         return f'checks for "{model_name}"'
-    elif quoting_config.quote_with_backticks_model_name:  # and check_type not in ["field_is_present", "field_type"]:
+    elif quoting_config.quote_with_backticks_model_name and check_type not in ["field_is_present", "field_type"]:
         return f"checks for `{model_name}`"
     return f"checks for {model_name}"
 
