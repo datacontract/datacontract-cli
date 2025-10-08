@@ -15,7 +15,7 @@ from datacontract.model.run import Check
 class QuotingConfig:
     quote_field_name: bool = False
     quote_model_name: bool = False
-    bq_flexible_model_name: bool = False
+    quote_with_backticks_model_name: bool = False
 
 
 def create_checks(data_contract_spec: DataContractSpecification, server: Server) -> List[Check]:
@@ -39,7 +39,7 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
     quoting_config = QuotingConfig(
         quote_field_name=server_type in ["postgres", "sqlserver"],
         quote_model_name=server_type in ["postgres", "sqlserver"],
-        bq_flexible_model_name=server_type == "bigquery",
+        quote_with_backticks_model_name=server_type == "bigquery",
     )
 
     for field_name, field in fields.items():
@@ -87,7 +87,7 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
 def checks_for(model_name: str, quoting_config: QuotingConfig, check_type: str) -> str:
     if quoting_config.quote_model_name:
         return f'checks for "{model_name}"'
-    elif quoting_config.bq_flexible_model_name and check_type not in ["field_is_present", "field_type"]:
+    elif quoting_config.quote_with_backticks_model_name and check_type not in ["field_is_present", "field_type"]:
         return f"checks for `{model_name}`"
     return f"checks for {model_name}"
 
@@ -794,7 +794,7 @@ def prepare_query(
 
     if quoting_config.quote_model_name:
         model_name_for_soda = f'"{model_name}"'
-    elif quoting_config.bq_flexible_model_name:
+    elif quoting_config.quote_with_backticks_model_name:
         model_name_for_soda = f"`{model_name}`"
     else:
         model_name_for_soda = model_name
