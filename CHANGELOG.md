@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [0.10.36] - 2025-10-17
+
 ### Added
 
 - Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
