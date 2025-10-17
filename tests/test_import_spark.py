@@ -151,17 +151,17 @@ def test_prog(spark: SparkSession, df_user, user_datacontract_no_desc, user_data
     expected_no_desc = user_datacontract_no_desc
 
     # does not include a table level description (table method)
-    result1 = DataContract().import_from_source("spark", "users")
+    result1 = DataContract.import_from_source("spark", "users")
     assert yaml.safe_load(result1.to_yaml()) == yaml.safe_load(expected_no_desc)
 
     # does include a table level description (table method)
-    result2 = DataContract().import_from_source("spark", "users", description="description")
+    result2 = DataContract.import_from_source("spark", "users", description="description")
     assert yaml.safe_load(result2.to_yaml()) == yaml.safe_load(expected_desc)
 
     # does not include a table level description (dataframe object method)
-    result3 = DataContract().import_from_source("spark", "users", dataframe=df_user)
+    result3 = DataContract.import_from_source("spark", "users", dataframe=df_user)
     assert yaml.safe_load(result3.to_yaml()) == yaml.safe_load(expected_no_desc)
 
     # does include a table level description (dataframe object method)
-    result4 = DataContract().import_from_source("spark", "users", dataframe=df_user, description="description")
+    result4 = DataContract.import_from_source("spark", "users", dataframe=df_user, description="description")
     assert yaml.safe_load(result4.to_yaml()) == yaml.safe_load(expected_desc)

@@ -10,7 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
+- Support for decimal testing in spark and databricks (#902)
 - Support for BigQuery Flexible Schema in Data Contract Checks (#909)
+
+### Changed
+
+- `DataContract().import_from_source()` as an instance method is now deprecated. Use `DataContract.import_from_source()` as a class method instead.
 
 ### Fixed
 

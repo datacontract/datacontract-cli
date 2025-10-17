@@ -26,7 +26,7 @@ def test_cli():
 
 def test_import_csv():
     source = "fixtures/csv/data/sample_data_5_column.csv"
-    result = DataContract().import_from_source("csv", source)
+    result = DataContract.import_from_source("csv", source)
     model = result.models["sample_data_5_column"]
     assert model is not None
     assert len(model.fields["field_one"].examples) == 5

@@ -312,11 +312,7 @@ def extra_to_markdown(obj: BaseModel, is_in_table_cell: bool = False) -> str:
     row_suffix = "<br>" if is_in_table_cell else ""
 
     def render_header(key: str) -> str:
-        return (
-            f"{bullet_char} **{key}:** "
-            if is_in_table_cell
-            else f"\n### {key.capitalize()}\n"
-        )
+        return f"{bullet_char} **{key}:** " if is_in_table_cell else f"\n### {key.capitalize()}\n"
 
     parts: list[str] = []
     for key_extra, value_extra in extra.items():

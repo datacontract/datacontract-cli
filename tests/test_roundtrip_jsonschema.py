@@ -32,7 +32,7 @@ def test_export_cli():
 
 def test_roundtrip_json_schema_orders():
     # Import the data contract from the JSON schema source
-    result_import = DataContract().import_from_source("jsonschema", "fixtures/import/orders.json")
+    result_import = DataContract.import_from_source("jsonschema", "fixtures/import/orders.json")
 
     # Create a data contract specification with inline definitions
     data_contract = DataContract(
