@@ -23,9 +23,9 @@ We have a _servers_ section with endpoint details to the S3 bucket, _models_ for
 
 This data contract contains all information to connect to S3 and check that the actual data meets the defined schema and quality requirements. We can use this information to test if the actual data product in S3 is compliant to the data contract.
 
-Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker)),
+Let's use [uv](https://docs.astral.sh/uv/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ python3 -m pip install 'datacontract-cli[all]'
+$ uv tool install 'datacontract-cli[all]'
 ```
 
 
