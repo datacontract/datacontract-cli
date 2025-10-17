@@ -26,7 +26,7 @@ def test_cli():
 
 def test_import_csv():
     source = "fixtures/csv/data/sample_data_5_column.csv"
-    result = DataContract().import_from_source("csv", source)
+    result = DataContract.import_from_source("csv", source)
     model = result.models["sample_data_5_column"]
     assert model is not None
     assert len(model.fields["field_one"].examples) == 5
@@ -37,7 +37,7 @@ def test_import_csv():
     for k in model.fields.keys():
         model.fields[k].examples = None
 
-    expected = f"""dataContractSpecification: 1.2.0
+    expected = f"""dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -77,4 +77,4 @@ models:
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()

@@ -23,9 +23,9 @@ We have a _servers_ section with endpoint details to the S3 bucket, _models_ for
 
 This data contract contains all information to connect to S3 and check that the actual data meets the defined schema and quality requirements. We can use this information to test if the actual data product in S3 is compliant to the data contract.
 
-Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker)),
+Let's use [uv](https://docs.astral.sh/uv/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ python3 -m pip install 'datacontract-cli[all]'
+$ uv tool install 'datacontract-cli[all]'
 ```
 
 
@@ -1514,20 +1514,20 @@ datacontract import --format spark --source "users,orders"
 
 ```bash
 # Example: Import Spark table
-DataContract().import_from_source("spark", "users")
-DataContract().import_from_source(format = "spark", source = "users")
+DataContract.import_from_source("spark", "users")
+DataContract.import_from_source(format = "spark", source = "users")
 
 # Example: Import Spark dataframe
-DataContract().import_from_source("spark", "users", dataframe = df_user)
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user)
+DataContract.import_from_source("spark", "users", dataframe = df_user)
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user)
 
 # Example: Import Spark table + table description
-DataContract().import_from_source("spark", "users", description = "description") 
-DataContract().import_from_source(format = "spark", source = "users", description = "description")
+DataContract.import_from_source("spark", "users", description = "description") 
+DataContract.import_from_source(format = "spark", source = "users", description = "description")
 
 # Example: Import Spark dataframe + table description
-DataContract().import_from_source("spark", "users", dataframe = df_user, description = "description")
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
+DataContract.import_from_source("spark", "users", dataframe = df_user, description = "description")
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
 #### DBML
@@ -1772,8 +1772,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract test
    ```
 
-3. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You
-   probably forgot to document some fields and add the terms and conditions.
+3. Validate that the `datacontract.yaml` is correctly formatted and adheres to the Data Contract Specification.
    ```bash
    $ datacontract lint
    ```
@@ -1794,8 +1793,7 @@ Create a data contract based on the requirements from use cases.
    ```
 
 2. Create the model and quality guarantees based on your business requirements. Fill in the terms,
-   descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the
-   linter.
+   descriptions, etc. Validate that your `datacontract.yaml` is correctly formatted.
     ```bash
     $ datacontract lint
     ```
@@ -1989,7 +1987,7 @@ if __name__ == "__main__":
 Output
 
 ```yaml
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: uuid-custom
 info:
   title: my_custom_imported_data
@@ -2015,6 +2013,7 @@ models:
 ```bash
 # make sure uv is installed
 uv python pin 3.11
+uv venv
 uv pip install -e '.[dev]'
 uv run ruff check
 uv run pytest

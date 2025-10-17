@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
+- Support for decimal testing in spark and databricks (#902)
+- Support for BigQuery Flexible Schema in Data Contract Checks (#909)
+
+### Changed
+
+- `DataContract().import_from_source()` as an instance method is now deprecated. Use `DataContract.import_from_source()` as a class method instead.
+
+### Fixed
+
+- Export to DQX: Correct DQX format for global-level quality check of data contract export. (#877)
+- Import the table tags from a open data contract spec v3 (#895)
+- dbt export: Enhanced model-level primaryKey support with automatic test generation for single and multiple column primary keys (#898)
+
+### Removed
+
+- Removed specific linters, as the linters did not support ODCS (#913)
+
 ## [0.10.35] - 2025-08-25
 
 ### Added
@@ -20,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
 - JSON Schema Check: Add globbing support for local JSON files
 - Avro Importer: Optional and required enum types now work for arrays
-
+- Fixed server section rendering for markdown exporter
 
 ## [0.10.34] - 2025-08-06
 
@@ -75,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
-- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly 
+- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly
 
 ## [0.10.28] - 2025-06-05
 
@@ -288,7 +308,7 @@ Code for proto to datacontract (#696)
 
 ### Fixed
 - SQL Server: cannot escape reserved word on model (#557)
-- Export dbt-staging-sql error on multi models contracts (#587) 
+- Export dbt-staging-sql error on multi models contracts (#587)
 
 ### Removed
 - OpenTelemetry publisher, as it was hardly used
