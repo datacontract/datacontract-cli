@@ -1772,8 +1772,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract test
    ```
 
-3. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You
-   probably forgot to document some fields and add the terms and conditions.
+3. Validate that the `datacontract.yaml` is correctly formatted and adheres to the Data Contract Specification.
    ```bash
    $ datacontract lint
    ```
@@ -1794,8 +1793,7 @@ Create a data contract based on the requirements from use cases.
    ```
 
 2. Create the model and quality guarantees based on your business requirements. Fill in the terms,
-   descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the
-   linter.
+   descriptions, etc. Validate that your `datacontract.yaml` is correctly formatted.
     ```bash
     $ datacontract lint
     ```

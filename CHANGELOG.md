@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import the table tags from a open data contract spec v3 (#895)
 - dbt export: Enhanced model-level primaryKey support with automatic test generation for single and multiple column primary keys (#898)
 
+### Removed
+
+- Removed specific linters, as the linters did not support ODCS (#913)
+
 ## [0.10.35] - 2025-08-25
 
 ### Added
