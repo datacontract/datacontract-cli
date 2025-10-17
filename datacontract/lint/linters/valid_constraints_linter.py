@@ -17,7 +17,7 @@ class ValidFieldConstraintsLinter(Linter):
 
     valid_types_for_constraint = {
         "pattern": set(["string", "text", "varchar"]),
-        "format": set(["string", "text", "varchar"]),
+        "format": set(["string", "text", "varchar", "date", "integer", "number"]),
         "minLength": set(["string", "text", "varchar"]),
         "maxLength": set(["string", "text", "varchar"]),
         "minimum": set(["int", "integer", "number", "decimal", "numeric", "long", "bigint", "float", "double"]),
