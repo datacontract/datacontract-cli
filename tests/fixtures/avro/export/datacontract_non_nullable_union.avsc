@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "TestNonNullableUnion",
+  "doc": "Test record with non-nullable union types",
+  "fields": [
+    {
+      "name": "id",
+      "doc": "Required field",
+      "type": "string"
+    },
+    {
+      "name": "multi_type_field",
+      "doc": "Field with multiple types takes first non-null type",
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  ]
+}

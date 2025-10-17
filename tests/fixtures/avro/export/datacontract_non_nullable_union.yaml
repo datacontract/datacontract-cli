@@ -1,0 +1,17 @@
+dataContractSpecification: 1.2.0
+id: non-nullable-union
+info:
+  title: Test Non-Nullable Union
+  version: 0.0.1
+models:
+  TestNonNullableUnion:
+    description: Test record with non-nullable union types
+    fields:
+      id:
+        type: string
+        required: true
+        description: Required field
+      multi_type_field:
+        type: string
+        required: false
+        description: Field with multiple types takes first non-null type
