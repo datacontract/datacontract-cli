@@ -656,19 +656,37 @@ models:
     fields: ...
 ```
 
-Notebook
-```python
-%pip install datacontract-cli[databricks]
-dbutils.library.restartPython()
+##### Installing on Databricks Compute
 
-from datacontract.data_contract import DataContract
+**Important:** When using Databricks LTS ML runtimes (15.4, 16.4), installing via `%pip install` in notebooks can issues.
 
-data_contract = DataContract(
-  data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml",
-  spark=spark)
-run = data_contract.test()
-run.result
-```
+**Recommended approach:** Use Databricks' native library management instead:
+
+1. **Create or configure your compute cluster:**
+   - Navigate to **Compute** in the Databricks workspace
+   - Create a new cluster or select an existing one
+   - Go to the **Libraries** tab
+
+2. **Add the datacontract-cli library:**
+   - Click **Install new**
+   - Select **PyPI** as the library source
+   - Enter package name: `datacontract-cli[databricks]`
+   - Click **Install**
+
+3. **Restart the cluster** to apply the library installation
+
+4. **Use in your notebook** without additional installation:
+   ```python
+   from datacontract.data_contract import DataContract
+
+   data_contract = DataContract(
+     data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml",
+     spark=spark)
+   run = data_contract.test()
+   run.result
+   ```
+
+Databricks' library management properly resolves dependencies during cluster initialization, rather than at runtime in the notebook.
 
 #### Dataframe (programmatic)
 
