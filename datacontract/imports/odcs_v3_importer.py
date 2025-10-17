@@ -334,7 +334,7 @@ def import_fields(
         return result
 
     for odcs_property in odcs_properties:
-        mapped_type = map_type(odcs_property.logicalType, custom_type_mappings)
+        mapped_type = map_type(odcs_property.logicalType, custom_type_mappings, odcs_property.physicalType)
         if mapped_type is not None:
             property_name = odcs_property.name
             description = odcs_property.description if odcs_property.description is not None else None
@@ -377,23 +377,72 @@ def import_fields(
 
             result[property_name] = field
         else:
-            logger.info(
-                f"Can't map {odcs_property.name} to the Datacontract Mapping types, as there is no equivalent or special mapping. Consider introducing a customProperty 'dc_mapping_{odcs_property.logicalType}' that defines your expected type as the 'value'"
+            type_info = f"logicalType={odcs_property.logicalType}, physicalType={odcs_property.physicalType}"
+            logger.warning(
+                f"Can't map field '{odcs_property.name}' ({type_info}) to the Datacontract Mapping types. "
+                f"Both logicalType and physicalType are missing or unmappable. "
+                f"Consider introducing a customProperty 'dc_mapping_<type>' that defines your expected type as the 'value'"
             )
 
     return result
 
 
-def map_type(odcs_type: str, custom_mappings: Dict[str, str]) -> str | None:
-    if odcs_type is None:
-        return None
-    t = odcs_type.lower()
-    if t in DATACONTRACT_TYPES:
-        return t
-    elif custom_mappings.get(t) is not None:
-        return custom_mappings.get(t)
-    else:
-        return None
+def map_type(odcs_logical_type: str, custom_mappings: Dict[str, str], physical_type: str = None) -> str | None:
+    # Try to map logicalType first
+    if odcs_logical_type is not None:
+        t = odcs_logical_type.lower()
+        if t in DATACONTRACT_TYPES:
+            return t
+        elif custom_mappings.get(t) is not None:
+            return custom_mappings.get(t)
+
+    # Fallback to physicalType if logicalType is not mapped
+    if physical_type is not None:
+        pt = physical_type.lower()
+        # Remove parameters from physical type (e.g., VARCHAR(50) -> varchar, DECIMAL(10,2) -> decimal)
+        pt_base = pt.split('(')[0].strip()
+
+        # Try direct mapping of physical type
+        if pt in DATACONTRACT_TYPES:
+            return pt
+        elif pt_base in DATACONTRACT_TYPES:
+            return pt_base
+        elif custom_mappings.get(pt) is not None:
+            return custom_mappings.get(pt)
+        elif custom_mappings.get(pt_base) is not None:
+            return custom_mappings.get(pt_base)
+        # Common physical type mappings
+        elif pt_base in ["varchar", "char", "nvarchar", "nchar", "text", "ntext", "string", "character varying"]:
+            return "string"
+        elif pt_base in ["int", "integer", "smallint", "tinyint", "mediumint", "int2", "int4", "int8"]:
+            return "int"
+        elif pt_base in ["bigint", "long", "int64"]:
+            return "long"
+        elif pt_base in ["float", "real", "float4", "float8"]:
+            return "float"
+        elif pt_base in ["double", "double precision"]:
+            return "double"
+        elif pt_base in ["decimal", "numeric", "number"]:
+            return "decimal"
+        elif pt_base in ["boolean", "bool", "bit"]:
+            return "boolean"
+        elif pt_base in ["timestamp", "datetime", "datetime2", "timestamptz", "timestamp with time zone"]:
+            return "timestamp"
+        elif pt_base in ["date"]:
+            return "date"
+        elif pt_base in ["time"]:
+            return "time"
+        elif pt_base in ["json", "jsonb"]:
+            return "json"
+        elif pt_base in ["array"]:
+            return "array"
+        elif pt_base in ["object", "struct", "record"]:
+            return "object"
+        elif pt_base in ["bytes", "binary", "varbinary", "blob", "bytea"]:
+            return "bytes"
+        else:
+            return None
+    return None
 
 
 def get_custom_type_mappings(odcs_custom_properties: List[CustomProperty]) -> Dict[str, str]:
