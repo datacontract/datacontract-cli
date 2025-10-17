@@ -10,12 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
+- Support for BigQuery Flexible Schema in Data Contract Checks (#909)
 
 ### Fixed
 
+- Export to DQX: Correct DQX format for global-level quality check of data contract export. (#877)
 - Import the table tags from a open data contract spec v3 (#895)
 - dbt export: Enhanced model-level primaryKey support with automatic test generation for single and multiple column primary keys (#898)
-
 
 ## [0.10.35] - 2025-08-25
 
@@ -84,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
-- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly 
+- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly
 
 ## [0.10.28] - 2025-06-05
 
@@ -297,7 +298,7 @@ Code for proto to datacontract (#696)
 
 ### Fixed
 - SQL Server: cannot escape reserved word on model (#557)
-- Export dbt-staging-sql error on multi models contracts (#587) 
+- Export dbt-staging-sql error on multi models contracts (#587)
 
 ### Removed
 - OpenTelemetry publisher, as it was hardly used

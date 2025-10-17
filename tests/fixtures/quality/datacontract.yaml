@@ -20,6 +20,17 @@ models:
         required: true
         unique: true
         pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+        quality:
+          - type: library
+            metric: missingValues
+            arguments:
+              missingValues: [null, '', 'N/A']
+            mustBe: 0
+          - type: library
+            metric: invalidValues
+            arguments:
+              validValues: ['CX-263-DU', 'IK-894-MN', 'ER-399-JY', 'MT-939-FH', 'LV-849-MI', 'VS-079-OH', 'DN-297-XY', 'ZE-172-FP', 'ID-840-EG', 'FK-230-KZ']
+            mustBe: 0
       field_two:
         type: integer
         minimum: 10
@@ -30,6 +41,9 @@ models:
             dialect: postgres
             query: SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY field_two) AS percentile_95 FROM my_table
             mustBeBetween: [ 1000, 49900 ]
+          - type: library
+            metric: nullValues
+            mustBe: 0
       field_three:
         type: timestamp
     # model level quality checks
@@ -50,3 +64,8 @@ models:
           SELECT count(*) as row_count
           FROM {model}
         mustBeGreaterThan: 5
+      - name: rowCount must be greater than 0
+        type: library
+        metric: rowCount
+        description: Row Count 2
+        mustBeGreaterThan: 9
