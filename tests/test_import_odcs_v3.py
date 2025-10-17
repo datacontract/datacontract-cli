@@ -26,17 +26,17 @@ def test_cli():
 
 
 def test_import_full_odcs():
-    result = DataContract().import_from_source("odcs", "./fixtures/odcs_v3/full-example.odcs.yaml")
+    result = DataContract.import_from_source("odcs", "./fixtures/odcs_v3/full-example.odcs.yaml")
     expected_datacontract = read_file("fixtures/odcs_v3/full-example.datacontract.yml")
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected_datacontract)
-    assert DataContract(data_contract_str=expected_datacontract).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected_datacontract).lint().has_passed()
 
 
 def test_import_complex_odcs():
-    result = DataContract().import_from_source("odcs", "./fixtures/odcs_v3/adventureworks.odcs.yaml")
+    result = DataContract.import_from_source("odcs", "./fixtures/odcs_v3/adventureworks.odcs.yaml")
     expected_datacontract = read_file("fixtures/odcs_v3/adventureworks.datacontract.yml")
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected_datacontract)
-    assert DataContract(data_contract_str=expected_datacontract).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected_datacontract).lint().has_passed()
 
 
 def read_file(file):

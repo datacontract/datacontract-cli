@@ -23,9 +23,9 @@ We have a _servers_ section with endpoint details to the S3 bucket, _models_ for
 
 This data contract contains all information to connect to S3 and check that the actual data meets the defined schema and quality requirements. We can use this information to test if the actual data product in S3 is compliant to the data contract.
 
-Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker)),
+Let's use [uv](https://docs.astral.sh/uv/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ python3 -m pip install 'datacontract-cli[all]'
+$ uv tool install 'datacontract-cli[all]'
 ```
 
 
@@ -1444,17 +1444,21 @@ datacontract import --format bigquery --bigquery-project <project_id> --bigquery
 ```
 
 #### Unity Catalog
-
 ```bash
 # Example import from a Unity Catalog JSON file
 datacontract import --format unity --source my_unity_table.json
 ```
 
 ```bash
-# Example import single table from Unity Catalog via HTTP endpoint
+# Example import single table from Unity Catalog via HTTP endpoint using PAT
 export DATACONTRACT_DATABRICKS_SERVER_HOSTNAME="https://xyz.cloud.databricks.com"
-export DATACONTRACT_DATABRICKS_HTTP_PATH="/sql/1.0/warehouses/b053a331fa014fb4"
 export DATACONTRACT_DATABRICKS_TOKEN=<token>
+datacontract import --format unity --unity-table-full-name <table_full_name>
+```
+ Please Refer to  [Databricks documentation](https://docs.databricks.com/aws/en/dev-tools/auth/unified-auth) on how to set up a profile
+```bash
+# Example import single table from Unity Catalog via HTTP endpoint using Profile
+export DATACONTRACT_DATABRICKS_PROFILE="my-profile"
 datacontract import --format unity --unity-table-full-name <table_full_name>
 ```
 
@@ -1514,20 +1518,20 @@ datacontract import --format spark --source "users,orders"
 
 ```bash
 # Example: Import Spark table
-DataContract().import_from_source("spark", "users")
-DataContract().import_from_source(format = "spark", source = "users")
+DataContract.import_from_source("spark", "users")
+DataContract.import_from_source(format = "spark", source = "users")
 
 # Example: Import Spark dataframe
-DataContract().import_from_source("spark", "users", dataframe = df_user)
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user)
+DataContract.import_from_source("spark", "users", dataframe = df_user)
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user)
 
 # Example: Import Spark table + table description
-DataContract().import_from_source("spark", "users", description = "description") 
-DataContract().import_from_source(format = "spark", source = "users", description = "description")
+DataContract.import_from_source("spark", "users", description = "description") 
+DataContract.import_from_source(format = "spark", source = "users", description = "description")
 
 # Example: Import Spark dataframe + table description
-DataContract().import_from_source("spark", "users", dataframe = df_user, description = "description")
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
+DataContract.import_from_source("spark", "users", dataframe = df_user, description = "description")
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
 #### DBML
@@ -1772,8 +1776,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract test
    ```
 
-3. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You
-   probably forgot to document some fields and add the terms and conditions.
+3. Validate that the `datacontract.yaml` is correctly formatted and adheres to the Data Contract Specification.
    ```bash
    $ datacontract lint
    ```
@@ -1794,8 +1797,7 @@ Create a data contract based on the requirements from use cases.
    ```
 
 2. Create the model and quality guarantees based on your business requirements. Fill in the terms,
-   descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the
-   linter.
+   descriptions, etc. Validate that your `datacontract.yaml` is correctly formatted.
     ```bash
     $ datacontract lint
     ```
@@ -2015,6 +2017,7 @@ models:
 ```bash
 # make sure uv is installed
 uv python pin 3.11
+uv venv
 uv pip install -e '.[dev]'
 uv run ruff check
 uv run pytest

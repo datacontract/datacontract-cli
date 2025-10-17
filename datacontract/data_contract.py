@@ -26,11 +26,6 @@ from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
 from datacontract.lint import resolve
-from datacontract.lint.linters.description_linter import DescriptionLinter
-from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
-from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
-from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
-from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
 from datacontract.model.data_contract_specification import DataContractSpecification, Info
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -64,24 +59,14 @@ class DataContract:
         self._inline_definitions = inline_definitions
         self._inline_quality = inline_quality
         self._ssl_verification = ssl_verification
-        self.all_linters = {
-            FieldPatternLinter(),
-            FieldReferenceLinter(),
-            NoticePeriodLinter(),
-            ValidFieldConstraintsLinter(),
-            DescriptionLinter(),
-        }
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> DataContractSpecification:
         template_str = get_init_template(template)
         return resolve.resolve_data_contract(data_contract_str=template_str, schema_location=schema)
 
-    def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
-        """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
-
-        enabled_linters can be either "all" or "none", or a set of linter IDs. The "schema" linter is always enabled, even with enabled_linters="none".
-        """
+    def lint(self) -> Run:
+        """Lint the data contract by validating it against the JSON schema."""
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -101,27 +86,6 @@ class DataContract:
                     engine="datacontract",
                 )
             )
-            if enabled_linters == "none":
-                linters_to_check = set()
-            elif enabled_linters == "all":
-                linters_to_check = self.all_linters
-            elif isinstance(enabled_linters, set):
-                linters_to_check = {linter for linter in self.all_linters if linter.id in enabled_linters}
-            else:
-                raise RuntimeError(f"Unknown argument enabled_linters={enabled_linters} for lint()")
-            for linter in linters_to_check:
-                try:
-                    run.checks.extend(linter.lint(data_contract))
-                except Exception as e:
-                    run.checks.append(
-                        Check(
-                            type="general",
-                            result=ResultEnum.error,
-                            name=f"Linter '{linter.name}'",
-                            reason=str(e),
-                            engine="datacontract",
-                        )
-                    )
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
         except DataContractException as e:
@@ -292,10 +256,9 @@ class DataContract:
                 export_args=kwargs,
             )
 
-    # REFACTOR THIS
-    # could be a class method, not using anything from the instance
+    @classmethod
     def import_from_source(
-        self,
+        cls,
         format: str,
         source: typing.Optional[str] = None,
         template: typing.Optional[str] = None,
@@ -307,7 +270,7 @@ class DataContract:
         owner = kwargs.get("owner")
 
         if spec == Spec.odcs or format == ImportFormat.excel:
-            data_contract_specification_initial = DataContract.init(template=template, schema=schema)
+            data_contract_specification_initial = cls.init(template=template, schema=schema)
 
             odcs_imported = importer_factory.create(format).import_source(
                 data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
@@ -317,12 +280,12 @@ class DataContract:
                 # convert automatically
                 odcs_imported = to_odcs_v3(odcs_imported)
 
-            self._overwrite_id_in_odcs(odcs_imported, id)
-            self._overwrite_owner_in_odcs(odcs_imported, owner)
+            cls._overwrite_id_in_odcs(odcs_imported, id)
+            cls._overwrite_owner_in_odcs(odcs_imported, owner)
 
             return odcs_imported
         elif spec == Spec.datacontract_specification:
-            data_contract_specification_initial = DataContract.init(template=template, schema=schema)
+            data_contract_specification_initial = cls.init(template=template, schema=schema)
 
             data_contract_specification_imported = importer_factory.create(format).import_source(
                 data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
@@ -334,8 +297,8 @@ class DataContract:
                     data_contract_specification_initial, data_contract_specification_imported
                 )
 
-            self._overwrite_id_in_data_contract_specification(data_contract_specification_imported, id)
-            self._overwrite_owner_in_data_contract_specification(data_contract_specification_imported, owner)
+            cls._overwrite_id_in_data_contract_specification(data_contract_specification_imported, id)
+            cls._overwrite_owner_in_data_contract_specification(data_contract_specification_imported, owner)
 
             return data_contract_specification_imported
         else:
@@ -347,16 +310,18 @@ class DataContract:
                 engine="datacontract",
             )
 
+    @staticmethod
     def _overwrite_id_in_data_contract_specification(
-        self, data_contract_specification: DataContractSpecification, id: str | None
+        data_contract_specification: DataContractSpecification, id: str | None
     ):
         if not id:
             return
 
         data_contract_specification.id = id
 
+    @staticmethod
     def _overwrite_owner_in_data_contract_specification(
-        self, data_contract_specification: DataContractSpecification, owner: str | None
+        data_contract_specification: DataContractSpecification, owner: str | None
     ):
         if not owner:
             return
@@ -365,7 +330,8 @@ class DataContract:
             data_contract_specification.info = Info()
         data_contract_specification.info.owner = owner
 
-    def _overwrite_owner_in_odcs(self, odcs: OpenDataContractStandard, owner: str | None):
+    @staticmethod
+    def _overwrite_owner_in_odcs(odcs: OpenDataContractStandard, owner: str | None):
         if not owner:
             return
 
@@ -377,7 +343,8 @@ class DataContract:
                 return
         odcs.customProperties.append(CustomProperty(property="owner", value=owner))
 
-    def _overwrite_id_in_odcs(self, odcs: OpenDataContractStandard, id: str | None):
+    @staticmethod
+    def _overwrite_id_in_odcs(odcs: OpenDataContractStandard, id: str | None):
         if not id:
             return
 

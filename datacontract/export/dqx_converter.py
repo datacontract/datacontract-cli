@@ -64,7 +64,11 @@ def process_quality_rule(rule: Quality, column_name: str) -> Dict[str, Any]:
     if column_name:
         arguments = check.setdefault(DqxKeys.ARGUMENTS, {})
 
-        if DqxKeys.COL_NAME not in arguments and DqxKeys.COL_NAMES not in arguments and DqxKeys.COLUMNS not in arguments:
+        if (
+            DqxKeys.COL_NAME not in arguments
+            and DqxKeys.COL_NAMES not in arguments
+            and DqxKeys.COLUMNS not in arguments
+        ):
             if check[DqxKeys.FUNCTION] not in ("is_unique", "foreign_key"):
                 arguments[DqxKeys.COL_NAME] = column_name
             else:

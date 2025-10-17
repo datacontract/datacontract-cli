@@ -200,28 +200,28 @@ models:
 def test_to_dbt_models_with_model_level_composite_primary_key():
     """Test model-level primaryKey with multiple columns generates dbt_utils.unique_combination_of_columns"""
     from datacontract.model.data_contract_specification import DataContractSpecification, Field, Info, Model
-    
+
     # Create test data with model-level composite primaryKey
     data_contract = DataContractSpecification(
         id="my-data-contract-id",
         info=Info(title="My Data Contract", version="0.0.1"),
         models={
-            "sfdc_loc_tenants_test": Model(
+            "test_table": Model(
                 type="table",
-                primaryKey=["tenant_id", "account_id"],  # Model-level composite primary key
+                primaryKey=["order_id", "user_id"],  # Model-level composite primary key
                 fields={
-                    "tenant_id": Field(type="string", required=True),
-                    "account_id": Field(type="string", required=True),
-                    "name": Field(type="string", required=True)
-                }
+                    "order_id": Field(type="string", required=True),
+                    "user_id": Field(type="string", required=True),
+                    "product_id": Field(type="string", required=True)
+                },
             )
-        }
+        },
     )
-    
+
     expected_dbt_model = """
 version: 2
 models:
-  - name: sfdc_loc_tenants_test
+  - name: test_table
     config:
       meta:
         data_contract: my-data-contract-id
@@ -231,18 +231,18 @@ models:
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
-            - tenant_id
-            - account_id
+            - order_id
+            - user_id
     columns:
-      - name: tenant_id
+      - name: order_id
         data_type: STRING
         constraints:
           - type: not_null
-      - name: account_id
+      - name: user_id
         data_type: STRING
         constraints:
           - type: not_null
-      - name: name
+      - name: product_id
         data_type: STRING
         constraints:
           - type: not_null
@@ -250,35 +250,35 @@ models:
 
     result = yaml.safe_load(to_dbt_models_yaml(data_contract))
     expected = yaml.safe_load(expected_dbt_model)
-    
+
     assert result == expected
 
 
 def test_to_dbt_models_with_single_column_primary_key():
     """Test model-level primaryKey with single column adds unique constraint to column"""
     from datacontract.model.data_contract_specification import DataContractSpecification, Field, Info, Model
-    
+
     # Create test data with model-level single primaryKey
     data_contract = DataContractSpecification(
         id="my-data-contract-id",
         info=Info(title="My Data Contract", version="0.0.1"),
         models={
-            "sfdc_loc_tenants_test": Model(
+            "test_table": Model(
                 type="table",
-                primaryKey=["tenant_id"],  # Model-level single primary key
+                primaryKey=["order_id"],  # Model-level single primary key
                 fields={
-                    "tenant_id": Field(type="string", required=True),
-                    "account_id": Field(type="string", required=True),
-                    "name": Field(type="string", required=True)
-                }
+                    "order_id": Field(type="string", required=True),
+                    "user_id": Field(type="string", required=True),
+                    "product_id": Field(type="string", required=True)
+                },
             )
-        }
+        },
     )
-    
+
     expected_dbt_model = """
 version: 2
 models:
-  - name: sfdc_loc_tenants_test
+  - name: test_table
     config:
       meta:
         data_contract: my-data-contract-id
@@ -286,16 +286,16 @@ models:
       contract:
         enforced: true
     columns:
-      - name: tenant_id
+      - name: order_id
         data_type: STRING
         constraints:
           - type: not_null
           - type: unique
-      - name: account_id
+      - name: user_id
         data_type: STRING
         constraints:
           - type: not_null
-      - name: name
+      - name: product_id
         data_type: STRING
         constraints:
           - type: not_null
@@ -303,7 +303,7 @@ models:
 
     result = yaml.safe_load(to_dbt_models_yaml(data_contract))
     expected = yaml.safe_load(expected_dbt_model)
-    
+
     assert result == expected
 
 

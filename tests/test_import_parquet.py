@@ -22,7 +22,7 @@ def test_cli():
 
 
 def test_import_parquet():
-    result = DataContract().import_from_source(format="parquet", source=parquet_file_path)
+    result = DataContract.import_from_source(format="parquet", source=parquet_file_path)
 
     expected = """dataContractSpecification: 1.2.1
 id: my-data-contract-id
@@ -65,4 +65,4 @@ models:
 """
 
     assert result.to_yaml() == expected
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
