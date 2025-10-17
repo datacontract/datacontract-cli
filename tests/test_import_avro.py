@@ -116,7 +116,7 @@ models:
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_arrays_of_records_and_nested_arrays():
@@ -167,7 +167,7 @@ models:
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_nested_records():
@@ -196,7 +196,7 @@ models:
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_nested_records_with_arrays():
@@ -262,7 +262,7 @@ models:
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_logical_types():
@@ -313,7 +313,7 @@ models:
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_optional_enum():
@@ -351,4 +351,4 @@ models:
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()

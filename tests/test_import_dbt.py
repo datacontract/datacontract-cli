@@ -227,7 +227,7 @@ models:
     - TABLE_PII"""
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_dbt_manifest_bigquery():
@@ -391,7 +391,7 @@ models:
     - TABLE_PII"""
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_dbt_manifest_with_filter_and_empty_columns():
@@ -413,7 +413,7 @@ models:
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_dbt_manifest_with_filter():
@@ -463,4 +463,4 @@ models:
     - TABLE_PII"""
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()

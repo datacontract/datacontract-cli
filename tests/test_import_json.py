@@ -61,7 +61,7 @@ def test_json_simple():
 
     # making sure the data contract is correct
     data_contract = DataContract(data_contract_str=actual)
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()
 
 
 def test_json_complex():
@@ -105,7 +105,7 @@ def test_json_complex():
 
     # making sure the data contract is correct
     data_contract = DataContract(data_contract_str=actual)
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()
 
 
 def test_ndjson():
@@ -148,4 +148,4 @@ def test_ndjson():
 
     # making sure the data contract is correct
     data_contract = DataContract(data_contract_str=actual)
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()

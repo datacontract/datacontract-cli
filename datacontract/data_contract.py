@@ -26,11 +26,6 @@ from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import publish_test_results_to_datamesh_manager
 from datacontract.lint import resolve
-from datacontract.lint.linters.description_linter import DescriptionLinter
-from datacontract.lint.linters.field_pattern_linter import FieldPatternLinter
-from datacontract.lint.linters.field_reference_linter import FieldReferenceLinter
-from datacontract.lint.linters.notice_period_linter import NoticePeriodLinter
-from datacontract.lint.linters.valid_constraints_linter import ValidFieldConstraintsLinter
 from datacontract.model.data_contract_specification import DataContractSpecification, Info
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -64,24 +59,14 @@ class DataContract:
         self._inline_definitions = inline_definitions
         self._inline_quality = inline_quality
         self._ssl_verification = ssl_verification
-        self.all_linters = {
-            FieldPatternLinter(),
-            FieldReferenceLinter(),
-            NoticePeriodLinter(),
-            ValidFieldConstraintsLinter(),
-            DescriptionLinter(),
-        }
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> DataContractSpecification:
         template_str = get_init_template(template)
         return resolve.resolve_data_contract(data_contract_str=template_str, schema_location=schema)
 
-    def lint(self, enabled_linters: typing.Union[str, set[str]] = "all") -> Run:
-        """Lint the data contract by deserializing the contract and checking the schema, as well as calling the configured linters.
-
-        enabled_linters can be either "all" or "none", or a set of linter IDs. The "schema" linter is always enabled, even with enabled_linters="none".
-        """
+    def lint(self) -> Run:
+        """Lint the data contract by validating it against the JSON schema."""
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -101,27 +86,6 @@ class DataContract:
                     engine="datacontract",
                 )
             )
-            if enabled_linters == "none":
-                linters_to_check = set()
-            elif enabled_linters == "all":
-                linters_to_check = self.all_linters
-            elif isinstance(enabled_linters, set):
-                linters_to_check = {linter for linter in self.all_linters if linter.id in enabled_linters}
-            else:
-                raise RuntimeError(f"Unknown argument enabled_linters={enabled_linters} for lint()")
-            for linter in linters_to_check:
-                try:
-                    run.checks.extend(linter.lint(data_contract))
-                except Exception as e:
-                    run.checks.append(
-                        Check(
-                            type="general",
-                            result=ResultEnum.error,
-                            name=f"Linter '{linter.name}'",
-                            reason=str(e),
-                            engine="datacontract",
-                        )
-                    )
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.info.version
         except DataContractException as e:

@@ -34,7 +34,7 @@ def test_import_unity():
     result_yaml = result.to_yaml()
     print("Result:\n", result_yaml)
     assert yaml.safe_load(result_yaml) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_cli_complex_types():
@@ -65,7 +65,7 @@ def test_import_unity_complex_types():
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_unity_with_owner_and_id():

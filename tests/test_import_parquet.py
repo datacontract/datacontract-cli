@@ -65,4 +65,4 @@ models:
 """
 
     assert result.to_yaml() == expected
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()

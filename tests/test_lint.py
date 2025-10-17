@@ -27,7 +27,7 @@ def test_lint_invalid_data_contract():
 
 def test_lint_cli_valid():
     data_contract_file = "fixtures/lint/valid_datacontract.yaml"
-    expected_output = "🟢 data contract is valid. Run 6 checks."
+    expected_output = "🟢 data contract is valid. Run 1 checks."
 
     result = runner.invoke(app, ["lint", data_contract_file])
 
@@ -72,12 +72,3 @@ def test_lint_with_references():
     run = data_contract.lint()
 
     assert run.result == "passed"
-
-#
-# def test_lint_valid_field_constraints():
-#     data_contract_file = "fixtures/lint/datacontract_valid_field_constraints.yaml"
-#     data_contract = DataContract(data_contract_file=data_contract_file)
-#
-#     run = data_contract.lint()
-#
-#     assert run.result == "passed"
