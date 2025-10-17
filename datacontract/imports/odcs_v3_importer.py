@@ -207,7 +207,11 @@ def import_models(odcs: Any) -> Dict[str, Model]:
         schema_physical_name = odcs_schema.physicalName
         schema_description = odcs_schema.description if odcs_schema.description is not None else ""
         model_name = schema_physical_name if schema_physical_name is not None else schema_name
-        model = Model(description=" ".join(schema_description.splitlines()) if schema_description else "", type="table")
+        model = Model(
+            description=" ".join(schema_description.splitlines()) if schema_description else "",
+            type="table",
+            tags=odcs_schema.tags if odcs_schema.tags is not None else None,
+        )
         model.fields = import_fields(odcs_schema.properties, custom_type_mappings, server_type=get_server_type(odcs))
         if odcs_schema.quality is not None:
             model.quality = convert_quality_list(odcs_schema.quality)
@@ -231,6 +235,8 @@ def convert_quality_list(odcs_quality_list):
                 quality.description = odcs_quality.description
             if odcs_quality.query is not None:
                 quality.query = odcs_quality.query
+            if odcs_quality.rule is not None:
+                quality.metric = odcs_quality.rule
             if odcs_quality.mustBe is not None:
                 quality.mustBe = odcs_quality.mustBe
             if odcs_quality.mustNotBe is not None:
@@ -238,11 +244,11 @@ def convert_quality_list(odcs_quality_list):
             if odcs_quality.mustBeGreaterThan is not None:
                 quality.mustBeGreaterThan = odcs_quality.mustBeGreaterThan
             if odcs_quality.mustBeGreaterOrEqualTo is not None:
-                quality.mustBeGreaterThanOrEqualTo = odcs_quality.mustBeGreaterOrEqualTo
+                quality.mustBeGreaterOrEqualTo = odcs_quality.mustBeGreaterOrEqualTo
             if odcs_quality.mustBeLessThan is not None:
                 quality.mustBeLessThan = odcs_quality.mustBeLessThan
             if odcs_quality.mustBeLessOrEqualTo is not None:
-                quality.mustBeLessThanOrEqualTo = odcs_quality.mustBeLessOrEqualTo
+                quality.mustBeLessOrEqualTo = odcs_quality.mustBeLessOrEqualTo
             if odcs_quality.mustBeBetween is not None:
                 quality.mustBeBetween = odcs_quality.mustBeBetween
             if odcs_quality.mustNotBeBetween is not None:
@@ -255,8 +261,6 @@ def convert_quality_list(odcs_quality_list):
                 quality.model_extra["businessImpact"] = odcs_quality.businessImpact
             if odcs_quality.dimension is not None:
                 quality.model_extra["dimension"] = odcs_quality.dimension
-            if odcs_quality.rule is not None:
-                quality.model_extra["rule"] = odcs_quality.rule
             if odcs_quality.schedule is not None:
                 quality.model_extra["schedule"] = odcs_quality.schedule
             if odcs_quality.scheduler is not None:

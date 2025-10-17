@@ -26,10 +26,10 @@ def test_cli():
 
 
 def test_import_sql_postgres():
-    result = DataContract().import_from_source("sql", sql_file_path, dialect="postgres")
+    result = DataContract.import_from_source("sql", sql_file_path, dialect="postgres")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -64,10 +64,10 @@ models:
 
 
 def test_import_sql_constraints():
-    result = DataContract().import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
+    result = DataContract.import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract

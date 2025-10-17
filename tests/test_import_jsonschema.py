@@ -51,7 +51,7 @@ def test_cli_with_output(tmp_path: Path):
 
 
 def test_import_json_schema_orders():
-    result = DataContract().import_from_source("jsonschema", "fixtures/import/orders_union-types.json")
+    result = DataContract.import_from_source("jsonschema", "fixtures/import/orders_union-types.json")
 
     with open("fixtures/import/orders_union-types_datacontract.yml") as file:
         expected = file.read()
@@ -62,7 +62,7 @@ def test_import_json_schema_orders():
 
 
 def test_import_json_schema_football():
-    result = DataContract().import_from_source("jsonschema", "fixtures/import/football.json")
+    result = DataContract.import_from_source("jsonschema", "fixtures/import/football.json")
 
     with open("fixtures/import/football-datacontract.yml") as file:
         expected = file.read()
@@ -73,7 +73,7 @@ def test_import_json_schema_football():
 
 
 def test_import_json_schema_football_deeply_nested_no_required():
-    result = DataContract().import_from_source("jsonschema", "fixtures/import/football_deeply_nested_no_required.json")
+    result = DataContract.import_from_source("jsonschema", "fixtures/import/football_deeply_nested_no_required.json")
 
     with open("fixtures/import/football_deeply_nested_no_required_datacontract.yml") as file:
         expected = file.read()

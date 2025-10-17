@@ -82,7 +82,7 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
         if value
     ]
     description = f"*{description_to_markdown(description_value)}*"
-    extra = [extra_to_markdown(obj)] if obj.model_extra else []
+    extra = [extra_to_markdown(obj, is_in_table_cell)] if obj.model_extra else []
     return newline_char.join([description] + attributes + extra)
 
 
@@ -293,26 +293,45 @@ def dict_to_markdown(dictionary: Dict[str, str]) -> str:
     return "\n".join(markdown_parts) + "\n"
 
 
-def extra_to_markdown(obj: BaseModel) -> str:
+def extra_to_markdown(obj: BaseModel, is_in_table_cell: bool = False) -> str:
     """
     Convert the extra attributes of a data contract to Markdown format.
     Args:
         obj (BaseModel): The data contract object containing extra attributes.
+        is_in_table_cell (bool): Whether the extra attributes are in a table cell.
     Returns:
         str: A Markdown formatted string representing the extra attributes of the data contract.
     """
-    markdown_part = ""
     extra = obj.model_extra
-    if extra:
-        for key_extra, value_extra in extra.items():
-            markdown_part += f"\n### {key_extra.capitalize()}\n"
-            if isinstance(value_extra, list) and len(value_extra):
-                if isinstance(value_extra[0], dict):
-                    markdown_part += array_of_dict_to_markdown(value_extra)
-                elif isinstance(value_extra[0], str):
-                    markdown_part += array_to_markdown(value_extra)
-            elif isinstance(value_extra, dict):
-                markdown_part += dict_to_markdown(value_extra)
-            else:
-                markdown_part += f"{str(value_extra)}\n"
-    return markdown_part
+
+    if not extra:
+        return ""
+
+    bullet_char = "•"
+    value_line_ending = "" if is_in_table_cell else "\n"
+    row_suffix = "<br>" if is_in_table_cell else ""
+
+    def render_header(key: str) -> str:
+        return f"{bullet_char} **{key}:** " if is_in_table_cell else f"\n### {key.capitalize()}\n"
+
+    parts: list[str] = []
+    for key_extra, value_extra in extra.items():
+        if not value_extra:
+            continue
+
+        parts.append(render_header(key_extra))
+
+        if isinstance(value_extra, list) and len(value_extra):
+            if isinstance(value_extra[0], dict):
+                parts.append(array_of_dict_to_markdown(value_extra))
+            elif isinstance(value_extra[0], str):
+                parts.append(array_to_markdown(value_extra))
+        elif isinstance(value_extra, dict):
+            parts.append(dict_to_markdown(value_extra))
+        else:
+            parts.append(f"{str(value_extra)}{value_line_ending}")
+
+        if row_suffix:
+            parts.append(row_suffix)
+
+    return "".join(parts)
