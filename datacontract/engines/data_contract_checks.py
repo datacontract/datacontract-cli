@@ -15,7 +15,7 @@ from datacontract.model.run import Check
 class QuotingConfig:
     quote_field_name: bool = False
     quote_model_name: bool = False
-    quote_with_backticks_model_name: bool = False
+    quote_model_name_with_backticks: bool = False
 
 
 def create_checks(data_contract_spec: DataContractSpecification, server: Server) -> List[Check]:
@@ -36,11 +36,13 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
 
     check_types = is_check_types(server)
 
-    quoting_config = QuotingConfig(
-        quote_field_name=server_type in ["postgres", "sqlserver"],
-        quote_model_name=server_type in ["postgres", "sqlserver"],
-        quote_with_backticks_model_name=server_type == "bigquery",
+    type1 = server.type if server and server.type else None
+    config = QuotingConfig(
+        quote_field_name=type1 in ["postgres", "sqlserver"],
+        quote_model_name=type1 in ["postgres", "sqlserver"],
+        quote_model_name_with_backticks=type1 == "bigquery",
     )
+    quoting_config = config
 
     for field_name, field in fields.items():
         checks.append(check_field_is_present(model_name, field_name, quoting_config))
@@ -87,7 +89,7 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
 def checks_for(model_name: str, quoting_config: QuotingConfig, check_type: str) -> str:
     if quoting_config.quote_model_name:
         return f'checks for "{model_name}"'
-    elif quoting_config.quote_with_backticks_model_name and check_type not in ["field_is_present", "field_type"]:
+    elif quoting_config.quote_model_name_with_backticks and check_type not in ["field_is_present", "field_type"]:
         return f"checks for `{model_name}`"
     return f"checks for {model_name}"
 
@@ -794,7 +796,7 @@ def prepare_query(
 
     if quoting_config.quote_model_name:
         model_name_for_soda = f'"{model_name}"'
-    elif quoting_config.quote_with_backticks_model_name:
+    elif quoting_config.quote_model_name_with_backticks:
         model_name_for_soda = f"`{model_name}`"
     else:
         model_name_for_soda = model_name
@@ -898,7 +900,7 @@ def to_servicelevel_freshness_check(data_contract_spec: DataContractSpecificatio
     check_key = "servicelevel_freshness"
 
     sodacl_check_dict = {
-        checks_for(model_name, False, check_type): [
+        checks_for(model_name, QuotingConfig(), check_type): [
             {
                 f"freshness({field_name}) < {threshold}": {
                     "name": check_key,
@@ -950,7 +952,7 @@ def to_servicelevel_retention_check(data_contract_spec) -> Check | None:
     check_type = "servicelevel_retention"
     check_key = "servicelevel_retention"
     sodacl_check_dict = {
-        checks_for(model_name, False, check_type): [
+        checks_for(model_name, QuotingConfig(), check_type): [
             {
                 f"orders_servicelevel_retention < {period_in_seconds}": {
                     "orders_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({field_name}), CURRENT_TIMESTAMP)",
