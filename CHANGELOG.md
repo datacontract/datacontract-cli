@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
 - Support for BigQuery Flexible Schema in Data Contract Checks (#909)
 
+### Changed
+
+- `DataContract().import_from_source()` as an instance method is now deprecated. Use `DataContract.import_from_source()` as a class method instead.
+
 ### Fixed
 
 - Export to DQX: Correct DQX format for global-level quality check of data contract export. (#877)

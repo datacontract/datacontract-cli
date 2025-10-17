@@ -292,10 +292,9 @@ class DataContract:
                 export_args=kwargs,
             )
 
-    # REFACTOR THIS
-    # could be a class method, not using anything from the instance
+    @classmethod
     def import_from_source(
-        self,
+        cls,
         format: str,
         source: typing.Optional[str] = None,
         template: typing.Optional[str] = None,
@@ -307,7 +306,7 @@ class DataContract:
         owner = kwargs.get("owner")
 
         if spec == Spec.odcs or format == ImportFormat.excel:
-            data_contract_specification_initial = DataContract.init(template=template, schema=schema)
+            data_contract_specification_initial = cls.init(template=template, schema=schema)
 
             odcs_imported = importer_factory.create(format).import_source(
                 data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
@@ -317,12 +316,12 @@ class DataContract:
                 # convert automatically
                 odcs_imported = to_odcs_v3(odcs_imported)
 
-            self._overwrite_id_in_odcs(odcs_imported, id)
-            self._overwrite_owner_in_odcs(odcs_imported, owner)
+            cls._overwrite_id_in_odcs(odcs_imported, id)
+            cls._overwrite_owner_in_odcs(odcs_imported, owner)
 
             return odcs_imported
         elif spec == Spec.datacontract_specification:
-            data_contract_specification_initial = DataContract.init(template=template, schema=schema)
+            data_contract_specification_initial = cls.init(template=template, schema=schema)
 
             data_contract_specification_imported = importer_factory.create(format).import_source(
                 data_contract_specification=data_contract_specification_initial, source=source, import_args=kwargs
@@ -334,8 +333,8 @@ class DataContract:
                     data_contract_specification_initial, data_contract_specification_imported
                 )
 
-            self._overwrite_id_in_data_contract_specification(data_contract_specification_imported, id)
-            self._overwrite_owner_in_data_contract_specification(data_contract_specification_imported, owner)
+            cls._overwrite_id_in_data_contract_specification(data_contract_specification_imported, id)
+            cls._overwrite_owner_in_data_contract_specification(data_contract_specification_imported, owner)
 
             return data_contract_specification_imported
         else:
@@ -347,16 +346,18 @@ class DataContract:
                 engine="datacontract",
             )
 
+    @staticmethod
     def _overwrite_id_in_data_contract_specification(
-        self, data_contract_specification: DataContractSpecification, id: str | None
+        data_contract_specification: DataContractSpecification, id: str | None
     ):
         if not id:
             return
 
         data_contract_specification.id = id
 
+    @staticmethod
     def _overwrite_owner_in_data_contract_specification(
-        self, data_contract_specification: DataContractSpecification, owner: str | None
+        data_contract_specification: DataContractSpecification, owner: str | None
     ):
         if not owner:
             return
@@ -365,7 +366,8 @@ class DataContract:
             data_contract_specification.info = Info()
         data_contract_specification.info.owner = owner
 
-    def _overwrite_owner_in_odcs(self, odcs: OpenDataContractStandard, owner: str | None):
+    @staticmethod
+    def _overwrite_owner_in_odcs(odcs: OpenDataContractStandard, owner: str | None):
         if not owner:
             return
 
@@ -377,7 +379,8 @@ class DataContract:
                 return
         odcs.customProperties.append(CustomProperty(property="owner", value=owner))
 
-    def _overwrite_id_in_odcs(self, odcs: OpenDataContractStandard, id: str | None):
+    @staticmethod
+    def _overwrite_id_in_odcs(odcs: OpenDataContractStandard, id: str | None):
         if not id:
             return
 
