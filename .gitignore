@@ -4,6 +4,7 @@
 datacontract.sh
 /cli
 tmp
+/venv
 /contracts/
 /quality/
 db.duckdb
@@ -328,3 +329,4 @@ fabric.properties
 
 # Generated test files
 **/.tmp
+/.claude/settings.local.json

@@ -55,13 +55,17 @@ def test_test_quality_invalid(postgres_container, monkeypatch):
         and check.result == ResultEnum.failed
         for check in run.checks
     )
+    assert any(
+        check.name == "Check that model my_table has row_count > 9" and check.result == ResultEnum.failed
+        for check in run.checks
+    )
 
 
 def _setup_datacontract(file):
     with open(file) as data_contract_file:
         data_contract_str = data_contract_file.read()
     port = postgres.get_exposed_port(5432)
-    data_contract_str = data_contract_str.replace("5432", port)
+    data_contract_str = data_contract_str.replace("5432", str(port))
     return data_contract_str
 
 

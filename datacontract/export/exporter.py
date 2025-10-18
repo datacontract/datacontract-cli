@@ -33,6 +33,7 @@ class ExportFormat(str, Enum):
     avro_idl = "avro-idl"
     sql = "sql"
     sql_query = "sql-query"
+    mermaid = "mermaid"
     html = "html"
     go = "go"
     bigquery = "bigquery"
@@ -44,6 +45,8 @@ class ExportFormat(str, Enum):
     markdown = "markdown"
     iceberg = "iceberg"
     custom = "custom"
+    excel = "excel"
+    dqx = "dqx"
 
     @classmethod
     def get_supported_formats(cls):

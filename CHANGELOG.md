@@ -7,10 +7,138 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.10.26] - 2025-05-16
+
+## [0.10.36] - 2025-10-17
+
+### Added
+
+- Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
+- Support for decimal testing in spark and databricks (#902)
+- Support for BigQuery Flexible Schema in Data Contract Checks (#909)
 
 ### Changed
 
+- `DataContract().import_from_source()` as an instance method is now deprecated. Use `DataContract.import_from_source()` as a class method instead.
+
+### Fixed
+
+- Export to DQX: Correct DQX format for global-level quality check of data contract export. (#877)
+- Import the table tags from a open data contract spec v3 (#895)
+- dbt export: Enhanced model-level primaryKey support with automatic test generation for single and multiple column primary keys (#898)
+- ODCS: field discarded when no logicalType defined  (#891)
+ 
+### Removed
+
+- Removed specific linters, as the linters did not support ODCS (#913)
+
+## [0.10.35] - 2025-08-25
+
+### Added
+
+- Export to DQX : datacontract export --format dqx (#846)
+- API `/test` endpoint now supports `publish_url` parameter to publish test results to a URL. (#853)
+- The Spark importer and exporter now also exports the description of columns via the additional metadata of StructFields (#868)
+
+### Fixed
+
+- Improved regex for extracting Azure storage account names from URLs with containerName@storageAccountName format (#848)
+- JSON Schema Check: Add globbing support for local JSON files
+- Fixed server section rendering for markdown exporter
+
+## [0.10.34] - 2025-08-06
+
+### Added
+
+- `datacontract test` now supports HTTP APIs.
+- `datacontract test` now supports Athena.
+
+### Fixed
+
+- Avro Importer: Optional and required enum types are now supported (#804)
+
+
+## [0.10.33] - 2025-07-29
+
+### Added
+- Export to Excel: Convert ODCS YAML to Excel https://github.com/datacontract/open-data-contract-standard-excel-template (#742)
+- Extra properties in Markdown export. (#842)
+
+
+## [0.10.32] - 2025-07-28
+
+### Added
+- Import from Excel: Support the new quality sheet
+
+### Fixed
+- JUnit Test Report: Fixed incorrect syntax on handling warning test report. (#833)
+
+## [0.10.31] - 2025-07-18
+
+### Added
+- Added support for Variant with Spark exporter, data_contract.test(), and import as source unity catalog (#792)
+
+
+## [0.10.30] - 2025-07-15
+
+### Fixed
+- Excel Import should return ODCS YAML (#829)
+- Excel Import: Missing server section when the server included a schema property (#823)
+
+### Changed
+- Use `&#x2007;` instead of `&numsp;` for tab in Markdown export.
+
+## [0.10.29] - 2025-07-06
+
+### Added
+- Support for Data Contract Specification v1.2.0
+- `datacontract import --format json`: Import from JSON files
+
+### Changed
+- `datacontract api [OPTIONS]`: Added option to pass extra arguments for `uvicorn.run()`
+
+### Fixed
+- `pytest tests\test_api.py`: Fixed an issue where special characters were not read correctly from file.
+- `datacontract export --format mermaid`: Fixed an issue where the `mermaid` export did not handle references correctly
+
+## [0.10.28] - 2025-06-05
+
+### Added
+- Much better ODCS support
+    - Import anything to ODCS via the `import --spec odcs` flag
+    - Export to HTML with an ODCS native template via `export --format html`
+    - Export to Mermaid with an ODCS native mapping via `export --format mermaid`
+- The databricks `unity` importer now supports more than a single table. You can use `--unity-table-full-name` multiple times to import multiple tables. And it will automatically add a server with the catalog and schema name.
+
+### Changed
+- `datacontract catalog [OPTIONS]`: Added version to contract cards in `index.html` of the catalog (enabled search by version)
+- The type mapping of the `unity` importer no uses the native databricks types instead of relying on spark types. This allows for better type mapping and more accurate data contracts.
+
+### Fixed
+
+## [0.10.27] - 2025-05-22
+
+### Added
+
+- `datacontract export --format mermaid` Export
+  to [Mermaid](https://mermaid-js.github.io/mermaid/#/) (#767, #725)
+
+### Changed
+
+- `datacontract export --format html`: Adding the mermaid figure to the html export
+- `datacontract export --format odcs`: Export physical type to ODCS if the physical type is
+  configured in config object
+- `datacontract import --format spark`: Added support for spark importer table level comments (#761)
+- `datacontract import` respects `--owner` and `--id` flags (#753)
+
+### Fixed
+
+- `datacontract export --format sodacl`: Fix resolving server when using `--server` flag (#768)
+- `datacontract export --format dbt`: Fixed DBT export behaviour of constraints to default to data tests when no model type is specified in the datacontract model
+
+
+## [0.10.26] - 2025-05-16
+
+### Changed
 - Databricks: Add support for Variant type (#758)
 - `datacontract export --format odcs`: Export physical type if the physical type is configured in
   config object (#757)
@@ -183,7 +311,7 @@ Code for proto to datacontract (#696)
 
 ### Fixed
 - SQL Server: cannot escape reserved word on model (#557)
-- Export dbt-staging-sql error on multi models contracts (#587) 
+- Export dbt-staging-sql error on multi models contracts (#587)
 
 ### Removed
 - OpenTelemetry publisher, as it was hardly used

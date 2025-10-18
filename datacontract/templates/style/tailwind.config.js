@@ -1,6 +1,7 @@
 module.exports = {
   content: [
     "../datacontract.html",
+    "../datacontract_odcs.html",
     "../index.html",
     "../partials/model_field.html",
     "../partials/server.html",

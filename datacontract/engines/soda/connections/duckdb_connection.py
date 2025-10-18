@@ -71,6 +71,9 @@ def get_duckdb_connection(
         elif server.format == "delta":
             con.sql("update extensions;")  # Make sure we have the latest delta extension
             con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
+        table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchdf()
+        if table_info is not None and not table_info.empty:
+            run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
     return con
 
 
@@ -132,10 +135,10 @@ def setup_s3_connection(con, server):
     use_ssl = "true"
     url_style = "vhost"
     if server.endpointUrl is not None:
+        url_style = "path"
         s3_endpoint = server.endpointUrl.removeprefix("http://").removeprefix("https://")
         if server.endpointUrl.startswith("http://"):
             use_ssl = "false"
-            url_style = "path"
 
     if s3_access_key_id is not None:
         if s3_session_token is not None:

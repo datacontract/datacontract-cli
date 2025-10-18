@@ -16,12 +16,12 @@ def test_lint():
     assert response.status_code == 200
     print(response.json())
     assert response.json()["result"] == "passed"
-    assert len(response.json()["checks"]) == 6
+    assert len(response.json()["checks"]) == 1
     assert all([check["result"] == "passed" for check in response.json()["checks"]])
 
 
 def test_export_jsonschema():
-    with open("fixtures/local-json/datacontract.yaml", "r") as f:
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
     response = client.post(
         url="/export?format=jsonschema",

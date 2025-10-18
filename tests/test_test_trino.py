@@ -95,5 +95,5 @@ def _setup_datacontract():
     with open(datacontract) as data_contract_file:
         data_contract_str = data_contract_file.read()
     port = trino.get_exposed_port(8080)
-    data_contract_str = data_contract_str.replace("__PORT__", port)
+    data_contract_str = data_contract_str.replace("__PORT__", str(port))
     return data_contract_str

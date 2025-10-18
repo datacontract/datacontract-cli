@@ -1,0 +1,42 @@
+apiVersion: v3.0.1
+kind: DataContract
+id: iceberg-example
+name: Iceberg Example
+version: 0.0.1
+status: active
+customProperties:
+  - property: owner
+    value: data--ai
+description: {}
+servers:
+  - server: athena
+    type: athena
+    description: Iceberg files on S3
+    catalog: awsdatacatalog # awsdatacatalog is the default catalog in Athena
+    schema: icebergdemodb # called database in Athena
+    regionName: eu-central-1
+    stagingDir: s3://entropy-data-demo-athena-results-dfhsiuya/cli
+schema:
+  - name: athena_iceberg_table_partitioned
+    logicalType: object
+    properties:
+      - name: color
+        logicalType: string
+        required: true
+        unique: true
+        physicalType: varchar
+      - name: date
+        logicalType: string
+        physicalType: varchar
+      - name: name
+        logicalType: string
+        physicalType: varchar
+      - name: price
+        logicalType: integer
+        physicalType: bigint
+      - name: product
+        logicalType: string
+        physicalType: varchar
+      - name: ts
+        logicalType: date
+        physicalType: timestamp(6)

@@ -1,8 +1,9 @@
+import glob
 import json
 import logging
 import os
 import threading
-from typing import List, Optional
+from typing import Any, Callable, Generator, List, Optional
 
 import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
@@ -85,7 +86,7 @@ def process_exceptions(run, exceptions: List[DataContractException]):
 
 
 def validate_json_stream(
-    schema: dict, model_name: str, validate: callable, json_stream: list[dict]
+    schema: dict, model_name: str, validate: Callable, json_stream: Generator[Any, Any, None]
 ) -> List[DataContractException]:
     logging.info(f"Validating JSON stream for model: '{model_name}'.")
     exceptions: List[DataContractException] = []
@@ -99,7 +100,7 @@ def validate_json_stream(
                 DataContractException(
                     type="schema",
                     name="Check that JSON has valid schema",
-                    result="failed",
+                    result=ResultEnum.failed,
                     reason=f"{f'#{primary_key_value}: ' if primary_key_value is not None else ''}{e.message}",
                     model=model_name,
                     engine="jsonschema",
@@ -159,27 +160,44 @@ def process_json_file(run, schema, model_name, validate, file, delimiter):
 
 def process_local_file(run, server, schema, model_name, validate):
     path = server.path
+    if not path:
+        raise DataContractException(
+            type="schema",
+            name="Check that JSON has valid schema",
+            result=ResultEnum.warning,
+            reason="For server with type 'local', a 'path' must be defined.",
+            engine="datacontract",
+        )
     if "{model}" in path:
         path = path.format(model=model_name)
 
+    all_files = []
     if os.path.isdir(path):
-        return process_directory(run, path, server, model_name, validate)
+        # Fetch all JSONs in the directory
+        for root, _, files in os.walk(path):
+            for file in files:
+                if file.endswith(".json"):
+                    all_files.append(os.path.join(root, file))
     else:
-        logging.info(f"Processing file {path}")
-        with open(path, "r") as file:
-            process_json_file(run, schema, model_name, validate, file, server.delimiter)
+        # Use glob to fetch all JSONs
+        for file_path in glob.glob(path, recursive=True):
+            if os.path.isfile(file_path):
+                if file_path.endswith(".json"):
+                    all_files.append(file_path)
 
+    if not all_files:
+        raise DataContractException(
+            type="schema",
+            name="Check that JSON has valid schema",
+            result=ResultEnum.warning,
+            reason=f"No files found in '{path}'.",
+            engine="datacontract",
+        )
 
-def process_directory(run, path, server, model_name, validate):
-    success = True
-    for filename in os.listdir(path):
-        if filename.endswith(".json"):  # or make this a parameter
-            file_path = os.path.join(path, filename)
-            with open(file_path, "r") as file:
-                if not process_json_file(run, model_name, validate, file, server.delimiter):
-                    success = False
-                    break
-    return success
+    for file in all_files:
+        logging.info(f"Processing file: {file}")
+        with open(file, "r") as f:
+            process_json_file(run, schema, model_name, validate, f, server.delimiter)
 
 
 def process_s3_file(run, server, schema, model_name, validate):
@@ -201,7 +219,7 @@ def process_s3_file(run, server, schema, model_name, validate):
         raise DataContractException(
             type="schema",
             name="Check that JSON has valid schema",
-            result="warning",
+            result=ResultEnum.warning,
             reason=f"Cannot find any file in {s3_location}",
             engine="datacontract",
         )
@@ -222,7 +240,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
             Check(
                 type="schema",
                 name="Check that JSON has valid schema",
-                result="warning",
+                result=ResultEnum.warning,
                 reason="Server format is not 'json'. Skip validating jsonschema.",
                 engine="jsonschema",
             )

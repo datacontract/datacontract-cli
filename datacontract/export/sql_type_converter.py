@@ -3,6 +3,9 @@ from datacontract.model.data_contract_specification import Field
 
 
 def convert_to_sql_type(field: Field, server_type: str) -> str:
+    if field.config and "physicalType" in field.config:
+        return field.config["physicalType"]
+
     if server_type == "snowflake":
         return convert_to_snowflake(field)
     elif server_type == "postgres":
@@ -19,6 +22,7 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_bigquery(field)
     elif server_type == "trino":
         return convert_type_to_trino(field)
+
     return field.type
 
 
@@ -129,8 +133,9 @@ def convert_to_dataframe(field: Field) -> None | str:
     if type.lower() in ["time"]:
         return "STRING"
     if type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "DECIMAL"
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return f"DECIMAL({precision},{scale})"
     if type.lower() in ["float"]:
         return "FLOAT"
     if type.lower() in ["double"]:
@@ -159,7 +164,11 @@ def convert_to_dataframe(field: Field) -> None | str:
 # https://docs.databricks.com/en/sql/language-manual/sql-ref-datatypes.html
 def convert_to_databricks(field: Field) -> None | str:
     type = field.type
-    if field.config and "databricksType" in field.config and type.lower() not in ["array", "object", "record", "struct"]:
+    if (
+        field.config
+        and "databricksType" in field.config
+        and type.lower() not in ["array", "object", "record", "struct"]
+    ):
         return field.config["databricksType"]
     if type is None:
         return None
@@ -174,8 +183,9 @@ def convert_to_databricks(field: Field) -> None | str:
     if type.lower() in ["time"]:
         return "STRING"
     if type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "DECIMAL"
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return f"DECIMAL({precision},{scale})"
     if type.lower() in ["float"]:
         return "FLOAT"
     if type.lower() in ["double"]:
@@ -190,8 +200,8 @@ def convert_to_databricks(field: Field) -> None | str:
         nested_fields = []
         for nested_field_name, nested_field in field.fields.items():
             nested_field_type = convert_to_databricks(nested_field)
-            nested_fields.append(f"{nested_field_name} {nested_field_type}")
-        return f"STRUCT<{', '.join(nested_fields)}>"
+            nested_fields.append(f"{nested_field_name}:{nested_field_type}")
+        return f"STRUCT<{','.join(nested_fields)}>"
     if type.lower() in ["bytes"]:
         return "BINARY"
     if type.lower() in ["array"]:

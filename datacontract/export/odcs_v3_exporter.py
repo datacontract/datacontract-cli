@@ -23,6 +23,12 @@ class OdcsV3Exporter(Exporter):
 
 
 def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
+    result = to_odcs_v3(data_contract_spec)
+
+    return result.to_yaml()
+
+
+def to_odcs_v3(data_contract_spec: DataContractSpecification) -> OpenDataContractStandard:
     result = OpenDataContractStandard(
         apiVersion="v3.0.1",
         kind="DataContract",
@@ -31,7 +37,6 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
         version=data_contract_spec.info.version,
         status=to_status(data_contract_spec.info.status),
     )
-
     if data_contract_spec.terms is not None:
         result.description = Description(
             purpose=data_contract_spec.terms.description.strip()
@@ -42,12 +47,10 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
             if data_contract_spec.terms.limitations is not None
             else None,
         )
-
     result.schema_ = []
     for model_key, model_value in data_contract_spec.models.items():
         odcs_schema = to_odcs_schema(model_key, model_value)
         result.schema_.append(odcs_schema)
-
     if data_contract_spec.servicelevels is not None:
         slas = []
         if data_contract_spec.servicelevels.availability is not None:
@@ -65,7 +68,6 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
 
         if len(slas) > 0:
             result.slaProperties = slas
-
     if data_contract_spec.info.contact is not None:
         support = []
         if data_contract_spec.info.contact.email is not None:
@@ -74,7 +76,6 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
             support.append(Support(channel="other", url=data_contract_spec.info.contact.url))
         if len(support) > 0:
             result.support = support
-
     if data_contract_spec.servers is not None and len(data_contract_spec.servers) > 0:
         servers = []
 
@@ -126,18 +127,15 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
 
         if len(servers) > 0:
             result.servers = servers
-
     custom_properties = []
     if data_contract_spec.info.owner is not None:
         custom_properties.append(CustomProperty(property="owner", value=data_contract_spec.info.owner))
     if data_contract_spec.info.model_extra is not None:
         for key, value in data_contract_spec.info.model_extra.items():
             custom_properties.append(CustomProperty(property=key, value=value))
-
     if len(custom_properties) > 0:
         result.customProperties = custom_properties
-
-    return result.to_yaml()
+    return result
 
 
 def to_odcs_schema(model_key, model_value: Model) -> SchemaObject:

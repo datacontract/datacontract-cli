@@ -25,13 +25,11 @@ def minio_container():
         yield minio_container
 
 
-@pytest.mark.skipif(
-    os.getenv("CI") == "true",
+@pytest.mark.skip(
     reason="""
-Runs locally on mac, but fails on CI with
 <Error><Code>InvalidTokenId</Code><Message>The security token included in the request is invalid</Message><Key>fixtures/s3-delta/data/orders.delta/_delta_log/_last_checkpoint</Key><BucketName>test-bucket</BucketName><Resource>/test-bucket/fixtures/s3-delta/data/orders.delta/_delta_log/_last_checkpoint</Resource></Error>)
 
-Need to investigate why the token is invalid on CI.
+Need to investigate why the token is invalid, or to deprecate Delta support
 """,
 )
 def test_test_s3_delta(minio_container, monkeypatch):

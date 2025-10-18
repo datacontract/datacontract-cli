@@ -11,7 +11,7 @@ from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat
+from datacontract.imports.importer import ImportFormat, Spec
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.datamesh_manager import (
     publish_data_contract_to_datamesh_manager,
@@ -126,7 +126,10 @@ def test(
             "servers (default)."
         ),
     ] = "all",
-    publish: Annotated[str, typer.Option(help="The url to publish the results after the test")] = None,
+    publish_test_results: Annotated[
+        bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
+    ] = False,
+    publish: Annotated[str, typer.Option(help="The url to publish the results after the test.")] = None,
     output: Annotated[
         Path,
         typer.Option(
@@ -149,6 +152,7 @@ def test(
     run = DataContract(
         data_contract_file=location,
         schema_location=schema,
+        publish_test_results=publish_test_results,
         publish_url=publish,
         server=server,
         ssl_verification=ssl_verification,
@@ -208,12 +212,21 @@ def export(
     # TODO: this should be a subcommand
     template: Annotated[
         Optional[Path],
-        typer.Option(help="[custom] The file path of Jinja template."),
+        typer.Option(
+            help="The file path or URL of a template. For Excel format: path/URL to custom Excel template. For custom format: path to Jinja template."
+        ),
     ] = None,
 ):
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
+    # Validate that Excel format requires an output file path
+    if format == ExportFormat.excel and output is None:
+        console.print("❌ Error: Excel export requires an output file path.")
+        console.print("💡 Hint: Use --output to specify where to save the Excel file, e.g.:")
+        console.print("   datacontract export --format excel --output datacontract.xlsx")
+        raise typer.Exit(code=1)
+
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=format,
@@ -228,8 +241,13 @@ def export(
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
     else:
-        with output.open(mode="w", encoding="utf-8") as f:
-            f.write(result)
+        if isinstance(result, bytes):
+            # If the result is bytes, we assume it's a binary file (e.g., Excel, PDF)
+            with output.open(mode="wb") as f:
+                f.write(result)
+        else:
+            with output.open(mode="w", encoding="utf-8") as f:
+                f.write(result)
         console.print(f"Written result to {output}")
 
 
@@ -246,6 +264,10 @@ def import_(
         Optional[str],
         typer.Option(help="The path to the file that should be imported."),
     ] = None,
+    spec: Annotated[
+        Spec,
+        typer.Option(help="The format of the data contract to import. "),
+    ] = Spec.datacontract_specification,
     dialect: Annotated[
         Optional[str],
         typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
@@ -265,7 +287,7 @@ def import_(
         ),
     ] = None,
     unity_table_full_name: Annotated[
-        Optional[str], typer.Option(help="Full name of a table in the unity catalog")
+        Optional[List[str]], typer.Option(help="Full name of a table in the unity catalog")
     ] = None,
     dbt_model: Annotated[
         Optional[List[str]],
@@ -297,13 +319,22 @@ def import_(
         str,
         typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
     ] = None,
+    owner: Annotated[
+        Optional[str],
+        typer.Option(help="The owner or team responsible for managing the data contract."),
+    ] = None,
+    id: Annotated[
+        Optional[str],
+        typer.Option(help="The identifier for the the data contract."),
+    ] = None,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
-    result = DataContract().import_from_source(
+    result = DataContract.import_from_source(
         format=format,
         source=source,
+        spec=spec,
         template=template,
         schema=schema,
         dialect=dialect,
@@ -316,6 +347,8 @@ def import_(
         dbml_schema=dbml_schema,
         dbml_table=dbml_table,
         iceberg_table=iceberg_table,
+        owner=owner,
+        id=id,
     )
     if output is None:
         console.print(result.to_yaml(), markup=False, soft_wrap=True)
@@ -452,8 +485,27 @@ def diff(
     console.print(result.changelog_str())
 
 
-@app.command()
+def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict:
+    """
+    Take the default datacontract uvicorn arguments and merge them with the
+    extra arguments passed to the command to start the API.
+    """
+    default_args = {
+        "app": "datacontract.api:app",
+        "port": port,
+        "host": host,
+        "reload": True,
+    }
+
+    # Create a list of the extra arguments, remove the leading -- from the cli arguments
+    trimmed_keys = list(map(lambda x: str(x).replace("--", ""), context.args[::2]))
+    # Merge the two dicts and return them as one dict
+    return default_args | dict(zip(trimmed_keys, context.args[1::2]))
+
+
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def api(
+    ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
     host: Annotated[
         str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
@@ -471,6 +523,9 @@ def api(
 
     To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in
     https://cli.datacontract.com/#test
+
+    It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.:
+    `datacontract api --port 1234 --root_path /datacontract`.
     """
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
@@ -478,7 +533,11 @@ def api(
     log_config = LOGGING_CONFIG
     log_config["root"] = {"level": "INFO"}
 
-    uvicorn.run(app="datacontract.api:app", port=port, host=host, reload=True, log_config=LOGGING_CONFIG)
+    uvicorn_args = _get_uvicorn_arguments(port, host, ctx)
+    # Add the log config
+    uvicorn_args["log_config"] = log_config
+    # Run uvicorn
+    uvicorn.run(**uvicorn_args)
 
 
 def _print_logs(run):
