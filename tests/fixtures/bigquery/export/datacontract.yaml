@@ -79,14 +79,32 @@ models:
         type: timestamp_tz
         required: false
         description: a simple timestamp_tz field
-      timestamp_ntz_field:
+      datetime_field:
         type: timestamp_ntz
         required: false
-        description: a simple timestamp_ntz field
+        description: a simple timestamp_ntz field (bq datetime)
       date_field:
         type: date
         required: false
         description: a simple date field
+      time_field:
+        type: object
+        required: false
+        description: a time field  
+        config:
+          bigqueryType: TIME
+      geography_field: 
+        type: object
+        required: false
+        description: a geography field    
+        config:
+          bigqueryType: GEOGRAPHY
+      json_field: 
+        type: object
+        required: false
+        description: a json field
+        config: 
+          bigqueryType: JSON
       number_field:
         type: number
         required: false
@@ -141,6 +159,10 @@ models:
             type: date
             required: false
             description: a non required date field
+          subfield_3:
+            type: bigint
+            required: false
+            description: an integer field
       struct_field:
         type: struct
         required: false
@@ -151,7 +173,7 @@ models:
             required: true
             description: a required bytes field
           subfield_2:
-            type: int
+            type: bigint
             required: false
             description: a non required int field
       string_array_field:
@@ -165,7 +187,7 @@ models:
         required: false
         description: an int array
         items:
-          type: int
+          type: bigint
       complex_array_field:
         type: array
         required: false
