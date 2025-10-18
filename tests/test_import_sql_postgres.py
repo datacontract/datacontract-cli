@@ -20,6 +20,8 @@ def test_cli():
             "sql",
             "--source",
             sql_file_path,
+            "--dialect",
+            "postgres"
         ],
     )
     assert result.exit_code == 0
