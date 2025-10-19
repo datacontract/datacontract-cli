@@ -19,7 +19,7 @@ def test_valid_cli():
 
 def test_valid():
     data_contract = DataContract(
-        data_contract_file="fixtures/local-delta/datacontract.yaml",
+        data_contract_file="./fixtures/local-delta/datacontract.yaml",
         # publish=True,
     )
     run = data_contract.test()

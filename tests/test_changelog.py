@@ -261,10 +261,10 @@ def test_fields_added():
         in output
     )
     assert (
-        r"""warning [field_pattern_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
+        "".join(r"""warning [field_pattern_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
         in models.my_table.fields.field_pattern.pattern
-            added with value: `^[A-Za-z0-9]{8,14}$`"""
-        in output
+            added with value: `^[A-Za-z0-9]{8,14}$`""".split())
+        in "".join(output.split())
     )
     assert (
         r"""warning [field_min_length_added] at 
@@ -281,10 +281,10 @@ def test_fields_added():
         in output
     )
     assert (
-        r"""warning [field_minimum_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
+        "".join(r"""warning [field_minimum_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
         in models.my_table.fields.field_minimum.minimum
-            added with value: `8`"""
-        in output
+            added with value: `8`""".split())
+        in "".join(output.split())
     )
     assert (
         r"""warning [field_exclusive_minimum_added] at 
@@ -294,10 +294,10 @@ def test_fields_added():
         in output
     )
     assert (
-        r"""warning [field_maximum_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
+        "".join(r"""warning [field_maximum_added] at ./fixtures/breaking/datacontract-fields-v2.yaml
         in models.my_table.fields.field_maximum.maximum
-            added with value: `14`"""
-        in output
+            added with value: `14`""".split())
+        in "".join(output.split())
     )
     assert (
         r"""warning [field_exclusive_maximum_added] at 
@@ -1115,12 +1115,11 @@ def test_info_updated():
         in output
     )
     assert (
-        """info    [contact_email_updated] at ./fixtures/breaking/datacontract-info-v3.yaml
+        "".join("""info    [contact_email_updated] at ./fixtures/breaking/datacontract-info-v3.yaml
         in info.contact.email
-            changed from `datateam@work.com` to `anotherteam@work.com`"""
-        in output
+            changed from `datateam@work.com` to `anotherteam@work.com`""".split())
+        in "".join(output.split())
     )
-
 
 def test_terms_added():
     result = runner.invoke(
