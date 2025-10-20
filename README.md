@@ -2041,6 +2041,28 @@ uv run ruff check
 uv run pytest
 ```
 
+### Troubleshooting
+
+Windows: Test fail
+
+Run in wsl. (We need to fix the pathes in the tests so that normal Windows will work, contributions are appreciated)
+
+PyCharm does not pick up the `.venv` ([Issue](https://github.com/astral-sh/uv/issues/12545))
+
+Try to sync all groups:
+
+```
+uv sync --all-groups --all-extras
+```
+
+Errors in tests that use PySpark (e.g. test_test_kafka.py)
+
+Ensure you have a JDK 17 or 21 installed. Java 25 causes issues.
+
+```
+java --version
+```
+
 
 ### Docker Build
 
