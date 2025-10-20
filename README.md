@@ -2043,11 +2043,13 @@ uv run pytest
 
 ### Troubleshooting
 
-Windows: Test fail
+#### Windows: Some tests fail
 
 Run in wsl. (We need to fix the pathes in the tests so that normal Windows will work, contributions are appreciated)
 
-PyCharm does not pick up the `.venv` ([Issue](https://github.com/astral-sh/uv/issues/12545))
+#### PyCharm does not pick up the `.venv` 
+
+This [uv issue](https://github.com/astral-sh/uv/issues/12545) might be relevant.
 
 Try to sync all groups:
 
@@ -2055,7 +2057,7 @@ Try to sync all groups:
 uv sync --all-groups --all-extras
 ```
 
-Errors in tests that use PySpark (e.g. test_test_kafka.py)
+#### Errors in tests that use PySpark (e.g. test_test_kafka.py)
 
 Ensure you have a JDK 17 or 21 installed. Java 25 causes issues.
 
