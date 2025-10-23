@@ -107,7 +107,6 @@ def check_soda_execute(
         scan.set_data_source_name(server.type)
     elif server.type == "oracle":
         soda_configuration_str = to_oracle_soda_configuration(server)
-        print("Server type is oracle.")
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     elif server.type == "trino":
