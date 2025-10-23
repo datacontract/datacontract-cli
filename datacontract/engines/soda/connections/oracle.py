@@ -31,11 +31,7 @@ def to_oracle_soda_configuration(server: Server) -> str:
             "username": os.getenv("DATACONTRACT_ORACLE_USERNAME", ""),
             "password": os.getenv("DATACONTRACT_ORACLE_PASSWORD", ""),
             "connectstring": f"{server.host}:{server.port}/{server.database}",
-            #"database": server.database,
-            #"schema": server.schema_,
-            #"trusted_connection": os.getenv("DATACONTRACT_ORACLE_TRUSTED_CONNECTION", False),
-            #"trust_server_certificate": os.getenv("DATACONTRACT_ORACLE_TRUST_SERVER_CERTIFICATE", False),
-            #"encrypt": os.getenv("DATACONTRACT_ORACLE_ENCRYPTED_CONNECTION", True),
+            "schema": server.schema_,
             "driver": server.driver,
         }
     }
