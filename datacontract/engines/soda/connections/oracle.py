@@ -10,17 +10,13 @@ def to_oracle_soda_configuration(server: Server) -> str:
 
 
     ### Example:
-        type: sqlserver
+        type: oracle
         host: host
-        port: '1433'
+        port: '1521'
         username: simple
         password: simple_pass
-        database: database (service name at oracle)
-        schema: dbo
-        trusted_connection: false
-        encrypt: false
-        trust_server_certificate: false
-        driver: ODBC Driver 18 for SQL Server
+        database: ORCL (service name at oracle)
+        schema: SYSTEM
     """
     # with service account key, using an external json file
     soda_configuration = {
@@ -32,7 +28,6 @@ def to_oracle_soda_configuration(server: Server) -> str:
             "password": os.getenv("DATACONTRACT_ORACLE_PASSWORD", ""),
             "connectstring": f"{server.host}:{server.port}/{server.database}",
             "schema": server.schema_,
-            "driver": server.driver,
         }
     }
 
