@@ -7,7 +7,7 @@ info:
 servers:
   oracle:
     type: oracle
-    host: database-1.chogyckq6uoe.us-east-1.rds.amazonaws.com
+    host: database-1.us-east-1.rds.amazonaws.com
     port: 1521
     database: ORCL
     schema: ADMIN
