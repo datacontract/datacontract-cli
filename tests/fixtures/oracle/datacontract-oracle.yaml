@@ -1,0 +1,203 @@
+dataContractSpecification: 1.2.1
+id: oracle
+info:
+  title: oracle
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  oracle:
+    type: oracle
+    host: database-1.us-east-1.rds.amazonaws.com
+    port: 1521
+    database: ORCL
+    schema: ADMIN
+models:
+  data_type_examples:
+    type: table
+    fields:
+      STRING_COL:
+        type: text
+        description: Unicode text string
+        config:
+          oracleType: NVARCHAR2
+      NUMBER_COL:
+        type: decimal
+        description: Decimal number
+      INT_COL:
+        type: int
+        description: 32-bit signed integer
+      LONG_COL:
+        type: long
+        description: 64-bit signed integer
+      FLOAT_COL:
+        type: float
+        description: Single precision floating-point
+      DOUBLE_COL:
+        type: double
+        description: Double precision floating-point
+      BOOLEAN_COL:
+        type: boolean
+        description: Boolean value (Y/N or 0/1 convention)
+      TIMESTAMP_TZ_COL:
+        type: timestamp_tz
+        description: Timestamp with timezone
+      TIMESTAMP_NTZ_COL:
+        type: timestamp_ntz
+        description: Timestamp without timezone
+      DATE_COL:
+        type: date
+        description: Date without time
+      TIME_COL:
+        type: time
+        description: Time without date (stored as interval)
+      ARRAY_COL:
+        type: array
+        description: Array (emulated as JSON or delimited string)
+      MAP_COL:
+        type: map
+        description: Key-value structure (emulated as JSON)
+      BYTES_COL:
+        type: bytes
+        description: Binary data (sequence of bytes)
+      OBJECT_COL:
+        type: object
+        description: Complex object or struct (JSON/XML)
+      VARIANT_COL:
+        type: variant
+        description: Semi-structured data
+      JSON_COL:
+        type: json
+        description: JSON-validated column
+      NULL_COL:
+        type: int
+        description: Explicit null column (actually NUMBER in Oracle)
+      ANSI_CHAR_COL:
+        type: string
+        description: Fixed-length ANSI character
+        config:
+          oracleType: CHAR
+      ANSI_CHARACTER_VARYING_COL:
+        type: varchar
+        description: Variable-length ANSI character string
+        config:
+          oracleType: VARCHAR2
+      ANSI_VARCHAR_COL:
+        type: varchar
+        description: Variable-length ANSI character (byte length)
+        config:
+          oracleType: VARCHAR2
+      ANSI_NATIONAL_CHAR_COL:
+        type: string
+        description: National fixed-length character
+        config:
+          oracleType: NCHAR
+      ANSI_NATIONAL_CHAR_VARYING_COL:
+        type: varchar
+        description: National variable-length character
+      ANSI_NUMERIC_COL:
+        type: numeric
+        description: ANSI NUMERIC
+      ANSI_DECIMAL_COL:
+        type: decimal
+        description: ANSI DECIMAL
+      ANSI_INTEGER_COL:
+        type: integer
+        description: ANSI INTEGER
+      ANSI_SMALLINT_COL:
+        type: int
+        description: ANSI SMALLINT
+      ANSI_FLOAT_COL:
+        type: float
+        description: ANSI FLOAT
+        config:
+          oracleType: FLOAT
+      ANSI_DOUBLE_PRECISION_COL:
+        type: double
+        description: ANSI DOUBLE PRECISION
+        config:
+          oracleType: FLOAT
+      ANSI_REAL_COL:
+        type: float
+        description: ANSI REAL
+        config:
+          oracleType: FLOAT
+      BUILTIN_VARCHAR2_COL:
+        type: varchar
+        description: Oracle VARCHAR2
+        config:
+          oracleType: VARCHAR2
+      BUILTIN_NCHAR_COL:
+        type: string
+        description: Oracle NCHAR
+        config:
+          oracleType: NCHAR
+      BUILTIN_NVARCHAR2_COL:
+        type: varchar
+        description: Oracle NVARCHAR2
+      BUILTIN_TIMESTAMP_LTZ_COL:
+        type: timestamp_tz
+        description: Timestamp with local time zone
+        config:
+          oracleType: TIMESTAMP(6) WITH LOCAL TIME ZONE
+      BUILTIN_INTERVAL_YM_COL:
+        type: time
+        description: Year-Month interval
+        config:
+          oracleType: INTERVAL YEAR(2) TO MONTH
+      BUILTIN_BLOB_COL:
+        type: bytes
+        description: Binary large object
+        config:
+          oracleType: BLOB
+      BUILTIN_NCLOB_COL:
+        type: text
+        description: National character large object
+        config:
+          oracleType: NCLOB
+      BUILTIN_BFILE_COL:
+        type: bytes
+        description: Binary file locator
+        config:
+          oracleType: BFILE
+      BUILTIN_LONG_RAW_COL:
+        type: bytes
+        description: Oracle LONG RAW (single per table)
+        config:
+          oracleType: LONG RAW
+      BUILTIN_ROWID_COL:
+        type: string
+        description: Physical row identifier
+        config:
+          oracleType: ROWID
+      BUILTIN_UROWID_COL:
+        type: string
+        description: Universal row identifier
+        config:
+          oracleType: UROWID
+      SUPPLIED_ANYDATA_EMULATED_COL:
+        type: variant
+        description: Emulated ANYDATA/ANYTYPE as text or JSON
+      SUPPLIED_XML_EMULATED_COL:
+        type: object
+        description: Emulated XMLType as XML text
+      SUPPLIED_SPATIAL_EMULATED_WKT_COL:
+        type: object
+        description: Emulated SDO_GEOMETRY as WKT/GeoJSON text
+      SUPPLIED_MEDIA_EMULATED_COL:
+        type: bytes
+        description: Emulated media object as BLOB
+        config:
+          oracleType: BLOB
+    quality:
+        - type: sql
+          description: Row Count
+          query: |
+            SELECT count(*) as row_count
+            FROM DATA_TYPE_EXAMPLES
+          mustBeGreaterThan: 5
+        - type: sql
+          description: value in int_col exists
+          query: |
+            SELECT int_col
+            FROM DATA_TYPE_EXAMPLES where int_col = 1010
+          mustBeGreaterThan: 0
