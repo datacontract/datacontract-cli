@@ -220,7 +220,7 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "string"
     elif sql_type_normed.startswith("ntext"):
         return "string"
-    elif sql_type_normed.startswith("int"):
+    elif sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval"):
         return "int"
     elif sql_type_normed.startswith("bigint"):
         return "long"
@@ -244,25 +244,19 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "bytes"
     elif sql_type_normed.startswith("varbinary"):
         return "bytes"
+    elif sql_type_normed.startswith("raw"):
+        return "bytes"
+    elif sql_type_normed == "blob" or sql_type_normed == "bfile":
+        return "bytes"
     elif sql_type_normed == "date":
         return "date"
     elif sql_type_normed == "time":
         return "string"
-    elif sql_type_normed == "timestamp":
-        return "timestamp_ntz"
-    elif (
-        sql_type_normed == "timestamptz"
-        or sql_type_normed == "timestamp_tz"
-        or sql_type_normed == "timestamp with time zone"
-    ):
-        return "timestamp_tz"
-    elif sql_type_normed == "timestampntz" or sql_type_normed == "timestamp_ntz":
+    elif sql_type_normed.startswith("timestamp"):
+        return __map_timestamp(sql_type_normed)
+    elif sql_type_normed == "datetime" or sql_type_normed == "datetime2":
         return "timestamp_ntz"
     elif sql_type_normed == "smalldatetime":
-        return "timestamp_ntz"
-    elif sql_type_normed == "datetime":
-        return "timestamp_ntz"
-    elif sql_type_normed == "datetime2":
         return "timestamp_ntz"
     elif sql_type_normed == "datetimeoffset":
         return "timestamp_tz"
@@ -272,8 +266,26 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "string"
     elif sql_type_normed == "xml":  # tsql
         return "string"
+    elif sql_type_normed.startswith("number"):
+        return "number"
+    elif (sql_type_normed == "clob" or sql_type_normed == "nclob"):
+        return "text"
     else:
         return "variant"
+
+def __map_timestamp(timestamp_type: str) -> str:
+    match timestamp_type:
+        case "timestamp" | "timestampntz" | "timestamp_ntz" :
+            return "timestamp_ntz"
+        case "timestamptz" | "timestamp_tz" | "timestamp with time zone":
+            return "timestamp_tz"
+        case localTimezone if localTimezone.startswith("timestampltz"):
+            return "timestamp_tz"
+        case timezoneWrittenOut if timezoneWrittenOut.endswith("time zone"):
+            return "timestamp_tz"
+        case _:
+            return "timestamp_ntz"
+
 
 
 def read_file(path):
