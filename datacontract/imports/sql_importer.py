@@ -253,7 +253,7 @@ def map_type_from_sql(sql_type: str) -> str | None:
     elif sql_type_normed == "time":
         return "string"
     elif sql_type_normed.startswith("timestamp"):
-        return __map_timestamp(sql_type_normed)
+        return map_timestamp(sql_type_normed)
     elif sql_type_normed == "datetime" or sql_type_normed == "datetime2":
         return "timestamp_ntz"
     elif sql_type_normed == "smalldatetime":
@@ -273,7 +273,7 @@ def map_type_from_sql(sql_type: str) -> str | None:
     else:
         return "variant"
 
-def __map_timestamp(timestamp_type: str) -> str:
+def map_timestamp(timestamp_type: str) -> str:
     match timestamp_type:
         case "timestamp" | "timestampntz" | "timestamp_ntz" :
             return "timestamp_ntz"
@@ -284,7 +284,7 @@ def __map_timestamp(timestamp_type: str) -> str:
         case timezoneWrittenOut if timezoneWrittenOut.endswith("time zone"):
             return "timestamp_tz"
         case _:
-            return "timestamp_ntz"
+            return "timestamp"
 
 
 
