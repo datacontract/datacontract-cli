@@ -331,7 +331,7 @@ def import_(
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
-    result = DataContract().import_from_source(
+    result = DataContract.import_from_source(
         format=format,
         source=source,
         spec=spec,
