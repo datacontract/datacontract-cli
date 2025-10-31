@@ -112,6 +112,12 @@ schema:
                 value:
               - property: COMPARISON_TYPE
                 value: Greater than
+      - name: array_of_array
+        logicalType: array
+        items:
+          logicalType: array
+          items:
+            logicalType: string
     quality:
       - rule: rowCount
         mustBeGreaterThan: 1000

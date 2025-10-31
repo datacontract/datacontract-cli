@@ -284,7 +284,7 @@ def convert_quality_list(odcs_quality_list):
     return quality_list
 
 
-def import_field_config(odcs_property: SchemaProperty, server_type=None) -> Dict[str, Any]:
+def import_field_config(odcs_property: SchemaProperty, server_type=None) -> dict[Any, Any] | None:
     config = {}
     if odcs_property.criticalDataElement is not None:
         config["criticalDataElement"] = odcs_property.criticalDataElement
@@ -316,6 +316,9 @@ def import_field_config(odcs_property: SchemaProperty, server_type=None) -> Dict
         else:
             config["physicalType"] = physical_type
 
+    if len(config) == 0:
+        return None
+
     return config
 
 
@@ -327,66 +330,80 @@ def has_composite_primary_key(odcs_properties: List[SchemaProperty]) -> bool:
 def import_fields(
     odcs_properties: List[SchemaProperty], custom_type_mappings: Dict[str, str], server_type
 ) -> Dict[str, Field]:
-    logger = logging.getLogger(__name__)
     result = {}
 
     if odcs_properties is None:
         return result
 
     for odcs_property in odcs_properties:
-        mapped_type = map_type(odcs_property.logicalType, custom_type_mappings, odcs_property.physicalType)
-        if mapped_type is not None:
-            property_name = odcs_property.name
-            description = odcs_property.description if odcs_property.description is not None else None
-            field = Field(
-                description=" ".join(description.splitlines()) if description is not None else None,
-                type=mapped_type,
-                title=odcs_property.businessName,
-                required=odcs_property.required if odcs_property.required is not None else None,
-                primaryKey=odcs_property.primaryKey
-                if not has_composite_primary_key(odcs_properties) and odcs_property.primaryKey is not None
-                else False,
-                unique=odcs_property.unique if odcs_property.unique else None,
-                examples=odcs_property.examples if odcs_property.examples is not None else None,
-                classification=odcs_property.classification if odcs_property.classification is not None else None,
-                tags=odcs_property.tags if odcs_property.tags is not None else None,
-                quality=convert_quality_list(odcs_property.quality),
-                fields=import_fields(odcs_property.properties, custom_type_mappings, server_type)
-                if odcs_property.properties is not None
-                else {},
-                config=import_field_config(odcs_property, server_type),
-                format=getattr(odcs_property, "format", None),
-            )
-            # mapped_type is array
-            if field.type == "array" and odcs_property.items is not None:
-                # nested array object
-                if odcs_property.items.logicalType == "object":
-                    field.items = Field(
-                        type="object",
-                        fields=import_fields(odcs_property.items.properties, custom_type_mappings, server_type),
-                    )
-                elif odcs_property.items.logicalType == "array":
-                    field.items = build_array_field(odcs_property.items, custom_type_mappings, server_type)
-                # array of simple type
-                elif odcs_property.items.logicalType is not None:
-                    field.items = Field(type=odcs_property.items.logicalType)
-
-            # enum from quality validValues as enum
-            if field.type == "string":
-                for q in field.quality:
-                    if hasattr(q, "validValues"):
-                        field.enum = q.validValues
-
-            result[property_name] = field
-        else:
-            type_info = f"logicalType={odcs_property.logicalType}, physicalType={odcs_property.physicalType}"
-            logger.warning(
-                f"Can't map field '{odcs_property.name}' ({type_info}) to the Datacontract Mapping types. "
-                f"Both logicalType and physicalType are missing or unmappable. "
-                f"Consider introducing a customProperty 'dc_mapping_<type>' that defines your expected type as the 'value'"
-            )
+        field = import_field(odcs_property, odcs_properties, custom_type_mappings, server_type)
+        if field is not None:
+            result[odcs_property.name] = field
 
     return result
+
+
+def import_field(
+    odcs_property: SchemaProperty,
+    odcs_properties: List[SchemaProperty],
+    custom_type_mappings: Dict[str, str],
+    server_type: str
+) -> Field | None:
+    """
+    Import a single ODCS property as a datacontract Field.
+    Returns None if the property cannot be mapped.
+    """
+    logger = logging.getLogger(__name__)
+
+    mapped_type = map_type(odcs_property.logicalType, custom_type_mappings, odcs_property.physicalType)
+
+    if mapped_type is None:
+        type_info = f"logicalType={odcs_property.logicalType}, physicalType={odcs_property.physicalType}"
+        logger.warning(
+            f"Can't map field '{odcs_property.name}' ({type_info}) to the datacontract mapping types. "
+            f"Both logicalType and physicalType are missing or unmappable. "
+            f"Consider introducing a customProperty 'dc_mapping_<type>' that defines your expected type as the 'value'"
+        )
+        return None
+
+    description = odcs_property.description if odcs_property.description is not None else None
+    field = Field(
+        description=" ".join(description.splitlines()) if description is not None else None,
+        type=mapped_type,
+        title=odcs_property.businessName,
+        required=odcs_property.required if odcs_property.required is not None else None,
+        primaryKey=to_primary_key(odcs_property, odcs_properties),
+        unique=odcs_property.unique if odcs_property.unique else None,
+        examples=odcs_property.examples if odcs_property.examples is not None else None,
+        classification=odcs_property.classification if odcs_property.classification is not None else None,
+        tags=odcs_property.tags if odcs_property.tags is not None else None,
+        quality=convert_quality_list(odcs_property.quality),
+        fields=import_fields(odcs_property.properties, custom_type_mappings, server_type)
+        if odcs_property.properties is not None
+        else {},
+        config=import_field_config(odcs_property, server_type),
+        format=getattr(odcs_property, "format", None),
+    )
+
+    # mapped_type is array
+    if field.type == "array" and odcs_property.items is not None:
+        field.items = import_field(odcs_property.items, [], custom_type_mappings, server_type)
+
+    # enum from quality validValues as enum
+    if field.type == "string":
+        for q in field.quality:
+            if hasattr(q, "validValues"):
+                field.enum = q.validValues
+
+    return field
+
+
+def to_primary_key(odcs_property: SchemaProperty, odcs_properties: list[SchemaProperty]) -> bool | None:
+    if odcs_property.primaryKey is None:
+        return None
+    if has_composite_primary_key(odcs_properties):
+        return None
+    return odcs_property.primaryKey
 
 
 def map_type(odcs_logical_type: str, custom_mappings: Dict[str, str], physical_type: str = None) -> str | None:
@@ -445,44 +462,6 @@ def map_type(odcs_logical_type: str, custom_mappings: Dict[str, str], physical_t
         else:
             return None
     return None
-
-
-def build_array_field(odcs_property: SchemaProperty, custom_type_mappings: Dict[str, str], server_type) -> Field:
-    logger = logging.getLogger(__name__)
-
-    if not isinstance(odcs_property, SchemaProperty):
-        odcs_property = SchemaProperty.model_validate(odcs_property)
-
-    mapped_type = map_type(odcs_property.logicalType, custom_type_mappings)
-
-    if mapped_type is None:
-        logger.warning(
-            f"Can't map {odcs_property.name} to the Datacontract Mapping types, as there is no equivalent or special mapping. Consider introducing a customProperty 'dc_mapping_{odcs_property.logicalType}' that defines your expected type as the 'value'"
-        )
-        return Field(type="string")  # fallback type
-
-    if mapped_type == "array":
-        if odcs_property.items is None:
-            logger.warning("Nested array items missing 'items': %s", odcs_property)
-            return Field(type="array")
-        return Field(
-            type="array",
-            items=build_array_field(odcs_property.items, custom_type_mappings, server_type),
-        )
-
-    # Array of objects
-    if mapped_type == "object":
-        # Build an object Field with its nested fields
-        return Field(
-            type="object",
-            fields=import_fields(
-                odcs_property.properties,
-                custom_type_mappings,
-                server_type,
-            ),
-        )
-
-    return Field(type=mapped_type)
 
 
 def get_custom_type_mappings(odcs_custom_properties: List[CustomProperty]) -> Dict[str, str]:

@@ -84,6 +84,12 @@ models:
           partitionKeyPosition: -1
           criticalDataElement: false
           encryptedName: rcvr_cntry_code_encrypted
+      array_of_array:
+        type: array
+        items:
+          type: array
+          items:
+            type: string
     quality:
     - type: library
       description: Ensure row count is within expected volume range

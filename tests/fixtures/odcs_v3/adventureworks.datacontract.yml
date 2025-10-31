@@ -193,7 +193,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Employee identification number. Foreign key to Employee.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -202,7 +201,6 @@ models:
       departmentid:
         type: number
         required: false
-        primaryKey: false
         description: Department in which the employee worked including currently.
           Foreign key to Department.DepartmentID.
         config:
@@ -212,7 +210,6 @@ models:
       shiftid:
         type: number
         required: false
-        primaryKey: false
         description: Identifies which 8-hour shift the employee works. Foreign key
           to Shift.Shift.ID.
         config:
@@ -222,7 +219,6 @@ models:
       startdate:
         type: date
         required: false
-        primaryKey: false
         description: Date the employee started work in the department.
         config:
           criticalDataElement: false
@@ -231,7 +227,6 @@ models:
       enddate:
         type: date
         required: false
-        primaryKey: false
         description: Date the employee left the department. NULL = Current department.
         config:
           criticalDataElement: false
@@ -240,7 +235,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -253,7 +247,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Employee identification number. Foreign key to Employee.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -262,7 +255,6 @@ models:
       ratechangedate:
         type: date
         required: false
-        primaryKey: false
         description: Date the change in pay is effective
         config:
           criticalDataElement: false
@@ -271,7 +263,6 @@ models:
       rate:
         type: number
         required: false
-        primaryKey: false
         description: Salary hourly rate.
         config:
           criticalDataElement: false
@@ -280,7 +271,6 @@ models:
       payfrequency:
         type: number
         required: false
-        primaryKey: false
         description: 1 = Salary received monthly, 2 = Salary received biweekly
         config:
           criticalDataElement: false
@@ -289,7 +279,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -548,7 +537,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -557,7 +545,6 @@ models:
       addressid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to Address.AddressID.
         config:
           criticalDataElement: false
@@ -566,7 +553,6 @@ models:
       addresstypeid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to AddressType.AddressTypeID.
         config:
           criticalDataElement: false
@@ -575,7 +561,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -583,7 +568,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -596,7 +580,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to BusinessEntity.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -605,7 +588,6 @@ models:
       personid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to Person.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -614,7 +596,6 @@ models:
       contacttypeid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key.  Foreign key to ContactType.ContactTypeID.
         config:
           criticalDataElement: false
@@ -623,7 +604,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -631,7 +611,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -707,7 +686,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Person associated with this email address.  Foreign
           key to Person.BusinessEntityID
         config:
@@ -717,7 +695,6 @@ models:
       emailaddressid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. ID of this email address.
         config:
           criticalDataElement: false
@@ -726,7 +703,6 @@ models:
       emailaddress:
         type: string
         required: false
-        primaryKey: false
         description: E-mail address for the person.
         config:
           criticalDataElement: false
@@ -735,7 +711,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -743,7 +718,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -934,7 +908,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Business entity identification number. Foreign key to Person.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -943,7 +916,6 @@ models:
       phonenumber:
         type: object
         required: false
-        primaryKey: false
         description: Telephone number identification number.
         config:
           criticalDataElement: false
@@ -952,7 +924,6 @@ models:
       phonenumbertypeid:
         type: number
         required: false
-        primaryKey: false
         description: Kind of phone number. Foreign key to PhoneNumberType.PhoneNumberTypeID.
         config:
           criticalDataElement: false
@@ -961,7 +932,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -1671,7 +1641,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID
         config:
           criticalDataElement: false
@@ -1680,7 +1649,6 @@ models:
       startdate:
         type: date
         required: false
-        primaryKey: false
         description: Product cost start date.
         config:
           criticalDataElement: false
@@ -1689,7 +1657,6 @@ models:
       enddate:
         type: date
         required: false
-        primaryKey: false
         description: Product cost end date.
         config:
           criticalDataElement: false
@@ -1698,7 +1665,6 @@ models:
       standardcost:
         type: number
         required: false
-        primaryKey: false
         description: Standard cost of the product.
         config:
           criticalDataElement: false
@@ -1707,7 +1673,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -1759,7 +1724,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -1768,7 +1732,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -1776,7 +1739,6 @@ models:
       documentnode:
         type: string
         required: false
-        primaryKey: false
         description: Document identification number. Foreign key to Document.DocumentNode.
         config:
           criticalDataElement: false
@@ -1790,7 +1752,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -1799,7 +1760,6 @@ models:
       locationid:
         type: number
         required: false
-        primaryKey: false
         description: Inventory location identification number. Foreign key to Location.LocationID.
         config:
           criticalDataElement: false
@@ -1808,7 +1768,6 @@ models:
       shelf:
         type: string
         required: false
-        primaryKey: false
         description: Storage compartment within an inventory location.
         config:
           criticalDataElement: false
@@ -1817,7 +1776,6 @@ models:
       bin:
         type: number
         required: false
-        primaryKey: false
         description: Storage container on a shelf in an inventory location.
         config:
           criticalDataElement: false
@@ -1826,7 +1784,6 @@ models:
       quantity:
         type: number
         required: false
-        primaryKey: false
         description: Quantity of products in the inventory location.
         config:
           criticalDataElement: false
@@ -1835,7 +1792,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -1843,7 +1799,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -1856,7 +1811,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID
         config:
           criticalDataElement: false
@@ -1865,7 +1819,6 @@ models:
       startdate:
         type: date
         required: false
-        primaryKey: false
         description: List price start date.
         config:
           criticalDataElement: false
@@ -1874,7 +1827,6 @@ models:
       enddate:
         type: date
         required: false
-        primaryKey: false
         description: List price end date
         config:
           criticalDataElement: false
@@ -1883,7 +1835,6 @@ models:
       listprice:
         type: number
         required: false
-        primaryKey: false
         description: Product list price.
         config:
           criticalDataElement: false
@@ -1892,7 +1843,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -1962,7 +1912,6 @@ models:
       productmodelid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to ProductModel.ProductModelID.
         config:
           criticalDataElement: false
@@ -1971,7 +1920,6 @@ models:
       illustrationid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to Illustration.IllustrationID.
         config:
           criticalDataElement: false
@@ -1980,7 +1928,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -1994,7 +1941,6 @@ models:
       productmodelid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to ProductModel.ProductModelID.
         config:
           criticalDataElement: false
@@ -2003,7 +1949,6 @@ models:
       productdescriptionid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to ProductDescription.ProductDescriptionID.
         config:
           criticalDataElement: false
@@ -2012,7 +1957,6 @@ models:
       cultureid:
         type: string
         required: false
-        primaryKey: false
         description: Culture identification number. Foreign key to Culture.CultureID.
         config:
           criticalDataElement: false
@@ -2021,7 +1965,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -2092,7 +2035,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -2101,7 +2043,6 @@ models:
       productphotoid:
         type: number
         required: false
-        primaryKey: false
         description: Product photo identification number. Foreign key to ProductPhoto.ProductPhotoID.
         config:
           criticalDataElement: false
@@ -2110,7 +2051,6 @@ models:
       primary:
         type: object
         required: false
-        primaryKey: false
         description: 0 = Photo is not the principal image. 1 = Photo is the principal
           image.
         config:
@@ -2120,7 +2060,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -2578,7 +2517,6 @@ models:
       workorderid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to WorkOrder.WorkOrderID.
         config:
           criticalDataElement: false
@@ -2587,7 +2525,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -2596,7 +2533,6 @@ models:
       operationsequence:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Indicates the manufacturing process sequence.
         config:
           criticalDataElement: false
@@ -2605,7 +2541,6 @@ models:
       locationid:
         type: number
         required: false
-        primaryKey: false
         description: Manufacturing location where the part is processed. Foreign key
           to Location.LocationID.
         config:
@@ -2615,7 +2550,6 @@ models:
       scheduledstartdate:
         type: date
         required: false
-        primaryKey: false
         description: Planned manufacturing start date.
         config:
           criticalDataElement: false
@@ -2624,7 +2558,6 @@ models:
       scheduledenddate:
         type: date
         required: false
-        primaryKey: false
         description: Planned manufacturing end date.
         config:
           criticalDataElement: false
@@ -2633,7 +2566,6 @@ models:
       actualstartdate:
         type: date
         required: false
-        primaryKey: false
         description: Actual start date.
         config:
           criticalDataElement: false
@@ -2642,7 +2574,6 @@ models:
       actualenddate:
         type: date
         required: false
-        primaryKey: false
         description: Actual end date.
         config:
           criticalDataElement: false
@@ -2651,7 +2582,6 @@ models:
       actualresourcehrs:
         type: number
         required: false
-        primaryKey: false
         description: Number of manufacturing hours used.
         config:
           criticalDataElement: false
@@ -2660,7 +2590,6 @@ models:
       plannedcost:
         type: number
         required: false
-        primaryKey: false
         description: Estimated manufacturing cost.
         config:
           criticalDataElement: false
@@ -2669,7 +2598,6 @@ models:
       actualcost:
         type: number
         required: false
-        primaryKey: false
         description: Actual manufacturing cost.
         config:
           criticalDataElement: false
@@ -2678,7 +2606,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -2691,7 +2618,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -2700,7 +2626,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to Vendor.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -2709,7 +2634,6 @@ models:
       averageleadtime:
         type: number
         required: false
-        primaryKey: false
         description: The average span of time (in days) between placing an order with
           the vendor and receiving the purchased product.
         config:
@@ -2719,7 +2643,6 @@ models:
       standardprice:
         type: number
         required: false
-        primaryKey: false
         description: The vendor's usual selling price.
         config:
           criticalDataElement: false
@@ -2728,7 +2651,6 @@ models:
       lastreceiptcost:
         type: number
         required: false
-        primaryKey: false
         description: The selling price when last purchased.
         config:
           criticalDataElement: false
@@ -2737,7 +2659,6 @@ models:
       lastreceiptdate:
         type: date
         required: false
-        primaryKey: false
         description: Date the product was last received by the vendor.
         config:
           criticalDataElement: false
@@ -2746,7 +2667,6 @@ models:
       minorderqty:
         type: number
         required: false
-        primaryKey: false
         description: The maximum quantity that should be ordered.
         config:
           criticalDataElement: false
@@ -2755,7 +2675,6 @@ models:
       maxorderqty:
         type: number
         required: false
-        primaryKey: false
         description: The minimum quantity that should be ordered.
         config:
           criticalDataElement: false
@@ -2764,7 +2683,6 @@ models:
       onorderqty:
         type: number
         required: false
-        primaryKey: false
         description: The quantity currently on order.
         config:
           criticalDataElement: false
@@ -2773,7 +2691,6 @@ models:
       unitmeasurecode:
         type: string
         required: false
-        primaryKey: false
         description: The product's unit of measure.
         config:
           criticalDataElement: false
@@ -2782,7 +2699,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -2796,7 +2712,6 @@ models:
       purchaseorderid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to PurchaseOrderHeader.PurchaseOrderID.
         config:
           criticalDataElement: false
@@ -2805,7 +2720,6 @@ models:
       purchaseorderdetailid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. One line number per purchased product.
         config:
           criticalDataElement: false
@@ -2814,7 +2728,6 @@ models:
       duedate:
         type: date
         required: false
-        primaryKey: false
         description: Date the product is expected to be received.
         config:
           criticalDataElement: false
@@ -2823,7 +2736,6 @@ models:
       orderqty:
         type: number
         required: false
-        primaryKey: false
         description: Quantity ordered.
         config:
           criticalDataElement: false
@@ -2832,7 +2744,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -2841,7 +2752,6 @@ models:
       unitprice:
         type: number
         required: false
-        primaryKey: false
         description: Vendor's selling price of a single product.
         config:
           criticalDataElement: false
@@ -2850,7 +2760,6 @@ models:
       receivedqty:
         type: number
         required: false
-        primaryKey: false
         description: Quantity actually received from the vendor.
         config:
           criticalDataElement: false
@@ -2859,7 +2768,6 @@ models:
       rejectedqty:
         type: number
         required: false
-        primaryKey: false
         description: Quantity rejected during inspection.
         config:
           criticalDataElement: false
@@ -2868,7 +2776,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -3134,7 +3041,6 @@ models:
       countryregioncode:
         type: string
         required: false
-        primaryKey: false
         description: ISO code for countries and regions. Foreign key to CountryRegion.CountryRegionCode.
         config:
           criticalDataElement: false
@@ -3143,7 +3049,6 @@ models:
       currencycode:
         type: string
         required: false
-        primaryKey: false
         description: ISO standard currency code. Foreign key to Currency.CurrencyCode.
         config:
           criticalDataElement: false
@@ -3152,7 +3057,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -3380,7 +3284,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Business entity identification number. Foreign key to Person.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -3389,7 +3292,6 @@ models:
       creditcardid:
         type: number
         required: false
-        primaryKey: false
         description: Credit card identification number. Foreign key to CreditCard.CreditCardID.
         config:
           criticalDataElement: false
@@ -3398,7 +3300,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -3411,7 +3312,6 @@ models:
       salesorderid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
         config:
           criticalDataElement: false
@@ -3420,7 +3320,6 @@ models:
       salesorderdetailid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. One incremental unique number per product sold.
         config:
           criticalDataElement: false
@@ -3429,7 +3328,6 @@ models:
       carriertrackingnumber:
         type: string
         required: false
-        primaryKey: false
         description: Shipment tracking number supplied by the shipper.
         config:
           criticalDataElement: false
@@ -3438,7 +3336,6 @@ models:
       orderqty:
         type: number
         required: false
-        primaryKey: false
         description: Quantity ordered per product.
         config:
           criticalDataElement: false
@@ -3447,7 +3344,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product sold to customer. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -3456,7 +3352,6 @@ models:
       specialofferid:
         type: number
         required: false
-        primaryKey: false
         description: Promotional code. Foreign key to SpecialOffer.SpecialOfferID.
         config:
           criticalDataElement: false
@@ -3465,7 +3360,6 @@ models:
       unitprice:
         type: number
         required: false
-        primaryKey: false
         description: Selling price of a single product.
         config:
           criticalDataElement: false
@@ -3474,7 +3368,6 @@ models:
       unitpricediscount:
         type: number
         required: false
-        primaryKey: false
         description: Discount amount.
         config:
           criticalDataElement: false
@@ -3483,7 +3376,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -3491,7 +3383,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -3735,7 +3626,6 @@ models:
       salesorderid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to SalesOrderHeader.SalesOrderID.
         config:
           criticalDataElement: false
@@ -3744,7 +3634,6 @@ models:
       salesreasonid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Foreign key to SalesReason.SalesReasonID.
         config:
           criticalDataElement: false
@@ -3753,7 +3642,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -3850,7 +3738,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Sales person identification number. Foreign key to SalesPerson.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -3859,7 +3746,6 @@ models:
       quotadate:
         type: date
         required: false
-        primaryKey: false
         description: Sales quota date.
         config:
           criticalDataElement: false
@@ -3868,7 +3754,6 @@ models:
       salesquota:
         type: number
         required: false
-        primaryKey: false
         description: Sales quota amount.
         config:
           criticalDataElement: false
@@ -3877,7 +3762,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -3885,7 +3769,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -4098,7 +3981,6 @@ models:
       businessentityid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. The sales rep.  Foreign key to SalesPerson.BusinessEntityID.
         config:
           criticalDataElement: false
@@ -4107,7 +3989,6 @@ models:
       territoryid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key. Territory identification number. Foreign key to
           SalesTerritory.SalesTerritoryID.
         config:
@@ -4117,7 +3998,6 @@ models:
       startdate:
         type: date
         required: false
-        primaryKey: false
         description: Primary key. Date the sales representive started work in the
           territory.
         config:
@@ -4127,7 +4007,6 @@ models:
       enddate:
         type: date
         required: false
-        primaryKey: false
         description: Date the sales representative left work in the territory.
         config:
           criticalDataElement: false
@@ -4136,7 +4015,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -4144,7 +4022,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -4317,7 +4194,6 @@ models:
       specialofferid:
         type: number
         required: false
-        primaryKey: false
         description: Primary key for SpecialOfferProduct records.
         config:
           criticalDataElement: false
@@ -4326,7 +4202,6 @@ models:
       productid:
         type: number
         required: false
-        primaryKey: false
         description: Product identification number. Foreign key to Product.ProductID.
         config:
           criticalDataElement: false
@@ -4335,7 +4210,6 @@ models:
       rowguid:
         type: string
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -4343,7 +4217,6 @@ models:
       modifieddate:
         type: date
         required: false
-        primaryKey: false
         config:
           criticalDataElement: false
           partitioned: false
@@ -4411,77 +4284,53 @@ models:
         title: StoreHolidayHours
         type: array
         required: false
-        primaryKey: false
         items:
           type: object
           fields:
             Date:
               title: Date
               type: date
-              required: false
-              primaryKey: false
               examples:
               - '2024-08-13'
               config:
-                criticalDataElement: false
-                partitioned: false
                 physicalType: string
             Close:
               title: Close
               type: date
-              required: false
-              primaryKey: false
               examples:
               - 02:00 PM
               config:
-                criticalDataElement: false
-                partitioned: false
                 physicalType: string
             Open:
               title: Open
               type: date
-              required: false
-              primaryKey: false
               examples:
               - 10:00 AM
               config:
-                criticalDataElement: false
-                partitioned: false
                 physicalType: string
         config:
-          criticalDataElement: false
-          partitioned: false
           physicalType: array
       extendedData:
         title: extendedData
         type: object
         required: true
-        primaryKey: false
         fields:
           pharmacyUUID:
             title: pharmacyUUID
             type: string
             required: true
-            primaryKey: false
             unique: true
             examples:
             - ec43dd63-c258-4506-8965-88a9e0c130ad
             config:
-              criticalDataElement: false
-              partitioned: false
               physicalType: string
         config:
-          criticalDataElement: false
-          partitioned: false
           physicalType: object
       ArrayComments:
         title: ArrayComments
         type: array
         required: false
-        primaryKey: false
         items:
           type: string
         config:
-          criticalDataElement: false
-          partitioned: false
           physicalType: array

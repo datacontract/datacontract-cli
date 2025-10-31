@@ -42,9 +42,13 @@ schema:
     - businesskey
     primaryKey: true
     logicalType: string
+    required: false
+    unique: false
+    partitioned: false
     classification: internal
     examples:
     - 123e4567-e89b-12d3-a456-426614174000
+    criticalDataElement: false
   - name: order_id
     physicalType: text
     physicalName: oid
@@ -52,54 +56,75 @@ schema:
     - url: http://localhost:8080/demo203502625092/definitions/sales/order_id
       type: definition
     primaryKey: false
+    partitioned: false
   - name: delivery_date
     physicalType: timestamp_tz
     description: The actual or expected delivery date of the shipment.
     businessName: Delivery Date
     primaryKey: false
     logicalType: date
+    required: false
+    unique: false
+    partitioned: false
     classification: internal
     examples:
     - '2023-10-01T10:00:00Z'
+    criticalDataElement: false
   - name: carrier
     physicalType: text
     description: The shipping carrier used for the delivery.
     businessName: Carrier
     primaryKey: false
     logicalType: string
+    required: false
+    unique: false
+    partitioned: false
     classification: internal
     examples:
     - FedEx
     - UPS
+    criticalDataElement: false
   - name: tracking_number
     physicalType: text
     description: Tracking number provided by the carrier.
     businessName: Tracking Number
     primaryKey: false
     logicalType: string
+    required: false
+    unique: false
+    partitioned: false
     classification: restricted
     examples:
     - 1Z999AA10123456784
+    criticalDataElement: false
   - name: status
     physicalType: text
     description: Current status of the shipment.
     businessName: Status
     primaryKey: false
     logicalType: string
+    required: false
+    unique: false
+    partitioned: false
     classification: internal
     examples:
     - Delivered
     - In Transit
+    criticalDataElement: false
   - name: inline_object_definition
     physicalType: json
     description: A JSON representation of additional shipment info
     businessName: Inline Object Definition
     primaryKey: false
     logicalType: object
+    required: false
+    unique: false
+    partitioned: false
     partitionKeyPosition: -1
     classification: internal
     examples:
     - '{"destination": "New York"}'
+    criticalDataElement: false
     quality:
     - description: '{field} must contain the field "destination"'
       type: text
@@ -118,6 +143,8 @@ schema:
       primaryKey: false
       logicalType: string
       required: true
+      unique: false
+      partitioned: false
       classification: restricted
       examples:
       - Marienplatz 1
@@ -128,6 +155,8 @@ schema:
       primaryKey: false
       logicalType: string
       required: true
+      unique: false
+      partitioned: false
       classification: restricted
       examples:
       - Munich
@@ -138,6 +167,7 @@ schema:
       primaryKey: false
       logicalType: string
       required: true
+      partitioned: false
       classification: restricted
       examples:
       - DE

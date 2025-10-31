@@ -314,6 +314,7 @@ def fill_single_property_template(
         "Transform Sources", ",".join(property.transformSourceObjects) if property.transformSourceObjects else ""
     )
     set_by_header("Transform Logic", property.transformLogic)
+    set_by_header("Critical Data Element Status", property.criticalDataElement)
 
     # Authoritative definitions
     if property.authoritativeDefinitions and len(property.authoritativeDefinitions) > 0:
