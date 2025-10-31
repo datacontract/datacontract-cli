@@ -1,0 +1,173 @@
+dataContractSpecification: 1.2.1
+id: oracle
+info:
+  title: oracle
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  oracle:
+    type: oracle
+    host: localhost
+    port: __PORT__
+    service_name: FREEPDB1
+    schema: SYSTEM
+models:
+  checks_testcase:
+    type: table
+    fields:
+      CTC_ID:
+        type: number
+        description: Primary key
+        primaryKey: true
+        config:
+          oracleType: NUMBER
+      DESCRIPTION:
+        type: text
+        description: Decimal number
+        config:
+          oracleType: VARCHAR2
+      AMOUNT:
+        type: number
+        description: Amount purchased
+        config:
+          oracleType: NUMBER
+        quality:
+          - type: sql
+            description: There is a customer who bought a lot of items
+            query: SELECT {field} FROM {model} where {field} = 100
+            mustBeGreaterThan: 0
+      QUALITY:
+        type: number
+        description: Percentage of checks passed
+        config:
+          oracleType: NUMBER
+      CUSTOM_ATTRIBUTES:
+        type: text
+        description: Custom attributes
+        config:
+          oracleType: CLOB
+      FIELD_VARCHAR:
+        type: string
+        description: Variable-length string
+        maxLength: 100
+        config:
+          oracleType: VARCHAR
+        FIELD_NVARCHAR:
+          type: string
+          description: Variable-length Unicode string
+          maxLength: 100
+          config:
+            oracleType: VARCHAR
+        FIELD_NUMBER:
+          type: decimal
+          description: Number
+          config:
+            oracleType: DECIMAL
+        FIELD_FLOAT:
+          type: float
+          description: Float
+          config:
+            oracleType: FLOAT
+        FIELD_DATE:
+          type: date
+          description: Date and Time down to second precision
+          config:
+            oracleType: DATE
+        FIELD_BINARY_FLOAT:
+          type: bytes
+          description: 32-bit floating point number
+          config:
+            oracleType: BINARY_FLOAT
+        FIELD_BINARY_DOUBLE:
+          type: bytes
+          description: 64-bit floating point number
+          config:
+            oracleType: BINARY_DOUBLE
+        FIELD_TIMESTAMP:
+          type: timestamp_ntz
+          description: Timestamp with fractional second precision of 6, no timezones
+          config:
+            oracleType: TIMESTAMP
+        FIELD_TIMESTAMP_TZ:
+          type: timestamp_tz
+          description: Timestamp with fractional second precision of 6, with timezones
+            (TZ)
+          config:
+            oracleType: TIMESTAMPTZ
+        FIELD_TIMESTAMP_LTZ:
+          type: variant
+          description: Timestamp with fractional second precision of 6, with local timezone
+            (LTZ)
+          config:
+            oracleType: TIMESTAMPLTZ
+        FIELD_INTERVAL_YEAR:
+          type: int
+          description: Interval of time in years and months with default (2) precision
+          config:
+            oracleType: INTERVAL YEAR TO MONTH
+        FIELD_INTERVAL_DAY:
+          type: int
+          description: Interval of time in days, hours, minutes and seconds with default
+            (2 / 6) precision
+          config:
+            oracleType: INTERVAL DAY TO SECOND
+        FIELD_RAW:
+          type: variant
+          description: Large raw binary data
+          config:
+            oracleType: RAW(1000)
+        FIELD_ROWID:
+          type: variant
+          description: Base 64 string representing a unique row address
+          config:
+            oracleType: ROWID
+        FIELD_UROWID:
+          type: variant
+          description: Base 64 string representing the logical address
+          config:
+            oracleType: UROWID
+        FIELD_CHAR:
+          type: string
+          description: Fixed-length string
+          maxLength: 10
+          config:
+            oracleType: CHAR(10)
+        FIELD_NCHAR:
+          type: string
+          description: Fixed-length Unicode string
+          maxLength: 10
+          config:
+            oracleType: CHAR(10)
+        FIELD_CLOB:
+          type: string
+          description: Character large object
+          config:
+            oracleType: TEXT
+        FIELD_NCLOB:
+          type: variant
+          description: National character large object
+          config:
+            oracleType: NCLOB
+        FIELD_BLOB:
+          type: bytes
+          description: Binary large object
+          config:
+            oracleType: VARBINARY
+        FIELD_BFILE:
+          type: variant
+          description: Binary file
+          config:
+            oracleType: BFILE
+    quality:
+        - type: sql
+          description: Row Count
+          query: |
+            SELECT count(*) as row_count
+            FROM {model}
+          mustBeGreaterThan: 5
+        - type: sql
+          description: Quality must be high except in exceptional cases where junk spare parts are sold
+          query: |
+            SELECT ctc_id FROM CHECKS_TESTCASE ct
+            WHERE quality < 90
+            AND json_value(ct.CUSTOM_ATTRIBUTES, '$.quality') != 'junk'

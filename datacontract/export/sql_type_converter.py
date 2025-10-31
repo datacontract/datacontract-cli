@@ -22,6 +22,8 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_bigquery(field)
     elif server_type == "trino":
         return convert_type_to_trino(field)
+    elif server_type == "oracle":
+        return convert_type_to_oracle(field)
 
     return field.type
 
@@ -390,3 +392,105 @@ def convert_type_to_trino(field: Field) -> None | str:
         return "varbinary"
     if field_type in ["object", "record", "struct"]:
         return "json"
+
+
+def convert_type_to_oracle(field: Field) -> None | str:
+    """Convert from supported datacontract types to equivalent Oracle types
+
+    Oracle returns types WITH precision/scale/length through Soda, so we need to match that.
+    For example:
+    - NUMBER -> NUMBER (base types without precision return without it)
+    - TIMESTAMP -> TIMESTAMP(6) (Oracle default precision)
+    - CHAR -> CHAR (but may need explicit handling)
+
+    For fields that were created with specific Oracle types (like NCHAR, ROWID, BLOB),
+    users should use config.oracleType to override the default mapping.
+
+    Reference: https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Data-Types.html
+    """
+    # config.oracleType always wins - use it as-is without stripping
+    if field.config and "oracleType" in field.config:
+        return field.config["oracleType"]
+
+    if field.config and "physicalType" in field.config:
+        return field.config["physicalType"]
+
+    field_type = field.type
+    if not field_type:
+        return None
+
+    field_type = field_type.lower()
+
+    # String types - default to NVARCHAR2 for strings
+    if field_type in ["string", "varchar"]:
+        return "NVARCHAR2"
+
+    if field_type == "text":
+        # text could be NVARCHAR2 or NCLOB depending on size
+        if field.config and field.config.get("large"):
+            return "NCLOB"
+        return "NVARCHAR2"
+
+    # Numeric types - NUMBER without precision (Oracle returns just NUMBER)
+    if field_type in ["number", "decimal", "numeric", "int", "integer", "long", "bigint", "smallint"]:
+        return "NUMBER"
+
+    # Float types - BINARY_FLOAT/BINARY_DOUBLE by default
+    if field_type == "float":
+        return "BINARY_FLOAT"
+
+    if field_type in ["double", "double precision"]:
+        return "BINARY_DOUBLE"
+
+    # Boolean - maps to CHAR
+    if field_type == "boolean":
+        return "CHAR"
+
+    # Temporal types - Oracle returns with precision
+    if field_type in ["timestamp_tz", "timestamp with time zone", "timestamptz"]:
+        return "TIMESTAMP(6) WITH TIME ZONE"
+
+    if field_type in ["timestamp_ntz", "timestamp", "timestamp without time zone"]:
+        return "TIMESTAMP(6)"
+
+    if field_type == "date":
+        return "DATE"
+
+    if field_type == "time":
+        # Oracle's INTERVAL DAY TO SECOND has default precision
+        return "INTERVAL DAY(0) TO SECOND(6)"
+
+    # Binary types
+    if field_type in ["bytes", "binary"]:
+        # Default to RAW for bytes
+        return "RAW"
+
+    # LOB types
+    if field_type == "blob":
+        return "BLOB"
+
+    if field_type == "nclob":
+        return "NCLOB"
+
+    if field_type == "clob":
+        return "CLOB"
+
+    # Oracle-specific types
+    if field_type == "bfile":
+        return "BFILE"
+
+    if field_type in ["long raw", "longraw"]:
+        return "LONG RAW"
+
+    if field_type == "rowid":
+        return "ROWID"
+
+    if field_type == "urowid":
+        return "UROWID"
+
+    # Complex/JSON types -> CLOB (emulated)
+    if field_type in ["array", "map", "object", "record", "struct", "variant", "json"]:
+        return "CLOB"
+
+    # Default to CLOB for unknown types
+    return "CLOB"
