@@ -298,6 +298,9 @@ def _resolve_data_contract_from_str(
 ) -> DataContractSpecification:
     yaml_dict = _to_yaml(data_contract_str)
 
+    if schema_location:
+        _validate_data_contract_specification_schema(yaml_dict, schema_location)
+
     if is_open_data_contract_standard(yaml_dict):
         logging.info("Importing ODCS v3")
         # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
