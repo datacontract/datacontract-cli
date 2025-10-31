@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Support for nested arrays in odcs v3 importer
+
+### Fixed
+
+- Excel exporter now exports critical data element
+
 
 ## [0.10.36] - 2025-10-17
 
