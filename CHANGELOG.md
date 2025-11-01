@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- odcs v3 export to jsonschema related fixes/enhancements
+    - primaryKey handling fix - remove composite primary key check that returned None
+    - added support for exporting logicalTypeOptions - pattern, format, minItems, maxItems, minLength, maxLength
+
+- Fixed odcs_v3 fixture adventureworks.datacontract.yaml which was missing 'primaryKey: true" for tables with composite primary keys from the corresponding odcs yaml fixture
+
+
+### Added
+
 - Support for nested arrays in odcs v3 importer
 
 ### Fixed

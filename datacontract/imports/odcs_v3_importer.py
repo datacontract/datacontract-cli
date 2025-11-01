@@ -367,12 +367,13 @@ def import_field(
         return None
 
     description = odcs_property.description if odcs_property.description is not None else None
+    
     field = Field(
         description=" ".join(description.splitlines()) if description is not None else None,
         type=mapped_type,
         title=odcs_property.businessName,
         required=odcs_property.required if odcs_property.required is not None else None,
-        primaryKey=to_primary_key(odcs_property, odcs_properties),
+        primaryKey=to_primary_key(odcs_property, type),
         unique=odcs_property.unique if odcs_property.unique else None,
         examples=odcs_property.examples if odcs_property.examples is not None else None,
         classification=odcs_property.classification if odcs_property.classification is not None else None,
@@ -382,8 +383,13 @@ def import_field(
         if odcs_property.properties is not None
         else {},
         config=import_field_config(odcs_property, server_type),
-        format=getattr(odcs_property, "format", None),
-    )
+        format=(odcs_property.logicalTypeOptions or {}).get("format"),
+        pattern=(odcs_property.logicalTypeOptions or {}).get("pattern"),
+        minItems=(odcs_property.logicalTypeOptions or {}).get("minItems"),
+        maxItems=(odcs_property.logicalTypeOptions or {}).get("maxItems"),
+        minLength=(odcs_property.logicalTypeOptions or {}).get("minLength"),
+        maxLength=(odcs_property.logicalTypeOptions or {}).get("maxLength")
+        )
 
     # mapped_type is array
     if field.type == "array" and odcs_property.items is not None:
@@ -398,10 +404,10 @@ def import_field(
     return field
 
 
-def to_primary_key(odcs_property: SchemaProperty, odcs_properties: list[SchemaProperty]) -> bool | None:
-    if odcs_property.primaryKey is None:
+def to_primary_key(odcs_property: SchemaProperty, type: str) -> bool | None:
+    if type == "array":
         return None
-    if has_composite_primary_key(odcs_properties):
+    if odcs_property.primaryKey is None:
         return None
     return odcs_property.primaryKey
 
