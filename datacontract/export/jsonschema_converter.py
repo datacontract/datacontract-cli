@@ -71,6 +71,10 @@ def to_property(field: Field) -> dict:
         property["minLength"] = field.minLength
     if field.maxLength is not None:
         property["maxLength"] = field.maxLength
+    if hasattr(field, "minItems") and field.minItems is not None:
+        property["minItems"] = field.minItems
+    if hasattr(field, "maxItems") and field.maxItems is not None:
+        property["maxItems"] = field.maxItems
     if field.title:
         property["title"] = field.title
     if field.description:
