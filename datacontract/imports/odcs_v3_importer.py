@@ -299,6 +299,21 @@ def import_field_config(odcs_property: SchemaProperty, server_type=None) -> dict
         for item in odcs_property.customProperties:
             config[item.property] = item.value
 
+    # Extract logicalTypeOptions that don't have direct Field properties
+    logical_type_options = odcs_property.logicalTypeOptions if odcs_property.logicalTypeOptions is not None else {}
+    if logical_type_options.get("minItems") is not None:
+        config["minItems"] = logical_type_options.get("minItems")
+    if logical_type_options.get("maxItems") is not None:
+        config["maxItems"] = logical_type_options.get("maxItems")
+    if logical_type_options.get("uniqueItems") is not None:
+        config["uniqueItems"] = logical_type_options.get("uniqueItems")
+    if logical_type_options.get("multipleOf") is not None:
+        config["multipleOf"] = logical_type_options.get("multipleOf")
+    if logical_type_options.get("minProperties") is not None:
+        config["minProperties"] = logical_type_options.get("minProperties")
+    if logical_type_options.get("maxProperties") is not None:
+        config["maxProperties"] = logical_type_options.get("maxProperties")
+
     physical_type = odcs_property.physicalType
     if physical_type is not None:
         if server_type == "postgres" or server_type == "postgresql":
@@ -367,6 +382,10 @@ def import_field(
         return None
 
     description = odcs_property.description if odcs_property.description is not None else None
+
+    # Extract logicalTypeOptions
+    logical_type_options = odcs_property.logicalTypeOptions if odcs_property.logicalTypeOptions is not None else {}
+
     field = Field(
         description=" ".join(description.splitlines()) if description is not None else None,
         type=mapped_type,
@@ -382,7 +401,16 @@ def import_field(
         if odcs_property.properties is not None
         else {},
         config=import_field_config(odcs_property, server_type),
-        format=getattr(odcs_property, "format", None),
+        format=logical_type_options.get("format") or getattr(odcs_property, "format", None),
+        # String constraints
+        minLength=logical_type_options.get("minLength"),
+        maxLength=logical_type_options.get("maxLength"),
+        pattern=logical_type_options.get("pattern"),
+        # Number constraints
+        minimum=logical_type_options.get("minimum"),
+        maximum=logical_type_options.get("maximum"),
+        exclusiveMinimum=logical_type_options.get("exclusiveMinimum"),
+        exclusiveMaximum=logical_type_options.get("exclusiveMaximum"),
     )
 
     # mapped_type is array

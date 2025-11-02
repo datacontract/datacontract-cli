@@ -1,0 +1,332 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "logical_types_test",
+  "description": "Main test object containing all logical types",
+  "required": [
+    "simple_string",
+    "string_with_length",
+    "simple_date",
+    "simple_integer",
+    "simple_number",
+    "simple_boolean",
+    "nested_object",
+    "simple_array"
+  ],
+  "properties": {
+    "simple_string": {
+      "type": "string",
+      "description": "Basic string field"
+    },
+    "string_with_length": {
+      "type": "string",
+      "description": "String with length constraints",
+      "minLength": 5,
+      "maxLength": 50
+    },
+    "string_with_pattern": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "String with regex pattern",
+      "pattern": "^[A-Z]{3}-\\d{4}$"
+    },
+    "email_string": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Email format string",
+      "format": "email"
+    },
+    "uuid_string": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "UUID format string",
+      "format": "uuid"
+    },
+    "uri_string": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "URI format string",
+      "format": "uri"
+    },
+    "simple_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Basic date field"
+    },
+    "date_with_format": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "Date with specific format"
+    },
+    "simple_integer": {
+      "type": "integer",
+      "description": "Basic integer field"
+    },
+    "integer_with_range": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Integer with min/max constraints",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "integer_multiple": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Integer that must be multiple of 5",
+      "multipleOf": 5
+    },
+    "integer_64bit": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "64-bit integer",
+      "minimum": -9223372036854775808,
+      "maximum": 9223372036854775807
+    },
+    "unsigned_integer": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Unsigned 32-bit integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "simple_number": {
+      "type": "number",
+      "description": "Basic floating-point number"
+    },
+    "number_with_range": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Number with min/max constraints",
+      "minimum": 0.0,
+      "maximum": 100.0
+    },
+    "number_multiple": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Number that must be multiple of 0.5",
+      "multipleOf": 0.5
+    },
+    "simple_boolean": {
+      "type": "boolean",
+      "description": "Basic boolean field"
+    },
+    "nested_object": {
+      "type": "object",
+      "description": "Nested object with properties",
+      "minProperties": 1,
+      "maxProperties": 10,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Object identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Object name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "metadata": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Nested metadata object",
+          "properties": {
+            "created_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date",
+              "description": "Creation timestamp"
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "Array of tags",
+              "minItems": 0,
+              "maxItems": 10,
+              "uniqueItems": true,
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Individual tag",
+                "minLength": 1,
+                "maxLength": 50
+              }
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    "simple_array": {
+      "type": "array",
+      "description": "Simple array of strings",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Array item"
+      }
+    },
+    "array_unique_integers": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "Array of unique integers",
+      "minItems": 0,
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Unique integer",
+        "minimum": 1
+      }
+    },
+    "array_of_objects": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "Array of complex objects",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Complex object in array",
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Object key",
+            "minLength": 1
+          },
+          "value": {
+            "type": "number",
+            "description": "Object value"
+          },
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Active status"
+          }
+        }
+      }
+    },
+    "composite_key_test": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Test object with composite primary key",
+      "required": [
+        "partition_key",
+        "sort_key"
+      ],
+      "properties": {
+        "partition_key": {
+          "type": "string",
+          "description": "Partition key field"
+        },
+        "sort_key": {
+          "type": "integer",
+          "description": "Sort key field"
+        },
+        "data": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Data field"
+        }
+      }
+    },
+    "sensitive_data_test": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Test object with sensitive data classifications",
+      "required": [
+        "public_field",
+        "confidential_field",
+        "restricted_pii"
+      ],
+      "properties": {
+        "public_field": {
+          "type": "string",
+          "description": "Public data field",
+          "classification": "public"
+        },
+        "confidential_field": {
+          "type": "string",
+          "description": "Confidential data field",
+          "classification": "confidential"
+        },
+        "restricted_pii": {
+          "type": "string",
+          "description": "Restricted PII field",
+          "classification": "restricted",
+          "format": "email"
+        },
+        "ssn": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Social Security Number",
+          "classification": "restricted",
+          "pattern": "^\\d{3}-\\d{2}-\\d{4}$"
+        }
+      }
+    }
+  }
+}

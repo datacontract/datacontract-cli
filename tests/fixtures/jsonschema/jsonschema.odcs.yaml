@@ -1,0 +1,331 @@
+version: "1.0.0"
+kind: DataContract
+apiVersion: v3.0.1
+id: "urn:uuid:a1b2c3d4-e5f6-7890-1234-567890abcdef"
+name: "Logical Types Test Contract"
+status: active
+description:
+  purpose: "Test data contract for validating logical type export to JSON Schema"
+  usage: "This contract demonstrates all ODCS logical types and their options for JSON Schema generation testing"
+
+schema:
+  # Test all basic logical types
+  - name: logical_types_test
+    physicalName: logical_types_test_table
+    logicalType: object
+    description: "Main test object containing all logical types"
+    properties:
+      # STRING type tests
+      - name: simple_string
+        logicalType: string
+        description: "Basic string field"
+        required: true
+        examples: ["hello", "world"]
+
+      - name: string_with_length
+        logicalType: string
+        description: "String with length constraints"
+        logicalTypeOptions:
+          minLength: 5
+          maxLength: 50
+        required: true
+
+      - name: string_with_pattern
+        logicalType: string
+        description: "String with regex pattern"
+        logicalTypeOptions:
+          pattern: "^[A-Z]{3}-\\d{4}$"
+        examples: ["ABC-1234", "XYZ-9999"]
+
+      - name: email_string
+        logicalType: string
+        description: "Email format string"
+        logicalTypeOptions:
+          format: email
+        examples: ["user@example.com"]
+
+      - name: uuid_string
+        logicalType: string
+        description: "UUID format string"
+        logicalTypeOptions:
+          format: uuid
+        examples: ["550e8400-e29b-41d4-a716-446655440000"]
+
+      - name: uri_string
+        logicalType: string
+        description: "URI format string"
+        logicalTypeOptions:
+          format: uri
+        examples: ["https://example.com/path"]
+
+      # DATE type tests
+      - name: simple_date
+        logicalType: date
+        description: "Basic date field"
+        required: true
+        examples: ["2025-01-15"]
+
+      - name: date_with_format
+        logicalType: date
+        description: "Date with specific format"
+        logicalTypeOptions:
+          format: "yyyy-MM-dd HH:mm:ss"
+        examples: ["2025-01-15 10:30:00"]
+
+      # INTEGER type tests
+      - name: simple_integer
+        logicalType: integer
+        description: "Basic integer field"
+        required: true
+        examples: [42, 100, -5]
+
+      - name: integer_with_range
+        logicalType: integer
+        description: "Integer with min/max constraints"
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 100
+        examples: [0, 50, 99]
+
+      - name: integer_multiple
+        logicalType: integer
+        description: "Integer that must be multiple of 5"
+        logicalTypeOptions:
+          multipleOf: 5
+          format: i32
+        examples: [0, 5, 10, 15]
+
+      - name: integer_64bit
+        logicalType: integer
+        description: "64-bit integer"
+        logicalTypeOptions:
+          format: i64
+          minimum: -9223372036854775808
+          maximum: 9223372036854775807
+        examples: [1234567890]
+
+      - name: unsigned_integer
+        logicalType: integer
+        description: "Unsigned 32-bit integer"
+        logicalTypeOptions:
+          format: u32
+          minimum: 0
+          maximum: 4294967295
+        examples: [0, 1000, 4294967295]
+
+      # NUMBER type tests
+      - name: simple_number
+        logicalType: number
+        description: "Basic floating-point number"
+        required: true
+        examples: [3.14, 2.718, -1.5]
+
+      - name: number_with_range
+        logicalType: number
+        description: "Number with min/max constraints"
+        logicalTypeOptions:
+          minimum: 0.0
+          maximum: 100.0
+        examples: [0.1, 50.5, 99.9]
+
+      - name: number_multiple
+        logicalType: number
+        description: "Number that must be multiple of 0.5"
+        logicalTypeOptions:
+          multipleOf: 0.5
+          format: f64
+        examples: [0.0, 0.5, 1.0, 1.5]
+
+      # BOOLEAN type test
+      - name: simple_boolean
+        logicalType: boolean
+        description: "Basic boolean field"
+        required: true
+        examples: [true, false]
+
+      # OBJECT type test
+      - name: nested_object
+        logicalType: object
+        description: "Nested object with properties"
+        required: true
+        logicalTypeOptions:
+          minProperties: 1
+          maxProperties: 10
+          required: ["id", "name"]
+        properties:
+          - name: id
+            logicalType: integer
+            description: "Object identifier"
+            required: true
+            logicalTypeOptions:
+              format: i32
+            examples: [1, 2, 3]
+
+          - name: name
+            logicalType: string
+            description: "Object name"
+            required: true
+            logicalTypeOptions:
+              minLength: 1
+              maxLength: 100
+            examples: ["Object A", "Object B"]
+
+          - name: metadata
+            logicalType: object
+            description: "Nested metadata object"
+            properties:
+              - name: created_at
+                logicalType: date
+                description: "Creation timestamp"
+                logicalTypeOptions:
+                  format: "yyyy-MM-dd'T'HH:mm:ss'Z'"
+                examples: ["2025-01-15T10:00:00Z"]
+
+              - name: tags
+                logicalType: array
+                description: "Array of tags"
+                logicalTypeOptions:
+                  minItems: 0
+                  maxItems: 10
+                  uniqueItems: true
+                items:
+                  logicalType: string
+                  description: "Individual tag"
+                  logicalTypeOptions:
+                    minLength: 1
+                    maxLength: 50
+                  examples: ["tag1", "tag2"]
+
+      # ARRAY type tests
+      - name: simple_array
+        logicalType: array
+        description: "Simple array of strings"
+        required: true
+        logicalTypeOptions:
+          minItems: 1
+          maxItems: 100
+          uniqueItems: false
+        items:
+          logicalType: string
+          description: "Array item"
+          examples: ["item1", "item2", "item3"]
+
+      - name: array_unique_integers
+        logicalType: array
+        description: "Array of unique integers"
+        logicalTypeOptions:
+          minItems: 0
+          maxItems: 50
+          uniqueItems: true
+        items:
+          logicalType: integer
+          description: "Unique integer"
+          logicalTypeOptions:
+            format: i32
+            minimum: 1
+          examples: [1, 2, 3, 4, 5]
+
+      - name: array_of_objects
+        logicalType: array
+        description: "Array of complex objects"
+        logicalTypeOptions:
+          minItems: 1
+          maxItems: 20
+        items:
+          logicalType: object
+          description: "Complex object in array"
+          properties:
+            - name: key
+              logicalType: string
+              description: "Object key"
+              required: true
+              logicalTypeOptions:
+                minLength: 1
+              examples: ["key1", "key2"]
+
+            - name: value
+              logicalType: number
+              description: "Object value"
+              required: true
+              logicalTypeOptions:
+                format: f64
+              examples: [1.5, 2.7, 3.9]
+
+            - name: active
+              logicalType: boolean
+              description: "Active status"
+              required: false
+              examples: [true, false]
+
+      - name: composite_key_test
+        physicalName: composite_key_table
+        logicalType: object
+        description: "Test object with composite primary key"
+        properties:
+          - name: partition_key
+            logicalType: string
+            description: "Partition key field"
+            primaryKey: true
+            primaryKeyPosition: 1
+            partitioned: true
+            partitionKeyPosition: 1
+            required: true
+            examples: ["US", "EU", "APAC"]
+
+          - name: sort_key
+            logicalType: integer
+            description: "Sort key field"
+            primaryKey: true
+            primaryKeyPosition: 2
+            required: true
+            logicalTypeOptions:
+              format: i64
+            examples: [1, 2, 3]
+
+          - name: data
+            logicalType: string
+            description: "Data field"
+            required: false
+            examples: ["sample data"]
+
+      # Classification and security test
+      - name: sensitive_data_test
+        physicalName: sensitive_data_table
+        logicalType: object
+        description: "Test object with sensitive data classifications"
+        properties:
+          - name: public_field
+            logicalType: string
+            description: "Public data field"
+            classification: public
+            required: true
+            examples: ["public information"]
+
+          - name: confidential_field
+            logicalType: string
+            description: "Confidential data field"
+            classification: confidential
+            required: true
+            examples: ["confidential information"]
+            encryptedName: confidential_field_encrypted
+
+          - name: restricted_pii
+            logicalType: string
+            description: "Restricted PII field"
+            classification: restricted
+            required: true
+            criticalDataElement: true
+            logicalTypeOptions:
+              format: email
+            examples: ["user@example.com"]
+            encryptedName: restricted_pii_encrypted
+
+          - name: ssn
+            logicalType: string
+            description: "Social Security Number"
+            classification: restricted
+            criticalDataElement: true
+            required: false
+            logicalTypeOptions:
+              pattern: "^\\d{3}-\\d{2}-\\d{4}$"
+            examples: ["123-45-6789"]
