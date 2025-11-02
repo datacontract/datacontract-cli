@@ -9,11 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for nested arrays in odcs v3 importer
+- import: Support for nested arrays in odcs v3 importer
+- lint: ODCS schema is now checked before converting
 
 ### Fixed
 
-- Excel exporter now exports critical data element
+- export: Excel exporter now exports critical data element
 
 
 ## [0.10.36] - 2025-10-17

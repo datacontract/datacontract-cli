@@ -54,6 +54,23 @@ def test_lint_custom_schema():
 
     assert run.result == "passed"
 
+def test_lint_valid_odcs_schema():
+    data_contract_file = "fixtures/lint/valid.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "passed"
+
+
+def test_lint_invalid_odcs_schema():
+    data_contract_file = "fixtures/lint/invalid.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "failed"
+
 
 def test_lint_with_ref():
     data_contract = DataContract(

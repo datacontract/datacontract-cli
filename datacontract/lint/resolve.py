@@ -1,6 +1,8 @@
+import importlib.resources as resources
 import logging
 import os
 import warnings
+from pathlib import Path
 
 import fastjsonschema
 import yaml
@@ -298,6 +300,14 @@ def _resolve_data_contract_from_str(
 ) -> DataContractSpecification:
     yaml_dict = _to_yaml(data_contract_str)
 
+    if schema_location is None:
+        if is_open_data_contract_standard(yaml_dict):
+            logging.info("Using ODCS 3.0.2 schema to validate data contract")
+            # TODO refactor this to a specific function
+            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.0.2.schema.json")
+
+    _validate_json_schema(yaml_dict, schema_location)
+
     if is_open_data_contract_standard(yaml_dict):
         logging.info("Importing ODCS v3")
         # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
@@ -311,7 +321,7 @@ def _resolve_data_contract_from_str(
 
 
 def _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_location, yaml_dict):
-    _validate_data_contract_specification_schema(yaml_dict, schema_location)
+    _validate_json_schema(yaml_dict, schema_location)
     data_contract_specification = yaml_dict
     spec = DataContractSpecification(**data_contract_specification)
     if inline_definitions:
@@ -349,16 +359,16 @@ def _to_yaml(data_contract_str) -> dict:
         )
 
 
-def _validate_data_contract_specification_schema(data_contract_yaml, schema_location: str = None):
+def _validate_json_schema(yaml_str, schema_location: str | Path = None):
     schema = fetch_schema(schema_location)
     try:
-        fastjsonschema.validate(schema, data_contract_yaml, use_default=False)
+        fastjsonschema.validate(schema, yaml_str, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {e.message}")
         raise DataContractException(
             type="lint",
-            result="failed",
+            result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason=e.message,
             engine="datacontract",
@@ -367,7 +377,7 @@ def _validate_data_contract_specification_schema(data_contract_yaml, schema_loca
         logging.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
         raise DataContractException(
             type="lint",
-            result="failed",
+            result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason=str(e),
             engine="datacontract",

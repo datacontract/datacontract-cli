@@ -4,7 +4,7 @@ id: postgres
 name: postgres
 version: 0.0.1
 domain: my-domain-team
-status: null
+status: active
 schema:
 - name: my_table
   physicalName: my_table
