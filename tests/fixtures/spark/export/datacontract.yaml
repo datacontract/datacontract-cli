@@ -1,4 +1,4 @@
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: orders
 info:
   title: Orders
@@ -55,6 +55,7 @@ models:
         type: int
       name:
         type: string
+        description: First and last name of the customer
       metadata:
         type: map
         required: false

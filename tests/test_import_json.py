@@ -28,7 +28,7 @@ def test_json_simple():
     expected_dict = yaml.safe_load(expected_json)
 
     json_file = "fixtures/import/json/product_simple.json"
-    actual = DataContract().import_from_source("json", json_file).to_yaml()
+    actual = DataContract.import_from_source("json", json_file).to_yaml()
     actual_dict = yaml.safe_load(actual)
 
     # normalize paths in both dictionaries to use forward slashes and remove any ./tests/ prefix
@@ -61,7 +61,7 @@ def test_json_simple():
 
     # making sure the data contract is correct
     data_contract = DataContract(data_contract_str=actual)
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()
 
 
 def test_json_complex():
@@ -72,7 +72,7 @@ def test_json_complex():
     expected_dict = yaml.safe_load(expected_json)
 
     json_file = "fixtures/import/json/product_detail.json"
-    actual = DataContract().import_from_source("json", json_file).to_yaml()
+    actual = DataContract.import_from_source("json", json_file).to_yaml()
     actual_dict = yaml.safe_load(actual)
 
     # normalize paths in both dictionaries to use forward slashes and remove any ./tests/ prefix
@@ -105,7 +105,7 @@ def test_json_complex():
 
     # making sure the data contract is correct
     data_contract = DataContract(data_contract_str=actual)
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()
 
 
 def test_ndjson():
@@ -116,7 +116,7 @@ def test_ndjson():
     expected_dict = yaml.safe_load(expected_json)
 
     json_file = "fixtures/import/json/inventory_ndjson.json"
-    actual = DataContract().import_from_source("json", json_file).to_yaml()
+    actual = DataContract.import_from_source("json", json_file).to_yaml()
     actual_dict = yaml.safe_load(actual)
 
     # normalize paths in both dictionaries to use forward slashes and remove any ./tests/ prefix
@@ -148,4 +148,4 @@ def test_ndjson():
 
     # making sure the data contract is correct
     data_contract = DataContract(data_contract_str=actual)
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()

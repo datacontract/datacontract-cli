@@ -6,10 +6,10 @@ sql_file_path = "fixtures/sqlserver/import/ddl.sql"
 
 
 def test_import_sql_sqlserver():
-    result = DataContract().import_from_source("sql", sql_file_path, dialect="sqlserver")
+    result = DataContract.import_from_source("sql", sql_file_path, dialect="sqlserver")
 
     expected = """
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: my-data-contract-id
 info:
   title: My Data Contract
@@ -175,4 +175,4 @@ models:
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
     # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()

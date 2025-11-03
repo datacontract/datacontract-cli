@@ -42,7 +42,7 @@ def test_cli_with_filters():
 
 
 def test_dbml_import():
-    result = DataContract().import_from_source("dbml", "fixtures/dbml/import/dbml.txt")
+    result = DataContract.import_from_source("dbml", "fixtures/dbml/import/dbml.txt")
 
     print("Result:\n", result.to_yaml())
     with open("fixtures/dbml/import/datacontract.yaml") as file:
@@ -51,7 +51,7 @@ def test_dbml_import():
 
 
 def test_dbml_import_with_schema_filter():
-    result = DataContract().import_from_source("dbml", "fixtures/dbml/import/dbml.txt", dbml_schema=["orders"])
+    result = DataContract.import_from_source("dbml", "fixtures/dbml/import/dbml.txt", dbml_schema=["orders"])
 
     print("Result:\n", result.to_yaml())
     with open("fixtures/dbml/import/datacontract_schema_filtered.yaml") as file:
@@ -60,7 +60,7 @@ def test_dbml_import_with_schema_filter():
 
 
 def test_dbml_import_with_tablename_filter():
-    result = DataContract().import_from_source("dbml", "fixtures/dbml/import/dbml.txt", dbml_table=["orders"])
+    result = DataContract.import_from_source("dbml", "fixtures/dbml/import/dbml.txt", dbml_table=["orders"])
 
     print("Result:\n", result.to_yaml())
     with open("fixtures/dbml/import/datacontract_table_filtered.yaml") as file:

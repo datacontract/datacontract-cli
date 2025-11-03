@@ -26,7 +26,7 @@ def test_cli_with_server():
 
 def test_dbml_export():
     data_contract = DataContract(data_contract_file="fixtures/dbml/datacontract.yaml")
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()
 
     result = data_contract.export("dbml")
 
@@ -81,7 +81,7 @@ Ref: line_items.order_id > orders.order_id
 
 def test_dbml_export_with_server():
     data_contract = DataContract(data_contract_file="fixtures/dbml/datacontract.yaml", server="production")
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()
 
     result = data_contract.export("dbml")
 

@@ -26,7 +26,7 @@ def test_cli():
 
 def test_import_unity():
     print("running test_import_unity")
-    result = DataContract().import_from_source("unity", "fixtures/databricks-unity/import/unity_table_schema.json")
+    result = DataContract.import_from_source("unity", "fixtures/databricks-unity/import/unity_table_schema.json")
 
     with open("fixtures/databricks-unity/import/datacontract.yaml") as file:
         expected = file.read()
@@ -34,7 +34,7 @@ def test_import_unity():
     result_yaml = result.to_yaml()
     print("Result:\n", result_yaml)
     assert yaml.safe_load(result_yaml) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_cli_complex_types():
@@ -56,7 +56,7 @@ def test_cli_complex_types():
 @pytest.mark.skip(reason="Complex types are not perfectly supported for the unity catalog import")
 def test_import_unity_complex_types():
     print("running test_import_unity_complex_types")
-    result = DataContract().import_from_source(
+    result = DataContract.import_from_source(
         "unity", "fixtures/databricks-unity/import/unity_table_schema_complex_types.json"
     )
 
@@ -65,12 +65,12 @@ def test_import_unity_complex_types():
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_unity_with_owner_and_id():
     print("running test_import_unity_with_owner_and_id")
-    result = DataContract().import_from_source(
+    result = DataContract.import_from_source(
         "unity", "fixtures/databricks-unity/import/unity_table_schema.json", owner="sales-team", id="orders-v1"
     )
 

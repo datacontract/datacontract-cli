@@ -329,3 +329,4 @@ fabric.properties
 
 # Generated test files
 **/.tmp
+/.claude/settings.local.json

@@ -126,8 +126,10 @@ def test(
             "servers (default)."
         ),
     ] = "all",
-    publish_test_results: Annotated[bool, typer.Option(help="Publish the results after the test")] = False,
-    publish: Annotated[str, typer.Option(help="DEPRECATED. The url to publish the results after the test.")] = None,
+    publish_test_results: Annotated[
+        bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
+    ] = False,
+    publish: Annotated[str, typer.Option(help="The url to publish the results after the test.")] = None,
     output: Annotated[
         Path,
         typer.Option(
@@ -329,7 +331,7 @@ def import_(
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
-    result = DataContract().import_from_source(
+    result = DataContract.import_from_source(
         format=format,
         source=source,
         spec=spec,

@@ -131,14 +131,18 @@ def import_servers(odcs: OpenDataContractStandard) -> Dict[str, Server] | None:
         server.host = odcs_server.host
         server.port = odcs_server.port
         server.catalog = odcs_server.catalog
+        server.stagingDir = odcs_server.stagingDir
         server.topic = getattr(odcs_server, "topic", None)
         server.http_path = getattr(odcs_server, "http_path", None)
         server.token = getattr(odcs_server, "token", None)
         server.driver = getattr(odcs_server, "driver", None)
         server.roles = import_server_roles(odcs_server.roles)
         server.storageAccount = (
-            re.search(r"(?:@|://)([^.]+)\.", odcs_server.location, re.IGNORECASE) if server.type == "azure" else None
+            to_azure_storage_account(odcs_server.location)
+            if server.type == "azure" and "://" in server.location
+            else None
         )
+
         servers[server_name] = server
     return servers
 
@@ -203,7 +207,11 @@ def import_models(odcs: Any) -> Dict[str, Model]:
         schema_physical_name = odcs_schema.physicalName
         schema_description = odcs_schema.description if odcs_schema.description is not None else ""
         model_name = schema_physical_name if schema_physical_name is not None else schema_name
-        model = Model(description=" ".join(schema_description.splitlines()) if schema_description else "", type="table")
+        model = Model(
+            description=" ".join(schema_description.splitlines()) if schema_description else "",
+            type="table",
+            tags=odcs_schema.tags if odcs_schema.tags is not None else None,
+        )
         model.fields = import_fields(odcs_schema.properties, custom_type_mappings, server_type=get_server_type(odcs))
         if odcs_schema.quality is not None:
             model.quality = convert_quality_list(odcs_schema.quality)
@@ -227,6 +235,8 @@ def convert_quality_list(odcs_quality_list):
                 quality.description = odcs_quality.description
             if odcs_quality.query is not None:
                 quality.query = odcs_quality.query
+            if odcs_quality.rule is not None:
+                quality.metric = odcs_quality.rule
             if odcs_quality.mustBe is not None:
                 quality.mustBe = odcs_quality.mustBe
             if odcs_quality.mustNotBe is not None:
@@ -234,11 +244,11 @@ def convert_quality_list(odcs_quality_list):
             if odcs_quality.mustBeGreaterThan is not None:
                 quality.mustBeGreaterThan = odcs_quality.mustBeGreaterThan
             if odcs_quality.mustBeGreaterOrEqualTo is not None:
-                quality.mustBeGreaterThanOrEqualTo = odcs_quality.mustBeGreaterOrEqualTo
+                quality.mustBeGreaterOrEqualTo = odcs_quality.mustBeGreaterOrEqualTo
             if odcs_quality.mustBeLessThan is not None:
                 quality.mustBeLessThan = odcs_quality.mustBeLessThan
             if odcs_quality.mustBeLessOrEqualTo is not None:
-                quality.mustBeLessThanOrEqualTo = odcs_quality.mustBeLessOrEqualTo
+                quality.mustBeLessOrEqualTo = odcs_quality.mustBeLessOrEqualTo
             if odcs_quality.mustBeBetween is not None:
                 quality.mustBeBetween = odcs_quality.mustBeBetween
             if odcs_quality.mustNotBeBetween is not None:
@@ -251,8 +261,6 @@ def convert_quality_list(odcs_quality_list):
                 quality.model_extra["businessImpact"] = odcs_quality.businessImpact
             if odcs_quality.dimension is not None:
                 quality.model_extra["dimension"] = odcs_quality.dimension
-            if odcs_quality.rule is not None:
-                quality.model_extra["rule"] = odcs_quality.rule
             if odcs_quality.schedule is not None:
                 quality.model_extra["schedule"] = odcs_quality.schedule
             if odcs_quality.scheduler is not None:
@@ -276,7 +284,7 @@ def convert_quality_list(odcs_quality_list):
     return quality_list
 
 
-def import_field_config(odcs_property: SchemaProperty, server_type=None) -> Dict[str, Any]:
+def import_field_config(odcs_property: SchemaProperty, server_type=None) -> dict[Any, Any] | None:
     config = {}
     if odcs_property.criticalDataElement is not None:
         config["criticalDataElement"] = odcs_property.criticalDataElement
@@ -308,6 +316,9 @@ def import_field_config(odcs_property: SchemaProperty, server_type=None) -> Dict
         else:
             config["physicalType"] = physical_type
 
+    if len(config) == 0:
+        return None
+
     return config
 
 
@@ -319,73 +330,138 @@ def has_composite_primary_key(odcs_properties: List[SchemaProperty]) -> bool:
 def import_fields(
     odcs_properties: List[SchemaProperty], custom_type_mappings: Dict[str, str], server_type
 ) -> Dict[str, Field]:
-    logger = logging.getLogger(__name__)
     result = {}
 
     if odcs_properties is None:
         return result
 
     for odcs_property in odcs_properties:
-        mapped_type = map_type(odcs_property.logicalType, custom_type_mappings)
-        if mapped_type is not None:
-            property_name = odcs_property.name
-            description = odcs_property.description if odcs_property.description is not None else None
-            field = Field(
-                description=" ".join(description.splitlines()) if description is not None else None,
-                type=mapped_type,
-                title=odcs_property.businessName,
-                required=odcs_property.required if odcs_property.required is not None else None,
-                primaryKey=odcs_property.primaryKey
-                if not has_composite_primary_key(odcs_properties) and odcs_property.primaryKey is not None
-                else False,
-                unique=odcs_property.unique if odcs_property.unique else None,
-                examples=odcs_property.examples if odcs_property.examples is not None else None,
-                classification=odcs_property.classification if odcs_property.classification is not None else None,
-                tags=odcs_property.tags if odcs_property.tags is not None else None,
-                quality=convert_quality_list(odcs_property.quality),
-                fields=import_fields(odcs_property.properties, custom_type_mappings, server_type)
-                if odcs_property.properties is not None
-                else {},
-                config=import_field_config(odcs_property, server_type),
-                format=getattr(odcs_property, "format", None),
-            )
-            # mapped_type is array
-            if field.type == "array" and odcs_property.items is not None:
-                # nested array object
-                if odcs_property.items.logicalType == "object":
-                    field.items = Field(
-                        type="object",
-                        fields=import_fields(odcs_property.items.properties, custom_type_mappings, server_type),
-                    )
-                # array of simple type
-                elif odcs_property.items.logicalType is not None:
-                    field.items = Field(type=odcs_property.items.logicalType)
-
-            # enum from quality validValues as enum
-            if field.type == "string":
-                for q in field.quality:
-                    if hasattr(q, "validValues"):
-                        field.enum = q.validValues
-
-            result[property_name] = field
-        else:
-            logger.info(
-                f"Can't map {odcs_property.name} to the Datacontract Mapping types, as there is no equivalent or special mapping. Consider introducing a customProperty 'dc_mapping_{odcs_property.logicalType}' that defines your expected type as the 'value'"
-            )
+        field = import_field(odcs_property, odcs_properties, custom_type_mappings, server_type)
+        if field is not None:
+            result[odcs_property.name] = field
 
     return result
 
 
-def map_type(odcs_type: str, custom_mappings: Dict[str, str]) -> str | None:
-    if odcs_type is None:
+def import_field(
+    odcs_property: SchemaProperty,
+    odcs_properties: List[SchemaProperty],
+    custom_type_mappings: Dict[str, str],
+    server_type: str
+) -> Field | None:
+    """
+    Import a single ODCS property as a datacontract Field.
+    Returns None if the property cannot be mapped.
+    """
+    logger = logging.getLogger(__name__)
+
+    mapped_type = map_type(odcs_property.logicalType, custom_type_mappings, odcs_property.physicalType)
+
+    if mapped_type is None:
+        type_info = f"logicalType={odcs_property.logicalType}, physicalType={odcs_property.physicalType}"
+        logger.warning(
+            f"Can't map field '{odcs_property.name}' ({type_info}) to the datacontract mapping types. "
+            f"Both logicalType and physicalType are missing or unmappable. "
+            f"Consider introducing a customProperty 'dc_mapping_<type>' that defines your expected type as the 'value'"
+        )
         return None
-    t = odcs_type.lower()
-    if t in DATACONTRACT_TYPES:
-        return t
-    elif custom_mappings.get(t) is not None:
-        return custom_mappings.get(t)
-    else:
+
+    description = odcs_property.description if odcs_property.description is not None else None
+    field = Field(
+        description=" ".join(description.splitlines()) if description is not None else None,
+        type=mapped_type,
+        title=odcs_property.businessName,
+        required=odcs_property.required if odcs_property.required is not None else None,
+        primaryKey=to_primary_key(odcs_property, odcs_properties),
+        unique=odcs_property.unique if odcs_property.unique else None,
+        examples=odcs_property.examples if odcs_property.examples is not None else None,
+        classification=odcs_property.classification if odcs_property.classification is not None else None,
+        tags=odcs_property.tags if odcs_property.tags is not None else None,
+        quality=convert_quality_list(odcs_property.quality),
+        fields=import_fields(odcs_property.properties, custom_type_mappings, server_type)
+        if odcs_property.properties is not None
+        else {},
+        config=import_field_config(odcs_property, server_type),
+        format=getattr(odcs_property, "format", None),
+    )
+
+    # mapped_type is array
+    if field.type == "array" and odcs_property.items is not None:
+        field.items = import_field(odcs_property.items, [], custom_type_mappings, server_type)
+
+    # enum from quality validValues as enum
+    if field.type == "string":
+        for q in field.quality:
+            if hasattr(q, "validValues"):
+                field.enum = q.validValues
+
+    return field
+
+
+def to_primary_key(odcs_property: SchemaProperty, odcs_properties: list[SchemaProperty]) -> bool | None:
+    if odcs_property.primaryKey is None:
         return None
+    if has_composite_primary_key(odcs_properties):
+        return None
+    return odcs_property.primaryKey
+
+
+def map_type(odcs_logical_type: str, custom_mappings: Dict[str, str], physical_type: str = None) -> str | None:
+    # Try to map logicalType first
+    if odcs_logical_type is not None:
+        t = odcs_logical_type.lower()
+        if t in DATACONTRACT_TYPES:
+            return t
+        elif custom_mappings.get(t) is not None:
+            return custom_mappings.get(t)
+
+    # Fallback to physicalType if logicalType is not mapped
+    if physical_type is not None:
+        pt = physical_type.lower()
+        # Remove parameters from physical type (e.g., VARCHAR(50) -> varchar, DECIMAL(10,2) -> decimal)
+        pt_base = pt.split('(')[0].strip()
+
+        # Try direct mapping of physical type
+        if pt in DATACONTRACT_TYPES:
+            return pt
+        elif pt_base in DATACONTRACT_TYPES:
+            return pt_base
+        elif custom_mappings.get(pt) is not None:
+            return custom_mappings.get(pt)
+        elif custom_mappings.get(pt_base) is not None:
+            return custom_mappings.get(pt_base)
+        # Common physical type mappings
+        elif pt_base in ["varchar", "char", "nvarchar", "nchar", "text", "ntext", "string", "character varying"]:
+            return "string"
+        elif pt_base in ["int", "integer", "smallint", "tinyint", "mediumint", "int2", "int4", "int8"]:
+            return "int"
+        elif pt_base in ["bigint", "long", "int64"]:
+            return "long"
+        elif pt_base in ["float", "real", "float4", "float8"]:
+            return "float"
+        elif pt_base in ["double", "double precision"]:
+            return "double"
+        elif pt_base in ["decimal", "numeric", "number"]:
+            return "decimal"
+        elif pt_base in ["boolean", "bool", "bit"]:
+            return "boolean"
+        elif pt_base in ["timestamp", "datetime", "datetime2", "timestamptz", "timestamp with time zone"]:
+            return "timestamp"
+        elif pt_base in ["date"]:
+            return "date"
+        elif pt_base in ["time"]:
+            return "time"
+        elif pt_base in ["json", "jsonb"]:
+            return "json"
+        elif pt_base in ["array"]:
+            return "array"
+        elif pt_base in ["object", "struct", "record"]:
+            return "object"
+        elif pt_base in ["bytes", "binary", "varbinary", "blob", "bytea"]:
+            return "bytes"
+        else:
+            return None
+    return None
 
 
 def get_custom_type_mappings(odcs_custom_properties: List[CustomProperty]) -> Dict[str, str]:
@@ -413,3 +489,28 @@ def import_tags(odcs: OpenDataContractStandard) -> List[str] | None:
     if odcs.tags is None:
         return None
     return odcs.tags
+
+
+def to_azure_storage_account(location: str) -> str | None:
+    """
+    Converts a storage location string to extract the storage account name.
+    ODCS v3.0 has no explicit field for the storage account. It uses the location field, which is a URI.
+
+    This function parses a storage location string to identify and return the
+    storage account name. It handles two primary patterns:
+    1. Protocol://containerName@storageAccountName
+    2. Protocol://storageAccountName
+
+    :param location: The storage location string to parse, typically following
+                     the format protocol://containerName@storageAccountName. or
+                     protocol://storageAccountName.
+    :return: The extracted storage account name if found, otherwise None
+    """
+    # to catch protocol://containerName@storageAccountName. pattern from location
+    match = re.search(r"(?<=@)([^.]*)", location, re.IGNORECASE)
+    if match:
+        return match.group()
+    else:
+        # to catch protocol://storageAccountName. pattern from location
+        match = re.search(r"(?<=//)(?!@)([^.]*)", location, re.IGNORECASE)
+    return match.group() if match else None

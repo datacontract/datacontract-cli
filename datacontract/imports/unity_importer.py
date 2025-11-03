@@ -88,23 +88,28 @@ def import_unity_from_api(
     """
     try:
         # print(f"Retrieving Unity Catalog schema for table: {unity_table_full_name}")
+        profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
         host, token = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
         # print(f"Databricks host: {host}, token: {'***' if token else 'not set'}")
-        if not host:
-            raise DataContractException(
+        exception = DataContractException(
                 type="configuration",
                 name="Databricks configuration",
-                reason="DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set",
+                reason="",
                 engine="datacontract",
             )
-        if not token:
-            raise DataContractException(
-                type="configuration",
-                name="Databricks configuration",
-                reason="DATACONTRACT_DATABRICKS_TOKEN environment variable is not set",
-                engine="datacontract",
-            )
-        workspace_client = WorkspaceClient(host=host, token=token)
+        if not profile and not host and not token:
+            reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set"
+            exception.reason = reason
+            raise exception
+        if token and not host:
+            reason = "DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set"
+            exception.reason = reason
+            raise exception
+        if host and not token:
+            reason = "DATACONTRACT_DATABRICKS_TOKEN environment variable is not set"
+            exception.reason = reason
+            raise exception
+        workspace_client = WorkspaceClient(profile=profile) if profile else WorkspaceClient(host=host, token=token)
     except Exception as e:
         raise DataContractException(
             type="schema",

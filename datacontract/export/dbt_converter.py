@@ -115,9 +115,28 @@ def _to_dbt_model(
         dbt_model["config"]["contract"] = {"enforced": True}
     if model_value.description is not None:
         dbt_model["description"] = model_value.description.strip().replace("\n", " ")
-    columns = _to_columns(data_contract_spec, model_value.fields, _supports_constraints(model_type), adapter_type)
+
+    # Handle model-level primaryKey (before columns for better YAML ordering)
+    primary_key_columns = []
+    if hasattr(model_value, "primaryKey") and model_value.primaryKey:
+        if isinstance(model_value.primaryKey, list) and len(model_value.primaryKey) > 1:
+            # Multiple columns: use dbt_utils.unique_combination_of_columns
+            dbt_model["data_tests"] = [
+                {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": model_value.primaryKey}}
+            ]
+        elif isinstance(model_value.primaryKey, list) and len(model_value.primaryKey) == 1:
+            # Single column: handle at column level (pass to _to_columns)
+            primary_key_columns = model_value.primaryKey
+        elif isinstance(model_value.primaryKey, str):
+            # Single column as string: handle at column level
+            primary_key_columns = [model_value.primaryKey]
+
+    columns = _to_columns(
+        data_contract_spec, model_value.fields, _supports_constraints(model_type), adapter_type, primary_key_columns
+    )
     if columns:
         dbt_model["columns"] = columns
+
     return dbt_model
 
 
@@ -143,10 +162,13 @@ def _to_columns(
     fields: Dict[str, Field],
     supports_constraints: bool,
     adapter_type: Optional[str],
+    primary_key_columns: Optional[list] = None,
 ) -> list:
     columns = []
+    primary_key_columns = primary_key_columns or []
     for field_name, field in fields.items():
-        column = _to_column(data_contract_spec, field_name, field, supports_constraints, adapter_type)
+        is_primary_key = field_name in primary_key_columns
+        column = _to_column(data_contract_spec, field_name, field, supports_constraints, adapter_type, is_primary_key)
         columns.append(column)
     return columns
 
@@ -164,6 +186,7 @@ def _to_column(
     field: Field,
     supports_constraints: bool,
     adapter_type: Optional[str],
+    is_primary_key: bool = False,
 ) -> dict:
     column = {"name": field_name}
     adapter_type = adapter_type or "snowflake"
@@ -178,12 +201,15 @@ def _to_column(
         )
     if field.description is not None:
         column["description"] = field.description.strip().replace("\n", " ")
-    if field.required:
+    # Handle required/not_null constraint
+    if field.required or is_primary_key:
         if supports_constraints:
             column.setdefault("constraints", []).append({"type": "not_null"})
         else:
             column["data_tests"].append("not_null")
-    if field.unique:
+
+    # Handle unique constraint
+    if field.unique or is_primary_key:
         if supports_constraints:
             column.setdefault("constraints", []).append({"type": "unique"})
         else:

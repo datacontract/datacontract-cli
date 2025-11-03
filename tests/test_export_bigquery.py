@@ -29,7 +29,7 @@ def test_exports_bigquery_schema():
     with open(data_contract_file) as file:
         file_content = file.read()
     data_contract = DataContract(data_contract_str=file_content, server="bigquery")
-    assert data_contract.lint(enabled_linters="none").has_passed()
+    assert data_contract.lint().has_passed()
     result = data_contract.export("bigquery")
 
     print("Result:\n", result)

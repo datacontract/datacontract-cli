@@ -1,3 +1,5 @@
+import json
+
 from pyspark.sql import types
 
 from datacontract.export.exporter import Exporter
@@ -104,7 +106,8 @@ def to_struct_field(field: Field, field_name: str) -> types.StructField:
         types.StructField: The corresponding Spark StructField.
     """
     data_type = to_spark_data_type(field)
-    return types.StructField(name=field_name, dataType=data_type, nullable=not field.required)
+    metadata = to_spark_metadata(field)
+    return types.StructField(name=field_name, dataType=data_type, nullable=not field.required, metadata=metadata)
 
 
 def to_spark_data_type(field: Field) -> types.DataType:
@@ -152,7 +155,25 @@ def to_spark_data_type(field: Field) -> types.DataType:
         return types.DateType()
     if field_type == "bytes":
         return types.BinaryType()
-    return types.StringType() # default if no condition is met
+    return types.StringType()  # default if no condition is met
+
+
+def to_spark_metadata(field: Field) -> dict[str, str]:
+    """
+    Convert a field to a Spark metadata dictonary.
+
+    Args:
+        field (Field): The field to convert.
+
+    Returns:
+        dict: dictionary that can be supplied to Spark as metadata for a StructField
+    """
+
+    metadata = {}
+    if field.description:
+        metadata["comment"] = field.description
+
+    return metadata
 
 
 def print_schema(dtype: types.DataType) -> str:
@@ -192,7 +213,11 @@ def print_schema(dtype: types.DataType) -> str:
         name = f'"{column.name}"'
         data_type = indent(print_schema(column.dataType), 1)
         nullable = indent(f"{column.nullable}", 1)
-        return f"StructField({name},\n{data_type},\n{nullable}\n)"
+        if column.metadata:
+            metadata = indent(f"{json.dumps(column.metadata)}", 1)
+            return f"StructField({name},\n{data_type},\n{nullable},\n{metadata}\n)"
+        else:
+            return f"StructField({name},\n{data_type},\n{nullable}\n)"
 
     def format_struct_type(struct_type: types.StructType) -> str:
         """

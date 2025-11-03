@@ -23,9 +23,9 @@ We have a _servers_ section with endpoint details to the S3 bucket, _models_ for
 
 This data contract contains all information to connect to S3 and check that the actual data meets the defined schema and quality requirements. We can use this information to test if the actual data product in S3 is compliant to the data contract.
 
-Let's use [pip](https://pip.pypa.io/en/stable/getting-started/) to install the CLI (or use the [Docker image](#docker)),
+Let's use [uv](https://docs.astral.sh/uv/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ python3 -m pip install 'datacontract-cli[all]'
+$ uv tool install --python python3.11 'datacontract-cli[all]'
 ```
 
 
@@ -161,6 +161,14 @@ if not run.has_passed():
 
 Choose the most appropriate installation method for your needs:
 
+### uv
+
+If you have [uv](https://docs.astral.sh/uv/) installed, you can run datacontract-cli directly without installing:
+
+```
+uv run --with 'datacontract-cli[all]' datacontract --version
+```
+
 ### pip
 Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
 
@@ -222,6 +230,7 @@ A list of available extras:
 
 | Dependency              | Installation Command                       |
 |-------------------------|--------------------------------------------|
+| Amazon Athena           | `pip install datacontract-cli[athena]`     |
 | Avro Support            | `pip install datacontract-cli[avro]`       |
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration  | `pip install datacontract-cli[databricks]` |
@@ -366,6 +375,7 @@ Credentials are provided with environment variables.
 Supported server types:
 
 - [s3](#S3)
+- [athena](#athena)
 - [bigquery](#bigquery)
 - [azure](#azure)
 - [sqlserver](#sqlserver)
@@ -435,6 +445,41 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+
+#### Athena
+
+Data Contract CLI can test data in AWS Athena stored in S3.
+Supports different file formats, such as Iceberg, Parquet, JSON, CSV...
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  athena:
+    type: athena
+    catalog: awsdatacatalog # awsdatacatalog is the default setting
+    schema: icebergdemodb   # in Athena, this is called "database"
+    regionName: eu-central-1
+    stagingDir: s3://my-bucket/athena-results/
+models:
+  my_table: # corresponds to a table of view name
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: string
+        config:
+          physicalType: varchar
+```
+
+##### Environment Variables
+
+| Environment Variable                | Example                         | Description                            |
+|-------------------------------------|---------------------------------|----------------------------------------|
+| `DATACONTRACT_S3_REGION`            | `eu-central-1`                  | Region of Athena service               |
+| `DATACONTRACT_S3_ACCESS_KEY_ID`     | `AKIAXV5Q5QABCDEFGH`            | AWS Access Key ID                      |
+| `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
+| `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
 
 #### Google Cloud Storage (GCS)
@@ -611,19 +656,37 @@ models:
     fields: ...
 ```
 
-Notebook
-```python
-%pip install datacontract-cli[databricks]
-dbutils.library.restartPython()
+##### Installing on Databricks Compute
 
-from datacontract.data_contract import DataContract
+**Important:** When using Databricks LTS ML runtimes (15.4, 16.4), installing via `%pip install` in notebooks can issues.
 
-data_contract = DataContract(
-  data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml",
-  spark=spark)
-run = data_contract.test()
-run.result
-```
+**Recommended approach:** Use Databricks' native library management instead:
+
+1. **Create or configure your compute cluster:**
+   - Navigate to **Compute** in the Databricks workspace
+   - Create a new cluster or select an existing one
+   - Go to the **Libraries** tab
+
+2. **Add the datacontract-cli library:**
+   - Click **Install new**
+   - Select **PyPI** as the library source
+   - Enter package name: `datacontract-cli[databricks]`
+   - Click **Install**
+
+3. **Restart the cluster** to apply the library installation
+
+4. **Use in your notebook** without additional installation:
+   ```python
+   from datacontract.data_contract import DataContract
+
+   data_contract = DataContract(
+     data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml",
+     spark=spark)
+   run = data_contract.test()
+   run.result
+   ```
+
+Databricks' library management properly resolves dependencies during cluster initialization, rather than at runtime in the notebook.
 
 #### Dataframe (programmatic)
 
@@ -878,7 +941,7 @@ models:
 │                      terraform|avro-idl|sql|sql-query|mer                                        │
 │                      maid|html|go|bigquery|dbml|spark|sql                                        │
 │                      alchemy|data-caterer|dcs|markdown|ic                                        │
-│                      eberg|custom|excel]                                                         │
+│                      eberg|custom|excel|dqx]                                                         │
 │    --output          PATH                                  Specify the file path where the       │
 │                                                            exported data will be saved. If no    │
 │                                                            path is provided, the output will be  │
@@ -898,8 +961,10 @@ models:
 │    --engine          TEXT                                  [engine] The engine used for great    │
 │                                                            expection run.                        │
 │                                                            [default: None]                       │
-│    --template        PATH                                  [custom] The file path of Jinja       │
-│                                                            template.                             │
+│    --template        PATH                                  The file path or URL of a template.   │
+│                                                            For Excel format: path/URL to custom  │
+│                                                            Excel template. For custom format:    │
+│                                                            path to Jinja template.               │
 │                                                            [default: None]                       │
 │    --help                                                  Show this message and exit.           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -922,34 +987,35 @@ datacontract export --format html --output datacontract.html
 
 Available export options:
 
-| Type                 | Description                                             | Status |
-|----------------------|---------------------------------------------------------|--------|
-| `html`               | Export to HTML                                          | ✅      |
-| `jsonschema`         | Export to JSON Schema                                   | ✅      |
-| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅      |
-| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅      |
-| `dbt`                | Export to dbt models in YAML format                     | ✅      |
-| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅      |
-| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅      |
-| `rdf`                | Export data contract to RDF representation in N3 format | ✅      |
-| `avro`               | Export to AVRO models                                   | ✅      |
-| `protobuf`           | Export to Protobuf                                      | ✅      |
-| `terraform`          | Export to terraform resources                           | ✅      |
-| `sql`                | Export to SQL DDL                                       | ✅      |
-| `sql-query`          | Export to SQL Query                                     | ✅      |
-| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅      |
-| `bigquery`           | Export to BigQuery Schemas                              | ✅      |
-| `go`                 | Export to Go types                                      | ✅      |
-| `pydantic-model`     | Export to pydantic models                               | ✅      |
-| `DBML`               | Export to a DBML Diagram description                    | ✅      |
-| `spark`              | Export to a Spark StructType                            | ✅      |
-| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅      |
-| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅      |
-| `dcs`                | Export to Data Contract Specification in YAML format    | ✅      |
-| `markdown`           | Export to Markdown                                      | ✅      |
+| Type                 | Description                                             | Status  |
+|----------------------|---------------------------------------------------------|---------|
+| `html`               | Export to HTML                                          | ✅       |
+| `jsonschema`         | Export to JSON Schema                                   | ✅       |
+| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅       |
+| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅       |
+| `dbt`                | Export to dbt models in YAML format                     | ✅       |
+| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅       |
+| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅       |
+| `rdf`                | Export data contract to RDF representation in N3 format | ✅       |
+| `avro`               | Export to AVRO models                                   | ✅       |
+| `protobuf`           | Export to Protobuf                                      | ✅       |
+| `terraform`          | Export to terraform resources                           | ✅       |
+| `sql`                | Export to SQL DDL                                       | ✅       |
+| `sql-query`          | Export to SQL Query                                     | ✅       |
+| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅       |
+| `bigquery`           | Export to BigQuery Schemas                              | ✅       |
+| `go`                 | Export to Go types                                      | ✅       |
+| `pydantic-model`     | Export to pydantic models                               | ✅       |
+| `DBML`               | Export to a DBML Diagram description                    | ✅       |
+| `spark`              | Export to a Spark StructType                            | ✅       |
+| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅       |
+| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅       |
+| `dcs`                | Export to Data Contract Specification in YAML format    | ✅       |
+| `markdown`           | Export to Markdown                                      | ✅       |
 | `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
-| `excel`              | Export to ODCS Excel Template                           | ✅      |
-| `custom`             | Export to Custom format with Jinja                      | ✅      |
+| `excel`              | Export to ODCS Excel Template                           | ✅       |
+| `custom`             | Export to Custom format with Jinja                      | ✅       |
+| `dqx`                | Export to DQX in YAML format                            | ✅       |
 | Missing something?   | Please create an issue on GitHub                        | TBD     |
 
 #### SQL
@@ -979,15 +1045,6 @@ The export creates a list of expectations by utilizing:
 
 - The data from the Model definition with a fixed mapping
 - The expectations provided in the quality field for each model (find here the expectations gallery: [Great Expectations Gallery](https://greatexpectations.io/expectations/))
-
-#### Markdown
-
-The `export` function converts a given data contract into a Markdown document.
-
-```shell
-datacontract export datacontract.yaml --format markdown --output output.md
-```
-
 
 ##### Additional Arguments
 
@@ -1405,17 +1462,21 @@ datacontract import --format bigquery --bigquery-project <project_id> --bigquery
 ```
 
 #### Unity Catalog
-
 ```bash
 # Example import from a Unity Catalog JSON file
 datacontract import --format unity --source my_unity_table.json
 ```
 
 ```bash
-# Example import single table from Unity Catalog via HTTP endpoint
+# Example import single table from Unity Catalog via HTTP endpoint using PAT
 export DATACONTRACT_DATABRICKS_SERVER_HOSTNAME="https://xyz.cloud.databricks.com"
-export DATACONTRACT_DATABRICKS_HTTP_PATH="/sql/1.0/warehouses/b053a331fa014fb4"
 export DATACONTRACT_DATABRICKS_TOKEN=<token>
+datacontract import --format unity --unity-table-full-name <table_full_name>
+```
+ Please Refer to  [Databricks documentation](https://docs.databricks.com/aws/en/dev-tools/auth/unified-auth) on how to set up a profile
+```bash
+# Example import single table from Unity Catalog via HTTP endpoint using Profile
+export DATACONTRACT_DATABRICKS_PROFILE="my-profile"
 datacontract import --format unity --unity-table-full-name <table_full_name>
 ```
 
@@ -1475,20 +1536,20 @@ datacontract import --format spark --source "users,orders"
 
 ```bash
 # Example: Import Spark table
-DataContract().import_from_source("spark", "users")
-DataContract().import_from_source(format = "spark", source = "users")
+DataContract.import_from_source("spark", "users")
+DataContract.import_from_source(format = "spark", source = "users")
 
 # Example: Import Spark dataframe
-DataContract().import_from_source("spark", "users", dataframe = df_user)
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user)
+DataContract.import_from_source("spark", "users", dataframe = df_user)
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user)
 
 # Example: Import Spark table + table description
-DataContract().import_from_source("spark", "users", description = "description") 
-DataContract().import_from_source(format = "spark", source = "users", description = "description")
+DataContract.import_from_source("spark", "users", description = "description") 
+DataContract.import_from_source(format = "spark", source = "users", description = "description")
 
 # Example: Import Spark dataframe + table description
-DataContract().import_from_source("spark", "users", dataframe = df_user, description = "description")
-DataContract().import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
+DataContract.import_from_source("spark", "users", dataframe = df_user, description = "description")
+DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
 #### DBML
@@ -1733,8 +1794,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract test
    ```
 
-3. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You
-   probably forgot to document some fields and add the terms and conditions.
+3. Validate that the `datacontract.yaml` is correctly formatted and adheres to the Data Contract Specification.
    ```bash
    $ datacontract lint
    ```
@@ -1755,8 +1815,7 @@ Create a data contract based on the requirements from use cases.
    ```
 
 2. Create the model and quality guarantees based on your business requirements. Fill in the terms,
-   descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the
-   linter.
+   descriptions, etc. Validate that your `datacontract.yaml` is correctly formatted.
     ```bash
     $ datacontract lint
     ```
@@ -1950,7 +2009,7 @@ if __name__ == "__main__":
 Output
 
 ```yaml
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: uuid-custom
 info:
   title: my_custom_imported_data
@@ -1976,9 +2035,34 @@ models:
 ```bash
 # make sure uv is installed
 uv python pin 3.11
+uv venv
 uv pip install -e '.[dev]'
 uv run ruff check
 uv run pytest
+```
+
+### Troubleshooting
+
+#### Windows: Some tests fail
+
+Run in wsl. (We need to fix the pathes in the tests so that normal Windows will work, contributions are appreciated)
+
+#### PyCharm does not pick up the `.venv` 
+
+This [uv issue](https://github.com/astral-sh/uv/issues/12545) might be relevant.
+
+Try to sync all groups:
+
+```
+uv sync --all-groups --all-extras
+```
+
+#### Errors in tests that use PySpark (e.g. test_test_kafka.py)
+
+Ensure you have a JDK 17 or 21 installed. Java 25 causes issues.
+
+```
+java --version
 ```
 
 
@@ -2013,27 +2097,6 @@ docker compose run --rm datacontract --version
 
 This command runs the container momentarily to check the version of the `datacontract` CLI. The `--rm` flag ensures that the container is automatically removed after the command executes, keeping your environment clean.
 
-## Use with pre-commit
-
-To run `datacontract-cli` as part of a [pre-commit](https://pre-commit.com/) workflow, add something like the below to the `repos` list in the project's `.pre-commit-config.yaml`:
-
-```yaml
-repos:
-  - repo: https://github.com/datacontract/datacontract-cli
-    rev: "v0.10.9"
-    hooks:
-      - id: datacontract-lint
-      - id: datacontract-test
-        args: ["--server", "production"]
-```
-
-### Available Hook IDs
-
-| Hook ID           | Description                                        | Dependency |
-| ----------------- | -------------------------------------------------- | ---------- |
-| datacontract-lint | Runs the lint subcommand.                          | Python3    |
-| datacontract-test | Runs the test subcommand. Please look at           | Python3    |
-|                   | [test](#test) section for all available arguments. |            |
 
 ## Release Steps
 

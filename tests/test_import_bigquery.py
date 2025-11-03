@@ -24,17 +24,17 @@ def test_cli():
 
 
 def test_import_bigquery_schema():
-    result = DataContract().import_from_source("bigquery", "fixtures/bigquery/import/complete_table_schema.json")
+    result = DataContract.import_from_source("bigquery", "fixtures/bigquery/import/complete_table_schema.json")
 
     print("Result:\n", result.to_yaml())
     with open("fixtures/bigquery/import/datacontract.yaml") as file:
         expected = file.read()
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_multiple_bigquery_schemas_with_different_types():
-    result = DataContract().import_from_source("bigquery", "fixtures/bigquery/import/multi_import_table.json")
+    result = DataContract.import_from_source("bigquery", "fixtures/bigquery/import/multi_import_table.json")
 
     result = import_bigquery_from_json(result, "fixtures/bigquery/import/multi_import_external_table.json")
     result = import_bigquery_from_json(result, "fixtures/bigquery/import/multi_import_snapshot.json")
@@ -45,4 +45,4 @@ def test_import_multiple_bigquery_schemas_with_different_types():
     with open("fixtures/bigquery/import/datacontract_multi_import.yaml") as file:
         expected = file.read()
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()

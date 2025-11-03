@@ -3,6 +3,9 @@ from datacontract.model.data_contract_specification import Field
 
 
 def convert_to_sql_type(field: Field, server_type: str) -> str:
+    if field.config and "physicalType" in field.config:
+        return field.config["physicalType"]
+
     if server_type == "snowflake":
         return convert_to_snowflake(field)
     elif server_type == "postgres":
@@ -19,6 +22,7 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_bigquery(field)
     elif server_type == "trino":
         return convert_type_to_trino(field)
+
     return field.type
 
 
@@ -129,8 +133,9 @@ def convert_to_dataframe(field: Field) -> None | str:
     if type.lower() in ["time"]:
         return "STRING"
     if type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "DECIMAL"
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return f"DECIMAL({precision},{scale})"
     if type.lower() in ["float"]:
         return "FLOAT"
     if type.lower() in ["double"]:
@@ -178,8 +183,9 @@ def convert_to_databricks(field: Field) -> None | str:
     if type.lower() in ["time"]:
         return "STRING"
     if type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "DECIMAL"
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return f"DECIMAL({precision},{scale})"
     if type.lower() in ["float"]:
         return "FLOAT"
     if type.lower() in ["double"]:

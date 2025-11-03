@@ -1,4 +1,4 @@
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: dataframetest
 info:
   title: dataframetest
@@ -21,6 +21,15 @@ models:
         minimum: 10
       field_three:
         type: timestamp
+      field_four:
+        type: decimal
+        precision: 4
+        scale: 2
+      field_five:
+        type: decimal
+        precision: 4
+      field_six:
+        type: decimal
       field_array_of_strings:
         type: array
         items:

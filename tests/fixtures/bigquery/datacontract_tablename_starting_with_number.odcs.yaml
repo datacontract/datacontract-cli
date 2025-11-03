@@ -1,0 +1,54 @@
+kind: DataContract
+apiVersion: v3.0.1
+id: bigquery_tablename_staring_with_number
+version: 0.0.1
+status: draft
+servers:
+- server: my-dataproduct/bigquery
+  type: bigquery
+  dataset: datacontract_cli
+  project: datameshexample-product
+schema:
+- name: 100_tablename_staring_with_number
+  physicalType: table
+  logicalType: object
+  properties:
+  - name: some_string
+    physicalType: string
+    logicalType: string
+    unique: true
+  - name: some_record
+    physicalType: STRUCT<some_field_1 STRING, some_field_2 STRING>
+    logicalType: object
+    properties:
+    - name: some_field_1
+      physicalType: string
+      logicalType: string
+    - name: some_field_2
+      physicalType: string
+      logicalType: string
+  - name: some_array_of_strings
+    physicalType: ARRAY<STRING>
+    logicalType: array
+    items:
+      physicalType: string
+      logicalType: string
+  - name: some_array_of_records
+    physicalType: ARRAY<STRUCT<some_other_field_1 STRING, some_other_field_2 STRING>>
+    logicalType: array
+    items:
+      physicalType: record
+      logicalType: object
+      properties:
+      - name: some_other_field_1
+        physicalType: string
+        logicalType: string
+      - name: some_other_field_2
+        physicalType: string
+        logicalType: string
+  - name: some_json
+    physicalType: json
+    logicalType: string
+  - name: some_range_of_timestamp
+    physicalType: RANGE<TIMESTAMP>
+    logicalType: object
