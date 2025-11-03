@@ -128,6 +128,7 @@ def import_servers(odcs: OpenDataContractStandard) -> Dict[str, Server] | None:
         server.account = odcs_server.account
         server.database = odcs_server.database
         server.schema_ = odcs_server.schema_
+        server.service_name = odcs_server.serviceName
         server.host = odcs_server.host
         server.port = odcs_server.port
         server.catalog = odcs_server.catalog
@@ -313,6 +314,8 @@ def import_field_config(odcs_property: SchemaProperty, server_type=None) -> dict
             config["sqlserverType"] = physical_type
         elif server_type == "databricks":
             config["databricksType"] = physical_type
+        elif server_type == "oracle":
+            config["oracleType"] = physical_type
         else:
             config["physicalType"] = physical_type
 
