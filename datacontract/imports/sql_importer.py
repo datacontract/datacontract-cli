@@ -268,14 +268,15 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "string"
     elif sql_type_normed.startswith("number"):
         return "number"
-    elif (sql_type_normed == "clob" or sql_type_normed == "nclob"):
+    elif sql_type_normed == "clob" or sql_type_normed == "nclob":
         return "text"
     else:
         return "variant"
 
+
 def map_timestamp(timestamp_type: str) -> str:
     match timestamp_type:
-        case "timestamp" | "timestampntz" | "timestamp_ntz" :
+        case "timestamp" | "timestampntz" | "timestamp_ntz":
             return "timestamp_ntz"
         case "timestamptz" | "timestamp_tz" | "timestamp with time zone":
             return "timestamp_tz"
@@ -285,7 +286,6 @@ def map_timestamp(timestamp_type: str) -> str:
             return "timestamp_tz"
         case _:
             return "timestamp"
-
 
 
 def read_file(path):

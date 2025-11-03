@@ -77,7 +77,8 @@ schema:
 
     # Write test file
     import tempfile
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(odcs_yaml)
         temp_file = f.name
 

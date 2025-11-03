@@ -43,6 +43,7 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
         location_str = str(location)
 
         if location_str.startswith("http://") or location_str.startswith("https://"):
+            logging.debug(f"Downloading schema from {location_str}")
             response = requests.get(location_str)
             schema = response.json()
         else:
@@ -54,6 +55,8 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
                     engine="datacontract",
                     result=ResultEnum.error,
                 )
+
+            logging.debug(f"Loading JSON schema locally at {location}")
             with open(location, "r") as file:
                 schema = json.load(file)
 
