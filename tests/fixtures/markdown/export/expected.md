@@ -7,10 +7,10 @@
 - **contact:** {'name': 'John Doe (Data Product Owner)', 'url': 'https://teams.microsoft.com/l/channel/example/checkout'}
 
 ## Servers
-| Name | Type | Attributes |
-| ---- | ---- | ---------- |
-| production | s3 | *One folder per model. One file per day.*<br>• **environment:** prod<br>• **format:** json<br>• **delimiter:** new_line<br>• **location:** s3://datacontract-example-orders-latest/v2/{model}/*.json<br>• **roles:** [{'name': 'analyst_us', 'description': 'Access to the data for US region'}, {'name': 'analyst_cn', 'description': 'Access to the data for China region'}] |
-| development | s3 | *One folder per model. One file per day.*<br>• **environment:** dev<br>• **format:** json<br>• **delimiter:** new_line<br>• **location:** s3://datacontract-example-orders-latest/v2/{model}/*.json<br>• **roles:** [{'name': 'analyst_us', 'description': 'Access to the data for US region'}, {'name': 'analyst_cn', 'description': 'Access to the data for China region'}] |
+| Server | Type | description | environment | format | delimiter | location | roles |
+| ------ | ---- | ----------- | ----------- | ------ | --------- | -------- | ----- |
+| production | s3 | One folder per model. One file per day. | prod | json | new_line | s3://datacontract-example-orders-latest/v2/{model}/*.json | [{'name': 'analyst_us', 'description': 'Access to the data for US region'}, {'name': 'analyst_cn', 'description': 'Access to the data for China region'}] |
+| development | s3 | One folder per model. One file per day. | dev | json | new_line | s3://datacontract-example-orders-latest/v2/{model}/*.json | [{'name': 'analyst_us', 'description': 'Access to the data for US region'}, {'name': 'analyst_cn', 'description': 'Access to the data for China region'}] |
 
 ## Terms
 *No description.*
@@ -50,22 +50,22 @@ This can help improve customer satisfaction and increase sales.
 ### orders
 *One record per order. Includes cancelled and deleted orders.*
 
-| Field | Type | Attributes |
-| ----- | ---- | ---------- |
-|  order_id | None | *No description.*<br>• **ref:** #/definitions/order_id<br>• `required`<br>• `primaryKey`<br>• `unique` |
-|  order_timestamp | timestamp | *The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.*<br>• `required`<br>• **tags:** ['business-timestamp']<br>• **examples:** ['2024-09-09T08:30:00Z'] |
-|  order_total | long | *Total amount the smallest monetary unit (e.g., cents).*<br>• `required`<br>• **examples:** [9999] |
-|  customer_id | text | *Unique identifier for the customer.*<br>• **minLength:** 10<br>• **maxLength:** 20 |
-|  customer_email_address | text | *The email address, as entered by the customer.*<br>• **format:** email<br>• `required`<br>• `pii`<br>• **classification:** sensitive<br>• **quality:** [{'type': 'text', 'description': 'The email address is not verified and may be invalid.'}]<br>• **lineage:** {'inputFields': [{'namespace': 'com.example.service.checkout', 'name': 'checkout_db.orders', 'field': 'email_address'}]} |
-|  processed_timestamp | timestamp | *The timestamp when the record was processed by the data platform.*<br>• `required`<br>• **config:** {'jsonType': 'string', 'jsonFormat': 'date-time'} |
+| ref | title | type | format | required | primaryKey | unique | description | pii | classification | tags | examples | minLength | maxLength | quality | lineage | config |
+| --- | ----- | ---- | ------ | -------- | ---------- | ------ | ----------- | --- | -------------- | ---- | -------- | --------- | --------- | ------- | ------- | ------ |
+| #/definitions/order_id | Order ID | text | uuid | True | True | True | An internal ID that identifies an order in the online shop. | True | restricted | ['orders'] | ['243c25e5-a081-43a9-aeab-6d5d5b6cb5e2'] |  |  |  |  |  |
+|  |  | timestamp |  | True |  |  | The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful. |  |  | ['business-timestamp'] | ['2024-09-09T08:30:00Z'] |  |  |  |  |  |
+|  |  | long |  | True |  |  | Total amount the smallest monetary unit (e.g., cents). |  |  |  | [9999] |  |  |  |  |  |
+|  |  | text |  |  |  |  | Unique identifier for the customer. |  |  |  |  | 10 | 20 |  |  |  |
+|  |  | text | email | True |  |  | The email address, as entered by the customer. | True | sensitive |  |  |  |  | [{'type': 'text', 'description': 'The email address is not verified and may be invalid.'}] | {'inputFields': [{'namespace': 'com.example.service.checkout', 'name': 'checkout_db.orders', 'field': 'email_address'}]} |  |
+|  |  | timestamp |  | True |  |  | The timestamp when the record was processed by the data platform. |  |  |  |  |  |  |  |  | {'jsonType': 'string', 'jsonFormat': 'date-time'} |
 ### line_items
 *A single article that is part of an order.*
 
-| Field | Type | Attributes |
-| ----- | ---- | ---------- |
-|  line_item_id | text | *Primary key of the lines_item_id table*<br>• `required` |
-|  order_id | None | *No description.*<br>• **ref:** #/definitions/order_id<br>• **references:** orders.order_id |
-|  sku | None | *The purchased article number*<br>• **ref:** #/definitions/sku |
+| type | required | description | ref | title | format | references | pii | classification | tags | examples | pattern | links |
+| ---- | -------- | ----------- | --- | ----- | ------ | ---------- | --- | -------------- | ---- | -------- | ------- | ----- |
+| text | True | Primary key of the lines_item_id table |  |  |  |  |  |  |  |  |  |  |
+| text |  | An internal ID that identifies an order in the online shop. | #/definitions/order_id | Order ID | uuid | orders.order_id | True | restricted | ['orders'] | ['243c25e5-a081-43a9-aeab-6d5d5b6cb5e2'] |  |  |
+| text |  | The purchased article number | #/definitions/sku | Stock Keeping Unit |  |  |  |  | ['inventory'] | ['96385074'] | ^[A-Za-z0-9]{8,14}$ | {'wikipedia': 'https://en.wikipedia.org/wiki/Stock_keeping_unit'} |
 
 ## Definitions
 | Name | Type | Domain | Attributes |
