@@ -9,8 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+
+### Fixed
+
+
+## [0.10.37] - 2025-11-03
+
+### Added
+
 - import: Support for nested arrays in odcs v3 importer
 - lint: ODCS schema is now checked before converting
+- --debug flag for all commands
 
 ### Fixed
 
