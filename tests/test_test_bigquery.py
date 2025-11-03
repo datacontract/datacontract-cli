@@ -48,7 +48,9 @@ def test_test_bigquery_complex_tables():
     reason="Requires DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH to be set",
 )
 def test_test_bigquery_tablename_staring_with_number():
-    data_contract = DataContract(data_contract_file="fixtures/bigquery/datacontract_tablename_starting_with_number.odcs.yaml")
+    data_contract = DataContract(
+        data_contract_file="fixtures/bigquery/datacontract_tablename_starting_with_number.odcs.yaml"
+    )
 
     run = data_contract.test()
 

@@ -38,7 +38,7 @@ def spark(tmp_path_factory) -> Generator[SparkSession, Any, None]:
             "spark.jars.packages",
             "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5,org.apache.spark:spark-avro_2.12:3.5.5",
         )
-        .config('spark.driver.host', '127.0.0.1')
+        .config("spark.driver.host", "127.0.0.1")
         .master("local[*]")
         .config("spark.ui.enabled", False)
         .getOrCreate()
