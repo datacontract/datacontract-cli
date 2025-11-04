@@ -321,6 +321,16 @@
                         </th>
                       </tr>
                       </thead>
+                      <tbody class="divide-y divide-gray-200 bg-white">
+                      {{ render_nested_properties(schema.properties, 0) }}
+                      </tbody>
+                      {% if schema.quality %}
+                      <tfoot class="divide-y divide-gray-200 bg-white">
+                      {% for quality in schema.quality %}
+                      <tr>
+                        <th scope="colgroup" colspan="5"
+                            class="py-2 pl-4 pr-3 text-left text-sm font-normal sm:pl-6 bg-white">
+                          <div class="flex flex-col space-y-1">
                             <div class="font-medium">{{ quality.rule }}</div>
                             <div class="text-xs text-gray-500">{{ quality.description }}</div>
                             {% if quality.dimension %}
