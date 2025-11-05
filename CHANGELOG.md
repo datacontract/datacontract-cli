@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Athena: Now correctly uses the (optional) AWS session token specified in the `DATACONTRACT_S3_SESSION_TOKEN' environment variable when testing contracts (#934)
 
 ## [0.10.37] - 2025-11-03
 
