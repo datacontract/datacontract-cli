@@ -2,7 +2,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from datacontract.export.exporter import Exporter
+from datacontract.export.exporter import Exporter, _check_models_for_export
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Model,
@@ -10,12 +10,12 @@ from datacontract.model.data_contract_specification import (
 
 
 class CustomExporter(Exporter):
-    """Exporter implementation for converting data contracts to Markdown."""
+    """Exporter implementation for converting data contracts to a custom Jinja template."""
 
     def export(
         self,
         data_contract: DataContractSpecification,
-        model: Model,
+        model: str | None,
         server: str,
         sql_server_type: str,
         export_args: dict,
@@ -25,16 +25,28 @@ class CustomExporter(Exporter):
         if template is None:
             raise RuntimeError("Export to custom requires template argument.")
 
-        return to_custom(data_contract, template)
+        if model and model != "all":
+            model_name, model_obj = _check_models_for_export(data_contract, model, self.export_format)
+            return to_custom(data_contract, template, model_name=model_name, model=model_obj)
+        else:
+            return to_custom(data_contract, template)
 
 
-def to_custom(data_contract: DataContractSpecification, template_path: Path) -> str:
+def to_custom(
+    data_contract: DataContractSpecification,
+    template_path: Path,
+    model_name: str | None = None,
+    model: Model | None = None,
+) -> str:
     template = get_template(template_path)
-    rendered_sql = template.render(data_contract=data_contract)
-    return rendered_sql
+    context = {"data_contract": data_contract}
+    if model is not None:
+        context["model"] = model
+        context["model_name"] = model_name
+    return template.render(**context)
 
 
 def get_template(path: Path):
-    abosolute_path = Path(path).resolve()
-    env = Environment(loader=FileSystemLoader(str(abosolute_path.parent)))
+    absolute_path = Path(path).resolve()
+    env = Environment(loader=FileSystemLoader(str(absolute_path.parent)))
     return env.get_template(path.name)
