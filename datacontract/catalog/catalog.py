@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +12,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 
 
 def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
+    logging.debug(f"Creating data contract html for file {file} and schema {schema}")
     data_contract = DataContract(
         data_contract_file=f"{file.absolute()}", inline_definitions=True, inline_quality=True, schema_location=schema
     )

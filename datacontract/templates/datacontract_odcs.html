@@ -1,3 +1,61 @@
+{% macro render_nested_properties(properties, level) %}
+  <tr>
+    {% for property in properties %}
+    <td class="px-4 py-4 whitespace-nowrap">
+      
+      <div class="text-sm font-medium text-gray-900">
+      {% for i in range(0,level)%}
+      &nbsp;
+      {% endfor %}
+      {% if level > 0 %}
+      ↳
+      {% endif %}
+      {{ property.name or "items" }}</div>
+      {% if property.primaryKey %}
+      <span
+        class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Primary Key</span>
+      {% endif %}
+      {% if property.partitioned %}
+      <span
+        class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-800 ring-1 ring-inset ring-blue-600/20">Partitioned</span>
+      {% endif %}
+      {% if property.criticalDataElement %}
+      <span
+        class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-800 ring-1 ring-inset ring-red-600/20">Critical</span>
+      {% endif %}
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{
+      property.businessName or "-" }}
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap">
+      <div class="text-sm text-gray-900">{{ property.logicalType }}</div>
+      {% if property.physicalType and property.physicalType !=
+      property.logicalType %}
+      <div class="text-xs text-gray-500">{{ property.physicalType }}</div>
+      {% endif %}
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+      {% if property.required %}
+      <span class="text-green-600">Yes</span>
+      {% else %}
+      <span class="text-gray-400">No</span>
+      {% endif %}
+    </td>
+    <td class="px-4 py-4 text-sm text-gray-500">{{ property.description or "-"
+      }}
+    </td>
+  </tr>
+    {% if property.properties %}
+    {{render_nested_properties(property.properties, level+1)}}
+    {% endif %}
+    {% if property.items %}
+    {{render_nested_properties([property.items], level+1)}}
+    {% endif %}
+  {% endfor %}
+<!-- Mark the end of the contained fields -->
+<tr style="--tw-divide-y-reverse: 2"></tr>
+{% endmacro %}
+
 <!doctype html>
 <html class="h-full bg-gray-100" lang="en">
 <head>
@@ -12,7 +70,6 @@
   </style>
 </head>
 <body class="h-full">
-
 <div class="min-h-full flex flex-col">
 
   <nav class="bg-white shadow-sm">
@@ -225,10 +282,10 @@
                         <th scope="colgroup" colspan="5"
                             class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
                           {% if schema.name %}
-                          <span class="font-semibold">{{ schema.name }}</span>
+                          <span class="font-semibold" id="{{ schema.name }}">{{ schema.name }}</span>
                           {% endif %}
                           {% if schema.physicalName and schema.physicalName != schema.name %}
-                          <span class="font-mono font-medium text-gray-600">({{ schema.physicalName }})</span>
+                          <span class="font-mono font-medium text-gray-600" id="{{ schema.physicalName }}">({{ schema.physicalName }})</span>
                           {% endif %}
                           <span
                             class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ schema.physicalType or schema.logicalType }}</span>
@@ -265,45 +322,7 @@
                       </tr>
                       </thead>
                       <tbody class="divide-y divide-gray-200 bg-white">
-                      {% for property in schema.properties %}
-                      <tr>
-                        <td class="px-4 py-4 whitespace-nowrap">
-                          <div class="text-sm font-medium text-gray-900">{{ property.name }}</div>
-                          {% if property.primaryKey %}
-                          <span
-                            class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Primary Key</span>
-                          {% endif %}
-                          {% if property.partitioned %}
-                          <span
-                            class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-800 ring-1 ring-inset ring-blue-600/20">Partitioned</span>
-                          {% endif %}
-                          {% if property.criticalDataElement %}
-                          <span
-                            class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-800 ring-1 ring-inset ring-red-600/20">Critical</span>
-                          {% endif %}
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{
-                          property.businessName or "-" }}
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap">
-                          <div class="text-sm text-gray-900">{{ property.logicalType }}</div>
-                          {% if property.physicalType and property.physicalType !=
-                          property.logicalType %}
-                          <div class="text-xs text-gray-500">{{ property.physicalType }}</div>
-                          {% endif %}
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {% if property.required %}
-                          <span class="text-green-600">Yes</span>
-                          {% else %}
-                          <span class="text-gray-400">No</span>
-                          {% endif %}
-                        </td>
-                        <td class="px-4 py-4 text-sm text-gray-500">{{ property.description or "-"
-                          }}
-                        </td>
-                      </tr>
-                      {% endfor %}
+                      {{ render_nested_properties(schema.properties, 0) }}
                       </tbody>
                       {% if schema.quality %}
                       <tfoot class="divide-y divide-gray-200 bg-white">

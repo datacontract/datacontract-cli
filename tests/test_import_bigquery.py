@@ -30,7 +30,7 @@ def test_import_bigquery_schema():
     with open("fixtures/bigquery/import/datacontract.yaml") as file:
         expected = file.read()
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_multiple_bigquery_schemas_with_different_types():
@@ -45,4 +45,4 @@ def test_import_multiple_bigquery_schemas_with_different_types():
     with open("fixtures/bigquery/import/datacontract_multi_import.yaml") as file:
         expected = file.read()
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint(enabled_linters="none").has_passed()
+    assert DataContract(data_contract_str=expected).lint().has_passed()

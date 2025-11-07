@@ -25,7 +25,7 @@ This data contract contains all information to connect to S3 and check that the 
 
 Let's use [uv](https://docs.astral.sh/uv/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ uv tool install 'datacontract-cli[all]'
+$ uv tool install --python python3.11 'datacontract-cli[all]'
 ```
 
 
@@ -379,6 +379,7 @@ Supported server types:
 - [bigquery](#bigquery)
 - [azure](#azure)
 - [sqlserver](#sqlserver)
+- [oracle](#oracle)
 - [databricks](#databricks)
 - [databricks (programmatic)](#databricks-programmatic)
 - [dataframe (programmatic)](#dataframe-programmatic)
@@ -603,6 +604,51 @@ models:
 
 
 
+#### Oracle
+
+Data Contract CLI can test data in Oracle Database.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  oracle:
+    type: oracle
+    host: localhost
+    port: 1521
+    service_name: ORCL
+    schema: ADMIN
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: decimal
+        description: Decimal number
+      my_column_2: # corresponds to another column
+        type: text
+        description: Unicode text string
+        config:
+          oracleType: NVARCHAR2 # optional: can be used to explicitly define the type used in the database
+                                # if not set a default mapping will be used
+```
+
+##### Environment Variables
+
+These environment variable specify the credentials used by the datacontract tool to connect to the database.
+If you've started the database from a container, e.g. [oracle-free](https://hub.docker.com/r/gvenzl/oracle-free)
+this should match either `system` and what you specified as `ORACLE_PASSWORD` on the container or
+alternatively what you've specified under `APP_USER` and `APP_USER_PASSWORD`.
+
+| Environment Variable                             | Example    | Description                                  |
+|--------------------------------------------------|------------|----------------------------------------------|
+| `DATACONTRACT_ORACLE_USERNAME`                   | `system`   | Username                                     |
+| `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53` | Password                                     |
+
+
+
+
 #### Databricks
 
 Works with Unity Catalog and Hive metastore.
@@ -657,19 +703,37 @@ models:
     fields: ...
 ```
 
-Notebook
-```python
-%pip install datacontract-cli[databricks]
-dbutils.library.restartPython()
+##### Installing on Databricks Compute
 
-from datacontract.data_contract import DataContract
+**Important:** When using Databricks LTS ML runtimes (15.4, 16.4), installing via `%pip install` in notebooks can issues.
 
-data_contract = DataContract(
-  data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml",
-  spark=spark)
-run = data_contract.test()
-run.result
-```
+**Recommended approach:** Use Databricks' native library management instead:
+
+1. **Create or configure your compute cluster:**
+   - Navigate to **Compute** in the Databricks workspace
+   - Create a new cluster or select an existing one
+   - Go to the **Libraries** tab
+
+2. **Add the datacontract-cli library:**
+   - Click **Install new**
+   - Select **PyPI** as the library source
+   - Enter package name: `datacontract-cli[databricks]`
+   - Click **Install**
+
+3. **Restart the cluster** to apply the library installation
+
+4. **Use in your notebook** without additional installation:
+   ```python
+   from datacontract.data_contract import DataContract
+
+   data_contract = DataContract(
+     data_contract_file="/Volumes/acme_catalog_prod/orders_latest/datacontract/datacontract.yaml",
+     spark=spark)
+   run = data_contract.test()
+   run.result
+   ```
+
+Databricks' library management properly resolves dependencies during cluster initialization, rather than at runtime in the notebook.
 
 #### Dataframe (programmatic)
 
@@ -1808,8 +1872,7 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract test
    ```
 
-3. Make sure that all the best practices for a `datacontract.yaml` are met using the linter. You
-   probably forgot to document some fields and add the terms and conditions.
+3. Validate that the `datacontract.yaml` is correctly formatted and adheres to the Data Contract Specification.
    ```bash
    $ datacontract lint
    ```
@@ -1830,8 +1893,7 @@ Create a data contract based on the requirements from use cases.
    ```
 
 2. Create the model and quality guarantees based on your business requirements. Fill in the terms,
-   descriptions, etc. Make sure you follow all best practices for a `datacontract.yaml` using the
-   linter.
+   descriptions, etc. Validate that your `datacontract.yaml` is correctly formatted.
     ```bash
     $ datacontract lint
     ```
@@ -2057,6 +2119,30 @@ uv run ruff check
 uv run pytest
 ```
 
+### Troubleshooting
+
+#### Windows: Some tests fail
+
+Run in wsl. (We need to fix the pathes in the tests so that normal Windows will work, contributions are appreciated)
+
+#### PyCharm does not pick up the `.venv` 
+
+This [uv issue](https://github.com/astral-sh/uv/issues/12545) might be relevant.
+
+Try to sync all groups:
+
+```
+uv sync --all-groups --all-extras
+```
+
+#### Errors in tests that use PySpark (e.g. test_test_kafka.py)
+
+Ensure you have a JDK 17 or 21 installed. Java 25 causes issues.
+
+```
+java --version
+```
+
 
 ### Docker Build
 
@@ -2089,27 +2175,6 @@ docker compose run --rm datacontract --version
 
 This command runs the container momentarily to check the version of the `datacontract` CLI. The `--rm` flag ensures that the container is automatically removed after the command executes, keeping your environment clean.
 
-## Use with pre-commit
-
-To run `datacontract-cli` as part of a [pre-commit](https://pre-commit.com/) workflow, add something like the below to the `repos` list in the project's `.pre-commit-config.yaml`:
-
-```yaml
-repos:
-  - repo: https://github.com/datacontract/datacontract-cli
-    rev: "v0.10.9"
-    hooks:
-      - id: datacontract-lint
-      - id: datacontract-test
-        args: ["--server", "production"]
-```
-
-### Available Hook IDs
-
-| Hook ID           | Description                                        | Dependency |
-| ----------------- | -------------------------------------------------- | ---------- |
-| datacontract-lint | Runs the lint subcommand.                          | Python3    |
-| datacontract-test | Runs the test subcommand. Please look at           | Python3    |
-|                   | [test](#test) section for all available arguments. |            |
 
 ## Release Steps
 

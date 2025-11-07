@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for Oracle Database (>= 19C)
+
+### Fixed
+
+
+## [0.10.37] - 2025-11-03
+
+### Added
+
+- import: Support for nested arrays in odcs v3 importer
+- lint: ODCS schema is now checked before converting
+- --debug flag for all commands
+
+### Fixed
+
+- export: Excel exporter now exports critical data element
+
+
+## [0.10.36] - 2025-10-17
+
+### Added
+
 - Support for Data Contract Specification v1.2.1 (Data Quality Metrics)
 - Support for decimal testing in spark and databricks (#902)
 - Support for BigQuery Flexible Schema in Data Contract Checks (#909)
@@ -21,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Export to DQX: Correct DQX format for global-level quality check of data contract export. (#877)
 - Import the table tags from a open data contract spec v3 (#895)
+- dbt export: Enhanced model-level primaryKey support with automatic test generation for single and multiple column primary keys (#898)
+- ODCS: field discarded when no logicalType defined  (#891)
+ 
+### Removed
+
+- Removed specific linters, as the linters did not support ODCS (#913)
 
 ## [0.10.35] - 2025-08-25
 
