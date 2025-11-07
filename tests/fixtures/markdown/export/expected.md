@@ -10,6 +10,7 @@
 | Name | Type | Attributes |
 | ---- | ---- | ---------- |
 | production | s3 | *One folder per model. One file per day.*<br>• **environment:** prod<br>• **format:** json<br>• **delimiter:** new_line<br>• **location:** s3://datacontract-example-orders-latest/v2/{model}/*.json<br>• **roles:** [{'name': 'analyst_us', 'description': 'Access to the data for US region'}, {'name': 'analyst_cn', 'description': 'Access to the data for China region'}] |
+| development | s3 | *One folder per model. One file per day.*<br>• **environment:** dev<br>• **format:** json<br>• **delimiter:** new_line<br>• **location:** s3://datacontract-example-orders-latest/v2/{model}/*.json<br>• **roles:** [{'name': 'analyst_us', 'description': 'Access to the data for US region'}, {'name': 'analyst_cn', 'description': 'Access to the data for China region'}] |
 
 ## Terms
 *No description.*

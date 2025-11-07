@@ -339,12 +339,11 @@ models:
           filter: "interaction_type IN ('click', 'view', 'purchase')"  # Example Filter
           check:
             function: "is_not_null"
-            arguments:
-              for_each_column:
-                - user_id
-                - interaction_id
-                - interaction_type
-                - interaction_timestamp
+            for_each_column:
+              - user_id
+              - interaction_id
+              - interaction_type
+              - interaction_timestamp
       - type: custom
         description: Item value present and within range for purchases.
         engine: dqx
@@ -390,9 +389,9 @@ models:
           check:
             function: is_unique
             arguments:
-              for_each_column:
-                  - [user_id, interaction_date]
-                  - [interaction_id]
+              columns:
+                - user_id
+                - interaction_date
       - type: custom
         description: Interaction value has to be under 1000
         engine: dqx

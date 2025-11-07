@@ -61,13 +61,18 @@ def process_quality_rule(rule: Quality, column_name: str) -> Dict[str, Any]:
     specification = rule_data[DqxKeys.SPECIFICATION]
     check = specification[DqxKeys.CHECK]
 
-    arguments = check.setdefault(DqxKeys.ARGUMENTS, {})
+    if column_name:
+        arguments = check.setdefault(DqxKeys.ARGUMENTS, {})
 
-    if DqxKeys.COL_NAME not in arguments and DqxKeys.COL_NAMES not in arguments and DqxKeys.COLUMNS not in arguments:
-        if check[DqxKeys.FUNCTION] not in ("is_unique", "foreign_key"):
-            arguments[DqxKeys.COL_NAME] = column_name
-        else:
-            arguments[DqxKeys.COLUMNS] = [column_name]
+        if (
+            DqxKeys.COL_NAME not in arguments
+            and DqxKeys.COL_NAMES not in arguments
+            and DqxKeys.COLUMNS not in arguments
+        ):
+            if check[DqxKeys.FUNCTION] not in ("is_unique", "foreign_key"):
+                arguments[DqxKeys.COL_NAME] = column_name
+            else:
+                arguments[DqxKeys.COLUMNS] = [column_name]
 
     return specification
 
