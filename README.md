@@ -1,4 +1,4 @@
-# Data Contract CLI
+s# Data Contract CLI
 
 <p>
   <a href="https://github.com/datacontract/datacontract-cli/actions/workflows/ci.yaml?query=branch%3Amain">
@@ -389,6 +389,7 @@ Supported server types:
 - [trino](#trino)
 - [api](#api)
 - [local](#local)
+- [sftp](#sftp) (coming soon)
 
 Supported formats:
 
@@ -966,6 +967,37 @@ models:
       my_column_2: # corresponds to a column
         type: string
 ```
+
+#### sftp
+
+Data Contract CLI can test sftp files in parquet, json, csv, or delta format.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  local:
+    type: sftp
+    path: sftp://data/*.parquet
+    format: parquet
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+      my_column_2: # corresponds to a column
+        type: string
+```
+
+##### Environment Variables
+
+| Environment Variable         | Example            | Description |
+|------------------------------|--------------------|-------------|
+| `DATACONTRACT_SFTP_USERNAME` | `admin`            | Username    |
+| `DATACONTRACT_SFTP_PASSWORD` | `mysecretpassword` | Password    |
+
 
 
 ### export

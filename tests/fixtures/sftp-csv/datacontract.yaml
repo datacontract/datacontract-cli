@@ -1,0 +1,30 @@
+dataContractSpecification: 1.2.0
+id: sftp-csv
+info:
+  title: s30-csv
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  my-server:
+    type: sftp
+    location: sftp://localhost:22/sftp/data/sample_data.csv
+    format: csv
+    dataProductId: my-dataproduct
+models:
+  my_table:
+    type: table
+    fields:
+      field_one:
+        type: varchar
+        required: true
+        unique: true
+        pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+      field_two:
+        type: bigint
+        minimum: 10
+      field_three:
+        type: timestamp
+    quality:
+      - type: sql
+        query: "SELECT count(*) FROM my_table"
+        mustBeGreaterThan: 0
