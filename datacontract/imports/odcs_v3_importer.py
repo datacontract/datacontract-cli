@@ -128,6 +128,7 @@ def import_servers(odcs: OpenDataContractStandard) -> Dict[str, Server] | None:
         server.account = odcs_server.account
         server.database = odcs_server.database
         server.schema_ = odcs_server.schema_
+        server.service_name = odcs_server.serviceName
         server.host = odcs_server.host
         server.port = odcs_server.port
         server.catalog = odcs_server.catalog
@@ -328,6 +329,8 @@ def import_field_config(odcs_property: SchemaProperty, server_type=None) -> dict
             config["sqlserverType"] = physical_type
         elif server_type == "databricks":
             config["databricksType"] = physical_type
+        elif server_type == "oracle":
+            config["oracleType"] = physical_type
         else:
             config["physicalType"] = physical_type
 
@@ -362,7 +365,7 @@ def import_field(
     odcs_property: SchemaProperty,
     odcs_properties: List[SchemaProperty],
     custom_type_mappings: Dict[str, str],
-    server_type: str
+    server_type: str,
 ) -> Field | None:
     """
     Import a single ODCS property as a datacontract Field.
@@ -447,7 +450,7 @@ def map_type(odcs_logical_type: str, custom_mappings: Dict[str, str], physical_t
     if physical_type is not None:
         pt = physical_type.lower()
         # Remove parameters from physical type (e.g., VARCHAR(50) -> varchar, DECIMAL(10,2) -> decimal)
-        pt_base = pt.split('(')[0].strip()
+        pt_base = pt.split("(")[0].strip()
 
         # Try direct mapping of physical type
         if pt in DATACONTRACT_TYPES:

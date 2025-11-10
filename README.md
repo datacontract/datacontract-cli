@@ -379,6 +379,7 @@ Supported server types:
 - [bigquery](#bigquery)
 - [azure](#azure)
 - [sqlserver](#sqlserver)
+- [oracle](#oracle)
 - [databricks](#databricks)
 - [databricks (programmatic)](#databricks-programmatic)
 - [dataframe (programmatic)](#dataframe-programmatic)
@@ -598,6 +599,51 @@ models:
 | `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True` | Use windows authentication, instead of login |
 | `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate                |
 | `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True` | Use SSL                                      |
+
+
+
+
+#### Oracle
+
+Data Contract CLI can test data in Oracle Database.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  oracle:
+    type: oracle
+    host: localhost
+    port: 1521
+    service_name: ORCL
+    schema: ADMIN
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: decimal
+        description: Decimal number
+      my_column_2: # corresponds to another column
+        type: text
+        description: Unicode text string
+        config:
+          oracleType: NVARCHAR2 # optional: can be used to explicitly define the type used in the database
+                                # if not set a default mapping will be used
+```
+
+##### Environment Variables
+
+These environment variable specify the credentials used by the datacontract tool to connect to the database.
+If you've started the database from a container, e.g. [oracle-free](https://hub.docker.com/r/gvenzl/oracle-free)
+this should match either `system` and what you specified as `ORACLE_PASSWORD` on the container or
+alternatively what you've specified under `APP_USER` and `APP_USER_PASSWORD`.
+
+| Environment Variable                             | Example    | Description                                  |
+|--------------------------------------------------|------------|----------------------------------------------|
+| `DATACONTRACT_ORACLE_USERNAME`                   | `system`   | Username                                     |
+| `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53` | Password                                     |
 
 
 
@@ -2097,27 +2143,6 @@ docker compose run --rm datacontract --version
 
 This command runs the container momentarily to check the version of the `datacontract` CLI. The `--rm` flag ensures that the container is automatically removed after the command executes, keeping your environment clean.
 
-## Use with pre-commit
-
-To run `datacontract-cli` as part of a [pre-commit](https://pre-commit.com/) workflow, add something like the below to the `repos` list in the project's `.pre-commit-config.yaml`:
-
-```yaml
-repos:
-  - repo: https://github.com/datacontract/datacontract-cli
-    rev: "v0.10.9"
-    hooks:
-      - id: datacontract-lint
-      - id: datacontract-test
-        args: ["--server", "production"]
-```
-
-### Available Hook IDs
-
-| Hook ID           | Description                                        | Dependency |
-| ----------------- | -------------------------------------------------- | ---------- |
-| datacontract-lint | Runs the lint subcommand.                          | Python3    |
-| datacontract-test | Runs the test subcommand. Please look at           | Python3    |
-|                   | [test](#test) section for all available arguments. |            |
 
 ## Release Steps
 

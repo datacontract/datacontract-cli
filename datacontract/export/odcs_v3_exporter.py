@@ -88,7 +88,10 @@ def to_odcs_v3(data_contract_spec: DataContractSpecification) -> OpenDataContrac
             if server_value.account is not None:
                 server.account = server_value.account
             if server_value.database is not None:
-                server.database = server_value.database
+                if server.type == "oracle":
+                    server.serviceName = server_value.database
+                else:
+                    server.database = server_value.database
             if server_value.schema_ is not None:
                 server.schema_ = server_value.schema_
             if server_value.format is not None:
@@ -224,6 +227,8 @@ def to_physical_type(config: Dict[str, Any]) -> str | None:
         return config["databricksType"]
     elif "physicalType" in config:
         return config["physicalType"]
+    elif "oracleType" in config:
+        return config["oracleType"]
     return None
 
 

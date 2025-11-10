@@ -54,6 +54,7 @@ def test_lint_custom_schema():
 
     assert run.result == "passed"
 
+
 def test_lint_valid_odcs_schema():
     data_contract_file = "fixtures/lint/valid.odcs.yaml"
     data_contract = DataContract(data_contract_file=data_contract_file)

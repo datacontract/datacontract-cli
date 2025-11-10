@@ -282,10 +282,10 @@
                         <th scope="colgroup" colspan="5"
                             class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
                           {% if schema.name %}
-                          <span class="font-semibold">{{ schema.name }}</span>
+                          <span class="font-semibold" id="{{ schema.name }}">{{ schema.name }}</span>
                           {% endif %}
                           {% if schema.physicalName and schema.physicalName != schema.name %}
-                          <span class="font-mono font-medium text-gray-600">({{ schema.physicalName }})</span>
+                          <span class="font-mono font-medium text-gray-600" id="{{ schema.physicalName }}">({{ schema.physicalName }})</span>
                           {% endif %}
                           <span
                             class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ schema.physicalType or schema.logicalType }}</span>

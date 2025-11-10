@@ -92,11 +92,11 @@ def import_unity_from_api(
         host, token = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
         # print(f"Databricks host: {host}, token: {'***' if token else 'not set'}")
         exception = DataContractException(
-                type="configuration",
-                name="Databricks configuration",
-                reason="",
-                engine="datacontract",
-            )
+            type="configuration",
+            name="Databricks configuration",
+            reason="",
+            engine="datacontract",
+        )
         if not profile and not host and not token:
             reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set"
             exception.reason = reason

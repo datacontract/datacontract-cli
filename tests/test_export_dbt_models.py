@@ -212,7 +212,7 @@ def test_to_dbt_models_with_model_level_composite_primary_key():
                 fields={
                     "order_id": Field(type="string", required=True),
                     "user_id": Field(type="string", required=True),
-                    "product_id": Field(type="string", required=True)
+                    "product_id": Field(type="string", required=True),
                 },
             )
         },
@@ -269,7 +269,7 @@ def test_to_dbt_models_with_single_column_primary_key():
                 fields={
                     "order_id": Field(type="string", required=True),
                     "user_id": Field(type="string", required=True),
-                    "product_id": Field(type="string", required=True)
+                    "product_id": Field(type="string", required=True),
                 },
             )
         },

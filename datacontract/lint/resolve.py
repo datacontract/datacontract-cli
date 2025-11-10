@@ -19,7 +19,7 @@ from datacontract.model.data_contract_specification import (
     DeprecatedQuality,
 )
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.odcs import is_open_data_contract_standard
+from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
 
 
@@ -285,6 +285,16 @@ def _resolve_data_contract_from_str_v2(
 ) -> DataContractSpecification | OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 
+    if is_open_data_product_standard(yaml_dict):
+        logging.info("Cannot import ODPS, as not supported")
+        raise DataContractException(
+            type="schema",
+            result=ResultEnum.failed,
+            name="Parse ODCS contract",
+            reason="Cannot parse ODPS product",
+            engine="datacontract",
+        )
+
     if is_open_data_contract_standard(yaml_dict):
         logging.info("Importing ODCS v3")
         # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
@@ -346,8 +356,7 @@ def _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_locat
 
 def _to_yaml(data_contract_str) -> dict:
     try:
-        yaml_dict = yaml.safe_load(data_contract_str)
-        return yaml_dict
+        return yaml.safe_load(data_contract_str)
     except Exception as e:
         logging.warning(f"Cannot parse YAML. Error: {str(e)}")
         raise DataContractException(
@@ -360,6 +369,7 @@ def _to_yaml(data_contract_str) -> dict:
 
 
 def _validate_json_schema(yaml_str, schema_location: str | Path = None):
+    logging.debug(f"Linting data contract with schema at {schema_location}")
     schema = fetch_schema(schema_location)
     try:
         fastjsonschema.validate(schema, yaml_str, use_default=False)
