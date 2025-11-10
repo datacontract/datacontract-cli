@@ -140,7 +140,7 @@ dev = [
   "kafka-python",
   "moto==5.1.13",
   "pandas>=2.1.0",
-  "pre-commit>=3.7.1,<4.4.0",
+  "pre-commit>=3.7.1,<4.5.0",
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.8",
