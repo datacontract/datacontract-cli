@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Fixed DuckDB DDL generation to use `JSON` type instead of invalid empty `STRUCT()` for objects without defined properties ([#940](https://github.com/datacontract/datacontract-cli/issues/940))
+
 ### Added
 
 - Support for Oracle Database (>= 19C)
