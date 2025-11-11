@@ -239,6 +239,11 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - departmentid
+      - shiftid
+      - startdate
   employeepayhistory:
     description: Employee pay history.
     type: table
@@ -283,6 +288,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - ratechangedate
   jobcandidate:
     description: Résumés submitted to Human Resources by job applicants.
     type: table
@@ -572,6 +580,10 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - addressid
+      - addresstypeid
   businessentitycontact:
     description: Cross-reference table mapping stores, vendors, and employees to people
     type: table
@@ -615,6 +627,10 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - personid
+      - contacttypeid
   contacttype:
     description: Lookup table containing the types of business entity contacts.
     type: table
@@ -722,6 +738,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - emailaddressid
   password:
     description: One way hashed authentication information
     type: table
@@ -936,6 +955,10 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - phonenumber
+      - phonenumbertypeid
   phonenumbertype:
     description: Type of phone number of a person.
     type: table
@@ -1677,6 +1700,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - productid
+      - startdate
   productdescription:
     description: Product descriptions in several languages.
     type: table
@@ -1744,6 +1770,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: varchar[2147483647]
+    primaryKey:
+      - productid
+      - documentnode
   productinventory:
     description: Product inventory information.
     type: table
@@ -1803,6 +1832,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - productid
+      - locationid
   productlistpricehistory:
     description: Changes in the list price of a product over time.
     type: table
@@ -1847,6 +1879,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - productid
+      - startdate
   productmodel:
     description: Product model classification.
     type: table
@@ -1932,6 +1967,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - productmodelid
+      - illustrationid
   productmodelproductdescriptionculture:
     description: Cross-reference table mapping product descriptions and the language
       the description is written in.
@@ -1969,6 +2007,10 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - productmodelid
+      - productdescriptionid
+      - cultureid
   productphoto:
     description: Product images.
     type: table
@@ -2064,6 +2106,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - productid
+      - productphotoid
   productreview:
     description: Customer reviews of products they have purchased.
     type: table
@@ -2610,6 +2655,10 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - workorderid
+      - productid
+      - operationsequence
   productvendor:
     description: Cross-reference table mapping vendors with the products they supply.
     type: table
@@ -2703,6 +2752,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - productid
+      - businessentityid
   purchaseorderdetail:
     description: Individual products associated with a specific purchase order. See
       PurchaseOrderHeader.
@@ -2780,6 +2832,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - purchaseorderid
+      - purchaseorderdetailid
   purchaseorderheader:
     description: General purchase order information. See PurchaseOrderDetail.
     type: table
@@ -3061,6 +3116,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - countryregioncode
+      - currencycode
   creditcard:
     description: Customer credit card information.
     type: table
@@ -3304,6 +3362,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - creditcardid
   salesorderdetail:
     description: Individual products associated with a specific sales order. See SalesOrderHeader.
     type: table
@@ -3387,6 +3448,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - salesorderid
+      - salesorderdetailid
   salesorderheader:
     description: General sales order information.
     type: table
@@ -3646,6 +3710,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - salesorderid
+      - salesreasonid
   salesperson:
     description: Sales representative current information.
     type: table
@@ -3773,6 +3840,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - quotadate
   salesreason:
     description: Lookup table of customer purchase reasons.
     type: table
@@ -4026,6 +4096,10 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - businessentityid
+      - territoryid
+      - startdate
   shoppingcartitem:
     description: Contains online customer orders until the order is submitted or cancelled.
     type: table
@@ -4221,6 +4295,9 @@ models:
           criticalDataElement: false
           partitioned: false
           physicalType: timestamp
+    primaryKey:
+      - specialofferid
+      - productid
   store:
     description: Customers (resellers) of Adventure Works products.
     type: table
