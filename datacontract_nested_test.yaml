@@ -1,0 +1,62 @@
+dataContractSpecification: 1.2.0
+id: my-data-contract-id
+info:
+  title: My Data Contract
+  version: 0.0.1
+servers:
+  dev:
+    type: bigquery
+    project: lf-rd-analysis-dev
+    dataset: dm_loc_agg
+models:
+  sfdc_loc_tenants_test:
+    type: table
+    primaryKey: ["tenant_id", "account_id"]
+    fields:
+      tenant_id:
+        type: string
+        unique: true
+        required: true
+      organization_id:
+        type: string
+      account_id:
+        type: string
+        primaryKey: true
+      contract_manage_id:
+        type: string
+      contract_type:
+        type: string
+      display_name:
+        type: string
+        pii: true
+      tenant_status:
+        type: string
+        enum: ["active", "inactive"]
+      is_valid_tenant_product:
+        type: boolean
+      first_contract_start_date_lf:
+        type: date
+        required: true
+      is_data_learning_optout_contracted:
+        type: boolean
+      opportunity_contract_start_date:
+        type: date
+      opportunity_contract_end_date:
+        type: date
+      products:
+        type: array
+        items:
+          type: object
+          fields:
+            product_name:
+              type: string
+              required: true
+              unique: true
+            contract_start_date:
+              type: date
+            contract_end_date:
+              type: date
+            is_data_learning_optout_contracted:
+              type: boolean
+            quantity:
+              type: float

@@ -1,0 +1,78 @@
+version: 2
+models:
+- name: sms_contracts
+  config:
+    meta:
+      data_contract: sms-tenant-contracts-latest
+      owner: SMS
+    materialized: table
+    contract:
+      enforced: true
+  description: 1行=テナント×契約×日。契約開始・終了・種別（正式/無償Tr）を管理。
+  data_tests:
+  - dbt_utils.unique_combination_of_columns:
+      combination_of_columns:
+      - tenant_id
+      - contract_manage_id
+      - snapshot_date
+  columns:
+  - name: snapshot_date
+    data_type: DATE
+    description: スナップショット日（JST基準の営業日切替に合わせて定義）
+    constraints:
+    - type: not_null
+  - name: account_id
+    data_tests:
+    - relationships:
+        to: source("sms-tenant-contracts-latest", "account")
+        field: id
+    data_type: STRING
+    description: 取引先ID（SFDC Account のID）
+    constraints:
+    - type: not_null
+  - name: tenant_id
+    data_tests:
+    - relationships:
+        to: source("sms-tenant-contracts-latest", "tenant__c")
+        field: ProductUuid__c
+    data_type: STRING
+    description: テナントID（tenant__c の ProductUuid__c）
+    constraints:
+    - type: not_null
+  - name: contract_type
+    data_tests:
+    - accepted_values:
+        values:
+        - 正式契約
+        - 無償トライアル
+    data_type: STRING
+    description: 契約種別（正式契約 / 無償トライアル）
+    constraints:
+    - type: not_null
+  - name: contract_manage_id
+    data_tests:
+    - relationships:
+        to: source("sms-tenant-contracts-latest", "contractManage__c")
+        field: id
+    data_type: STRING
+    description: 契約管理ID（contractManage__c の id）
+    constraints:
+    - type: not_null
+  - name: opportunity_id
+    data_tests:
+    - relationships:
+        to: source("sms-tenant-contracts-latest", "opportunity")
+        field: id
+    data_type: STRING
+    description: 商談ID（opportunity の id。無償トライアル等はNULL可の想定）
+  - name: contract_id
+    data_type: STRING
+    description: 契約ID（無償トライアル等の商談非連携ケース識別用の便宜的キー）
+  - name: contract_start_date
+    data_type: DATE
+    description: 契約開始日（tenantProduct__c.ActiveDate__c）
+    constraints:
+    - type: not_null
+  - name: contract_end_date
+    data_type: DATE
+    description: 契約終了日（tenantProduct__c.ExpirationDate__c。未設定=継続中）
