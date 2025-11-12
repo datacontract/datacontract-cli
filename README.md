@@ -8,7 +8,7 @@
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
 </p>
 
-The `datacontract` CLI is an open-source command-line tool for working with data contracts.
+The `datacontract` CLI is a popular and [recognized](https://www.thoughtworks.com/en-de/radar/tools/summary/data-contract-cli) open-source command-line tool for working with data contracts.
 It uses data contract YAML files as [Data Contract Specification](https://datacontract.com/) or [ODCS](https://bitol-io.github.io/open-data-contract-standard/latest/) to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
