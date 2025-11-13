@@ -4,6 +4,7 @@ from typing import Any, Dict
 import duckdb
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
+from datacontract.lint.resources import setup_sftp_filesystem
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
 from datacontract.model.run import Run
 
@@ -20,17 +21,22 @@ def get_duckdb_connection(
         con = duckdb_connection
 
     path: str = ""
-    if server.type == "local":
-        path = server.path
-    if server.type == "s3":
-        path = server.location
-        setup_s3_connection(con, server)
-    if server.type == "gcs":
-        path = server.location
-        setup_gcs_connection(con, server)
-    if server.type == "azure":
-        path = server.location
-        setup_azure_connection(con, server)
+    match server.type :
+        case "local":
+            path = server.path
+        case "s3":
+            path = server.location
+            setup_s3_connection(con, server)
+        case"gcs":
+            path = server.location
+            setup_gcs_connection(con, server)
+        case "azure":
+            path = server.location
+            setup_azure_connection(con, server)
+        case "sftp":
+            fs = setup_sftp_filesystem(server.location)
+            duckdb.register_filesystem(filesystem=fs, connection=con)
+            path = server.location
     for model_name, model in data_contract.models.items():
         model_path = path
         if "{model}" in model_path:
