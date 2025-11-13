@@ -3,8 +3,8 @@ import typing
 import uuid
 
 from datacontract.engines.soda.connections.athena import to_athena_soda_configuration
-
 from datacontract.engines.soda.connections.oracle import to_oracle_soda_configuration
+
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 

@@ -3,6 +3,7 @@ from typing import Dict, List
 import avro.schema
 
 from datacontract.imports.importer import Importer
+from datacontract.lint.resources import setup_sftp_filesystem
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.model.exceptions import DataContractException
 
@@ -45,8 +46,13 @@ def import_avro(data_contract_specification: DataContractSpecification, source: 
         data_contract_specification.models = {}
 
     try:
-        with open(source, "r") as file:
-            avro_schema = avro.schema.parse(file.read())
+        if source.startswith("sftp://"):
+            fs = setup_sftp_filesystem(source)
+            with fs.open(source, "r") as file:
+                avro_schema = avro.schema.parse(file.read())
+        else:
+            with open(source, "r") as file:
+                avro_schema = avro.schema.parse(file.read())
     except Exception as e:
         raise DataContractException(
             type="schema",

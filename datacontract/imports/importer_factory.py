@@ -15,7 +15,7 @@ class ImporterFactory:
     def register_lazy_importer(self, name: str, module_path: str, class_name: str):
         self.dict_lazy_importer.update({name: (module_path, class_name)})
 
-    def create(self, name) -> Importer:
+    def create(self, name,server_type:str=None) -> Importer:
         importers = self.dict_importer.copy()
         importers.update(self.dict_lazy_importer.copy())
         if name not in importers.keys():
