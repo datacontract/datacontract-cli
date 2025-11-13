@@ -14,6 +14,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 requires-python = ">=3.10"
+
 dependencies = [
   "typer>=0.15.1,<0.20",
   "pydantic>=2.8.2,<2.13.0",
@@ -35,6 +36,7 @@ dependencies = [
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
   "open-data-contract-standard>=3.0.5,<4.0.0",
+  "paramiko>=4.0.0",
 ]
 
 [project.optional-dependencies]
