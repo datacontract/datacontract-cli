@@ -1,4 +1,4 @@
-s# Data Contract CLI
+# Data Contract CLI
 
 <p>
   <a href="https://github.com/datacontract/datacontract-cli/actions/workflows/ci.yaml?query=branch%3Amain">
@@ -389,7 +389,7 @@ Supported server types:
 - [trino](#trino)
 - [api](#api)
 - [local](#local)
-- [sftp](#sftp) (coming soon)
+- [sftp](#sftp)
 
 Supported formats:
 
