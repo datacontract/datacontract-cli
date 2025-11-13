@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Import composite primary keys from open data contract spec
+
+## [0.10.38] - 2025-11-11
+
 ### Added
 
 - Support for Oracle Database (>= 19C)
 
 ### Fixed
 
+- Athena: Now correctly uses the (optional) AWS session token specified in the `DATACONTRACT_S3_SESSION_TOKEN' environment variable when testing contracts (#934)
 
 ## [0.10.37] - 2025-11-03
 

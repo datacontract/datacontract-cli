@@ -71,7 +71,7 @@ def to_athena_soda_configuration(server):
         data_source["catalog"] = server.catalog
 
     if s3_session_token:
-        data_source["aws_session_token"] = s3_session_token
+        data_source["session_token"] = s3_session_token
 
     soda_configuration = {f"data_source {server.type}": data_source}
 

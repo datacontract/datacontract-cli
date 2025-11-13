@@ -197,6 +197,17 @@ def get_server_type(odcs: OpenDataContractStandard) -> str | None:
     return server.type
 
 
+def get_composite_primary_keys(properties: List[SchemaProperty]) -> list[str]:
+    primary_keys = [
+        (property.name, property.primaryKeyPosition)
+        for property in properties
+        if property.name and property.primaryKey is not None and property.primaryKey
+    ]
+
+    primary_keys.sort(key=lambda x: x[1] or -1)
+    return [name for name, _ in primary_keys]
+
+
 def import_models(odcs: Any) -> Dict[str, Model]:
     custom_type_mappings = get_custom_type_mappings(odcs.customProperties)
 
@@ -214,6 +225,8 @@ def import_models(odcs: Any) -> Dict[str, Model]:
             tags=odcs_schema.tags if odcs_schema.tags is not None else None,
         )
         model.fields = import_fields(odcs_schema.properties, custom_type_mappings, server_type=get_server_type(odcs))
+        if has_composite_primary_key(odcs_properties=odcs_schema.properties):
+            model.primaryKey = get_composite_primary_keys(odcs_schema.properties)
         if odcs_schema.quality is not None:
             model.quality = convert_quality_list(odcs_schema.quality)
         model.title = schema_name
