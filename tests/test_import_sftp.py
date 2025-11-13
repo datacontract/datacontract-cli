@@ -54,7 +54,7 @@ password = "demo"  # for emberstack
 user = SFTPUser(name = username,password=password)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def sftp_container():
     """
     Initialize and provide an SFTP container for all tests in this module.
