@@ -1,8 +1,10 @@
 import os
 from time import sleep
+
 import paramiko
-from datacontract.data_contract import DataContract
 from testcontainers.sftp import SFTPContainer, SFTPUser
+
+from datacontract.data_contract import DataContract
 
 sftp_dir = "/sftp/data"
 sftp_path = f"{sftp_dir}/sample_data.csv"
