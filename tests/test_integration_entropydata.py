@@ -15,8 +15,8 @@ load_dotenv(override=True)
 )
 def test_remote_data_contract():
     data_contract = DataContract(
-        data_contract_file="https://app.datamesh-manager.com/checker1/datacontracts/verbraucherpreisindex-61111-0002zzz",
-        publish_url="https://api.datamesh-manager.com/api/test-results",
+        data_contract_file="https://app.entropy-data.com/checker1/datacontracts/verbraucherpreisindex-61111-0002zzz",
+        publish_url="https://api.entropy-data.com/api/test-results",
     )
 
     run = data_contract.test()

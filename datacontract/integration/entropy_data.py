@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 import requests
 
@@ -10,19 +11,15 @@ RESPONSE_HEADER_LOCATION_HTML = "location-html"
 
 def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_verification: bool):
     try:
+        host = publish_url
         if publish_url is None:
             # this url supports Data Mesh Manager and Data Contract Manager
-            url = "https://api.datamesh-manager.com/api/test-results"
+            host = _get_host()
+            url = "%s/api/test-results" % host
         else:
             url = publish_url
 
-        api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
-        if api_key is None:
-            api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
-        if api_key is None:
-            raise Exception(
-                "Cannot publish run results, as DATAMESH_MANAGER_API_KEY nor DATACONTRACT_MANAGER_API_KEY are not set"
-            )
+        api_key = _get_api_key()
 
         if run.dataContractId is None:
             raise Exception("Cannot publish run results for unknown data contract ID")
@@ -39,7 +36,8 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_ver
         # print("Status Code:", response.status_code)
         # print("Response Body:", response.text)
         if response.status_code != 200:
-            run.log_error(f"Error publishing test results to Data Mesh Manager: {response.text}")
+            display_host = _extract_hostname(host)
+            run.log_error(f"Error publishing test results to {display_host}: {response.text}")
             return
         run.log_info("Published test results successfully")
 
@@ -53,16 +51,8 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_ver
 
 def publish_data_contract_to_datamesh_manager(data_contract_dict: dict, ssl_verification: bool):
     try:
-        api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
-        host = "https://api.datamesh-manager.com"
-        if os.getenv("DATAMESH_MANAGER_HOST") is not None:
-            host = os.getenv("DATAMESH_MANAGER_HOST")
-        if api_key is None:
-            api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
-        if api_key is None:
-            raise Exception(
-                "Cannot publish data contract, as neither DATAMESH_MANAGER_API_KEY nor DATACONTRACT_MANAGER_API_KEY is set"
-            )
+        api_key = _get_api_key()
+        host = _get_host()
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
         id = data_contract_dict["id"]
         url = f"{host}/api/datacontracts/{id}"
@@ -73,7 +63,8 @@ def publish_data_contract_to_datamesh_manager(data_contract_dict: dict, ssl_veri
             verify=ssl_verification,
         )
         if response.status_code != 200:
-            print(f"Error publishing data contract to Data Mesh Manager: {response.text}")
+            display_host = _extract_hostname(host)
+            print(f"Error publishing data contract to {display_host}: {response.text}")
             exit(1)
 
         print("✅ Published data contract successfully")
@@ -84,3 +75,52 @@ def publish_data_contract_to_datamesh_manager(data_contract_dict: dict, ssl_veri
 
     except Exception as e:
         print(f"Failed publishing data contract. Error: {str(e)}")
+
+
+def _get_api_key() -> str:
+    """
+    Get API key from environment variables with fallback priority:
+    1. ENTROPY_DATA_API_KEY
+    2. DATAMESH_MANAGER_API_KEY
+    3. DATACONTRACT_MANAGER_API_KEY
+    """
+    api_key = os.getenv("ENTROPY_DATA_API_KEY")
+    if api_key is None:
+        api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
+    if api_key is None:
+        api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
+    if api_key is None:
+        raise Exception(
+            "Cannot publish, as neither ENTROPY_DATA_API_KEY, DATAMESH_MANAGER_API_KEY, nor DATACONTRACT_MANAGER_API_KEY is set"
+        )
+    return api_key
+
+
+def _get_host() -> str:
+    """
+    Get host from environment variables with fallback priority:
+    1. ENTROPY_DATA_HOST
+    2. DATAMESH_MANAGER_HOST
+    3. DATACONTRACT_MANAGER_HOST
+    4. Default: https://api.entropy-data.com
+    """
+    host = os.getenv("ENTROPY_DATA_HOST")
+    if host is None:
+        host = os.getenv("DATAMESH_MANAGER_HOST")
+    if host is None:
+        host = os.getenv("DATACONTRACT_MANAGER_HOST")
+    if host is None:
+        host = "https://api.entropy-data.com"
+    return host
+
+
+def _extract_hostname(url: str) -> str:
+    """
+    Extract the hostname (including subdomains and top-level domain) from a URL.
+
+    Examples:
+    - https://app.entropy-data.com/path -> app.entropy-data.com
+    - http://api.example.com:8080/api -> api.example.com
+    """
+    parsed = urlparse(url)
+    return parsed.netloc.split(":")[0] if parsed.netloc else url
