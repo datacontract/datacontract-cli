@@ -3,7 +3,7 @@ import typing
 import uuid
 
 from datacontract.engines.soda.connections.athena import to_athena_soda_configuration
-from datacontract.engines.soda.connections.oracle import to_oracle_soda_configuration
+from datacontract.engines.soda.connections.oracle import initialize_client_and_create_soda_configuration
 
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
@@ -106,7 +106,7 @@ def check_soda_execute(
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     elif server.type == "oracle":
-        soda_configuration_str = to_oracle_soda_configuration(server)
+        soda_configuration_str = initialize_client_and_create_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     elif server.type == "trino":
