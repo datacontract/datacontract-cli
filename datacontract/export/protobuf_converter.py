@@ -1,3 +1,5 @@
+import sys
+
 from datacontract.export.exporter import Exporter
 from datacontract.model.data_contract_specification import DataContractSpecification
 
@@ -6,7 +8,7 @@ class ProtoBufExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         # Returns a dict containing the protobuf representation.
         proto = to_protobuf(data_contract)
-        return {"protobuf": proto}
+        return proto
 
 
 def to_protobuf(data_contract_spec: DataContractSpecification) -> str:
@@ -158,7 +160,7 @@ def _convert_type(field_name: str, field) -> str:
     Prioritizes enum conversion if a non-empty "values" property exists.
     """
     # For debugging purposes
-    print("Converting field:", field_name)
+    print("Converting field:", field_name, file=sys.stderr)
     # If the field should be treated as an enum, return its enum name.
     if _is_enum_field(field):
         return _get_enum_name(field, field_name)
