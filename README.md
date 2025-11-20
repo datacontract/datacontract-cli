@@ -639,11 +639,15 @@ These environment variable specify the credentials used by the datacontract tool
 If you've started the database from a container, e.g. [oracle-free](https://hub.docker.com/r/gvenzl/oracle-free)
 this should match either `system` and what you specified as `ORACLE_PASSWORD` on the container or
 alternatively what you've specified under `APP_USER` and `APP_USER_PASSWORD`.
+If you require thick mode to connect to the database, you need to have an Oracle Instant Client
+installed on the system and specify the path to the installation within the environment variable
+`DATACONTRACT_ORACLE_CLIENT_DIR`.
 
-| Environment Variable                             | Example    | Description                                  |
-|--------------------------------------------------|------------|----------------------------------------------|
-| `DATACONTRACT_ORACLE_USERNAME`                   | `system`   | Username                                     |
-| `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53` | Password                                     |
+| Environment Variable                             | Example            | Description                                |
+|--------------------------------------------------|--------------------|--------------------------------------------|
+| `DATACONTRACT_ORACLE_USERNAME`                   | `system`           | Username                                   |
+| `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53`         | Password                                   |
+| `DATACONTRACT_ORACLE_CLIENT_DIR`                 | `C:\oracle\client` | Path to Oracle Instant Client installation |
 
 
 
