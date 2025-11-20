@@ -24,7 +24,7 @@ from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
-from datacontract.integration.entropy_data import publish_test_results_to_datamesh_manager
+from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
 from datacontract.lint import resolve
 from datacontract.model.data_contract_specification import DataContractSpecification, Info
 from datacontract.model.exceptions import DataContractException
@@ -151,7 +151,7 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None or self._publish_test_results:
-            publish_test_results_to_datamesh_manager(run, self._publish_url, self._ssl_verification)
+            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification)
 
         return run
 
