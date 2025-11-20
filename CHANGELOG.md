@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Protobuf export now works without error
 
 ## [0.10.39] - 2025-11-20
 
 ### Added
-- 
+
 - Oracle DB: Client Directory for Connection Mode 'Thick' can now be specified in the `DATACONTRACT_ORACLE_CLIENT_DIR` environment variable (#949)
 
 ### Fixed
