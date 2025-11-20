@@ -3,6 +3,7 @@ import json
 import fastjsonschema
 
 from datacontract.imports.importer import Importer
+from datacontract.lint.resources import setup_sftp_filesystem
 from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Field, Model
 from datacontract.model.exceptions import DataContractException
 
@@ -42,8 +43,13 @@ def import_jsonschema(data_contract_specification: DataContractSpecification, so
 
 def load_and_validate_json_schema(source):
     try:
-        with open(source, "r") as file:
-            json_schema = json.loads(file.read())
+        if source.startswith("sftp://"):
+            fs = setup_sftp_filesystem(source)
+            with fs.open(source, "r") as file:
+                json_schema = json.loads(file.read())
+        else:
+            with open(source, "r") as file:
+                json_schema = json.loads(file.read())
 
         validator = fastjsonschema.compile({})
         validator(json_schema)
