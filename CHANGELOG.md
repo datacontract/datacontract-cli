@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for Oracle Database (>= 19C)
+- export: JSON Schema exporter now exports validation constraints from ODCS logicalTypeOptions (minLength, maxLength, pattern, format, minimum, maximum, multipleOf, minItems, maxItems, uniqueItems, minProperties, maxProperties)
 
 ### Fixed
 
@@ -33,13 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - import: Support for nested arrays in odcs v3 importer
+- import: Support for ODCS logicalTypeOptions in odcs v3 importer
 - lint: ODCS schema is now checked before converting
 - --debug flag for all commands
 
 ### Fixed
 
 - export: Excel exporter now exports critical data element
-
+- test: Fixed DuckDB type conversion for number/decimal/numeric types - now uses DECIMAL instead of VARCHAR
 
 ## [0.10.36] - 2025-10-17
 
