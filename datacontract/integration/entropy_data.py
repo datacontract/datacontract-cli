@@ -9,7 +9,7 @@ from datacontract.model.run import Run
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
 
 
-def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_verification: bool):
+def publish_test_results_to_entropy_data(run: Run, publish_url: str, ssl_verification: bool):
     try:
         host = publish_url
         if publish_url is None:
@@ -49,7 +49,7 @@ def publish_test_results_to_datamesh_manager(run: Run, publish_url: str, ssl_ver
         run.log_error(f"Failed publishing test results. Error: {str(e)}")
 
 
-def publish_data_contract_to_datamesh_manager(data_contract_dict: dict, ssl_verification: bool):
+def publish_data_contract_to_entropy_data(data_contract_dict: dict, ssl_verification: bool):
     try:
         api_key = _get_api_key()
         host = _get_host()
