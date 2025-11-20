@@ -1,12 +1,12 @@
 import os
 
-import oracledb
 import yaml
 
 from datacontract.model.data_contract_specification import Server
 
 
 def initialize_client_and_create_soda_configuration(server: Server) -> str:
+    import oracledb
     soda_config = to_oracle_soda_configuration(server)
 
     oracle_client_dir = os.getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
