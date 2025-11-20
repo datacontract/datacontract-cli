@@ -105,16 +105,34 @@
         "description": "a simple timestamp_tz field"
       },
       {
-        "name": "timestamp_ntz_field",
+        "name": "datetime_field",
         "type": "DATETIME",
         "mode": "NULLABLE",
-        "description": "a simple timestamp_ntz field"
+        "description": "a simple timestamp_ntz field (bq datetime)"
       },
       {
         "name": "date_field",
         "type": "DATE",
         "mode": "NULLABLE",
         "description": "a simple date field"
+      },
+      {
+        "name": "time_field",
+        "type": "TIME",
+        "mode": "NULLABLE",
+        "description": "a time field"
+      },
+      {
+        "name": "geography_field",
+        "type": "GEOGRAPHY",
+        "mode": "NULLABLE",
+        "description": "a geography field"
+      },
+      {
+        "name": "json_field",
+        "type": "JSON",
+        "mode": "NULLABLE",
+        "description": "a json field"
       },
       {
         "name": "number_field",
@@ -194,7 +212,13 @@
             "type": "DATE",
             "mode": "NULLABLE",
             "description": "a non required date field"
-          }
+          },
+          {
+            "name": "subfield_3",
+            "type": "INT64",
+            "mode": "NULLABLE",
+            "description": "an integer field"
+          } 
         ]
       },
       {
@@ -211,7 +235,7 @@
           },
           {
             "name": "subfield_2",
-            "type": "INTEGER",
+            "type": "INT64",
             "mode": "NULLABLE",
             "description": "a non required int field"
           }
@@ -225,7 +249,7 @@
       },
       {
         "name": "int_array_field",
-        "type": "INTEGER",
+        "type": "INT64",
         "mode": "REPEATED",
         "description": "an int array"
       },
