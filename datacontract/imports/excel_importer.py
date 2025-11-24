@@ -16,6 +16,7 @@ from open_data_contract_standard.model import (
     ServiceLevelAgreementProperty,
     Support,
     Team,
+    TeamMember,
 )
 from openpyxl.cell.cell import Cell
 from openpyxl.workbook.workbook import Workbook
@@ -540,7 +541,7 @@ def import_team(workbook: Workbook) -> Optional[List[Team]]:
             if (not (username or name or role)) or row_idx == team_range[0] - 1:
                 continue
 
-            team_member = Team(
+            team_member = TeamMember(
                 username=username,
                 name=name,
                 description=get_cell_value(row, headers.get("description")),
