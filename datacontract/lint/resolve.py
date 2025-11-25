@@ -312,9 +312,9 @@ def _resolve_data_contract_from_str(
 
     if schema_location is None:
         if is_open_data_contract_standard(yaml_dict):
-            logging.info("Using ODCS 3.0.2 schema to validate data contract")
+            logging.info("Using ODCS 3.1.0 schema to validate data contract")
             # TODO refactor this to a specific function
-            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.0.2.schema.json")
+            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
 
     _validate_json_schema(yaml_dict, schema_location)
 
