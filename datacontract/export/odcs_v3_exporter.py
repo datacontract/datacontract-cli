@@ -198,14 +198,10 @@ def to_logical_type(type: str) -> str | None:
         return "integer"
     if type.lower() in ["boolean"]:
         return "boolean"
-    if type.lower() in ["object", "record", "struct"]:
+    if type.lower() in ["object", "record", "struct", "map", "variant"]:
         return "object"
-    if type.lower() in ["bytes"]:
+    if type.lower() in ["bytes", "array"]:
         return "array"
-    if type.lower() in ["array"]:
-        return "array"
-    if type.lower() in ["variant"]:
-        return "variant"
     if type.lower() in ["null"]:
         return None
     return None
