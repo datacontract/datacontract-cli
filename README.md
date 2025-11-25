@@ -25,7 +25,7 @@ This data contract contains all information to connect to S3 and check that the 
 
 Let's use [uv](https://docs.astral.sh/uv/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ uv tool install --python python3.11 'datacontract-cli[all]'
+$ uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
 ```
 
 
