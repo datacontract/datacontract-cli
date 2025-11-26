@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- export: field annotation now matches to number/numeric/decimal types
+
 
 ## [0.10.39] - 2025-11-20
 
