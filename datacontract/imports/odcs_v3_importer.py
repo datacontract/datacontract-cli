@@ -10,19 +10,6 @@ from open_data_contract_standard.model import CustomProperty, OpenDataContractSt
 
 from datacontract.imports.importer import Importer
 from datacontract.lint.resources import read_resource
-
-
-class _SafeLoaderNoTimestamp(yaml.SafeLoader):
-    """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
-
-    pass
-
-
-# Remove the timestamp implicit resolver so dates like 2022-01-15 stay as strings
-_SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
-    k: [(tag, regexp) for tag, regexp in v if tag != "tag:yaml.org,2002:timestamp"]
-    for k, v in _SafeLoaderNoTimestamp.yaml_implicit_resolvers.copy().items()
-}
 from datacontract.model.data_contract_specification import (
     DATACONTRACT_TYPES,
     Availability,
@@ -37,6 +24,19 @@ from datacontract.model.data_contract_specification import (
     Terms,
 )
 from datacontract.model.exceptions import DataContractException
+
+
+class _SafeLoaderNoTimestamp(yaml.SafeLoader):
+    """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
+
+    pass
+
+
+# Remove the timestamp implicit resolver so dates like 2022-01-15 stay as strings
+_SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
+    k: [(tag, regexp) for tag, regexp in v if tag != "tag:yaml.org,2002:timestamp"]
+    for k, v in _SafeLoaderNoTimestamp.yaml_implicit_resolvers.copy().items()
+}
 
 
 class OdcsImporter(Importer):
