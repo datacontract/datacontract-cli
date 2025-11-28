@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - api: CORS is now enabled for all origins
 
+### Fixed
+
+- lint: YAML date values (e.g., `2022-01-15`) are now kept as strings instead of being converted to datetime objects, fixing ODCS schema validation
+
 ## [0.10.40] - 2025-11-25
 
 ### Added
