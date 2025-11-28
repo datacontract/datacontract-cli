@@ -75,3 +75,68 @@ models:
     assert tbl.columns == ["first", "last"]
     assert [x[1].lower() for x in tbl.description] == ["string", "string"]
     assert tbl.fetchall() == [("John", "Doe")]
+
+
+def test_empty_object():
+    """Test that objects without defined fields are handled as JSON and don't create nested views."""
+    data_contract_str = """
+dataContractSpecification: 1.2.1
+id: "empty-object-test"
+info:
+  title: Test data with objects without fields
+  version: 1.0.0
+servers:
+  sample:
+    type: local
+    path: ./fixtures/local-json/data/empty_object.json
+    format: json
+    delimiter: array
+models:
+  sample_data:
+    type: object
+    fields:
+      id:
+        type: integer
+        required: true
+      metadata:
+        type: object
+        required: false
+        description: "Object with no fields defined - should be treated as JSON"
+      name:
+        type: string
+        required: true
+      settings:
+        type: object
+        required: false
+        fields: {}
+        description: "Object with explicitly empty fields - should be treated as JSON"
+    """
+    data_contract = resolve.resolve_data_contract(data_contract_str=data_contract_str)
+    run = Run.create_run()
+    con = get_duckdb_connection(data_contract, data_contract.servers["sample"], run)
+
+    # Test main table exists and has correct columns
+    tbl = con.table("sample_data")
+    assert tbl.columns == ["id", "metadata", "name", "settings"]
+
+    # Test that the data can be read correctly
+    row1 = tbl.fetchone()
+    assert row1[0] == 1  # id
+    assert row1[2] == "Alice"  # name
+
+    row2 = tbl.fetchone()
+    assert row2[0] == 2  # id
+    assert row2[2] == "Bob"  # name
+
+    row3 = tbl.fetchone()
+    assert row3[0] == 3  # id
+    assert row3[2] == "Charlie"  # name
+
+    # Test that no nested views were created for empty objects
+    tables_result = con.sql("SHOW TABLES").fetchall()
+    table_names = [table[0] for table in tables_result]
+
+    # Should only have the main table, not nested views for metadata or settings
+    assert "sample_data" in table_names
+    assert "sample_data__metadata" not in table_names
+    assert "sample_data__settings" not in table_names

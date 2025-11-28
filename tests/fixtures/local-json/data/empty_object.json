@@ -1,0 +1,19 @@
+[
+    {
+        "id": 1,
+        "metadata": {},
+        "name": "Alice",
+        "settings": {}
+    },
+    {
+        "id": 2,
+        "metadata": {"version": "1.0"},
+        "name": "Bob",
+        "settings": {}
+    },
+    {
+        "id": 3,
+        "metadata": {},
+        "name": "Charlie"
+    }
+]
