@@ -24,6 +24,8 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_trino(field)
     elif server_type == "oracle":
         return convert_type_to_oracle(field)
+    elif server_type == "duckdb":
+        return convert_to_duckdb(field)
 
     return field.type
 
