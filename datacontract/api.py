@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 
 import typer
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
 
@@ -88,6 +89,13 @@ app = FastAPI(
             },
         },
     ],
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 api_key_header = APIKeyHeader(
