@@ -174,10 +174,11 @@ schema:
   quality:
   - description: Table shall contain at least 1 row
     type: sql
+    mustBeGreaterOrEqualTo: 1.0
     query: SELECT COUNT(*) FROM shipments
   - description: confirming that the total number of records  is 7
     type: sql
-    mustBe: 7
+    mustBe: 7.0
     query: SELECT COUNT(*) FROM shipments
   - description: confirming that the total number of records divided by 2 is 3.5
     type: sql
