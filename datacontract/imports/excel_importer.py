@@ -982,21 +982,21 @@ def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dic
                     threshold_dict[threshold_operator] = values[:2]  # Take first two values
             except (ValueError, TypeError) as e:
                 logger.warning(f"Failed to parse between values: {threshold_value}, error: {e}")
-    else:
-        # Single value for other operators
-        try:
-            # Try to parse as number
-            has_digit = "." in threshold_value
-            if threshold_value.replace(".", "").replace("-", "").isdigit():
-                if has_digit:
-                    value = Decimal(threshold_value)
-                else:
-                    value = int(threshold_value)
+        else:
+            # Single value for other operators
+            try:
+                # Try to parse as number
+                has_digit = "." in threshold_value
+                if threshold_value.replace(".", "").replace("-", "").isdigit():
+                    if has_digit:
+                        value = Decimal(threshold_value)
+                    else:
+                        value = int(threshold_value)
 
-                threshold_dict[threshold_operator] = value
+                    threshold_dict[threshold_operator] = value
 
-        except (ValueError, TypeError) as e:
-            logger.warning(f"Failed to parse threshold value: {threshold_value}, error: {e}")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Failed to parse threshold value: {threshold_value}, error: {e}")
 
     return threshold_dict
 
