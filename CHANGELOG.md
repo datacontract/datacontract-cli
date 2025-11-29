@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - lint: YAML date values (e.g., `2022-01-15`) are now kept as strings instead of being converted to datetime objects, fixing ODCS schema validation
+- export: field annotation now matches to number/numeric/decimal types
 
 ## [0.10.40] - 2025-11-25
 
