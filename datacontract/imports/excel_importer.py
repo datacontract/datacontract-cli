@@ -985,13 +985,14 @@ def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dic
     else:
         # Single value for other operators
         try:
-                # Try to parse as number
+            # Try to parse as number
+            isFraction =  "." in threshold_value
             if threshold_value.replace(".", "").replace("-", "").isdigit():
-                if threshold_operator in ["mustBe", "mustNotBe"]:
+                if isFraction:
                     value = float(threshold_value)
                 else:
-                    value = Decimal(threshold_value)
-            
+                    value = int(threshold_value)
+
             threshold_dict[threshold_operator] = value
 
         except (ValueError, TypeError) as e:
