@@ -9,12 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- test: Log server name and type in output (#963)
 - api: CORS is now enabled for all origins
+- quality: Support `{schema}` and `${schema}` placeholder in SQL quality checks to reference the server's database schema (#957)
+- SQL Server: Support `DATACONTRACT_SQLSERVER_DRIVER` environment variable to specify the ODBC driver (#959)
+- Excel: Add Oracle server type support for Excel export/import (#960)
+- Excel Export: Complete server types (glue, kafka, postgres, s3, snowflake, sqlserver, custom)
 
 ### Fixed
 
 - lint: YAML date values (e.g., `2022-01-15`) are now kept as strings instead of being converted to datetime objects, fixing ODCS schema validation
 - export: field annotation now matches to number/numeric/decimal types
+- Excel: Server port is now correctly parsed as integer instead of string for all server types
 
 ## [0.10.40] - 2025-11-25
 
