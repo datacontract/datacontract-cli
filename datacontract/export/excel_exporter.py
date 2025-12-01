@@ -483,10 +483,14 @@ def get_threshold_operator(quality: DataQuality) -> Optional[str]:
         return "mustBeGreaterThan"
     elif hasattr(quality, "mustBeGreaterThanOrEqualTo") and quality.mustBeGreaterThanOrEqualTo is not None:
         return "mustBeGreaterThanOrEqualTo"
+    elif hasattr(quality, "mustBeGreaterOrEqualTo") and quality.mustBeGreaterOrEqualTo is not None:
+        return "mustBeGreaterOrEqualTo"
     elif hasattr(quality, "mustBeLessThan") and quality.mustBeLessThan is not None:
         return "mustBeLessThan"
     elif hasattr(quality, "mustBeLessThanOrEqualTo") and quality.mustBeLessThanOrEqualTo is not None:
         return "mustBeLessThanOrEqualTo"
+    elif hasattr(quality, "mustBeLessOrEqualTo") and quality.mustBeLessOrEqualTo is not None:
+        return "mustBeLessOrEqualTo" 
     elif hasattr(quality, "mustBeBetween") and quality.mustBeBetween is not None:
         return "mustBeBetween"
     elif hasattr(quality, "mustNotBeBetween") and quality.mustNotBeBetween is not None:
@@ -504,10 +508,14 @@ def get_threshold_value(quality: DataQuality) -> Optional[str]:
         return str(quality.mustBeGreaterThan)
     elif hasattr(quality, "mustBeGreaterThanOrEqualTo") and quality.mustBeGreaterThanOrEqualTo is not None:
         return str(quality.mustBeGreaterThanOrEqualTo)
+    elif hasattr(quality, "mustBeGreaterOrEqualTo") and quality.mustBeGreaterOrEqualTo is not None:
+        return str(quality.mustBeGreaterOrEqualTo)
     elif hasattr(quality, "mustBeLessThan") and quality.mustBeLessThan is not None:
         return str(quality.mustBeLessThan)
     elif hasattr(quality, "mustBeLessThanOrEqualTo") and quality.mustBeLessThanOrEqualTo is not None:
         return str(quality.mustBeLessThanOrEqualTo)
+    elif hasattr(quality, "mustBeLessOrEqualTo") and quality.mustBeLessOrEqualTo is not None:
+        return str(quality.mustBeLessOrEqualTo)
     elif hasattr(quality, "mustBeBetween") and quality.mustBeBetween is not None and len(quality.mustBeBetween) >= 2:
         return f"[{quality.mustBeBetween[0]}, {quality.mustBeBetween[1]}]"
     elif (
