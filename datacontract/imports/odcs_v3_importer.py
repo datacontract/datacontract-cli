@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, List
 from venv import logger
 
+import yaml
 from datacontract_specification.model import Quality
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
 
@@ -25,6 +26,19 @@ from datacontract.model.data_contract_specification import (
 from datacontract.model.exceptions import DataContractException
 
 
+class _SafeLoaderNoTimestamp(yaml.SafeLoader):
+    """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
+
+    pass
+
+
+# Remove the timestamp implicit resolver so dates like 2022-01-15 stay as strings
+_SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
+    k: [(tag, regexp) for tag, regexp in v if tag != "tag:yaml.org,2002:timestamp"]
+    for k, v in _SafeLoaderNoTimestamp.yaml_implicit_resolvers.copy().items()
+}
+
+
 class OdcsImporter(Importer):
     def import_source(
         self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
@@ -42,7 +56,9 @@ def import_odcs_v3_as_dcs(
 
 def parse_odcs_v3_from_str(source_str):
     try:
-        odcs = OpenDataContractStandard.from_string(source_str)
+        # Use custom loader to keep dates as strings instead of datetime objects
+        data = yaml.load(source_str, Loader=_SafeLoaderNoTimestamp)
+        odcs = OpenDataContractStandard(**data)
     except Exception as e:
         raise DataContractException(
             type="schema",

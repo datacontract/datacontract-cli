@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS CHECKS_TESTCASE CASCADE CONSTRAINTS;
+
 CREATE TABLE CHECKS_TESTCASE (
   CTC_ID                            NUMBER PRIMARY KEY,               -- Primary key
   DESCRIPTION                       VARCHAR2(30) NOT NULL,            -- Description

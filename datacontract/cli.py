@@ -18,7 +18,7 @@ from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import (
     publish_data_contract_to_entropy_data,
 )
-from datacontract.lint.resolve import resolve_data_contract_dict
+from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
@@ -180,7 +180,11 @@ def test(
     ).test()
     if logs:
         _print_logs(run)
-    write_test_result(run, console, output_format, output)
+    try:
+        data_contract = resolve_data_contract(location, schema_location=schema)
+    except Exception:
+        data_contract = None
+    write_test_result(run, console, output_format, output, data_contract)
 
 
 @app.command()

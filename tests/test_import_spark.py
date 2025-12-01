@@ -18,6 +18,8 @@ def spark(tmp_path_factory) -> SparkSession:
             "spark.sql.warehouse.dir",
             f"{tmp_path_factory.mktemp('spark')}/spark-warehouse",
         )
+        .config("spark.driver.host", "127.0.0.1")
+        .config("spark.driver.bindAddress", "127.0.0.1")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
         .config(
             "spark.jars.packages",

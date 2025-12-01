@@ -58,7 +58,7 @@ def constant_field_annotation(
     match field.type:
         case "string" | "text" | "varchar":
             return (ast.Name("str", ctx=ast.Load()), None)
-        case "number", "decimal", "numeric":
+        case "number" | "decimal" | "numeric":
             # Either integer or float in specification,
             # so we use float.
             return (ast.Name("float", ctx=ast.Load()), None)
