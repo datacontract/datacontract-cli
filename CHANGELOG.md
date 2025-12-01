@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - test: Log server name and type in output (#963)
 - api: CORS is now enabled for all origins
 - quality: Support `{schema}` and `${schema}` placeholder in SQL quality checks to reference the server's database schema (#957)
+- SQL Server: Support `DATACONTRACT_SQLSERVER_DRIVER` environment variable to specify the ODBC driver (#959)
 
 ### Fixed
 
