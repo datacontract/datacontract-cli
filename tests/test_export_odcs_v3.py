@@ -20,7 +20,7 @@ def test_cli():
 def test_to_odcs():
     data_contract = DataContractSpecification.from_string(read_file("fixtures/export/datacontract.yaml"))
     expected_odcs_model = """
-apiVersion: v3.0.1
+apiVersion: v3.1.0
 kind: DataContract
 id: orders-unit-test
 name: Orders Unit Test
@@ -97,6 +97,8 @@ servers:
     roles:
       - role: analyst_us
         description: Access to the data for US region
+team:
+ name: checkout
 
 support:
   - channel: email
@@ -105,8 +107,6 @@ support:
     url: https://wiki.example.com/teams/checkout
 
 customProperties:
-- property: owner
-  value: checkout
 - property: otherField
   value: otherValue
 """

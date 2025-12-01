@@ -8,6 +8,7 @@ from datacontract.data_contract import DataContract
 oracleContainer = OracleDbContainer("gvenzl/oracle-free:slim-faststart")
 ORACLE_SERVER_PORT: int = 1521
 
+
 @pytest.fixture(scope="module", autouse=True)
 def oracle_container(request):
     oracleContainer.start()
@@ -59,6 +60,7 @@ def _init_sql(sql_file_path):
                         cursor.execute(sql_command)
                     except DatabaseError as e:
                         print(f"Error executing SQL command: {e}", sql_command)
+
 
 def _setup_datacontract(datacontract):
     with open(datacontract) as data_contract_file:

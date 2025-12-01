@@ -8,7 +8,7 @@
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
 </p>
 
-The `datacontract` CLI is an open-source command-line tool for working with data contracts.
+The `datacontract` CLI is a popular and [recognized](https://www.thoughtworks.com/en-de/radar/tools/summary/data-contract-cli) open-source command-line tool for working with data contracts.
 It uses data contract YAML files as [Data Contract Specification](https://datacontract.com/) or [ODCS](https://bitol-io.github.io/open-data-contract-standard/latest/) to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
@@ -25,7 +25,7 @@ This data contract contains all information to connect to S3 and check that the 
 
 Let's use [uv](https://docs.astral.sh/uv/) to install the CLI (or use the [Docker image](#docker)),
 ```bash
-$ uv tool install --python python3.11 'datacontract-cli[all]'
+$ uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
 ```
 
 
@@ -599,6 +599,7 @@ models:
 | `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True` | Use windows authentication, instead of login |
 | `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate                |
 | `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True` | Use SSL                                      |
+| `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name   |
 
 
 
@@ -639,11 +640,15 @@ These environment variable specify the credentials used by the datacontract tool
 If you've started the database from a container, e.g. [oracle-free](https://hub.docker.com/r/gvenzl/oracle-free)
 this should match either `system` and what you specified as `ORACLE_PASSWORD` on the container or
 alternatively what you've specified under `APP_USER` and `APP_USER_PASSWORD`.
+If you require thick mode to connect to the database, you need to have an Oracle Instant Client
+installed on the system and specify the path to the installation within the environment variable
+`DATACONTRACT_ORACLE_CLIENT_DIR`.
 
-| Environment Variable                             | Example    | Description                                  |
-|--------------------------------------------------|------------|----------------------------------------------|
-| `DATACONTRACT_ORACLE_USERNAME`                   | `system`   | Username                                     |
-| `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53` | Password                                     |
+| Environment Variable                             | Example            | Description                                |
+|--------------------------------------------------|--------------------|--------------------------------------------|
+| `DATACONTRACT_ORACLE_USERNAME`                   | `system`           | Username                                   |
+| `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53`         | Password                                   |
+| `DATACONTRACT_ORACLE_CLIENT_DIR`                 | `C:\oracle\client` | Path to Oracle Instant Client installation |
 
 
 

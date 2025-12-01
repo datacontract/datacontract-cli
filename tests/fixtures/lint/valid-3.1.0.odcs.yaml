@@ -1,4 +1,4 @@
-apiVersion: "v3.0.2"
+apiVersion: "v3.1.0"
 kind: "DataContract"
 id: "valid_odcs"
 name: "Valid ODCS data contract"
@@ -33,7 +33,14 @@ schema:
   - type: "sql"
     description: "Table shall contain at least 1 row"
     query: "SELECT COUNT(*) FROM shipments"
-    mustBeGreaterThan: 0
+    mustBeGreaterOrEqualTo: 1
+  - type: "library"
+    description: "same as above as type library"
+    metric: rowCount
+    mustBeGreaterOrEqualTo: 1
+  - description: "same as above as type default"
+    metric: rowCount
+    mustBeGreaterOrEqualTo: 1
   properties:
   - name: "shipment_id"
     businessName: "Shipment ID"
@@ -198,7 +205,7 @@ price:
   priceCurrency: "EUR"
   priceUnit: "Per 1000 requests"
 team:
-  name: fulfillment
+  name: "fullfillment"
   members:
   - username: "vimportant"
     role: "administrator"

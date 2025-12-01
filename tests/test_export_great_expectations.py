@@ -107,26 +107,25 @@ def data_contract_great_expectations_quality_column() -> DataContractSpecificati
 @pytest.fixture
 def expected_json_suite() -> Dict[str, Any]:
     return {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "string"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "processed_timestamp", "type_": "timestamp"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_table_row_count_to_be_between",
+                "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
                 "meta": {},
             },
@@ -138,17 +137,16 @@ def expected_json_suite() -> Dict[str, Any]:
 @pytest.fixture
 def expected_json_suite_table_quality() -> Dict[str, Any]:
     return {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
-            {"expectation_type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 10}, "meta": {}},
+            {"type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 10}, "meta": {}},
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "string"},
                 "meta": {},
             },
@@ -160,32 +158,31 @@ def expected_json_suite_table_quality() -> Dict[str, Any]:
 @pytest.fixture
 def expected_json_suite_with_enum() -> Dict[str, Any]:
     return {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.1.1",
+        "name": "orders.1.1.1",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["id", "type"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "id", "type_": "string"},
                 "meta": {},
             },
-            {"expectation_type": "expect_column_values_to_be_unique", "kwargs": {"column": "id"}, "meta": {}},
+            {"type": "expect_column_values_to_be_unique", "kwargs": {"column": "id"}, "meta": {}},
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "type", "type_": "string"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_in_set",
+                "type": "expect_column_values_to_be_in_set",
                 "kwargs": {"column": "type", "value_set": ["A", "B", "C", "D", "E"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_value_lengths_to_equal",
+                "type": "expect_column_value_lengths_to_equal",
                 "kwargs": {"value": 1},
                 "meta": {"notes": "Ensures that column length is 1."},
                 "column": "type",
@@ -198,26 +195,25 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
 @pytest.fixture
 def expected_spark_engine() -> Dict[str, Any]:
     return {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "StringType"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "processed_timestamp", "type_": "TimestampType"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_table_row_count_to_be_between",
+                "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
                 "meta": {},
             },
@@ -229,26 +225,25 @@ def expected_spark_engine() -> Dict[str, Any]:
 @pytest.fixture
 def expected_pandas_engine() -> Dict[str, Any]:
     return {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "str"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "processed_timestamp", "type_": "datetime64[ns]"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_table_row_count_to_be_between",
+                "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
                 "meta": {},
             },
@@ -260,26 +255,25 @@ def expected_pandas_engine() -> Dict[str, Any]:
 @pytest.fixture
 def expected_sql_engine() -> Dict[str, Any]:
     return {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "STRING"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "processed_timestamp", "type_": "TIMESTAMP_TZ"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_table_row_count_to_be_between",
+                "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
                 "meta": {},
             },
@@ -291,21 +285,20 @@ def expected_sql_engine() -> Dict[str, Any]:
 @pytest.fixture
 def expected_sql_trino_engine() -> Dict[str, Any]:
     return {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "varchar"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {
                     "column": "processed_timestamp",
                     "type_": "timestamp(3) with time zone",
@@ -313,7 +306,7 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
                 "meta": {},
             },
             {
-                "expectation_type": "expect_table_row_count_to_be_between",
+                "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
                 "meta": {},
             },
@@ -324,36 +317,35 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
 
 def test_to_great_expectation(data_contract_basic: DataContractSpecification):
     expected_json_suite = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id", "order_total", "order_status"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "varchar"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_unique",
+                "type": "expect_column_values_to_be_unique",
                 "kwargs": {"column": "order_id"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_value_lengths_to_be_between",
+                "type": "expect_column_value_lengths_to_be_between",
                 "kwargs": {"column": "order_id", "min_value": 8, "max_value": 10},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_total", "type_": "bigint"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_between",
+                "type": "expect_column_values_to_be_between",
                 "kwargs": {
                     "column": "order_total",
                     "min_value": 0,
@@ -362,12 +354,12 @@ def test_to_great_expectation(data_contract_basic: DataContractSpecification):
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_status", "type_": "text"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_in_set",
+                "type": "expect_column_values_to_be_in_set",
                 "kwargs": {"column": "order_status", "value_set": ["pending", "shipped", "delivered"]},
                 "meta": {},
             },
@@ -385,11 +377,10 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
     """
 
     expected_orders = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "orders.1.0.0",
+        "name": "orders.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {
                     "column_list": [
                         "order_id",
@@ -402,32 +393,32 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_unique",
+                "type": "expect_column_values_to_be_unique",
                 "kwargs": {"column": "order_id"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_timestamp", "type_": "timestamp"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_total", "type_": "long"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "customer_id", "type_": "text"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_value_lengths_to_be_between",
+                "type": "expect_column_value_lengths_to_be_between",
                 "kwargs": {"column": "customer_id", "min_value": 10, "max_value": 20},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "customer_email_address", "type_": "text"},
                 "meta": {},
             },
@@ -436,21 +427,20 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
     }
 
     expected_line_items = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "line_items.1.0.0",
+        "name": "line_items.1.0.0",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["lines_item_id", "order_id", "sku"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "lines_item_id", "type_": "text"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_unique",
+                "type": "expect_column_values_to_be_unique",
                 "kwargs": {"column": "lines_item_id"},
                 "meta": {},
             },
@@ -484,26 +474,25 @@ def test_to_great_expectation_custom_name(
     Test with Quality definition in the contract
     """
     expected = {
-        "data_asset_type": "null",
-        "expectation_suite_name": "my_expectation_suite_name",
+        "name": "my_expectation_suite_name",
         "expectations": [
             {
-                "expectation_type": "expect_table_columns_to_match_ordered_list",
+                "type": "expect_table_columns_to_match_ordered_list",
                 "kwargs": {"column_list": ["order_id", "processed_timestamp"]},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "string"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_column_values_to_be_of_type",
+                "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "processed_timestamp", "type_": "timestamp"},
                 "meta": {},
             },
             {
-                "expectation_type": "expect_table_row_count_to_be_between",
+                "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
                 "meta": {},
             },

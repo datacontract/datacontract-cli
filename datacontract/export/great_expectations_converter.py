@@ -115,8 +115,7 @@ def to_suite(expectations: List[Dict[str, Any]], expectation_suite_name: str) ->
     """
     return json.dumps(
         {
-            "data_asset_type": "null",
-            "expectation_suite_name": expectation_suite_name,
+            "name": expectation_suite_name,
             "expectations": expectations,
             "meta": {},
         },
@@ -199,7 +198,7 @@ def add_column_order_exp(fields: Dict[str, Field], expectations: List[Dict[str, 
     """
     expectations.append(
         {
-            "expectation_type": "expect_table_columns_to_match_ordered_list",
+            "type": "expect_table_columns_to_match_ordered_list",
             "kwargs": {"column_list": list(fields.keys())},
             "meta": {},
         }
@@ -217,7 +216,7 @@ def to_column_types_exp(field_name, field_type) -> Dict[str, Any]:
         Dict[str, Any]: Column type expectation.
     """
     return {
-        "expectation_type": "expect_column_values_to_be_of_type",
+        "type": "expect_column_values_to_be_of_type",
         "kwargs": {"column": field_name, "type_": field_type},
         "meta": {},
     }
@@ -233,7 +232,7 @@ def to_column_unique_exp(field_name) -> Dict[str, Any]:
         Dict[str, Any]: Column uniqueness expectation.
     """
     return {
-        "expectation_type": "expect_column_values_to_be_unique",
+        "type": "expect_column_values_to_be_unique",
         "kwargs": {"column": field_name},
         "meta": {},
     }
@@ -251,7 +250,7 @@ def to_column_length_exp(field_name, min_length, max_length) -> Dict[str, Any]:
         Dict[str, Any]: Column length expectation.
     """
     return {
-        "expectation_type": "expect_column_value_lengths_to_be_between",
+        "type": "expect_column_value_lengths_to_be_between",
         "kwargs": {
             "column": field_name,
             "min_value": min_length,
@@ -273,7 +272,7 @@ def to_column_min_max_exp(field_name, minimum, maximum) -> Dict[str, Any]:
         Dict[str, Any]: Column min-max value expectation.
     """
     return {
-        "expectation_type": "expect_column_values_to_be_between",
+        "type": "expect_column_values_to_be_between",
         "kwargs": {"column": field_name, "min_value": minimum, "max_value": maximum},
         "meta": {},
     }
@@ -290,7 +289,7 @@ def to_column_enum_exp(field_name, enum_list: List[str]) -> Dict[str, Any]:
         Dict[str, Any]: Column value in set expectation.
     """
     return {
-        "expectation_type": "expect_column_values_to_be_in_set",
+        "type": "expect_column_values_to_be_in_set",
         "kwargs": {"column": field_name, "value_set": enum_list},
         "meta": {},
     }

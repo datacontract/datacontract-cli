@@ -15,10 +15,10 @@ from datacontract.catalog.catalog import create_data_contract_html, create_index
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.imports.importer import ImportFormat, Spec
 from datacontract.init.init_template import get_init_template
-from datacontract.integration.datamesh_manager import (
-    publish_data_contract_to_datamesh_manager,
+from datacontract.integration.entropy_data import (
+    publish_data_contract_to_entropy_data,
 )
-from datacontract.lint.resolve import resolve_data_contract_dict
+from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
@@ -180,7 +180,11 @@ def test(
     ).test()
     if logs:
         _print_logs(run)
-    write_test_result(run, console, output_format, output)
+    try:
+        data_contract = resolve_data_contract(location, schema_location=schema)
+    except Exception:
+        data_contract = None
+    write_test_result(run, console, output_format, output, data_contract)
 
 
 @app.command()
@@ -406,7 +410,7 @@ def publish(
     """
     enable_debug_logging(debug)
 
-    publish_data_contract_to_datamesh_manager(
+    publish_data_contract_to_entropy_data(
         data_contract_dict=resolve_data_contract_dict(location),
         ssl_verification=ssl_verification,
     )

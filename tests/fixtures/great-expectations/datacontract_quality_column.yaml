@@ -28,7 +28,7 @@ models:
             engine: great-expectations
             description: "Accepted Values for type"
             implementation:
-              expectation_type: expect_column_value_lengths_to_equal
+              type: expect_column_value_lengths_to_equal
               kwargs:
                 value: 1
               meta:

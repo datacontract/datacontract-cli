@@ -11,6 +11,7 @@ from open_data_contract_standard.model import (
     Server,
     ServiceLevelAgreementProperty,
     Support,
+    Team,
 )
 
 from datacontract.export.exporter import Exporter
@@ -30,7 +31,7 @@ def to_odcs_v3_yaml(data_contract_spec: DataContractSpecification) -> str:
 
 def to_odcs_v3(data_contract_spec: DataContractSpecification) -> OpenDataContractStandard:
     result = OpenDataContractStandard(
-        apiVersion="v3.0.1",
+        apiVersion="v3.1.0",
         kind="DataContract",
         id=data_contract_spec.id,
         name=data_contract_spec.info.title,
@@ -130,9 +131,9 @@ def to_odcs_v3(data_contract_spec: DataContractSpecification) -> OpenDataContrac
 
         if len(servers) > 0:
             result.servers = servers
+    if (data_contract_spec.info.owner is not None) and (data_contract_spec.info.owner != ""):
+        result.team = Team(name=data_contract_spec.info.owner)
     custom_properties = []
-    if data_contract_spec.info.owner is not None:
-        custom_properties.append(CustomProperty(property="owner", value=data_contract_spec.info.owner))
     if data_contract_spec.info.model_extra is not None:
         for key, value in data_contract_spec.info.model_extra.items():
             custom_properties.append(CustomProperty(property=key, value=value))
@@ -197,14 +198,10 @@ def to_logical_type(type: str) -> str | None:
         return "integer"
     if type.lower() in ["boolean"]:
         return "boolean"
-    if type.lower() in ["object", "record", "struct"]:
+    if type.lower() in ["object", "record", "struct", "map", "variant"]:
         return "object"
-    if type.lower() in ["bytes"]:
+    if type.lower() in ["bytes", "array"]:
         return "array"
-    if type.lower() in ["array"]:
-        return "array"
-    if type.lower() in ["variant"]:
-        return "variant"
     if type.lower() in ["null"]:
         return None
     return None
