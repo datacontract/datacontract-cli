@@ -72,14 +72,14 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
         if field.enum is not None and len(field.enum) > 0:
             checks.append(check_field_enum(model_name, field_name, field.enum, quoting_config))
         if field.quality is not None and len(field.quality) > 0:
-            quality_list = check_quality_list(model_name, field_name, field.quality, quoting_config)
+            quality_list = check_quality_list(model_name, field_name, field.quality, quoting_config, server)
             if (quality_list is not None) and len(quality_list) > 0:
                 checks.extend(quality_list)
         # TODO references: str = None
         # TODO format
 
     if model_value.quality is not None and len(model_value.quality) > 0:
-        quality_list = check_quality_list(model_name, None, model_value.quality)
+        quality_list = check_quality_list(model_name, None, model_value.quality, quoting_config, server)
         if (quality_list is not None) and len(quality_list) > 0:
             checks.extend(quality_list)
 
@@ -681,7 +681,11 @@ def check_field_missing_values(
 
 
 def check_quality_list(
-    model_name, field_name, quality_list: List[Quality], quoting_config: QuotingConfig = QuotingConfig()
+    model_name,
+    field_name,
+    quality_list: List[Quality],
+    quoting_config: QuotingConfig = QuotingConfig(),
+    server: Server = None,
 ) -> List[Check]:
     checks: List[Check] = []
 
@@ -695,7 +699,7 @@ def check_quality_list(
                 check_key = f"{model_name}__{field_name}__quality_sql_{count}"
                 check_type = "model_quality_sql"
             threshold = to_sodacl_threshold(quality)
-            query = prepare_query(quality, model_name, field_name, quoting_config)
+            query = prepare_query(quality, model_name, field_name, quoting_config, server)
             if query is None:
                 logger.warning(f"Quality check {check_key} has no query")
                 continue
@@ -780,7 +784,11 @@ def check_quality_list(
 
 
 def prepare_query(
-    quality: Quality, model_name: str, field_name: str = None, quoting_config: QuotingConfig = QuotingConfig()
+    quality: Quality,
+    model_name: str,
+    field_name: str = None,
+    quoting_config: QuotingConfig = QuotingConfig(),
+    server: Server = None,
 ) -> str | None:
     if quality.query is None:
         return None
@@ -801,14 +809,26 @@ def prepare_query(
     else:
         model_name_for_soda = model_name
 
-    query = re.sub(r'["\']?\{model}["\']?', model_name_for_soda, query)
-    query = re.sub(r'["\']?{schema}["\']?', model_name_for_soda, query)
-    query = re.sub(r'["\']?{table}["\']?', model_name_for_soda, query)
+    query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
+    query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
+
+    # Handle {schema} and ${schema} placeholder - use server schema if available
+    if server and server.schema_:
+        if quoting_config.quote_model_name:
+            schema_name_for_soda = f'"{server.schema_}"'
+        elif quoting_config.quote_model_name_with_backticks:
+            schema_name_for_soda = f"`{server.schema_}`"
+        else:
+            schema_name_for_soda = server.schema_
+        query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
+    else:
+        # Fallback to model name for backward compatibility
+        query = re.sub(r'["\']?\$?\{schema}["\']?', model_name_for_soda, query)
 
     if field_name is not None:
-        query = re.sub(r'["\']?{field}["\']?', field_name_for_soda, query)
-        query = re.sub(r'["\']?{column}["\']?', field_name_for_soda, query)
-        query = re.sub(r'["\']?{property}["\']?', field_name_for_soda, query)
+        query = re.sub(r'["\']?\$?\{field}["\']?', field_name_for_soda, query)
+        query = re.sub(r'["\']?\$?\{column}["\']?', field_name_for_soda, query)
+        query = re.sub(r'["\']?\$?\{property}["\']?', field_name_for_soda, query)
 
     return query
 
