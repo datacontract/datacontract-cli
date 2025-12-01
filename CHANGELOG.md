@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Excel: Server port is now correctly parsed as integer instead of string for all server types
 - Excel: Remove invalid `table` and `view` fields from custom server import
 
+### Deprecated
+
+- The `breaking`, `changelog`, and `diff` commands are now deprecated and will be removed in a future version (#925)
+
 ## [0.10.40] - 2025-11-25
 
 ### Added

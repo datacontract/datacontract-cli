@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import warnings
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -455,7 +456,7 @@ def catalog(
     create_index_html(contracts, path)
 
 
-@app.command()
+@app.command(deprecated=True)
 def breaking(
     location_old: Annotated[
         str,
@@ -468,9 +469,17 @@ def breaking(
     debug: debug_option = None,
 ):
     """
-    Identifies breaking changes between data contracts. Prints to stdout.
+    [DEPRECATED] Identifies breaking changes between data contracts. Prints to stdout.
+
+    This command is deprecated and will be removed in a future version.
     """
     enable_debug_logging(debug)
+    warnings.warn(
+        "The 'breaking' command is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    console.print("[yellow]Warning: The 'breaking' command is deprecated and will be removed in a future version.[/yellow]")
 
     # TODO exception handling
     result = DataContract(data_contract_file=location_old, inline_definitions=True).breaking(
@@ -483,7 +492,7 @@ def breaking(
         raise typer.Exit(code=1)
 
 
-@app.command()
+@app.command(deprecated=True)
 def changelog(
     location_old: Annotated[
         str,
@@ -496,9 +505,17 @@ def changelog(
     debug: debug_option = None,
 ):
     """
-    Generate a changelog between data contracts. Prints to stdout.
+    [DEPRECATED] Generate a changelog between data contracts. Prints to stdout.
+
+    This command is deprecated and will be removed in a future version.
     """
     enable_debug_logging(debug)
+    warnings.warn(
+        "The 'changelog' command is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    console.print("[yellow]Warning: The 'changelog' command is deprecated and will be removed in a future version.[/yellow]")
 
     # TODO exception handling
     result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
@@ -508,7 +525,7 @@ def changelog(
     console.print(result.changelog_str())
 
 
-@app.command()
+@app.command(deprecated=True)
 def diff(
     location_old: Annotated[
         str,
@@ -521,9 +538,17 @@ def diff(
     debug: debug_option = None,
 ):
     """
-    PLACEHOLDER. Currently works as 'changelog' does.
+    [DEPRECATED] Generate a diff between data contracts. Prints to stdout.
+
+    This command is deprecated and will be removed in a future version.
     """
     enable_debug_logging(debug)
+    warnings.warn(
+        "The 'diff' command is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    console.print("[yellow]Warning: The 'diff' command is deprecated and will be removed in a future version.[/yellow]")
 
     # TODO change to diff output, not the changelog entries
     result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
