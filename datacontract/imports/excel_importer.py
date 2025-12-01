@@ -742,8 +742,6 @@ def import_servers(workbook) -> Optional[List[Server]]:
                     server.project = get_server_cell_value(workbook, sheet, "servers.custom.project", index)
                     server.schema_ = get_server_cell_value(workbook, sheet, "servers.custom.schema", index)
                     server.stagingDir = get_server_cell_value(workbook, sheet, "servers.custom.stagingDir", index)
-                    server.table = get_server_cell_value(workbook, sheet, "servers.custom.table", index)
-                    server.view = get_server_cell_value(workbook, sheet, "servers.custom.view", index)
                     server.warehouse = get_server_cell_value(workbook, sheet, "servers.custom.warehouse", index)
                     server.region = get_server_cell_value(workbook, sheet, "servers.custom.region", index)
                     server.regionName = get_server_cell_value(workbook, sheet, "servers.custom.regionName", index)
