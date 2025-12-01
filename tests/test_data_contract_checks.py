@@ -1,4 +1,4 @@
-from datacontract.engines.data_contract_checks import period_to_seconds, prepare_query, QuotingConfig
+from datacontract.engines.data_contract_checks import QuotingConfig, period_to_seconds, prepare_query
 from datacontract.model.data_contract_specification import Quality, Server
 
 
