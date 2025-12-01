@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Great Expectations export: Update to Great Expectations 1.x format (#919)
+  - Changed `expectation_suite_name` to `name` in suite output
+  - Changed `expectation_type` to `type` in expectations
+  - Removed `data_asset_type` field from suite output
+  - **Breaking**: Users with custom quality definitions using `expectation_type` must update to use `type`
+
 ### Added
 
 - test: Log server name and type in output (#963)
