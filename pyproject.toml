@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.39"
+version = "0.10.40"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -13,7 +13,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 
 dependencies = [
   "typer>=0.15.1,<0.20",
@@ -35,13 +35,14 @@ dependencies = [
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
-  "open-data-contract-standard>=3.0.5,<4.0.0"
+  "open-data-contract-standard>=3.1.0,<4.0.0",
+
 ]
 
 [project.optional-dependencies]
 
 avro = [
-  "avro==1.12.0"
+  "avro==1.12.1"
 ]
 
 bigquery = [
@@ -122,7 +123,7 @@ rdf = [
 ]
 
 api = [
-  "fastapi==0.116.1",
+  "fastapi==0.121.2",
   "uvicorn==0.38.0",
 ]
 
@@ -143,14 +144,15 @@ dev = [
   "datacontract-cli[all]",
   "httpx==0.28.1",
   "kafka-python",
-  "moto==5.1.13",
+  "minio==7.2.17",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
+  "moto==5.1.17",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.5.0",
   "pytest",
   "pytest-xdist",
-  "pymssql==2.3.8",
+  "pymssql==2.3.9",
   "ruff",
-  "testcontainers[minio,postgres,kafka,mssql]==4.12.0",
+  "testcontainers[minio,postgres,kafka,mssql]==4.13.3",
   "trino==0.336.0",
 ]
 

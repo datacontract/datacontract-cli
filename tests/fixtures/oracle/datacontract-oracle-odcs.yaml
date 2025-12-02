@@ -143,9 +143,3 @@ schema:
             SELECT count(*) as row_count
             FROM {model}
           mustBeGreaterThan: 5
-        - type: sql
-          description: Quality must be high except in exceptional cases where junk spare parts are sold
-          query: |
-            SELECT ctc_id FROM CHECKS_TESTCASE ct
-            WHERE quality < 90
-            AND json_value(ct.CUSTOM_ATTRIBUTES, '$.quality') != 'junk'

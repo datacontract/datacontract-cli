@@ -23,6 +23,19 @@ from datacontract.model.odcs import is_open_data_contract_standard, is_open_data
 from datacontract.model.run import ResultEnum
 
 
+class _SafeLoaderNoTimestamp(yaml.SafeLoader):
+    """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
+
+    pass
+
+
+# Remove the timestamp implicit resolver so dates like 2022-01-15 stay as strings
+_SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
+    k: [(tag, regexp) for tag, regexp in v if tag != "tag:yaml.org,2002:timestamp"]
+    for k, v in _SafeLoaderNoTimestamp.yaml_implicit_resolvers.copy().items()
+}
+
+
 def resolve_data_contract(
     data_contract_location: str = None,
     data_contract_str: str = None,
@@ -312,9 +325,9 @@ def _resolve_data_contract_from_str(
 
     if schema_location is None:
         if is_open_data_contract_standard(yaml_dict):
-            logging.info("Using ODCS 3.0.2 schema to validate data contract")
+            logging.info("Using ODCS 3.1.0 schema to validate data contract")
             # TODO refactor this to a specific function
-            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.0.2.schema.json")
+            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
 
     _validate_json_schema(yaml_dict, schema_location)
 
@@ -356,7 +369,7 @@ def _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_locat
 
 def _to_yaml(data_contract_str) -> dict:
     try:
-        return yaml.safe_load(data_contract_str)
+        return yaml.load(data_contract_str, Loader=_SafeLoaderNoTimestamp)
     except Exception as e:
         logging.warning(f"Cannot parse YAML. Error: {str(e)}")
         raise DataContractException(

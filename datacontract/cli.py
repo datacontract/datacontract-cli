@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import warnings
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -18,7 +19,7 @@ from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import (
     publish_data_contract_to_entropy_data,
 )
-from datacontract.lint.resolve import resolve_data_contract_dict
+from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
@@ -180,7 +181,11 @@ def test(
     ).test()
     if logs:
         _print_logs(run)
-    write_test_result(run, console, output_format, output)
+    try:
+        data_contract = resolve_data_contract(location, schema_location=schema)
+    except Exception:
+        data_contract = None
+    write_test_result(run, console, output_format, output, data_contract)
 
 
 @app.command()
@@ -451,7 +456,7 @@ def catalog(
     create_index_html(contracts, path)
 
 
-@app.command()
+@app.command(deprecated=True)
 def breaking(
     location_old: Annotated[
         str,
@@ -464,9 +469,17 @@ def breaking(
     debug: debug_option = None,
 ):
     """
-    Identifies breaking changes between data contracts. Prints to stdout.
+    [DEPRECATED] Identifies breaking changes between data contracts. Prints to stdout.
+
+    This command is deprecated and will be removed in a future version.
     """
     enable_debug_logging(debug)
+    warnings.warn(
+        "The 'breaking' command is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    console.print("[yellow]Warning: The 'breaking' command is deprecated and will be removed in a future version.[/yellow]")
 
     # TODO exception handling
     result = DataContract(data_contract_file=location_old, inline_definitions=True).breaking(
@@ -479,7 +492,7 @@ def breaking(
         raise typer.Exit(code=1)
 
 
-@app.command()
+@app.command(deprecated=True)
 def changelog(
     location_old: Annotated[
         str,
@@ -492,9 +505,17 @@ def changelog(
     debug: debug_option = None,
 ):
     """
-    Generate a changelog between data contracts. Prints to stdout.
+    [DEPRECATED] Generate a changelog between data contracts. Prints to stdout.
+
+    This command is deprecated and will be removed in a future version.
     """
     enable_debug_logging(debug)
+    warnings.warn(
+        "The 'changelog' command is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    console.print("[yellow]Warning: The 'changelog' command is deprecated and will be removed in a future version.[/yellow]")
 
     # TODO exception handling
     result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
@@ -504,7 +525,7 @@ def changelog(
     console.print(result.changelog_str())
 
 
-@app.command()
+@app.command(deprecated=True)
 def diff(
     location_old: Annotated[
         str,
@@ -517,9 +538,17 @@ def diff(
     debug: debug_option = None,
 ):
     """
-    PLACEHOLDER. Currently works as 'changelog' does.
+    [DEPRECATED] Generate a diff between data contracts. Prints to stdout.
+
+    This command is deprecated and will be removed in a future version.
     """
     enable_debug_logging(debug)
+    warnings.warn(
+        "The 'diff' command is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    console.print("[yellow]Warning: The 'diff' command is deprecated and will be removed in a future version.[/yellow]")
 
     # TODO change to diff output, not the changelog entries
     result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(

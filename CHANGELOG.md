@@ -7,11 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Great Expectations export: Update to Great Expectations 1.x format (#919)
+  - Changed `expectation_suite_name` to `name` in suite output
+  - Changed `expectation_type` to `type` in expectations
+  - Removed `data_asset_type` field from suite output
+  - **Breaking**: Users with custom quality definitions using `expectation_type` must update to use `type`
+
+### Added
+
+- test: Log server name and type in output (#963)
+- api: CORS is now enabled for all origins
+- quality: Support `{schema}` and `${schema}` placeholder in SQL quality checks to reference the server's database schema (#957)
+- SQL Server: Support `DATACONTRACT_SQLSERVER_DRIVER` environment variable to specify the ODBC driver (#959)
+- Excel: Add Oracle server type support for Excel export/import (#960)
+- Excel: Add local/CSV server type support for Excel export/import (#961)
+- Excel Export: Complete server types (glue, kafka, postgres, s3, snowflake, sqlserver, custom)
+
+### Fixed
+
+- Protobuf import: Fix transitive imports across subdirectories (#943)
+- Protobuf export now works without error (#951)
+- lint: YAML date values (e.g., `2022-01-15`) are now kept as strings instead of being converted to datetime objects, fixing ODCS schema validation
+- export: field annotation now matches to number/numeric/decimal types
+- Excel: Server port is now correctly parsed as integer instead of string for all server types
+- Excel: Remove invalid `table` and `view` fields from custom server import
+
+### Deprecated
+
+- The `breaking`, `changelog`, and `diff` commands are now deprecated and will be removed in a future version (#925)
+
+## [0.10.40] - 2025-11-25
+
+### Added
+
+- Support for ODCS v3.1.0
 
 ## [0.10.39] - 2025-11-20
 
 ### Added
-- 
+
 - Oracle DB: Client Directory for Connection Mode 'Thick' can now be specified in the `DATACONTRACT_ORACLE_CLIENT_DIR` environment variable (#949)
 
 ### Fixed
