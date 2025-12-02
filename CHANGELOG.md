@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - export: field annotation now matches to number/numeric/decimal types
 - Excel: Server port is now correctly parsed as integer instead of string for all server types
 - Excel: Remove invalid `table` and `view` fields from custom server import
+- Fixed DuckDB DDL generation to use `JSON` type instead of invalid empty `STRUCT()` for objects without defined properties ([#940](https://github.com/datacontract/datacontract-cli/issues/940))
 
 ### Deprecated
 

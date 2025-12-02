@@ -48,6 +48,9 @@ def convert_to_duckdb_json_type(field: Field) -> None | str:
     if datacontract_type.lower() in ["array"]:
         return convert_to_duckdb_json_type(field.items) + "[]"  # type: ignore
     if datacontract_type.lower() in ["object", "record", "struct"]:
+        # If no fields are defined, treat as generic JSON
+        if field.fields is None or len(field.fields) == 0:
+            return "JSON"
         return convert_to_duckdb_object(field.fields)
     return convert_to_duckdb_csv_type(field)
 
