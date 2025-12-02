@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [0.10.41] - 2025-12-02
+
 ### Changed
 
 - Great Expectations export: Update to Great Expectations 1.x format (#919)
