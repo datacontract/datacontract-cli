@@ -28,10 +28,22 @@ def fetch_resource(url: str):
 def _set_api_key(headers, url):
     hostname = urlparse(url).hostname
 
+    entropy_data_api_key = os.getenv("ENTROPY_DATA_API_KEY")
     datamesh_manager_api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
     datacontract_manager_api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
 
-    if hostname == "datamesh-manager.com" or hostname.endswith(".datamesh-manager.com"):
+    if hostname == "entropy-data.com" or hostname.endswith(".entropy-data.com"):
+        if entropy_data_api_key is None or entropy_data_api_key == "":
+            print("Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.")
+            raise DataContractException(
+                type="lint",
+                name=f"Reading data contract from {url}",
+                reason="Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.",
+                engine="datacontract",
+                result="error",
+            )
+        headers["x-api-key"] = entropy_data_api_key
+    elif hostname == "datamesh-manager.com" or hostname.endswith(".datamesh-manager.com"):
         if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
             print("Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
             raise DataContractException(
@@ -54,7 +66,9 @@ def _set_api_key(headers, url):
             )
         headers["x-api-key"] = datacontract_manager_api_key
 
-    if datamesh_manager_api_key is not None and datamesh_manager_api_key != "":
-        headers["x-api-key"] = datamesh_manager_api_key
     if datacontract_manager_api_key is not None and datacontract_manager_api_key != "":
         headers["x-api-key"] = datacontract_manager_api_key
+    if datamesh_manager_api_key is not None and datamesh_manager_api_key != "":
+        headers["x-api-key"] = datamesh_manager_api_key
+    if entropy_data_api_key is not None and entropy_data_api_key != "":
+        headers["x-api-key"] = entropy_data_api_key

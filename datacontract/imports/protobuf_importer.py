@@ -31,9 +31,9 @@ def map_type_from_protobuf(field_type: int):
     return protobuf_type_mapping.get(field_type, "string")
 
 
-def parse_imports(proto_file: str) -> list:
+def parse_imports_raw(proto_file: str) -> list:
     """
-    Parse import statements from a .proto file and return a list of imported file paths.
+    Parse import statements from a .proto file and return the raw import paths as written.
     """
     try:
         with open(proto_file, "r") as f:
@@ -46,19 +46,39 @@ def parse_imports(proto_file: str) -> list:
             engine="datacontract",
             original_exception=e,
         )
-    imported_files = re.findall(r'import\s+"(.+?)";', content)
+    return re.findall(r'import\s+"(.+?)";', content)
+
+
+def parse_imports(proto_file: str) -> list:
+    """
+    Parse import statements from a .proto file and return a list of imported file paths.
+    """
+    imported_files = parse_imports_raw(proto_file)
     proto_dir = os.path.dirname(proto_file)
     return [os.path.join(proto_dir, imp) for imp in imported_files]
 
 
-def compile_proto_to_binary(proto_files: list, output_file: str):
+def compile_proto_to_binary(proto_files: list, output_file: str, proto_root: str = None):
     """
     Compile the provided proto files into a single descriptor set using grpc_tools.protoc.
+
+    Args:
+        proto_files: List of proto file paths to compile
+        output_file: Path to the output descriptor set file
+        proto_root: Root directory for proto imports (used as primary proto path)
     """
-    proto_dirs = set(os.path.dirname(proto) for proto in proto_files)
+    # Use proto_root as the primary proto path if provided
+    # Otherwise, fall back to using directories of each proto file
+    if proto_root:
+        proto_dirs = {proto_root}
+    else:
+        proto_dirs = set(os.path.dirname(os.path.abspath(proto)) for proto in proto_files)
     proto_paths = [f"--proto_path={d}" for d in proto_dirs]
 
-    args = [""] + proto_paths + [f"--descriptor_set_out={output_file}"] + proto_files
+    # Normalize all proto files to absolute paths
+    abs_proto_files = [os.path.abspath(proto) for proto in proto_files]
+
+    args = [""] + proto_paths + [f"--descriptor_set_out={output_file}"] + abs_proto_files
     ret = protoc.main(args)
     if ret != 0:
         raise DataContractException(
@@ -144,15 +164,25 @@ def import_protobuf(
     """
 
     # --- Step 1: Gather all proto files (main and imported)
+    # Determine the root proto path (directory of the first source file)
+    # This is used to resolve imports that are relative to the project root
+    proto_root = os.path.dirname(os.path.abspath(sources[0])) if sources else ""
+
     proto_files_set = set()
     queue = list(sources)
     while queue:
         proto = queue.pop(0)
         if proto not in proto_files_set:
             proto_files_set.add(proto)
-            for imp in parse_imports(proto):
-                if os.path.exists(imp) and imp not in proto_files_set:
-                    queue.append(imp)
+            proto_dir = os.path.dirname(proto)
+            for imp in parse_imports_raw(proto):
+                # Try resolving relative to the importing file's directory first
+                resolved = os.path.join(proto_dir, imp)
+                if not os.path.exists(resolved):
+                    # Try resolving relative to the proto root
+                    resolved = os.path.join(proto_root, imp)
+                if os.path.exists(resolved) and resolved not in proto_files_set:
+                    queue.append(resolved)
     all_proto_files = list(proto_files_set)
 
     # --- Step 2: Compile all proto files into a single descriptor set.
@@ -160,7 +190,7 @@ def import_protobuf(
     descriptor_file = temp_descriptor.name
     temp_descriptor.close()  # Allow protoc to write to the file
     try:
-        compile_proto_to_binary(all_proto_files, descriptor_file)
+        compile_proto_to_binary(all_proto_files, descriptor_file, proto_root)
 
         with open(descriptor_file, "rb") as f:
             proto_data = f.read()

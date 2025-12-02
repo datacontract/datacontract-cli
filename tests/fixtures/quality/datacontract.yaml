@@ -64,6 +64,12 @@ models:
           SELECT count(*) as row_count
           FROM {model}
         mustBeGreaterThan: 5
+      - type: sql
+        description: Row Count with schema placeholder
+        query: |
+          SELECT count(*) as row_count
+          FROM ${schema}.{table}
+        mustBeGreaterThan: 5
       - name: rowCount must be greater than 0
         type: library
         metric: rowCount

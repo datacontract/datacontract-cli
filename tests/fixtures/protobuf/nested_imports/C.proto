@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package example;
+
+import "A.proto";
+
+// Message representing a Company with a contact Person
+message Company {
+    string name = 1;
+    string registration_number = 2;
+    Person contact = 3;
+}

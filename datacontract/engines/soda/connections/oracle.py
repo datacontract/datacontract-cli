@@ -5,6 +5,20 @@ import yaml
 from datacontract.model.data_contract_specification import Server
 
 
+def initialize_client_and_create_soda_configuration(server: Server) -> str:
+    import oracledb
+
+    soda_config = to_oracle_soda_configuration(server)
+
+    oracle_client_dir = os.getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
+    if oracle_client_dir is not None:
+        # Soda Core currently does not support thick mode natively, see https://github.com/sodadata/soda-core/issues/2036
+        #   but the oracledb client can be configured accordingly before Soda initializes as a work-around
+        oracledb.init_oracle_client(lib_dir=oracle_client_dir)
+
+    return soda_config
+
+
 def to_oracle_soda_configuration(server: Server) -> str:
     """Serialize server config to soda configuration.
 

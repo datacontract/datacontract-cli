@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package example;
+
+// Base message defining an Address
+message Address {
+    string street = 1;
+    string city = 2;
+    string country = 3;
+    string postal_code = 4;
+}
