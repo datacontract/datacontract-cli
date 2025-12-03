@@ -164,7 +164,7 @@ def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, fields: Di
         field_type = field.type.lower()
         if field_type == "array" and field.items is None:
             continue
-        elif field_type == "object" and field.fields is None:
+        elif field_type == "object" and (field.fields is None or len(field.fields) == 0):
             continue
 
         nested_model_name = f"{model_name}__{field_name}"
