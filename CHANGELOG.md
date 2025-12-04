@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Add Impala engine support for Soda scans via ODCS `impala` server type.
+
 
 ## [0.10.41] - 2025-12-02
 
