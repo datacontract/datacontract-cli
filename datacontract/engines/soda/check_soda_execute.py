@@ -117,6 +117,10 @@ def check_soda_execute(
         soda_configuration_str = to_athena_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
+    elif server.type == "duckdb":
+        soda_configuration_str = to_duckdb_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        scan.set_data_source_name(server.type)
 
     else:
         run.checks.append(

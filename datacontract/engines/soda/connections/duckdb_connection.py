@@ -2,11 +2,43 @@ import os
 from typing import Any, Dict
 
 import duckdb
+import yaml
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
+
+def to_duckdb_soda_configuration(server):
+    if not hasattr(server, "database") or not server.database:
+        raise DataContractException(
+            type="duckdb-connection",
+            name="missing_database",
+            reason="Database is required for DuckDB connection. Specify the database file in which your tables exist.",
+            engine="datacontract",
+        )
+
+    if not hasattr(server, "read_only") or not server.read_only:
+        raise DataContractException(
+            type="duckdb-connection",
+            name="missing_read_only",
+            reason="read_only is required for DuckDB connection. Specify if the database should be opened in read-only mode.",
+            engine="datacontract",
+        )
+
+    data_source = {
+        "type": "duckdb",
+        "path": server.database,
+        "read_only": server.read_only,
+    }
+
+    if server.schema:
+        data_source["schema_"] = server.schema_
+
+    soda_configuration = {f"data_source {server.type}": data_source}
+    soda_configuration_str = yaml.dump(soda_configuration)
+    return soda_configuration_str
 
 def get_duckdb_connection(
     data_contract: DataContractSpecification,
