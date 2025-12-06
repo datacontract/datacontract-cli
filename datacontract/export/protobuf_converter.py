@@ -77,9 +77,9 @@ def to_protobuf(data_contract: OpenDataContractStandard) -> str:
 
 def _is_enum_field(prop: SchemaProperty) -> bool:
     """
-    Returns True if the field has a non-empty "values" property (via customProperties).
+    Returns True if the field has a non-empty "enumValues" property (via customProperties).
     """
-    values = _get_config_value(prop, "values")
+    values = _get_config_value(prop, "enumValues")
     return bool(values)
 
 
@@ -97,7 +97,7 @@ def _get_enum_values(prop: SchemaProperty) -> dict:
     """
     Returns the enum values from the field.
     """
-    values = _get_config_value(prop, "values")
+    values = _get_config_value(prop, "enumValues")
     if values and isinstance(values, dict):
         return values
     return {}

@@ -1,9 +1,10 @@
+import yaml
+
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.protobuf_converter import to_protobuf
-from datacontract.imports.dcs_importer import convert_dcs_to_odcs
-from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -15,8 +16,57 @@ def test_cli():
 
 
 def test_to_protobuf():
-    dcs = DataContractSpecification.from_file("fixtures/protobuf/datacontract.yaml")
-    data_contract = convert_dcs_to_odcs(dcs)
+    odcs_yaml = """
+kind: DataContract
+apiVersion: v3.1.0
+id: test_protobuf
+schema:
+  - name: Product
+    description: Details of Product.
+    properties:
+      - name: category
+        logicalType: string
+        description: Enum field category
+        customProperties:
+          - property: enumValues
+            value:
+              CATEGORY_UNKNOWN: 0
+              CATEGORY_ELECTRONICS: 1
+              CATEGORY_CLOTHING: 2
+              CATEGORY_HOME_APPLIANCES: 3
+      - name: id
+        logicalType: string
+        description: Field id
+      - name: name
+        logicalType: string
+        description: Field name
+      - name: price
+        logicalType: number
+        description: Field price
+      - name: reviews
+        logicalType: array
+        description: List of Review
+        items:
+          name: item
+          logicalType: string
+      - name: tags
+        logicalType: string
+        description: Field tags
+  - name: Review
+    description: Details of Review.
+    properties:
+      - name: comment
+        logicalType: string
+        description: Field comment
+      - name: rating
+        logicalType: integer
+        description: Field rating
+      - name: user
+        logicalType: string
+        description: Field user
+"""
+    data_contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
+
     expected_protobuf = """
 syntax = "proto3";
 
