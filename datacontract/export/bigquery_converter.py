@@ -85,13 +85,10 @@ def to_field(field_name: str, prop: SchemaProperty) -> dict:
 
     # number types have precision and scale
     if bq_type.lower() in ["numeric", "bignumeric"]:
-        precision = None
-        scale = None
-        if prop.logicalTypeOptions:
-            precision = prop.logicalTypeOptions.get("precision")
-            scale = prop.logicalTypeOptions.get("scale")
-        bq_field["precision"] = precision
-        bq_field["scale"] = scale
+        precision_str = _get_config_value(prop, "precision")
+        scale_str = _get_config_value(prop, "scale")
+        bq_field["precision"] = int(precision_str) if precision_str else None
+        bq_field["scale"] = int(scale_str) if scale_str else None
 
     return bq_field
 
