@@ -206,6 +206,8 @@ def to_spark_data_type(prop: SchemaProperty) -> types.DataType:
         case "boolean":
             return types.BooleanType()
         case "date":
+            return types.DateType()
+        case "timestamp":
             return types.TimestampType()
         case _:
             return types.StringType()  # default if no condition is met

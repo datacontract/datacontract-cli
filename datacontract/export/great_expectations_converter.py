@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaProperty
 
 from datacontract.export.exporter import (
     Exporter,
@@ -40,7 +40,7 @@ class GreatExpectationsExporter(Exporter):
 
     """
 
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, model, server, sql_server_type, export_args) -> str:
         """Exports a data contract model to a Great Expectations suite.
 
         Args:
@@ -51,21 +51,21 @@ class GreatExpectationsExporter(Exporter):
             export_args (dict): Additional arguments for export, such as "suite_name" and "engine".
 
         Returns:
-            dict: A dictionary representation of the Great Expectations suite.
+            str: JSON string of the Great Expectations suite.
         """
         expectation_suite_name = export_args.get("suite_name")
         engine = export_args.get("engine")
-        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+        schema_name, _ = _check_models_for_export(data_contract, model, self.export_format)
         sql_server_type = "snowflake" if sql_server_type == "auto" else sql_server_type
-        return to_great_expectations(data_contract, model_name, model_value, expectation_suite_name, engine, sql_server_type)
+        return to_great_expectations(data_contract, schema_name, expectation_suite_name, engine, sql_server_type)
 
 
 def _get_type(prop: SchemaProperty) -> Optional[str]:
     """Get the type from a schema property."""
-    if prop.logicalType:
-        return prop.logicalType
     if prop.physicalType:
         return prop.physicalType
+    if prop.logicalType:
+        return prop.logicalType
     return None
 
 
@@ -77,9 +77,8 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
 
 
 def to_great_expectations(
-    data_contract: OpenDataContractStandard,
-    model_key: str,
-    model_value: SchemaObject,
+    odcs: OpenDataContractStandard,
+    schema_name: str,
     expectation_suite_name: str | None = None,
     engine: str | None = None,
     sql_server_type: str = "snowflake",
@@ -87,9 +86,8 @@ def to_great_expectations(
     """Converts a data contract model to a Great Expectations suite.
 
     Args:
-        data_contract (OpenDataContractStandard): The data contract specification.
-        model_key (str): The model key.
-        model_value (SchemaObject): The schema object for the model.
+        odcs (OpenDataContractStandard): The data contract.
+        schema_name (str): The schema/model name to export.
         expectation_suite_name (str | None): Optional suite name for the expectations.
         engine (str | None): Optional engine type (e.g., "pandas", "spark").
         sql_server_type (str): The type of SQL server (default is "snowflake").
@@ -97,18 +95,23 @@ def to_great_expectations(
     Returns:
         str: JSON string of the Great Expectations suite.
     """
+    # Find the schema by name
+    schema = next((s for s in odcs.schema_ if s.name == schema_name), None)
+    if schema is None:
+        raise RuntimeError(f"Schema '{schema_name}' not found in data contract.")
+
     expectations = []
     if not expectation_suite_name:
-        expectation_suite_name = "{model_key}.{contract_version}".format(
-            model_key=model_key, contract_version=data_contract.version
+        expectation_suite_name = "{schema_name}.{contract_version}".format(
+            schema_name=schema_name, contract_version=odcs.version
         )
 
     # Get quality checks from schema-level quality
-    if model_value.quality:
-        expectations.extend(get_quality_checks(model_value.quality))
+    if schema.quality:
+        expectations.extend(get_quality_checks(schema.quality))
 
     # Get expectations from model fields
-    expectations.extend(model_to_expectations(model_value.properties or [], engine, sql_server_type))
+    expectations.extend(model_to_expectations(schema.properties or [], engine, sql_server_type))
 
     model_expectation_suite = to_suite(expectations, expectation_suite_name)
 
@@ -330,7 +333,7 @@ def get_quality_checks(qualities: List[DataQuality], field_name: str | None = No
     """
     quality_specification = []
     for quality in qualities:
-        if quality is not None and quality.engine is not None and quality.engine.lower() == "great-expectations":
+        if quality is not None and quality.engine is not None and quality.engine.lower() in ("great-expectations", "greatexpectations"):
             ge_expectation = quality.implementation
             if field_name is not None and isinstance(ge_expectation, dict):
                 ge_expectation["column"] = field_name
