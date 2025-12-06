@@ -70,7 +70,7 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
 
     # Convert models to schema
     if dcs.models:
-        odcs.schema_ = _convert_models_to_schema(dcs.models)
+        odcs.schema_ = _convert_models_to_schema(dcs.models, dcs.definitions)
 
     # Convert service levels to SLA properties
     if dcs.servicelevels:
@@ -132,7 +132,7 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
     return servers
 
 
-def _convert_models_to_schema(models: Dict[str, Model]) -> List[SchemaObject]:
+def _convert_models_to_schema(models: Dict[str, Model], definitions: Dict[str, Field] = None) -> List[SchemaObject]:
     """Convert DCS models dict to ODCS schema list."""
     schema = []
     for model_name, model in models.items():
@@ -158,7 +158,7 @@ def _convert_models_to_schema(models: Dict[str, Model]) -> List[SchemaObject]:
         # Pass model-level primaryKey list to set primaryKey and primaryKeyPosition on fields
         model_primary_keys = model.primaryKey if hasattr(model, 'primaryKey') and model.primaryKey else []
         if model.fields:
-            schema_obj.properties = _convert_fields_to_properties(model.fields, model_primary_keys)
+            schema_obj.properties = _convert_fields_to_properties(model.fields, model_primary_keys, definitions)
 
         # Convert quality rules
         if model.quality:
@@ -188,7 +188,9 @@ def _get_physical_name_from_config(config: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _convert_fields_to_properties(fields: Dict[str, Field], model_primary_keys: List[str] = None) -> List[SchemaProperty]:
+def _convert_fields_to_properties(
+    fields: Dict[str, Field], model_primary_keys: List[str] = None, definitions: Dict[str, Field] = None
+) -> List[SchemaProperty]:
     """Convert DCS fields dict to ODCS properties list."""
     model_primary_keys = model_primary_keys or []
     properties = []
@@ -197,13 +199,53 @@ def _convert_fields_to_properties(fields: Dict[str, Field], model_primary_keys: 
         primary_key_position = None
         if field_name in model_primary_keys:
             primary_key_position = model_primary_keys.index(field_name) + 1
-        prop = _convert_field_to_property(field_name, field, primary_key_position)
+        prop = _convert_field_to_property(field_name, field, primary_key_position, definitions)
         properties.append(prop)
     return properties
 
 
-def _convert_field_to_property(field_name: str, field: Field, primary_key_position: int = None) -> SchemaProperty:
+def _resolve_field_ref(field: Field, definitions: Dict[str, Field]) -> Field:
+    """Resolve a field's $ref and merge with field properties."""
+    if not field.ref or not definitions:
+        return field
+
+    # Parse ref like '#/definitions/order_id'
+    ref_path = field.ref
+    if ref_path.startswith("#/definitions/"):
+        def_name = ref_path[len("#/definitions/"):]
+        if def_name in definitions:
+            definition = definitions[def_name]
+            # Create merged field: definition values as base, field values override
+            merged_data = {}
+            # Get all field names from the Field model
+            for attr in Field.model_fields.keys():
+                def_value = getattr(definition, attr, None)
+                field_value = getattr(field, attr, None)
+                # Field value takes precedence if set (not None and not empty for collections)
+                if field_value is not None:
+                    if isinstance(field_value, (list, dict)):
+                        if field_value:  # Non-empty collection
+                            merged_data[attr] = field_value
+                        elif def_value:
+                            merged_data[attr] = def_value
+                    else:
+                        merged_data[attr] = field_value
+                elif def_value is not None:
+                    merged_data[attr] = def_value
+            # Clear ref to avoid infinite recursion
+            merged_data['ref'] = None
+            return Field(**merged_data)
+
+    return field
+
+
+def _convert_field_to_property(
+    field_name: str, field: Field, primary_key_position: int = None, definitions: Dict[str, Field] = None
+) -> SchemaProperty:
     """Convert a DCS field to an ODCS property."""
+    # Resolve $ref if present
+    field = _resolve_field_ref(field, definitions)
+
     prop = SchemaProperty(name=field_name)
 
     # Preserve original type as physicalType and convert to logicalType
@@ -280,11 +322,11 @@ def _convert_field_to_property(field_name: str, field: Field, primary_key_positi
 
     # Convert nested fields (for object types)
     if field.fields:
-        prop.properties = _convert_fields_to_properties(field.fields)
+        prop.properties = _convert_fields_to_properties(field.fields, None, definitions)
 
     # Convert items (for array types)
     if field.items:
-        prop.items = _convert_field_to_property("item", field.items)
+        prop.items = _convert_field_to_property("item", field.items, None, definitions)
 
     # Convert quality rules
     if field.quality:
