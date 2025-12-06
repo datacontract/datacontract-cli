@@ -2,10 +2,12 @@ import typing
 from dataclasses import dataclass
 from enum import Enum
 from io import StringIO
+from typing import Optional
+
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
 from datacontract.lint.resolve import inline_definitions_into_data_contract
-from datacontract.model.data_contract_specification import DataContractSpecification, Field
 from datacontract.model.exceptions import DataContractException
 
 
@@ -63,27 +65,26 @@ class AvroIDLProtocol:
     model_types: list[AvroModelType]
 
 
-# TODO use DATACONTRACT_TYPES from datacontract/model/data_contract_specification.py
-avro_primitive_types = set(
-    [
-        "string",
-        "text",
-        "varchar",
-        "float",
-        "double",
-        "int",
-        "integer",
-        "long",
-        "bigint",
-        "boolean",
-        "timestamp_ntz",
-        "timestamp",
-        "timestamp_tz",
-        "date",
-        "bytes",
-        "null",
-    ]
-)
+# ODCS logical types and physical types that map to Avro primitive types
+avro_primitive_logical_types = {"string", "integer", "number", "boolean", "date"}
+avro_primitive_physical_types = {
+    "string",
+    "text",
+    "varchar",
+    "float",
+    "double",
+    "int",
+    "integer",
+    "long",
+    "bigint",
+    "boolean",
+    "timestamp_ntz",
+    "timestamp",
+    "timestamp_tz",
+    "date",
+    "bytes",
+    "null",
+}
 
 
 class AvroIdlExporter(Exporter):
@@ -91,7 +92,7 @@ class AvroIdlExporter(Exporter):
         return to_avro_idl(data_contract)
 
 
-def to_avro_idl(contract: DataContractSpecification) -> str:
+def to_avro_idl(contract: OpenDataContractStandard) -> str:
     """Serialize the provided data contract specification into an Avro IDL string.
 
     The data contract will be serialized as a protocol, with one record type
@@ -103,95 +104,165 @@ def to_avro_idl(contract: DataContractSpecification) -> str:
     return stream.getvalue()
 
 
-def to_avro_idl_stream(contract: DataContractSpecification, stream: typing.TextIO):
+def to_avro_idl_stream(contract: OpenDataContractStandard, stream: typing.TextIO):
     """Serialize the provided data contract specification into Avro IDL."""
     ir = _contract_to_avro_idl_ir(contract)
     if ir.description:
-        stream.write(f"/** {contract.info.description} */\n")
+        stream.write(f"/** {contract.description} */\n")
     stream.write(f"protocol {ir.name or 'Unnamed'} {{\n")
     for model_type in ir.model_types:
         _write_model_type(model_type, stream)
     stream.write("}\n")
 
 
-def _to_avro_primitive_logical_type(field_name: str, field: Field) -> AvroPrimitiveField:
-    result = AvroPrimitiveField(field_name, field.required, field.description, AvroPrimitiveType.string)
-    match field.type:
-        case "string" | "text" | "varchar":
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the logical type from a schema property."""
+    return prop.logicalType
+
+
+def _is_primitive_type(prop: SchemaProperty) -> bool:
+    """Check if a property is a primitive type."""
+    logical_type = _get_type(prop)
+    physical_type = prop.physicalType
+
+    if logical_type in avro_primitive_logical_types:
+        return True
+    if physical_type and physical_type.lower() in avro_primitive_physical_types:
+        return True
+    return False
+
+
+def _to_avro_primitive_logical_type(field_name: str, prop: SchemaProperty) -> AvroPrimitiveField:
+    result = AvroPrimitiveField(field_name, prop.required or False, prop.description, AvroPrimitiveType.string)
+    logical_type = _get_type(prop)
+    physical_type = prop.physicalType.lower() if prop.physicalType else None
+
+    # Check physical type first for more specific mapping
+    if physical_type:
+        if physical_type in ["string", "text", "varchar"]:
             result.type = AvroPrimitiveType.string
-        case "float":
+            return result
+        elif physical_type == "float":
             result.type = AvroPrimitiveType.float
-        case "double":
+            return result
+        elif physical_type == "double":
             result.type = AvroPrimitiveType.double
-        case "int" | "integer":
+            return result
+        elif physical_type in ["int", "integer"]:
             result.type = AvroPrimitiveType.int
-        case "long" | "bigint":
+            return result
+        elif physical_type in ["long", "bigint"]:
+            result.type = AvroPrimitiveType.long
+            return result
+        elif physical_type == "boolean":
+            result.type = AvroPrimitiveType.boolean
+            return result
+        elif physical_type in ["timestamp", "timestamp_tz"]:
+            result.type = AvroPrimitiveType.string
+            return result
+        elif physical_type == "timestamp_ntz":
+            result.type = AvroLogicalType.timestamp_ms
+            return result
+        elif physical_type == "date":
+            result.type = AvroLogicalType.date
+            return result
+        elif physical_type == "bytes":
+            result.type = AvroPrimitiveType.bytes
+            return result
+        elif physical_type == "null":
+            result.type = AvroPrimitiveType.null
+            return result
+
+    # Fall back to logical type
+    match logical_type:
+        case "string":
+            result.type = AvroPrimitiveType.string
+        case "number":
+            result.type = AvroPrimitiveType.double
+        case "integer":
             result.type = AvroPrimitiveType.long
         case "boolean":
             result.type = AvroPrimitiveType.boolean
-        case "timestamp" | "timestamp_tz":
-            result.type = AvroPrimitiveType.string
-        case "timestamp_ntz":
-            result.type = AvroLogicalType.timestamp_ms
         case "date":
             result.type = AvroLogicalType.date
-        case "bytes":
-            result.type = AvroPrimitiveType.bytes
-        case "null":
-            result.type = AvroPrimitiveType.null
         case _:
             raise DataContractException(
                 type="general",
                 name="avro-idl-export",
-                model=field,
-                reason="Unknown field type {field.type}",
+                model=prop,
+                reason=f"Unknown field type {logical_type}",
                 result="failed",
                 message="Avro IDL type conversion failed.",
             )
     return result
 
 
-def _to_avro_idl_type(field_name: str, field: Field) -> AvroField:
-    if field.type in avro_primitive_types:
-        return _to_avro_primitive_logical_type(field_name, field)
+def _to_avro_idl_type(field_name: str, prop: SchemaProperty) -> AvroField:
+    if _is_primitive_type(prop):
+        return _to_avro_primitive_logical_type(field_name, prop)
     else:
-        match field.type:
-            case "array":
+        logical_type = _get_type(prop)
+        physical_type = prop.physicalType.lower() if prop.physicalType else None
+
+        if logical_type == "array":
+            if prop.items:
                 return AvroArrayField(
-                    field_name, field.required, field.description, _to_avro_idl_type(field_name, field.items)
+                    field_name, prop.required or False, prop.description, _to_avro_idl_type(field_name, prop.items)
                 )
-            case "object" | "record" | "struct":
-                return AvroComplexField(
-                    field_name,
-                    field.required,
-                    field.description,
-                    [_to_avro_idl_type(field_name, field) for (field_name, field) in field.fields.items()],
-                )
-            case _:
+            else:
                 raise DataContractException(
                     type="general",
                     name="avro-idl-export",
-                    model=type,
-                    reason="Unknown Data Contract field type",
+                    model=prop,
+                    reason="Array type requires items",
                     result="failed",
                     message="Avro IDL type conversion failed.",
                 )
+        elif logical_type == "object" or physical_type in ["record", "struct"]:
+            if prop.properties:
+                return AvroComplexField(
+                    field_name,
+                    prop.required or False,
+                    prop.description,
+                    [_to_avro_idl_type(p.name, p) for p in prop.properties],
+                )
+            else:
+                raise DataContractException(
+                    type="general",
+                    name="avro-idl-export",
+                    model=prop,
+                    reason="Object type requires properties",
+                    result="failed",
+                    message="Avro IDL type conversion failed.",
+                )
+        else:
+            raise DataContractException(
+                type="general",
+                name="avro-idl-export",
+                model=prop,
+                reason=f"Unknown Data Contract field type: {logical_type}",
+                result="failed",
+                message="Avro IDL type conversion failed.",
+            )
 
 
-def _generate_field_types(contract: DataContractSpecification) -> list[AvroField]:
+def _generate_field_types(schema_obj: SchemaObject) -> list[AvroField]:
     result = []
-    for _, model in contract.models.items():
-        for field_name, field in model.fields.items():
-            result.append(_to_avro_idl_type(field_name, field))
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            result.append(_to_avro_idl_type(prop.name, prop))
     return result
 
 
-def generate_model_types(contract: DataContractSpecification) -> list[AvroModelType]:
+def generate_model_types(contract: OpenDataContractStandard) -> list[AvroModelType]:
     result = []
-    for model_name, model in contract.models.items():
-        result.append(
-            AvroModelType(name=model_name, description=model.description, fields=_generate_field_types(contract))
-        )
+    if contract.schema_:
+        for schema_obj in contract.schema_:
+            result.append(
+                AvroModelType(
+                    name=schema_obj.name, description=schema_obj.description, fields=_generate_field_types(schema_obj)
+                )
+            )
     return result
 
 
@@ -199,18 +270,16 @@ def _model_name_to_identifier(model_name: str):
     return "".join([word.title() for word in model_name.split()])
 
 
-def _contract_to_avro_idl_ir(contract: DataContractSpecification) -> AvroIDLProtocol:
+def _contract_to_avro_idl_ir(contract: OpenDataContractStandard) -> AvroIDLProtocol:
     """Convert models into an intermediate representation for later serialization into Avro IDL.
 
     Each model is converted to a record containing a field for each model field.
     """
     inlined_contract = contract.model_copy()
     inline_definitions_into_data_contract(inlined_contract)
-    protocol_name = _model_name_to_identifier(contract.info.title) if contract.info and contract.info.title else None
-    description = contract.info.description if contract.info and contract.info.description else None
-    return AvroIDLProtocol(
-        name=protocol_name, description=description, model_types=generate_model_types(inlined_contract)
-    )
+    protocol_name = _model_name_to_identifier(contract.name) if contract.name else None
+    description = contract.description if contract.description else None
+    return AvroIDLProtocol(name=protocol_name, description=description, model_types=generate_model_types(inlined_contract))
 
 
 def _write_indent(indent: int, stream: typing.TextIO):
@@ -244,10 +313,10 @@ def _write_field_type_definition(field: AvroField, indent: int, stream: typing.T
             for subfield in subfields:
                 subfield_types.append(_write_field_type_definition(subfield, indent + 1, stream))
             # Reference all defined record types.
-            for field, subfield_type in zip(field.subfields, subfield_types):
-                _write_field_description(field, indent + 1, stream)
+            for subfield, subfield_type in zip(field.subfields, subfield_types):
+                _write_field_description(subfield, indent + 1, stream)
                 _write_indent(indent + 1, stream)
-                stream.write(f"{subfield_type} {field.name};\n")
+                stream.write(f"{subfield_type} {subfield.name};\n")
             _write_indent(indent, stream)
             stream.write("}\n")
             if required is True:
@@ -261,7 +330,7 @@ def _write_field_type_definition(field: AvroField, indent: int, stream: typing.T
             else:
                 return f"array<{subfield_type}>?"
         case _:
-            raise RuntimeError("Unknown Avro field type {field}")
+            raise RuntimeError(f"Unknown Avro field type {field}")
 
 
 def _write_field(field: AvroField, indent, stream: typing.TextIO):

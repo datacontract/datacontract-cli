@@ -2,7 +2,7 @@ import os
 
 import yaml
 
-from datacontract.model.data_contract_specification import Server
+from open_data_contract_standard.model import Server
 
 
 def initialize_client_and_create_soda_configuration(server: Server) -> str:

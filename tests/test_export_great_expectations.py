@@ -6,8 +6,10 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.great_expectations_converter import to_great_expectations
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 from datacontract.lint import resolve
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import OpenDataContractStandard
 from datacontract.model.exceptions import DataContractException
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
@@ -64,24 +66,26 @@ def test_cli_multi_models_failed():
 
 
 @pytest.fixture
-def data_contract_basic() -> DataContractSpecification:
-    return DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+def data_contract_basic() -> OpenDataContractStandard:
+    dcs = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    return convert_dcs_to_odcs(dcs)
 
 
 @pytest.fixture
-def data_contract_complex() -> DataContractSpecification:
-    return DataContractSpecification.from_file("fixtures/export/rdf/datacontract-complex.yaml")
+def data_contract_complex() -> OpenDataContractStandard:
+    dcs = DataContractSpecification.from_file("fixtures/export/rdf/datacontract-complex.yaml")
+    return convert_dcs_to_odcs(dcs)
 
 
 @pytest.fixture
-def data_contract_great_expectations() -> DataContractSpecification:
+def data_contract_great_expectations() -> OpenDataContractStandard:
     return resolve.resolve_data_contract_from_location(
         "./fixtures/great-expectations/datacontract.yaml", inline_quality=True
     )
 
 
 @pytest.fixture
-def data_contract_great_expectations_quality_file() -> DataContractSpecification:
+def data_contract_great_expectations_quality_file() -> OpenDataContractStandard:
     return resolve.resolve_data_contract_from_location(
         "./fixtures/great-expectations/datacontract_quality_file.yaml",
         inline_quality=True,
@@ -89,7 +93,7 @@ def data_contract_great_expectations_quality_file() -> DataContractSpecification
 
 
 @pytest.fixture
-def data_contract_great_expectations_quality_yaml() -> DataContractSpecification:
+def data_contract_great_expectations_quality_yaml() -> OpenDataContractStandard:
     return resolve.resolve_data_contract_from_location(
         "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
         inline_quality=True,
@@ -97,7 +101,7 @@ def data_contract_great_expectations_quality_yaml() -> DataContractSpecification
 
 
 @pytest.fixture
-def data_contract_great_expectations_quality_column() -> DataContractSpecification:
+def data_contract_great_expectations_quality_column() -> OpenDataContractStandard:
     return resolve.resolve_data_contract_from_location(
         "./fixtures/great-expectations/datacontract_quality_column.yaml",
         inline_quality=True,
@@ -315,7 +319,7 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
     }
 
 
-def test_to_great_expectation(data_contract_basic: DataContractSpecification):
+def test_to_great_expectation(data_contract_basic: OpenDataContractStandard):
     expected_json_suite = {
         "name": "orders.1.0.0",
         "expectations": [
@@ -371,7 +375,7 @@ def test_to_great_expectation(data_contract_basic: DataContractSpecification):
     assert result_orders == json.dumps(expected_json_suite, indent=2)
 
 
-def test_to_great_expectation_complex(data_contract_complex: DataContractSpecification):
+def test_to_great_expectation_complex(data_contract_complex: OpenDataContractStandard):
     """
     Test with 2 model definitions in the contract
     """
@@ -456,7 +460,7 @@ def test_to_great_expectation_complex(data_contract_complex: DataContractSpecifi
 
 
 def test_to_great_expectation_quality(
-    data_contract_great_expectations: DataContractSpecification,
+    data_contract_great_expectations: OpenDataContractStandard,
     expected_json_suite: Dict[str, Any],
 ):
     """
@@ -468,7 +472,7 @@ def test_to_great_expectation_quality(
 
 
 def test_to_great_expectation_custom_name(
-    data_contract_great_expectations: DataContractSpecification,
+    data_contract_great_expectations: OpenDataContractStandard,
 ):
     """
     Test with Quality definition in the contract
@@ -509,7 +513,7 @@ def test_to_great_expectation_custom_name(
 
 
 def test_to_great_expectation_engine_spark(
-    data_contract_great_expectations: DataContractSpecification,
+    data_contract_great_expectations: OpenDataContractStandard,
     expected_spark_engine: Dict[str, Any],
 ):
     """
@@ -524,7 +528,7 @@ def test_to_great_expectation_engine_spark(
 
 
 def test_to_great_expectation_engine_pandas(
-    data_contract_great_expectations: DataContractSpecification,
+    data_contract_great_expectations: OpenDataContractStandard,
     expected_pandas_engine: Dict[str, Any],
 ):
     """
@@ -539,7 +543,7 @@ def test_to_great_expectation_engine_pandas(
 
 
 def test_to_great_expectation_engine_sql(
-    data_contract_great_expectations: DataContractSpecification,
+    data_contract_great_expectations: OpenDataContractStandard,
     expected_sql_engine: Dict[str, Any],
 ):
     """
@@ -554,7 +558,7 @@ def test_to_great_expectation_engine_sql(
 
 
 def test_to_great_expectation_engine_sql_trino(
-    data_contract_great_expectations: DataContractSpecification,
+    data_contract_great_expectations: OpenDataContractStandard,
     expected_sql_trino_engine: Dict[str, Any],
 ):
     """
@@ -570,7 +574,7 @@ def test_to_great_expectation_engine_sql_trino(
 
 
 def test_to_great_expectation_quality_json_file(
-    data_contract_great_expectations_quality_file: DataContractSpecification,
+    data_contract_great_expectations_quality_file: OpenDataContractStandard,
     expected_json_suite: Dict[str, Any],
 ):
     """
@@ -675,7 +679,7 @@ def test_to_great_expectation_missing_quality_json_file():
 
 
 def test_to_great_expectation_quality_yaml(
-    data_contract_great_expectations_quality_yaml: DataContractSpecification,
+    data_contract_great_expectations_quality_yaml: OpenDataContractStandard,
     expected_json_suite_table_quality: Dict[str, Any],
 ):
     """
@@ -686,7 +690,7 @@ def test_to_great_expectation_quality_yaml(
 
 
 def test_to_great_expectation_quality_column(
-    data_contract_great_expectations_quality_column: DataContractSpecification,
+    data_contract_great_expectations_quality_column: OpenDataContractStandard,
     expected_json_suite_with_enum: Dict[str, Any],
 ):
     """

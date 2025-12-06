@@ -1,0 +1,19 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: "123"
+name: Test
+version: "1.0.0"
+team:
+  name: my-domain-team
+schema:
+  - name: sample_model
+    description: Sample Model
+    physicalType: table
+    properties:
+      - name: id
+        logicalType: string
+        description: A unique identifier
+        properties:
+          - name: nested_id
+            logicalType: string
+            description: A nested property

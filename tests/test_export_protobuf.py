@@ -2,7 +2,8 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.protobuf_converter import to_protobuf
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs
+from datacontract_specification.model import DataContractSpecification
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -14,7 +15,8 @@ def test_cli():
 
 
 def test_to_protobuf():
-    data_contract = DataContractSpecification.from_file("fixtures/protobuf/datacontract.yaml")
+    dcs = DataContractSpecification.from_file("fixtures/protobuf/datacontract.yaml")
+    data_contract = convert_dcs_to_odcs(dcs)
     expected_protobuf = """
 syntax = "proto3";
 

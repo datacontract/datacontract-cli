@@ -1,7 +1,9 @@
 import ast
 import typing
+from typing import Optional
 
-import datacontract.model.data_contract_specification as spec
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+
 from datacontract.export.exporter import Exporter
 
 
@@ -10,11 +12,13 @@ class PydanticExporter(Exporter):
         return to_pydantic_model_str(data_contract)
 
 
-def to_pydantic_model_str(contract: spec.DataContractSpecification) -> str:
-    classdefs = [generate_model_class(model_name, model) for (model_name, model) in contract.models.items()]
-    documentation = (
-        [ast.Expr(ast.Constant(contract.info.description))] if (contract.info and contract.info.description) else []
-    )
+def to_pydantic_model_str(contract: OpenDataContractStandard) -> str:
+    classdefs = []
+    if contract.schema_:
+        for schema_obj in contract.schema_:
+            classdefs.append(generate_model_class(schema_obj.name, schema_obj))
+
+    documentation = [ast.Expr(ast.Constant(contract.description))] if contract.description else []
     result = ast.Module(
         body=[
             ast.Import(
@@ -52,69 +56,102 @@ def product_of(nodes: list[typing.Any]) -> ast.Subscript:
 type_annotation_type = typing.Union[ast.Name, ast.Attribute, ast.Constant, ast.Subscript]
 
 
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the logical type from a schema property."""
+    return prop.logicalType
+
+
 def constant_field_annotation(
-    field_name: str, field: spec.Field
+    field_name: str, prop: SchemaProperty
 ) -> tuple[type_annotation_type, typing.Optional[ast.ClassDef]]:
-    match field.type:
-        case "string" | "text" | "varchar":
+    prop_type = _get_type(prop)
+    match prop_type:
+        case "string":
             return (ast.Name("str", ctx=ast.Load()), None)
-        case "number" | "decimal" | "numeric":
+        case "number":
             # Either integer or float in specification,
             # so we use float.
             return (ast.Name("float", ctx=ast.Load()), None)
-        case "int" | "integer" | "long" | "bigint":
+        case "integer":
             return (ast.Name("int", ctx=ast.Load()), None)
-        case "float" | "double":
-            return (ast.Name("float", ctx=ast.Load()), None)
         case "boolean":
             return (ast.Name("bool", ctx=ast.Load()), None)
-        case "timestamp" | "timestamp_tz" | "timestamp_ntz":
-            return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="datetime"), None)
         case "date":
-            return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="date"), None)
-        case "bytes":
-            return (ast.Name("bytes", ctx=ast.Load()), None)
-        case "null":
-            return (ast.Constant("None"), None)
+            return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="datetime"), None)
         case "array":
-            (annotated_type, new_class) = type_annotation(field_name, field.items)
-            return (list_of(annotated_type), new_class)
-        case "object" | "record" | "struct":
-            classdef = generate_field_class(field_name.capitalize(), field)
+            if prop.items:
+                (annotated_type, new_class) = type_annotation(field_name, prop.items)
+                return (list_of(annotated_type), new_class)
+            return (list_of(ast.Name("typing.Any", ctx=ast.Load())), None)
+        case "object":
+            classdef = generate_field_class(field_name.capitalize(), prop)
             return (ast.Name(field_name.capitalize(), ctx=ast.Load()), classdef)
         case _:
-            raise RuntimeError(f"Unsupported field type {field.type}.")
+            # Check physical type for more specific mappings
+            physical_type = prop.physicalType.lower() if prop.physicalType else None
+            if physical_type:
+                if physical_type in ["text", "varchar", "char", "nvarchar"]:
+                    return (ast.Name("str", ctx=ast.Load()), None)
+                elif physical_type in ["int", "integer", "int32"]:
+                    return (ast.Name("int", ctx=ast.Load()), None)
+                elif physical_type in ["long", "bigint", "int64"]:
+                    return (ast.Name("int", ctx=ast.Load()), None)
+                elif physical_type in ["float", "real", "float32"]:
+                    return (ast.Name("float", ctx=ast.Load()), None)
+                elif physical_type in ["double", "float64"]:
+                    return (ast.Name("float", ctx=ast.Load()), None)
+                elif physical_type in ["decimal", "numeric", "number"]:
+                    return (ast.Name("float", ctx=ast.Load()), None)
+                elif physical_type in ["timestamp", "datetime", "timestamp_tz", "timestamp_ntz"]:
+                    return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="datetime"), None)
+                elif physical_type == "date":
+                    return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="date"), None)
+                elif physical_type in ["bytes", "binary", "bytea"]:
+                    return (ast.Name("bytes", ctx=ast.Load()), None)
+                elif physical_type == "null":
+                    return (ast.Constant("None"), None)
+                elif physical_type in ["record", "struct"]:
+                    classdef = generate_field_class(field_name.capitalize(), prop)
+                    return (ast.Name(field_name.capitalize(), ctx=ast.Load()), classdef)
+            # Default to string
+            return (ast.Name("str", ctx=ast.Load()), None)
 
 
-def type_annotation(field_name: str, field: spec.Field) -> tuple[type_annotation_type, typing.Optional[ast.ClassDef]]:
-    if field.required:
-        return constant_field_annotation(field_name, field)
+def type_annotation(
+    field_name: str, prop: SchemaProperty
+) -> tuple[type_annotation_type, typing.Optional[ast.ClassDef]]:
+    if prop.required:
+        return constant_field_annotation(field_name, prop)
     else:
-        (annotated_type, new_classes) = constant_field_annotation(field_name, field)
+        (annotated_type, new_classes) = constant_field_annotation(field_name, prop)
         return (optional_of(annotated_type), new_classes)
 
 
-def is_simple_field(field: spec.Field) -> bool:
-    return field.type not in set(["object", "record", "struct"])
+def is_simple_field(prop: SchemaProperty) -> bool:
+    prop_type = _get_type(prop) or ""
+    physical_type = (prop.physicalType or "").lower()
+    return prop_type not in {"object"} and physical_type not in {"record", "struct"}
 
 
-def field_definitions(fields: dict[str, spec.Field]) -> tuple[list[ast.Expr], list[ast.ClassDef]]:
+def field_definitions(properties: list[SchemaProperty]) -> tuple[list[ast.Expr], list[ast.ClassDef]]:
     annotations = []
     classes = []
-    for field_name, field in fields.items():
-        (ann, new_class) = type_annotation(field_name, field)
-        annotations.append(ast.AnnAssign(target=ast.Name(id=field_name, ctx=ast.Store()), annotation=ann, simple=1))
-        if field.description and is_simple_field(field):
-            annotations.append(ast.Expr(ast.Constant(field.description)))
+    for prop in properties:
+        (ann, new_class) = type_annotation(prop.name, prop)
+        annotations.append(ast.AnnAssign(target=ast.Name(id=prop.name, ctx=ast.Store()), annotation=ann, simple=1))
+        if prop.description and is_simple_field(prop):
+            annotations.append(ast.Expr(ast.Constant(prop.description)))
         if new_class:
             classes.append(new_class)
     return (annotations, classes)
 
 
-def generate_field_class(field_name: str, field: spec.Field) -> ast.ClassDef:
-    assert field.type in set(["object", "record", "struct"])
-    (annotated_type, new_classes) = field_definitions(field.fields)
-    documentation = [ast.Expr(ast.Constant(field.description))] if field.description else []
+def generate_field_class(field_name: str, prop: SchemaProperty) -> ast.ClassDef:
+    prop_type = _get_type(prop) or ""
+    physical_type = (prop.physicalType or "").lower()
+    assert prop_type == "object" or physical_type in {"record", "struct"}
+    (annotated_type, new_classes) = field_definitions(prop.properties or [])
+    documentation = [ast.Expr(ast.Constant(prop.description))] if prop.description else []
     return ast.ClassDef(
         name=field_name,
         bases=[ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()), attr="BaseModel", ctx=ast.Load())],
@@ -124,9 +161,9 @@ def generate_field_class(field_name: str, field: spec.Field) -> ast.ClassDef:
     )
 
 
-def generate_model_class(name: str, model_definition: spec.Model) -> ast.ClassDef:
-    (field_assignments, nested_classes) = field_definitions(model_definition.fields)
-    documentation = [ast.Expr(ast.Constant(model_definition.description))] if model_definition.description else []
+def generate_model_class(name: str, schema_obj: SchemaObject) -> ast.ClassDef:
+    (field_assignments, nested_classes) = field_definitions(schema_obj.properties or [])
+    documentation = [ast.Expr(ast.Constant(schema_obj.description))] if schema_obj.description else []
     result = ast.ClassDef(
         name=name.capitalize(),
         bases=[ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()), attr="BaseModel", ctx=ast.Load())],

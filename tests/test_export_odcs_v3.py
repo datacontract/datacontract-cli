@@ -6,7 +6,8 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.odcs_v3_exporter import to_odcs_v3_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.lint.resolve import resolve_data_contract
+from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -18,7 +19,7 @@ def test_cli():
 
 
 def test_to_odcs():
-    data_contract = DataContractSpecification.from_string(read_file("fixtures/export/datacontract.yaml"))
+    data_contract = resolve_data_contract(data_contract_str=read_file("fixtures/export/datacontract.yaml"))
     expected_odcs_model = """
 apiVersion: v3.1.0
 kind: DataContract

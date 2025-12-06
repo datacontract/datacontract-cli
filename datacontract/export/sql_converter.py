@@ -1,6 +1,9 @@
+from typing import List, Optional, Tuple
+
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+
 from datacontract.export.exporter import Exporter, _check_models_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Model
 
 
 class SqlExporter(Exporter):
@@ -25,26 +28,27 @@ class SqlQueryExporter(Exporter):
 
 
 def to_sql_query(
-    data_contract_spec: DataContractSpecification, model_name: str, model_value: Model, server_type: str = "snowflake"
+    data_contract: OpenDataContractStandard, model_name: str, model_value: SchemaObject, server_type: str = "snowflake"
 ) -> str:
-    if data_contract_spec is None:
+    if data_contract is None:
         return ""
-    if data_contract_spec.models is None or len(data_contract_spec.models) == 0:
+    if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         return ""
 
     result = ""
-    result += f"-- Data Contract: {data_contract_spec.id}\n"
+    result += f"-- Data Contract: {data_contract.id}\n"
     result += f"-- SQL Dialect: {server_type}\n"
     result += _to_sql_query(model_name, model_value, server_type)
 
     return result
 
 
-def _to_sql_query(model_name, model_value, server_type) -> str:
+def _to_sql_query(model_name: str, model_value: SchemaObject, server_type: str) -> str:
     columns = []
-    for field_name, field in model_value.fields.items():
-        # TODO escape SQL reserved key words, probably dependent on server type
-        columns.append(field_name)
+    if model_value.properties:
+        for prop in model_value.properties:
+            # TODO escape SQL reserved key words, probably dependent on server type
+            columns.append(prop.name)
 
     result = "select\n"
     current_column_index = 1
@@ -60,65 +64,69 @@ def _to_sql_query(model_name, model_value, server_type) -> str:
 
 
 def to_sql_ddl(
-    data_contract_spec: DataContractSpecification, server_type: str = "snowflake", server: str = None
+    data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None
 ) -> str:
-    if data_contract_spec is None:
+    if data_contract is None:
         return ""
-    if data_contract_spec.models is None or len(data_contract_spec.models) == 0:
+    if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         return ""
 
     table_prefix = ""
 
-    if server is None:
-        servers = data_contract_spec.servers
-    else:
-        servers = {server: data_contract_spec.servers[server]}
+    # Get servers list
+    servers = data_contract.servers or []
+    if server is not None:
+        # Filter to just the requested server
+        servers = [s for s in servers if s.server == server]
 
-    for server_name, server in iter(servers.items()):
-        if server.type == "snowflake":
+    for srv in servers:
+        if srv.type == "snowflake":
             server_type = "snowflake"
             break
-        if server.type == "postgres":
+        if srv.type == "postgres":
             server_type = "postgres"
             break
-        if server.type == "databricks":
+        if srv.type == "databricks":
             server_type = "databricks"
-            if server.catalog is not None and server.schema_ is not None:
-                table_prefix = server.catalog + "." + server.schema_ + "."
+            if srv.catalog is not None and srv.schema_ is not None:
+                table_prefix = srv.catalog + "." + srv.schema_ + "."
             break
-        if server.type == server_type:
+        if srv.type == server_type:
             break
 
     result = ""
-    result += f"-- Data Contract: {data_contract_spec.id}\n"
+    result += f"-- Data Contract: {data_contract.id}\n"
     result += f"-- SQL Dialect: {server_type}\n"
 
-    for model_name, model in iter(data_contract_spec.models.items()):
-        result += _to_sql_table(table_prefix + model_name, model, server_type)
+    for schema_obj in data_contract.schema_:
+        result += _to_sql_table(table_prefix + schema_obj.name, schema_obj, server_type)
 
     return result.strip()
 
 
-def _to_sql_table(model_name, model, server_type="snowflake"):
+def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snowflake") -> str:
     if server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
         result = f"CREATE OR REPLACE TABLE {model_name} (\n"
     else:
         result = f"CREATE TABLE {model_name} (\n"
-    fields = len(model.fields)
+
+    properties = model.properties or []
+    fields = len(properties)
     current_field_index = 1
-    for field_name, field in iter(model.fields.items()):
-        type = convert_to_sql_type(field, server_type)
-        result += f"  {field_name} {type}"
-        if field.required:
+
+    for prop in properties:
+        type_str = convert_to_sql_type(prop, server_type)
+        result += f"  {prop.name} {type_str}"
+        if prop.required:
             result += " not null"
-        if field.primaryKey or field.primary:
+        if prop.primaryKey:
             result += " primary key"
-        if server_type == "databricks" and field.description is not None:
-            result += f' COMMENT "{_escape(field.description)}"'
-        if server_type == "snowflake" and field.description is not None:
-            result += f" COMMENT '{_escape(field.description)}'"
+        if server_type == "databricks" and prop.description is not None:
+            result += f' COMMENT "{_escape(prop.description)}"'
+        if server_type == "snowflake" and prop.description is not None:
+            result += f" COMMENT '{_escape(prop.description)}'"
         if current_field_index < fields:
             result += ","
         result += "\n"

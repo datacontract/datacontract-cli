@@ -3,7 +3,8 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.dbt_converter import to_dbt_sources_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs
+from datacontract_specification.model import DataContractSpecification
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -27,7 +28,7 @@ def test_cli_bigquery():
 
 
 def test_to_dbt_sources():
-    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("fixtures/export/datacontract.yaml"))
     expected_dbt_model = """
 version: 2
 sources:
@@ -53,7 +54,6 @@ sources:
                   regex: ^B[0-9]+$
             meta:
               classification: sensitive
-              pii: true
             tags:
               - order_id
           - name: order_total
@@ -81,7 +81,7 @@ sources:
 
 
 def test_to_dbt_sources_bigquery():
-    data_contract = DataContractSpecification.from_file("./fixtures/dbt/export/datacontract.yaml")
+    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("./fixtures/dbt/export/datacontract.yaml"))
     expected_dbt_model = """
 version: 2
 sources:
@@ -107,7 +107,6 @@ sources:
                   regex: ^B[0-9]+$
             meta:
               classification: sensitive
-              pii: true
             tags:
               - order_id
           - name: order_total

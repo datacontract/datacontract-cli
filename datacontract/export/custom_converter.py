@@ -2,20 +2,18 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
+
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Model,
-)
 
 
 class CustomExporter(Exporter):
-    """Exporter implementation for converting data contracts to Markdown."""
+    """Exporter implementation for converting data contracts to custom format with Jinja."""
 
     def export(
         self,
-        data_contract: DataContractSpecification,
-        model: Model,
+        data_contract: OpenDataContractStandard,
+        model: SchemaObject,
         server: str,
         sql_server_type: str,
         export_args: dict,
@@ -28,7 +26,7 @@ class CustomExporter(Exporter):
         return to_custom(data_contract, template)
 
 
-def to_custom(data_contract: DataContractSpecification, template_path: Path) -> str:
+def to_custom(data_contract: OpenDataContractStandard, template_path: Path) -> str:
     template = get_template(template_path)
     rendered_sql = template.render(data_contract=data_contract)
     return rendered_sql

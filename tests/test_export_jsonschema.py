@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.export.jsonschema_converter import to_jsonschemas
-from datacontract.model.data_contract_specification import DataContractSpecification
+from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 

@@ -1,9 +1,10 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject, SchemaProperty
+
 from datacontract.export.exporter import Exporter, _check_models_for_export
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Quality
 
 
 class DqxKeys:
@@ -21,8 +22,8 @@ class DqxExporter(Exporter):
 
     def export(
         self,
-        data_contract: DataContractSpecification,
-        model: Model,
+        data_contract: OpenDataContractStandard,
+        model: SchemaObject,
         server: str,
         sql_server_type: str,
         export_args: Dict[str, Any],
@@ -32,12 +33,12 @@ class DqxExporter(Exporter):
         return to_dqx_yaml(model_value)
 
 
-def to_dqx_yaml(model_value: Model) -> str:
+def to_dqx_yaml(model_value: SchemaObject) -> str:
     """
     Converts the data contract's quality checks to DQX YAML format.
 
     Args:
-        model_value (Model): The data contract to convert.
+        model_value (SchemaObject): The schema object to convert.
 
     Returns:
         str: YAML representation of the data contract's quality checks.
@@ -46,12 +47,12 @@ def to_dqx_yaml(model_value: Model) -> str:
     return yaml.dump(extracted_rules, sort_keys=False, allow_unicode=True, default_flow_style=False)
 
 
-def process_quality_rule(rule: Quality, column_name: str) -> Dict[str, Any]:
+def process_quality_rule(rule: DataQuality, column_name: str) -> Dict[str, Any]:
     """
     Processes a single quality rule by injecting the column path into its arguments if absent.
 
     Args:
-        rule (Quality): The quality rule to process.
+        rule (DataQuality): The quality rule to process.
         column_name (str): The full path to the current column.
 
     Returns:
@@ -77,12 +78,12 @@ def process_quality_rule(rule: Quality, column_name: str) -> Dict[str, Any]:
     return specification
 
 
-def extract_quality_rules(data: Union[Model, Field, Quality], column_path: str = "") -> List[Dict[str, Any]]:
+def extract_quality_rules(data: Union[SchemaObject, SchemaProperty, DataQuality], column_path: str = "") -> List[Dict[str, Any]]:
     """
     Recursively extracts all quality rules from a data contract structure.
 
     Args:
-        data (Union[Model, Field, Quality]): The data contract model, field, or quality rule.
+        data (Union[SchemaObject, SchemaProperty, DataQuality]): The schema object, property, or quality rule.
         column_path (str, optional): The current path in the schema hierarchy. Defaults to "".
 
     Returns:
@@ -90,23 +91,62 @@ def extract_quality_rules(data: Union[Model, Field, Quality], column_path: str =
     """
     quality_rules = []
 
-    if isinstance(data, Quality):
+    if isinstance(data, DataQuality):
         return [process_quality_rule(data, column_path)]
 
-    if isinstance(data, (Model, Field)):
-        for key, field in data.fields.items():
-            current_path = build_column_path(column_path, key)
+    if isinstance(data, SchemaObject):
+        # Process properties
+        if data.properties:
+            for prop in data.properties:
+                current_path = build_column_path(column_path, prop.name)
 
-            if field.fields:
-                # Field is a struct-like object, recurse deeper
-                quality_rules.extend(extract_quality_rules(field, current_path))
+                if prop.properties:
+                    # Property is a struct-like object, recurse deeper
+                    quality_rules.extend(extract_quality_rules_from_property(prop, current_path))
+                else:
+                    # Process quality rules at leaf properties
+                    if prop.quality:
+                        for rule in prop.quality:
+                            quality_rules.append(process_quality_rule(rule, current_path))
+
+        # Process any quality rules attached directly to the schema
+        if data.quality:
+            for rule in data.quality:
+                quality_rules.append(process_quality_rule(rule, column_path))
+
+    return quality_rules
+
+
+def extract_quality_rules_from_property(prop: SchemaProperty, column_path: str) -> List[Dict[str, Any]]:
+    """
+    Recursively extracts quality rules from a property and its nested properties.
+
+    Args:
+        prop (SchemaProperty): The property to process.
+        column_path (str): The current path in the schema hierarchy.
+
+    Returns:
+        List[Dict[str, Any]]: A list of quality rule specifications.
+    """
+    quality_rules = []
+
+    # Process nested properties
+    if prop.properties:
+        for nested_prop in prop.properties:
+            nested_path = build_column_path(column_path, nested_prop.name)
+
+            if nested_prop.properties:
+                # Recurse deeper
+                quality_rules.extend(extract_quality_rules_from_property(nested_prop, nested_path))
             else:
-                # Process quality rules at leaf fields
-                for rule in field.quality:
-                    quality_rules.append(process_quality_rule(rule, current_path))
+                # Process quality rules at leaf properties
+                if nested_prop.quality:
+                    for rule in nested_prop.quality:
+                        quality_rules.append(process_quality_rule(rule, nested_path))
 
-        # Process any quality rules attached directly to this level
-        for rule in data.quality:
+    # Process quality rules at this property level
+    if prop.quality:
+        for rule in prop.quality:
             quality_rules.append(process_quality_rule(rule, column_path))
 
     return quality_rules

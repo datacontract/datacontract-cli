@@ -1,7 +1,9 @@
 import json
+from typing import Dict, List, Optional, Union
+
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_models_for_export
-from datacontract.model.data_contract_specification import Field
 
 
 class AvroExporter(Exporter):
@@ -10,46 +12,68 @@ class AvroExporter(Exporter):
         return to_avro_schema_json(model_name, model_value)
 
 
-def to_avro_schema(model_name, model) -> dict:
-    return to_avro_record(model_name, model.fields, model.description, model.namespace)
+def to_avro_schema(model_name: str, model: SchemaObject) -> dict:
+    namespace = _get_config_value(model, "namespace")
+    return to_avro_record(model_name, model.properties or [], model.description, namespace)
 
 
-def to_avro_schema_json(model_name, model) -> str:
+def to_avro_schema_json(model_name: str, model: SchemaObject) -> str:
     schema = to_avro_schema(model_name, model)
     return json.dumps(schema, indent=2, sort_keys=False)
 
 
-def to_avro_record(name, fields, description, namespace) -> dict:
+def to_avro_record(name: str, properties: List[SchemaProperty], description: Optional[str], namespace: Optional[str]) -> dict:
     schema = {"type": "record", "name": name}
     if description is not None:
         schema["doc"] = description
     if namespace is not None:
         schema["namespace"] = namespace
-    schema["fields"] = to_avro_fields(fields)
+    schema["fields"] = to_avro_fields(properties)
     return schema
 
 
-def to_avro_fields(fields):
+def to_avro_fields(properties: List[SchemaProperty]) -> list:
     result = []
-    for field_name, field in fields.items():
-        result.append(to_avro_field(field, field_name))
+    for prop in properties:
+        result.append(to_avro_field(prop))
     return result
 
 
-def to_avro_field(field, field_name):
-    avro_field = {"name": field_name}
-    if field.description is not None:
-        avro_field["doc"] = field.description
-    is_required_avro = field.required if field.required is not None else True
-    avro_type = to_avro_type(field, field_name)
+def _get_config_value(obj: Union[SchemaObject, SchemaProperty], key: str) -> Optional[str]:
+    """Get a custom property value."""
+    if obj.customProperties is None:
+        return None
+    for cp in obj.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def to_avro_field(prop: SchemaProperty) -> dict:
+    avro_field = {"name": prop.name}
+    if prop.description is not None:
+        avro_field["doc"] = prop.description
+    is_required_avro = prop.required if prop.required is not None else True
+    avro_type = to_avro_type(prop)
     avro_field["type"] = avro_type if is_required_avro else ["null", avro_type]
 
     # Handle enum types - both required and optional
+    enum_values = _get_logical_type_option(prop, "enum")
+    avro_config_type = _get_config_value(prop, "avroType")
+
     if avro_type == "enum" or (isinstance(avro_field["type"], list) and "enum" in avro_field["type"]):
+        title = prop.businessName or prop.name
         enum_def = {
             "type": "enum",
-            "name": field.title,
-            "symbols": field.enum,
+            "name": title,
+            "symbols": enum_values or [],
         }
         if is_required_avro:
             avro_field["type"] = enum_def
@@ -57,82 +81,90 @@ def to_avro_field(field, field_name):
             # Replace "enum" with the full enum definition in the union
             avro_field["type"] = ["null", enum_def]
 
-    if field.config:
-        if "avroDefault" in field.config:
-            if field.config.get("avroType") != "enum":
-                avro_field["default"] = field.config["avroDefault"]
+    avro_default = _get_config_value(prop, "avroDefault")
+    if avro_default is not None:
+        if avro_config_type != "enum":
+            avro_field["default"] = avro_default
 
     return avro_field
 
 
-def to_avro_type(field: Field, field_name: str) -> str | dict:
-    if field.config:
-        if "avroLogicalType" in field.config and "avroType" in field.config:
-            return {"type": field.config["avroType"], "logicalType": field.config["avroLogicalType"]}
-        if "avroLogicalType" in field.config:
-            if field.config["avroLogicalType"] in [
-                "timestamp-millis",
-                "timestamp-micros",
-                "local-timestamp-millis",
-                "local-timestamp-micros",
-                "time-micros",
-            ]:
-                return {"type": "long", "logicalType": field.config["avroLogicalType"]}
-            if field.config["avroLogicalType"] in ["time-millis", "date"]:
-                return {"type": "int", "logicalType": field.config["avroLogicalType"]}
-        if "avroType" in field.config:
-            return field.config["avroType"]
+def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
+    avro_logical_type = _get_config_value(prop, "avroLogicalType")
+    avro_type = _get_config_value(prop, "avroType")
+
+    if avro_logical_type and avro_type:
+        return {"type": avro_type, "logicalType": avro_logical_type}
+    if avro_logical_type:
+        if avro_logical_type in [
+            "timestamp-millis",
+            "timestamp-micros",
+            "local-timestamp-millis",
+            "local-timestamp-micros",
+            "time-micros",
+        ]:
+            return {"type": "long", "logicalType": avro_logical_type}
+        if avro_logical_type in ["time-millis", "date"]:
+            return {"type": "int", "logicalType": avro_logical_type}
+    if avro_type:
+        return avro_type
 
     # Check for enum fields based on presence of enum list and avroType config
-    if field.enum and field.config and field.config.get("avroType") == "enum":
+    enum_values = _get_logical_type_option(prop, "enum")
+    if enum_values and avro_type == "enum":
         return "enum"
 
-    if field.type is None:
+    field_type = prop.logicalType
+    if field_type is None:
         return "null"
-    if field.type in ["string", "varchar", "text"]:
+    if field_type.lower() in ["string", "varchar", "text"]:
         return "string"
-    elif field.type in ["number", "numeric"]:
+    elif field_type.lower() in ["number", "numeric"]:
         # https://avro.apache.org/docs/1.11.1/specification/#decimal
         return "bytes"
-    elif field.type in ["decimal"]:
+    elif field_type.lower() in ["decimal"]:
         typeVal = {"type": "bytes", "logicalType": "decimal"}
-        if field.scale is not None:
-            typeVal["scale"] = field.scale
-        if field.precision is not None:
-            typeVal["precision"] = field.precision
+        scale = _get_logical_type_option(prop, "scale")
+        precision = _get_logical_type_option(prop, "precision")
+        if scale is not None:
+            typeVal["scale"] = scale
+        if precision is not None:
+            typeVal["precision"] = precision
         return typeVal
-    elif field.type in ["float"]:
+    elif field_type.lower() in ["float"]:
         return "float"
-    elif field.type in ["double"]:
+    elif field_type.lower() in ["double"]:
         return "double"
-    elif field.type in ["integer", "int"]:
+    elif field_type.lower() in ["integer", "int"]:
         return "int"
-    elif field.type in ["long", "bigint"]:
+    elif field_type.lower() in ["long", "bigint"]:
         return "long"
-    elif field.type in ["boolean"]:
+    elif field_type.lower() in ["boolean"]:
         return "boolean"
-    elif field.type in ["timestamp", "timestamp_tz"]:
+    elif field_type.lower() in ["timestamp", "timestamp_tz"]:
         return {"type": "long", "logicalType": "timestamp-millis"}
-    elif field.type in ["timestamp_ntz"]:
+    elif field_type.lower() in ["timestamp_ntz"]:
         return {"type": "long", "logicalType": "local-timestamp-millis"}
-    elif field.type in ["date"]:
+    elif field_type.lower() in ["date"]:
         return {"type": "int", "logicalType": "date"}
-    elif field.type in ["time"]:
+    elif field_type.lower() in ["time"]:
         return "long"
-    elif field.type in ["map"]:
-        if field.config is not None and "values" in field.config:
-            return {"type": "map", "values": field.config["values"]}
+    elif field_type.lower() in ["map"]:
+        values_type = _get_config_value(prop, "values")
+        if values_type:
+            return {"type": "map", "values": values_type}
         else:
             return "bytes"
-    elif field.type in ["object", "record", "struct"]:
-        if field.config is not None and "namespace" in field.config:
-            return to_avro_record(field_name, field.fields, field.description, field.config["namespace"])
-        return to_avro_record(field_name, field.fields, field.description, None)
-    elif field.type in ["binary"]:
+    elif field_type.lower() in ["object", "record", "struct"]:
+        namespace = _get_config_value(prop, "namespace")
+        return to_avro_record(prop.name, prop.properties or [], prop.description, namespace)
+    elif field_type.lower() in ["binary"]:
         return "bytes"
-    elif field.type in ["array"]:
-        return {"type": "array", "items": to_avro_type(field.items, field_name)}
-    elif field.type in ["null"]:
+    elif field_type.lower() in ["array"]:
+        if prop.items:
+            return {"type": "array", "items": to_avro_type(prop.items)}
+        return {"type": "array", "items": "string"}
+    elif field_type.lower() in ["null"]:
         return "null"
     else:
         return "bytes"

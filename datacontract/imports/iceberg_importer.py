@@ -1,21 +1,26 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from pydantic import ValidationError
 from pyiceberg import types as iceberg_types
 from pyiceberg.schema import Schema
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+)
 from datacontract.model.exceptions import DataContractException
 
 
 class IcebergImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
+        self, source: str, import_args: dict
+    ) -> OpenDataContractStandard:
         schema = load_and_validate_iceberg_schema(source)
         return import_iceberg(
-            data_contract_specification,
             schema,
             import_args.get("iceberg_table"),
         )
@@ -34,139 +39,126 @@ def load_and_validate_iceberg_schema(source: str) -> Schema:
             )
 
 
-def import_iceberg(
-    data_contract_specification: DataContractSpecification, schema: Schema, table_name: str
-) -> DataContractSpecification:
-    if data_contract_specification.models is None:
-        data_contract_specification.models = {}
-
-    model = Model(type="table", title=table_name)
+def import_iceberg(schema: Schema, table_name: str) -> OpenDataContractStandard:
+    """Import an Iceberg schema and create an ODCS data contract."""
+    odcs = create_odcs()
 
     # Iceberg identifier_fields aren't technically primary keys since Iceberg doesn't support primary keys,
-    # but they are close enough that we can probably treat them as primary keys on the conversion.
-    # ref: https://iceberg.apache.org/spec/#identifier-field-ids
-    # this code WILL NOT support finding nested primary key fields.
+    # but they are close enough that we can treat them as primary keys on the conversion.
     identifier_fields_ids = schema.identifier_field_ids
 
+    properties = []
+    pk_position = 1
+
     for field in schema.fields:
-        model_field = _field_from_nested_field(field)
+        prop = _property_from_nested_field(field)
 
         if field.field_id in identifier_fields_ids:
-            model_field.primaryKey = True
+            prop.primaryKey = True
+            prop.primaryKeyPosition = pk_position
+            pk_position += 1
 
-        model.fields[field.name] = model_field
+        properties.append(prop)
 
-    data_contract_specification.models[table_name] = model
-    return data_contract_specification
-
-
-def _field_from_nested_field(nested_field: iceberg_types.NestedField) -> Field:
-    """
-    Converts an Iceberg NestedField into a Field object for the data contract.
-
-    Args:
-        nested_field: The Iceberg NestedField to convert.
-
-    Returns:
-        Field: The generated Field object.
-    """
-    field = Field(
-        title=nested_field.name,
-        required=nested_field.required,
-        config=build_field_config(nested_field),
+    schema_obj = create_schema_object(
+        name=table_name or "iceberg_table",
+        physical_type="table",
+        properties=properties,
     )
 
-    if nested_field.doc is not None:
-        field.description = nested_field.doc
-
-    return _type_from_iceberg_type(field, nested_field.field_type)
+    odcs.schema_ = [schema_obj]
+    return odcs
 
 
-def _type_from_iceberg_type(field: Field, iceberg_type: iceberg_types.IcebergType) -> Field:
-    """
-    Maps Iceberg data types to the Data Contract type system and updates the field.
+def _property_from_nested_field(nested_field: iceberg_types.NestedField) -> SchemaProperty:
+    """Converts an Iceberg NestedField into an ODCS SchemaProperty."""
+    logical_type = _data_type_from_iceberg(nested_field.field_type)
 
-    Args:
-        field: The Field object to update.
-        iceberg_type: The Iceberg data type to map.
+    custom_props = {}
+    if nested_field.field_id > 0:
+        custom_props["icebergFieldId"] = nested_field.field_id
+    if nested_field.initial_default is not None:
+        custom_props["icebergInitialDefault"] = str(nested_field.initial_default)
+    if nested_field.write_default is not None:
+        custom_props["icebergWriteDefault"] = str(nested_field.write_default)
 
-    Returns:
-        Field: The updated Field object.
-    """
-    field.type = _data_type_from_iceberg(iceberg_type)
+    nested_properties = None
+    items_prop = None
 
-    if field.type == "array":
-        field.items = _type_from_iceberg_type(Field(required=iceberg_type.element_required), iceberg_type.element_type)
+    if logical_type == "array":
+        items_prop = _type_to_property("items", nested_field.field_type.element_type, nested_field.field_type.element_required)
+    elif logical_type == "object" and hasattr(nested_field.field_type, "fields"):
+        nested_properties = [_property_from_nested_field(nf) for nf in nested_field.field_type.fields]
 
-    elif field.type == "map":
-        field.keys = _type_from_iceberg_type(Field(required=True), iceberg_type.key_type)
-        field.values = _type_from_iceberg_type(Field(required=iceberg_type.value_required), iceberg_type.value_type)
-
-    elif field.type == "object":
-        field.fields = {nf.name: _field_from_nested_field(nf) for nf in iceberg_type.fields}
-
-    return field
-
-
-def build_field_config(iceberg_field: iceberg_types.NestedField) -> Dict[str, Any]:
-    config = {}
-
-    if iceberg_field.field_id > 0:
-        config["icebergFieldId"] = iceberg_field.field_id
-
-    if iceberg_field.initial_default is not None:
-        config["icebergInitialDefault"] = iceberg_field.initial_default
-
-    if iceberg_field.write_default is not None:
-        config["icebergWriteDefault"] = iceberg_field.write_default
-
-    return config
+    return create_property(
+        name=nested_field.name,
+        logical_type=logical_type,
+        physical_type=str(nested_field.field_type),
+        description=nested_field.doc,
+        required=nested_field.required if nested_field.required else None,
+        properties=nested_properties,
+        items=items_prop,
+        custom_properties=custom_props if custom_props else None,
+    )
 
 
-def _data_type_from_iceberg(type: iceberg_types.IcebergType) -> str:
-    """
-    Convert an Iceberg field type to a datacontract field type
+def _type_to_property(name: str, iceberg_type: iceberg_types.IcebergType, required: bool = True) -> SchemaProperty:
+    """Convert an Iceberg type to an ODCS SchemaProperty."""
+    logical_type = _data_type_from_iceberg(iceberg_type)
 
-    Args:
-        type: The Iceberg field type
+    nested_properties = None
+    items_prop = None
 
-    Returns:
-        str: The datacontract field type
-    """
-    if isinstance(type, iceberg_types.BooleanType):
+    if logical_type == "array":
+        items_prop = _type_to_property("items", iceberg_type.element_type, iceberg_type.element_required)
+    elif logical_type == "object" and hasattr(iceberg_type, "fields"):
+        nested_properties = [_property_from_nested_field(nf) for nf in iceberg_type.fields]
+
+    return create_property(
+        name=name,
+        logical_type=logical_type,
+        physical_type=str(iceberg_type),
+        required=required if required else None,
+        properties=nested_properties,
+        items=items_prop,
+    )
+
+
+def _data_type_from_iceberg(iceberg_type: iceberg_types.IcebergType) -> str:
+    """Convert an Iceberg field type to an ODCS logical type."""
+    if isinstance(iceberg_type, iceberg_types.BooleanType):
         return "boolean"
-    if isinstance(type, iceberg_types.IntegerType):
+    if isinstance(iceberg_type, iceberg_types.IntegerType):
         return "integer"
-    if isinstance(type, iceberg_types.LongType):
-        return "long"
-    if isinstance(type, iceberg_types.FloatType):
-        return "float"
-    if isinstance(type, iceberg_types.DoubleType):
-        return "double"
-    if isinstance(type, iceberg_types.DecimalType):
-        return "decimal"
-    if isinstance(type, iceberg_types.DateType):
+    if isinstance(iceberg_type, iceberg_types.LongType):
+        return "integer"
+    if isinstance(iceberg_type, iceberg_types.FloatType):
+        return "number"
+    if isinstance(iceberg_type, iceberg_types.DoubleType):
+        return "number"
+    if isinstance(iceberg_type, iceberg_types.DecimalType):
+        return "number"
+    if isinstance(iceberg_type, iceberg_types.DateType):
         return "date"
-    if isinstance(type, iceberg_types.TimeType):
-        # there isn't a great mapping for the iceberg type "time", just map to string for now
+    if isinstance(iceberg_type, iceberg_types.TimeType):
         return "string"
-    if isinstance(type, iceberg_types.TimestampType):
-        return "timestamp_ntz"
-    if isinstance(type, iceberg_types.TimestamptzType):
-        return "timestamp_tz"
-    if isinstance(type, iceberg_types.StringType):
+    if isinstance(iceberg_type, iceberg_types.TimestampType):
+        return "date"
+    if isinstance(iceberg_type, iceberg_types.TimestamptzType):
+        return "date"
+    if isinstance(iceberg_type, iceberg_types.StringType):
         return "string"
-    if isinstance(type, iceberg_types.UUIDType):
+    if isinstance(iceberg_type, iceberg_types.UUIDType):
         return "string"
-    if isinstance(type, iceberg_types.BinaryType):
-        return "bytes"
-    if isinstance(type, iceberg_types.FixedType):
-        return "bytes"
-    if isinstance(type, iceberg_types.MapType):
-        return "map"
-    if isinstance(type, iceberg_types.ListType):
+    if isinstance(iceberg_type, iceberg_types.BinaryType):
         return "array"
-    if isinstance(type, iceberg_types.StructType):
+    if isinstance(iceberg_type, iceberg_types.FixedType):
+        return "array"
+    if isinstance(iceberg_type, iceberg_types.MapType):
+        return "object"
+    if isinstance(iceberg_type, iceberg_types.ListType):
+        return "array"
+    if isinstance(iceberg_type, iceberg_types.StructType):
         return "object"
 
-    raise ValueError(f"Unknown Iceberg type: {type}")
+    raise ValueError(f"Unknown Iceberg type: {iceberg_type}")

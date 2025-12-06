@@ -1,10 +1,11 @@
 from datetime import datetime
 from importlib.metadata import version
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pytz
 
-import datacontract.model.data_contract_specification as spec
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+
 from datacontract.export.exporter import Exporter
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.exceptions import DataContractException
@@ -12,23 +13,49 @@ from datacontract.model.exceptions import DataContractException
 
 class DbmlExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        found_server = data_contract.servers.get(server)
+        found_server = _get_server_by_name(data_contract, server) if server else None
         return to_dbml_diagram(data_contract, found_server)
 
 
-def to_dbml_diagram(contract: spec.DataContractSpecification, server: spec.Server) -> str:
+def _get_server_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[Server]:
+    """Get a server by name."""
+    if data_contract.servers is None:
+        return None
+    return next((s for s in data_contract.servers if s.server == name), None)
+
+
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the type from a schema property."""
+    if prop.logicalType:
+        return prop.logicalType
+    if prop.physicalType:
+        return prop.physicalType
+    return None
+
+
+def _get_references(prop: SchemaProperty) -> Optional[str]:
+    """Get references from a property's relationships."""
+    if prop.relationships:
+        for rel in prop.relationships:
+            if hasattr(rel, 'ref'):
+                return rel.ref
+    return None
+
+
+def to_dbml_diagram(contract: OpenDataContractStandard, server: Optional[Server]) -> str:
     result = ""
     result += add_generated_info(contract, server) + "\n"
     result += generate_project_info(contract) + "\n"
 
-    for model_name, model in contract.models.items():
-        table_description = generate_table(model_name, model, server)
-        result += f"\n{table_description}\n"
+    if contract.schema_:
+        for schema_obj in contract.schema_:
+            table_description = generate_table(schema_obj.name, schema_obj, server)
+            result += f"\n{table_description}\n"
 
     return result
 
 
-def add_generated_info(contract: spec.DataContractSpecification, server: spec.Server) -> str:
+def add_generated_info(contract: OpenDataContractStandard, server: Optional[Server]) -> str:
     tz = pytz.timezone("UTC")
     now = datetime.now(tz)
     formatted_date = now.strftime("%b %d %Y")
@@ -37,10 +64,10 @@ def add_generated_info(contract: spec.DataContractSpecification, server: spec.Se
 
     generated_info = """
 Generated at {0} by datacontract-cli version {1}
-for datacontract {2} ({3}) version {4} 
+for datacontract {2} ({3}) version {4}
 Using {5} Types for the field types
     """.format(
-        formatted_date, datacontract_cli_version, contract.info.title, contract.id, contract.info.version, dialect
+        formatted_date, datacontract_cli_version, contract.name, contract.id, contract.version, dialect
     )
 
     comment = """/*
@@ -57,25 +84,26 @@ def get_version() -> str:
         return ""
 
 
-def generate_project_info(contract: spec.DataContractSpecification) -> str:
+def generate_project_info(contract: OpenDataContractStandard) -> str:
     return """Project "{0}" {{
     Note: '''{1}'''
 }}\n
-    """.format(contract.info.title, contract.info.description)
+    """.format(contract.name or "", contract.description or "")
 
 
-def generate_table(model_name: str, model: spec.Model, server: spec.Server) -> str:
-    result = """Table "{0}" {{ 
+def generate_table(model_name: str, schema_obj: SchemaObject, server: Optional[Server]) -> str:
+    result = """Table "{0}" {{
 Note: {1}
-    """.format(model_name, formatDescription(model.description))
+    """.format(model_name, formatDescription(schema_obj.description or ""))
 
     references = []
 
-    for field_name, field in model.fields.items():
-        ref, field_string = generate_field(field_name, field, model_name, server)
-        if ref is not None:
-            references.append(ref)
-        result += "{0}\n".format(field_string)
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            ref, field_string = generate_field(prop.name, prop, model_name, server)
+            if ref is not None:
+                references.append(ref)
+            result += "{0}\n".format(field_string)
 
     result += "}\n"
 
@@ -89,10 +117,10 @@ Note: {1}
     return result
 
 
-def generate_field(field_name: str, field: spec.Field, model_name: str, server: spec.Server) -> Tuple[str, str]:
-    if field.primaryKey or field.primary:
-        if field.required is not None:
-            if not field.required:
+def generate_field(field_name: str, prop: SchemaProperty, model_name: str, server: Optional[Server]) -> Tuple[str, str]:
+    if prop.primaryKey:
+        if prop.required is not None:
+            if not prop.required:
                 raise DataContractException(
                     type="lint",
                     name="Primary key fields cannot have required == False.",
@@ -101,9 +129,9 @@ def generate_field(field_name: str, field: spec.Field, model_name: str, server: 
                     engine="datacontract",
                 )
         else:
-            field.required = True
-        if field.unique is not None:
-            if not field.unique:
+            prop.required = True
+        if prop.unique is not None:
+            if not prop.unique:
                 raise DataContractException(
                     type="lint",
                     name="Primary key fields cannot have unique == False",
@@ -112,32 +140,34 @@ def generate_field(field_name: str, field: spec.Field, model_name: str, server: 
                     engine="datacontract",
                 )
         else:
-            field.unique = True
+            prop.unique = True
 
     field_attrs = []
-    if field.primaryKey or field.primary:
+    if prop.primaryKey:
         field_attrs.append("pk")
 
-    if field.unique:
+    if prop.unique:
         field_attrs.append("unique")
 
-    if field.required:
+    if prop.required:
         field_attrs.append("not null")
     else:
         field_attrs.append("null")
 
-    if field.description:
-        field_attrs.append("""Note: {0}""".format(formatDescription(field.description)))
+    if prop.description:
+        field_attrs.append("""Note: {0}""".format(formatDescription(prop.description)))
 
-    field_type = field.type if server is None else convert_to_sql_type(field, server.type)
+    prop_type = _get_type(prop)
+    field_type = prop_type if server is None else convert_to_sql_type(prop, server.type)
 
     field_str = '"{0}" "{1}" [{2}]'.format(field_name, field_type, ",".join(field_attrs))
     ref_str = None
-    if (field.references) is not None:
-        if field.unique:
-            ref_str = "{0}.{1} - {2}".format(model_name, field_name, field.references)
+    references = _get_references(prop)
+    if references is not None:
+        if prop.unique:
+            ref_str = "{0}.{1} - {2}".format(model_name, field_name, references)
         else:
-            ref_str = "{0}.{1} > {2}".format(model_name, field_name, field.references)
+            ref_str = "{0}.{1} > {2}".format(model_name, field_name, references)
     return (ref_str, field_str)
 
 

@@ -1,13 +1,15 @@
 import ast
 import typing
+from typing import List, Optional
 
-import datacontract.model.data_contract_specification as spec
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+
 from datacontract.export.exporter import Exporter, _determine_sql_server_type
 
 
 class SQLAlchemyExporter(Exporter):
     def export(
-        self, data_contract: spec.DataContractSpecification, model, server, sql_server_type, export_args
+        self, data_contract: OpenDataContractStandard, model, server, sql_server_type, export_args
     ) -> dict:
         sql_server_type = _determine_sql_server_type(data_contract, sql_server_type, server)
         return to_sqlalchemy_model_str(data_contract, sql_server_type, server)
@@ -16,15 +18,39 @@ class SQLAlchemyExporter(Exporter):
 DECLARATIVE_BASE = "Base"
 
 
-def to_sqlalchemy_model_str(contract: spec.DataContractSpecification, sql_server_type: str = "", server=None) -> str:
-    server_obj = contract.servers.get(server)
-    classdefs = [
-        generate_model_class(model_name, model, server_obj, sql_server_type)
-        for (model_name, model) in contract.models.items()
-    ]
-    documentation = (
-        [ast.Expr(ast.Constant(contract.info.description))] if (contract.info and contract.info.description) else []
-    )
+def _get_server_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[Server]:
+    """Get a server by name."""
+    if data_contract.servers is None:
+        return None
+    return next((s for s in data_contract.servers if s.server == name), None)
+
+
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the type from a schema property."""
+    if prop.logicalType:
+        return prop.logicalType
+    if prop.physicalType:
+        return prop.physicalType
+    return None
+
+
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def to_sqlalchemy_model_str(
+    contract: OpenDataContractStandard, sql_server_type: str = "", server=None
+) -> str:
+    server_obj = _get_server_by_name(contract, server) if server else None
+    classdefs = []
+    if contract.schema_:
+        for schema_obj in contract.schema_:
+            classdefs.append(generate_model_class(schema_obj.name, schema_obj, server_obj, sql_server_type))
+
+    documentation = [ast.Expr(ast.Constant(contract.description))] if contract.description else []
 
     declarative_base = ast.ClassDef(
         name=DECLARATIVE_BASE,
@@ -82,14 +108,24 @@ def Column(predicate, **kwargs) -> ast.Call:
     return Call("Column", predicate, **kwargs)
 
 
-def sqlalchemy_primitive(field: spec.Field):
+def sqlalchemy_primitive(prop: SchemaProperty):
+    prop_type = _get_type(prop)
+    max_length = _get_logical_type_option(prop, "maxLength")
+    precision = _get_logical_type_option(prop, "precision")
+    scale = _get_logical_type_option(prop, "scale")
+
+    if prop_type is None:
+        return None
+
+    prop_type_lower = prop_type.lower()
+
     sqlalchemy_name = {
-        "string": Call("String", ast.Constant(field.maxLength)),
-        "text": Call("Text", ast.Constant(field.maxLength)),
-        "varchar": Call("VARCHAR", ast.Constant(field.maxLength)),
-        "number": Call("Numeric", ast.Constant(field.precision), ast.Constant(field.scale)),
-        "decimal": Call("Numeric", ast.Constant(field.precision), ast.Constant(field.scale)),
-        "numeric": Call("Numeric", ast.Constant(field.precision), ast.Constant(field.scale)),
+        "string": Call("String", ast.Constant(max_length)),
+        "text": Call("Text", ast.Constant(max_length)),
+        "varchar": Call("VARCHAR", ast.Constant(max_length)),
+        "number": Call("Numeric", ast.Constant(precision), ast.Constant(scale)),
+        "decimal": Call("Numeric", ast.Constant(precision), ast.Constant(scale)),
+        "numeric": Call("Numeric", ast.Constant(precision), ast.Constant(scale)),
         "int": ast.Name("Integer"),
         "integer": ast.Name("Integer"),
         "long": ast.Name("BigInteger"),
@@ -101,46 +137,52 @@ def sqlalchemy_primitive(field: spec.Field):
         "timestamp_tz": Call("TIMESTAMP", ast.Constant(True)),
         "timestamp_ntz": ast.Name("TIMESTAMP_NTZ"),
         "date": ast.Name("Date"),
-        "bytes": Call("LargeBinary", ast.Constant(field.maxLength)),
+        "bytes": Call("LargeBinary", ast.Constant(max_length)),
     }
-    return sqlalchemy_name.get(field.type)
+    return sqlalchemy_name.get(prop_type_lower)
 
 
-def constant_field_value(field_name: str, field: spec.Field) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
-    new_type = sqlalchemy_primitive(field)
-    match field.type:
-        case "array":
-            new_type = Call("ARRAY", sqlalchemy_primitive(field.items))
+def constant_field_value(field_name: str, prop: SchemaProperty) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
+    new_type = sqlalchemy_primitive(prop)
+    prop_type = _get_type(prop)
+
+    if prop_type and prop_type.lower() == "array":
+        if prop.items:
+            new_type = Call("ARRAY", sqlalchemy_primitive(prop.items))
+        else:
+            new_type = Call("ARRAY", ast.Name("String"))
+
     if new_type is None:
-        raise RuntimeError(f"Unsupported field type {field.type}.")
+        raise RuntimeError(f"Unsupported field type {prop_type}.")
 
     return Column(
-        new_type, nullable=not field.required, comment=field.description, primary_key=field.primaryKey or field.primary
+        new_type, nullable=not prop.required, comment=prop.description, primary_key=prop.primaryKey or False
     ), None
 
 
-def column_assignment(field_name: str, field: spec.Field) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
-    return constant_field_value(field_name, field)
+def column_assignment(field_name: str, prop: SchemaProperty) -> tuple[ast.Call, typing.Optional[ast.ClassDef]]:
+    return constant_field_value(field_name, prop)
 
 
-def is_simple_field(field: spec.Field) -> bool:
-    return field.type not in set(["object", "record", "struct"])
+def is_simple_field(prop: SchemaProperty) -> bool:
+    prop_type = _get_type(prop) or ""
+    return prop_type.lower() not in {"object", "record", "struct"}
 
 
-def field_definitions(fields: dict[str, spec.Field]) -> tuple[list[ast.Expr], list[ast.ClassDef]]:
+def field_definitions(properties: List[SchemaProperty]) -> tuple[list[ast.Expr], list[ast.ClassDef]]:
     annotations: list[ast.Expr] = []
     classes: list[typing.Any] = []
-    for field_name, field in fields.items():
-        (ann, new_class) = column_assignment(field_name, field)
-        annotations.append(ast.Assign(targets=[ast.Name(id=field_name, ctx=ast.Store())], value=ann, lineno=0))
+    for prop in properties:
+        (ann, new_class) = column_assignment(prop.name, prop)
+        annotations.append(ast.Assign(targets=[ast.Name(id=prop.name, ctx=ast.Store())], value=ann, lineno=0))
     return (annotations, classes)
 
 
 def generate_model_class(
-    name: str, model_definition: spec.Model, server=None, sql_server_type: str = ""
+    name: str, schema_obj: SchemaObject, server: Optional[Server] = None, sql_server_type: str = ""
 ) -> ast.ClassDef:
-    (field_assignments, nested_classes) = field_definitions(model_definition.fields)
-    documentation = [ast.Expr(ast.Constant(model_definition.description))] if model_definition.description else []
+    (field_assignments, nested_classes) = field_definitions(schema_obj.properties or [])
+    documentation = [ast.Expr(ast.Constant(schema_obj.description))] if schema_obj.description else []
 
     schema = None if server is None else server.schema_
     table_name = ast.Constant(name)
@@ -157,7 +199,7 @@ def generate_model_class(
                 targets=[ast.Name("__table_args__")],
                 value=ast.Dict(
                     keys=[ast.Constant("comment"), ast.Constant("schema")],
-                    values=[ast.Constant(model_definition.description), ast.Constant(schema)],
+                    values=[ast.Constant(schema_obj.description), ast.Constant(schema)],
                 ),
                 lineno=0,
             ),

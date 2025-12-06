@@ -2,7 +2,7 @@ from textwrap import dedent
 
 from typer.testing import CliRunner
 
-import datacontract.model.data_contract_specification as spec
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 from datacontract.cli import app
 from datacontract.export.avro_idl_converter import (
     AvroIDLProtocol,
@@ -69,20 +69,30 @@ def test_avro_idl_cli_export():
 
 
 def test_avro_idl_complex_type():
-    contract = spec.DataContractSpecification(
-        models={
-            "test_model": spec.Model(
+    contract = OpenDataContractStandard(
+        apiVersion="v3.1.0",
+        kind="DataContract",
+        schema_=[
+            SchemaObject(
+                name="test_model",
                 description="Test model",
-                fields={
-                    "test_field": spec.Field(
-                        type="object",
+                properties=[
+                    SchemaProperty(
+                        name="test_field",
+                        logicalType="object",
                         required=True,
                         description="Complex field",
-                        fields={"nested_field_1": spec.Field(description="Primitive field", type="text")},
+                        properties=[
+                            SchemaProperty(
+                                name="nested_field_1",
+                                description="Primitive field",
+                                logicalType="string",
+                            )
+                        ],
                     )
-                },
+                ],
             )
-        }
+        ],
     )
     expected = dedent("""
     protocol Unnamed {
@@ -102,23 +112,34 @@ def test_avro_idl_complex_type():
 
 
 def test_avro_idl_array_type():
-    contract = spec.DataContractSpecification(
-        models={
-            "test_model": spec.Model(
+    contract = OpenDataContractStandard(
+        apiVersion="v3.1.0",
+        kind="DataContract",
+        schema_=[
+            SchemaObject(
+                name="test_model",
                 description="Test model",
-                fields={
-                    "test_field": spec.Field(
-                        type="array",
+                properties=[
+                    SchemaProperty(
+                        name="test_field",
+                        logicalType="array",
                         description="Array field",
-                        items=spec.Field(
-                            type="record",
+                        items=SchemaProperty(
+                            name="item",
+                            logicalType="object",
                             description="Record field",
-                            fields={"nested_field_1": spec.Field(type="text", description="Primitive field")},
+                            properties=[
+                                SchemaProperty(
+                                    name="nested_field_1",
+                                    logicalType="string",
+                                    description="Primitive field",
+                                )
+                            ],
                         ),
                     )
-                },
+                ],
             )
-        }
+        ],
     )
     expected = dedent("""
     protocol Unnamed {

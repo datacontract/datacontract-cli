@@ -1,13 +1,11 @@
 import json
+from typing import List, Optional
 
 from pyspark.sql import types
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Field,
-    Model,
-)
 
 
 class SparkExporter(Exporter):
@@ -17,7 +15,7 @@ class SparkExporter(Exporter):
 
     def export(
         self,
-        data_contract: DataContractSpecification,
+        data_contract: OpenDataContractStandard,
         model,
         server,
         sql_server_type,
@@ -27,7 +25,7 @@ class SparkExporter(Exporter):
         Export the given data contract to Spark schemas.
 
         Args:
-            data_contract (DataContractSpecification): The data contract specification.
+            data_contract (OpenDataContractStandard): The data contract specification.
             model: Not used in this implementation.
             server: Not used in this implementation.
             sql_server_type: Not used in this implementation.
@@ -39,139 +37,193 @@ class SparkExporter(Exporter):
         return to_spark(data_contract)
 
 
-def to_spark(contract: DataContractSpecification) -> str:
+def to_spark(contract: OpenDataContractStandard) -> str:
     """
-    Converts a DataContractSpecification into a Spark schema string.
+    Converts an OpenDataContractStandard into a Spark schema string.
 
     Args:
-        contract (DataContractSpecification): The data contract specification containing models.
+        contract (OpenDataContractStandard): The data contract specification containing models.
 
     Returns:
         str: A string representation of the Spark schema for each model in the contract.
     """
-    return "\n\n".join(
-        f"{model_name} = {print_schema(to_spark_schema(model))}" for model_name, model in contract.models.items()
-    )
+    result = []
+    if contract.schema_:
+        for schema_obj in contract.schema_:
+            result.append(f"{schema_obj.name} = {print_schema(to_spark_schema(schema_obj))}")
+    return "\n\n".join(result)
 
 
-def to_spark_dict(contract: DataContractSpecification) -> dict[str, types.StructType]:
+def to_spark_dict(contract: OpenDataContractStandard) -> dict[str, types.StructType]:
     """
     Convert a data contract specification to Spark schemas.
 
     Args:
-        contract (DataContractSpecification): The data contract specification.
+        contract (OpenDataContractStandard): The data contract specification.
 
     Returns:
         dict[str, types.StructType]: A dictionary mapping model names to their corresponding Spark schemas.
     """
-    return {model_name: to_spark_schema(model) for model_name, model in contract.models.items()}
+    result = {}
+    if contract.schema_:
+        for schema_obj in contract.schema_:
+            result[schema_obj.name] = to_spark_schema(schema_obj)
+    return result
 
 
-def to_spark_schema(model: Model) -> types.StructType:
+def to_spark_schema(schema_obj: SchemaObject) -> types.StructType:
     """
-    Convert a model to a Spark schema.
+    Convert a schema object to a Spark schema.
 
     Args:
-        model (Model): The model to convert.
+        schema_obj (SchemaObject): The schema object to convert.
 
     Returns:
         types.StructType: The corresponding Spark schema.
     """
-    return to_struct_type(model.fields)
+    return to_struct_type(schema_obj.properties or [])
 
 
-def to_struct_type(fields: dict[str, Field]) -> types.StructType:
+def to_struct_type(properties: List[SchemaProperty]) -> types.StructType:
     """
-    Convert a dictionary of fields to a Spark StructType.
+    Convert a list of properties to a Spark StructType.
 
     Args:
-        fields (dict[str, Field]): The fields to convert.
+        properties (List[SchemaProperty]): The properties to convert.
 
     Returns:
         types.StructType: The corresponding Spark StructType.
     """
-    struct_fields = [to_struct_field(field, field_name) for field_name, field in fields.items()]
+    struct_fields = [to_struct_field(prop) for prop in properties]
     return types.StructType(struct_fields)
 
 
-def to_struct_field(field: Field, field_name: str) -> types.StructField:
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the logical type from a schema property."""
+    return prop.logicalType
+
+
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def to_struct_field(prop: SchemaProperty) -> types.StructField:
     """
-    Convert a field to a Spark StructField.
+    Convert a property to a Spark StructField.
 
     Args:
-        field (Field): The field to convert.
-        field_name (str): The name of the field.
+        prop (SchemaProperty): The property to convert.
 
     Returns:
         types.StructField: The corresponding Spark StructField.
     """
-    data_type = to_spark_data_type(field)
-    metadata = to_spark_metadata(field)
-    return types.StructField(name=field_name, dataType=data_type, nullable=not field.required, metadata=metadata)
+    data_type = to_spark_data_type(prop)
+    metadata = to_spark_metadata(prop)
+    return types.StructField(name=prop.name, dataType=data_type, nullable=not prop.required, metadata=metadata)
 
 
-def to_spark_data_type(field: Field) -> types.DataType:
+def to_spark_data_type(prop: SchemaProperty) -> types.DataType:
     """
-    Convert a field to a Spark DataType.
+    Convert a property to a Spark DataType.
 
     Args:
-        field (Field): The field to convert.
+        prop (SchemaProperty): The property to convert.
 
     Returns:
         types.DataType: The corresponding Spark DataType.
     """
-    field_type = field.type
-    if field_type is None or field_type in ["null"]:
+    logical_type = _get_type(prop)
+    physical_type = prop.physicalType.lower() if prop.physicalType else None
+
+    # Check for null type
+    if logical_type is None and physical_type is None:
         return types.NullType()
-    if field_type == "array":
-        return types.ArrayType(to_spark_data_type(field.items))
-    if field_type in ["object", "record", "struct"]:
-        return types.StructType(to_struct_type(field.fields))
-    if field_type == "map":
-        return types.MapType(to_spark_data_type(field.keys), to_spark_data_type(field.values))
-    if field_type == "variant":
+    if physical_type == "null":
+        return types.NullType()
+
+    # Handle array type
+    if logical_type == "array":
+        if prop.items:
+            return types.ArrayType(to_spark_data_type(prop.items))
+        return types.ArrayType(types.StringType())
+
+    # Handle object/struct type
+    if logical_type == "object" or physical_type in ["object", "record", "struct"]:
+        if prop.properties:
+            return types.StructType(to_struct_type(prop.properties))
+        return types.StructType([])
+
+    # Handle map type (check physical type)
+    if physical_type == "map":
+        # For ODCS, maps might be represented differently - check for keys/values properties
+        # For now, default to string -> string map
+        return types.MapType(types.StringType(), types.StringType())
+
+    # Handle variant type
+    if physical_type == "variant":
         return types.VariantType()
-    if field_type in ["string", "varchar", "text"]:
-        return types.StringType()
-    if field_type in ["number", "decimal", "numeric"]:
-        precision = field.precision if field.precision is not None else 38
-        scale = field.scale if field.scale is not None else 0
-        return types.DecimalType(precision=precision, scale=scale)
-    if field_type in ["integer", "int"]:
-        return types.IntegerType()
-    if field_type == "long":
-        return types.LongType()
-    if field_type == "float":
-        return types.FloatType()
-    if field_type == "double":
-        return types.DoubleType()
-    if field_type == "boolean":
-        return types.BooleanType()
-    if field_type in ["timestamp", "timestamp_tz"]:
-        return types.TimestampType()
-    if field_type == "timestamp_ntz":
-        return types.TimestampNTZType()
-    if field_type == "date":
-        return types.DateType()
-    if field_type == "bytes":
-        return types.BinaryType()
-    return types.StringType()  # default if no condition is met
+
+    # Check physical type first for specific SQL types
+    if physical_type:
+        if physical_type in ["string", "varchar", "text", "char", "nvarchar"]:
+            return types.StringType()
+        if physical_type in ["decimal", "numeric"]:
+            precision = _get_logical_type_option(prop, "precision") or 38
+            scale = _get_logical_type_option(prop, "scale") or 0
+            return types.DecimalType(precision=precision, scale=scale)
+        if physical_type in ["integer", "int", "int32"]:
+            return types.IntegerType()
+        if physical_type in ["long", "bigint", "int64"]:
+            return types.LongType()
+        if physical_type in ["float", "real", "float32"]:
+            return types.FloatType()
+        if physical_type in ["double", "float64"]:
+            return types.DoubleType()
+        if physical_type in ["boolean", "bool"]:
+            return types.BooleanType()
+        if physical_type in ["timestamp", "timestamp_tz"]:
+            return types.TimestampType()
+        if physical_type == "timestamp_ntz":
+            return types.TimestampNTZType()
+        if physical_type == "date":
+            return types.DateType()
+        if physical_type in ["bytes", "binary", "bytea"]:
+            return types.BinaryType()
+
+    # Fall back to logical type
+    match logical_type:
+        case "string":
+            return types.StringType()
+        case "number":
+            precision = _get_logical_type_option(prop, "precision") or 38
+            scale = _get_logical_type_option(prop, "scale") or 0
+            return types.DecimalType(precision=precision, scale=scale)
+        case "integer":
+            return types.LongType()
+        case "boolean":
+            return types.BooleanType()
+        case "date":
+            return types.TimestampType()
+        case _:
+            return types.StringType()  # default if no condition is met
 
 
-def to_spark_metadata(field: Field) -> dict[str, str]:
+def to_spark_metadata(prop: SchemaProperty) -> dict[str, str]:
     """
-    Convert a field to a Spark metadata dictonary.
+    Convert a property to a Spark metadata dictionary.
 
     Args:
-        field (Field): The field to convert.
+        prop (SchemaProperty): The property to convert.
 
     Returns:
         dict: dictionary that can be supplied to Spark as metadata for a StructField
     """
-
     metadata = {}
-    if field.description:
-        metadata["comment"] = field.description
+    if prop.description:
+        metadata["comment"] = prop.description
 
     return metadata
 

@@ -1,9 +1,10 @@
-from typing import Dict
+from typing import List, Optional
 
 import yaml
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
 
 
 class DataCatererExporter(Exporter):
@@ -16,41 +17,66 @@ class DataCatererExporter(Exporter):
         return to_data_caterer_generate_yaml(data_contract, server)
 
 
-def to_data_caterer_generate_yaml(data_contract_spec: DataContractSpecification, server):
-    generation_task = {"name": data_contract_spec.info.title, "steps": []}
-    server_info = _get_server_info(data_contract_spec, server)
+def _get_server_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[Server]:
+    """Get a server by name."""
+    if data_contract.servers is None:
+        return None
+    return next((s for s in data_contract.servers if s.server == name), None)
 
-    for model_key, model_value in data_contract_spec.models.items():
-        odcs_table = _to_data_caterer_generate_step(model_key, model_value, server_info)
-        generation_task["steps"].append(odcs_table)
+
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the type from a schema property."""
+    if prop.logicalType:
+        return prop.logicalType
+    if prop.physicalType:
+        return prop.physicalType
+    return None
+
+
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def to_data_caterer_generate_yaml(data_contract: OpenDataContractStandard, server):
+    generation_task = {"name": data_contract.name, "steps": []}
+    server_info = _get_server_info(data_contract, server)
+
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            step = _to_data_caterer_generate_step(schema_obj.name, schema_obj, server_info)
+            generation_task["steps"].append(step)
     return yaml.dump(generation_task, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def _get_server_info(data_contract_spec: DataContractSpecification, server):
-    if server is not None and server in data_contract_spec.servers:
-        return data_contract_spec.servers.get(server)
-    elif server is not None:
+def _get_server_info(data_contract: OpenDataContractStandard, server) -> Optional[Server]:
+    if server is not None:
+        found_server = _get_server_by_name(data_contract, server)
+        if found_server:
+            return found_server
         raise Exception(f"Server name not found in servers list in data contract, server-name={server}")
-    elif len(data_contract_spec.servers.keys()) > 0:
-        return next(iter(data_contract_spec.servers.values()))
+    elif data_contract.servers and len(data_contract.servers) > 0:
+        return data_contract.servers[0]
     else:
         return None
 
 
-def _to_data_caterer_generate_step(model_key, model_value: Model, server: Server) -> dict:
+def _to_data_caterer_generate_step(model_key: str, schema_obj: SchemaObject, server: Optional[Server]) -> dict:
     step = {
         "name": model_key,
         "type": _to_step_type(server),
         "options": _to_data_source_options(model_key, server),
         "fields": [],
     }
-    fields = _to_fields(model_value.fields)
+    fields = _to_fields(schema_obj.properties or [])
     if fields:
         step["fields"] = fields
     return step
 
 
-def _to_step_type(server: Server):
+def _to_step_type(server: Optional[Server]):
     if server is not None and server.type is not None:
         if server.type in ["s3", "gcs", "azure", "local"]:
             return server.format
@@ -60,7 +86,7 @@ def _to_step_type(server: Server):
         return "csv"
 
 
-def _to_data_source_options(model_key, server: Server):
+def _to_data_source_options(model_key: str, server: Optional[Server]):
     options = {}
     if server is not None and server.type is not None:
         if server.type in ["s3", "gcs", "azure", "local"]:
@@ -79,53 +105,66 @@ def _to_data_source_options(model_key, server: Server):
     return options
 
 
-def _to_fields(fields: Dict[str, Field]) -> list:
+def _to_fields(properties: List[SchemaProperty]) -> list:
     dc_fields = []
-    for field_name, field in fields.items():
-        column = _to_field(field_name, field)
+    for prop in properties:
+        column = _to_field(prop.name, prop)
         dc_fields.append(column)
     return dc_fields
 
 
-def _to_field(field_name: str, field: Field) -> dict:
+def _to_field(field_name: str, prop: SchemaProperty) -> dict:
     dc_field = {"name": field_name}
     dc_generator_opts = {}
 
-    if field.type is not None:
-        new_type = _to_data_type(field.type)
-        dc_field["type"] = _to_data_type(field.type)
-        if new_type == "object" or new_type == "record" or new_type == "struct":
+    prop_type = _get_type(prop)
+    if prop_type is not None:
+        new_type = _to_data_type(prop_type)
+        dc_field["type"] = new_type
+        if new_type in ["object", "record", "struct"]:
             # need to get nested field definitions
-            nested_fields = _to_fields(field.fields)
+            nested_fields = _to_fields(prop.properties or [])
             dc_field["fields"] = nested_fields
         elif new_type == "array":
-            if field.items is not None and field.items.type is not None:
-                dc_generator_opts["arrayType"] = _to_data_type(field.items.type)
+            if prop.items is not None:
+                item_type = _get_type(prop.items)
+                if item_type is not None:
+                    dc_generator_opts["arrayType"] = _to_data_type(item_type)
+                else:
+                    dc_generator_opts["arrayType"] = "string"
             else:
                 dc_generator_opts["arrayType"] = "string"
 
-    if field.enum is not None and len(field.enum) > 0:
-        dc_generator_opts["oneOf"] = field.enum
-    if field.unique is not None and field.unique:
-        dc_generator_opts["isUnique"] = field.unique
-    if field.primaryKey is not None and field.primaryKey:
-        dc_generator_opts["isPrimaryKey"] = field.primaryKey
-    if field.minLength is not None:
-        if field.type is not None and field.type == "array":
-            dc_generator_opts["arrayMinLen"] = field.minLength
+    enum_values = _get_logical_type_option(prop, "enum")
+    if enum_values is not None and len(enum_values) > 0:
+        dc_generator_opts["oneOf"] = enum_values
+    if prop.unique is not None and prop.unique:
+        dc_generator_opts["isUnique"] = prop.unique
+    if prop.primaryKey is not None and prop.primaryKey:
+        dc_generator_opts["isPrimaryKey"] = prop.primaryKey
+
+    min_length = _get_logical_type_option(prop, "minLength")
+    max_length = _get_logical_type_option(prop, "maxLength")
+    pattern = _get_logical_type_option(prop, "pattern")
+    minimum = _get_logical_type_option(prop, "minimum")
+    maximum = _get_logical_type_option(prop, "maximum")
+
+    if min_length is not None:
+        if prop_type is not None and prop_type.lower() == "array":
+            dc_generator_opts["arrayMinLen"] = min_length
         else:
-            dc_generator_opts["minLen"] = field.minLength
-    if field.maxLength is not None:
-        if field.type is not None and field.type == "array":
-            dc_generator_opts["arrayMaxLen"] = field.maxLength
+            dc_generator_opts["minLen"] = min_length
+    if max_length is not None:
+        if prop_type is not None and prop_type.lower() == "array":
+            dc_generator_opts["arrayMaxLen"] = max_length
         else:
-            dc_generator_opts["maxLen"] = field.maxLength
-    if field.pattern is not None:
-        dc_generator_opts["regex"] = field.pattern
-    if field.minimum is not None:
-        dc_generator_opts["min"] = field.minimum
-    if field.maximum is not None:
-        dc_generator_opts["max"] = field.maximum
+            dc_generator_opts["maxLen"] = max_length
+    if pattern is not None:
+        dc_generator_opts["regex"] = pattern
+    if minimum is not None:
+        dc_generator_opts["min"] = minimum
+    if maximum is not None:
+        dc_generator_opts["max"] = maximum
 
     if len(dc_generator_opts.keys()) > 0:
         dc_field["options"] = dc_generator_opts
@@ -133,29 +172,30 @@ def _to_field(field_name: str, field: Field) -> dict:
 
 
 def _to_data_type(data_type):
-    if data_type == "number" or data_type == "numeric" or data_type == "double":
+    data_type_lower = data_type.lower() if data_type else ""
+    if data_type_lower in ["number", "numeric", "double"]:
         return "double"
-    elif data_type == "decimal" or data_type == "bigint":
+    elif data_type_lower in ["decimal", "bigint"]:
         return "decimal"
-    elif data_type == "int" or data_type == "integer":
+    elif data_type_lower in ["int", "integer"]:
         return "integer"
-    elif data_type == "long":
+    elif data_type_lower == "long":
         return "long"
-    elif data_type == "float":
+    elif data_type_lower == "float":
         return "float"
-    elif data_type == "string" or data_type == "text" or data_type == "varchar":
+    elif data_type_lower in ["string", "text", "varchar"]:
         return "string"
-    if data_type == "boolean":
+    elif data_type_lower == "boolean":
         return "boolean"
-    if data_type == "timestamp" or data_type == "timestamp_tz" or data_type == "timestamp_ntz":
+    elif data_type_lower in ["timestamp", "timestamp_tz", "timestamp_ntz"]:
         return "timestamp"
-    elif data_type == "date":
+    elif data_type_lower == "date":
         return "date"
-    elif data_type == "array":
+    elif data_type_lower == "array":
         return "array"
-    elif data_type == "map" or data_type == "object" or data_type == "record" or data_type == "struct":
+    elif data_type_lower in ["map", "object", "record", "struct"]:
         return "struct"
-    elif data_type == "bytes":
+    elif data_type_lower == "bytes":
         return "binary"
     else:
         return "string"

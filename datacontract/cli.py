@@ -14,7 +14,7 @@ from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat, Spec
+from datacontract.imports.importer import ImportFormat
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import (
     publish_data_contract_to_entropy_data,
@@ -293,10 +293,6 @@ def import_(
         Optional[str],
         typer.Option(help="The path to the file that should be imported."),
     ] = None,
-    spec: Annotated[
-        Spec,
-        typer.Option(help="The format of the data contract to import. "),
-    ] = Spec.datacontract_specification,
     dialect: Annotated[
         Optional[str],
         typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
@@ -366,7 +362,6 @@ def import_(
     result = DataContract.import_from_source(
         format=format,
         source=source,
-        spec=spec,
         template=template,
         schema=schema,
         dialect=dialect,
@@ -454,108 +449,6 @@ def catalog(
             console.print(f"Skipped {file} due to error: {e}")
 
     create_index_html(contracts, path)
-
-
-@app.command(deprecated=True)
-def breaking(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-    debug: debug_option = None,
-):
-    """
-    [DEPRECATED] Identifies breaking changes between data contracts. Prints to stdout.
-
-    This command is deprecated and will be removed in a future version.
-    """
-    enable_debug_logging(debug)
-    warnings.warn(
-        "The 'breaking' command is deprecated and will be removed in a future version.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    console.print("[yellow]Warning: The 'breaking' command is deprecated and will be removed in a future version.[/yellow]")
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).breaking(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.breaking_str())
-
-    if not result.passed_checks():
-        raise typer.Exit(code=1)
-
-
-@app.command(deprecated=True)
-def changelog(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-    debug: debug_option = None,
-):
-    """
-    [DEPRECATED] Generate a changelog between data contracts. Prints to stdout.
-
-    This command is deprecated and will be removed in a future version.
-    """
-    enable_debug_logging(debug)
-    warnings.warn(
-        "The 'changelog' command is deprecated and will be removed in a future version.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    console.print("[yellow]Warning: The 'changelog' command is deprecated and will be removed in a future version.[/yellow]")
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.changelog_str())
-
-
-@app.command(deprecated=True)
-def diff(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-    debug: debug_option = None,
-):
-    """
-    [DEPRECATED] Generate a diff between data contracts. Prints to stdout.
-
-    This command is deprecated and will be removed in a future version.
-    """
-    enable_debug_logging(debug)
-    warnings.warn(
-        "The 'diff' command is deprecated and will be removed in a future version.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    console.print("[yellow]Warning: The 'diff' command is deprecated and will be removed in a future version.[/yellow]")
-
-    # TODO change to diff output, not the changelog entries
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.changelog_str())
 
 
 def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict:

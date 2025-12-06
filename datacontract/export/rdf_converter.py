@@ -1,33 +1,34 @@
 from pydantic import BaseModel
 from rdflib import RDF, BNode, Graph, Literal, Namespace, URIRef
 
+from open_data_contract_standard.model import OpenDataContractStandard
+
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 class RdfExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
         self.dict_args = export_args
         rdf_base = self.dict_args.get("rdf_base")
-        return to_rdf_n3(data_contract_spec=data_contract, base=rdf_base)
+        return to_rdf_n3(data_contract=data_contract, base=rdf_base)
 
 
 def is_literal(property_name):
     return property_name in [
-        "dataContractSpecification",
-        "title",
+        "apiVersion",
+        "kind",
+        "id",
+        "name",
         "version",
         "description",
-        "name",
-        "url",
+        "status",
+        "domain",
+        "dataProduct",
+        "tenant",
         "type",
         "location",
         "format",
         "delimiter",
-        "usage",
-        "limitations",
-        "billing",
-        "noticePeriod",
         "required",
         "unique",
         "minLength",
@@ -40,48 +41,50 @@ def is_literal(property_name):
         "minimum",
         "maximum",
         "patterns",
+        "logicalType",
+        "physicalType",
     ]
 
 
 def is_uriref(property_name):
-    return property_name in ["model", "domain", "owner"]
+    return property_name in ["model", "domain", "owner", "team"]
 
 
-def to_rdf_n3(data_contract_spec: DataContractSpecification, base) -> str:
-    return to_rdf(data_contract_spec, base).serialize(format="n3")
+def to_rdf_n3(data_contract: OpenDataContractStandard, base) -> str:
+    return to_rdf(data_contract, base).serialize(format="n3")
 
 
-def to_rdf(data_contract_spec: DataContractSpecification, base) -> Graph:
+def to_rdf(data_contract: OpenDataContractStandard, base) -> Graph:
     if base is not None:
         g = Graph(base=base)
     else:
         g = Graph(base=Namespace(""))
 
-    dc = Namespace("https://datacontract.com/DataContractSpecification/1.2.1/")
-    dcx = Namespace("https://datacontract.com/DataContractSpecification/1.2.1/Extension/")
+    # Use ODCS namespace
+    odcs = Namespace("https://odcs.io/OpenDataContractStandard/3.0.0/")
+    odcsx = Namespace("https://odcs.io/OpenDataContractStandard/3.0.0/Extension/")
 
-    g.bind("dc", dc)
-    g.bind("dcx", dcx)
+    g.bind("odcs", odcs)
+    g.bind("odcsx", odcsx)
 
-    this_contract = URIRef(data_contract_spec.id)
+    this_contract = URIRef(data_contract.id)
 
-    g.add((this_contract, dc.dataContractSpecification, Literal(data_contract_spec.dataContractSpecification)))
-    g.add((this_contract, dc.id, Literal(data_contract_spec.id)))
-    g.add((this_contract, RDF.type, URIRef(dc + "DataContract")))
+    g.add((this_contract, odcs.apiVersion, Literal(data_contract.apiVersion)))
+    g.add((this_contract, odcs.kind, Literal(data_contract.kind)))
+    g.add((this_contract, odcs.id, Literal(data_contract.id)))
+    g.add((this_contract, RDF.type, URIRef(odcs + "DataContract")))
 
-    add_info(contract=this_contract, info=data_contract_spec.info, graph=g, dc=dc, dcx=dcx)
+    add_basic_info(contract=this_contract, data_contract=data_contract, graph=g, odcs=odcs, odcsx=odcsx)
 
-    if data_contract_spec.terms is not None:
-        add_terms(contract=this_contract, terms=data_contract_spec.terms, graph=g, dc=dc, dcx=dcx)
+    # Add servers
+    if data_contract.servers:
+        for server in data_contract.servers:
+            add_server(contract=this_contract, server=server, graph=g, odcs=odcs, odcsx=odcsx)
 
-    for server_name, server in data_contract_spec.servers.items():
-        add_server(contract=this_contract, server=server, server_name=server_name, graph=g, dc=dc, dcx=dcx)
-
-    for model_name, model in data_contract_spec.models.items():
-        add_model(contract=this_contract, model=model, model_name=model_name, graph=g, dc=dc, dcx=dcx)
-
-    for example in data_contract_spec.examples:
-        add_example(contract=this_contract, example=example, graph=g, dc=dc, dcx=dcx)
+    # Add schema
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            add_schema(contract=this_contract, schema_obj=schema_obj, graph=g, odcs=odcs, odcsx=odcsx)
 
     g.commit()
     g.close()
@@ -89,79 +92,66 @@ def to_rdf(data_contract_spec: DataContractSpecification, base) -> Graph:
     return g
 
 
-def add_example(contract, example, graph, dc, dcx):
-    an_example = BNode()
-    graph.add((contract, dc["example"], an_example))
-    graph.add((an_example, RDF.type, URIRef(dc + "Example")))
-    for example_property in example.model_fields:
-        add_triple(sub=an_example, pred=example_property, obj=example, graph=graph, dc=dc, dcx=dcx)
+def add_basic_info(contract, data_contract: OpenDataContractStandard, graph, odcs, odcsx):
+    bnode_info = BNode()
+    graph.add((contract, odcs.info, bnode_info))
+    graph.add((bnode_info, RDF.type, URIRef(odcs + "Info")))
+
+    if data_contract.name:
+        graph.add((bnode_info, odcs.name, Literal(data_contract.name)))
+    if data_contract.description:
+        desc = data_contract.description
+        if hasattr(desc, 'purpose'):
+            graph.add((bnode_info, odcs.description, Literal(desc.purpose)))
+        else:
+            graph.add((bnode_info, odcs.description, Literal(str(desc))))
+    if data_contract.version:
+        graph.add((bnode_info, odcs.version, Literal(data_contract.version)))
+
+    # Add team/owner
+    if data_contract.team:
+        graph.add((bnode_info, odcs.team, Literal(data_contract.team.name)))
+
+
+def add_server(contract, server, graph, odcs, odcsx):
+    a_server = URIRef(server.server or "default")
+    graph.add((contract, odcs.server, a_server))
+    graph.add((a_server, RDF.type, URIRef(odcs + "Server")))
+    for server_property_name in server.model_fields:
+        add_triple(sub=a_server, pred=server_property_name, obj=server, graph=graph, dc=odcs, dcx=odcsx)
+
+
+def add_schema(contract, schema_obj, graph, odcs, odcsx):
+    a_model = URIRef(schema_obj.name)
+    graph.add((contract, odcs.schema_, a_model))
+    graph.add((a_model, odcs.description, Literal(schema_obj.description or "")))
+    graph.add((a_model, RDF.type, URIRef(odcs + "Schema")))
+
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            a_property = BNode()
+            graph.add((a_model, odcs["property"], a_property))
+            graph.add((a_property, RDF.type, URIRef(odcs + "Property")))
+            graph.add((a_property, odcs["name"], Literal(prop.name)))
+            for field_property in prop.model_fields:
+                add_triple(sub=a_property, pred=field_property, obj=prop, graph=graph, dc=odcs, dcx=odcsx)
 
 
 def add_triple(sub, pred, obj, graph, dc, dcx):
     if pred == "ref":
         pass
-    elif isinstance(getattr(obj, pred), list):
+    elif isinstance(getattr(obj, pred, None), list):
         for item in getattr(obj, pred):
             add_predicate(sub=sub, pred=pred, obj=item, graph=graph, dc=dc, dcx=dcx)
-    elif isinstance(getattr(obj, pred), dict):
+    elif isinstance(getattr(obj, pred, None), dict):
         pass
     else:
         add_predicate(sub=sub, pred=pred, obj=obj, graph=graph, dc=dc, dcx=dcx)
 
 
-def add_model(contract, model, model_name, graph, dc, dcx):
-    a_model = URIRef(model_name)
-    graph.add((contract, dc["model"], a_model))
-    graph.add((a_model, dc.description, Literal(model.description)))
-    graph.add((a_model, RDF.type, URIRef(dc + "Model")))
-    for field_name, field in model.fields.items():
-        a_field = BNode()
-        graph.add((a_model, dc["field"], a_field))
-        graph.add((a_field, RDF.type, URIRef(dc + "Field")))
-        graph.add((a_field, dc["name"], Literal(field_name)))
-        for field_property in field.model_fields:
-            add_triple(sub=a_field, pred=field_property, obj=field, graph=graph, dc=dc, dcx=dcx)
-
-
-def add_server(contract, server, server_name, graph, dc, dcx):
-    a_server = URIRef(server_name)
-    graph.add((contract, dc.server, a_server))
-    graph.add((a_server, RDF.type, URIRef(dc + "Server")))
-    for server_property_name in server.model_fields:
-        add_triple(sub=a_server, pred=server_property_name, obj=server, graph=graph, dc=dc, dcx=dcx)
-
-
-def add_terms(contract, terms, graph, dc, dcx):
-    bnode_terms = BNode()
-    graph.add((contract, dc.terms, bnode_terms))
-    graph.add((bnode_terms, RDF.type, URIRef(dc + "Terms")))
-    for term_name in terms.model_fields:
-        add_triple(sub=bnode_terms, pred=term_name, obj=terms, graph=graph, dc=dc, dcx=dcx)
-
-
-def add_info(contract, info, graph, dc, dcx):
-    bnode_info = BNode()
-    graph.add((contract, dc.info, bnode_info))
-    graph.add((bnode_info, RDF.type, URIRef(dc + "Info")))
-    graph.add((bnode_info, dc.title, Literal(info.title)))
-    graph.add((bnode_info, dc.description, Literal(info.description)))
-    graph.add((bnode_info, dc.version, Literal(info.version)))
-
-    # add owner
-    owner = Literal(info.owner)
-    graph.add((bnode_info, dc.owner, owner))
-
-    # add contact
-    contact = BNode()
-    graph.add((bnode_info, dc.contact, contact))
-    graph.add((contact, RDF.type, URIRef(dc + "Contact")))
-    for contact_property in info.contact.model_fields:
-        add_triple(sub=contact, pred=contact_property, obj=info.contact, graph=graph, dc=dc, dcx=dcx)
-
-
 def add_predicate(sub, pred, obj, graph, dc, dcx):
     if isinstance(obj, BaseModel):
-        if getattr(obj, pred) is not None:
+        if getattr(obj, pred, None) is not None:
             if is_literal(pred):
                 graph.add((sub, dc[pred], Literal(getattr(obj, pred))))
             elif is_uriref(pred):

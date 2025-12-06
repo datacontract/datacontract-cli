@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.rdf_converter import to_rdf
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -29,7 +29,7 @@ def test_no_rdf_base():
 def test_to_rdf():
     data_contract_file = "fixtures/export/rdf/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+    data_contract = resolve_data_contract(data_contract_str=file_content)
     expected_rdf = """
 @prefix dc1: <https://datacontract.com/DataContractSpecification/1.2.1/> .
 @prefix dcx: <https://datacontract.com/DataContractSpecification/1.2.1/Extension/> .
@@ -95,7 +95,7 @@ def test_to_rdf():
 def test_to_rdf_complex():
     data_contract_file = "fixtures/export/rdf/datacontract-complex.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+    data_contract = resolve_data_contract(data_contract_str=file_content)
     expected_rdf = """
 @base <http://test.com/> .
 @prefix dc1: <https://datacontract.com/DataContractSpecification/1.2.1/> .

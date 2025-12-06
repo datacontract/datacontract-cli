@@ -1,12 +1,11 @@
+from typing import List, Optional
+
 from pyiceberg import types
 from pyiceberg.schema import Schema, assign_fresh_schema_ids
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Field,
-    Model,
-)
 
 
 class IcebergExporter(Exporter):
@@ -16,7 +15,7 @@ class IcebergExporter(Exporter):
 
     def export(
         self,
-        data_contract: DataContractSpecification,
+        data_contract: OpenDataContractStandard,
         model,
         server,
         sql_server_type,
@@ -26,7 +25,7 @@ class IcebergExporter(Exporter):
         Export the given data contract model to an Iceberg schema.
 
         Args:
-            data_contract (DataContractSpecification): The data contract specification.
+            data_contract (OpenDataContractStandard): The data contract specification.
             model: The model to export, currently just supports one model.
             server: Not used in this implementation.
             sql_server_type: Not used in this implementation.
@@ -39,49 +38,56 @@ class IcebergExporter(Exporter):
         return to_iceberg(data_contract, model)
 
 
-def to_iceberg(contract: DataContractSpecification, model: str) -> str:
+def to_iceberg(contract: OpenDataContractStandard, model: str) -> str:
     """
-    Converts a DataContractSpecification into an Iceberg json schema string. JSON string follows https://iceberg.apache.org/spec/#appendix-c-json-serialization.
+    Converts an OpenDataContractStandard into an Iceberg json schema string. JSON string follows https://iceberg.apache.org/spec/#appendix-c-json-serialization.
 
     Args:
-        contract (DataContractSpecification): The data contract specification containing models.
+        contract (OpenDataContractStandard): The data contract specification containing models.
         model: The model to export, currently just supports one model.
 
     Returns:
         str: A string representation of the Iceberg json schema.
     """
+    if not contract.schema_:
+        raise Exception("No schema found in contract")
+
     if model is None or model == "all":
-        if len(contract.models.items()) != 1:
+        if len(contract.schema_) != 1:
             # Iceberg doesn't have a way to combine multiple models into a single schema, an alternative would be to export json lines
-            raise Exception(f"Can only output one model at a time, found {len(contract.models.items())} models")
-        for model_name, model in contract.models.items():
-            schema = to_iceberg_schema(model)
+            raise Exception(f"Can only output one model at a time, found {len(contract.schema_)} models")
+        schema_obj = contract.schema_[0]
+        schema = to_iceberg_schema(schema_obj)
     else:
-        if model not in contract.models:
+        # Find the specific schema by name
+        schema_obj = next((s for s in contract.schema_ if s.name == model), None)
+        if schema_obj is None:
             raise Exception(f"model {model} not found in contract")
-        schema = to_iceberg_schema(contract.models[model])
+        schema = to_iceberg_schema(schema_obj)
 
     return schema.model_dump_json()
 
 
-def to_iceberg_schema(model: Model) -> types.StructType:
+def to_iceberg_schema(schema_obj: SchemaObject) -> types.StructType:
     """
-    Convert a model to a Iceberg schema.
+    Convert a schema object to an Iceberg schema.
 
     Args:
-        model (Model): The model to convert.
+        schema_obj (SchemaObject): The schema object to convert.
 
     Returns:
         types.StructType: The corresponding Iceberg schema.
     """
     iceberg_fields = []
     primary_keys = []
-    for field_name, spec_field in model.fields.items():
-        iceberg_field = make_field(field_name, spec_field)
-        iceberg_fields.append(iceberg_field)
 
-        if spec_field.primaryKey:
-            primary_keys.append(iceberg_field.name)
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            iceberg_field = make_field(prop.name, prop)
+            iceberg_fields.append(iceberg_field)
+
+            if prop.primaryKey:
+                primary_keys.append(iceberg_field.name)
 
     schema = Schema(*iceberg_fields)
 
@@ -94,8 +100,20 @@ def to_iceberg_schema(model: Model) -> types.StructType:
     return schema
 
 
-def make_field(field_name, field):
-    field_type = get_field_type(field)
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the logical type from a schema property."""
+    return prop.logicalType
+
+
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def make_field(field_name: str, prop: SchemaProperty) -> types.NestedField:
+    field_type = get_field_type(prop)
 
     # Note: might want to re-populate field_id from config['icebergFieldId'] if it exists, however, it gets
     # complicated since field_ids impact the list and map element_ids, and the importer is not keeping track of those.
@@ -105,84 +123,118 @@ def make_field(field_name, field):
     # Note 2: field_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values.
     # also, the Iceberg sdk catalog code will re-set the fieldIDs prior to executing any table operations on the schema
     # ref: https://github.com/apache/iceberg-python/pull/1072
-    return types.NestedField(field_id=0, name=field_name, field_type=field_type, required=field.required is True)
+    return types.NestedField(field_id=0, name=field_name, field_type=field_type, required=prop.required is True)
 
 
-def make_list(item):
+def make_list(item: SchemaProperty) -> types.ListType:
     field_type = get_field_type(item)
 
     # element_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values (see #make_field)
     return types.ListType(element_id=0, element_type=field_type, element_required=item.required is True)
 
 
-def make_map(field):
-    key_type = get_field_type(field.keys)
-    value_type = get_field_type(field.values)
+def make_map(prop: SchemaProperty) -> types.MapType:
+    # For ODCS, we need to check for nested properties that represent keys/values
+    # Default to string -> string if not specified
+    key_type = types.StringType()
+    value_type = types.StringType()
 
     # key_id and value_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values (see #make_field)
-    return types.MapType(
-        key_id=0, key_type=key_type, value_id=0, value_type=value_type, value_required=field.values.required is True
-    )
+    return types.MapType(key_id=0, key_type=key_type, value_id=0, value_type=value_type, value_required=False)
 
 
-def to_struct_type(fields: dict[str, Field]) -> types.StructType:
+def to_struct_type(properties: List[SchemaProperty]) -> types.StructType:
     """
-    Convert a dictionary of fields to a Iceberg StructType.
+    Convert a list of properties to an Iceberg StructType.
 
     Args:
-        fields (dict[str, Field]): The fields to convert.
+        properties (List[SchemaProperty]): The properties to convert.
 
     Returns:
         types.StructType: The corresponding Iceberg StructType.
     """
     struct_fields = []
-    for field_name, field in fields.items():
-        struct_field = make_field(field_name, field)
+    for prop in properties:
+        struct_field = make_field(prop.name, prop)
         struct_fields.append(struct_field)
     return types.StructType(*struct_fields)
 
 
-def get_field_type(field: Field) -> types.IcebergType:
+def get_field_type(prop: SchemaProperty) -> types.IcebergType:
     """
-    Convert a field to a Iceberg IcebergType.
+    Convert a property to an Iceberg IcebergType.
 
     Args:
-        field (Field): The field to convert.
+        prop (SchemaProperty): The property to convert.
 
     Returns:
         types.IcebergType: The corresponding Iceberg IcebergType.
     """
-    field_type = field.type
-    if field_type is None or field_type in ["null"]:
+    logical_type = _get_type(prop)
+    physical_type = prop.physicalType.lower() if prop.physicalType else None
+
+    # Handle null type
+    if logical_type is None and physical_type is None:
         return types.NullType()
-    if field_type == "array":
-        return make_list(field.items)
-    if field_type == "map":
-        return make_map(field)
-    if field_type in ["object", "record", "struct"]:
-        return to_struct_type(field.fields)
-    if field_type in ["string", "varchar", "text"]:
-        return types.StringType()
-    if field_type in ["number", "decimal", "numeric"]:
-        precision = field.precision if field.precision is not None else 38
-        scale = field.scale if field.scale is not None else 0
-        return types.DecimalType(precision=precision, scale=scale)
-    if field_type in ["integer", "int"]:
-        return types.IntegerType()
-    if field_type in ["bigint", "long"]:
-        return types.LongType()
-    if field_type == "float":
-        return types.FloatType()
-    if field_type == "double":
-        return types.DoubleType()
-    if field_type == "boolean":
-        return types.BooleanType()
-    if field_type in ["timestamp", "timestamp_tz"]:
-        return types.TimestamptzType()
-    if field_type == "timestamp_ntz":
-        return types.TimestampType()
-    if field_type == "date":
-        return types.DateType()
-    if field_type == "bytes":
-        return types.BinaryType()
-    return types.BinaryType()
+    if physical_type == "null":
+        return types.NullType()
+
+    # Handle array type
+    if logical_type == "array":
+        if prop.items:
+            return make_list(prop.items)
+        return types.ListType(element_id=0, element_type=types.StringType(), element_required=False)
+
+    # Handle map type
+    if physical_type == "map":
+        return make_map(prop)
+
+    # Handle object/struct type
+    if logical_type == "object" or physical_type in ["object", "record", "struct"]:
+        if prop.properties:
+            return to_struct_type(prop.properties)
+        return types.StructType()
+
+    # Check physical type first for specific SQL types
+    if physical_type:
+        if physical_type in ["string", "varchar", "text", "char", "nvarchar"]:
+            return types.StringType()
+        if physical_type in ["decimal", "numeric"]:
+            precision = _get_logical_type_option(prop, "precision") or 38
+            scale = _get_logical_type_option(prop, "scale") or 0
+            return types.DecimalType(precision=precision, scale=scale)
+        if physical_type in ["integer", "int", "int32"]:
+            return types.IntegerType()
+        if physical_type in ["bigint", "long", "int64"]:
+            return types.LongType()
+        if physical_type in ["float", "real", "float32"]:
+            return types.FloatType()
+        if physical_type in ["double", "float64"]:
+            return types.DoubleType()
+        if physical_type in ["boolean", "bool"]:
+            return types.BooleanType()
+        if physical_type in ["timestamp", "timestamp_tz"]:
+            return types.TimestamptzType()
+        if physical_type == "timestamp_ntz":
+            return types.TimestampType()
+        if physical_type == "date":
+            return types.DateType()
+        if physical_type in ["bytes", "binary", "bytea"]:
+            return types.BinaryType()
+
+    # Fall back to logical type
+    match logical_type:
+        case "string":
+            return types.StringType()
+        case "number":
+            precision = _get_logical_type_option(prop, "precision") or 38
+            scale = _get_logical_type_option(prop, "scale") or 0
+            return types.DecimalType(precision=precision, scale=scale)
+        case "integer":
+            return types.LongType()
+        case "boolean":
+            return types.BooleanType()
+        case "date":
+            return types.TimestamptzType()
+        case _:
+            return types.BinaryType()

@@ -3,31 +3,34 @@ from typing import List
 from pydbml import Database, PyDBML
 from pyparsing import ParseException
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+
 from datacontract.imports.importer import Importer
 from datacontract.imports.sql_importer import map_type_from_sql
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+)
 from datacontract.model.exceptions import DataContractException
 
 
 class DBMLImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
-        data_contract_specification = import_dbml_from_source(
-            data_contract_specification,
+        self, source: str, import_args: dict
+    ) -> OpenDataContractStandard:
+        return import_dbml_from_source(
             source,
             import_args.get("dbml_schema"),
             import_args.get("dbml_table"),
         )
-        return data_contract_specification
 
 
 def import_dbml_from_source(
-    data_contract_specification: DataContractSpecification,
     source: str,
     import_schemas: List[str],
     import_tables: List[str],
-) -> DataContractSpecification:
+) -> OpenDataContractStandard:
     try:
         with open(source, "r") as file:
             dbml_schema = PyDBML(file)
@@ -40,65 +43,92 @@ def import_dbml_from_source(
             original_exception=e,
         )
 
-    return convert_dbml(data_contract_specification, dbml_schema, import_schemas, import_tables)
+    return convert_dbml(dbml_schema, import_schemas, import_tables)
 
 
 def convert_dbml(
-    data_contract_specification: DataContractSpecification,
     dbml_schema: Database,
     import_schemas: List[str],
     import_tables: List[str],
-) -> DataContractSpecification:
-    if dbml_schema.project is not None:
-        data_contract_specification.info.title = dbml_schema.project.name
+) -> OpenDataContractStandard:
+    odcs = create_odcs()
 
-    if data_contract_specification.models is None:
-        data_contract_specification.models = {}
+    if dbml_schema.project is not None:
+        odcs.name = dbml_schema.project.name
+
+    odcs.schema_ = []
 
     for table in dbml_schema.tables:
         schema_name = table.schema
         table_name = table.name
 
-        # Skip if import schemas or table names are defined
-        # and the current table doesn't match
-        # if empty no filtering is done
+        # Skip if import schemas or table names are defined and current table doesn't match
         if import_schemas and schema_name not in import_schemas:
             continue
 
         if import_tables and table_name not in import_tables:
             continue
 
-        fields = import_table_fields(table, dbml_schema.refs)
+        properties = import_table_fields(table, dbml_schema.refs)
 
-        data_contract_specification.models[table_name] = Model(
-            fields=fields, namespace=schema_name, description=table.note.text
+        schema_obj = create_schema_object(
+            name=table_name,
+            physical_type="table",
+            description=table.note.text if table.note else None,
+            properties=properties,
         )
 
-    return data_contract_specification
+        # Store namespace as custom property
+        if schema_name:
+            from open_data_contract_standard.model import CustomProperty
+            schema_obj.customProperties = [CustomProperty(property="namespace", value=schema_name)]
+
+        odcs.schema_.append(schema_obj)
+
+    return odcs
 
 
-def import_table_fields(table, references) -> dict[str, Field]:
-    imported_fields = {}
+def import_table_fields(table, references) -> List[SchemaProperty]:
+    """Import DBML table fields as ODCS SchemaProperties."""
+    properties = []
+    pk_position = 1
+
     for field in table.columns:
         field_name = field.name
-        imported_fields[field_name] = Field()
-        imported_fields[field_name].required = field.not_null
-        imported_fields[field_name].description = field.note.text
-        imported_fields[field_name].primaryKey = field.pk
-        imported_fields[field_name].unique = field.unique
-        # This is an assumption, that these might be valid SQL Types, since
-        # DBML doesn't really enforce anything other than 'no spaces' in column types
-        imported_fields[field_name].type = map_type_from_sql(field.type)
+        required = field.not_null
+        description = field.note.text if field.note else None
+        is_primary_key = field.pk
+        is_unique = field.unique
+        logical_type = map_type_from_sql(field.type)
 
         ref = get_reference(field, references)
-        if ref is not None:
-            imported_fields[field_name].references = ref
 
-    return imported_fields
+        custom_props = {}
+        if ref:
+            custom_props["references"] = ref
+
+        prop = create_property(
+            name=field_name,
+            logical_type=logical_type if logical_type else "string",
+            physical_type=field.type,
+            description=description,
+            required=required if required else None,
+            primary_key=is_primary_key if is_primary_key else None,
+            primary_key_position=pk_position if is_primary_key else None,
+            unique=is_unique if is_unique else None,
+            custom_properties=custom_props if custom_props else None,
+        )
+
+        if is_primary_key:
+            pk_position += 1
+
+        properties.append(prop)
+
+    return properties
 
 
 def get_reference(field, references):
-    result = None
+    """Get the reference for a field if it exists."""
     for ref in references:
         ref_table_name = ref.col1[0].table.name
         ref_col_name = ref.col1[0].name
@@ -106,7 +136,6 @@ def get_reference(field, references):
         field_name = field.name
 
         if ref_table_name == field_table_name and ref_col_name == field_name:
-            result = f"{ref.col2[0].table.name}.{ref.col2[0].name}"
-            return result
+            return f"{ref.col2[0].table.name}.{ref.col2[0].name}"
 
-    return result
+    return None

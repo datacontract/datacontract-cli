@@ -1,16 +1,16 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
-from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Definition,
-    Field,
-    Model,
+from open_data_contract_standard.model import (
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
     Server,
-    ServiceLevel,
+    ServiceLevelAgreementProperty,
 )
+
+from datacontract.export.exporter import Exporter
 
 TAB = "&#x2007;"
 ARROW = "&#x21b3;"
@@ -21,8 +21,8 @@ class MarkdownExporter(Exporter):
 
     def export(
         self,
-        data_contract: DataContractSpecification,
-        model: Model,
+        data_contract: OpenDataContractStandard,
+        model: SchemaObject,
         server: str,
         sql_server_type: str,
         export_args: dict,
@@ -31,12 +31,12 @@ class MarkdownExporter(Exporter):
         return to_markdown(data_contract)
 
 
-def to_markdown(data_contract: DataContractSpecification) -> str:
+def to_markdown(data_contract: OpenDataContractStandard) -> str:
     """
     Convert a data contract to its Markdown representation.
 
     Args:
-        data_contract (DataContractSpecification): The data contract to convert.
+        data_contract (OpenDataContractStandard): The data contract to convert.
 
     Returns:
         str: The Markdown representation of the data contract.
@@ -44,24 +44,34 @@ def to_markdown(data_contract: DataContractSpecification) -> str:
     markdown_parts = [
         f"# {data_contract.id}",
         "## Info",
-        obj_attributes_to_markdown(data_contract.info),
+        info_to_markdown(data_contract),
         "",
         "## Servers",
         servers_to_markdown(data_contract.servers),
         "",
-        "## Terms",
-        obj_attributes_to_markdown(data_contract.terms),
+        "## Schema",
+        schema_to_markdown(data_contract.schema_),
         "",
-        "## Models",
-        models_to_markdown(data_contract.models),
-        "",
-        "## Definitions",
-        definitions_to_markdown(data_contract.definitions),
-        "",
-        "## Service levels",
-        service_level_to_markdown(data_contract.servicelevels),
+        "## SLA Properties",
+        sla_properties_to_markdown(data_contract.slaProperties),
     ]
     return "\n".join(markdown_parts)
+
+
+def info_to_markdown(data_contract: OpenDataContractStandard) -> str:
+    """Convert basic info to markdown."""
+    parts = []
+    if data_contract.description:
+        parts.append(f"*{description_to_markdown(data_contract.description)}*")
+    if data_contract.name:
+        parts.append(f"- **name:** {data_contract.name}")
+    if data_contract.version:
+        parts.append(f"- **version:** {data_contract.version}")
+    if data_contract.status:
+        parts.append(f"- **status:** {data_contract.status}")
+    if data_contract.team:
+        parts.append(f"- **team:** {data_contract.team.name}")
+    return "\n".join(parts)
 
 
 def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_in_table_cell: bool = False) -> str:
@@ -86,127 +96,124 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
     return newline_char.join([description] + attributes + extra)
 
 
-def servers_to_markdown(servers: Dict[str, Server]) -> str:
+def servers_to_markdown(servers: Optional[List[Server]]) -> str:
     if not servers:
         return ""
     markdown_parts = [
         "| Name | Type | Attributes |",
         "| ---- | ---- | ---------- |",
     ]
-    for server_name, server in servers.items():
+    for server in servers:
+        server_name = server.server or ""
         markdown_parts.append(
-            f"| {server_name} | {server.type or ''} | {obj_attributes_to_markdown(server, {'type'}, True)} |"
+            f"| {server_name} | {server.type or ''} | {obj_attributes_to_markdown(server, {'type', 'server'}, True)} |"
         )
     return "\n".join(markdown_parts)
 
 
-def models_to_markdown(models: Dict[str, Model]) -> str:
-    return "\n".join(model_to_markdown(model_name, model) for model_name, model in models.items())
+def schema_to_markdown(schema: Optional[List[SchemaObject]]) -> str:
+    if not schema:
+        return ""
+    return "\n".join(schema_obj_to_markdown(schema_obj.name, schema_obj) for schema_obj in schema)
 
 
-def model_to_markdown(model_name: str, model: Model) -> str:
+def schema_obj_to_markdown(model_name: str, schema_obj: SchemaObject) -> str:
     """
-    Generate Markdown representation for a specific model.
+    Generate Markdown representation for a specific schema object.
 
     Args:
         model_name (str): The name of the model.
-        model (Model): The model object.
+        schema_obj (SchemaObject): The schema object.
 
     Returns:
-        str: The Markdown representation of the model.
+        str: The Markdown representation of the schema object.
     """
     parts = [
         f"### {model_name}",
-        f"*{description_to_markdown(model.description)}*",
+        f"*{description_to_markdown(schema_obj.description)}*",
         "",
         "| Field | Type | Attributes |",
         "| ----- | ---- | ---------- |",
     ]
 
     # Append generated field rows
-    parts.append(fields_to_markdown(model.fields))
+    parts.append(properties_to_markdown(schema_obj.properties))
     return "\n".join(parts)
 
 
-def fields_to_markdown(
-    fields: Dict[str, Field],
+def properties_to_markdown(
+    properties: Optional[List[SchemaProperty]],
     level: int = 0,
 ) -> str:
     """
-    Generate Markdown table rows for all fields in a model.
+    Generate Markdown table rows for all properties in a schema.
 
     Args:
-        fields (Dict[str, Field]): The fields to process.
+        properties (List[SchemaProperty]): The properties to process.
         level (int): The level of nesting for indentation.
 
     Returns:
-        str: A Markdown table rows for the fields.
+        str: A Markdown table rows for the properties.
     """
+    if not properties:
+        return ""
+    return "\n".join(property_to_markdown(prop.name, prop, level) for prop in properties)
 
-    return "\n".join(field_to_markdown(field_name, field, level) for field_name, field in fields.items())
+
+def _get_type(prop: SchemaProperty) -> str:
+    """Get the display type for a property."""
+    if prop.logicalType:
+        return prop.logicalType
+    if prop.physicalType:
+        return prop.physicalType
+    return ""
 
 
-def field_to_markdown(field_name: str, field: Field, level: int = 0) -> str:
+def property_to_markdown(field_name: str, prop: SchemaProperty, level: int = 0) -> str:
     """
-    Generate Markdown table rows for a single field, including nested structures.
+    Generate Markdown table rows for a single property, including nested structures.
 
     Args:
         field_name (str): The name of the field.
-        field (Field): The field object.
+        prop (SchemaProperty): The property object.
         level (int): The level of nesting for indentation.
 
     Returns:
-        str: A Markdown table rows for the field.
+        str: A Markdown table rows for the property.
     """
     tabs = TAB * level
     arrow = ARROW if level > 0 else ""
     column_name = f"{tabs}{arrow} {field_name}"
 
-    attributes = obj_attributes_to_markdown(field, {"type", "fields", "items", "keys", "values"}, True)
+    prop_type = _get_type(prop)
+    attributes = obj_attributes_to_markdown(prop, {"name", "logicalType", "physicalType", "properties", "items"}, True)
 
-    rows = [f"| {column_name} | {field.type} | {attributes} |"]
+    rows = [f"| {column_name} | {prop_type} | {attributes} |"]
 
-    # Recursively handle nested fields, array, map
-    if field.fields:
-        rows.append(fields_to_markdown(field.fields, level + 1))
-    if field.items:
-        rows.append(field_to_markdown("items", field.items, level + 1))
-    if field.keys:
-        rows.append(field_to_markdown("keys", field.keys, level + 1))
-    if field.values:
-        rows.append(field_to_markdown("values", field.values, level + 1))
+    # Recursively handle nested properties, array
+    if prop.properties:
+        rows.append(properties_to_markdown(prop.properties, level + 1))
+    if prop.items:
+        rows.append(property_to_markdown("items", prop.items, level + 1))
 
     return "\n".join(rows)
 
 
-def definitions_to_markdown(definitions: Dict[str, Definition]) -> str:
-    if not definitions:
+def sla_properties_to_markdown(sla_properties: Optional[List[ServiceLevelAgreementProperty]]) -> str:
+    """Convert SLA properties to markdown."""
+    if not sla_properties:
         return ""
+
     markdown_parts = [
-        "| Name | Type | Domain | Attributes |",
-        "| ---- | ---- | ------ | ---------- |",
+        "| Property | Value | Unit |",
+        "| -------- | ----- | ---- |",
     ]
-    for definition_name, definition in definitions.items():
-        markdown_parts.append(
-            f"| {definition_name} | {definition.type or ''} | {definition.domain or ''} | {obj_attributes_to_markdown(definition, {'name', 'type', 'domain'}, True)} |",
-        )
+    for sla in sla_properties:
+        prop_name = sla.property or ""
+        value = sla.value or ""
+        unit = sla.unit or ""
+        markdown_parts.append(f"| {prop_name} | {value} | {unit} |")
     return "\n".join(markdown_parts)
-
-
-def service_level_to_markdown(service_level: ServiceLevel | None) -> str:
-    if not service_level:
-        return ""
-    sections = {
-        "Availability": service_level.availability,
-        "Retention": service_level.retention,
-        "Latency": service_level.latency,
-        "Freshness": service_level.freshness,
-        "Frequency": service_level.frequency,
-        "Support": service_level.support,
-        "Backup": service_level.backup,
-    }
-    result = [f"### {name}\n{obj_attributes_to_markdown(attr)}\n" for name, attr in sections.items() if attr]
-    return "\n".join(result)
 
 
 def description_to_markdown(description: str | None) -> str:

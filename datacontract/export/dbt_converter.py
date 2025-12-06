@@ -1,10 +1,11 @@
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import yaml
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+
 from datacontract.export.exporter import Exporter, _check_models_for_export
 from datacontract.export.sql_type_converter import convert_to_sql_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 
 
 class DbtExporter(Exporter):
@@ -27,42 +28,77 @@ class DbtStageExporter(Exporter):
         )
 
 
-def to_dbt_models_yaml(data_contract_spec: DataContractSpecification, server: str = None) -> str:
+def _get_config_value(prop: SchemaProperty, key: str) -> Optional[str]:
+    """Get a custom property value."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def _get_owner(data_contract: OpenDataContractStandard) -> Optional[str]:
+    """Get owner from team."""
+    if data_contract.team is None:
+        return None
+    return data_contract.team.name
+
+
+def _get_server_by_name(data_contract: OpenDataContractStandard, name: str):
+    """Get a server by name."""
+    if data_contract.servers is None:
+        return None
+    return next((s for s in data_contract.servers if s.server == name), None)
+
+
+def to_dbt_models_yaml(data_contract: OpenDataContractStandard, server: str = None) -> str:
     dbt = {
         "version": 2,
         "models": [],
     }
 
-    for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = _to_dbt_model(model_key, model_value, data_contract_spec, adapter_type=server)
-        dbt["models"].append(dbt_model)
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            dbt_model = _to_dbt_model(schema_obj.name, schema_obj, data_contract, adapter_type=server)
+            dbt["models"].append(dbt_model)
     return yaml.safe_dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def to_dbt_staging_sql(data_contract_spec: DataContractSpecification, model_name: str, model_value: Model) -> str:
-    id = data_contract_spec.id
+def to_dbt_staging_sql(data_contract: OpenDataContractStandard, model_name: str, model_value: SchemaObject) -> str:
+    contract_id = data_contract.id
     columns = []
-    for field_name, field in model_value.fields.items():
-        # TODO escape SQL reserved key words, probably dependent on server type
-        columns.append(field_name)
+    if model_value.properties:
+        for prop in model_value.properties:
+            # TODO escape SQL reserved key words, probably dependent on server type
+            columns.append(prop.name)
     return f"""
     select
         {", ".join(columns)}
-    from {{{{ source('{id}', '{model_name}') }}}}
+    from {{{{ source('{contract_id}', '{model_name}') }}}}
 """
 
 
-def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: str = None):
-    source = {"name": data_contract_spec.id}
+def to_dbt_sources_yaml(data_contract: OpenDataContractStandard, server: str = None):
+    source = {"name": data_contract.id}
     dbt = {
         "version": 2,
         "sources": [source],
     }
-    if data_contract_spec.info.owner is not None:
-        source["meta"] = {"owner": data_contract_spec.info.owner}
-    if data_contract_spec.info.description is not None:
-        source["description"] = data_contract_spec.info.description.strip().replace("\n", " ")
-    found_server = data_contract_spec.servers.get(server)
+    owner = _get_owner(data_contract)
+    if owner is not None:
+        source["meta"] = {"owner": owner}
+    if data_contract.description is not None:
+        source["description"] = data_contract.description.strip().replace("\n", " ")
+
+    found_server = _get_server_by_name(data_contract, server) if server else None
     adapter_type = None
     if found_server is not None:
         adapter_type = found_server.type
@@ -74,14 +110,15 @@ def to_dbt_sources_yaml(data_contract_spec: DataContractSpecification, server: s
             source["schema"] = found_server.schema_
 
     source["tables"] = []
-    for model_key, model_value in data_contract_spec.models.items():
-        dbt_model = _to_dbt_source_table(data_contract_spec, model_key, model_value, adapter_type)
-        source["tables"].append(dbt_model)
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            dbt_model = _to_dbt_source_table(data_contract, schema_obj.name, schema_obj, adapter_type)
+            source["tables"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def _to_dbt_source_table(
-    data_contract_spec: DataContractSpecification, model_key, model_value: Model, adapter_type: Optional[str]
+    data_contract: OpenDataContractStandard, model_key: str, model_value: SchemaObject, adapter_type: Optional[str]
 ) -> dict:
     dbt_model = {
         "name": model_key,
@@ -89,50 +126,49 @@ def _to_dbt_source_table(
 
     if model_value.description is not None:
         dbt_model["description"] = model_value.description.strip().replace("\n", " ")
-    columns = _to_columns(data_contract_spec, model_value.fields, False, adapter_type)
+    columns = _to_columns(data_contract, model_value.properties or [], False, adapter_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
 
 
 def _to_dbt_model(
-    model_key, model_value: Model, data_contract_spec: DataContractSpecification, adapter_type: Optional[str]
+    model_key: str, model_value: SchemaObject, data_contract: OpenDataContractStandard, adapter_type: Optional[str]
 ) -> dict:
     dbt_model = {
         "name": model_key,
     }
-    model_type = _to_dbt_model_type(model_value.type)
+    model_type = _to_dbt_model_type(model_value.physicalType)
 
-    dbt_model["config"] = {"meta": {"data_contract": data_contract_spec.id}}
+    dbt_model["config"] = {"meta": {"data_contract": data_contract.id}}
 
     if model_type:
         dbt_model["config"]["materialized"] = model_type
 
-    if data_contract_spec.info.owner is not None:
-        dbt_model["config"]["meta"]["owner"] = data_contract_spec.info.owner
+    owner = _get_owner(data_contract)
+    if owner is not None:
+        dbt_model["config"]["meta"]["owner"] = owner
 
     if _supports_constraints(model_type):
         dbt_model["config"]["contract"] = {"enforced": True}
     if model_value.description is not None:
         dbt_model["description"] = model_value.description.strip().replace("\n", " ")
 
-    # Handle model-level primaryKey (before columns for better YAML ordering)
+    # Handle model-level primaryKey from properties
     primary_key_columns = []
-    if hasattr(model_value, "primaryKey") and model_value.primaryKey:
-        if isinstance(model_value.primaryKey, list) and len(model_value.primaryKey) > 1:
-            # Multiple columns: use dbt_utils.unique_combination_of_columns
-            dbt_model["data_tests"] = [
-                {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": model_value.primaryKey}}
-            ]
-        elif isinstance(model_value.primaryKey, list) and len(model_value.primaryKey) == 1:
-            # Single column: handle at column level (pass to _to_columns)
-            primary_key_columns = model_value.primaryKey
-        elif isinstance(model_value.primaryKey, str):
-            # Single column as string: handle at column level
-            primary_key_columns = [model_value.primaryKey]
+    if model_value.properties:
+        for prop in model_value.properties:
+            if prop.primaryKey:
+                primary_key_columns.append(prop.name)
+
+    if len(primary_key_columns) > 1:
+        # Multiple columns: use dbt_utils.unique_combination_of_columns
+        dbt_model["data_tests"] = [
+            {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": primary_key_columns}}
+        ]
 
     columns = _to_columns(
-        data_contract_spec, model_value.fields, _supports_constraints(model_type), adapter_type, primary_key_columns
+        data_contract, model_value.properties or [], _supports_constraints(model_type), adapter_type, primary_key_columns
     )
     if columns:
         dbt_model["columns"] = columns
@@ -140,7 +176,7 @@ def _to_dbt_model(
     return dbt_model
 
 
-def _to_dbt_model_type(model_type):
+def _to_dbt_model_type(model_type: Optional[str]):
     # https://docs.getdbt.com/docs/build/materializations
     # Allowed values: table, view, incremental, ephemeral, materialized view
     # Custom values also possible
@@ -153,27 +189,30 @@ def _to_dbt_model_type(model_type):
     return "table"
 
 
-def _supports_constraints(model_type):
+def _supports_constraints(model_type: Optional[str]) -> bool:
     return model_type == "table" or model_type == "incremental"
 
 
 def _to_columns(
-    data_contract_spec: DataContractSpecification,
-    fields: Dict[str, Field],
+    data_contract: OpenDataContractStandard,
+    properties: List[SchemaProperty],
     supports_constraints: bool,
     adapter_type: Optional[str],
     primary_key_columns: Optional[list] = None,
 ) -> list:
     columns = []
     primary_key_columns = primary_key_columns or []
-    for field_name, field in fields.items():
-        is_primary_key = field_name in primary_key_columns
-        column = _to_column(data_contract_spec, field_name, field, supports_constraints, adapter_type, is_primary_key)
+    is_single_pk = len(primary_key_columns) == 1
+    for prop in properties:
+        is_primary_key = prop.name in primary_key_columns
+        # Only pass is_primary_key for unique constraint if it's a single-column PK
+        # Composite PKs use unique_combination_of_columns at model level instead
+        column = _to_column(data_contract, prop, supports_constraints, adapter_type, is_primary_key, is_single_pk)
         columns.append(column)
     return columns
 
 
-def get_table_name_and_column_name(references: str) -> tuple[Optional[str], str]:
+def get_table_name_and_column_name(references: str) -> tuple:
     parts = references.split(".")
     if len(parts) < 2:
         return None, parts[0]
@@ -181,16 +220,16 @@ def get_table_name_and_column_name(references: str) -> tuple[Optional[str], str]
 
 
 def _to_column(
-    data_contract_spec: DataContractSpecification,
-    field_name: str,
-    field: Field,
+    data_contract: OpenDataContractStandard,
+    prop: SchemaProperty,
     supports_constraints: bool,
     adapter_type: Optional[str],
     is_primary_key: bool = False,
+    is_single_pk: bool = False,
 ) -> dict:
-    column = {"name": field_name}
+    column = {"name": prop.name}
     adapter_type = adapter_type or "snowflake"
-    dbt_type = convert_to_sql_type(field, adapter_type)
+    dbt_type = convert_to_sql_type(prop, adapter_type)
 
     column["data_tests"] = []
     if dbt_type is not None:
@@ -199,94 +238,107 @@ def _to_column(
         column["data_tests"].append(
             {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
         )
-    if field.description is not None:
-        column["description"] = field.description.strip().replace("\n", " ")
+    if prop.description is not None:
+        column["description"] = prop.description.strip().replace("\n", " ")
+
     # Handle required/not_null constraint
-    if field.required or is_primary_key:
+    if prop.required or is_primary_key:
         if supports_constraints:
             column.setdefault("constraints", []).append({"type": "not_null"})
         else:
             column["data_tests"].append("not_null")
 
     # Handle unique constraint
-    if field.unique or is_primary_key:
+    # For composite primary keys, uniqueness is handled at model level via unique_combination_of_columns
+    # Only add unique constraint for single-column primary keys or explicit unique fields
+    if prop.unique or (is_primary_key and is_single_pk):
         if supports_constraints:
             column.setdefault("constraints", []).append({"type": "unique"})
         else:
             column["data_tests"].append("unique")
-    if field.enum is not None and len(field.enum) > 0:
-        column["data_tests"].append({"accepted_values": {"values": field.enum}})
-    if field.minLength is not None or field.maxLength is not None:
+
+    enum_values = _get_logical_type_option(prop, "enum")
+    if enum_values and len(enum_values) > 0:
+        column["data_tests"].append({"accepted_values": {"values": enum_values}})
+
+    min_length = _get_logical_type_option(prop, "minLength")
+    max_length = _get_logical_type_option(prop, "maxLength")
+    if min_length is not None or max_length is not None:
         length_test = {}
-        if field.minLength is not None:
-            length_test["min_value"] = field.minLength
-        if field.maxLength is not None:
-            length_test["max_value"] = field.maxLength
+        if min_length is not None:
+            length_test["min_value"] = min_length
+        if max_length is not None:
+            length_test["max_value"] = max_length
         column["data_tests"].append({"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
-    if field.pii is not None:
-        column.setdefault("meta", {})["pii"] = field.pii
-    if field.classification is not None:
-        column.setdefault("meta", {})["classification"] = field.classification
-    if field.tags is not None and len(field.tags) > 0:
-        column.setdefault("tags", []).extend(field.tags)
-    if field.pattern is not None:
+
+    if prop.classification is not None:
+        column.setdefault("meta", {})["classification"] = prop.classification
+    if prop.tags is not None and len(prop.tags) > 0:
+        column.setdefault("tags", []).extend(prop.tags)
+
+    pattern = _get_logical_type_option(prop, "pattern")
+    if pattern is not None:
         # Beware, the data contract pattern is a regex, not a like pattern
-        column["data_tests"].append({"dbt_expectations.expect_column_values_to_match_regex": {"regex": field.pattern}})
-    if (
-        field.minimum is not None
-        or field.maximum is not None
-        and field.exclusiveMinimum is None
-        and field.exclusiveMaximum is None
-    ):
+        column["data_tests"].append({"dbt_expectations.expect_column_values_to_match_regex": {"regex": pattern}})
+
+    minimum = _get_logical_type_option(prop, "minimum")
+    maximum = _get_logical_type_option(prop, "maximum")
+    exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
+    exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
+
+    if (minimum is not None or maximum is not None) and exclusive_minimum is None and exclusive_maximum is None:
         range_test = {}
-        if field.minimum is not None:
-            range_test["min_value"] = field.minimum
-        if field.maximum is not None:
-            range_test["max_value"] = field.maximum
+        if minimum is not None:
+            range_test["min_value"] = minimum
+        if maximum is not None:
+            range_test["max_value"] = maximum
         column["data_tests"].append({"dbt_expectations.expect_column_values_to_be_between": range_test})
-    elif (
-        field.exclusiveMinimum is not None
-        or field.exclusiveMaximum is not None
-        and field.minimum is None
-        and field.maximum is None
-    ):
+    elif (exclusive_minimum is not None or exclusive_maximum is not None) and minimum is None and maximum is None:
         range_test = {}
-        if field.exclusiveMinimum is not None:
-            range_test["min_value"] = field.exclusiveMinimum
-        if field.exclusiveMaximum is not None:
-            range_test["max_value"] = field.exclusiveMaximum
+        if exclusive_minimum is not None:
+            range_test["min_value"] = exclusive_minimum
+        if exclusive_maximum is not None:
+            range_test["max_value"] = exclusive_maximum
         range_test["strictly"] = True
         column["data_tests"].append({"dbt_expectations.expect_column_values_to_be_between": range_test})
     else:
-        if field.minimum is not None:
+        if minimum is not None:
             column["data_tests"].append(
-                {"dbt_expectations.expect_column_values_to_be_between": {"min_value": field.minimum}}
+                {"dbt_expectations.expect_column_values_to_be_between": {"min_value": minimum}}
             )
-        if field.maximum is not None:
+        if maximum is not None:
             column["data_tests"].append(
-                {"dbt_expectations.expect_column_values_to_be_between": {"max_value": field.maximum}}
+                {"dbt_expectations.expect_column_values_to_be_between": {"max_value": maximum}}
             )
-        if field.exclusiveMinimum is not None:
+        if exclusive_minimum is not None:
             column["data_tests"].append(
                 {
                     "dbt_expectations.expect_column_values_to_be_between": {
-                        "min_value": field.exclusiveMinimum,
+                        "min_value": exclusive_minimum,
                         "strictly": True,
                     }
                 }
             )
-        if field.exclusiveMaximum is not None:
+        if exclusive_maximum is not None:
             column["data_tests"].append(
                 {
                     "dbt_expectations.expect_column_values_to_be_between": {
-                        "max_value": field.exclusiveMaximum,
+                        "max_value": exclusive_maximum,
                         "strictly": True,
                     }
                 }
             )
-    if field.references is not None:
-        ref_source_name = data_contract_spec.id
-        table_name, column_name = get_table_name_and_column_name(field.references)
+
+    # Handle references from relationships
+    references = None
+    if prop.relationships:
+        for rel in prop.relationships:
+            if hasattr(rel, 'to') and rel.to:
+                references = rel.to
+                break
+    if references is not None:
+        ref_source_name = data_contract.id
+        table_name, column_name = get_table_name_and_column_name(references)
         if table_name is not None and column_name is not None:
             column["data_tests"].append(
                 {

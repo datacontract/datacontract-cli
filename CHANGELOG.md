@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.11.1] - Unreleased
+
+This is a major release with breaking changes:
+We switch the internal data model from Data Contract Specification to Open Data Contract Standard (ODCS).
+Not all features that were available in the previous version are available in this version, as some features are not supported by the Open Data Contract Standard..
+
+The reason for this change is that the Data Contract Specification is deprecated, we focus on best possible support for the Open Data Contract Standard.
+We try to make this transition as seamless as possible. 
+If you face issues, please open an issue on GitHub.
+
+We recommend migrating to the Open Data Contract Standard as soon as possible: https://datacontract-specification.com/#migration
+
+### Changed
+
+- ODCS v3.1.0 is now the default format for imports.
+
+### Removed
+
+- The `breaking`, `changelog`, and `diff` commands are now deleted (#925).
+
 
 
 ## [0.10.41] - 2025-12-02

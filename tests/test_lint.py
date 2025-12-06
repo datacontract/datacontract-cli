@@ -1,7 +1,8 @@
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.data_contract import DataContract, DataContractSpecification
+from datacontract.data_contract import DataContract
+from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.INFO, force=True)
 
@@ -89,7 +90,7 @@ def test_lint_with_ref():
     )
 
     run = data_contract.lint()
-    DataContractSpecification.model_validate(data_contract.get_data_contract_specification())
+    OpenDataContractStandard.model_validate(data_contract.get_data_contract())
 
     assert run.result == "passed"
 

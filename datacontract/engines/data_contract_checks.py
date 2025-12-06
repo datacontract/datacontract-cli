@@ -1,13 +1,19 @@
 import re
 import uuid
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from venv import logger
 
 import yaml
 
+from open_data_contract_standard.model import (
+    DataQuality,
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
+    Server,
+)
 from datacontract.export.sql_type_converter import convert_to_sql_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Quality, Server
 from datacontract.model.run import Check
 
 
@@ -18,21 +24,50 @@ class QuotingConfig:
     quote_model_name_with_backticks: bool = False
 
 
-def create_checks(data_contract_spec: DataContractSpecification, server: Server) -> List[Check]:
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def _get_config_value(prop: SchemaProperty, key: str) -> Optional[str]:
+    """Get a custom property value."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
+def _get_schema_config_value(schema: SchemaObject, key: str) -> Optional[str]:
+    """Get a custom property value from schema."""
+    if schema.customProperties is None:
+        return None
+    for cp in schema.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
+def create_checks(data_contract: OpenDataContractStandard, server: Server) -> List[Check]:
     checks: List[Check] = []
-    for model_key, model_value in data_contract_spec.models.items():
-        model_checks = to_model_checks(model_key, model_value, server)
+    if data_contract.schema_ is None:
+        return checks
+    for schema_obj in data_contract.schema_:
+        model_checks = to_model_checks(schema_obj.name, schema_obj, server)
         checks.extend(model_checks)
-    checks.extend(to_servicelevel_checks(data_contract_spec))
-    checks.append(to_quality_check(data_contract_spec))
+    checks.extend(to_servicelevel_checks(data_contract))
+    checks.append(to_quality_check(data_contract))
     return [check for check in checks if check is not None]
 
 
-def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
+def to_model_checks(model_key: str, model_value: SchemaObject, server: Server) -> List[Check]:
     checks: List[Check] = []
     server_type = server.type if server and server.type else None
     model_name = to_model_name(model_key, model_value, server_type)
-    fields = model_value.fields
+    properties = model_value.properties or []
 
     check_types = is_check_types(server)
 
@@ -44,39 +79,57 @@ def to_model_checks(model_key, model_value, server: Server) -> List[Check]:
     )
     quoting_config = config
 
-    for field_name, field in fields.items():
+    for prop in properties:
+        field_name = prop.name
+        field_type = prop.logicalType
+
         checks.append(check_field_is_present(model_name, field_name, quoting_config))
-        if check_types and field.type is not None:
-            sql_type: str = convert_to_sql_type(field, server_type)
+        if check_types and field_type is not None:
+            sql_type: str = convert_to_sql_type(prop, server_type)
             checks.append(check_field_type(model_name, field_name, sql_type, quoting_config))
-        if field.required:
+        if prop.required:
             checks.append(check_field_required(model_name, field_name, quoting_config))
-        if field.unique:
+        if prop.unique:
             checks.append(check_field_unique(model_name, field_name, quoting_config))
-        if field.minLength is not None:
-            checks.append(check_field_min_length(model_name, field_name, field.minLength, quoting_config))
-        if field.maxLength is not None:
-            checks.append(check_field_max_length(model_name, field_name, field.maxLength, quoting_config))
-        if field.minimum is not None:
-            checks.append(check_field_minimum(model_name, field_name, field.minimum, quoting_config))
-        if field.maximum is not None:
-            checks.append(check_field_maximum(model_name, field_name, field.maximum, quoting_config))
-        if field.exclusiveMinimum is not None:
-            checks.append(check_field_minimum(model_name, field_name, field.exclusiveMinimum, quoting_config))
-            checks.append(check_field_not_equal(model_name, field_name, field.exclusiveMinimum, quoting_config))
-        if field.exclusiveMaximum is not None:
-            checks.append(check_field_maximum(model_name, field_name, field.exclusiveMaximum, quoting_config))
-            checks.append(check_field_not_equal(model_name, field_name, field.exclusiveMaximum, quoting_config))
-        if field.pattern is not None:
-            checks.append(check_field_regex(model_name, field_name, field.pattern, quoting_config))
-        if field.enum is not None and len(field.enum) > 0:
-            checks.append(check_field_enum(model_name, field_name, field.enum, quoting_config))
-        if field.quality is not None and len(field.quality) > 0:
-            quality_list = check_quality_list(model_name, field_name, field.quality, quoting_config, server)
+
+        min_length = _get_logical_type_option(prop, "minLength")
+        if min_length is not None:
+            checks.append(check_field_min_length(model_name, field_name, min_length, quoting_config))
+
+        max_length = _get_logical_type_option(prop, "maxLength")
+        if max_length is not None:
+            checks.append(check_field_max_length(model_name, field_name, max_length, quoting_config))
+
+        minimum = _get_logical_type_option(prop, "minimum")
+        if minimum is not None:
+            checks.append(check_field_minimum(model_name, field_name, minimum, quoting_config))
+
+        maximum = _get_logical_type_option(prop, "maximum")
+        if maximum is not None:
+            checks.append(check_field_maximum(model_name, field_name, maximum, quoting_config))
+
+        exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
+        if exclusive_minimum is not None:
+            checks.append(check_field_minimum(model_name, field_name, exclusive_minimum, quoting_config))
+            checks.append(check_field_not_equal(model_name, field_name, exclusive_minimum, quoting_config))
+
+        exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
+        if exclusive_maximum is not None:
+            checks.append(check_field_maximum(model_name, field_name, exclusive_maximum, quoting_config))
+            checks.append(check_field_not_equal(model_name, field_name, exclusive_maximum, quoting_config))
+
+        pattern = _get_logical_type_option(prop, "pattern")
+        if pattern is not None:
+            checks.append(check_field_regex(model_name, field_name, pattern, quoting_config))
+
+        enum_values = _get_logical_type_option(prop, "enum")
+        if enum_values is not None and len(enum_values) > 0:
+            checks.append(check_field_enum(model_name, field_name, enum_values, quoting_config))
+
+        if prop.quality is not None and len(prop.quality) > 0:
+            quality_list = check_quality_list(model_name, field_name, prop.quality, quoting_config, server)
             if (quality_list is not None) and len(quality_list) > 0:
                 checks.extend(quality_list)
-        # TODO references: str = None
-        # TODO format
 
     if model_value.quality is not None and len(model_value.quality) > 0:
         quality_list = check_quality_list(model_name, None, model_value.quality, quoting_config, server)
@@ -100,19 +153,28 @@ def is_check_types(server: Server) -> bool:
     return server.format != "json" and server.format != "csv" and server.format != "avro"
 
 
-def to_model_name(model_key, model_value, server_type):
+def to_model_name(model_key: str, model_value: SchemaObject, server_type: str) -> str:
+    # Use physicalName if set (ODCS standard way to specify actual table name)
+    if model_value.physicalName:
+        return model_value.physicalName
+
+    # Fall back to server-specific config values in customProperties (DCS compatibility)
     if server_type == "databricks":
-        if model_value.config is not None and "databricksTable" in model_value.config:
-            return model_value.config["databricksTable"]
+        table_name = _get_schema_config_value(model_value, "databricksTable")
+        if table_name:
+            return table_name
     if server_type == "snowflake":
-        if model_value.config is not None and "snowflakeTable" in model_value.config:
-            return model_value.config["snowflakeTable"]
+        table_name = _get_schema_config_value(model_value, "snowflakeTable")
+        if table_name:
+            return table_name
     if server_type == "sqlserver":
-        if model_value.config is not None and "sqlserverTable" in model_value.config:
-            return model_value.config["sqlserverTable"]
+        table_name = _get_schema_config_value(model_value, "sqlserverTable")
+        if table_name:
+            return table_name
     if server_type == "postgres" or server_type == "postgresql":
-        if model_value.config is not None and "postgresTable" in model_value.config:
-            return model_value.config["postgresTable"]
+        table_name = _get_schema_config_value(model_value, "postgresTable")
+        if table_name:
+            return table_name
     return model_key
 
 
@@ -654,7 +716,6 @@ def check_field_missing_values(
     }
 
     if missing_values is not None:
-        # Filter out null/None values as SodaCL handles these automatically
         filtered_missing_values = [v for v in missing_values if v is not None]
         if filtered_missing_values:
             sodacl_check_config["missing values"] = filtered_missing_values
@@ -683,7 +744,7 @@ def check_field_missing_values(
 def check_quality_list(
     model_name,
     field_name,
-    quality_list: List[Quality],
+    quality_list: List[DataQuality],
     quoting_config: QuotingConfig = QuotingConfig(),
     server: Server = None,
 ) -> List[Check]:
@@ -746,7 +807,6 @@ def check_quality_list(
                 checks.append(check_row_count(model_name, threshold, quoting_config))
             elif quality.metric == "duplicateValues":
                 if field_name is None:
-                    # TODO check that quality.arguments.get("properties") is a list of strings and contains at lease one property
                     checks.append(
                         check_model_duplicate_values(
                             model_name, quality.arguments.get("properties"), threshold, quoting_config
@@ -784,7 +844,7 @@ def check_quality_list(
 
 
 def prepare_query(
-    quality: Quality,
+    quality: DataQuality,
     model_name: str,
     field_name: str = None,
     quoting_config: QuotingConfig = QuotingConfig(),
@@ -812,7 +872,6 @@ def prepare_query(
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
 
-    # Handle {schema} and ${schema} placeholder - use server schema if available
     if server and server.schema_:
         if quoting_config.quote_model_name:
             schema_name_for_soda = f'"{server.schema_}"'
@@ -822,7 +881,6 @@ def prepare_query(
             schema_name_for_soda = server.schema_
         query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
     else:
-        # Fallback to model name for backward compatibility
         query = re.sub(r'["\']?\$?\{schema}["\']?', model_name_for_soda, query)
 
     if field_name is not None:
@@ -833,7 +891,7 @@ def prepare_query(
     return query
 
 
-def to_sodacl_threshold(quality: Quality) -> str | None:
+def to_sodacl_threshold(quality: DataQuality) -> str | None:
     if quality.mustBe is not None:
         return f"= {quality.mustBe}"
     if quality.mustNotBe is not None:
@@ -842,14 +900,10 @@ def to_sodacl_threshold(quality: Quality) -> str | None:
         return f"> {quality.mustBeGreaterThan}"
     if quality.mustBeGreaterOrEqualTo is not None:
         return f">= {quality.mustBeGreaterOrEqualTo}"
-    if quality.mustBeGreaterThanOrEqualTo is not None:
-        return f">= {quality.mustBeGreaterThanOrEqualTo}"
     if quality.mustBeLessThan is not None:
         return f"< {quality.mustBeLessThan}"
     if quality.mustBeLessOrEqualTo is not None:
         return f"<= {quality.mustBeLessOrEqualTo}"
-    if quality.mustBeLessThanOrEqualTo is not None:
-        return f"<= {quality.mustBeLessThanOrEqualTo}"
     if quality.mustBeBetween is not None:
         if len(quality.mustBeBetween) != 2:
             logger.warning(
@@ -867,195 +921,24 @@ def to_sodacl_threshold(quality: Quality) -> str | None:
     return None
 
 
-def to_servicelevel_checks(data_contract_spec: DataContractSpecification) -> List[Check]:
+def _get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[SchemaObject]:
+    """Get a schema object by name from the data contract."""
+    if data_contract.schema_ is None:
+        return None
+    return next((s for s in data_contract.schema_ if s.name == name), None)
+
+
+def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Check]:
     checks: List[Check] = []
-    if data_contract_spec.servicelevels is None:
+    # Service levels in ODCS are in slaProperties
+    if data_contract.slaProperties is None:
         return checks
-    if data_contract_spec.servicelevels.freshness is not None:
-        checks.append(to_servicelevel_freshness_check(data_contract_spec))
-    if data_contract_spec.servicelevels.retention is not None:
-        checks.append(to_servicelevel_retention_check(data_contract_spec))
-    # only return checks that are not None
-    return [check for check in checks if check is not None]
+    # Note: Freshness and retention checks need to be adapted for ODCS format
+    # For now, return empty list - these will need to be refactored
+    return checks
 
 
-def to_servicelevel_freshness_check(data_contract_spec: DataContractSpecification) -> Check | None:
-    if data_contract_spec.servicelevels.freshness.timestampField is None:
-        return None
-    freshness_threshold = data_contract_spec.servicelevels.freshness.threshold
-    if freshness_threshold is None:
-        logger.info("servicelevel.freshness.threshold is not defined")
-        return None
-
-    if not (
-        "d" in freshness_threshold
-        or "D" in freshness_threshold
-        or "h" in freshness_threshold
-        or "H" in freshness_threshold
-        or "m" in freshness_threshold
-        or "M" in freshness_threshold
-    ):
-        logger.info("servicelevel.freshness.threshold must be in days, hours, or minutes (e.g., PT1H, or 1h)")
-        return None
-    timestamp_field_fully_qualified = data_contract_spec.servicelevels.freshness.timestampField
-    if "." not in timestamp_field_fully_qualified:
-        logger.info("servicelevel.freshness.timestampField is not fully qualified, skipping freshness check")
-        return None
-    if timestamp_field_fully_qualified.count(".") > 1:
-        logger.info(
-            "servicelevel.freshness.timestampField contains multiple dots, which is currently not supported, skipping freshness check"
-        )
-        return None
-    model_name = timestamp_field_fully_qualified.split(".")[0]
-    field_name = timestamp_field_fully_qualified.split(".")[1]
-    threshold = freshness_threshold
-    threshold = threshold.replace("P", "")
-    threshold = threshold.replace("T", "")
-    threshold = threshold.lower()
-    if model_name not in data_contract_spec.models:
-        logger.info(f"Model {model_name} not found in data_contract_spec.models, skipping freshness check")
-        return None
-
-    check_type = "servicelevel_freshness"
-    check_key = "servicelevel_freshness"
-
-    sodacl_check_dict = {
-        checks_for(model_name, QuotingConfig(), check_type): [
-            {
-                f"freshness({field_name}) < {threshold}": {
-                    "name": check_key,
-                },
-            }
-        ]
-    }
-    return Check(
-        id=str(uuid.uuid4()),
-        key=check_key,
-        category="servicelevel",
-        type=check_type,
-        name="Freshness",
-        model=model_name,
-        engine="soda",
-        language="sodacl",
-        implementation=yaml.dump(sodacl_check_dict),
-    )
-
-
-def to_servicelevel_retention_check(data_contract_spec) -> Check | None:
-    if data_contract_spec.servicelevels.retention is None:
-        return None
-    if data_contract_spec.servicelevels.retention.unlimited is True:
-        return None
-    if data_contract_spec.servicelevels.retention.timestampField is None:
-        logger.info("servicelevel.retention.timestampField is not defined")
-        return None
-    if data_contract_spec.servicelevels.retention.period is None:
-        logger.info("servicelevel.retention.period is not defined")
-        return None
-    timestamp_field_fully_qualified = data_contract_spec.servicelevels.retention.timestampField
-    if "." not in timestamp_field_fully_qualified:
-        logger.info("servicelevel.retention.timestampField is not fully qualified, skipping retention check")
-        return None
-    if timestamp_field_fully_qualified.count(".") > 1:
-        logger.info(
-            "servicelevel.retention.timestampField contains multiple dots, which is currently not supported, skipping retention check"
-        )
-        return None
-
-    model_name = timestamp_field_fully_qualified.split(".")[0]
-    field_name = timestamp_field_fully_qualified.split(".")[1]
-    period = data_contract_spec.servicelevels.retention.period
-    period_in_seconds = period_to_seconds(period)
-    if model_name not in data_contract_spec.models:
-        logger.info(f"Model {model_name} not found in data_contract_spec.models, skipping retention check")
-        return None
-    check_type = "servicelevel_retention"
-    check_key = "servicelevel_retention"
-    sodacl_check_dict = {
-        checks_for(model_name, QuotingConfig(), check_type): [
-            {
-                f"orders_servicelevel_retention < {period_in_seconds}": {
-                    "orders_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({field_name}), CURRENT_TIMESTAMP)",
-                    "name": check_key,
-                }
-            },
-        ]
-    }
-    return Check(
-        id=str(uuid.uuid4()),
-        key=check_key,
-        category="servicelevel",
-        type=check_type,
-        name=f"Retention: Oldest entry has a max age of {period}",
-        model=model_name,
-        engine="soda",
-        language="sodacl",
-        implementation=yaml.dump(sodacl_check_dict),
-    )
-
-
-def period_to_seconds(period: str) -> int | None:
-    import re
-
-    # if period is None:
-    #     return None
-    # if period is in form "30d" or "24h" or "60m"
-    if re.match(r"^\d+[dhm]$", period):
-        if period[-1] == "d":
-            return int(period[:-1]) * 86400
-        if period[-1] == "h":
-            return int(period[:-1]) * 3600
-        if period[-1] == "m":
-            return int(period[:-1]) * 60
-    # if it is in iso period format (do not use isodate, can also be years)
-    iso_period_regex = re.compile(
-        r"P(?:(?P<years>\d+)Y)?(?:(?P<months>\d+)M)?(?:(?P<days>\d+)D)?"
-        r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?)?"
-    )
-    match = iso_period_regex.match(period)
-    if match:
-        years = int(match.group("years") or 0)
-        months = int(match.group("months") or 0)
-        days = int(match.group("days") or 0)
-        hours = int(match.group("hours") or 0)
-        minutes = int(match.group("minutes") or 0)
-        seconds = int(match.group("seconds") or 0)
-
-        # Convert everything to seconds
-        total_seconds = (
-            years * 365 * 86400  # Approximate conversion of years to seconds
-            + months * 30 * 86400  # Approximate conversion of months to seconds
-            + days * 86400
-            + hours * 3600
-            + minutes * 60
-            + seconds
-        )
-        return total_seconds
-
+def to_quality_check(data_contract: OpenDataContractStandard) -> Check | None:
+    # Root-level quality checks in ODCS are stored differently
+    # This is deprecated functionality - skip for now
     return None
-
-
-# These are deprecated root-level quality specifications, use the model-level and field-level quality fields instead
-def to_quality_check(data_contract_spec) -> Check | None:
-    if data_contract_spec.quality is None:
-        return None
-    if data_contract_spec.quality.type is None:
-        return None
-    if data_contract_spec.quality.type.lower() != "sodacl":
-        return None
-    if isinstance(data_contract_spec.quality.specification, str):
-        quality_specification = yaml.safe_load(data_contract_spec.quality.specification)
-    else:
-        quality_specification = data_contract_spec.quality.specification
-
-    return Check(
-        id=str(uuid.uuid4()),
-        key="quality__sodacl",
-        category="quality",
-        type="quality",
-        name="Quality Check",
-        model=None,
-        engine="soda",
-        language="sodacl",
-        implementation=yaml.dump(quality_specification),
-    )

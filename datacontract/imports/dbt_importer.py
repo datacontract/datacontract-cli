@@ -1,27 +1,23 @@
 import json
-from typing import TypedDict
+from typing import List, TypedDict
 
 from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
 from dbt.contracts.graph.nodes import GenericTestNode, ManifestNode, ModelNode
 from dbt_common.contracts.constraints import ConstraintType
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+
 from datacontract.imports.bigquery_importer import map_type_from_bigquery
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+)
 
 
 class DBTImportArgs(TypedDict, total=False):
-    """
-    A dictionary representing arguments for importing DBT models.
-    Makes the DBT Importer more customizable by allowing for flexible filtering
-    of models and their properties, through wrapping or extending.
-
-    Attributes:
-        dbt_models: The keys of models to be used in contract. All as default.
-        resource_types: Nodes listed in resource_types are kept while importing. model as default.
-    """
-
     dbt_nodes: list[str]
     resource_types: list[str]
 
@@ -29,13 +25,11 @@ class DBTImportArgs(TypedDict, total=False):
 class DbtManifestImporter(Importer):
     def import_source(
         self,
-        data_contract_specification: DataContractSpecification,
         source: str,
         import_args: DBTImportArgs,
-    ) -> DataContractSpecification:
+    ) -> OpenDataContractStandard:
         manifest = read_dbt_manifest(manifest_path=source)
         return import_dbt_manifest(
-            data_contract_specification=data_contract_specification,
             manifest=manifest,
             dbt_nodes=import_args.get("dbt_model", []),
             resource_types=import_args.get("resource_types", ["model"]),
@@ -92,26 +86,25 @@ def _get_references(manifest: Manifest, node: ManifestNode) -> dict[str, str]:
 
 
 def import_dbt_manifest(
-    data_contract_specification: DataContractSpecification,
     manifest: Manifest,
     dbt_nodes: list[str],
     resource_types: list[str],
-) -> DataContractSpecification:
-    """
-    Extracts all relevant information from the manifest,
-    and puts it in a data contract specification.
-    """
-    data_contract_specification.info.title = manifest.metadata.project_name
-    data_contract_specification.info.dbt_version = manifest.metadata.dbt_version
+) -> OpenDataContractStandard:
+    """Extracts all relevant information from the manifest into an ODCS data contract."""
+    odcs = create_odcs()
+    odcs.name = manifest.metadata.project_name
+
+    # Store dbt version as custom property
+    from open_data_contract_standard.model import CustomProperty
+    odcs.customProperties = [CustomProperty(property="dbt_version", value=manifest.metadata.dbt_version)]
+
     adapter_type = manifest.metadata.adapter_type
-    data_contract_specification.models = data_contract_specification.models or {}
+    odcs.schema_ = []
+
     for node in manifest.nodes.values():
-        # Only intressted in processing models.
         if node.resource_type not in resource_types:
             continue
 
-        # To allow args stored in dbt_models to filter relevant models.
-        # If dbt_models is empty, use all models.
         if dbt_nodes and node.name not in dbt_nodes:
             continue
 
@@ -123,30 +116,82 @@ def import_dbt_manifest(
         if len(primary_keys) == 1:
             primary_key = primary_keys[0]
 
-        dc_model = Model(
-            description=node.description,
-            tags=node.tags,
-            fields=create_fields(
-                manifest,
-                model_unique_id=model_unique_id,
-                columns=node.columns,
-                primary_key_name=primary_key,
-                references=references,
-                adapter_type=adapter_type,
-            ),
+        properties = create_fields(
+            manifest,
+            model_unique_id=model_unique_id,
+            columns=node.columns,
+            primary_key_name=primary_key,
+            references=references,
+            adapter_type=adapter_type,
         )
+
+        schema_obj = create_schema_object(
+            name=node.name,
+            physical_type="table",
+            description=node.description,
+            properties=properties,
+        )
+
+        # Add tags as custom property
+        if node.tags:
+            if schema_obj.customProperties is None:
+                schema_obj.customProperties = []
+            schema_obj.customProperties.append(CustomProperty(property="tags", value=",".join(node.tags)))
+
+        # Handle composite primary key
         if len(primary_keys) > 1:
-            dc_model.primaryKey = primary_keys
+            if schema_obj.customProperties is None:
+                schema_obj.customProperties = []
+            schema_obj.customProperties.append(CustomProperty(property="primaryKey", value=",".join(primary_keys)))
 
-        data_contract_specification.models[node.name] = dc_model
+        odcs.schema_.append(schema_obj)
 
-    return data_contract_specification
+    return odcs
 
 
 def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
     if adapter_type == "bigquery":
         return map_type_from_bigquery(data_type)
-    return data_type
+    return map_dbt_type_to_odcs(data_type)
+
+
+def map_dbt_type_to_odcs(data_type: str) -> str:
+    """Map dbt data type to ODCS logical type."""
+    if not data_type:
+        return "string"
+
+    data_type_lower = data_type.lower()
+
+    type_mapping = {
+        "string": "string",
+        "varchar": "string",
+        "text": "string",
+        "char": "string",
+        "int": "integer",
+        "integer": "integer",
+        "bigint": "integer",
+        "smallint": "integer",
+        "float": "number",
+        "double": "number",
+        "decimal": "number",
+        "numeric": "number",
+        "boolean": "boolean",
+        "bool": "boolean",
+        "date": "date",
+        "datetime": "date",
+        "timestamp": "date",
+        "time": "string",
+        "array": "array",
+        "object": "object",
+        "struct": "object",
+        "json": "object",
+    }
+
+    for key, value in type_mapping.items():
+        if data_type_lower.startswith(key):
+            return value
+
+    return "string"
 
 
 def create_fields(
@@ -156,12 +201,12 @@ def create_fields(
     primary_key_name: str,
     references: dict[str, str],
     adapter_type: str,
-) -> dict[str, Field]:
-    fields = {
-        column.name: create_field(manifest, model_unique_id, column, primary_key_name, references, adapter_type)
+) -> List[SchemaProperty]:
+    """Create ODCS SchemaProperties from dbt columns."""
+    return [
+        create_field(manifest, model_unique_id, column, primary_key_name, references, adapter_type)
         for column in columns.values()
-    }
-    return fields
+    ]
 
 
 def get_column_tests(manifest: Manifest, model_name: str, column_name: str) -> list[dict[str, str]]:
@@ -204,13 +249,9 @@ def create_field(
     primary_key_name: str,
     references: dict[str, str],
     adapter_type: str,
-) -> Field:
-    column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else ""
-    field = Field(
-        description=column.description,
-        type=column_type,
-        tags=column.tags,
-    )
+) -> SchemaProperty:
+    """Create an ODCS SchemaProperty from a dbt column."""
+    column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else "string"
 
     all_tests = get_column_tests(manifest, model_unique_id, column.name)
 
@@ -219,22 +260,30 @@ def create_field(
         required = True
     if [test for test in all_tests if test["test_type"] == "not_null"]:
         required = True
-    if required:
-        field.required = required
 
     unique = False
     if any(constraint.type == ConstraintType.unique for constraint in column.constraints):
         unique = True
     if [test for test in all_tests if test["test_type"] == "unique"]:
         unique = True
-    if unique:
-        field.unique = unique
 
-    if column.name == primary_key_name:
-        field.primaryKey = True
+    is_primary_key = column.name == primary_key_name
 
+    custom_props = {}
     references_key = f"{manifest.nodes[model_unique_id].name}.{column.name}"
     if references_key in references:
-        field.references = references[references_key]
+        custom_props["references"] = references[references_key]
+    if column.tags:
+        custom_props["tags"] = ",".join(column.tags)
 
-    return field
+    return create_property(
+        name=column.name,
+        logical_type=column_type,
+        physical_type=column.data_type,
+        description=column.description,
+        required=required if required else None,
+        unique=unique if unique else None,
+        primary_key=is_primary_key if is_primary_key else None,
+        primary_key_position=1 if is_primary_key else None,
+        custom_properties=custom_props if custom_props else None,
+    )

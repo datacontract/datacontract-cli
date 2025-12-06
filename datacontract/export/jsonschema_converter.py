@@ -1,8 +1,9 @@
 import json
-from typing import Dict
+from typing import Dict, List, Optional
+
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_models_for_export
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 
 
 class JsonSchemaExporter(Exporter):
@@ -11,146 +12,195 @@ class JsonSchemaExporter(Exporter):
         return to_jsonschema_json(model_name, model_value)
 
 
-def to_jsonschemas(data_contract_spec: DataContractSpecification):
-    jsonschmemas = {}
-    for model_key, model_value in data_contract_spec.models.items():
-        jsonschema = to_jsonschema(model_key, model_value)
-        jsonschmemas[model_key] = jsonschema
-    return jsonschmemas
+def to_jsonschemas(data_contract: OpenDataContractStandard) -> dict:
+    jsonschemas = {}
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            jsonschema = to_jsonschema(schema_obj.name, schema_obj)
+            jsonschemas[schema_obj.name] = jsonschema
+    return jsonschemas
 
 
-def to_jsonschema_json(model_key, model_value: Model) -> str:
+def to_jsonschema_json(model_key: str, model_value: SchemaObject) -> str:
     jsonschema = to_jsonschema(model_key, model_value)
     return json.dumps(jsonschema, indent=2)
 
 
-def to_properties(fields: Dict[str, Field]) -> dict:
-    properties = {}
-    for field_name, field in fields.items():
-        properties[field_name] = to_property(field)
-    return properties
+def to_properties(properties: List[SchemaProperty]) -> dict:
+    result = {}
+    for prop in properties:
+        result[prop.name] = to_property(prop)
+    return result
 
 
-def to_property(field: Field) -> dict:
-    property = {}
-    json_type, json_format = convert_type_format(field.type, field.format)
+def _get_logical_type_option(prop: SchemaProperty, key: str):
+    """Get a logical type option value."""
+    if prop.logicalTypeOptions is None:
+        return None
+    return prop.logicalTypeOptions.get(key)
+
+
+def _get_config_value(prop: SchemaProperty, key: str):
+    """Get a custom property value."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
+def to_property(prop: SchemaProperty) -> dict:
+    property_dict = {}
+    field_type = prop.logicalType
+    json_type, json_format = convert_type_format(field_type, _get_logical_type_option(prop, "format"))
+
     if json_type is not None:
-        if not field.required:
+        if not prop.required:
             """
             From: https://json-schema.org/understanding-json-schema/reference/type
             The type keyword may either be a string or an array:
 
             If it's a string, it is the name of one of the basic types above.
-            If it is an array, it must be an array of strings, where each string 
+            If it is an array, it must be an array of strings, where each string
             is the name of one of the basic types, and each element is unique.
             In this case, the JSON snippet is valid if it matches any of the given types.
             """
-            property["type"] = [json_type, "null"]
+            property_dict["type"] = [json_type, "null"]
         else:
-            property["type"] = json_type
+            property_dict["type"] = json_type
+
     if json_format is not None:
-        property["format"] = json_format
-    if field.primaryKey:
-        property["primaryKey"] = field.primaryKey
-    if field.unique:
-        property["unique"] = True
+        property_dict["format"] = json_format
+
+    if prop.primaryKey:
+        property_dict["primaryKey"] = prop.primaryKey
+
+    if prop.unique:
+        property_dict["unique"] = True
+
     if json_type == "object":
+        nested_props = prop.properties or []
         # TODO: any better idea to distinguish between properties and patternProperties?
-        if field.fields.keys() and next(iter(field.fields.keys())).startswith("^"):
-            property["patternProperties"] = to_properties(field.fields)
+        if nested_props and nested_props[0].name.startswith("^"):
+            property_dict["patternProperties"] = to_properties(nested_props)
         else:
-            property["properties"] = to_properties(field.fields)
-        property["required"] = to_required(field.fields)
-    if json_type == "array":
-        property["items"] = to_property(field.items)
-    if field.pattern:
-        property["pattern"] = field.pattern
-    if field.enum:
-        property["enum"] = field.enum
-    if field.minLength is not None:
-        property["minLength"] = field.minLength
-    if field.maxLength is not None:
-        property["maxLength"] = field.maxLength
-    if field.title:
-        property["title"] = field.title
-    if field.description:
-        property["description"] = field.description
-    if field.exclusiveMinimum is not None:
-        property["exclusiveMinimum"] = field.exclusiveMinimum
-    if field.exclusiveMaximum is not None:
-        property["exclusiveMaximum"] = field.exclusiveMaximum
-    if field.minimum is not None:
-        property["minimum"] = field.minimum
-    if field.maximum is not None:
-        property["maximum"] = field.maximum
-    if field.tags:
-        property["tags"] = field.tags
-    if field.pii:
-        property["pii"] = field.pii
-    if field.classification is not None:
-        property["classification"] = field.classification
+            property_dict["properties"] = to_properties(nested_props)
+        property_dict["required"] = to_required(nested_props)
+
+    if json_type == "array" and prop.items:
+        property_dict["items"] = to_property(prop.items)
+
+    pattern = _get_logical_type_option(prop, "pattern")
+    if pattern:
+        property_dict["pattern"] = pattern
+
+    enum_values = _get_logical_type_option(prop, "enum")
+    if enum_values:
+        property_dict["enum"] = enum_values
+
+    min_length = _get_logical_type_option(prop, "minLength")
+    if min_length is not None:
+        property_dict["minLength"] = min_length
+
+    max_length = _get_logical_type_option(prop, "maxLength")
+    if max_length is not None:
+        property_dict["maxLength"] = max_length
+
+    if prop.businessName:
+        property_dict["title"] = prop.businessName
+
+    if prop.description:
+        property_dict["description"] = prop.description
+
+    exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
+    if exclusive_minimum is not None:
+        property_dict["exclusiveMinimum"] = exclusive_minimum
+
+    exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
+    if exclusive_maximum is not None:
+        property_dict["exclusiveMaximum"] = exclusive_maximum
+
+    minimum = _get_logical_type_option(prop, "minimum")
+    if minimum is not None:
+        property_dict["minimum"] = minimum
+
+    maximum = _get_logical_type_option(prop, "maximum")
+    if maximum is not None:
+        property_dict["maximum"] = maximum
+
+    if prop.tags:
+        property_dict["tags"] = prop.tags
+
+    pii = _get_config_value(prop, "pii")
+    if pii:
+        property_dict["pii"] = pii
+
+    if prop.classification is not None:
+        property_dict["classification"] = prop.classification
 
     # TODO: all constraints
-    return property
+    return property_dict
 
 
-def to_required(fields: Dict[str, Field]):
+def to_required(properties: List[SchemaProperty]) -> list:
     required = []
-    for field_name, field in fields.items():
-        if field.required is True:
-            required.append(field_name)
+    for prop in properties:
+        if prop.required is True:
+            required.append(prop.name)
     return required
 
 
-def convert_type_format(type, format) -> (str, str):
-    if type is None:
+def convert_type_format(type_str: Optional[str], format_str: Optional[str]) -> tuple:
+    if type_str is None:
         return None, None
-    if type.lower() in ["string", "varchar", "text"]:
-        return "string", format
-    if type.lower() in ["timestamp", "timestamp_tz", "date-time", "datetime"]:
+    if type_str.lower() in ["string", "varchar", "text"]:
+        return "string", format_str
+    if type_str.lower() in ["timestamp", "timestamp_tz", "date-time", "datetime"]:
         return "string", "date-time"
-    if type.lower() in ["timestamp_ntz"]:
+    if type_str.lower() in ["timestamp_ntz"]:
         return "string", None
-    if type.lower() in ["date"]:
+    if type_str.lower() in ["date"]:
         return "string", "date"
-    if type.lower() in ["time"]:
+    if type_str.lower() in ["time"]:
         return "string", "time"
-    if type.lower() in ["number", "decimal", "numeric", "float", "double"]:
+    if type_str.lower() in ["number", "decimal", "numeric", "float", "double"]:
         return "number", None
-    if type.lower() in ["integer", "int", "long", "bigint"]:
+    if type_str.lower() in ["integer", "int", "long", "bigint"]:
         return "integer", None
-    if type.lower() in ["boolean"]:
+    if type_str.lower() in ["boolean"]:
         return "boolean", None
-    if type.lower() in ["object", "record", "struct"]:
+    if type_str.lower() in ["object", "record", "struct"]:
         return "object", None
-    if type.lower() in ["array"]:
+    if type_str.lower() in ["array"]:
         return "array", None
     return None, None
 
 
-def convert_format(self, format):
-    if format is None:
+def convert_format(format_str: Optional[str]) -> Optional[str]:
+    if format_str is None:
         return None
-    if format.lower() in ["uri"]:
+    if format_str.lower() in ["uri"]:
         return "uri"
-    if format.lower() in ["email"]:
+    if format_str.lower() in ["email"]:
         return "email"
-    if format.lower() in ["uuid"]:
+    if format_str.lower() in ["uuid"]:
         return "uuid"
-    if format.lower() in ["boolean"]:
+    if format_str.lower() in ["boolean"]:
         return "boolean"
     return None
 
 
-def to_jsonschema(model_key, model_value: Model) -> dict:
+def to_jsonschema(model_key: str, model_value: SchemaObject) -> dict:
+    properties = model_value.properties or []
     model = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "properties": to_properties(model_value.fields),
-        "required": to_required(model_value.fields),
+        "properties": to_properties(properties),
+        "required": to_required(properties),
     }
-    if model_value.title:
-        model["title"] = model_value.title
+    if model_value.businessName:
+        model["title"] = model_value.businessName
     if model_value.description:
         model["description"] = model_value.description
 

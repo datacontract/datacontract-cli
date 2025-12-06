@@ -1,7 +1,7 @@
 import yaml
 
 from datacontract.export.sodacl_converter import SodaExporter
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.lint.resolve import resolve_data_contract
 
 
 def test_export_sodacl():
@@ -113,8 +113,7 @@ checks for line_items:
       name: Have at lease 10 line items
 """
 
-    data = yaml.safe_load(data_contract_specification_str)
-    data_contract_specification = DataContractSpecification(**data)
+    data_contract_specification = resolve_data_contract(data_contract_str=data_contract_specification_str)
 
     exporter = SodaExporter(export_format="sodacl")
     result = exporter.export(data_contract_specification, "all", None, "auto", None)

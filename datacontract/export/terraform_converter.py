@@ -1,7 +1,9 @@
 import re
+from typing import Optional
+
+from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
 
 
 class TerraformExporter(Exporter):
@@ -9,28 +11,36 @@ class TerraformExporter(Exporter):
         return to_terraform(data_contract)
 
 
-def to_terraform(data_contract_spec: DataContractSpecification, server_id: str = None) -> str:
-    if data_contract_spec is None:
+def _get_server_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[Server]:
+    """Get a server by name."""
+    if data_contract.servers is None:
+        return None
+    return next((s for s in data_contract.servers if s.server == name), None)
+
+
+def to_terraform(data_contract: OpenDataContractStandard, server_id: str = None) -> str:
+    if data_contract is None:
         return ""
-    if data_contract_spec.servers is None or len(data_contract_spec.servers) == 0:
+    if data_contract.servers is None or len(data_contract.servers) == 0:
         return ""
 
     result = ""
-    for server_name, server in iter(data_contract_spec.servers.items()):
+    for server in data_contract.servers:
+        server_name = server.server
         if server_id is not None and server_name != server_id:
             continue
-        result = server_to_terraform_resource(data_contract_spec, result, server, server_name)
+        result = server_to_terraform_resource(data_contract, result, server, server_name)
 
     return result.strip()
 
 
-def server_to_terraform_resource(data_contract_spec, result, server: Server, server_name):
-    tag_data_contract = data_contract_spec.id
-    tag_name = data_contract_spec.info.title
+def server_to_terraform_resource(data_contract: OpenDataContractStandard, result, server: Server, server_name):
+    tag_data_contract = data_contract.id
+    tag_name = data_contract.name
     tag_server = server_name
     bucket_name = extract_bucket_name(server)
-    resource_id = f"{data_contract_spec.id}_{server_name}"
-    data_product_id = server.dataProductId
+    resource_id = f"{data_contract.id}_{server_name}"
+    data_product_id = data_contract.dataProduct
 
     if data_product_id is not None:
         result += f"""

@@ -1,0 +1,391 @@
+"""DCS Importer - Converts Data Contract Specification (DCS) to ODCS format."""
+
+import logging
+from typing import Any, Dict, List, Optional
+
+from datacontract_specification.model import DataContractSpecification, Field, Model, Server as DCSServer
+from open_data_contract_standard.model import (
+    CustomProperty,
+    DataQuality,
+    Description,
+    OpenDataContractStandard,
+    Relationship,
+    SchemaObject,
+    SchemaProperty,
+    Server as ODCSServer,
+    ServiceLevelAgreementProperty,
+    Team,
+)
+
+from datacontract.imports.importer import Importer
+
+logger = logging.getLogger(__name__)
+
+
+class DcsImporter(Importer):
+    """Importer for Data Contract Specification (DCS) format."""
+
+    def import_source(
+        self, data_contract: OpenDataContractStandard, source: str, import_args: dict
+    ) -> OpenDataContractStandard:
+        from datacontract.lint.resources import read_resource
+        import yaml
+
+        source_str = read_resource(source)
+        dcs_dict = yaml.safe_load(source_str)
+        dcs = parse_dcs_from_dict(dcs_dict)
+        return convert_dcs_to_odcs(dcs)
+
+
+def parse_dcs_from_dict(dcs_dict: dict) -> DataContractSpecification:
+    """Parse a DCS dictionary into a DataContractSpecification object."""
+    return DataContractSpecification(**dcs_dict)
+
+
+def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStandard:
+    """Convert a DCS data contract to ODCS format."""
+    odcs = OpenDataContractStandard(
+        id=dcs.id,
+        kind="DataContract",
+        apiVersion="v3.1.0",
+    )
+
+    # Convert basic info
+    if dcs.info:
+        odcs.name = dcs.info.title
+        odcs.version = dcs.info.version
+        if dcs.info.description:
+            odcs.description = dcs.info.description
+        if dcs.info.owner:
+            odcs.team = Team(name=dcs.info.owner)
+
+    # Convert status
+    if dcs.info and dcs.info.status:
+        odcs.status = dcs.info.status
+
+    # Convert servers
+    if dcs.servers:
+        odcs.servers = _convert_servers(dcs.servers)
+
+    # Convert models to schema
+    if dcs.models:
+        odcs.schema_ = _convert_models_to_schema(dcs.models)
+
+    # Convert service levels to SLA properties
+    if dcs.servicelevels:
+        odcs.slaProperties = _convert_servicelevels(dcs.servicelevels)
+
+    return odcs
+
+
+def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
+    """Convert DCS servers dict to ODCS servers list."""
+    servers = []
+    for server_name, dcs_server in dcs_servers.items():
+        odcs_server = ODCSServer(
+            server=server_name,
+            type=dcs_server.type,
+        )
+
+        # Copy common attributes
+        if dcs_server.environment:
+            odcs_server.environment = dcs_server.environment
+        if dcs_server.account:
+            odcs_server.account = dcs_server.account
+        if dcs_server.database:
+            odcs_server.database = dcs_server.database
+        if dcs_server.schema_:
+            odcs_server.schema_ = dcs_server.schema_
+        if dcs_server.format:
+            odcs_server.format = dcs_server.format
+        if dcs_server.project:
+            odcs_server.project = dcs_server.project
+        if dcs_server.dataset:
+            odcs_server.dataset = dcs_server.dataset
+        if dcs_server.path:
+            odcs_server.path = dcs_server.path
+        if dcs_server.delimiter:
+            odcs_server.delimiter = dcs_server.delimiter
+        if dcs_server.endpointUrl:
+            odcs_server.endpointUrl = dcs_server.endpointUrl
+        if dcs_server.location:
+            odcs_server.location = dcs_server.location
+        if dcs_server.host:
+            odcs_server.host = dcs_server.host
+        if dcs_server.port:
+            odcs_server.port = dcs_server.port
+        if dcs_server.catalog:
+            odcs_server.catalog = dcs_server.catalog
+        if dcs_server.topic:
+            odcs_server.topic = dcs_server.topic
+        if getattr(dcs_server, "http_path", None):
+            odcs_server.http_path = dcs_server.http_path
+        if getattr(dcs_server, "driver", None):
+            odcs_server.driver = dcs_server.driver
+
+        servers.append(odcs_server)
+
+    return servers
+
+
+def _convert_models_to_schema(models: Dict[str, Model]) -> List[SchemaObject]:
+    """Convert DCS models dict to ODCS schema list."""
+    schema = []
+    for model_name, model in models.items():
+        schema_obj = SchemaObject(
+            name=model_name,
+            physicalType=model.type,
+            description=model.description,
+        )
+
+        # Convert config.*Table to physicalName
+        if model.config:
+            physical_name = _get_physical_name_from_config(model.config)
+            if physical_name:
+                schema_obj.physicalName = physical_name
+
+        # Convert fields to properties
+        # Pass model-level primaryKey list to set primaryKey and primaryKeyPosition on fields
+        model_primary_keys = model.primaryKey if hasattr(model, 'primaryKey') and model.primaryKey else []
+        if model.fields:
+            schema_obj.properties = _convert_fields_to_properties(model.fields, model_primary_keys)
+
+        # Convert quality rules
+        if model.quality:
+            schema_obj.quality = _convert_quality_list(model.quality)
+
+        schema.append(schema_obj)
+
+    return schema
+
+
+def _get_physical_name_from_config(config: Dict[str, Any]) -> Optional[str]:
+    """Extract physical table name from DCS model config."""
+    # Check for server-specific table name config keys
+    table_config_keys = [
+        "postgresTable",
+        "databricksTable",
+        "snowflakeTable",
+        "sqlserverTable",
+        "bigqueryTable",
+        "redshiftTable",
+        "oracleTable",
+        "mysqlTable",
+    ]
+    for key in table_config_keys:
+        if key in config and config[key]:
+            return config[key]
+    return None
+
+
+def _convert_fields_to_properties(fields: Dict[str, Field], model_primary_keys: List[str] = None) -> List[SchemaProperty]:
+    """Convert DCS fields dict to ODCS properties list."""
+    model_primary_keys = model_primary_keys or []
+    properties = []
+    for field_name, field in fields.items():
+        # Determine primaryKeyPosition from model-level primaryKey list
+        primary_key_position = None
+        if field_name in model_primary_keys:
+            primary_key_position = model_primary_keys.index(field_name) + 1
+        prop = _convert_field_to_property(field_name, field, primary_key_position)
+        properties.append(prop)
+    return properties
+
+
+def _convert_field_to_property(field_name: str, field: Field, primary_key_position: int = None) -> SchemaProperty:
+    """Convert a DCS field to an ODCS property."""
+    prop = SchemaProperty(name=field_name)
+
+    # Preserve original type as physicalType and convert to logicalType
+    if field.type:
+        prop.physicalType = field.type
+        prop.logicalType = _convert_type_to_logical_type(field.type)
+
+    # Copy direct attributes
+    if field.description:
+        prop.description = field.description
+    if field.required is not None:
+        prop.required = field.required
+    if field.unique is not None:
+        prop.unique = field.unique
+    # Set primaryKey from field-level or model-level primaryKey
+    if field.primaryKey is not None:
+        prop.primaryKey = field.primaryKey
+    elif primary_key_position is not None:
+        prop.primaryKey = True
+        prop.primaryKeyPosition = primary_key_position
+    if field.title:
+        prop.businessName = field.title
+    if field.classification:
+        prop.classification = field.classification
+    if field.tags:
+        prop.tags = field.tags
+
+    # Convert constraints to logicalTypeOptions
+    logical_type_options = {}
+    if field.minLength is not None:
+        logical_type_options["minLength"] = field.minLength
+    if field.maxLength is not None:
+        logical_type_options["maxLength"] = field.maxLength
+    if field.pattern:
+        logical_type_options["pattern"] = field.pattern
+    if field.minimum is not None:
+        logical_type_options["minimum"] = field.minimum
+    if field.maximum is not None:
+        logical_type_options["maximum"] = field.maximum
+    if field.exclusiveMinimum is not None:
+        logical_type_options["exclusiveMinimum"] = field.exclusiveMinimum
+    if field.exclusiveMaximum is not None:
+        logical_type_options["exclusiveMaximum"] = field.exclusiveMaximum
+    if field.enum:
+        logical_type_options["enum"] = field.enum
+    if field.format:
+        logical_type_options["format"] = field.format
+
+    if logical_type_options:
+        prop.logicalTypeOptions = logical_type_options
+
+    # Convert config to customProperties
+    custom_properties = []
+    if field.pii is not None:
+        custom_properties.append(CustomProperty(property="pii", value=str(field.pii)))
+    if field.precision is not None:
+        custom_properties.append(CustomProperty(property="precision", value=str(field.precision)))
+    if field.scale is not None:
+        custom_properties.append(CustomProperty(property="scale", value=str(field.scale)))
+    if field.config:
+        for key, value in field.config.items():
+            custom_properties.append(CustomProperty(property=key, value=str(value)))
+
+    if custom_properties:
+        prop.customProperties = custom_properties
+
+    # Convert references to relationships
+    if field.references:
+        prop.relationships = [Relationship(type="foreignKey", to=field.references)]
+
+    # Convert nested fields (for object types)
+    if field.fields:
+        prop.properties = _convert_fields_to_properties(field.fields)
+
+    # Convert items (for array types)
+    if field.items:
+        prop.items = _convert_field_to_property("item", field.items)
+
+    # Convert quality rules
+    if field.quality:
+        prop.quality = _convert_quality_list(field.quality)
+
+    return prop
+
+
+def _convert_type_to_logical_type(dcs_type: str) -> str:
+    """Convert DCS type to ODCS logical type."""
+    if dcs_type is None:
+        return "string"
+
+    t = dcs_type.lower()
+
+    # Map DCS types to ODCS logical types
+    type_mapping = {
+        "string": "string",
+        "text": "string",
+        "varchar": "string",
+        "char": "string",
+        "integer": "integer",
+        "int": "integer",
+        "long": "integer",
+        "bigint": "integer",
+        "float": "number",
+        "double": "number",
+        "decimal": "number",
+        "numeric": "number",
+        "number": "number",
+        "boolean": "boolean",
+        "bool": "boolean",
+        "timestamp": "timestamp",
+        "timestamp_tz": "timestamp",
+        "timestamp_ntz": "timestamp",
+        "date": "date",
+        "time": "string",   # not supported in ODCS
+        "datetime": "timestamp",
+        "array": "array",
+        "object": "object",
+        "record": "object",
+        "struct": "object",
+        "map": "object",
+        "bytes": "string",   # not supported in ODCS
+        "binary": "string",  # not supported in ODCS
+        "null": "string",    # not supported in ODCS
+    }
+
+    return type_mapping.get(t, t)
+
+
+def _convert_quality_list(quality_list: list) -> List[DataQuality]:
+    """Convert DCS quality list to ODCS DataQuality list."""
+    if not quality_list:
+        return []
+
+    result = []
+    for q in quality_list:
+        if q is None:
+            continue
+        dq = DataQuality(type=getattr(q, "type", None))
+        if hasattr(q, "description") and q.description:
+            dq.description = q.description
+        if hasattr(q, "query") and q.query:
+            dq.query = q.query
+        if hasattr(q, "metric") and q.metric:
+            dq.rule = q.metric
+        if hasattr(q, "mustBe") and q.mustBe is not None:
+            dq.mustBe = q.mustBe
+        if hasattr(q, "mustNotBe") and q.mustNotBe is not None:
+            dq.mustNotBe = q.mustNotBe
+        if hasattr(q, "mustBeGreaterThan") and q.mustBeGreaterThan is not None:
+            dq.mustBeGreaterThan = q.mustBeGreaterThan
+        if hasattr(q, "mustBeGreaterOrEqualTo") and q.mustBeGreaterOrEqualTo is not None:
+            dq.mustBeGreaterOrEqualTo = q.mustBeGreaterOrEqualTo
+        if hasattr(q, "mustBeGreaterThanOrEqualTo") and q.mustBeGreaterThanOrEqualTo is not None:
+            dq.mustBeGreaterOrEqualTo = q.mustBeGreaterThanOrEqualTo
+        if hasattr(q, "mustBeLessThan") and q.mustBeLessThan is not None:
+            dq.mustBeLessThan = q.mustBeLessThan
+        if hasattr(q, "mustBeLessOrEqualTo") and q.mustBeLessOrEqualTo is not None:
+            dq.mustBeLessOrEqualTo = q.mustBeLessOrEqualTo
+        if hasattr(q, "mustBeLessThanOrEqualTo") and q.mustBeLessThanOrEqualTo is not None:
+            dq.mustBeLessOrEqualTo = q.mustBeLessThanOrEqualTo
+        if hasattr(q, "mustBeBetween") and q.mustBeBetween is not None:
+            dq.mustBeBetween = q.mustBeBetween
+        if hasattr(q, "mustNotBeBetween") and q.mustNotBeBetween is not None:
+            dq.mustNotBeBetween = q.mustNotBeBetween
+        if hasattr(q, "engine") and q.engine:
+            dq.engine = q.engine
+        if hasattr(q, "implementation") and q.implementation:
+            dq.implementation = q.implementation
+
+        result.append(dq)
+
+    return result
+
+
+def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProperty]:
+    """Convert DCS service levels to ODCS SLA properties."""
+    sla_properties = []
+
+    if hasattr(servicelevels, "availability") and servicelevels.availability:
+        sla_properties.append(
+            ServiceLevelAgreementProperty(
+                property="generalAvailability",
+                value=servicelevels.availability.description if hasattr(servicelevels.availability, "description") else str(servicelevels.availability),
+            )
+        )
+
+    if hasattr(servicelevels, "retention") and servicelevels.retention:
+        sla_properties.append(
+            ServiceLevelAgreementProperty(
+                property="retention",
+                value=servicelevels.retention.period if hasattr(servicelevels.retention, "period") else str(servicelevels.retention),
+            )
+        )
+
+    return sla_properties

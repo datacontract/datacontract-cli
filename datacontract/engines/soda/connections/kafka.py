@@ -2,9 +2,10 @@ import atexit
 import logging
 import os
 import tempfile
+from typing import List, Optional
 
 from datacontract.export.avro_converter import to_avro_schema_json
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Server
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
@@ -44,7 +45,7 @@ def create_spark_session():
     return spark
 
 
-def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Server):
+def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Server):
     """Read and process data from a Kafka topic based on the server configuration."""
 
     logging.info("Reading data from Kafka server %s topic %s", server.host, server.topic)
@@ -57,13 +58,23 @@ def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Se
         .load()
     )
 
-    model_name, model = next(iter(data_contract.models.items()))
+    if not data_contract.schema_ or len(data_contract.schema_) == 0:
+        raise DataContractException(
+            type="test",
+            name="Configuring Kafka checks",
+            result="warning",
+            reason="No schema defined in data contract. Skip executing tests.",
+            engine="datacontract",
+        )
+
+    schema_obj = data_contract.schema_[0]
+    model_name = schema_obj.name
 
     match server.format:
         case "avro":
-            process_avro_format(df, model_name, model)
+            process_avro_format(df, model_name, schema_obj)
         case "json":
-            process_json_format(df, model_name, model)
+            process_json_format(df, model_name, schema_obj)
         case _:
             raise DataContractException(
                 type="test",
@@ -74,7 +85,7 @@ def read_kafka_topic(spark, data_contract: DataContractSpecification, server: Se
             )
 
 
-def process_avro_format(df, model_name, model):
+def process_avro_format(df, model_name: str, schema_obj: SchemaObject):
     try:
         from pyspark.sql.avro.functions import from_avro
         from pyspark.sql.functions import col, expr
@@ -88,7 +99,7 @@ def process_avro_format(df, model_name, model):
             original_exception=e,
         )
 
-    avro_schema = to_avro_schema_json(model_name, model)
+    avro_schema = to_avro_schema_json(model_name, schema_obj)
     df2 = df.withColumn("fixedValue", expr("substring(value, 6, length(value)-5)"))
     options = {"mode": "PERMISSIVE"}
     df2.select(from_avro(col("fixedValue"), avro_schema, options).alias("avro")).select(
@@ -96,7 +107,7 @@ def process_avro_format(df, model_name, model):
     ).createOrReplaceTempView(model_name)
 
 
-def process_json_format(df, model_name, model):
+def process_json_format(df, model_name: str, schema_obj: SchemaObject):
     try:
         from pyspark.sql.functions import col, from_json
     except ImportError as e:
@@ -109,7 +120,7 @@ def process_json_format(df, model_name, model):
             original_exception=e,
         )
 
-    struct_type = to_struct_type(model.fields)
+    struct_type = to_struct_type(schema_obj.properties or [])
     df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").select(
         from_json(col("value"), struct_type, {"mode": "PERMISSIVE"}).alias("json")
     ).select(col("json.*")).createOrReplaceTempView(model_name)
@@ -154,7 +165,16 @@ def get_auth_options():
     }
 
 
-def to_struct_type(fields):
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the type from a schema property. Prefers physicalType for accurate type checking."""
+    if prop.physicalType:
+        return prop.physicalType
+    if prop.logicalType:
+        return prop.logicalType
+    return None
+
+
+def to_struct_type(properties: List[SchemaProperty]):
     try:
         from pyspark.sql.types import StructType
     except ImportError as e:
@@ -168,10 +188,10 @@ def to_struct_type(fields):
         )
 
     """Convert field definitions to Spark StructType."""
-    return StructType([to_struct_field(field_name, field) for field_name, field in fields.items()])
+    return StructType([to_struct_field(prop.name, prop) for prop in properties])
 
 
-def to_struct_field(field_name: str, field: Field):
+def to_struct_field(field_name: str, prop: SchemaProperty):
     try:
         from pyspark.sql.types import (
             ArrayType,
@@ -201,7 +221,8 @@ def to_struct_field(field_name: str, field: Field):
         )
 
     """Map field definitions to Spark StructField using match-case."""
-    match field.type:
+    field_type = _get_type(prop)
+    match field_type:
         case "string" | "varchar" | "text":
             data_type = StringType()
         case "number" | "decimal" | "numeric":
@@ -223,23 +244,19 @@ def to_struct_field(field_name: str, field: Field):
         case "time":
             data_type = DataType()  # Specific handling for time type
         case "object" | "record" | "struct":
-            data_type = StructType(
-                [to_struct_field(sub_field_name, sub_field) for sub_field_name, sub_field in field.fields.items()]
-            )
+            nested_props = prop.properties or []
+            data_type = StructType([to_struct_field(p.name, p) for p in nested_props])
         case "binary":
             data_type = BinaryType()
         case "array":
-            element_type = (
-                StructType(
-                    [to_struct_field(sub_field_name, sub_field) for sub_field_name, sub_field in field.fields.items()]
-                )
-                if field.fields
-                else DataType()
-            )
+            if prop.items and prop.items.properties:
+                element_type = StructType([to_struct_field(p.name, p) for p in prop.items.properties])
+            else:
+                element_type = DataType()
             data_type = ArrayType(element_type)
         case "null":
             data_type = NullType()
         case _:
             data_type = DataType()  # Fallback generic DataType
 
-    return StructField(field_name, data_type, nullable=not field.required)
+    return StructField(field_name, data_type, nullable=not prop.required)
