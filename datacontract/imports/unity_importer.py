@@ -97,6 +97,7 @@ def import_unity_from_api(
             reason="",
             engine="datacontract",
         )
+
         if not profile and not host and not token:
             reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set"
             exception.reason = reason
