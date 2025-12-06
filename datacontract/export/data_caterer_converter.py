@@ -26,10 +26,10 @@ def _get_server_by_name(data_contract: OpenDataContractStandard, name: str) -> O
 
 def _get_type(prop: SchemaProperty) -> Optional[str]:
     """Get the type from a schema property."""
-    if prop.logicalType:
-        return prop.logicalType
     if prop.physicalType:
         return prop.physicalType
+    if prop.logicalType:
+        return prop.logicalType
     return None
 
 
