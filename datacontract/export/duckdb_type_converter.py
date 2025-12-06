@@ -29,8 +29,7 @@ def convert_to_duckdb_csv_type(prop: SchemaProperty) -> None | str:
     if datacontract_type.lower() in ["time"]:
         return "TIME"
     if datacontract_type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "VARCHAR"
+        return "DOUBLE"
     if datacontract_type.lower() in ["float", "double"]:
         return "DOUBLE"
     if datacontract_type.lower() in ["integer", "int", "long", "bigint"]:
