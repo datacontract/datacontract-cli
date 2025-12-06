@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.export.exporter import ExportFormat
 from datacontract.export.jsonschema_converter import to_jsonschemas
 from datacontract.model.data_contract_specification import DataContractSpecification
 
@@ -173,6 +174,16 @@ def test_to_jsonschemas_complex_2():
 """
     result = to_jsonschemas(data_contract)
     assert result["sts_data"] == json.loads(expected_json_schema)
+
+
+def test_odcs_to_jsonschema():
+    data_contract_file = "fixtures/jsonschema/jsonschema.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+    expected_json_schema = read_file("fixtures/jsonschema/jsonschema.json")
+
+    result = data_contract.export(export_format=ExportFormat.jsonschema)
+
+    assert json.loads(result) == json.loads(expected_json_schema)
 
 
 def read_file(data_contract_file):

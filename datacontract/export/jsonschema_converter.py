@@ -90,7 +90,22 @@ def to_property(field: Field) -> dict:
     if field.classification is not None:
         property["classification"] = field.classification
 
-    # TODO: all constraints
+    # Export constraints from config (for fields not directly available on Field model)
+    if field.config:
+        if "multipleOf" in field.config and field.config["multipleOf"] is not None:
+            property["multipleOf"] = field.config["multipleOf"]
+        if "minItems" in field.config and field.config["minItems"] is not None:
+            property["minItems"] = field.config["minItems"]
+        if "maxItems" in field.config and field.config["maxItems"] is not None:
+            property["maxItems"] = field.config["maxItems"]
+        # Only export uniqueItems when it's true (default is false, so don't export false)
+        if "uniqueItems" in field.config and field.config["uniqueItems"] is True:
+            property["uniqueItems"] = field.config["uniqueItems"]
+        if "minProperties" in field.config and field.config["minProperties"] is not None:
+            property["minProperties"] = field.config["minProperties"]
+        if "maxProperties" in field.config and field.config["maxProperties"] is not None:
+            property["maxProperties"] = field.config["maxProperties"]
+
     return property
 
 
