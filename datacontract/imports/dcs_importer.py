@@ -337,7 +337,7 @@ def _convert_quality_list(quality_list: list) -> List[DataQuality]:
         if hasattr(q, "query") and q.query:
             dq.query = q.query
         if hasattr(q, "metric") and q.metric:
-            dq.rule = q.metric
+            dq.metric = q.metric
         if hasattr(q, "mustBe") and q.mustBe is not None:
             dq.mustBe = q.mustBe
         if hasattr(q, "mustNotBe") and q.mustNotBe is not None:
