@@ -56,6 +56,28 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _parse_default_value(value: str):
+    """Parse a default value string to its proper type (bool, int, float, or string)."""
+    if value.lower() == "true":
+        return True
+    if value.lower() == "false":
+        return False
+    if value.lower() == "null":
+        return None
+    # Try parsing as int
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    # Try parsing as float
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    # Return as string
+    return value
+
+
 def to_avro_field(prop: SchemaProperty) -> dict:
     avro_field = {"name": prop.name}
     if prop.description is not None:
@@ -84,7 +106,8 @@ def to_avro_field(prop: SchemaProperty) -> dict:
     avro_default = _get_config_value(prop, "avroDefault")
     if avro_default is not None:
         if avro_config_type != "enum":
-            avro_field["default"] = avro_default
+            # Parse the default value to its proper type
+            avro_field["default"] = _parse_default_value(avro_default)
 
     return avro_field
 
@@ -114,7 +137,42 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
     if enum_values and avro_type == "enum":
         return "enum"
 
+    # Use physicalType for more specific type mappings, fall back to logicalType
+    physical_type = prop.physicalType.lower() if prop.physicalType else None
     field_type = prop.logicalType
+
+    # Handle specific physical types that need special treatment
+    if physical_type in ["float"]:
+        return "float"
+    elif physical_type in ["double"]:
+        return "double"
+    elif physical_type in ["long", "bigint"]:
+        return "long"
+    elif physical_type in ["decimal"]:
+        typeVal = {"type": "bytes", "logicalType": "decimal"}
+        # Read precision/scale from customProperties
+        scale = _get_config_value(prop, "scale")
+        precision = _get_config_value(prop, "precision")
+        if scale is not None:
+            typeVal["scale"] = int(scale)
+        if precision is not None:
+            typeVal["precision"] = int(precision)
+        return typeVal
+    elif physical_type in ["map"]:
+        values_type = _get_config_value(prop, "values")
+        if values_type:
+            # Parse JSON array if values is a string like '["string", "long"]'
+            import json
+            try:
+                parsed_values = json.loads(values_type)
+                return {"type": "map", "values": parsed_values}
+            except (json.JSONDecodeError, TypeError):
+                return {"type": "map", "values": values_type}
+        else:
+            return "bytes"
+    elif physical_type in ["timestamp_ntz"]:
+        return {"type": "long", "logicalType": "local-timestamp-millis"}
+
     if field_type is None:
         return "null"
     if field_type.lower() in ["string", "varchar", "text"]:
@@ -124,12 +182,13 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         return "bytes"
     elif field_type.lower() in ["decimal"]:
         typeVal = {"type": "bytes", "logicalType": "decimal"}
-        scale = _get_logical_type_option(prop, "scale")
-        precision = _get_logical_type_option(prop, "precision")
+        # Read precision/scale from customProperties
+        scale = _get_config_value(prop, "scale")
+        precision = _get_config_value(prop, "precision")
         if scale is not None:
-            typeVal["scale"] = scale
+            typeVal["scale"] = int(scale)
         if precision is not None:
-            typeVal["precision"] = precision
+            typeVal["precision"] = int(precision)
         return typeVal
     elif field_type.lower() in ["float"]:
         return "float"

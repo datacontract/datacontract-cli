@@ -1,5 +1,6 @@
 """DCS Importer - Converts Data Contract Specification (DCS) to ODCS format."""
 
+import json
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -117,7 +118,10 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
         if dcs_server.catalog:
             odcs_server.catalog = dcs_server.catalog
         if dcs_server.topic:
-            odcs_server.topic = dcs_server.topic
+            # Store topic in customProperties since ODCS Server doesn't have a topic field
+            if odcs_server.customProperties is None:
+                odcs_server.customProperties = []
+            odcs_server.customProperties.append(CustomProperty(property="topic", value=dcs_server.topic))
         if getattr(dcs_server, "http_path", None):
             odcs_server.http_path = dcs_server.http_path
         if getattr(dcs_server, "driver", None):
@@ -143,6 +147,12 @@ def _convert_models_to_schema(models: Dict[str, Model]) -> List[SchemaObject]:
             physical_name = _get_physical_name_from_config(model.config)
             if physical_name:
                 schema_obj.physicalName = physical_name
+
+        # Store namespace in customProperties for Avro export
+        if hasattr(model, 'namespace') and model.namespace:
+            if schema_obj.customProperties is None:
+                schema_obj.customProperties = []
+            schema_obj.customProperties.append(CustomProperty(property="namespace", value=model.namespace))
 
         # Convert fields to properties
         # Pass model-level primaryKey list to set primaryKey and primaryKeyPosition on fields
@@ -255,7 +265,11 @@ def _convert_field_to_property(field_name: str, field: Field, primary_key_positi
         custom_properties.append(CustomProperty(property="scale", value=str(field.scale)))
     if field.config:
         for key, value in field.config.items():
-            custom_properties.append(CustomProperty(property=key, value=str(value)))
+            # Use JSON serialization for lists and dicts to preserve structure
+            if isinstance(value, (list, dict)):
+                custom_properties.append(CustomProperty(property=key, value=json.dumps(value)))
+            else:
+                custom_properties.append(CustomProperty(property=key, value=str(value)))
 
     if custom_properties:
         prop.customProperties = custom_properties
