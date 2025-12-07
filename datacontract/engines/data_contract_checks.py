@@ -15,7 +15,6 @@ from open_data_contract_standard.model import (
 )
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.run import Check
-from tests.test_test_dataframe import schema
 
 
 @dataclass
