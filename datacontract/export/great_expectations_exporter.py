@@ -76,6 +76,16 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _get_enum_from_custom_properties(prop: SchemaProperty) -> Optional[List[str]]:
+    """Get enum values from customProperties (used when importing from DCS)."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == "enum" and cp.value:
+            return json.loads(cp.value)
+    return None
+
+
 def to_great_expectations(
     odcs: OpenDataContractStandard,
     schema_name: str,
@@ -207,7 +217,7 @@ def add_field_expectations(
     if minimum is not None or maximum is not None:
         expectations.append(to_column_min_max_exp(field_name, minimum, maximum))
 
-    enum_values = _get_logical_type_option(prop, "enum")
+    enum_values = _get_logical_type_option(prop, "enum") or _get_enum_from_custom_properties(prop)
     if enum_values is not None and len(enum_values) != 0:
         expectations.append(to_column_enum_exp(field_name, enum_values))
 

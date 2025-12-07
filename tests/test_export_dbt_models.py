@@ -15,7 +15,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "dbt"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "dbt"])
     assert result.exit_code == 0
 
 
@@ -81,7 +81,7 @@ models:
 
 
 def test_to_dbt_models_with_server():
-    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("fixtures/export/datacontract.yaml"))
+    odcs = OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
     expected_dbt_model = """
 version: 2
 models:
@@ -136,7 +136,7 @@ models:
                 - 'delivered'
 """
 
-    result = yaml.safe_load(to_dbt_models_yaml(data_contract, server="bigquery"))
+    result = yaml.safe_load(to_dbt_models_yaml(odcs, server="bigquery"))
 
     assert result == yaml.safe_load(expected_dbt_model)
 

@@ -58,11 +58,12 @@ schema:
     primaryKey: true
     primaryKeyPosition: 2
     logicalType: string
-    logicalTypeOptions:
-      enum:
-      - pending
-      - shipped
-      - delivered
+    customProperties:
+      - property: enum
+        value:
+          - pending
+          - shipped
+          - delivered
     required: true
   quality:
   - description: Row Count

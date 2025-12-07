@@ -8,12 +8,12 @@ from datacontract.data_contract import DataContract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "go"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "go"])
     assert result.exit_code == 0
 
 
 def test_to_go_types():
-    actual = DataContract(data_contract_file="fixtures/export/datacontract.yaml").export("go")
+    actual = DataContract(data_contract_file="fixtures/export/datacontract.odcs.yaml").export("go")
     expected = """
 package main
 

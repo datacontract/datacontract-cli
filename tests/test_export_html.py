@@ -10,7 +10,7 @@ from datacontract.cli import app
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "html"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "html"])
     assert result.exit_code == 0
 
 
@@ -20,7 +20,7 @@ def test_cli_with_output(tmp_path: Path):
         app,
         [
             "export",
-            "./fixtures/export/datacontract.yaml",
+            "./fixtures/export/datacontract.odcs.yaml",
             "--format",
             "html",
             "--output",

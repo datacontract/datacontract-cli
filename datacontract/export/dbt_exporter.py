@@ -59,21 +59,21 @@ def _get_server_by_name(data_contract: OpenDataContractStandard, name: str):
     return next((s for s in data_contract.servers if s.server == name), None)
 
 
-def to_dbt_models_yaml(data_contract: OpenDataContractStandard, server: str = None) -> str:
+def to_dbt_models_yaml(odcs: OpenDataContractStandard, server: str = None) -> str:
     dbt = {
         "version": 2,
         "models": [],
     }
 
-    if data_contract.schema_:
-        for schema_obj in data_contract.schema_:
-            dbt_model = _to_dbt_model(schema_obj.name, schema_obj, data_contract, adapter_type=server)
+    if odcs.schema_:
+        for schema_obj in odcs.schema_:
+            dbt_model = _to_dbt_model(schema_obj.name, schema_obj, odcs, adapter_type=server)
             dbt["models"].append(dbt_model)
     return yaml.safe_dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def to_dbt_staging_sql(data_contract: OpenDataContractStandard, model_name: str, model_value: SchemaObject) -> str:
-    contract_id = data_contract.id
+def to_dbt_staging_sql(odcs: OpenDataContractStandard, model_name: str, model_value: SchemaObject) -> str:
+    contract_id = odcs.id
     columns = []
     if model_value.properties:
         for prop in model_value.properties:
@@ -86,19 +86,19 @@ def to_dbt_staging_sql(data_contract: OpenDataContractStandard, model_name: str,
 """
 
 
-def to_dbt_sources_yaml(data_contract: OpenDataContractStandard, server: str = None):
-    source = {"name": data_contract.id}
+def to_dbt_sources_yaml(odcs: OpenDataContractStandard, server: str = None):
+    source = {"name": odcs.id}
     dbt = {
         "version": 2,
         "sources": [source],
     }
-    owner = _get_owner(data_contract)
+    owner = _get_owner(odcs)
     if owner is not None:
         source["meta"] = {"owner": owner}
-    if data_contract.description is not None:
-        source["description"] = data_contract.description.strip().replace("\n", " ")
+    if odcs.description is not None:
+        source["description"] = odcs.description.strip().replace("\n", " ")
 
-    found_server = _get_server_by_name(data_contract, server) if server else None
+    found_server = _get_server_by_name(odcs, server) if server else None
     adapter_type = None
     if found_server is not None:
         adapter_type = found_server.type
@@ -110,15 +110,15 @@ def to_dbt_sources_yaml(data_contract: OpenDataContractStandard, server: str = N
             source["schema"] = found_server.schema_
 
     source["tables"] = []
-    if data_contract.schema_:
-        for schema_obj in data_contract.schema_:
-            dbt_model = _to_dbt_source_table(data_contract, schema_obj.name, schema_obj, adapter_type)
+    if odcs.schema_:
+        for schema_obj in odcs.schema_:
+            dbt_model = _to_dbt_source_table(odcs, schema_obj.name, schema_obj, adapter_type)
             source["tables"].append(dbt_model)
     return yaml.dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 
 
 def _to_dbt_source_table(
-    data_contract: OpenDataContractStandard, model_key: str, model_value: SchemaObject, adapter_type: Optional[str]
+    odcs: OpenDataContractStandard, model_key: str, model_value: SchemaObject, adapter_type: Optional[str]
 ) -> dict:
     dbt_model = {
         "name": model_key,
@@ -126,38 +126,38 @@ def _to_dbt_source_table(
 
     if model_value.description is not None:
         dbt_model["description"] = model_value.description.strip().replace("\n", " ")
-    columns = _to_columns(data_contract, model_value.properties or [], False, adapter_type)
+    columns = _to_columns(odcs, model_value.properties or [], False, adapter_type)
     if columns:
         dbt_model["columns"] = columns
     return dbt_model
 
 
 def _to_dbt_model(
-    model_key: str, model_value: SchemaObject, data_contract: OpenDataContractStandard, adapter_type: Optional[str]
+    schema_name: str, schema_object: SchemaObject, odcs: OpenDataContractStandard, adapter_type: Optional[str]
 ) -> dict:
     dbt_model = {
-        "name": model_key,
+        "name": schema_name,
     }
-    model_type = _to_dbt_model_type(model_value.physicalType)
+    model_type = _to_dbt_model_type(schema_object.physicalType)
 
-    dbt_model["config"] = {"meta": {"data_contract": data_contract.id}}
+    dbt_model["config"] = {"meta": {"data_contract": odcs.id}}
 
     if model_type:
         dbt_model["config"]["materialized"] = model_type
 
-    owner = _get_owner(data_contract)
+    owner = _get_owner(odcs)
     if owner is not None:
         dbt_model["config"]["meta"]["owner"] = owner
 
     if _supports_constraints(model_type):
         dbt_model["config"]["contract"] = {"enforced": True}
-    if model_value.description is not None:
-        dbt_model["description"] = model_value.description.strip().replace("\n", " ")
+    if schema_object.description is not None:
+        dbt_model["description"] = schema_object.description.strip().replace("\n", " ")
 
     # Handle model-level primaryKey from properties
     primary_key_columns = []
-    if model_value.properties:
-        for prop in model_value.properties:
+    if schema_object.properties:
+        for prop in schema_object.properties:
             if prop.primaryKey:
                 primary_key_columns.append(prop.name)
 
@@ -168,7 +168,7 @@ def _to_dbt_model(
         ]
 
     columns = _to_columns(
-        data_contract, model_value.properties or [], _supports_constraints(model_type), adapter_type, primary_key_columns
+        odcs, schema_object.properties or [], _supports_constraints(model_type), adapter_type, primary_key_columns
     )
     if columns:
         dbt_model["columns"] = columns
@@ -194,7 +194,7 @@ def _supports_constraints(model_type: Optional[str]) -> bool:
 
 
 def _to_columns(
-    data_contract: OpenDataContractStandard,
+    odcs: OpenDataContractStandard,
     properties: List[SchemaProperty],
     supports_constraints: bool,
     adapter_type: Optional[str],
@@ -207,7 +207,7 @@ def _to_columns(
         is_primary_key = prop.name in primary_key_columns
         # Only pass is_primary_key for unique constraint if it's a single-column PK
         # Composite PKs use unique_combination_of_columns at model level instead
-        column = _to_column(data_contract, prop, supports_constraints, adapter_type, is_primary_key, is_single_pk)
+        column = _to_column(odcs, prop, supports_constraints, adapter_type, is_primary_key, is_single_pk)
         columns.append(column)
     return columns
 

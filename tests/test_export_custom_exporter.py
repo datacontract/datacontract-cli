@@ -22,7 +22,7 @@ exporter_factory.register_exporter("custom_exporter", CustomExporter)
 
 
 def test_custom_exporter():
-    result = DataContract(data_contract_file="./fixtures/export/datacontract.yaml", server="production").export(
+    result = DataContract(data_contract_file="./fixtures/export/datacontract.odcs.yaml", server="production").export(
         export_format="custom_exporter", schema_name="orders", server="production", custom_arg="my_custom_arg"
     )
     # Verify result contains expected key components (Server model repr differs between DCS/ODCS)

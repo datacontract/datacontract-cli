@@ -12,7 +12,7 @@ from datacontract_specification.model import DataContractSpecification
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(
-        app, ["export", "./fixtures/export/datacontract.yaml", "--format", "dbt-sources", "--server", "production"]
+        app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "dbt-sources", "--server", "production"]
     )
     print(result.stdout)
     assert result.exit_code == 0
@@ -28,7 +28,7 @@ def test_cli_bigquery():
 
 
 def test_to_dbt_sources():
-    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("fixtures/export/datacontract.yaml"))
+    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("fixtures/export/datacontract.odcs.yaml"))
     expected_dbt_model = """
 version: 2
 sources:

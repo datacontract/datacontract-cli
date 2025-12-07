@@ -20,7 +20,7 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/export/datacontract.yaml",
+            "./fixtures/export/datacontract.odcs.yaml",
             "--format",
             "great-expectations",
         ],
@@ -66,7 +66,7 @@ def test_cli_multi_models_failed():
 
 @pytest.fixture
 def data_contract_basic() -> OpenDataContractStandard:
-    dcs = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    dcs = DataContractSpecification.from_file("fixtures/export/datacontract.odcs.yaml")
     return convert_dcs_to_odcs(dcs)
 
 

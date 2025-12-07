@@ -14,12 +14,12 @@ from open_data_contract_standard.model import OpenDataContractStandard
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "odcs"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "odcs"])
     assert result.exit_code == 0
 
 
 def test_to_odcs():
-    data_contract = resolve_data_contract(data_contract_str=read_file("fixtures/export/datacontract.yaml"))
+    data_contract = resolve_data_contract(data_contract_str=read_file("fixtures/export/datacontract.odcs.yaml"))
 
     # Export to ODCS v3 YAML
     odcs_yaml = to_odcs_v3_yaml(data_contract)
