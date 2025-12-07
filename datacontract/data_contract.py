@@ -162,7 +162,7 @@ class DataContract:
             or export_format == ExportFormat.mermaid
             or export_format == ExportFormat.excel
         ):
-            data_contract = resolve.resolve_data_contract_v2(
+            data_contract = resolve.resolve_data_contract(
                 self._data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
