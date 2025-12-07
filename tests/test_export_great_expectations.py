@@ -40,7 +40,7 @@ def test_cli_multi_models():
             "./fixtures/export/rdf/datacontract-complex.yaml",
             "--format",
             "great-expectations",
-            "--model",
+            "--schema-name",
             "orders",
         ],
     )

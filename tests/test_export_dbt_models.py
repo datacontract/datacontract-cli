@@ -20,7 +20,7 @@ def test_cli():
 
 
 def test_to_dbt_models():
-    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("fixtures/export/datacontract.yaml"))
+    data_contract = OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
     expected_dbt_model = """
 version: 2
 models:
@@ -142,7 +142,7 @@ models:
 
 
 def test_to_dbt_models_with_no_model_type():
-    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("fixtures/export/datacontract_no_model_type.yaml"))
+    data_contract = OpenDataContractStandard.from_file("fixtures/export/datacontract_no_model_type_odcs.yaml")
     expected_dbt_model = """
 version: 2
 models:
