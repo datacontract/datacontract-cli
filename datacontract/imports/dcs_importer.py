@@ -27,7 +27,7 @@ class DcsImporter(Importer):
     """Importer for Data Contract Specification (DCS) format."""
 
     def import_source(
-        self, data_contract: OpenDataContractStandard, source: str, import_args: dict
+        self, source: str, import_args: dict
     ) -> OpenDataContractStandard:
         from datacontract.lint.resources import read_resource
         import yaml
