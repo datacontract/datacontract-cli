@@ -10,7 +10,6 @@ from datacontract.export.exporter import Exporter, _check_models_for_export
 class DqxKeys:
     CHECK = "check"
     ARGUMENTS = "arguments"
-    SPECIFICATION = "specification"
     COL_NAME = "column"
     COL_NAMES = "for_each_column"
     COLUMNS = "columns"
@@ -58,9 +57,8 @@ def process_quality_rule(rule: DataQuality, column_name: str) -> Dict[str, Any]:
     Returns:
         dict: The processed quality rule specification.
     """
-    rule_data = rule.model_extra
-    specification = rule_data[DqxKeys.SPECIFICATION]
-    check = specification[DqxKeys.CHECK]
+    implementation = rule.implementation
+    check = implementation[DqxKeys.CHECK]
 
     if column_name:
         arguments = check.setdefault(DqxKeys.ARGUMENTS, {})
@@ -75,7 +73,7 @@ def process_quality_rule(rule: DataQuality, column_name: str) -> Dict[str, Any]:
             else:
                 arguments[DqxKeys.COLUMNS] = [column_name]
 
-    return specification
+    return implementation
 
 
 def extract_quality_rules(data: Union[SchemaObject, SchemaProperty, DataQuality], column_path: str = "") -> List[Dict[str, Any]]:

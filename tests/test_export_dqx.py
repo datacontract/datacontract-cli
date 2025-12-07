@@ -9,12 +9,12 @@ from datacontract.data_contract import DataContract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/dqx/datacontract.yaml", "--format", "dqx"])
+    result = runner.invoke(app, ["export", "./fixtures/dqx/datacontract.odcs.yaml", "--format", "dqx"])
     assert result.exit_code == 0
 
 
 def test_to_dqx():
-    actual = DataContract(data_contract_file="fixtures/dqx/datacontract.yaml").export("dqx")
+    actual = DataContract(data_contract_file="fixtures/dqx/datacontract.odcs.yaml").export("dqx")
     # Expected quality rules (based on the data contract)
     expected_rules = [
         {"check": {"arguments": {"column": "interaction_id"}, "function": "is_not_null"}, "criticality": "error"},
@@ -204,7 +204,7 @@ def test_to_dqx():
 
 
 def test_extract_none_from_datacontract_without_quality():
-    actual = DataContract(data_contract_file="fixtures/dqx/datacontract_missing_quality.yaml").export("dqx")
+    actual = DataContract(data_contract_file="fixtures/dqx/datacontract_missing_quality.odcs.yaml").export("dqx")
 
     # Expected quality rules (based on the data contract)
     expected_rules = []
