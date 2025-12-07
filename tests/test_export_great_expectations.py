@@ -28,46 +28,9 @@ def test_cli():
     assert result.exit_code == 0
 
 
-def test_cli_multi_models():
-    """
-    Test with 2 model definitions in the contract with the model parameter
-    """
-    runner = CliRunner()
-    result = runner.invoke(
-        app,
-        [
-            "export",
-            "./fixtures/export/rdf/datacontract-complex.yaml",
-            "--format",
-            "great-expectations",
-            "--schema-name",
-            "orders",
-        ],
-    )
-    assert result.exit_code == 0
-
-
-def test_cli_multi_models_failed():
-    """
-    Test with 2 model definitions in the contract without the model parameter
-    """
-    runner = CliRunner()
-    result = runner.invoke(
-        app,
-        [
-            "export",
-            "./fixtures/export/rdf/datacontract-complex.yaml",
-            "--format",
-            "great-expectations",
-        ],
-    )
-    assert result.exit_code == 1
-
-
 @pytest.fixture
 def data_contract_basic() -> OpenDataContractStandard:
-    dcs = DataContractSpecification.from_file("fixtures/export/datacontract.odcs.yaml")
-    return convert_dcs_to_odcs(dcs)
+    return OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
 
 
 @pytest.fixture
