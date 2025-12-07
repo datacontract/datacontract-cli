@@ -257,11 +257,15 @@ def _to_column(
         else:
             column["data_tests"].append("unique")
 
-    enum_str = _get_custom_property_value(prop, "enum")
-    if enum_str:
+    enum_value = _get_custom_property_value(prop, "enum")
+    if enum_value:
         import json
         try:
-            enum_values = json.loads(enum_str)
+            # Handle both list (already parsed) and string (needs parsing)
+            if isinstance(enum_value, list):
+                enum_values = enum_value
+            else:
+                enum_values = json.loads(enum_value)
             if enum_values and len(enum_values) > 0:
                 column["data_tests"].append({"accepted_values": {"values": enum_values}})
         except json.JSONDecodeError:
