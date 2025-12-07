@@ -1,11 +1,23 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import yaml
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import Description, OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.export.sql_type_converter import convert_to_sql_type
+
+
+def _get_description_str(description: Union[str, Description, None]) -> Optional[str]:
+    """Extract description string from either a string or Description object."""
+    if description is None:
+        return None
+    if isinstance(description, str):
+        return description.strip().replace("\n", " ")
+    # Description object - use purpose field
+    if hasattr(description, "purpose") and description.purpose:
+        return description.purpose.strip().replace("\n", " ")
+    return None
 
 
 class DbtExporter(Exporter):
@@ -95,8 +107,9 @@ def to_dbt_sources_yaml(odcs: OpenDataContractStandard, server: str = None):
     owner = _get_owner(odcs)
     if owner is not None:
         source["meta"] = {"owner": owner}
-    if odcs.description is not None:
-        source["description"] = odcs.description.strip().replace("\n", " ")
+    desc_str = _get_description_str(odcs.description)
+    if desc_str is not None:
+        source["description"] = desc_str
 
     found_server = _get_server_by_name(odcs, server) if server else None
     adapter_type = None

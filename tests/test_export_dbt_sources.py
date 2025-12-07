@@ -5,6 +5,7 @@ from datacontract.cli import app
 from datacontract.export.dbt_exporter import to_dbt_sources_yaml
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -28,7 +29,7 @@ def test_cli_bigquery():
 
 
 def test_to_dbt_sources():
-    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("fixtures/export/datacontract.odcs.yaml"))
+    data_contract = OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
     expected_dbt_model = """
 version: 2
 sources:
