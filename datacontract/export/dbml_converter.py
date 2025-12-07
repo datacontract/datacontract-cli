@@ -37,8 +37,8 @@ def _get_references(prop: SchemaProperty) -> Optional[str]:
     """Get references from a property's relationships."""
     if prop.relationships:
         for rel in prop.relationships:
-            if hasattr(rel, 'ref'):
-                return rel.ref
+            if hasattr(rel, 'to') and rel.to:
+                return rel.to
     return None
 
 
@@ -62,19 +62,13 @@ def add_generated_info(contract: OpenDataContractStandard, server: Optional[Serv
     datacontract_cli_version = get_version()
     dialect = "Logical Datacontract" if server is None else server.type
 
-    generated_info = """
+    return """/*
 Generated at {0} by datacontract-cli version {1}
 for datacontract {2} ({3}) version {4}
 Using {5} Types for the field types
-    """.format(
+*/""".format(
         formatted_date, datacontract_cli_version, contract.name, contract.id, contract.version, dialect
     )
-
-    comment = """/*
-{0}
-*/
-    """.format(generated_info)
-    return comment
 
 
 def get_version() -> str:
@@ -85,16 +79,19 @@ def get_version() -> str:
 
 
 def generate_project_info(contract: OpenDataContractStandard) -> str:
+    description = ""
+    if contract.description:
+        if hasattr(contract.description, 'purpose') and contract.description.purpose:
+            description = contract.description.purpose
+        elif isinstance(contract.description, str):
+            description = contract.description
     return """Project "{0}" {{
-    Note: '''{1}'''
-}}\n
-    """.format(contract.name or "", contract.description or "")
+    note: '''{1}'''
+}}""".format(contract.name or "", description)
 
 
 def generate_table(model_name: str, schema_obj: SchemaObject, server: Optional[Server]) -> str:
-    result = """Table "{0}" {{
-Note: {1}
-    """.format(model_name, formatDescription(schema_obj.description or ""))
+    result = "Table {0} {{\n    note: {1}\n".format(model_name, formatDescription(schema_obj.description or ""))
 
     references = []
 
@@ -105,14 +102,13 @@ Note: {1}
                 references.append(ref)
             result += "{0}\n".format(field_string)
 
-    result += "}\n"
+    result += "}"
 
     # and if any: add the references
     if len(references) > 0:
+        result += "\n"
         for ref in references:
             result += "Ref: {0}\n".format(ref)
-
-        result += "\n"
 
     return result
 
@@ -155,12 +151,12 @@ def generate_field(field_name: str, prop: SchemaProperty, model_name: str, serve
         field_attrs.append("null")
 
     if prop.description:
-        field_attrs.append("""Note: {0}""".format(formatDescription(prop.description)))
+        field_attrs.append("""note: {0}""".format(formatDescription(prop.description)))
 
     prop_type = _get_type(prop)
     field_type = prop_type if server is None else convert_to_sql_type(prop, server.type)
 
-    field_str = '"{0}" "{1}" [{2}]'.format(field_name, field_type, ",".join(field_attrs))
+    field_str = '    {0} {1} [{2}]'.format(field_name, field_type, ", ".join(field_attrs))
     ref_str = None
     references = _get_references(prop)
     if references is not None:
