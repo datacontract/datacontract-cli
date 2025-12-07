@@ -44,7 +44,6 @@ class ExportFormat(str, Enum):
     avro = "avro"
     protobuf = "protobuf"
     great_expectations = "great-expectations"
-    terraform = "terraform"
     avro_idl = "avro-idl"
     sql = "sql"
     sql_query = "sql-query"

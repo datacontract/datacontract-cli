@@ -168,12 +168,6 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.terraform,
-    module_path="datacontract.export.terraform_exporter",
-    class_name="TerraformExporter",
-)
-
-exporter_factory.register_lazy_exporter(
     name=ExportFormat.spark,
     module_path="datacontract.export.spark_exporter",
     class_name="SparkExporter",

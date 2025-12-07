@@ -36,6 +36,7 @@ We recommend migrating to the Open Data Contract Standard as soon as possible: h
 ### Removed
 
 - The `breaking`, `changelog`, and `diff` commands are now deleted (#925).
+- The `terraform` export format has been removed.
 
 
 
