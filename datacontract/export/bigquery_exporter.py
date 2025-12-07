@@ -117,7 +117,7 @@ def map_type_to_bigquery(prop: SchemaProperty) -> str:
             "BIGNUMERIC", "BOOL", "BOOLEAN", "TIMESTAMP", "DATE", "TIME", "DATETIME",
             "GEOGRAPHY", "JSON", "RECORD", "STRUCT", "ARRAY"
         }
-        if prop.physicalType.upper() in bq_types or prop.physicalType.upper().startswith(("STRUCT<", "ARRAY<")):
+        if prop.physicalType.upper() in bq_types or prop.physicalType.upper().startswith(("STRUCT<", "ARRAY<", "RANGE<")):
             return prop.physicalType
 
     # Determine which type to map (prefer physicalType)
