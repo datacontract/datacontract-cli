@@ -28,7 +28,7 @@ class DbtStageExporter(Exporter):
         )
 
 
-def _get_config_value(prop: SchemaProperty, key: str) -> Optional[str]:
+def _get_custom_property_value(prop: SchemaProperty, key: str) -> Optional[str]:
     """Get a custom property value."""
     if prop.customProperties is None:
         return None
@@ -257,9 +257,15 @@ def _to_column(
         else:
             column["data_tests"].append("unique")
 
-    enum_values = _get_logical_type_option(prop, "enum")
-    if enum_values and len(enum_values) > 0:
-        column["data_tests"].append({"accepted_values": {"values": enum_values}})
+    enum_str = _get_custom_property_value(prop, "enum")
+    if enum_str:
+        import json
+        try:
+            enum_values = json.loads(enum_str)
+            if enum_values and len(enum_values) > 0:
+                column["data_tests"].append({"accepted_values": {"values": enum_values}})
+        except json.JSONDecodeError:
+            pass
 
     min_length = _get_logical_type_option(prop, "minLength")
     max_length = _get_logical_type_option(prop, "maxLength")
