@@ -407,6 +407,13 @@ def _convert_field_to_property(
     if field.scale is not None:
         custom_properties.append(CustomProperty(property="scale", value=str(field.scale)))
     if field.config:
+        # Server-specific type overrides physicalType
+        server_type_keys = ["oracleType", "snowflakeType", "postgresType", "bigqueryType", "databricksType", "sqlserverType", "trinoType", "physicalType"]
+        for key in server_type_keys:
+            if key in field.config:
+                prop.physicalType = field.config[key]
+                break
+
         for key, value in field.config.items():
             # Use JSON serialization for lists and dicts to preserve structure
             if isinstance(value, (list, dict)):
