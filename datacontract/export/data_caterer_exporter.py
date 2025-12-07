@@ -40,6 +40,16 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _get_custom_property_value(prop: SchemaProperty, key: str):
+    """Get a custom property value."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
 def to_data_caterer_generate_yaml(data_contract: OpenDataContractStandard, server):
     generation_task = {"name": data_contract.name, "steps": []}
     server_info = _get_server_info(data_contract, server)
@@ -135,9 +145,19 @@ def _to_field(field_name: str, prop: SchemaProperty) -> dict:
             else:
                 dc_generator_opts["arrayType"] = "string"
 
-    enum_values = _get_logical_type_option(prop, "enum")
-    if enum_values is not None and len(enum_values) > 0:
-        dc_generator_opts["oneOf"] = enum_values
+    enum_value = _get_custom_property_value(prop, "enum")
+    if enum_value is not None:
+        import json
+        # Handle both list (already parsed) and string (needs parsing)
+        if isinstance(enum_value, list):
+            enum_values = enum_value
+        else:
+            try:
+                enum_values = json.loads(enum_value)
+            except json.JSONDecodeError:
+                enum_values = None
+        if enum_values is not None and len(enum_values) > 0:
+            dc_generator_opts["oneOf"] = enum_values
     if prop.unique is not None and prop.unique:
         dc_generator_opts["isUnique"] = prop.unique
     if prop.primaryKey is not None and prop.primaryKey:
