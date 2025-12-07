@@ -21,6 +21,10 @@ We recommend migrating to the Open Data Contract Standard as soon as possible: h
 
 - ODCS v3.1.0 is now the default format for imports.
 
+### Fixed
+
+- Oracle: Fix `service_name` attribute access to use ODCS field name `serviceName`
+
 ### Removed
 
 - The `breaking`, `changelog`, and `diff` commands are now deleted (#925).

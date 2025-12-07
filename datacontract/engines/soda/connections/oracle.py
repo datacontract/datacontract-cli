@@ -33,7 +33,7 @@ def to_oracle_soda_configuration(server: Server) -> str:
         schema: SYSTEM
     """
 
-    service_name = server.service_name or server.database
+    service_name = server.serviceName or server.database
     # with service account key, using an external json file
     soda_configuration = {
         f"data_source {server.type}": {

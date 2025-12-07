@@ -126,6 +126,8 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
             odcs_server.http_path = dcs_server.http_path
         if getattr(dcs_server, "driver", None):
             odcs_server.driver = dcs_server.driver
+        if getattr(dcs_server, "service_name", None):
+            odcs_server.serviceName = dcs_server.service_name
 
         servers.append(odcs_server)
 
