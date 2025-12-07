@@ -110,6 +110,38 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _get_custom_property_value(prop: SchemaProperty, key: str) -> Optional[str]:
+    """Get a custom property value."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
+def _logical_type_to_spark_type(logical_type: str) -> types.DataType:
+    """Convert a logical type string to a Spark DataType."""
+    if logical_type is None:
+        return types.StringType()
+    lt = logical_type.lower()
+    if lt == "string":
+        return types.StringType()
+    if lt == "integer":
+        return types.LongType()
+    if lt == "number":
+        return types.DoubleType()
+    if lt == "boolean":
+        return types.BooleanType()
+    if lt == "date":
+        return types.DateType()
+    if lt == "timestamp":
+        return types.TimestampType()
+    if lt == "object":
+        return types.StructType([])
+    return types.StringType()
+
+
 def to_struct_field(prop: SchemaProperty) -> types.StructField:
     """
     Convert a property to a Spark StructField.
@@ -150,17 +182,32 @@ def to_spark_data_type(prop: SchemaProperty) -> types.DataType:
             return types.ArrayType(to_spark_data_type(prop.items))
         return types.ArrayType(types.StringType())
 
+    # Handle map type (check physical type) - MUST be before object/struct check
+    if physical_type == "map":
+        # Get key type from customProperties, default to string
+        key_type = types.StringType()
+        value_type = types.StringType()
+
+        # Check for mapKeyType and mapValueType in customProperties
+        map_key_type = _get_custom_property_value(prop, "mapKeyType")
+        map_value_type = _get_custom_property_value(prop, "mapValueType")
+
+        if map_key_type:
+            key_type = _logical_type_to_spark_type(map_key_type)
+
+        # If map has struct values with properties, use them
+        if prop.properties:
+            value_type = to_struct_type(prop.properties)
+        elif map_value_type:
+            value_type = _logical_type_to_spark_type(map_value_type)
+
+        return types.MapType(key_type, value_type)
+
     # Handle object/struct type
     if logical_type == "object" or physical_type in ["object", "record", "struct"]:
         if prop.properties:
-            return types.StructType(to_struct_type(prop.properties))
+            return to_struct_type(prop.properties)
         return types.StructType([])
-
-    # Handle map type (check physical type)
-    if physical_type == "map":
-        # For ODCS, maps might be represented differently - check for keys/values properties
-        # For now, default to string -> string map
-        return types.MapType(types.StringType(), types.StringType())
 
     # Handle variant type
     if physical_type == "variant":

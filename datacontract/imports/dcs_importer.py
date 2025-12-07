@@ -439,6 +439,9 @@ def _convert_field_to_property(
             custom_properties.append(CustomProperty(property="mapKeyType", value=_convert_type_to_logical_type(field.keys.type)))
         if field.values and field.values.type:
             custom_properties.append(CustomProperty(property="mapValueType", value=_convert_type_to_logical_type(field.values.type)))
+            # For map with struct values, store the value fields in properties
+            if field.values.fields:
+                prop.properties = _convert_fields_to_properties(field.values.fields, None, definitions)
 
     # Set customProperties after all have been added
     if custom_properties:
