@@ -81,7 +81,7 @@ sources:
 
 
 def test_to_dbt_sources_bigquery():
-    data_contract = convert_dcs_to_odcs(DataContractSpecification.from_file("./fixtures/dbt/export/datacontract.yaml"))
+    odcs = convert_dcs_to_odcs(DataContractSpecification.from_file("./fixtures/dbt/export/datacontract.yaml"))
     expected_dbt_model = """
 version: 2
 sources:
@@ -143,6 +143,6 @@ sources:
             data_type: STRING
 """
 
-    result = to_dbt_sources_yaml(data_contract, "production")
+    result = to_dbt_sources_yaml(odcs, "production")
 
     assert yaml.safe_load(result) == yaml.safe_load(expected_dbt_model)

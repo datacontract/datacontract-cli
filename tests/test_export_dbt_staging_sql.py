@@ -2,9 +2,8 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
+from datacontract.data_contract import DataContract
 from datacontract.export.dbt_exporter import to_dbt_staging_sql
-from datacontract.imports.dcs_importer import convert_dcs_to_odcs
-from datacontract_specification.model import DataContractSpecification
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -15,10 +14,10 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/dbt/export/datacontract.yaml",
+            "./fixtures/dbt/export/datacontract.odcs.yaml",
             "--format",
             "dbt-staging-sql",
-            "--model",
+            "--schema-name",
             "orders",
         ],
     )
@@ -27,8 +26,7 @@ def test_cli():
 
 
 def test_to_dbt_staging():
-    dcs = DataContractSpecification.from_file("fixtures/dbt/export/datacontract.yaml")
-    data_contract = convert_dcs_to_odcs(dcs)
+    data_contract = DataContract(data_contract_file="fixtures/dbt/export/datacontract.odcs.yaml").get_data_contract()
     expected = """
 select
     order_id,
