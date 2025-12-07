@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
 class ExcelImporter(Importer):
     def import_source(
         self,
-        data_contract: OpenDataContractStandard,
         source: str,
         import_args: dict,
     ) -> OpenDataContractStandard:
