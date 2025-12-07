@@ -20,14 +20,14 @@ def test_cli():
             "bigquery",
             "--server",
             "bigquery",
-            "fixtures/bigquery/export/datacontract.yaml",
+            "fixtures/bigquery/export/datacontract.odcs.yaml",
         ],
     )
     assert result.exit_code == 0
 
 
 def test_exports_bigquery_schema():
-    data_contract_file: str = "fixtures/bigquery/export/datacontract.yaml"
+    data_contract_file: str = "fixtures/bigquery/export/datacontract.odcs.yaml"
     with open(data_contract_file) as file:
         file_content = file.read()
     data_contract = DataContract(data_contract_str=file_content, server="bigquery")

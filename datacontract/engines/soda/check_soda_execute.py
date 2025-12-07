@@ -20,7 +20,7 @@ from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_co
 from datacontract.engines.soda.connections.trino import to_trino_soda_configuration
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
-from datacontract.export.sodacl_converter import to_sodacl_yaml
+from datacontract.export.sodacl_exporter import to_sodacl_yaml
 from datacontract.model.run import Check, Log, ResultEnum, Run
 
 

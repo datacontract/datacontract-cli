@@ -6,7 +6,7 @@ from rdflib.graph import Graph
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.rdf_converter import to_rdf
+from datacontract.export.rdf_exporter import to_rdf
 from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)

@@ -13,7 +13,7 @@ class DataCatererExporter(Exporter):
     Creates a YAML file, based on the data contract, for Data Caterer to generate synthetic data.
     """
 
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_data_caterer_generate_yaml(data_contract, server)
 
 

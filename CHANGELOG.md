@@ -20,6 +20,8 @@ We recommend migrating to the Open Data Contract Standard as soon as possible: h
 ### Changed
 
 - ODCS v3.1.0 is now the default format for all imports.
+- Renamed `--model` option to `--schema-name` in the `export` command to align with ODCS terminology.
+- Renamed exporter files from `*_converter.py` to `*_exporter.py` for consistency (internal change).
 
 ### Added
 

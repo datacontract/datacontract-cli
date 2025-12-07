@@ -31,7 +31,7 @@ class ExcelExporter(Exporter):
     def __init__(self, export_format):
         super().__init__(export_format)
 
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> bytes:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> bytes:
         """
         Export data contract to Excel using the official ODCS template
 

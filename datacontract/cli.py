@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-import warnings
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -198,12 +197,11 @@ def export(
         ),
     ] = None,
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
-    model: Annotated[
+    schema_name: Annotated[
         str,
         typer.Option(
-            help="Use the key of the model in the data contract yaml file "
-            "to refer to a model, e.g., `orders`, or `all` for all "
-            "models (default)."
+            help="The name of the schema to export, e.g., `orders`, or `all` for all "
+            "schemas (default)."
         ),
     ] = "all",
     # TODO: this should be a subcommand
@@ -228,7 +226,7 @@ def export(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     # TODO: this should be a subcommand
     engine: Annotated[
@@ -259,7 +257,7 @@ def export(
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=format,
-        model=model,
+        schema_name=schema_name,
         server=server,
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,

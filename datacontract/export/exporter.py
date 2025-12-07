@@ -13,12 +13,19 @@ class Exporter(ABC):
     def export(
         self,
         data_contract: OpenDataContractStandard,
-        model: str,
+        schema_name: str,
         server: str,
         sql_server_type: str,
         export_args: dict,
     ) -> dict | str:
         """Export a data contract to the target format.
+
+        Args:
+            data_contract: The ODCS data contract to export.
+            schema_name: The name of the schema to export, or 'all' for all schemas.
+            server: The server name to use for export.
+            sql_server_type: The SQL server type for dialect-specific exports.
+            export_args: Additional export arguments.
 
         All exporters now accept OpenDataContractStandard (ODCS) format.
         """
@@ -61,33 +68,32 @@ class ExportFormat(str, Enum):
         return list(map(lambda c: c.value, cls))
 
 
-def _check_models_for_export(
-    data_contract: OpenDataContractStandard, model: str, export_format: str
+def _check_schema_name_for_export(
+    data_contract: OpenDataContractStandard, schema_name: str, export_format: str
 ) -> typing.Tuple[str, SchemaObject]:
-    """Check and retrieve a model from the data contract for export.
+    """Check and retrieve a schema from the data contract for export.
 
-    In ODCS, models are stored in schema_ as a list of SchemaObject.
+    In ODCS, schemas are stored in schema_ as a list of SchemaObject.
     """
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise RuntimeError(f"Export to {export_format} requires schema in the data contract.")
 
-    model_names = [schema.name for schema in data_contract.schema_]
+    schema_names = [schema.name for schema in data_contract.schema_]
 
-    if model == "all":
+    if schema_name == "all":
         if len(data_contract.schema_) != 1:
             raise RuntimeError(
-                f"Export to {export_format} is model specific. Specify the model via --model $MODEL_NAME. Available models: {model_names}"
+                f"Export to {export_format} requires a specific schema. Specify the schema via --schema-name. Available schemas: {schema_names}"
             )
 
         schema_obj = data_contract.schema_[0]
         return schema_obj.name, schema_obj
     else:
-        model_name = model
-        schema_obj = next((s for s in data_contract.schema_ if s.name == model_name), None)
+        schema_obj = next((s for s in data_contract.schema_ if s.name == schema_name), None)
         if schema_obj is None:
-            raise RuntimeError(f"Model {model_name} not found in the data contract. Available models: {model_names}")
+            raise RuntimeError(f"Schema '{schema_name}' not found in the data contract. Available schemas: {schema_names}")
 
-        return model_name, schema_obj
+        return schema_name, schema_obj
 
 
 def _determine_sql_server_type(

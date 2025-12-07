@@ -5,7 +5,7 @@ from pyiceberg.schema import Schema, assign_fresh_schema_ids
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.iceberg_converter import IcebergExporter
+from datacontract.export.iceberg_exporter import IcebergExporter
 from datacontract.lint.resolve import resolve_data_contract
 
 

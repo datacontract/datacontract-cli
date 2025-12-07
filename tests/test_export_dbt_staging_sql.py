@@ -2,7 +2,7 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.dbt_converter import to_dbt_staging_sql
+from datacontract.export.dbt_exporter import to_dbt_staging_sql
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 from datacontract_specification.model import DataContractSpecification
 

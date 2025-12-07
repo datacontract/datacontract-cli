@@ -9,7 +9,7 @@ import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
 
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
-from datacontract.export.jsonschema_converter import to_jsonschema
+from datacontract.export.jsonschema_exporter import to_jsonschema
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run

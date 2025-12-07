@@ -8,7 +8,7 @@ from datacontract.model.run import Run
 
 
 class SodaExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> str:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         run = Run.create_run()
         found_server = get_server(data_contract, server)
         run.checks.extend(create_checks(data_contract, found_server))

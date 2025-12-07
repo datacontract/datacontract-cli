@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.terraform_converter import to_terraform
+from datacontract.export.terraform_exporter import to_terraform
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 from datacontract_specification.model import DataContractSpecification
 

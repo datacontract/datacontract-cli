@@ -13,7 +13,7 @@ class CustomExporter(Exporter):
     def export(
         self,
         data_contract: OpenDataContractStandard,
-        model: SchemaObject,
+        schema_name: str,
         server: str,
         sql_server_type: str,
         export_args: dict,

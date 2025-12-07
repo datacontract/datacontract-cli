@@ -14,7 +14,7 @@ from open_data_contract_standard.model import DataQuality, OpenDataContractStand
 
 from datacontract.export.exporter import (
     Exporter,
-    _check_models_for_export,
+    _check_schema_name_for_export,
 )
 
 
@@ -40,7 +40,7 @@ class GreatExpectationsExporter(Exporter):
 
     """
 
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> str:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         """Exports a data contract model to a Great Expectations suite.
 
         Args:
@@ -55,7 +55,7 @@ class GreatExpectationsExporter(Exporter):
         """
         expectation_suite_name = export_args.get("suite_name")
         engine = export_args.get("engine")
-        schema_name, _ = _check_models_for_export(data_contract, model, self.export_format)
+        schema_name, _ = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         sql_server_type = "snowflake" if sql_server_type == "auto" else sql_server_type
         return to_great_expectations(data_contract, schema_name, expectation_suite_name, engine, sql_server_type)
 
@@ -180,7 +180,7 @@ def add_field_expectations(
     prop_type = _get_type(prop)
     if prop_type is not None:
         if engine == GreatExpectationsEngine.spark.value:
-            from datacontract.export.spark_converter import to_spark_data_type
+            from datacontract.export.spark_exporter import to_spark_data_type
 
             field_type = to_spark_data_type(prop).__class__.__name__
         elif engine == GreatExpectationsEngine.pandas.value:

@@ -456,7 +456,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
 def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | str:
     """Convert from supported datacontract types to equivalent bigquery types"""
     # Import here to avoid circular import
-    from datacontract.export.bigquery_converter import map_type_to_bigquery
+    from datacontract.export.bigquery_exporter import map_type_to_bigquery
 
     # BigQuery exporter cannot be used for complex types, as the exporter has different syntax than SodaCL
 

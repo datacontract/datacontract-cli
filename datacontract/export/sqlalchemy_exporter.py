@@ -9,7 +9,7 @@ from datacontract.export.exporter import Exporter, _determine_sql_server_type
 
 class SQLAlchemyExporter(Exporter):
     def export(
-        self, data_contract: OpenDataContractStandard, model, server, sql_server_type, export_args
+        self, data_contract: OpenDataContractStandard, schema_name, server, sql_server_type, export_args
     ) -> dict:
         sql_server_type = _determine_sql_server_type(data_contract, sql_server_type, server)
         return to_sqlalchemy_model_str(data_contract, sql_server_type, server)

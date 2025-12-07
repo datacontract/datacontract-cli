@@ -1,6 +1,6 @@
 import yaml
 
-from datacontract.export.sodacl_converter import SodaExporter
+from datacontract.export.sodacl_exporter import SodaExporter
 from datacontract.lint.resolve import resolve_data_contract
 
 

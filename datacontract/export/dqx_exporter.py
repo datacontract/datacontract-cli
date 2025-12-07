@@ -4,7 +4,7 @@ import yaml
 
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject, SchemaProperty
 
-from datacontract.export.exporter import Exporter, _check_models_for_export
+from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 
 
 class DqxKeys:
@@ -22,13 +22,13 @@ class DqxExporter(Exporter):
     def export(
         self,
         data_contract: OpenDataContractStandard,
-        model: SchemaObject,
+        schema_name: str,
         server: str,
         sql_server_type: str,
         export_args: Dict[str, Any],
     ) -> str:
         """Exports a data contract to DQX format."""
-        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+        model_name, model_value = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         return to_dqx_yaml(model_value)
 
 

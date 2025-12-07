@@ -5,7 +5,7 @@ import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.great_expectations_converter import to_great_expectations
+from datacontract.export.great_expectations_exporter import to_great_expectations
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 from datacontract.lint import resolve
 from datacontract_specification.model import DataContractSpecification

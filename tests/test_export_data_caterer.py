@@ -5,7 +5,7 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.data_caterer_converter import to_data_caterer_generate_yaml
+from datacontract.export.data_caterer_exporter import to_data_caterer_generate_yaml
 from datacontract.lint.resolve import resolve_data_contract
 
 

@@ -16,7 +16,7 @@ class SparkExporter(Exporter):
     def export(
         self,
         data_contract: OpenDataContractStandard,
-        model,
+        schema_name,
         server,
         sql_server_type,
         export_args,
@@ -26,7 +26,7 @@ class SparkExporter(Exporter):
 
         Args:
             data_contract (OpenDataContractStandard): The data contract specification.
-            model: Not used in this implementation.
+            schema_name: The name of the schema to export, or 'all' for all schemas.
             server: Not used in this implementation.
             sql_server_type: Not used in this implementation.
             export_args: Additional arguments for export.

@@ -16,17 +16,17 @@ class IcebergExporter(Exporter):
     def export(
         self,
         data_contract: OpenDataContractStandard,
-        model,
+        schema_name,
         server,
         sql_server_type,
         export_args,
     ):
         """
-        Export the given data contract model to an Iceberg schema.
+        Export the given data contract to an Iceberg schema.
 
         Args:
             data_contract (OpenDataContractStandard): The data contract specification.
-            model: The model to export, currently just supports one model.
+            schema_name: The name of the schema to export, or 'all' for all schemas.
             server: Not used in this implementation.
             sql_server_type: Not used in this implementation.
             export_args: Additional arguments for export.

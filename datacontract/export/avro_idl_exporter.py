@@ -88,7 +88,7 @@ avro_primitive_physical_types = {
 
 
 class AvroIdlExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_avro_idl(data_contract)
 
 

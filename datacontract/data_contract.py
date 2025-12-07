@@ -155,7 +155,7 @@ class DataContract:
         )
 
     def export(
-        self, export_format: ExportFormat, model: str = "all", sql_server_type: str = "auto", **kwargs
+        self, export_format: ExportFormat, schema_name: str = "all", sql_server_type: str = "auto", **kwargs
     ) -> str | bytes:
         if (
             export_format == ExportFormat.html
@@ -173,7 +173,7 @@ class DataContract:
 
             return exporter_factory.create(export_format).export(
                 data_contract=data_contract,
-                model=model,
+                schema_name=schema_name,
                 server=self._server,
                 sql_server_type=sql_server_type,
                 export_args=kwargs,
@@ -190,7 +190,7 @@ class DataContract:
 
             return exporter_factory.create(export_format).export(
                 data_contract=data_contract,
-                model=model,
+                schema_name=schema_name,
                 server=self._server,
                 sql_server_type=sql_server_type,
                 export_args=kwargs,

@@ -4,23 +4,23 @@ import yaml
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
-from datacontract.export.exporter import Exporter, _check_models_for_export
+from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.export.sql_type_converter import convert_to_sql_type
 
 
 class DbtExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_dbt_models_yaml(data_contract, server)
 
 
 class DbtSourceExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_dbt_sources_yaml(data_contract, server)
 
 
 class DbtStageExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+        model_name, model_value = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         return to_dbt_staging_sql(
             data_contract,
             model_name,

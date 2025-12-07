@@ -3,12 +3,12 @@ from typing import Dict, List, Optional, Union
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
-from datacontract.export.exporter import Exporter, _check_models_for_export
+from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 
 
 class AvroExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+        model_name, model_value = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         return to_avro_schema_json(model_name, model_value)
 
 

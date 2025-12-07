@@ -3,7 +3,7 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.protobuf_converter import to_protobuf
+from datacontract.export.protobuf_exporter import to_protobuf
 from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)

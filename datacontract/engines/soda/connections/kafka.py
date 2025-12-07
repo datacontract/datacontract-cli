@@ -4,7 +4,7 @@ import os
 import tempfile
 from typing import List, Optional
 
-from datacontract.export.avro_converter import to_avro_schema_json
+from datacontract.export.avro_exporter import to_avro_schema_json
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum

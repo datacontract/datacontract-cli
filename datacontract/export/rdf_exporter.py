@@ -7,7 +7,7 @@ from datacontract.export.exporter import Exporter
 
 
 class RdfExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         self.dict_args = export_args
         rdf_base = self.dict_args.get("rdf_base")
         return to_rdf_n3(data_contract=data_contract, base=rdf_base)

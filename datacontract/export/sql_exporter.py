@@ -2,12 +2,12 @@ from typing import List, Optional, Tuple
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
-from datacontract.export.exporter import Exporter, _check_models_for_export, _determine_sql_server_type
+from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
 
 
 class SqlExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> str:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         server_type = _determine_sql_server_type(
             data_contract,
             sql_server_type,
@@ -16,8 +16,8 @@ class SqlExporter(Exporter):
 
 
 class SqlQueryExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> str:
-        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
+        model_name, model_value = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         server_type = _determine_sql_server_type(data_contract, sql_server_type, export_args.get("server"))
         return to_sql_query(
             data_contract,
