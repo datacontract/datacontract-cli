@@ -15,6 +15,7 @@ from open_data_contract_standard.model import (
 )
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.run import Check
+from tests.test_test_dataframe import schema
 
 
 @dataclass
@@ -31,7 +32,7 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
-def _get_config_value(prop: SchemaProperty, key: str) -> Optional[str]:
+def _get_custom_property_value(prop: SchemaProperty, key: str) -> Optional[str]:
     """Get a custom property value."""
     if prop.customProperties is None:
         return None
@@ -41,7 +42,7 @@ def _get_config_value(prop: SchemaProperty, key: str) -> Optional[str]:
     return None
 
 
-def _get_schema_config_value(schema: SchemaObject, key: str) -> Optional[str]:
+def _get_schema_custom_property_value(schema: SchemaObject, key: str) -> Optional[str]:
     """Get a custom property value from schema."""
     if schema.customProperties is None:
         return None
@@ -56,18 +57,17 @@ def create_checks(data_contract: OpenDataContractStandard, server: Server) -> Li
     if data_contract.schema_ is None:
         return checks
     for schema_obj in data_contract.schema_:
-        model_checks = to_model_checks(schema_obj.name, schema_obj, server)
-        checks.extend(model_checks)
+        schema_checks = to_schema_checks(schema_obj, server)
+        checks.extend(schema_checks)
     checks.extend(to_servicelevel_checks(data_contract))
-    checks.append(to_quality_check(data_contract))
     return [check for check in checks if check is not None]
 
 
-def to_model_checks(model_key: str, model_value: SchemaObject, server: Server) -> List[Check]:
+def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]:
     checks: List[Check] = []
     server_type = server.type if server and server.type else None
-    model_name = to_model_name(model_key, model_value, server_type)
-    properties = model_value.properties or []
+    schema_name = to_schema_name(schema_object, server_type)
+    properties = schema_object.properties or []
 
     check_types = is_check_types(server)
 
@@ -80,59 +80,59 @@ def to_model_checks(model_key: str, model_value: SchemaObject, server: Server) -
     quoting_config = config
 
     for prop in properties:
-        field_name = prop.name
-        field_type = prop.logicalType
+        property_name = prop.name
+        logical_type = prop.logicalType
 
-        checks.append(check_field_is_present(model_name, field_name, quoting_config))
-        if check_types and field_type is not None:
+        checks.append(check_property_is_present(schema_name, property_name, quoting_config))
+        if check_types and logical_type is not None:
             sql_type: str = convert_to_sql_type(prop, server_type)
-            checks.append(check_field_type(model_name, field_name, sql_type, quoting_config))
+            checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
         if prop.required:
-            checks.append(check_field_required(model_name, field_name, quoting_config))
+            checks.append(check_property_required(schema_name, property_name, quoting_config))
         if prop.unique:
-            checks.append(check_field_unique(model_name, field_name, quoting_config))
+            checks.append(check_property_unique(schema_name, property_name, quoting_config))
 
         min_length = _get_logical_type_option(prop, "minLength")
         if min_length is not None:
-            checks.append(check_field_min_length(model_name, field_name, min_length, quoting_config))
+            checks.append(check_property_min_length(schema_name, property_name, min_length, quoting_config))
 
         max_length = _get_logical_type_option(prop, "maxLength")
         if max_length is not None:
-            checks.append(check_field_max_length(model_name, field_name, max_length, quoting_config))
+            checks.append(check_property_max_length(schema_name, property_name, max_length, quoting_config))
 
         minimum = _get_logical_type_option(prop, "minimum")
         if minimum is not None:
-            checks.append(check_field_minimum(model_name, field_name, minimum, quoting_config))
+            checks.append(check_property_minimum(schema_name, property_name, minimum, quoting_config))
 
         maximum = _get_logical_type_option(prop, "maximum")
         if maximum is not None:
-            checks.append(check_field_maximum(model_name, field_name, maximum, quoting_config))
+            checks.append(check_property_maximum(schema_name, property_name, maximum, quoting_config))
 
         exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
         if exclusive_minimum is not None:
-            checks.append(check_field_minimum(model_name, field_name, exclusive_minimum, quoting_config))
-            checks.append(check_field_not_equal(model_name, field_name, exclusive_minimum, quoting_config))
+            checks.append(check_property_minimum(schema_name, property_name, exclusive_minimum, quoting_config))
+            checks.append(check_property_not_equal(schema_name, property_name, exclusive_minimum, quoting_config))
 
         exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
         if exclusive_maximum is not None:
-            checks.append(check_field_maximum(model_name, field_name, exclusive_maximum, quoting_config))
-            checks.append(check_field_not_equal(model_name, field_name, exclusive_maximum, quoting_config))
+            checks.append(check_property_maximum(schema_name, property_name, exclusive_maximum, quoting_config))
+            checks.append(check_property_not_equal(schema_name, property_name, exclusive_maximum, quoting_config))
 
         pattern = _get_logical_type_option(prop, "pattern")
         if pattern is not None:
-            checks.append(check_field_regex(model_name, field_name, pattern, quoting_config))
+            checks.append(check_property_regex(schema_name, property_name, pattern, quoting_config))
 
         enum_values = _get_logical_type_option(prop, "enum")
         if enum_values is not None and len(enum_values) > 0:
-            checks.append(check_field_enum(model_name, field_name, enum_values, quoting_config))
+            checks.append(check_property_enum(schema_name, property_name, enum_values, quoting_config))
 
         if prop.quality is not None and len(prop.quality) > 0:
-            quality_list = check_quality_list(model_name, field_name, prop.quality, quoting_config, server)
+            quality_list = check_quality_list(schema_name, property_name, prop.quality, quoting_config, server)
             if (quality_list is not None) and len(quality_list) > 0:
                 checks.extend(quality_list)
 
-    if model_value.quality is not None and len(model_value.quality) > 0:
-        quality_list = check_quality_list(model_name, None, model_value.quality, quoting_config, server)
+    if schema_object.quality is not None and len(schema_object.quality) > 0:
+        quality_list = check_quality_list(schema_name, None, schema_object.quality, quoting_config, server)
         if (quality_list is not None) and len(quality_list) > 0:
             checks.extend(quality_list)
 
@@ -153,32 +153,21 @@ def is_check_types(server: Server) -> bool:
     return server.format != "json" and server.format != "csv" and server.format != "avro"
 
 
-def to_model_name(model_key: str, model_value: SchemaObject, server_type: str) -> str:
+def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
+    # For Kafka, use name (not physicalName) since the Spark SQL view uses schema name
+    # physicalName in Kafka represents the topic name, not the SQL view name
+    if server_type == "kafka":
+        return schema_object.name
+
     # Use physicalName if set (ODCS standard way to specify actual table name)
-    if model_value.physicalName:
-        return model_value.physicalName
-
-    # Fall back to server-specific config values in customProperties (DCS compatibility)
-    if server_type == "databricks":
-        table_name = _get_schema_config_value(model_value, "databricksTable")
-        if table_name:
-            return table_name
-    if server_type == "snowflake":
-        table_name = _get_schema_config_value(model_value, "snowflakeTable")
-        if table_name:
-            return table_name
-    if server_type == "sqlserver":
-        table_name = _get_schema_config_value(model_value, "sqlserverTable")
-        if table_name:
-            return table_name
-    if server_type == "postgres" or server_type == "postgresql":
-        table_name = _get_schema_config_value(model_value, "postgresTable")
-        if table_name:
-            return table_name
-    return model_key
+    if schema_object.physicalName:
+        return schema_object.physicalName
+    
+    return schema_object.name
 
 
-def check_field_is_present(model_name, field_name, quoting_config: QuotingConfig = QuotingConfig()) -> Check:
+
+def check_property_is_present(model_name, field_name, quoting_config: QuotingConfig = QuotingConfig()) -> Check:
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
@@ -207,7 +196,7 @@ def check_field_is_present(model_name, field_name, quoting_config: QuotingConfig
     )
 
 
-def check_field_type(
+def check_property_type(
     model_name: str, field_name: str, expected_type: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
     check_type = "field_type"
@@ -240,7 +229,7 @@ def check_field_type(
     )
 
 
-def check_field_required(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
+def check_property_required(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
     if quoting_config.quote_field_name:
         field_name_for_soda = f'"{field_name}"'
     else:
@@ -271,7 +260,7 @@ def check_field_required(model_name: str, field_name: str, quoting_config: Quoti
     )
 
 
-def check_field_unique(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
+def check_property_unique(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
     if quoting_config.quote_field_name:
         field_name_for_soda = f'"{field_name}"'
     else:
@@ -302,7 +291,7 @@ def check_field_unique(model_name: str, field_name: str, quoting_config: Quoting
     )
 
 
-def check_field_min_length(
+def check_property_min_length(
     model_name: str, field_name: str, min_length: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if quoting_config.quote_field_name:
@@ -336,7 +325,7 @@ def check_field_min_length(
     )
 
 
-def check_field_max_length(
+def check_property_max_length(
     model_name: str, field_name: str, max_length: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if quoting_config.quote_field_name:
@@ -370,7 +359,7 @@ def check_field_max_length(
     )
 
 
-def check_field_minimum(
+def check_property_minimum(
     model_name: str, field_name: str, minimum: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if quoting_config.quote_field_name:
@@ -404,7 +393,7 @@ def check_field_minimum(
     )
 
 
-def check_field_maximum(
+def check_property_maximum(
     model_name: str, field_name: str, maximum: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if quoting_config.quote_field_name:
@@ -438,7 +427,7 @@ def check_field_maximum(
     )
 
 
-def check_field_not_equal(
+def check_property_not_equal(
     model_name: str, field_name: str, value: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if quoting_config.quote_field_name:
@@ -472,7 +461,7 @@ def check_field_not_equal(
     )
 
 
-def check_field_enum(model_name: str, field_name: str, enum: list, quoting_config: QuotingConfig = QuotingConfig()):
+def check_property_enum(model_name: str, field_name: str, enum: list, quoting_config: QuotingConfig = QuotingConfig()):
     if quoting_config.quote_field_name:
         field_name_for_soda = f'"{field_name}"'
     else:
@@ -504,7 +493,7 @@ def check_field_enum(model_name: str, field_name: str, enum: list, quoting_confi
     )
 
 
-def check_field_regex(model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()):
+def check_property_regex(model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()):
     if quoting_config.quote_field_name:
         field_name_for_soda = f'"{field_name}"'
     else:
@@ -587,7 +576,7 @@ def check_model_duplicate_values(
     )
 
 
-def check_field_duplicate_values(
+def check_property_duplicate_values(
     model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if quoting_config.quote_field_name:
@@ -620,7 +609,7 @@ def check_field_duplicate_values(
     )
 
 
-def check_field_null_values(
+def check_property_null_values(
     model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if quoting_config.quote_field_name:
@@ -653,7 +642,7 @@ def check_field_null_values(
     )
 
 
-def check_field_invalid_values(
+def check_property_invalid_values(
     model_name: str,
     field_name: str,
     threshold: str,
@@ -696,7 +685,7 @@ def check_field_invalid_values(
     )
 
 
-def check_field_missing_values(
+def check_property_missing_values(
     model_name: str,
     field_name: str,
     threshold: str,
@@ -742,8 +731,8 @@ def check_field_missing_values(
 
 
 def check_quality_list(
-    model_name,
-    field_name,
+    schema_name,
+    property_name,
     quality_list: List[DataQuality],
     quoting_config: QuotingConfig = QuotingConfig(),
     server: Server = None,
@@ -754,7 +743,7 @@ def check_quality_list(
     for quality in quality_list:
         if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
             # Custom SodaCL quality check with raw implementation
-            check_key = f"{model_name}__quality_custom_{count}"
+            check_key = f"{schema_name}__quality_custom_{count}"
             check_type = "quality_custom_soda"
             checks.append(
                 Check(
@@ -763,22 +752,22 @@ def check_quality_list(
                     category="quality",
                     type=check_type,
                     name=quality.description if quality.description is not None else "Custom SodaCL Check",
-                    model=model_name,
-                    field=field_name,
+                    model=schema_name,
+                    field=property_name,
                     engine="soda",
                     language="sodacl",
                     implementation=quality.implementation,
                 )
             )
         elif quality.type == "sql":
-            if field_name is None:
-                check_key = f"{model_name}__quality_sql_{count}"
+            if property_name is None:
+                check_key = f"{schema_name}__quality_sql_{count}"
                 check_type = "field_quality_sql"
             else:
-                check_key = f"{model_name}__{field_name}__quality_sql_{count}"
+                check_key = f"{schema_name}__{property_name}__quality_sql_{count}"
                 check_type = "model_quality_sql"
             threshold = to_sodacl_threshold(quality)
-            query = prepare_query(quality, model_name, field_name, quoting_config, server)
+            query = prepare_query(quality, schema_name, property_name, quoting_config, server)
             if query is None:
                 logger.warning(f"Quality check {check_key} has no query")
                 continue
@@ -787,9 +776,9 @@ def check_quality_list(
                 continue
 
             if quoting_config.quote_model_name:
-                model_name_for_soda = f'"{model_name}"'
+                model_name_for_soda = f'"{schema_name}"'
             else:
-                model_name_for_soda = model_name
+                model_name_for_soda = schema_name
             sodacl_check_dict = {
                 f"checks for {model_name_for_soda}": [
                     {
@@ -807,8 +796,8 @@ def check_quality_list(
                     category="quality",
                     type=check_type,
                     name=quality.description if quality.description is not None else "Quality Check",
-                    model=model_name,
-                    field=field_name,
+                    model=schema_name,
+                    field=property_name,
                     engine="soda",
                     language="sodacl",
                     implementation=yaml.dump(sodacl_check_dict),
@@ -822,34 +811,34 @@ def check_quality_list(
                 continue
 
             if quality.metric == "rowCount":
-                checks.append(check_row_count(model_name, threshold, quoting_config))
+                checks.append(check_row_count(schema_name, threshold, quoting_config))
             elif quality.metric == "duplicateValues":
-                if field_name is None:
+                if property_name is None:
                     checks.append(
                         check_model_duplicate_values(
-                            model_name, quality.arguments.get("properties"), threshold, quoting_config
+                            schema_name, quality.arguments.get("properties"), threshold, quoting_config
                         )
                     )
                 else:
-                    checks.append(check_field_duplicate_values(model_name, field_name, threshold, quoting_config))
+                    checks.append(check_property_duplicate_values(schema_name, property_name, threshold, quoting_config))
             elif quality.metric == "nullValues":
-                if field_name is not None:
-                    checks.append(check_field_null_values(model_name, field_name, threshold, quoting_config))
+                if property_name is not None:
+                    checks.append(check_property_null_values(schema_name, property_name, threshold, quoting_config))
                 else:
                     logger.warning("Quality check nullValues is only supported at field level")
             elif quality.metric == "invalidValues":
-                if field_name is not None:
+                if property_name is not None:
                     valid_values = quality.arguments.get("validValues") if quality.arguments else None
                     checks.append(
-                        check_field_invalid_values(model_name, field_name, threshold, valid_values, quoting_config)
+                        check_property_invalid_values(schema_name, property_name, threshold, valid_values, quoting_config)
                     )
                 else:
                     logger.warning("Quality check invalidValues is only supported at field level")
             elif quality.metric == "missingValues":
-                if field_name is not None:
+                if property_name is not None:
                     missing_values = quality.arguments.get("missingValues") if quality.arguments else None
                     checks.append(
-                        check_field_missing_values(model_name, field_name, threshold, missing_values, quoting_config)
+                        check_property_missing_values(schema_name, property_name, threshold, missing_values, quoting_config)
                     )
                 else:
                     logger.warning("Quality check missingValues is only supported at field level")
@@ -953,7 +942,7 @@ def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Chec
 
     for sla in data_contract.slaProperties:
         if sla.property == "freshness":
-            check = to_servicelevel_freshness_check(data_contract, sla)
+            check = to_sla_freshness_check(data_contract, sla)
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
@@ -964,7 +953,7 @@ def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Chec
     return checks
 
 
-def to_servicelevel_freshness_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
+def to_sla_freshness_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
     """Create a freshness check from an ODCS latency SLA property."""
     if sla.element is None:
         logger.info("slaProperties.latency.element is not defined, skipping freshness check")
@@ -1138,8 +1127,3 @@ def _parse_iso8601_to_seconds(duration: str) -> int | None:
 
     return None
 
-
-def to_quality_check(data_contract: OpenDataContractStandard) -> Check | None:
-    # Root-level quality checks in ODCS are stored differently
-    # This is deprecated functionality - skip for now
-    return None

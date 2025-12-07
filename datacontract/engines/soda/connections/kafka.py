@@ -34,6 +34,8 @@ def create_spark_session():
         .config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
         .config("spark.ui.enabled", "false")
+        .config("spark.driver.bindAddress", "127.0.0.1")
+        .config("spark.driver.host", "127.0.0.1")
         .config(
             "spark.jars.packages",
             f"org.apache.spark:spark-sql-kafka-0-10_2.12:{pyspark_version},org.apache.spark:spark-avro_2.12:{pyspark_version}",
@@ -48,16 +50,6 @@ def create_spark_session():
 def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Server):
     """Read and process data from a Kafka topic based on the server configuration."""
 
-    logging.info("Reading data from Kafka server %s topic %s", server.host, server.topic)
-    df = (
-        spark.read.format("kafka")
-        .options(**get_auth_options())
-        .option("kafka.bootstrap.servers", server.host)
-        .option("subscribe", server.topic)
-        .option("startingOffsets", "earliest")
-        .load()
-    )
-
     if not data_contract.schema_ or len(data_contract.schema_) == 0:
         raise DataContractException(
             type="test",
@@ -69,6 +61,17 @@ def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Ser
 
     schema_obj = data_contract.schema_[0]
     model_name = schema_obj.name
+    topic = schema_obj.physicalName or schema_obj.name
+
+    logging.info("Reading data from Kafka server %s topic %s", server.host, topic)
+    df = (
+        spark.read.format("kafka")
+        .options(**get_auth_options())
+        .option("kafka.bootstrap.servers", server.host)
+        .option("subscribe", topic)
+        .option("startingOffsets", "earliest")
+        .load()
+    )
 
     match server.format:
         case "avro":
