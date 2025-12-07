@@ -42,15 +42,19 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
 
 
 def to_sqlalchemy_model_str(
-    contract: OpenDataContractStandard, sql_server_type: str = "", server=None
+    odcs: OpenDataContractStandard, sql_server_type: str = "", server=None
 ) -> str:
-    server_obj = _get_server_by_name(contract, server) if server else None
+    server_obj = _get_server_by_name(odcs, server) if server else None
     classdefs = []
-    if contract.schema_:
-        for schema_obj in contract.schema_:
+    if odcs.schema_:
+        for schema_obj in odcs.schema_:
             classdefs.append(generate_model_class(schema_obj.name, schema_obj, server_obj, sql_server_type))
 
-    documentation = [ast.Expr(ast.Constant(contract.description))] if contract.description else []
+    description_str = None
+    if odcs.description:
+        if hasattr(odcs.description, "purpose"):
+            description_str = odcs.description.purpose
+    documentation = [ast.Expr(ast.Constant(description_str))] if description_str else []
 
     declarative_base = ast.ClassDef(
         name=DECLARATIVE_BASE,
