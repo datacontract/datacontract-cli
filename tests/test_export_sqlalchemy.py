@@ -4,7 +4,7 @@ from textwrap import dedent
 import pytest
 
 import datacontract.export.sqlalchemy_exporter as conv
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import Description, OpenDataContractStandard, SchemaObject, SchemaProperty
 
 
 # These tests would be easier if AST nodes were comparable.
@@ -111,8 +111,8 @@ def test_model_description_export():
     contract = OpenDataContractStandard(
         apiVersion="v3.1.0",
         kind="DataContract",
-        description="Contract description",
-        schema_=[SchemaObject(name="test_model", properties=[SchemaProperty(name="f", logicalType="string")])],
+        description=Description(purpose="Contract description"),
+        schema=[SchemaObject(name="test_model", properties=[SchemaProperty(name="f", logicalType="string")])],
     )
     result = conv.to_sqlalchemy_model_str(contract)
     assert result.strip().endswith(

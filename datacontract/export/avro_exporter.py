@@ -56,6 +56,23 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _get_enum_values(prop: SchemaProperty):
+    """Get enum values from logicalTypeOptions or customProperties."""
+    import json
+    # First check logicalTypeOptions (legacy/direct ODCS)
+    enum_values = _get_logical_type_option(prop, "enum")
+    if enum_values:
+        return enum_values
+    # Then check customProperties (converted from DCS)
+    enum_str = _get_config_value(prop, "enum")
+    if enum_str:
+        try:
+            return json.loads(enum_str)
+        except (json.JSONDecodeError, TypeError):
+            return None
+    return None
+
+
 def _parse_default_value(value: str):
     """Parse a default value string to its proper type (bool, int, float, or string)."""
     if value.lower() == "true":
@@ -87,7 +104,7 @@ def to_avro_field(prop: SchemaProperty) -> dict:
     avro_field["type"] = avro_type if is_required_avro else ["null", avro_type]
 
     # Handle enum types - both required and optional
-    enum_values = _get_logical_type_option(prop, "enum")
+    enum_values = _get_enum_values(prop)
     avro_config_type = _get_config_value(prop, "avroType")
 
     if avro_type == "enum" or (isinstance(avro_field["type"], list) and "enum" in avro_field["type"]):
@@ -133,7 +150,7 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         return avro_type
 
     # Check for enum fields based on presence of enum list and avroType config
-    enum_values = _get_logical_type_option(prop, "enum")
+    enum_values = _get_enum_values(prop)
     if enum_values and avro_type == "enum":
         return "enum"
 

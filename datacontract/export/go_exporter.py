@@ -125,8 +125,9 @@ def generate_go_type(schema_obj: SchemaObject, model_name: str) -> List[str]:
 
             go_type = go_type if prop.required else f"*{go_type}"
             description = prop.description or ""
+            comment = f" {description}" if description else ""
 
-            lines.append(f'    {camel_case_name} {go_type} `json:"{json_tag}" avro:"{avro_tag}"`  // {description}')
+            lines.append(f'    {camel_case_name} {go_type} `json:"{json_tag}" avro:"{avro_tag}"`  //{comment}')
 
     lines.append("}")
     go_types.append("\n".join(lines))

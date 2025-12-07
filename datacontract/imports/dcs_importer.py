@@ -389,8 +389,6 @@ def _convert_field_to_property(
         logical_type_options["exclusiveMinimum"] = field.exclusiveMinimum
     if field.exclusiveMaximum is not None:
         logical_type_options["exclusiveMaximum"] = field.exclusiveMaximum
-    if field.enum:
-        logical_type_options["enum"] = field.enum
     if field.format:
         logical_type_options["format"] = field.format
 
@@ -399,6 +397,9 @@ def _convert_field_to_property(
 
     # Convert config to customProperties
     custom_properties = []
+    # Note: enum is not allowed in logicalTypeOptions in ODCS 3.1.0, store in customProperties
+    if field.enum:
+        custom_properties.append(CustomProperty(property="enum", value=json.dumps(field.enum)))
     if field.pii is not None:
         custom_properties.append(CustomProperty(property="pii", value=str(field.pii)))
     if field.precision is not None:
@@ -413,9 +414,6 @@ def _convert_field_to_property(
             else:
                 custom_properties.append(CustomProperty(property=key, value=str(value)))
 
-    if custom_properties:
-        prop.customProperties = custom_properties
-
     # Convert references to relationships
     if field.references:
         prop.relationships = [Relationship(type="foreignKey", to=field.references)]
@@ -427,6 +425,17 @@ def _convert_field_to_property(
     # Convert items (for array types)
     if field.items:
         prop.items = _convert_field_to_property("item", field.items, None, definitions)
+
+    # Convert keys/values (for map types) - store types in customProperties
+    if field.keys or field.values:
+        if field.keys and field.keys.type:
+            custom_properties.append(CustomProperty(property="mapKeyType", value=_convert_type_to_logical_type(field.keys.type)))
+        if field.values and field.values.type:
+            custom_properties.append(CustomProperty(property="mapValueType", value=_convert_type_to_logical_type(field.values.type)))
+
+    # Set customProperties after all have been added
+    if custom_properties:
+        prop.customProperties = custom_properties
 
     # Convert quality rules
     if field.quality:

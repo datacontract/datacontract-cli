@@ -252,7 +252,7 @@ def print_schema(dtype: types.DataType) -> str:
         Returns:
             str: The indented text.
         """
-        return "\n".join([f"{'    ' * level}{line}" for line in text.split("\n")])
+        return "\n".join([f"{'    ' * level}{line}" if line else "" for line in text.split("\n")])
 
     def repr_column(column: types.StructField) -> str:
         """
@@ -283,6 +283,8 @@ def print_schema(dtype: types.DataType) -> str:
         Returns:
             str: The code representation of the StructType.
         """
+        if not struct_type.fields:
+            return "StructType([\n\n])"
         fields = ",\n".join([indent(repr_column(field), 1) for field in struct_type.fields])
         return f"StructType([\n{fields}\n])"
 

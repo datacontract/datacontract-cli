@@ -95,7 +95,16 @@ def to_property(prop: SchemaProperty) -> dict:
     if pattern:
         property_dict["pattern"] = pattern
 
+    # Check logicalTypeOptions first, then customProperties for enum
     enum_values = _get_logical_type_option(prop, "enum")
+    if not enum_values:
+        enum_from_custom = _get_config_value(prop, "enum")
+        if enum_from_custom:
+            # Parse JSON string from customProperties
+            try:
+                enum_values = json.loads(enum_from_custom)
+            except (json.JSONDecodeError, TypeError):
+                enum_values = None
     if enum_values:
         property_dict["enum"] = enum_values
 

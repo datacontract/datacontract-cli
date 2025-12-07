@@ -35,7 +35,7 @@ class IcebergExporter(Exporter):
             str: A string representation of the Iceberg json schema.
         """
 
-        return to_iceberg(data_contract, model)
+        return to_iceberg(data_contract, schema_name)
 
 
 def to_iceberg(contract: OpenDataContractStandard, model: str) -> str:
@@ -133,14 +133,78 @@ def make_list(item: SchemaProperty) -> types.ListType:
     return types.ListType(element_id=0, element_type=field_type, element_required=item.required is True)
 
 
+def _type_str_to_iceberg_type(type_str: str) -> types.IcebergType:
+    """Convert a type string to an Iceberg type."""
+    if not type_str:
+        return types.StringType()
+    t = type_str.lower()
+    if t == "string":
+        return types.StringType()
+    elif t in ["integer", "int"]:
+        return types.IntegerType()
+    elif t in ["long", "bigint"]:
+        return types.LongType()
+    elif t == "number":
+        return types.DecimalType(precision=38, scale=0)
+    elif t in ["float"]:
+        return types.FloatType()
+    elif t in ["double"]:
+        return types.DoubleType()
+    elif t == "boolean":
+        return types.BooleanType()
+    elif t == "date":
+        return types.DateType()
+    elif t == "timestamp":
+        return types.TimestamptzType()
+    elif t in ["bytes", "binary"]:
+        return types.BinaryType()
+    else:
+        return types.StringType()
+
+
+def _get_custom_prop(prop: SchemaProperty, key: str) -> Optional[str]:
+    """Get a custom property value from a SchemaProperty."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
 def make_map(prop: SchemaProperty) -> types.MapType:
-    # For ODCS, we need to check for nested properties that represent keys/values
+    # For ODCS, read key/value types from customProperties
     # Default to string -> string if not specified
     key_type = types.StringType()
     value_type = types.StringType()
 
+    key_type_str = _get_custom_prop(prop, "mapKeyType")
+    value_type_str = _get_custom_prop(prop, "mapValueType")
+    value_physical_type = _get_custom_prop(prop, "mapValuePhysicalType")
+    value_required_str = _get_custom_prop(prop, "mapValueRequired")
+    value_required = value_required_str == "true" if value_required_str else False
+
+    if key_type_str:
+        key_type = _type_str_to_iceberg_type(key_type_str)
+
+    # Handle nested map in value type
+    if value_physical_type == "map":
+        nested_key_type = _get_custom_prop(prop, "mapNestedKeyType") or "string"
+        nested_value_type = _get_custom_prop(prop, "mapNestedValueType") or "string"
+        nested_value_required_str = _get_custom_prop(prop, "mapNestedValueRequired")
+        nested_value_required = nested_value_required_str == "true" if nested_value_required_str else True
+        value_type = types.MapType(
+            key_id=0,
+            key_type=_type_str_to_iceberg_type(nested_key_type),
+            value_id=0,
+            value_type=_type_str_to_iceberg_type(nested_value_type),
+            value_required=nested_value_required
+        )
+    elif value_type_str:
+        value_type = _type_str_to_iceberg_type(value_type_str)
+
     # key_id and value_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values (see #make_field)
-    return types.MapType(key_id=0, key_type=key_type, value_id=0, value_type=value_type, value_required=False)
+    return types.MapType(key_id=0, key_type=key_type, value_id=0, value_type=value_type, value_required=value_required)
 
 
 def to_struct_type(properties: List[SchemaProperty]) -> types.StructType:

@@ -34,13 +34,24 @@ def to_terraform(data_contract: OpenDataContractStandard, server_id: str = None)
     return result.strip()
 
 
+def _get_server_custom_property(server: Server, key: str) -> Optional[str]:
+    """Get a custom property from the server."""
+    if server.customProperties is None:
+        return None
+    for cp in server.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
+
+
 def server_to_terraform_resource(data_contract: OpenDataContractStandard, result, server: Server, server_name):
     tag_data_contract = data_contract.id
     tag_name = data_contract.name
     tag_server = server_name
     bucket_name = extract_bucket_name(server)
     resource_id = f"{data_contract.id}_{server_name}"
-    data_product_id = data_contract.dataProduct
+    # Get dataProductId from data_contract or server customProperties
+    data_product_id = data_contract.dataProduct or _get_server_custom_property(server, "dataProductId")
 
     if data_product_id is not None:
         result += f"""

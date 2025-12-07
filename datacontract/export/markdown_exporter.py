@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from open_data_contract_standard.model import (
+    Description,
     OpenDataContractStandard,
     SchemaObject,
     SchemaProperty,
@@ -46,6 +47,9 @@ def to_markdown(data_contract: OpenDataContractStandard) -> str:
         "## Info",
         info_to_markdown(data_contract),
         "",
+        "## Terms of Use",
+        terms_of_use_to_markdown(data_contract.description),
+        "",
         "## Servers",
         servers_to_markdown(data_contract.servers),
         "",
@@ -72,6 +76,29 @@ def info_to_markdown(data_contract: OpenDataContractStandard) -> str:
     if data_contract.team:
         parts.append(f"- **team:** {data_contract.team.name}")
     return "\n".join(parts)
+
+
+def terms_of_use_to_markdown(description: Optional[Description]) -> str:
+    """Convert Description object's terms of use fields to markdown."""
+    if not description:
+        return "*No terms of use defined.*"
+
+    # Handle case where description is a string (legacy)
+    if isinstance(description, str):
+        return "*No terms of use defined.*"
+
+    parts = []
+    if description.usage:
+        parts.append(f"### Usage\n{description.usage}")
+    if description.purpose:
+        parts.append(f"### Purpose\n{description.purpose}")
+    if description.limitations:
+        parts.append(f"### Limitations\n{description.limitations}")
+
+    if not parts:
+        return "*No terms of use defined.*"
+
+    return "\n\n".join(parts)
 
 
 def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_in_table_cell: bool = False) -> str:
@@ -216,8 +243,18 @@ def sla_properties_to_markdown(sla_properties: Optional[List[ServiceLevelAgreeme
     return "\n".join(markdown_parts)
 
 
-def description_to_markdown(description: str | None) -> str:
-    return (description or "No description.").replace("\n", "<br>")
+def description_to_markdown(description) -> str:
+    """Convert a description (string or Description object) to markdown text."""
+    if description is None:
+        return "No description."
+    if isinstance(description, str):
+        return description.replace("\n", "<br>")
+    # Handle Description object - use purpose as the primary description
+    if hasattr(description, "purpose") and description.purpose:
+        return description.purpose.replace("\n", "<br>")
+    if hasattr(description, "usage") and description.usage:
+        return description.usage.replace("\n", "<br>")
+    return "No description."
 
 
 def array_of_dict_to_markdown(array: List[Dict[str, str]]) -> str:

@@ -156,7 +156,7 @@ def constant_field_value(field_name: str, prop: SchemaProperty) -> tuple[ast.Cal
         raise RuntimeError(f"Unsupported field type {prop_type}.")
 
     return Column(
-        new_type, nullable=not prop.required, comment=prop.description, primary_key=prop.primaryKey or False
+        new_type, nullable=not prop.required, comment=prop.description, primary_key=prop.primaryKey if prop.primaryKey else None
     ), None
 
 

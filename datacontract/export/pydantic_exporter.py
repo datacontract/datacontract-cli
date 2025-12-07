@@ -12,13 +12,28 @@ class PydanticExporter(Exporter):
         return to_pydantic_model_str(data_contract)
 
 
+def _get_description_str(description) -> str | None:
+    """Extract a string from a description, handling both string and Description object."""
+    if description is None:
+        return None
+    if isinstance(description, str):
+        return description
+    # It's a Description object - get purpose or other meaningful field
+    if hasattr(description, 'purpose') and description.purpose:
+        return description.purpose
+    if hasattr(description, 'usage') and description.usage:
+        return description.usage
+    return None
+
+
 def to_pydantic_model_str(contract: OpenDataContractStandard) -> str:
     classdefs = []
     if contract.schema_:
         for schema_obj in contract.schema_:
             classdefs.append(generate_model_class(schema_obj.name, schema_obj))
 
-    documentation = [ast.Expr(ast.Constant(contract.description))] if contract.description else []
+    desc_str = _get_description_str(contract.description)
+    documentation = [ast.Expr(ast.Constant(desc_str))] if desc_str else []
     result = ast.Module(
         body=[
             ast.Import(
