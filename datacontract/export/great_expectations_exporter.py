@@ -82,6 +82,8 @@ def _get_enum_from_custom_properties(prop: SchemaProperty) -> Optional[List[str]
         return None
     for cp in prop.customProperties:
         if cp.property == "enum" and cp.value:
+            if isinstance(cp.value, list):
+                return cp.value
             return json.loads(cp.value)
     return None
 

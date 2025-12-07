@@ -47,12 +47,64 @@ def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
 
 
 @dataclass
+class _InfoView:
+    """Unified info view for templates."""
+    title: str
+    version: str
+    owner: Optional[str]
+    description: Optional[str]
+
+
+@dataclass
+class _SpecView:
+    """Unified spec view for templates, compatible with DCS template structure."""
+    info: _InfoView
+    models: dict
+
+
+@dataclass
 class DataContractView:
     """Class for keeping track of an item in inventory."""
 
     html_filepath: Path
     html_link: Path
     odcs: OpenDataContractStandard
+
+    @property
+    def spec(self) -> _SpecView:
+        """Provide a DCS-compatible view for templates."""
+        # Build models dict from ODCS schema
+        models = {}
+        if self.odcs.schema_:
+            for schema in self.odcs.schema_:
+                fields = {}
+                if schema.properties:
+                    for prop in schema.properties:
+                        fields[prop.name] = {
+                            "description": prop.description,
+                        }
+                models[schema.name] = {
+                    "description": schema.description,
+                    "fields": fields,
+                }
+
+        # Get description
+        description = None
+        if self.odcs.description:
+            if isinstance(self.odcs.description, str):
+                description = self.odcs.description
+            elif hasattr(self.odcs.description, "purpose"):
+                description = self.odcs.description.purpose
+
+        return _SpecView(
+            info=_InfoView(
+                title=self.odcs.name or self.odcs.id or "",
+                version=self.odcs.version or "",
+                owner=_get_owner(self.odcs),
+                description=description,
+            ),
+            models=models,
+        )
 
 
 def create_index_html(contracts, path):
