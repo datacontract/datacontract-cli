@@ -9,6 +9,7 @@ schema:
   physicalType: object
   description: Schema for football team and person details, where team is nested under
     the person
+  businessName: FootballSchema
   logicalType: object
   physicalName: FootballSchema
   properties:

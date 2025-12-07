@@ -8,6 +8,7 @@ schema:
 - name: FootballSchema
   physicalType: object
   description: Schema for football team and person details
+  businessName: FootballSchema
   logicalType: object
   physicalName: FootballSchema
 

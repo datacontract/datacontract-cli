@@ -8,6 +8,7 @@ schema:
 - name: OrderSchema
   physicalType: object
   description: Schema for order details
+  businessName: OrderSchema
   logicalType: object
   physicalName: OrderSchema
   properties:
@@ -21,10 +22,9 @@ schema:
     physicalType: string
     description: Timestamp when the order was placed
     businessName: Order Timestamp
-    customProperties:
-    - property: format
-      value: date-time
     logicalType: string
+    logicalTypeOptions:
+      format: date-time
     required: true
   - name: order_total
     physicalType: integer
@@ -60,18 +60,15 @@ schema:
     physicalType: string
     description: Email address of the customer
     businessName: Customer Email Address
-    customProperties:
-    - property: format
-      value: email
     logicalType: string
+    logicalTypeOptions:
+      format: email
     required: true
   - name: processed_timestamp
     physicalType: string
     description: Timestamp when the order was processed
     businessName: Processed Timestamp
-    customProperties:
-    - property: format
-      value: date-time
     logicalType: string
+    logicalTypeOptions:
+      format: date-time
     required: true
-

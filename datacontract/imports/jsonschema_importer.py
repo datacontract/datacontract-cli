@@ -39,6 +39,7 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
         name=title,
         physical_type=type_,
         description=description,
+        business_name=title,
         properties=properties,
     )
 
@@ -112,8 +113,6 @@ def schema_to_property(
 
     # Build custom properties for attributes not directly mapped
     custom_props = {}
-    if format_val:
-        custom_props["format"] = format_val
     if prop_schema.get("pii"):
         custom_props["pii"] = prop_schema.get("pii")
 
@@ -154,6 +153,7 @@ def schema_to_property(
         max_length=max_length,
         minimum=minimum,
         maximum=maximum,
+        format=format_val,
         properties=nested_properties,
         items=items_prop,
         custom_properties=custom_props if custom_props else None,

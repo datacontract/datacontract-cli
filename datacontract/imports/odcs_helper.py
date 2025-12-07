@@ -33,6 +33,7 @@ def create_schema_object(
     name: str,
     physical_type: str = "table",
     description: str = None,
+    business_name: str = None,
     properties: List[SchemaProperty] = None,
 ) -> SchemaObject:
     """Create a SchemaObject (equivalent to DCS Model)."""
@@ -44,6 +45,8 @@ def create_schema_object(
     )
     if description:
         schema.description = description
+    if business_name:
+        schema.businessName = business_name
     if properties:
         schema.properties = properties
     return schema
@@ -68,6 +71,7 @@ def create_property(
     maximum: float = None,
     precision: int = None,
     scale: int = None,
+    format: str = None,
     properties: List["SchemaProperty"] = None,
     items: "SchemaProperty" = None,
     custom_properties: Dict[str, Any] = None,
@@ -114,6 +118,8 @@ def create_property(
         logical_type_options["precision"] = precision
     if scale is not None:
         logical_type_options["scale"] = scale
+    if format:
+        logical_type_options["format"] = format
     if logical_type_options:
         prop.logicalTypeOptions = logical_type_options
 
