@@ -73,7 +73,7 @@ def map_pyarrow_field_to_property(pyarrow_field: pyarrow.Field, field_name: str)
             scale=pyarrow_field.type.scale,
         )
     if pyarrow.types.is_timestamp(pyarrow_field.type):
-        return create_property(name=field_name, logical_type="date", physical_type="TIMESTAMP")
+        return create_property(name=field_name, logical_type="timestamp", physical_type="TIMESTAMP")
     if pyarrow.types.is_date(pyarrow_field.type):
         return create_property(name=field_name, logical_type="date", physical_type="DATE")
     if pyarrow.types.is_null(pyarrow_field.type):
