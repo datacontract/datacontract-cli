@@ -61,8 +61,8 @@ def to_rdf(data_contract: OpenDataContractStandard, base) -> Graph:
         g = Graph(base=Namespace(""))
 
     # Use ODCS namespace
-    odcs = Namespace("https://odcs.io/OpenDataContractStandard/3.0.0/")
-    odcsx = Namespace("https://odcs.io/OpenDataContractStandard/3.0.0/Extension/")
+    odcs = Namespace("https://github.com/bitol-io/open-data-contract-standard/")
+    odcsx = Namespace("https://github.com/bitol-io/open-data-contract-standard/extension/")
 
     g.bind("odcs", odcs)
     g.bind("odcsx", odcsx)
