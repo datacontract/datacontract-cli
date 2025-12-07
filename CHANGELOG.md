@@ -19,7 +19,11 @@ We recommend migrating to the Open Data Contract Standard as soon as possible: h
 
 ### Changed
 
-- ODCS v3.1.0 is now the default format for imports.
+- ODCS v3.1.0 is now the default format for all imports.
+
+### Added
+
+- If an ODCS slaProperty "freshness" is defined with a reference to the element (column), the CLI will now test freshness of the data.
 
 ### Fixed
 
