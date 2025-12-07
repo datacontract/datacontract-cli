@@ -930,12 +930,85 @@ def _get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> O
 
 def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Check]:
     checks: List[Check] = []
-    # Service levels in ODCS are in slaProperties
     if data_contract.slaProperties is None:
         return checks
-    # Note: Freshness and retention checks need to be adapted for ODCS format
-    # For now, return empty list - these will need to be refactored
+
+    for sla in data_contract.slaProperties:
+        if sla.property == "freshness":
+            check = to_servicelevel_freshness_check(data_contract, sla)
+            if check is not None:
+                checks.append(check)
+
     return checks
+
+
+def to_servicelevel_freshness_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
+    """Create a freshness check from an ODCS latency SLA property."""
+    if sla.element is None:
+        logger.info("slaProperties.latency.element is not defined, skipping freshness check")
+        return None
+
+    if sla.value is None:
+        logger.info("slaProperties.latency.value is not defined, skipping freshness check")
+        return None
+
+    # Parse element to get model and field (e.g., "my_table.field_three")
+    element = sla.element
+    if "." not in element:
+        logger.info("slaProperties.latency.element is not fully qualified (model.field), skipping freshness check")
+        return None
+
+    if element.count(".") > 1:
+        logger.info("slaProperties.latency.element contains multiple dots, which is currently not supported")
+        return None
+
+    model_name = element.split(".")[0]
+    field_name = element.split(".")[1]
+
+    # Verify the model exists
+    schema = _get_schema_by_name(data_contract, model_name)
+    if schema is None:
+        logger.info(f"Model {model_name} not found in schema, skipping freshness check")
+        return None
+
+    # Build threshold from value and unit
+    unit = sla.unit.lower() if sla.unit else "d"
+    value = sla.value
+
+    # Normalize unit to soda format (d, h, m)
+    if unit in ["d", "day", "days"]:
+        threshold = f"{value}d"
+    elif unit in ["h", "hr", "hour", "hours"]:
+        threshold = f"{value}h"
+    elif unit in ["m", "min", "minute", "minutes"]:
+        threshold = f"{value}m"
+    else:
+        logger.info(f"Unsupported unit {unit} for freshness check, must be days, hours, or minutes")
+        return None
+
+    check_type = "servicelevel_freshness"
+    check_key = "servicelevel_freshness"
+    sodacl_check_dict = {
+        f"checks for {model_name}": [
+            {
+                f"freshness({field_name}) < {threshold}": {
+                    "name": check_key,
+                },
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="servicelevel",
+        type=check_type,
+        name=f"Freshness of {model_name}.{field_name} < {threshold}",
+        model=model_name,
+        field=field_name,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
 
 
 def to_quality_check(data_contract: OpenDataContractStandard) -> Check | None:

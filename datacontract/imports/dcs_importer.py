@@ -446,4 +446,39 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
             )
         )
 
+    if hasattr(servicelevels, "freshness") and servicelevels.freshness:
+        freshness = servicelevels.freshness
+        if hasattr(freshness, "threshold") and freshness.threshold and hasattr(freshness, "timestampField") and freshness.timestampField:
+            value, unit = _parse_iso8601_duration(freshness.threshold)
+            if value is not None and unit is not None:
+                sla_properties.append(
+                    ServiceLevelAgreementProperty(
+                        property="freshness",
+                        value=value,
+                        unit=unit,
+                        element=freshness.timestampField,
+                    )
+                )
+
     return sla_properties
+
+
+def _parse_iso8601_duration(duration: str) -> tuple:
+    """Parse ISO 8601 duration (e.g., PT1H, P1D) to value and unit."""
+    import re
+
+    if not duration:
+        return None, None
+
+    # Remove P and T prefixes
+    duration = duration.upper().replace("P", "").replace("T", "")
+
+    # Match patterns like 1H, 30M, 1D
+    match = re.match(r"(\d+)([DHMS])", duration)
+    if match:
+        value = int(match.group(1))
+        unit_char = match.group(2)
+        unit_map = {"D": "d", "H": "h", "M": "m", "S": "s"}
+        return value, unit_map.get(unit_char, "d")
+
+    return None, None
