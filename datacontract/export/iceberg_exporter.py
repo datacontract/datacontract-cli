@@ -112,6 +112,16 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _get_custom_property_value(prop: SchemaProperty, key: str):
+    """Get a custom property value."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key and cp.value is not None:
+            return cp.value
+    return None
+
+
 def make_field(field_name: str, prop: SchemaProperty) -> types.NestedField:
     field_type = get_field_type(prop)
 
@@ -264,8 +274,8 @@ def get_field_type(prop: SchemaProperty) -> types.IcebergType:
         if physical_type in ["string", "varchar", "text", "char", "nvarchar"]:
             return types.StringType()
         if physical_type in ["decimal", "numeric"]:
-            precision = _get_logical_type_option(prop, "precision") or 38
-            scale = _get_logical_type_option(prop, "scale") or 0
+            precision = _get_custom_property_value(prop, "precision") or 38
+            scale = _get_custom_property_value(prop, "scale") or 0
             return types.DecimalType(precision=precision, scale=scale)
         if physical_type in ["integer", "int", "int32"]:
             return types.IntegerType()
@@ -291,14 +301,16 @@ def get_field_type(prop: SchemaProperty) -> types.IcebergType:
         case "string":
             return types.StringType()
         case "number":
-            precision = _get_logical_type_option(prop, "precision") or 38
-            scale = _get_logical_type_option(prop, "scale") or 0
+            precision = _get_custom_property_value(prop, "precision") or 38
+            scale = _get_custom_property_value(prop, "scale") or 0
             return types.DecimalType(precision=precision, scale=scale)
         case "integer":
             return types.LongType()
         case "boolean":
             return types.BooleanType()
-        case "date":
+        case "timestamp":
             return types.TimestamptzType()
+        case "date":
+            return types.DateType()
         case _:
             return types.BinaryType()
