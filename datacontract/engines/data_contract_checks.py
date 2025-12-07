@@ -752,7 +752,25 @@ def check_quality_list(
 
     count = 0
     for quality in quality_list:
-        if quality.type == "sql":
+        if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
+            # Custom SodaCL quality check with raw implementation
+            check_key = f"{model_name}__quality_custom_{count}"
+            check_type = "quality_custom_soda"
+            checks.append(
+                Check(
+                    id=str(uuid.uuid4()),
+                    key=check_key,
+                    category="quality",
+                    type=check_type,
+                    name=quality.description if quality.description is not None else "Custom SodaCL Check",
+                    model=model_name,
+                    field=field_name,
+                    engine="soda",
+                    language="sodacl",
+                    implementation=quality.implementation,
+                )
+            )
+        elif quality.type == "sql":
             if field_name is None:
                 check_key = f"{model_name}__quality_sql_{count}"
                 check_type = "field_quality_sql"
@@ -938,6 +956,10 @@ def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Chec
             check = to_servicelevel_freshness_check(data_contract, sla)
             if check is not None:
                 checks.append(check)
+        elif sla.property == "retention":
+            check = to_servicelevel_retention_check(data_contract, sla)
+            if check is not None:
+                checks.append(check)
 
     return checks
 
@@ -1009,6 +1031,112 @@ def to_servicelevel_freshness_check(data_contract: OpenDataContractStandard, sla
         language="sodacl",
         implementation=yaml.dump(sodacl_check_dict),
     )
+
+
+def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
+    """Create a retention check from an ODCS retention SLA property."""
+    if sla.element is None:
+        logger.info("slaProperties.retention.element is not defined, skipping retention check")
+        return None
+
+    if sla.value is None:
+        logger.info("slaProperties.retention.value is not defined, skipping retention check")
+        return None
+
+    # Parse element to get model and field (e.g., "orders.processed_timestamp")
+    element = sla.element
+    if "." not in element:
+        logger.info("slaProperties.retention.element is not fully qualified (model.field), skipping retention check")
+        return None
+
+    if element.count(".") > 1:
+        logger.info("slaProperties.retention.element contains multiple dots, which is currently not supported")
+        return None
+
+    model_name = element.split(".")[0]
+    field_name = element.split(".")[1]
+
+    # Verify the model exists
+    schema = _get_schema_by_name(data_contract, model_name)
+    if schema is None:
+        logger.info(f"Model {model_name} not found in schema, skipping retention check")
+        return None
+
+    # Parse ISO 8601 duration to seconds
+    retention_period = sla.value
+    seconds = _parse_iso8601_to_seconds(retention_period)
+    if seconds is None:
+        logger.info(f"Could not parse retention period {retention_period}, skipping retention check")
+        return None
+
+    check_type = "servicelevel_retention"
+    check_key = "servicelevel_retention"
+    sodacl_check_dict = {
+        f"checks for {model_name}": [
+            {
+                f"{model_name}_servicelevel_retention < {seconds}": {
+                    "name": check_key,
+                    f"{model_name}_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({field_name}), CURRENT_TIMESTAMP)",
+                },
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="servicelevel",
+        type=check_type,
+        name=f"Retention of {model_name}.{field_name} < {seconds}s",
+        model=model_name,
+        field=field_name,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
+def _parse_iso8601_to_seconds(duration: str) -> int | None:
+    """Parse ISO 8601 duration to seconds."""
+    if not duration:
+        return None
+
+    duration = duration.upper()
+
+    # Simple patterns: P1Y, P1M, P1D, PT1H, PT1M, PT1S
+    # For simplicity, we support only single unit durations
+    import re
+
+    # Year
+    match = re.match(r"P(\d+)Y", duration)
+    if match:
+        return int(match.group(1)) * 365 * 24 * 60 * 60
+
+    # Month (approximate as 30 days)
+    match = re.match(r"P(\d+)M", duration)
+    if match:
+        return int(match.group(1)) * 30 * 24 * 60 * 60
+
+    # Day
+    match = re.match(r"P(\d+)D", duration)
+    if match:
+        return int(match.group(1)) * 24 * 60 * 60
+
+    # Hour
+    match = re.match(r"PT(\d+)H", duration)
+    if match:
+        return int(match.group(1)) * 60 * 60
+
+    # Minute
+    match = re.match(r"PT(\d+)M", duration)
+    if match:
+        return int(match.group(1)) * 60
+
+    # Second
+    match = re.match(r"PT(\d+)S", duration)
+    if match:
+        return int(match.group(1))
+
+    return None
 
 
 def to_quality_check(data_contract: OpenDataContractStandard) -> Check | None:

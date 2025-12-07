@@ -537,10 +537,14 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
         )
 
     if hasattr(servicelevels, "retention") and servicelevels.retention:
+        retention = servicelevels.retention
+        period = retention.period if hasattr(retention, "period") else str(retention)
+        element = retention.timestampField if hasattr(retention, "timestampField") else None
         sla_properties.append(
             ServiceLevelAgreementProperty(
                 property="retention",
-                value=servicelevels.retention.period if hasattr(servicelevels.retention, "period") else str(servicelevels.retention),
+                value=period,
+                element=element,
             )
         )
 

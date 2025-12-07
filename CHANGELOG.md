@@ -26,6 +26,8 @@ We recommend migrating to the Open Data Contract Standard as soon as possible: h
 ### Added
 
 - If an ODCS slaProperty "freshness" is defined with a reference to the element (column), the CLI will now test freshness of the data.
+- If an ODCS slaProperty "retention" is defined with a reference to the element (column), the CLI will now test retention of the data.
+- Support for custom Soda quality checks in ODCS using `type: custom` and `engine: soda` with raw SodaCL implementation.
 
 ### Fixed
 
