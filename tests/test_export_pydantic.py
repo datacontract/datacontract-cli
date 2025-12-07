@@ -1,7 +1,7 @@
 import ast
 from textwrap import dedent
 
-import datacontract.export.pydantic_converter as conv
+import datacontract.export.pydantic_exporter as conv
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 

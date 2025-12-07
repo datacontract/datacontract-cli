@@ -3,7 +3,7 @@ from textwrap import dedent
 
 import pytest
 
-import datacontract.export.sqlalchemy_converter as conv
+import datacontract.export.sqlalchemy_exporter as conv
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 
@@ -27,7 +27,7 @@ def test_simple_model_export():
     )
 
 
-def test_simple_model_export_with_primaryKey():
+def test_simple_model_export_with_primary_key():
     schema = SchemaObject(
         name="Test", properties=[SchemaProperty(name="f", logicalType="string", primaryKey=True, primaryKeyPosition=1)]
     )
