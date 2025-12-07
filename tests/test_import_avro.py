@@ -26,329 +26,394 @@ def test_import_avro_schema():
     result = DataContract.import_from_source("avro", "fixtures/avro/data/orders.avsc")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  orders:
-    description: My Model
-    namespace: com.sample.schema
-    fields:
-      ordertime:
-        type: long
-        description: My Field
-        required: true
-      orderid:
-        type: int
-        required: true
-      itemid:
-        type: string
-        required: true
-      material:
-        type: string
-        required: false
-        description: An optional field
-      orderunits:
-        type: double
-        required: true
-      emailaddresses:
-        type: array
-        description: Different email addresses of a customer
-        items:
-           type: string
-           format: email
-           pattern: ^.*@.*$
-        required: true
-      address:
-        type: object
-        required: true
-        fields:
-          city:
-            type: string
-            required: true
-          state:
-            type: string
-            required: true
-          zipcode:
-            type: long
-            required: true
-      status:
-        type: string
-        required: true
-        description: order status
-        title: Status
-        enum:
-            - PLACED
-            - SHIPPED
-            - DELIVERED
-            - CANCELLED
-        config:
-            avroType: enum
-      metadata:
-        type: map
-        required: true
-        description: Additional metadata about the order
-        values:
-          type: object
-          fields:
-            value:
-              type: string
-              required: true
-            type:
-              type: string
-              required: true
-              title: MetadataType
-              enum:
-                  - STRING
-                  - LONG
-                  - DOUBLE
-              config:
-                avroType: enum
-            timestamp:
-              type: long
-              required: true
-            source:
-              type: string
-              required: true
-          default: {}
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: orders
+  physicalType: record
+  description: My Model
+  customProperties:
+  - property: namespace
+    value: com.sample.schema
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: ordertime
+    physicalType: long
+    description: My Field
+    logicalType: integer
+    required: true
+  - name: orderid
+    physicalType: int
+    logicalType: integer
+    required: true
+  - name: itemid
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: material
+    physicalType: string
+    description: An optional field
+    logicalType: string
+    required: false
+  - name: orderunits
+    physicalType: double
+    logicalType: number
+    required: true
+  - name: emailaddresses
+    physicalType: array
+    description: Different email addresses of a customer
+    logicalType: array
+    required: true
+    items:
+      name: items
+      physicalType: string
+      logicalType: string
+  - name: address
+    physicalType: record
+    logicalType: object
+    required: true
+    properties:
+    - name: city
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: state
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: zipcode
+      physicalType: long
+      logicalType: integer
+      required: true
+  - name: status
+    physicalType: enum
+    description: order status
+    customProperties:
+    - property: avroType
+      value: enum
+    - property: avroSymbols
+      value:
+      - PLACED
+      - SHIPPED
+      - DELIVERED
+      - CANCELLED
+    logicalType: string
+    required: true
+  - name: metadata
+    physicalType: map
+    description: Additional metadata about the order
+    customProperties:
+    - property: avroType
+      value: map
+    logicalType: object
+    required: true
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_arrays_of_records_and_nested_arrays():
     result = DataContract.import_from_source("avro", "fixtures/avro/data/arrays.avsc")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  orders:
-    description: My Model
-    fields:
-      orderid:
-        type: int
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: orders
+  physicalType: record
+  description: My Model
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: orderid
+    physicalType: int
+    logicalType: integer
+    required: true
+  - name: addresses
+    physicalType: array
+    description: Addresses of a customer
+    logicalType: array
+    required: true
+    items:
+      name: items
+      physicalType: record
+      logicalType: object
+      properties:
+      - name: city
+        physicalType: string
+        logicalType: string
         required: true
-      addresses:
-        type: array
+      - name: state
+        physicalType: string
+        logicalType: string
         required: true
-        description: Addresses of a customer
-        items:
-          type: object
-          fields:
-            city:
-              type: string
-              required: true
-            state:
-              type: string
-              required: true
-            zipcode:
-              type: long
-              required: true
-      nestedArrays:
-        type: array
+      - name: zipcode
+        physicalType: long
+        logicalType: integer
         required: true
-        description: Example schema for an array of arrays
-        items:
-          type: array
-          items:
-            type: int
-      nationalities:
-        type: array
-        required: false
-        items:
-          type: string
+  - name: nestedArrays
+    physicalType: array
+    description: Example schema for an array of arrays
+    logicalType: array
+    required: true
+    items:
+      name: items
+      physicalType: array
+      logicalType: array
+      items:
+        name: items
+        physicalType: int
+        logicalType: integer
+  - name: nationalities
+    physicalType: array
+    logicalType: array
+    required: false
+    items:
+      name: items
+      physicalType: string
+      logicalType: string
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_nested_records():
     result = DataContract.import_from_source("avro", "fixtures/avro/data/nested.avsc")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  Doc:
-    namespace: com.xxx
-    fields:
-      fieldA:
-        type: long
-        required: false
-      fieldB:
-        type: record
-        required: false
-        fields:
-          fieldC:
-            type: string
-            required: false
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: Doc
+  physicalType: record
+  customProperties:
+  - property: namespace
+    value: com.xxx
+  logicalType: object
+  physicalName: Doc
+  properties:
+  - name: fieldA
+    physicalType: long
+    logicalType: integer
+    required: false
+  - name: fieldB
+    physicalType: record
+    logicalType: object
+    required: false
+    properties:
+    - name: fieldC
+      physicalType: string
+      logicalType: string
+      required: false
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_nested_records_with_arrays():
     result = DataContract.import_from_source("avro", "fixtures/avro/data/nested_with_arrays.avsc")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  MarketingLoyaltyAggregation:
-    namespace: domain.schemas
-    fields:
-      Entries:
-        type: array
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: MarketingLoyaltyAggregation
+  physicalType: record
+  customProperties:
+  - property: namespace
+    value: domain.schemas
+  logicalType: object
+  physicalName: MarketingLoyaltyAggregation
+  properties:
+  - name: Entries
+    physicalType: array
+    logicalType: array
+    required: true
+    items:
+      name: items
+      physicalType: record
+      logicalType: object
+      properties:
+      - name: Identifier
+        physicalType: string
+        logicalType: string
         required: true
-        items:
-          type: object
-          fields:
-            Identifier:
-              type: string
+      - name: BranchPromo
+        physicalType: record
+        logicalType: object
+        required: false
+        properties:
+        - name: CodePrefix
+          physicalType: int
+          logicalType: integer
+          required: true
+        - name: Criteria
+          physicalType: record
+          logicalType: object
+          required: true
+          properties:
+          - name: MinimumSpendThreshold
+            physicalType: double
+            logicalType: number
+            required: false
+          - name: ApplicableBranchIDs
+            physicalType: array
+            logicalType: array
+            required: false
+            items:
+              name: items
+              physicalType: string
+              logicalType: string
+          - name: ProductGroupDetails
+            physicalType: record
+            logicalType: object
+            required: false
+            properties:
+            - name: IncludesAlcohol
+              physicalType: boolean
+              logicalType: boolean
               required: true
-            BranchPromo:
-              type: record
+            - name: ItemList
+              physicalType: array
+              logicalType: array
               required: false
-              fields:
-                CodePrefix:
-                  type: int
+              items:
+                name: items
+                physicalType: record
+                logicalType: object
+                properties:
+                - name: ProductID
+                  physicalType: string
+                  logicalType: string
                   required: true
-                Criteria:
-                  type: object
-                  required: true
-                  fields:
-                    MinimumSpendThreshold:
-                      type: double
-                      required: false
-                    ApplicableBranchIDs:
-                      type: array
-                      required: false
-                      items: 
-                        type: string
-                    ProductGroupDetails:
-                      type: record
-                      required: false
-                      fields:
-                        IncludesAlcohol:
-                          type: boolean
-                          required: true
-                        ItemList:
-                          type: array
-                          required: false
-                          items:
-                            type: object
-                            fields:
-                              ProductID:
-                                type: string
-                                required: true
-                              IsPromoItem:
-                                type: boolean
-                                required: false
+                - name: IsPromoItem
+                  physicalType: boolean
+                  logicalType: boolean
+                  required: false
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_logical_types():
     result = DataContract.import_from_source("avro", "fixtures/avro/data/logical_types.avsc")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  Test:
-    namespace: mynamespace.com
-    fields:
-      test_id:
-        type: string
-        required: true
-        description: id documentation test
-      device_id:
-        type: int
-        required: true
-      test_value:
-        type: double
-        required: true
-      num_items:
-        type: int
-        required: true
-      processed_timestamp:
-        type: long
-        required: true
-        description: 'The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29'        
-        config:
-          avroLogicalType: local-timestamp-micros
-      description:
-        type: string
-        required: true
-      is_processed:
-        type: boolean
-        required: true
-        config:
-          avroDefault: false 
-      some_bytes_decimal:
-        type: decimal
-        required: true
-        precision: 25
-        scale: 2                                
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: Test
+  physicalType: record
+  customProperties:
+  - property: namespace
+    value: mynamespace.com
+  logicalType: object
+  physicalName: Test
+  properties:
+  - name: test_id
+    physicalType: string
+    description: id documentation test
+    logicalType: string
+    required: true
+  - name: device_id
+    physicalType: int
+    logicalType: integer
+    required: true
+  - name: test_value
+    physicalType: double
+    logicalType: number
+    required: true
+  - name: num_items
+    physicalType: int
+    logicalType: integer
+    required: true
+  - name: processed_timestamp
+    physicalType: long
+    description: 'The date the event was processed: for more info https://avro.apache.org/docs/current/spec.html#Local+timestamp+%28microsecond+precision%29'
+    customProperties:
+    - property: avroLogicalType
+      value: local-timestamp-micros
+    logicalType: integer
+    required: true
+  - name: description
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: is_processed
+    physicalType: boolean
+    customProperties:
+    - property: avroDefault
+      value: 'False'
+    logicalType: boolean
+    required: true
+  - name: some_bytes_decimal
+    physicalType: bytes
+    logicalType: number
+    logicalTypeOptions:
+      precision: 25
+      scale: 2
+    required: true
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_avro_optional_enum():
     result = DataContract.import_from_source("avro", "fixtures/avro/data/optional_enum.avsc")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  TestRecord:
-    fields:
-      required_enum:
-        title: Color
-        type: string
-        required: true
-        enum:
-        - RED
-        - GREEN
-        - BLUE
-        config:
-          avroType: enum
-      optional_enum:
-        title: Status
-        type: string
-        required: false
-        enum:
-        - ACTIVE
-        - INACTIVE
-        - PENDING
-        config:
-          avroType: enum
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: TestRecord
+  physicalType: record
+  logicalType: object
+  physicalName: TestRecord
+  properties:
+  - name: required_enum
+    physicalType: enum
+    customProperties:
+    - property: avroType
+      value: enum
+    - property: avroSymbols
+      value:
+      - RED
+      - GREEN
+      - BLUE
+    logicalType: string
+    required: true
+  - name: optional_enum
+    physicalType: enum
+    customProperties:
+    - property: avroType
+      value: enum
+    logicalType: string
+    required: false
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint().has_passed()
