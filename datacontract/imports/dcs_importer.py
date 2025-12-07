@@ -208,37 +208,135 @@ def _convert_fields_to_properties(
 
 def _resolve_field_ref(field: Field, definitions: Dict[str, Field]) -> Field:
     """Resolve a field's $ref and merge with field properties."""
-    if not field.ref or not definitions:
+    if not field.ref:
         return field
 
-    # Parse ref like '#/definitions/order_id'
     ref_path = field.ref
-    if ref_path.startswith("#/definitions/"):
-        def_name = ref_path[len("#/definitions/"):]
-        if def_name in definitions:
-            definition = definitions[def_name]
-            # Create merged field: definition values as base, field values override
-            merged_data = {}
-            # Get all field names from the Field model
-            for attr in Field.model_fields.keys():
-                def_value = getattr(definition, attr, None)
-                field_value = getattr(field, attr, None)
-                # Field value takes precedence if set (not None and not empty for collections)
-                if field_value is not None:
-                    if isinstance(field_value, (list, dict)):
-                        if field_value:  # Non-empty collection
-                            merged_data[attr] = field_value
-                        elif def_value:
-                            merged_data[attr] = def_value
-                    else:
-                        merged_data[attr] = field_value
-                elif def_value is not None:
-                    merged_data[attr] = def_value
-            # Clear ref to avoid infinite recursion
-            merged_data['ref'] = None
-            return Field(**merged_data)
+    resolved_data = None
 
-    return field
+    # Handle file:// references
+    if ref_path.startswith("file://"):
+        resolved_data = _resolve_file_ref(ref_path)
+    # Handle #/definitions/ references
+    elif ref_path.startswith("#/") and definitions:
+        resolved_data = _resolve_local_ref(ref_path, definitions)
+
+    if resolved_data is None:
+        return field
+
+    # Create merged field: resolved values as base, field values override
+    merged_data = {}
+    for attr in Field.model_fields.keys():
+        resolved_value = resolved_data.get(attr)
+        field_value = getattr(field, attr, None)
+        # Field value takes precedence if set (not None and not empty for collections)
+        if field_value is not None:
+            if isinstance(field_value, (list, dict)):
+                if field_value:  # Non-empty collection
+                    merged_data[attr] = field_value
+                elif resolved_value:
+                    merged_data[attr] = resolved_value
+            else:
+                merged_data[attr] = field_value
+        elif resolved_value is not None:
+            merged_data[attr] = resolved_value
+    # Clear ref to avoid infinite recursion
+    merged_data['ref'] = None
+    return Field(**merged_data)
+
+
+def _resolve_file_ref(ref_path: str) -> Optional[Dict[str, Any]]:
+    """Resolve a file:// reference, optionally with a JSON pointer path."""
+    import yaml
+    from urllib.parse import urlparse
+
+    # Split file path and JSON pointer
+    if "#" in ref_path:
+        file_url, pointer = ref_path.split("#", 1)
+    else:
+        file_url, pointer = ref_path, ""
+
+    try:
+        # Parse the file:// URL to get the path
+        parsed = urlparse(file_url)
+        if parsed.scheme == "file":
+            file_path = parsed.path
+        else:
+            # Not a file:// URL, can't handle
+            logger.warning(f"Unsupported URL scheme in reference: {ref_path}")
+            return None
+
+        # Read the file
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        data = yaml.safe_load(content)
+
+        if pointer:
+            # Navigate the JSON pointer path
+            data = _navigate_path(data, pointer)
+
+        return data if isinstance(data, dict) else None
+    except Exception as e:
+        logger.warning(f"Failed to resolve file reference {ref_path}: {e}")
+        return None
+
+
+def _resolve_local_ref(ref_path: str, definitions: Dict[str, Field]) -> Optional[Dict[str, Any]]:
+    """Resolve a local #/ reference within definitions."""
+    if not ref_path.startswith("#/definitions/"):
+        return None
+
+    # Remove the #/definitions/ prefix
+    path_after_definitions = ref_path[len("#/definitions/"):]
+
+    # Check for simple case: #/definitions/name
+    if "/" not in path_after_definitions:
+        if path_after_definitions in definitions:
+            definition = definitions[path_after_definitions]
+            return {attr: getattr(definition, attr, None) for attr in Field.model_fields.keys()}
+        return None
+
+    # Complex case: #/definitions/name/fields/field_name
+    parts = path_after_definitions.split("/")
+    def_name = parts[0]
+
+    if def_name not in definitions:
+        return None
+
+    definition = definitions[def_name]
+
+    # Navigate remaining path
+    remaining_path = "/" + "/".join(parts[1:])
+    data = {attr: getattr(definition, attr, None) for attr in Field.model_fields.keys()}
+    # Convert fields dict to nested structure for navigation
+    if definition.fields:
+        data["fields"] = {name: _field_to_dict(f) for name, f in definition.fields.items()}
+
+    return _navigate_path(data, remaining_path)
+
+
+def _field_to_dict(field: Field) -> Dict[str, Any]:
+    """Convert a Field object to a dictionary."""
+    return {attr: getattr(field, attr, None) for attr in Field.model_fields.keys()}
+
+
+def _navigate_path(data: Any, path: str) -> Optional[Dict[str, Any]]:
+    """Navigate a JSON pointer-like path within data."""
+    if not path or path == "/":
+        return data if isinstance(data, dict) else None
+
+    # Remove leading slash and split
+    parts = path.lstrip("/").split("/")
+
+    current = data
+    for part in parts:
+        if isinstance(current, dict) and part in current:
+            current = current[part]
+        else:
+            return None
+
+    return current if isinstance(current, dict) else None
 
 
 def _convert_field_to_property(
