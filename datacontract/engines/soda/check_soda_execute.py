@@ -24,7 +24,6 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
-
 def check_soda_execute(
     run: Run,
     data_contract: DataContractSpecification,
