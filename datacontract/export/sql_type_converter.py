@@ -24,6 +24,8 @@ def convert_to_sql_type(field: Field, server_type: str) -> str:
         return convert_type_to_trino(field)
     elif server_type == "oracle":
         return convert_type_to_oracle(field)
+    elif server_type == "impala":
+        return convert_type_to_impala(field)
 
     return field.type
 
@@ -69,6 +71,8 @@ def convert_to_snowflake(field: Field) -> None | str:
     if type.lower() in ["array"]:
         return "ARRAY"
     return None
+
+
 
 
 # https://www.postgresql.org/docs/current/datatype.html
@@ -392,6 +396,56 @@ def convert_type_to_trino(field: Field) -> None | str:
         return "varbinary"
     if field_type in ["object", "record", "struct"]:
         return "json"
+
+
+def convert_type_to_impala(field: Field) -> None | str:
+    """Convert from supported datacontract types to equivalent Impala types.
+    Used as a fallback when `physicalType` is not present in the field config.
+    """
+
+    # Allow an explicit override, 
+    if field.config and "impalaType" in field.config:
+        return field.config["impalaType"]
+
+    field_type = field.type
+    if not field_type:
+        return None
+
+    t = field_type.lower()
+
+    # String-like
+    if t in ["string", "varchar", "text"]:
+        return "STRING"
+    # Numeric / decimal
+    if t in ["number", "decimal", "numeric"]:
+        precision = field.precision if field.precision is not None else 38
+        scale = field.scale if field.scale is not None else 0
+        return f"DECIMAL({precision},{scale})"
+    if t in ["float"]:
+        return "FLOAT"
+    if t in ["double"]:
+        return "DOUBLE"
+    if t in ["integer", "int"]:
+        return "INT"
+    if t in ["long", "bigint"]:
+        return "BIGINT"
+    # Booleans
+    if t == "boolean":
+        return "BOOLEAN"
+    # Temporal – Impala has a single TIMESTAMP type without timezone
+    if t in ["timestamp", "timestamp_ntz", "timestamp_tz"]:
+        return "TIMESTAMP"
+    if t == "date":
+        return "DATE"
+    # No dedicated TIME type in Impala → store as string
+    if t == "time":
+        return "STRING"
+    # Binary
+    if t in ["bytes", "binary"]:
+        return "BINARY"
+    # For complex / JSON-like types we currently do not emit a type check
+    # (returning None means no "has type" check is generated)
+    return None
 
 
 def convert_type_to_oracle(field: Field) -> None | str:

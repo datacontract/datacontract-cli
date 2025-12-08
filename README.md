@@ -958,8 +958,8 @@ If `physicalType` is not specified in the schema, we recommend the following map
 
 |logicalType | Recommended Impala type |
 |------------|-------------------------|
-| `integer`  | `INT`                   |
-| `number`   | `DOUBLE`                |
+| `integer`  | `INT` or `BIGINT`       |
+| `number`   | `DOUBLE`/`decimal(..)`  |
 | `string`   | `STRING` or `VARCHAR`   |
 | `boolean`  | `BOOLEAN`               |
 | `date`     | `DATE`                  |
