@@ -141,7 +141,7 @@ dev = [
   "minio==7.2.17",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
   "moto==5.1.17",
   "pandas>=2.1.0",
-  "pre-commit>=3.7.1,<4.5.0",
+  "pre-commit>=3.7.1,<4.6.0",
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.9",
