@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Restrict DuckDB dependency to < 1.4.0 (#972)
 
 ## [0.10.41] - 2025-12-02
 
