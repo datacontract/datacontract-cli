@@ -36,8 +36,9 @@ def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
                     # Handle references from relationships
                     if prop.relationships:
                         for rel in prop.relationships:
-                            if hasattr(rel, 'ref') and rel.ref:
-                                references = rel.ref.replace(".", "·")
+                            ref_target = getattr(rel, 'to', None) or getattr(rel, 'ref', None)
+                            if ref_target:
+                                references = ref_target.replace(".", "·")
                                 parts = references.split("·")
                                 referenced_model = _sanitize_name(parts[0]) if len(parts) > 0 else ""
                                 referenced_field = _sanitize_name(parts[1]) if len(parts) > 1 else ""
