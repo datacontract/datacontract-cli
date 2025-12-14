@@ -36,6 +36,7 @@ def test_test_sqlserver(mssql_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_USERNAME", sql_server.username)
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_PASSWORD", sql_server.password)
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE", "True")
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_DRIVER", "ODBC Driver 18 for SQL Server")
 
     _init_sql()
 

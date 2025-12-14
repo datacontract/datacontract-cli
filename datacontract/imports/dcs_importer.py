@@ -183,9 +183,15 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
                 odcs_server.customProperties = []
             odcs_server.customProperties.append(CustomProperty(property="topic", value=dcs_server.topic))
         if getattr(dcs_server, "http_path", None):
-            odcs_server.http_path = dcs_server.http_path
+            # Store http_path in customProperties since ODCS Server doesn't have it
+            if odcs_server.customProperties is None:
+                odcs_server.customProperties = []
+            odcs_server.customProperties.append(CustomProperty(property="http_path", value=dcs_server.http_path))
         if getattr(dcs_server, "driver", None):
-            odcs_server.driver = dcs_server.driver
+            # Store driver in customProperties since ODCS Server doesn't have it
+            if odcs_server.customProperties is None:
+                odcs_server.customProperties = []
+            odcs_server.customProperties.append(CustomProperty(property="driver", value=dcs_server.driver))
         if getattr(dcs_server, "service_name", None):
             odcs_server.serviceName = dcs_server.service_name
 
