@@ -1,35 +1,42 @@
-dataContractSpecification: 1.2.1
+kind: DataContract
+apiVersion: v3.1.0
 id: my-data-contract-id
-info:
-  title: Orders Unit Test
-  version: 1.1.1
-  owner: checkout
-  description: The orders data contract
-  contact:
-    email: team-orders@example.com
-    url: https://wiki.example.com/teams/checkout
-models:
-  orders:
+name: Orders Unit Test
+version: 1.1.1
+status: active
+description:
+  purpose: The orders data contract
+team:
+  name: checkout
+schema:
+  - name: orders
     description: test
-    fields:
-      id:
+    properties:
+      - name: id
         description: Unique identifier for each alert.
-        type: string
+        logicalType: string
         required: true
         primaryKey: true
         unique: true
-      type:
+      - name: type
         description: The type of alert that has fired.
-        type: string
+        logicalType: string
         required: true
-        enum: [ "A", "B", "C", "D", "E" ]
+        customProperties:
+          - property: enum
+            value:
+              - A
+              - B
+              - C
+              - D
+              - E
         quality:
           - type: custom
-            engine: great-expectations
-            description: "Accepted Values for type"
+            engine: greatExpectations
+            description: Accepted Values for type
             implementation:
               type: expect_column_value_lengths_to_equal
               kwargs:
                 value: 1
               meta:
-                notes: "Ensures that column length is 1."
+                notes: Ensures that column length is 1.

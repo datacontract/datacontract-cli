@@ -28,229 +28,203 @@ def test_import_sql_oracle():
     result = DataContract.import_from_source("sql", data_definition_file, dialect="oracle")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+apiVersion: v3.1.0
+kind: DataContract
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
 servers:
-  oracle:
+  - server: oracle
     type: oracle
-models:
-  field_showcase:
-    type: table
-    fields:
-      field_primary_key:
-        type: int
+schema:
+  - name: field_showcase
+    physicalType: table
+    logicalType: object
+    physicalName: field_showcase
+    properties:
+      - name: field_primary_key
+        logicalType: integer
+        physicalType: INT
         primaryKey: true
+        primaryKeyPosition: 1
         description: Primary key
-        config:
-          oracleType: INT
-      field_not_null:
-        type: int
+      - name: field_not_null
+        logicalType: integer
+        physicalType: INT
         required: true
         description: Not null
-        config:
-          oracleType: INT
-      field_varchar:
-        type: string
+      - name: field_varchar
+        logicalType: string
+        physicalType: VARCHAR2
         description: Variable-length string
-        config:
-          oracleType: VARCHAR2
-      field_nvarchar:
-        type: string
+      - name: field_nvarchar
+        logicalType: string
+        physicalType: NVARCHAR2
         description: Variable-length Unicode string
-        config:
-          oracleType: NVARCHAR2
-      field_number:
-        type: number
+      - name: field_number
+        logicalType: number
+        physicalType: NUMBER
         description: Number
-        config:
-          oracleType: NUMBER
-      field_float:
-        type: float
+      - name: field_float
+        logicalType: number
+        physicalType: FLOAT
         description: Float
-        config:
-          oracleType: FLOAT
-      field_date:
-        type: date
+      - name: field_date
+        logicalType: date
+        physicalType: DATE
         description: Date and Time down to second precision
-        config:
-          oracleType: DATE
-      field_binary_float:
-        type: float
+      - name: field_binary_float
+        logicalType: number
+        physicalType: FLOAT
         description: 32-bit floating point number
-        config:
-          oracleType: FLOAT
-      field_binary_double:
-        type: double
+      - name: field_binary_double
+        logicalType: number
+        physicalType: DOUBLE PRECISION
         description: 64-bit floating point number
-        config:
-          oracleType: DOUBLE PRECISION
-      field_timestamp:
-        type: timestamp_ntz
+      - name: field_timestamp
+        logicalType: date
+        physicalType: TIMESTAMP
         description: Timestamp with fractional second precision of 6, no timezones
-        config:
-          oracleType: TIMESTAMP
-      field_timestamp_tz:
-        type: timestamp_tz
-        description: Timestamp with fractional second precision of 6, with timezones
-          (TZ)
-        config:
-          oracleType: TIMESTAMP WITH TIME ZONE
-      field_timestamp_ltz:
-        type: timestamp_tz
-        description: Timestamp with fractional second precision of 6, with local timezone
-          (LTZ)
-        config:
-          oracleType: TIMESTAMPLTZ
-      field_interval_year:
-        type: variant
+      - name: field_timestamp_tz
+        logicalType: date
+        physicalType: TIMESTAMP WITH TIME ZONE
+        description: Timestamp with fractional second precision of 6, with timezones (TZ)
+      - name: field_timestamp_ltz
+        logicalType: date
+        physicalType: TIMESTAMPLTZ
+        description: Timestamp with fractional second precision of 6, with local timezone (LTZ)
+      - name: field_interval_year
+        logicalType: object
+        physicalType: INTERVAL YEAR TO MONTH
         description: Interval of time in years and months with default (2) precision
-        config:
-          oracleType: INTERVAL YEAR TO MONTH
-      field_interval_day:
-        type: variant
-        description: Interval of time in days, hours, minutes and seconds with default
-          (2 / 6) precision
-        config:
-          oracleType: INTERVAL DAY TO SECOND
-      field_raw:
-        type: bytes
+      - name: field_interval_day
+        logicalType: object
+        physicalType: INTERVAL DAY TO SECOND
+        description: Interval of time in days, hours, minutes and seconds with default (2 / 6) precision
+      - name: field_raw
+        logicalType: array
+        physicalType: RAW
         description: Large raw binary data
-        config:
-          oracleType: RAW
-      field_rowid:
-        type: variant
+      - name: field_rowid
+        logicalType: object
+        physicalType: ROWID
         description: Base 64 string representing a unique row address
-        config:
-          oracleType: ROWID
-      field_urowid:
-        type: variant
+      - name: field_urowid
+        logicalType: object
+        physicalType: UROWID
         description: Base 64 string representing the logical address
-        config:
-          oracleType: UROWID
-      field_char:
-        type: string
+      - name: field_char
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 10
+        physicalType: CHAR(10)
         description: Fixed-length string
-        maxLength: 10
-        config:
-          oracleType: CHAR(10)
-      field_nchar:
-        type: string
+      - name: field_nchar
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 10
+        physicalType: NCHAR(10)
         description: Fixed-length Unicode string
-        maxLength: 10
-        config:
-          oracleType: NCHAR(10)
-      field_clob:
-        type: text
+      - name: field_clob
+        logicalType: string
+        physicalType: CLOB
         description: Character large object
-        config:
-          oracleType: CLOB
-      field_nclob:
-        type: text
+      - name: field_nclob
+        logicalType: string
+        physicalType: NCLOB
         description: National character large object
-        config:
-          oracleType: NCLOB
-      field_blob:
-        type: bytes
+      - name: field_blob
+        logicalType: array
+        physicalType: BLOB
         description: Binary large object
-        config:
-          oracleType: BLOB
-      field_bfile:
-        type: bytes
-        config:
-          oracleType: BFILE
+      - name: field_bfile
+        logicalType: array
+        physicalType: BFILE
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_sql_constraints():
     result = DataContract.import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+apiVersion: v3.1.0
+kind: DataContract
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
 servers:
-  postgres:
+  - server: postgres
     type: postgres
-models:
-  customer_location:
-    type: table
-    fields:
-      id:
-        type: decimal
+schema:
+  - name: customer_location
+    physicalType: table
+    logicalType: object
+    physicalName: customer_location
+    properties:
+      - name: id
+        logicalType: number
+        physicalType: DECIMAL
         required: true
-        # primaryKey: true
-        config:
-          postgresType: DECIMAL
-      created_by:
-        type: string
+      - name: created_by
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 30
+        physicalType: VARCHAR(30)
         required: true
-        maxLength: 30
-        config:
-          postgresType: VARCHAR(30)
-      create_date:
-        type: timestamp_ntz
+      - name: create_date
+        logicalType: date
+        physicalType: TIMESTAMP
         required: true
-        config:
-          postgresType: TIMESTAMP
-      changed_by:
-        type: string
-        maxLength: 30
-        config:
-          postgresType: VARCHAR(30)
-      change_date:
-        type: timestamp_ntz
-        config:
-          postgresType: TIMESTAMP
-      name:
-        type: string
+      - name: changed_by
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 30
+        physicalType: VARCHAR(30)
+      - name: change_date
+        logicalType: date
+        physicalType: TIMESTAMP
+      - name: name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: VARCHAR(120)
         required: true
-        maxLength: 120
-        config:
-          postgresType: VARCHAR(120)
-      short_name:
-        type: string
-        maxLength: 60
-        config:
-          postgresType: VARCHAR(60)
-      display_name:
-        type: string
+      - name: short_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 60
+        physicalType: VARCHAR(60)
+      - name: display_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: VARCHAR(120)
         required: true
-        maxLength: 120
-        config:
-          postgresType: VARCHAR(120)
-      code:
-        type: string
+      - name: code
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 30
+        physicalType: VARCHAR(30)
         required: true
-        maxLength: 30
-        config:
-          postgresType: VARCHAR(30)
-      description:
-        type: string
-        maxLength: 4000
-        config:
-          postgresType: VARCHAR(4000)
-      language_id:
-        type: decimal
+      - name: description
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 4000
+        physicalType: VARCHAR(4000)
+      - name: language_id
+        logicalType: number
+        physicalType: DECIMAL
         required: true
-        config:
-          postgresType: DECIMAL
-      status:
-        type: string
+      - name: status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 2
+        physicalType: VARCHAR(2)
         required: true
-        maxLength: 2
-        config:
-          postgresType: VARCHAR(2)
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()

@@ -5,49 +5,51 @@ from datacontract.model.run import Run
 
 def test_nested_json():
     data_contract_str = """
-dataContractSpecification: 1.2.1
+kind: DataContract
+apiVersion: v3.1.0
 id: "61111-0002"
-info:
-  title: Sample data of nested types
-  version: 1.0.0
+name: Sample data of nested types
+version: 1.0.0
+status: active
 servers:
-  sample:
+  - server: sample
     type: local
     path: ./fixtures/local-json/data/nested_types.json
     format: json
     delimiter: array
-models:
-  sample_data:
-    type: object
-    fields:
-      id:
-        type: integer
+schema:
+  - name: sample_data
+    physicalType: object
+    properties:
+      - name: id
+        logicalType: integer
         required: true
-      tags:
-        type: array
+      - name: tags
+        logicalType: array
         required: true
         items:
-          type: object
-          fields:
-            foo:
-              type: string
+          logicalType: object
+          properties:
+            - name: foo
+              logicalType: string
               required: true
-            arr:
-              type: array
+            - name: arr
+              logicalType: array
               items:
-                type: integer
-      name:
-        type: object
+                logicalType: integer
+      - name: name
+        logicalType: object
         required: false
-        fields:
-          first:
-            type: string
-          last:
-            type: string
+        properties:
+          - name: first
+            logicalType: string
+          - name: last
+            logicalType: string
     """
     data_contract = resolve.resolve_data_contract(data_contract_str=data_contract_str)
     run = Run.create_run()
-    con = get_duckdb_connection(data_contract, data_contract.servers["sample"], run)
+    server = next(s for s in data_contract.servers if s.server == "sample")
+    con = get_duckdb_connection(data_contract, server, run)
     tbl = con.table("sample_data")
     assert tbl.columns == ["id", "tags", "name"]
     assert [x[1].lower() for x in tbl.description] == ["number", "list", "dict"]
@@ -80,40 +82,41 @@ models:
 def test_empty_object():
     """Test that objects without defined fields are handled as JSON and don't create nested views."""
     data_contract_str = """
-dataContractSpecification: 1.2.1
+kind: DataContract
+apiVersion: v3.1.0
 id: "empty-object-test"
-info:
-  title: Test data with objects without fields
-  version: 1.0.0
+name: Test data with objects without fields
+version: 1.0.0
+status: active
 servers:
-  sample:
+  - server: sample
     type: local
     path: ./fixtures/local-json/data/empty_object.json
     format: json
     delimiter: array
-models:
-  sample_data:
-    type: object
-    fields:
-      id:
-        type: integer
+schema:
+  - name: sample_data
+    physicalType: object
+    properties:
+      - name: id
+        logicalType: integer
         required: true
-      metadata:
-        type: object
+      - name: metadata
+        logicalType: object
         required: false
         description: "Object with no fields defined - should be treated as JSON"
-      name:
-        type: string
+      - name: name
+        logicalType: string
         required: true
-      settings:
-        type: object
+      - name: settings
+        logicalType: object
         required: false
-        fields: {}
         description: "Object with explicitly empty fields - should be treated as JSON"
     """
     data_contract = resolve.resolve_data_contract(data_contract_str=data_contract_str)
     run = Run.create_run()
-    con = get_duckdb_connection(data_contract, data_contract.servers["sample"], run)
+    server = next(s for s in data_contract.servers if s.server == "sample")
+    con = get_duckdb_connection(data_contract, server, run)
 
     # Test main table exists and has correct columns
     tbl = con.table("sample_data")

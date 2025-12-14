@@ -1,23 +1,14 @@
 import importlib.resources as resources
 import logging
-import os
-import warnings
 from pathlib import Path
 
 import fastjsonschema
 import yaml
 from fastjsonschema import JsonSchemaValueException
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
-from datacontract.imports.odcs_v3_importer import import_from_odcs, parse_odcs_v3_from_str
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
-from datacontract.lint.urls import fetch_resource
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Definition,
-    DeprecatedQuality,
-)
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
@@ -36,65 +27,12 @@ _SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
 }
 
 
-def resolve_data_contract(
-    data_contract_location: str = None,
-    data_contract_str: str = None,
-    data_contract: DataContractSpecification = None,
-    schema_location: str = None,
-    inline_definitions: bool = False,
-    inline_quality: bool = False,
-) -> DataContractSpecification:
-    if data_contract_location is not None:
-        return resolve_data_contract_from_location(
-            data_contract_location, schema_location, inline_definitions, inline_quality
-        )
-    elif data_contract_str is not None:
-        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
-    elif data_contract is not None:
-        return data_contract
-    else:
-        raise DataContractException(
-            type="lint",
-            result=ResultEnum.failed,
-            name="Check that data contract YAML is valid",
-            reason="Data contract needs to be provided",
-            engine="datacontract",
-        )
-
-
-def resolve_data_contract_v2(
-    data_contract_location: str = None,
-    data_contract_str: str = None,
-    data_contract: DataContractSpecification | OpenDataContractStandard = None,
-    schema_location: str = None,
-    inline_definitions: bool = False,
-    inline_quality: bool = False,
-) -> DataContractSpecification | OpenDataContractStandard:
-    if data_contract_location is not None:
-        return resolve_data_contract_from_location_v2(
-            data_contract_location, schema_location, inline_definitions, inline_quality
-        )
-    elif data_contract_str is not None:
-        return _resolve_data_contract_from_str_v2(
-            data_contract_str, schema_location, inline_definitions, inline_quality
-        )
-    elif data_contract is not None:
-        return data_contract
-    else:
-        raise DataContractException(
-            type="lint",
-            result=ResultEnum.failed,
-            name="Check that data contract YAML is valid",
-            reason="Data contract needs to be provided",
-            engine="datacontract",
-        )
-
-
 def resolve_data_contract_dict(
     data_contract_location: str = None,
     data_contract_str: str = None,
-    data_contract: DataContractSpecification = None,
+    data_contract: OpenDataContractStandard = None,
 ) -> dict:
+    """Resolve a data contract and return it as a dictionary."""
     if data_contract_location is not None:
         return _to_yaml(read_resource(data_contract_location))
     elif data_contract_str is not None:
@@ -111,191 +49,68 @@ def resolve_data_contract_dict(
         )
 
 
-def resolve_data_contract_from_location_v2(
-    location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
-) -> DataContractSpecification | OpenDataContractStandard:
-    data_contract_str = read_resource(location)
-    return _resolve_data_contract_from_str_v2(data_contract_str, schema_location, inline_definitions, inline_quality)
+def resolve_data_contract(
+    data_contract_location: str = None,
+    data_contract_str: str = None,
+    data_contract: OpenDataContractStandard = None,
+    schema_location: str = None,
+    inline_definitions: bool = False,
+) -> OpenDataContractStandard:
+    """Resolve and parse a data contract from various sources."""
+    if data_contract_location is not None:
+        return resolve_data_contract_from_location(
+            data_contract_location, schema_location, inline_definitions
+        )
+    elif data_contract_str is not None:
+        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
+    elif data_contract is not None:
+        return data_contract
+    else:
+        raise DataContractException(
+            type="lint",
+            result=ResultEnum.failed,
+            name="Check that data contract YAML is valid",
+            reason="Data contract needs to be provided",
+            engine="datacontract",
+        )
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
-) -> DataContractSpecification:
+    location, schema_location: str = None, inline_definitions: bool = False
+) -> OpenDataContractStandard:
     data_contract_str = read_resource(location)
-    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
+    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
 
 
-def inline_definitions_into_data_contract(spec: DataContractSpecification):
-    for model in spec.models.values():
-        for field in model.fields.values():
-            inline_definition_into_field(field, spec)
-
-
-def inline_definition_into_field(field, spec):
-    # iterate recursively over arrays
-    if field.items is not None:
-        inline_definition_into_field(field.items, spec)
-
-    # iterate recursively over nested fields
-    if field.fields is not None:
-        for nested_field_name, nested_field in field.fields.items():
-            inline_definition_into_field(nested_field, spec)
-
-    if not field.ref:
+def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
+    """Inline any definition references into the schema properties."""
+    if data_contract.schema_ is None:
         return
 
-    definition = _resolve_definition_ref(field.ref, spec)
-    for field_name in field.model_fields.keys():
-        if field_name in definition.model_fields_set and field_name not in field.model_fields_set:
-            setattr(field, field_name, getattr(definition, field_name))
-    # extras
-    for extra_field_name, extra_field_value in definition.model_extra.items():
-        if extra_field_name not in field.model_extra.keys():
-            setattr(field, extra_field_name, extra_field_value)
+    for schema_obj in data_contract.schema_:
+        if schema_obj.properties:
+            for prop in schema_obj.properties:
+                inline_definition_into_property(prop, data_contract)
 
 
-def _resolve_definition_ref(ref, spec) -> Definition:
-    logging.info(f"Resolving definition ref {ref}")
+def inline_definition_into_property(prop: SchemaProperty, data_contract: OpenDataContractStandard):
+    """Recursively inline definitions into a property and its nested properties."""
+    # Iterate over items for arrays
+    if prop.items is not None:
+        inline_definition_into_property(prop.items, data_contract)
 
-    if "#" in ref:
-        path, definition_path = ref.split("#")
-    else:
-        path, definition_path = ref, None
+    # Iterate over nested properties
+    if prop.properties is not None:
+        for nested_prop in prop.properties:
+            inline_definition_into_property(nested_prop, data_contract)
 
-    if path.startswith("http://") or path.startswith("https://"):
-        logging.info(f"Resolving definition url {path}")
-
-        definition_str = fetch_resource(path)
-        definition_dict = _to_yaml(definition_str)
-        definition = Definition(**definition_dict)
-        if definition_path is not None:
-            return _find_by_path_in_definition(definition_path, definition)
-        else:
-            return definition
-    elif path.startswith("file://"):
-        logging.info(f"Resolving definition file path {path}")
-
-        path = path.replace("file://", "")
-        definition_str = _fetch_file(path)
-        definition_dict = _to_yaml(definition_str)
-        if definition_path:
-            path_parts = [part for part in definition_path.split("/") if part != ""]
-            for path_part in path_parts:
-                definition_dict = definition_dict.get(path_part, None)
-                if not definition_dict:
-                    raise DataContractException(
-                        type="lint",
-                        result="failed",
-                        name="Check that data contract YAML is valid",
-                        reason=f"Cannot resolve definition {definition_path}, {path_part} not found",
-                        engine="datacontract",
-                    )
-        # this assumes that definitions_dict is a definitions dict, however,
-        # all we know is that it is a file!
-        definition = Definition(**definition_dict)
-        # if definition_path is not None:
-        #     definition = _find_by_path_in_definition(definition_path, definition)
-        return definition
-    elif ref.startswith("#"):
-        logging.info(f"Resolving definition local path {path}")
-
-        definition_path = ref[1:]
-
-        return _find_by_path_in_spec(definition_path, spec)
-    else:
-        raise DataContractException(
-            type="lint",
-            result=ResultEnum.failed,
-            name="Check that data contract YAML is valid",
-            reason=f"Cannot resolve reference {ref}",
-            engine="datacontract",
-        )
+    # No definition $ref support in ODCS at the moment
+    # ODCS uses a different approach - definitions would be handled differently
 
 
-def _find_by_path_in_spec(definition_path: str, spec: DataContractSpecification):
-    path_elements = definition_path.split("/")
-    definition_key = path_elements[2]
-    if definition_key not in spec.definitions:
-        raise DataContractException(
-            type="lint",
-            result=ResultEnum.failed,
-            name="Check that data contract YAML is valid",
-            reason=f"Cannot resolve definition {definition_key}",
-            engine="datacontract",
-        )
-    definition = spec.definitions[definition_key]
-    definition = _find_subfield_in_definition(definition, path_elements[3:])
-    return definition
-
-
-def _find_by_path_in_definition(definition_path: str, definition: Definition):
-    if definition_path == "" or definition_path == "/":
-        return definition
-
-    path_elements = definition_path.split("/")
-    return _find_subfield_in_definition(definition, path_elements[1:])
-
-
-def _find_subfield_in_definition(definition: Definition, path_elements):
-    while len(path_elements) > 0 and path_elements[0] == "fields":
-        definition = definition.fields[path_elements[1]]
-        path_elements = path_elements[2:]
-
-    return definition
-
-
-def _fetch_file(path) -> str:
-    if not os.path.exists(path):
-        raise DataContractException(
-            type="export",
-            result=ResultEnum.failed,
-            name="Check that data contract definition is valid",
-            reason=f"Cannot resolve reference {path}",
-            engine="datacontract",
-        )
-    with open(path, "r") as file:
-        return file.read()
-
-
-def _resolve_quality_ref(quality: DeprecatedQuality):
-    """
-    Return the content of a ref file path
-    @param quality data contract quality specification
-    """
-    if isinstance(quality.specification, dict):
-        specification = quality.specification
-        if quality.type == "great-expectations":
-            for model, model_quality in specification.items():
-                specification[model] = _get_quality_ref_file(model_quality)
-        else:
-            if "$ref" in specification:
-                quality.specification = _get_quality_ref_file(specification)
-
-
-def _get_quality_ref_file(quality_spec: str | object) -> str | object:
-    """
-    Get the file associated with a quality reference
-    @param quality_spec quality specification
-    @returns: the content of the quality file
-    """
-    if isinstance(quality_spec, dict) and "$ref" in quality_spec:
-        ref = quality_spec["$ref"]
-        if not os.path.exists(ref):
-            raise DataContractException(
-                type="export",
-                result=ResultEnum.failed,
-                name="Check that data contract quality is valid",
-                reason=f"Cannot resolve reference {ref}",
-                engine="datacontract",
-            )
-        with open(ref, "r") as file:
-            quality_spec = file.read()
-    return quality_spec
-
-
-def _resolve_data_contract_from_str_v2(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
-) -> DataContractSpecification | OpenDataContractStandard:
+def _resolve_data_contract_from_str(
+    data_contract_str, schema_location: str = None, inline_definitions: bool = False
+) -> OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 
     if is_open_data_product_standard(yaml_dict):
@@ -310,61 +125,40 @@ def _resolve_data_contract_from_str_v2(
 
     if is_open_data_contract_standard(yaml_dict):
         logging.info("Importing ODCS v3")
-        # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
-        odcs = parse_odcs_v3_from_str(data_contract_str)
+        # Validate the ODCS schema
+        if schema_location is None:
+            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
+        _validate_json_schema(yaml_dict, schema_location)
+
+        # Parse ODCS directly
+        odcs = _parse_odcs_from_dict(yaml_dict)
+        if inline_definitions:
+            inline_definitions_into_data_contract(odcs)
         return odcs
 
-    logging.info("Importing DCS")
-    return _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_location, yaml_dict)
+    # For DCS format, we need to convert it to ODCS
+    logging.info("Importing DCS format - converting to ODCS")
+    from datacontract.imports.dcs_importer import convert_dcs_to_odcs, parse_dcs_from_dict
 
-
-def _resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
-) -> DataContractSpecification:
-    yaml_dict = _to_yaml(data_contract_str)
-
-    if schema_location is None:
-        if is_open_data_contract_standard(yaml_dict):
-            logging.info("Using ODCS 3.1.0 schema to validate data contract")
-            # TODO refactor this to a specific function
-            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
-
-    _validate_json_schema(yaml_dict, schema_location)
-
-    if is_open_data_contract_standard(yaml_dict):
-        logging.info("Importing ODCS v3")
-        # if ODCS, then validate the ODCS schema and import to DataContractSpecification directly
-        odcs = parse_odcs_v3_from_str(data_contract_str)
-
-        data_contract_specification = DataContractSpecification(dataContractSpecification="1.2.1")
-        return import_from_odcs(data_contract_specification, odcs)
-
-    logging.info("Importing DCS")
-    return _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_location, yaml_dict)
-
-
-def _resolve_dcs_from_yaml_dict(inline_definitions, inline_quality, schema_location, yaml_dict):
-    _validate_json_schema(yaml_dict, schema_location)
-    data_contract_specification = yaml_dict
-    spec = DataContractSpecification(**data_contract_specification)
+    dcs = parse_dcs_from_dict(yaml_dict)
+    odcs = convert_dcs_to_odcs(dcs)
     if inline_definitions:
-        inline_definitions_into_data_contract(spec)
-    ## Suppress DeprecationWarning when accessing spec.quality,
-    ## iif it is in fact *not* used.
-    with warnings.catch_warnings(record=True) as recorded_warnings:
-        spec_quality = spec.quality
-    for w in recorded_warnings:
-        if not issubclass(w.category, DeprecationWarning) or spec_quality is not None:
-            warnings.warn_explicit(
-                message=w.message,
-                category=w.category,
-                filename=w.filename,
-                lineno=w.lineno,
-                source=w.source,
-            )
-    if spec_quality and inline_quality:
-        _resolve_quality_ref(spec_quality)
-    return spec
+        inline_definitions_into_data_contract(odcs)
+    return odcs
+
+
+def _parse_odcs_from_dict(yaml_dict: dict) -> OpenDataContractStandard:
+    """Parse ODCS from a dictionary."""
+    try:
+        return OpenDataContractStandard(**yaml_dict)
+    except Exception as e:
+        raise DataContractException(
+            type="schema",
+            name="Parse ODCS contract",
+            reason=f"Failed to parse ODCS contract: {str(e)}",
+            engine="datacontract",
+            original_exception=e,
+        )
 
 
 def _to_yaml(data_contract_str) -> dict:

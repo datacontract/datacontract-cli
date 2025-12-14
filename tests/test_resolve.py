@@ -5,8 +5,8 @@ from datacontract.lint.resolve import resolve_data_contract
 # logging.basicConfig(level=logging.INFO, force=True)
 
 
-def test_resolve_data_contract_simple_definition():
-    datacontract = resolve_data_contract(
+def test_resolve_dcs_inlines_definition():
+    odcs = resolve_data_contract(
         data_contract_str="""
     dataContractSpecification: 1.2.1
     id: my-id
@@ -25,11 +25,14 @@ def test_resolve_data_contract_simple_definition():
     """,
         inline_definitions=True,
     )
-    assert datacontract.models["orders"].fields["order_id"].type == "int"
+    # ODCS uses schema_ (list) with properties (list) and logicalType
+    orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
+    order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
+    assert order_id_prop.logicalType == "integer"
 
 
 def test_resolve_data_contract_complex_definition():
-    datacontract = resolve_data_contract(
+    odcs = resolve_data_contract(
         data_contract_str="""
     dataContractSpecification: 1.2.1
     id: my-id
@@ -51,11 +54,13 @@ def test_resolve_data_contract_complex_definition():
     """,
         inline_definitions=True,
     )
-    assert datacontract.models["orders"].fields["order_id"].type == "int"
+    orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
+    order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
+    assert order_id_prop.logicalType == "integer"
 
 
 def test_resolve_data_contract_array_definition():
-    datacontract = resolve_data_contract(
+    odcs = resolve_data_contract(
         data_contract_str="""
     dataContractSpecification: 1.2.1
     id: my-id
@@ -81,11 +86,14 @@ def test_resolve_data_contract_array_definition():
     """,
         inline_definitions=True,
     )
-    assert datacontract.models["my_message"].fields["my_data"].items.fields["data_id"].type == "int"
+    my_message_schema = next(s for s in odcs.schema_ if s.name == "my_message")
+    my_data_prop = next(p for p in my_message_schema.properties if p.name == "my_data")
+    data_id_prop = next(p for p in my_data_prop.items.properties if p.name == "data_id")
+    assert data_id_prop.logicalType == "integer"
 
 
 def test_resolve_data_contract_nested_definition():
-    datacontract = resolve_data_contract(
+    odcs = resolve_data_contract(
         data_contract_str="""
     dataContractSpecification: 1.2.1
     id: my-id
@@ -109,7 +117,10 @@ def test_resolve_data_contract_nested_definition():
     """,
         inline_definitions=True,
     )
-    assert datacontract.models["my_message"].fields["my_data"].fields["data_id"].type == "int"
+    my_message_schema = next(s for s in odcs.schema_ if s.name == "my_message")
+    my_data_prop = next(p for p in my_message_schema.properties if p.name == "my_data")
+    data_id_prop = next(p for p in my_data_prop.properties if p.name == "data_id")
+    assert data_id_prop.logicalType == "integer"
 
 
 def test_resolve_data_contract_simple_definition_file():
@@ -122,7 +133,7 @@ def test_resolve_data_contract_simple_definition_file():
         temp_file.flush()
         print(temp_file.name)
 
-        datacontract = resolve_data_contract(
+        odcs = resolve_data_contract(
             data_contract_str=f"""
         dataContractSpecification: 1.2.1
         id: my-id
@@ -137,7 +148,9 @@ def test_resolve_data_contract_simple_definition_file():
         """,
             inline_definitions=True,
         )
-        assert datacontract.models["orders"].fields["order_id"].type == "int"
+        orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
+        order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
+        assert order_id_prop.logicalType == "integer"
 
 
 def test_resolve_data_contract_complex_definition_file():
@@ -153,7 +166,7 @@ def test_resolve_data_contract_complex_definition_file():
         temp_file.flush()
         print(temp_file.name)
 
-        datacontract = resolve_data_contract(
+        odcs = resolve_data_contract(
             data_contract_str=f"""
         dataContractSpecification: 1.2.1
         id: my-id
@@ -168,7 +181,9 @@ def test_resolve_data_contract_complex_definition_file():
         """,
             inline_definitions=True,
         )
-        assert datacontract.models["orders"].fields["order_id"].type == "int"
+        orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
+        order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
+        assert order_id_prop.logicalType == "integer"
 
 
 def test_resolve_data_contract_relative_refrence():
@@ -190,7 +205,7 @@ def test_resolve_data_contract_relative_refrence():
             temp_file.flush()
             print(temp_file.name)
 
-        datacontract = resolve_data_contract(
+        odcs = resolve_data_contract(
             data_contract_str=f"""
         dataContractSpecification: 1.2.1
         id: my-id
@@ -205,4 +220,6 @@ def test_resolve_data_contract_relative_refrence():
         """,
             inline_definitions=True,
         )
-        assert datacontract.models["orders"].fields["order_id"].type == "text"
+        orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
+        order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
+        assert order_id_prop.logicalType == "string"
