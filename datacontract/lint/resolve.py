@@ -55,15 +55,14 @@ def resolve_data_contract(
     data_contract: OpenDataContractStandard = None,
     schema_location: str = None,
     inline_definitions: bool = False,
-    inline_quality: bool = False,
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
     if data_contract_location is not None:
         return resolve_data_contract_from_location(
-            data_contract_location, schema_location, inline_definitions, inline_quality
+            data_contract_location, schema_location, inline_definitions
         )
     elif data_contract_str is not None:
-        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
+        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
     elif data_contract is not None:
         return data_contract
     else:
@@ -77,10 +76,10 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
+    location, schema_location: str = None, inline_definitions: bool = False
 ) -> OpenDataContractStandard:
     data_contract_str = read_resource(location)
-    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, inline_quality)
+    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
 
 
 def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
@@ -110,7 +109,7 @@ def inline_definition_into_property(prop: SchemaProperty, data_contract: OpenDat
 
 
 def _resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False, inline_quality: bool = False
+    data_contract_str, schema_location: str = None, inline_definitions: bool = False
 ) -> OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 

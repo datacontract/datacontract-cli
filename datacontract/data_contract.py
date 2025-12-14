@@ -31,7 +31,6 @@ class DataContract:
         spark: "SparkSession" = None,
         duckdb_connection: DuckDBPyConnection = None,
         inline_definitions: bool = True,
-        inline_quality: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
     ):
@@ -45,7 +44,6 @@ class DataContract:
         self._spark = spark
         self._duckdb_connection = duckdb_connection
         self._inline_definitions = inline_definitions
-        self._inline_quality = inline_quality
         self._ssl_verification = ssl_verification
 
     @classmethod
@@ -64,7 +62,6 @@ class DataContract:
                 self._data_contract,
                 self._schema_location,
                 inline_definitions=self._inline_definitions,
-                inline_quality=self._inline_quality,
             )
             run.checks.append(
                 Check(
@@ -105,7 +102,6 @@ class DataContract:
                 self._data_contract,
                 self._schema_location,
                 inline_definitions=self._inline_definitions,
-                inline_quality=self._inline_quality,
             )
 
             execute_data_contract_test(data_contract, run, self._server, self._spark, self._duckdb_connection)
@@ -150,7 +146,6 @@ class DataContract:
             data_contract=self._data_contract,
             schema_location=self._schema_location,
             inline_definitions=self._inline_definitions,
-            inline_quality=self._inline_quality,
         )
 
     def export(
@@ -167,7 +162,6 @@ class DataContract:
                 self._data_contract,
                 schema_location=self._schema_location,
                 inline_definitions=self._inline_definitions,
-                inline_quality=self._inline_quality,
             )
 
             return exporter_factory.create(export_format).export(
@@ -184,7 +178,6 @@ class DataContract:
                 self._data_contract,
                 schema_location=self._schema_location,
                 inline_definitions=self._inline_definitions,
-                inline_quality=self._inline_quality,
             )
 
             return exporter_factory.create(export_format).export(

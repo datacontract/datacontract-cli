@@ -26,7 +26,7 @@ def _get_owner(odcs: OpenDataContractStandard) -> Optional[str]:
 def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
     logging.debug(f"Creating data contract html for file {file} and schema {schema}")
     data_contract = DataContract(
-        data_contract_file=f"{file.absolute()}", inline_definitions=True, inline_quality=True, schema_location=schema
+        data_contract_file=f"{file.absolute()}", inline_definitions=True, schema_location=schema
     )
     html = data_contract.export(export_format="html")
     odcs = data_contract.get_data_contract()

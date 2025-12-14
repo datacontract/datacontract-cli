@@ -50,7 +50,6 @@ def odcs() -> OpenDataContractStandard:
 def data_contract_great_expectations_quality_yaml() -> OpenDataContractStandard:
     return resolve.resolve_data_contract_from_location(
         "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
-        inline_quality=True,
     )
 
 
@@ -58,7 +57,6 @@ def data_contract_great_expectations_quality_yaml() -> OpenDataContractStandard:
 def data_contract_great_expectations_quality_column() -> OpenDataContractStandard:
     return resolve.resolve_data_contract_from_location(
         "./fixtures/great-expectations/datacontract_quality_column.yaml",
-        inline_quality=True,
     )
 
 
