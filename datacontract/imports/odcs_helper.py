@@ -1,6 +1,6 @@
 """Helper functions for creating ODCS (OpenDataContractStandard) objects."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from open_data_contract_standard.model import (
     CustomProperty,
@@ -8,7 +8,6 @@ from open_data_contract_standard.model import (
     SchemaObject,
     SchemaProperty,
     Server,
-    Team,
 )
 
 

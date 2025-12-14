@@ -2,13 +2,12 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import pytz
 from jinja2 import Environment, PackageLoader, select_autoescape
-
-from typing import Optional
-
 from open_data_contract_standard.model import OpenDataContractStandard
+
 from datacontract.data_contract import DataContract
 from datacontract.export.html_exporter import get_version
 

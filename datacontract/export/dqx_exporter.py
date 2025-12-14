@@ -1,7 +1,6 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import yaml
-
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export

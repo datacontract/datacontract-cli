@@ -3,7 +3,6 @@ from importlib.metadata import version
 from typing import Optional, Tuple
 
 import pytz
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.exporter import Exporter

@@ -1,8 +1,8 @@
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.INFO, force=True)
 

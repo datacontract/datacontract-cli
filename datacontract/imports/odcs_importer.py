@@ -1,5 +1,4 @@
 import yaml
-
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer

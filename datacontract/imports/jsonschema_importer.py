@@ -2,7 +2,6 @@ import json
 from typing import Any, Dict, List
 
 import fastjsonschema
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer

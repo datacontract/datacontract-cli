@@ -1,7 +1,7 @@
 import logging
 import typing
 
-from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, Team
+from open_data_contract_standard.model import OpenDataContractStandard, Team
 
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
@@ -11,7 +11,6 @@ from duckdb.duckdb import DuckDBPyConnection
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
-from datacontract.imports.importer import ImportFormat
 from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import publish_test_results_to_entropy_data

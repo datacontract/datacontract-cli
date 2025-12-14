@@ -5,7 +5,6 @@ from typing import List, Optional
 from venv import logger
 
 import yaml
-
 from open_data_contract_standard.model import (
     DataQuality,
     OpenDataContractStandard,
@@ -13,6 +12,7 @@ from open_data_contract_standard.model import (
     SchemaProperty,
     Server,
 )
+
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.run import Check
 

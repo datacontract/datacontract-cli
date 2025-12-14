@@ -2,14 +2,14 @@ import json
 from typing import Any, Dict
 
 import pytest
+from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.great_expectations_exporter import to_great_expectations
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 from datacontract.lint import resolve
-from datacontract_specification.model import DataContractSpecification
-from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 

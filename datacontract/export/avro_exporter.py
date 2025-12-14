@@ -1,7 +1,7 @@
 import json
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 

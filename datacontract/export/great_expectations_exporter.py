@@ -8,8 +8,6 @@ import json
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-import yaml
-
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaProperty
 
 from datacontract.export.exporter import (

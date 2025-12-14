@@ -2,7 +2,6 @@ import re
 from typing import Dict, Generator, List
 
 import boto3
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer

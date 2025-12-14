@@ -1,9 +1,8 @@
 import os.path
 
 import pyarrow
-from pyarrow import parquet
-
 from open_data_contract_standard.model import OpenDataContractStandard
+from pyarrow import parquet
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (

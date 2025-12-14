@@ -1,6 +1,5 @@
-import yaml
-
 import pytest
+import yaml
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, NestedField
 from typer.testing import CliRunner

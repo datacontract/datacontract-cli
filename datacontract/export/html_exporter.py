@@ -4,9 +4,7 @@ from importlib.metadata import version
 
 import jinja_partials
 import pytz
-import yaml
 from jinja2 import Environment, PackageLoader, select_autoescape
-
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.export.exporter import Exporter

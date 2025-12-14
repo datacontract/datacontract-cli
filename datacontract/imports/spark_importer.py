@@ -1,12 +1,10 @@
 import atexit
 import logging
 import tempfile
-from typing import List
 
 from databricks.sdk import WorkspaceClient
-from pyspark.sql import DataFrame, SparkSession, types
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from pyspark.sql import DataFrame, SparkSession, types
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (

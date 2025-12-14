@@ -1,7 +1,5 @@
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel
-
 from open_data_contract_standard.model import (
     Description,
     OpenDataContractStandard,
@@ -10,6 +8,7 @@ from open_data_contract_standard.model import (
     Server,
     ServiceLevelAgreementProperty,
 )
+from pydantic import BaseModel
 
 from datacontract.export.exporter import Exporter
 

@@ -5,7 +5,6 @@ from dbt.artifacts.resources.v1.components import ColumnInfo
 from dbt.contracts.graph.manifest import Manifest
 from dbt.contracts.graph.nodes import GenericTestNode, ManifestNode, ModelNode
 from dbt_common.contracts.constraints import ConstraintType
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.bigquery_importer import map_type_from_bigquery

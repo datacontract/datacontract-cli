@@ -5,7 +5,6 @@ from typing import List
 
 from google.protobuf import descriptor_pb2
 from grpc_tools import protoc
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer

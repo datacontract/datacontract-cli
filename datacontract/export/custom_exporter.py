@@ -1,8 +1,7 @@
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
-
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
+from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.export.exporter import Exporter
 

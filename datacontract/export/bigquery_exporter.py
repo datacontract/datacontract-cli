@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Dict, List
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+from open_data_contract_standard.model import SchemaObject, SchemaProperty, Server
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.model.exceptions import DataContractException

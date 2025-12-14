@@ -1,6 +1,5 @@
-from typing import List, Optional, Tuple
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type

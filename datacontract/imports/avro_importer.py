@@ -1,7 +1,6 @@
 from typing import List
 
 import avro.schema
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
@@ -11,7 +10,6 @@ from datacontract.imports.odcs_helper import (
     create_schema_object,
 )
 from datacontract.model.exceptions import DataContractException
-
 
 # Avro logical type to ODCS logical type mapping
 LOGICAL_TYPE_MAPPING = {
@@ -168,7 +166,6 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
             custom_properties=custom_props if custom_props else None,
         )
     elif field.type.type == "map":
-        values_prop = import_avro_map_values(field.type)
         prop = create_property(
             name=field.name,
             logical_type="object",

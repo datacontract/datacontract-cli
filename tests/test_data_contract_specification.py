@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 import pytest
-
 from datacontract_specification.model import DataContractSpecification
 
 

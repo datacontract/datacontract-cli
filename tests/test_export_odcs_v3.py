@@ -2,12 +2,12 @@ import os
 import sys
 
 import yaml
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.odcs_v3_exporter import to_odcs_v3_yaml
 from datacontract.lint.resolve import resolve_data_contract
-from open_data_contract_standard.model import OpenDataContractStandard
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -53,7 +53,6 @@ def test_to_odcs():
 
 
 def assert_equals_odcs_yaml_str(expected, actual):
-    from open_data_contract_standard.model import OpenDataContractStandard
 
     expected_yaml = OpenDataContractStandard.from_string(expected).to_yaml()
     print(expected_yaml)

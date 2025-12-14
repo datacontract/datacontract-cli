@@ -1,7 +1,6 @@
 import os
 
 import yaml
-
 from open_data_contract_standard.model import Server
 
 

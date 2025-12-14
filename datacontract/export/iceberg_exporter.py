@@ -1,9 +1,8 @@
 from typing import List, Optional
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 from pyiceberg import types
 from pyiceberg.schema import Schema, assign_fresh_schema_ids
-
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
 

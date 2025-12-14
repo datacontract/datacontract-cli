@@ -1,3 +1,4 @@
+from datacontract_specification.model import DataContractSpecification
 from pyspark.sql import types
 from pyspark.testing import assertSchemaEqual
 from typer.testing import CliRunner
@@ -5,7 +6,6 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.export.spark_exporter import to_spark_dict
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
-from datacontract_specification.model import DataContractSpecification
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 

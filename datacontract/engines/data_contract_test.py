@@ -5,7 +5,6 @@ import typing
 
 import requests
 from duckdb.duckdb import DuckDBPyConnection
-
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.data_contract_checks import create_checks

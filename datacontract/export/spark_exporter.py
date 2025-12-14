@@ -1,9 +1,8 @@
 import json
 from typing import List, Optional
 
-from pyspark.sql import types
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from pyspark.sql import types
 
 from datacontract.export.exporter import Exporter
 

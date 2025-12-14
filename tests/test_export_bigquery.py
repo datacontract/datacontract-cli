@@ -6,7 +6,6 @@ from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat
 
-
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
 

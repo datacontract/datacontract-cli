@@ -4,17 +4,16 @@ from typing import List
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
-from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
     create_server,
 )
+from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
 
 

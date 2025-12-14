@@ -1,8 +1,7 @@
 import os
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import duckdb
-
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer

@@ -1,7 +1,5 @@
 import importlib.resources as resources
 import logging
-import os
-import warnings
 from pathlib import Path
 
 import fastjsonschema
@@ -11,7 +9,6 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
-from datacontract.lint.urls import fetch_resource
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum

@@ -1,7 +1,6 @@
+from open_data_contract_standard.model import OpenDataContractStandard
 from pydantic import BaseModel
 from rdflib import RDF, BNode, Graph, Literal, Namespace, URIRef
-
-from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.export.exporter import Exporter
 

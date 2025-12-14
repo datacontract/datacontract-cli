@@ -1,8 +1,7 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import duckdb
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type

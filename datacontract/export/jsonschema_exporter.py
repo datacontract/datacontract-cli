@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 

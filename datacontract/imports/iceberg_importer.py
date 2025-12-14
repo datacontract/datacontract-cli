@@ -1,10 +1,8 @@
-from typing import Any, Dict, List
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 from pydantic import ValidationError
 from pyiceberg import types as iceberg_types
 from pyiceberg.schema import Schema
-
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (

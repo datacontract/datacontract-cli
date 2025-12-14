@@ -1,7 +1,7 @@
 import sys
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.export.exporter import Exporter
 

@@ -1,9 +1,9 @@
+from datacontract_specification.model import DataContractSpecification
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.markdown_exporter import to_markdown
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
-from datacontract_specification.model import DataContractSpecification
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 

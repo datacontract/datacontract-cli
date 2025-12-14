@@ -4,7 +4,8 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from datacontract_specification.model import DataContractSpecification, Field, Model, Server as DCSServer
+from datacontract_specification.model import DataContractSpecification, Field, Model
+from datacontract_specification.model import Server as DCSServer
 from open_data_contract_standard.model import (
     CustomProperty,
     DataQuality,
@@ -13,9 +14,11 @@ from open_data_contract_standard.model import (
     Relationship,
     SchemaObject,
     SchemaProperty,
-    Server as ODCSServer,
     ServiceLevelAgreementProperty,
     Team,
+)
+from open_data_contract_standard.model import (
+    Server as ODCSServer,
 )
 
 from datacontract.imports.importer import Importer
@@ -29,8 +32,9 @@ class DcsImporter(Importer):
     def import_source(
         self, source: str, import_args: dict
     ) -> OpenDataContractStandard:
-        from datacontract.lint.resources import read_resource
         import yaml
+
+        from datacontract.lint.resources import read_resource
 
         source_str = read_resource(source)
         dcs_dict = yaml.safe_load(source_str)
@@ -303,8 +307,9 @@ def _resolve_field_ref(field: Field, definitions: Dict[str, Field]) -> Field:
 
 def _resolve_file_ref(ref_path: str) -> Optional[Dict[str, Any]]:
     """Resolve a file:// reference, optionally with a JSON pointer path."""
-    import yaml
     from urllib.parse import urlparse
+
+    import yaml
 
     # Split file path and JSON pointer
     if "#" in ref_path:

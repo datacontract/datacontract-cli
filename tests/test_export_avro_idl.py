@@ -1,9 +1,9 @@
 from textwrap import dedent
 
 import yaml
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
-from open_data_contract_standard.model import OpenDataContractStandard
 from datacontract.cli import app
 from datacontract.export.avro_idl_exporter import (
     AvroIDLProtocol,

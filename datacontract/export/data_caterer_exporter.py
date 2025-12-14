@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 import yaml
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.exporter import Exporter

@@ -1,6 +1,6 @@
 """DCS Exporter - Exports ODCS to Data Contract Specification format for backward compatibility."""
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from datacontract_specification.model import (
     Availability,
@@ -10,13 +10,17 @@ from datacontract_specification.model import (
     Info,
     Model,
     Retention,
-    Server as DCSServer,
     Terms,
+)
+from datacontract_specification.model import (
+    Server as DCSServer,
 )
 from open_data_contract_standard.model import (
     OpenDataContractStandard,
     SchemaObject,
     SchemaProperty,
+)
+from open_data_contract_standard.model import (
     Server as ODCSServer,
 )
 

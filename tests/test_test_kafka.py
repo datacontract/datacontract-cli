@@ -64,8 +64,8 @@ def send_messages_to_topic(kafka: KafkaContainer, messages_file_path: str, topic
 
 def _ensure_topic_exists(bootstrap_server: str, topic_name: str, timeout_seconds: int = 30):
     """Create topic and wait for it to be fully available in cluster metadata."""
-    from kafka.admin import KafkaAdminClient, NewTopic
     from kafka import KafkaConsumer
+    from kafka.admin import KafkaAdminClient, NewTopic
     from kafka.errors import TopicAlreadyExistsError
 
     admin = KafkaAdminClient(bootstrap_servers=bootstrap_server)

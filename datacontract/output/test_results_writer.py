@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from open_data_contract_standard.model import OpenDataContractStandard
 from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from open_data_contract_standard.model import OpenDataContractStandard
 from datacontract.model.run import Run
 from datacontract.output.junit_test_results import write_junit_test_results
 from datacontract.output.output_format import OutputFormat

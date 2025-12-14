@@ -2,9 +2,8 @@ import logging
 import os
 
 import sqlglot
-from sqlglot.dialects.dialect import Dialects
-
 from open_data_contract_standard.model import OpenDataContractStandard
+from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (

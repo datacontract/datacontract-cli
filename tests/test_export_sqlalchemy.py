@@ -2,9 +2,9 @@ import ast
 from textwrap import dedent
 
 import pytest
+from open_data_contract_standard.model import Description, OpenDataContractStandard, SchemaObject, SchemaProperty
 
 import datacontract.export.sqlalchemy_exporter as conv
-from open_data_contract_standard.model import Description, OpenDataContractStandard, SchemaObject, SchemaProperty
 
 
 # These tests would be easier if AST nodes were comparable.

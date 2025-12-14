@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Protocol, Union
+from typing import Any, Dict, Optional, Protocol, Union
 
 from open_data_contract_standard.model import SchemaProperty
 

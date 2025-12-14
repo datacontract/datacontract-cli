@@ -1,5 +1,6 @@
-from datacontract.engines.data_contract_checks import QuotingConfig, prepare_query
 from open_data_contract_standard.model import DataQuality, Server
+
+from datacontract.engines.data_contract_checks import QuotingConfig, prepare_query
 
 
 def test_prepare_query_schema_placeholder():
