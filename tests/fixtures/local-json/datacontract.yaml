@@ -90,14 +90,58 @@ models:
         type: string
         required: true
       PREIS1__Verbraucherpreisindex__q:
-        $ref: "#/definitions/qualitaetskennzeichen"
+        description: |
+          e
+          endgültiger Wert
+          0
+          weniger als die Hälfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts
+          -
+          nichts vorhanden
+          ...
+          Angabe fällt später an
+          /
+          keine Angaben, da Zahlenwert nicht sicher genug
+          .
+          Zahlenwert unbekannt oder geheimzuhalten
+          x
+          Tabellenfach gesperrt, weil Aussage nicht sinnvoll
+          ()
+          Aussagewert eingeschränkt, da der Zahlenwert statistisch relativ unsicher ist
+          p
+          vorläufige Zahl
+          r
+          berichtigte Zahl
+          s
+          geschätzte Zahl
         type: string
         required: true
       Verbraucherpreisindex__CH0004:
         description: Veränderung zum Vorjahresmonat
         type: string
       Verbraucherpreisindex__CH0004__q:
-        $ref: "#/definitions/qualitaetskennzeichen"
+        description: |
+          e
+          endgültiger Wert
+          0
+          weniger als die Hälfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts
+          -
+          nichts vorhanden
+          ...
+          Angabe fällt später an
+          /
+          keine Angaben, da Zahlenwert nicht sicher genug
+          .
+          Zahlenwert unbekannt oder geheimzuhalten
+          x
+          Tabellenfach gesperrt, weil Aussage nicht sinnvoll
+          ()
+          Aussagewert eingeschränkt, da der Zahlenwert statistisch relativ unsicher ist
+          p
+          vorläufige Zahl
+          r
+          berichtigte Zahl
+          s
+          geschätzte Zahl
         type: string
         required: true
       PREIS1__CH0005:
@@ -105,36 +149,31 @@ models:
         type: string
         required: false
       PREIS1__CH0005__q:
-        $ref: "#/definitions/qualitaetskennzeichen"
+        description: |
+          e
+          endgültiger Wert
+          0
+          weniger als die Hälfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts
+          -
+          nichts vorhanden
+          ...
+          Angabe fällt später an
+          /
+          keine Angaben, da Zahlenwert nicht sicher genug
+          .
+          Zahlenwert unbekannt oder geheimzuhalten
+          x
+          Tabellenfach gesperrt, weil Aussage nicht sinnvoll
+          ()
+          Aussagewert eingeschränkt, da der Zahlenwert statistisch relativ unsicher ist
+          p
+          vorläufige Zahl
+          r
+          berichtigte Zahl
+          s
+          geschätzte Zahl
         type: string
         required: true
-definitions:
-  qualitaetskennzeichen:
-    name: qualitaetskennzeichen
-    type: string
-    description: |
-      e
-      endgültiger Wert
-      0
-      weniger als die Hälfte von 1 in der letzten besetzten Stelle, jedoch mehr als nichts
-      -
-      nichts vorhanden
-      ...
-      Angabe fällt später an
-      /
-      keine Angaben, da Zahlenwert nicht sicher genug
-      .
-      Zahlenwert unbekannt oder geheimzuhalten
-      x
-      Tabellenfach gesperrt, weil Aussage nicht sinnvoll
-      ()
-      Aussagewert eingeschränkt, da der Zahlenwert statistisch relativ unsicher ist
-      p
-      vorläufige Zahl
-      r
-      berichtigte Zahl
-      s
-      geschätzte Zahl
 examples:
   - type: json
     description: Example entry for CPI data

@@ -6,8 +6,8 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.export.jsonschema_converter import to_jsonschemas
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.jsonschema_exporter import to_jsonschemas
+from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -21,7 +21,7 @@ def test_cli():
 def test_to_jsonschemas():
     data_contract = DataContract(
         data_contract_file="fixtures/local-json/datacontract.yaml", inline_definitions=True
-    ).get_data_contract_specification()
+    ).get_data_contract()
 
     with open("fixtures/local-json/datacontract.json") as file:
         expected_json_schema = file.read()
@@ -33,7 +33,7 @@ def test_to_jsonschemas():
 def test_to_jsonschemas_complex():
     data_contract_file = "fixtures/s3-json-complex/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+    data_contract = resolve_data_contract(data_contract_str=file_content)
     expected_json_schema = """{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
@@ -87,7 +87,7 @@ def test_to_jsonschemas_complex():
 def test_to_jsonschemas_complex_2():
     data_contract_file = "fixtures/local-json-complex/datacontract.yaml"
     file_content = read_file(data_contract_file=data_contract_file)
-    data_contract = DataContractSpecification.from_string(file_content)
+    data_contract = resolve_data_contract(data_contract_str=file_content)
     expected_json_schema = """{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",

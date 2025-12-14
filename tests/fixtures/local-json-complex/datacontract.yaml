@@ -1,85 +1,64 @@
-dataContractSpecification: 1.2.1
+kind: DataContract
+apiVersion: v3.1.0
 id: jsonschema-complex-data
-info:
-  title: sts data
-  version: 1.0.0
-  owner: Checkout Team
-models:
-  sts_data:
-    type: table
-    fields:
-      array_test_string:
-        type: array
+name: sts data
+version: "1.0.0"
+status: active
+team:
+  name: Checkout Team
+schema:
+  - name: sts_data
+    physicalType: table
+    properties:
+      - name: array_test_string
+        logicalType: array
         required: true
         items:
-          type: string
+          name: item
+          logicalType: string
           required: true
-      array_test_object:
-        type: array
+      - name: array_test_object
+        logicalType: array
         required: true
         items:
-          type: object
+          name: item
+          logicalType: object
           required: true
-          fields:
-            key:
-              type: string
+          properties:
+            - name: key
+              logicalType: string
               required: true
-            value:
-              type: string
+            - name: value
+              logicalType: string
               required: true
-      id:
-        type: string
-        minLength: 1
-        maxLength: 10
-        pattern: "^[0-9]{8}$"
+      - name: id
+        logicalType: string
         required: true
-      sts_data:
-        type: object
+        logicalTypeOptions:
+          minLength: 1
+          maxLength: 10
+          pattern: "^[0-9]{8}$"
+      - name: sts_data
+        logicalType: object
         required: true
-        fields:
-          connection_test:
-            type: string
-            enum: ["SUCCESS", "FAIL", "NULL"]
+        properties:
+          - name: connection_test
+            logicalType: string
             required: true
-          key_list:
-            type: object
+            customProperties:
+              - property: enum
+                value: '["SUCCESS", "FAIL", "NULL"]'
+          - name: key_list
+            logicalType: object
             required: true
-            fields:
-              ^[0-5]$:
-                type: object
-                fields:
-                  key:
-                    type: string
-                    pattern: "^[0-9]{8}$"
+            properties:
+              - name: "^[0-5]$"
+                logicalType: object
+                properties:
+                  - name: key
+                    logicalType: string
                     required: true
-      empty_object:
-        type: object
-examples:
-  - type: json # csv, json, yaml, custom
-    model: sts_data
-    data: | # expressed as string or inline yaml or via "$ref: data.csv"
-      {
-        "array_test_string": ["test1", "test2"],
-        "array_test_object": [
-            {
-                "key": "key1",
-                "value": "value1"
-            },
-            {
-                "key": "key2",
-                "value": "value2"
-            }
-        ],
-        "id": "11111111",
-        "sts_data": {
-            "connection_test": "SUCCESS",
-            "key_list": {
-                "0": {
-                    "key": "12345678"
-                },
-                "1": {
-                    "key": "23456789"
-                }
-            }
-        }
-      }
+                    logicalTypeOptions:
+                      pattern: "^[0-9]{8}$"
+      - name: empty_object
+        logicalType: object

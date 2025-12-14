@@ -1,8 +1,9 @@
+from datacontract_specification.model import DataContractSpecification
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.markdown_converter import to_markdown
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.markdown_exporter import to_markdown
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -23,7 +24,8 @@ def test_cli():
 
 
 def test_to_markdown():
-    data_contract = DataContractSpecification.from_file("fixtures/markdown/export/datacontract.yaml")
+    dcs = DataContractSpecification.from_file("fixtures/markdown/export/datacontract.yaml")
+    data_contract = convert_dcs_to_odcs(dcs)
     result = to_markdown(data_contract)
 
     with open("fixtures/markdown/export/expected.md", "r") as file:

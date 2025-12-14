@@ -2,8 +2,8 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.dbt_converter import to_dbt_staging_sql
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.data_contract import DataContract
+from datacontract.export.dbt_exporter import to_dbt_staging_sql
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -14,10 +14,10 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/dbt/export/datacontract.yaml",
+            "./fixtures/dbt/export/datacontract.odcs.yaml",
             "--format",
             "dbt-staging-sql",
-            "--model",
+            "--schema-name",
             "orders",
         ],
     )
@@ -26,9 +26,9 @@ def test_cli():
 
 
 def test_to_dbt_staging():
-    data_contract = DataContractSpecification.from_file("fixtures/dbt/export/datacontract.yaml")
+    data_contract = DataContract(data_contract_file="fixtures/dbt/export/datacontract.odcs.yaml").get_data_contract()
     expected = """
-select 
+select
     order_id,
     order_total,
     order_status,
@@ -36,6 +36,8 @@ select
 from {{ source('orders-unit-test', 'orders') }}
 """
 
-    result = to_dbt_staging_sql(data_contract, "orders", data_contract.models.get("orders"))
+    # Find the orders schema
+    orders_schema = next((s for s in data_contract.schema_ if s.name == "orders"), None)
+    result = to_dbt_staging_sql(data_contract, "orders", orders_schema)
 
     assert yaml.safe_load(result) == yaml.safe_load(expected)

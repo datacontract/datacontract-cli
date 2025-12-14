@@ -313,12 +313,6 @@ slaProperties:
     element: "weather_forecast"
     driver: "operational"
 
-  - property: "freshness"
-    value: 15
-    unit: "minutes"
-    element: "weather_forecast.current"
-    driver: "operational"
-
   - property: "latency"
     value: 500
     unit: "ms"

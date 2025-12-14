@@ -1,29 +1,35 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: Orders Latest
-  version: 0.0.1
-models:
-  line_items:
-    description: A single article that is part of an order.
-    namespace: orders
-    fields:
-      lines_item_id:
-        type: string
-        required: true
-        primaryKey: true
-        unique: true
-        description: Primary key of the lines_item_id table
-      order_id:
-        type: string
-        required: false
-        primaryKey: false
-        unique: false
-        references: orders.order_id
-        description: An internal ID that identifies an order in the online shop.
-      sku:
-        type: string
-        required: false
-        primaryKey: false
-        unique: false
-        description: The purchased article number
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: Orders Latest
+status: draft
+schema:
+- name: line_items
+  physicalType: table
+  description: A single article that is part of an order.
+  customProperties:
+  - property: namespace
+    value: orders
+  logicalType: object
+  physicalName: line_items
+  properties:
+  - name: lines_item_id
+    physicalType: text
+    description: Primary key of the lines_item_id table
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+    unique: true
+  - name: order_id
+    physicalType: text
+    description: An internal ID that identifies an order in the online shop.
+    customProperties:
+    - property: references
+      value: orders.order_id
+    logicalType: string
+  - name: sku
+    physicalType: text
+    description: The purchased article number
+    logicalType: string

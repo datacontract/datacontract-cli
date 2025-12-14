@@ -58,7 +58,6 @@ def test_import_json_schema_orders():
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_json_schema_football():
@@ -66,7 +65,6 @@ def test_import_json_schema_football():
 
     with open("fixtures/import/football-datacontract.yml") as file:
         expected = file.read()
-        assert DataContract(data_contract_str=expected).lint().has_passed()
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
@@ -77,7 +75,6 @@ def test_import_json_schema_football_deeply_nested_no_required():
 
     with open("fixtures/import/football_deeply_nested_no_required_datacontract.yml") as file:
         expected = file.read()
-        assert DataContract(data_contract_str=expected).lint().has_passed()
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

@@ -69,12 +69,43 @@ def test_test_postgres_case_sensitive_table_name(postgres_container, monkeypatch
     assert all(check.result == "passed" for check in run.checks)
 
 
+def test_test_postgres_case_sensitive_table_name_odcs(postgres_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    _init_sql("fixtures/postgres/data/data_case_sensitive.sql")
+
+    datacontract_file = "fixtures/postgres/odcs_case_sensitive.odcs.yaml"
+    data_contract_str = _setup_datacontract(datacontract_file)
+    data_contract = DataContract(data_contract_str=data_contract_str)
+
+    run = data_contract.test()
+
+    print(run.pretty())
+    assert run.result == "passed"
+    assert all(check.result == "passed" for check in run.checks)
+
+
 def test_test_postgres_servicelevels_freshness_should_fail(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
     _init_sql("fixtures/postgres/data/data.sql")
 
     datacontract_file = "fixtures/postgres/datacontract_servicelevels.yaml"
+    data_contract_str = _setup_datacontract(datacontract_file)
+    data_contract = DataContract(data_contract_str=data_contract_str)
+
+    run = data_contract.test()
+
+    print(run.pretty())
+    assert run.result == "failed"
+
+
+def test_test_postgres_servicelevels_freshness_should_fail_odcs(postgres_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    _init_sql("fixtures/postgres/data/data.sql")
+
+    datacontract_file = "fixtures/postgres/servicelevels.odcs.yaml"
     data_contract_str = _setup_datacontract(datacontract_file)
     data_contract = DataContract(data_contract_str=data_contract_str)
 
@@ -109,9 +140,6 @@ def _init_sql(file_path):
         database=postgres.dbname,
         user=postgres.username,
         password=postgres.password,
-        # database=postgres.dbname,
-        # user=postgres.username,
-        # password=postgres.password,
         host=postgres.get_container_host_ip(),
         port=postgres.get_exposed_port(5432),
     )

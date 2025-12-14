@@ -1,16 +1,16 @@
-{%- for model_name, model in data_contract.models.items() %}
-{#- Export only the first model #}
+{%- for schema in data_contract.schema_ %}
+{#- Export only the first schema #}
 {%- if loop.first -%}
 SELECT
-{%- for field_name, field in model.fields.items() %}
-  {%- if field.type == "timestamp" %}
-  DATETIME({{ field_name }}, "Asia/Tokyo") AS {{ field_name }},
+{%- for prop in schema.properties %}
+  {%- if prop.logicalType == "timestamp" or prop.physicalType == "timestamp" %}
+  DATETIME({{ prop.name }}, "Asia/Tokyo") AS {{ prop.name }},
   {%- else %}
-  {{ field_name }} AS {{ field_name }},
+  {{ prop.name }} AS {{ prop.name }},
   {%- endif %}
 {%- endfor %}
 FROM
-  {{ "{{" }} ref('{{ model_name }}') {{ "}}" }} 
+  {{ "{{" }} ref('{{ schema.name }}') {{ "}}" }}
 {%- endif %}
 {%- endfor %}
 

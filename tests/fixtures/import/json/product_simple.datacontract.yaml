@@ -1,321 +1,410 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
 servers:
-  production:
-    type: local
-    format: json
-    path: .\tests\fixtures\import\json\product_simple.json
-models:
-  product_simple:
-    description: Generated from JSON object in .\tests\fixtures\import\json\product_simple.json
-    type: object
-    fields:
-      identification:
-        type: object
-        fields:
-          productType:
-            type: string
-            examples:
-            - EA
-          gtin:
-            type: string
-            examples:
-            - '056500371706'
-          gtin14:
-            type: string
-            examples:
-            - '00056500371706'
-          targetMarketCountryCode:
-            type: string
-            examples:
-            - '124'
-          catalogueGln:
-            type: string
-            examples:
-            - 0068780060324
-          dataProviderName:
-            type: string
-            examples:
-            - Bayer Inc. Consumer Health
-          gpc:
-            type: string
-            examples:
-            - '10000856'
-          gpcDescription:
-            type: string
-            examples:
-            - General/Multi-use Pain Relief
-          baseGln:
-            type: string
-            examples:
-            - 0056500000019
-      pharmaceuticalContent:
-        type: array
+- server: production
+  type: local
+  format: json
+  path: fixtures/import/json/product_simple.json
+schema:
+- name: product_simple
+  physicalType: object
+  description: Generated from JSON object in fixtures/import/json/product_simple.json
+  logicalType: object
+  physicalName: product_simple
+  properties:
+  - name: identification
+    physicalType: object
+    logicalType: object
+    properties:
+    - name: productType
+      physicalType: string
+      logicalType: string
+      examples:
+      - EA
+    - name: gtin
+      physicalType: string
+      logicalType: string
+      examples:
+      - '056500371706'
+    - name: gtin14
+      physicalType: string
+      logicalType: string
+      examples:
+      - '00056500371706'
+    - name: targetMarketCountryCode
+      physicalType: string
+      logicalType: string
+      examples:
+      - '124'
+    - name: catalogueGln
+      physicalType: string
+      logicalType: string
+      examples:
+      - 0068780060324
+    - name: dataProviderName
+      physicalType: string
+      logicalType: string
+      examples:
+      - Bayer Inc. Consumer Health
+    - name: gpc
+      physicalType: string
+      logicalType: string
+      examples:
+      - '10000856'
+    - name: gpcDescription
+      physicalType: string
+      logicalType: string
+      examples:
+      - General/Multi-use Pain Relief
+    - name: baseGln
+      physicalType: string
+      logicalType: string
+      examples:
+      - 0056500000019
+  - name: pharmaceuticalContent
+    physicalType: array
+    logicalType: array
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: extendedDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Back and Body Pain 220mg, 30s
+      - name: shortDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Back & Body 30s
+      - name: productLabelType
+        physicalType: string
+        logicalType: string
+        examples:
+        - CS
+      - name: dateAvailable
+        physicalType: string
+        customProperties:
+        - property: format
+          value: date
+        logicalType: string
+        examples:
+        - '2021-02-01'
+      - name: shapeDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Oval
+      - name: shapeDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Ovale
+      - name: markingDirectEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: markingDirectFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: drugType
+        physicalType: string
+        logicalType: string
+        examples:
+        - T1
+      - name: controlledDrug
+        physicalType: string
+        logicalType: string
+        examples:
+        - CON4
+      - name: narcotic
+        physicalType: string
+        logicalType: string
+        examples:
+        - NAR4
+      - name: targetedSubstance
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: federalReportable
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: precursorStatus
+        physicalType: string
+        logicalType: string
+        examples:
+        - PN
+      - name: tempControlRangeMin
+        physicalType: string
+        logicalType: string
+        examples:
+        - '15'
+      - name: tempControlRangeMax
+        physicalType: string
+        logicalType: string
+        examples:
+        - '25'
+      - name: tempControlRangeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CE
+      - name: labelStorageConditionsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Store between 15C and 25C
+      - name: labelStorageConditionsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Conserver entre 15C et 25C
+      - name: sterile
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: shakable
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: colourDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Blue
+      - name: colourDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Bleu
+      - name: flavourDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - n/a
+      - name: flavourDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - n/a
+      - name: dateEffective
+        physicalType: string
+        customProperties:
+        - property: format
+          value: date
+        logicalType: string
+        examples:
+        - '2021-02-01'
+      - name: totalUnits
+        physicalType: string
+        logicalType: string
+        examples:
+        - '1'
+      - name: length
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.59'
+      - name: lengthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: width
+        physicalType: string
+        logicalType: string
+        examples:
+        - '9.91'
+      - name: widthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: height
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.59'
+      - name: heightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: volume
+        physicalType: string
+        logicalType: string
+        examples:
+        - '310'
+      - name: volumeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CC
+      - name: grossWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.09'
+      - name: grossWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - K
+      - name: packagingFormQual
+        physicalType: string
+        logicalType: string
+        examples:
+        - BOX
+      - name: packagingMaterialQual
+        physicalType: string
+        logicalType: string
+        examples:
+        - '31'
+      - name: size
+        physicalType: string
+        logicalType: string
+        examples:
+        - '30'
+      - name: sizeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - EA
+      - name: originOfProductCountry
+        physicalType: string
+        logicalType: string
+        examples:
+        - US
+      - name: gpcClassificationCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10000856'
+      - name: barcodeSymbologyMulti
+        physicalType: array
+        logicalType: array
+        examples:
+        - '34'
         items:
-          type: object
-          fields:
-            extendedDescriptionEnglish:
-              type: string
-              examples:
-              - Aleve Back and Body Pain 220mg, 30s
-            shortDescriptionEnglish:
-              type: string
-              examples:
-              - Aleve Back & Body 30s
-            productLabelType:
-              type: string
-              examples:
-              - CS
-            dateAvailable:
-              type: string
-              format: date
-              examples:
-              - '2021-02-01'
-            shapeDescriptionEnglish:
-              type: string
-              examples:
-              - Oval
-            shapeDescriptionFrench:
-              type: string
-              examples:
-              - Ovale
-            markingDirectEnglish:
-              type: string
-              examples:
-              - Aleve
-            markingDirectFrench:
-              type: string
-              examples:
-              - Aleve
-            drugType:
-              type: string
-              examples:
-              - T1
-            controlledDrug:
-              type: string
-              examples:
-              - CON4
-            narcotic:
-              type: string
-              examples:
-              - NAR4
-            targetedSubstance:
-              type: string
-              examples:
-              - N
-            federalReportable:
-              type: string
-              examples:
-              - N
-            precursorStatus:
-              type: string
-              examples:
-              - PN
-            tempControlRangeMin:
-              type: string
-              examples:
-              - '15'
-            tempControlRangeMax:
-              type: string
-              examples:
-              - '25'
-            tempControlRangeUOM:
-              type: string
-              examples:
-              - CE
-            labelStorageConditionsEnglish:
-              type: string
-              examples:
-              - Store between 15C and 25C
-            labelStorageConditionsFrench:
-              type: string
-              examples:
-              - Conserver entre 15C et 25C
-            sterile:
-              type: string
-              examples:
-              - N
-            shakable:
-              type: string
-              examples:
-              - N
-            colourDescriptionEnglish:
-              type: string
-              examples:
-              - Blue
-            colourDescriptionFrench:
-              type: string
-              examples:
-              - Bleu
-            flavourDescriptionEnglish:
-              type: string
-              examples:
-              - n/a
-            flavourDescriptionFrench:
-              type: string
-              examples:
-              - n/a
-            dateEffective:
-              type: string
-              format: date
-              examples:
-              - '2021-02-01'
-            totalUnits:
-              type: string
-              examples:
-              - '1'
-            length:
-              type: string
-              examples:
-              - '5.59'
-            lengthUOM:
-              type: string
-              examples:
-              - CM
-            width:
-              type: string
-              examples:
-              - '9.91'
-            widthUOM:
-              type: string
-              examples:
-              - CM
-            height:
-              type: string
-              examples:
-              - '5.59'
-            heightUOM:
-              type: string
-              examples:
-              - CM
-            volume:
-              type: string
-              examples:
-              - '310'
-            volumeUOM:
-              type: string
-              examples:
-              - CC
-            grossWeight:
-              type: string
-              examples:
-              - '0.09'
-            grossWeightUOM:
-              type: string
-              examples:
-              - K
-            packagingFormQual:
-              type: string
-              examples:
-              - BOX
-            packagingMaterialQual:
-              type: string
-              examples:
-              - '31'
-            size:
-              type: string
-              examples:
-              - '30'
-            sizeUOM:
-              type: string
-              examples:
-              - EA
-            originOfProductCountry:
-              type: string
-              examples:
-              - US
-            gpcClassificationCode:
-              type: string
-              examples:
-              - '10000856'
-            barcodeSymbologyMulti:
-              type: array
-              items:
-                type: string
-              examples:
-              - '34'
-            unspsc:
-              type: string
-              examples:
-              - '51384533'
-            productType:
-              type: string
-              examples:
-              - EA
-            hazardRatingSystemWHMISclassCode:
-              type: array
-              items:
-                type: string
-              examples:
-              - N
-            rxDosageForm:
-              type: string
-              examples:
-              - CAPU
-            rxRouteOfAdministration:
-              type: string
-              examples:
-              - OR
-            anatomicalTherapeuticChemical:
-              type: string
-              examples:
-              - M01AE02
-            markingLotNumber:
-              type: string
-              examples:
-              - Y
-            drugMerchandising:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingBC:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingMB:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingNB:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingNF:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingNS:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingNT:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingNU:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingON:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingPE:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingQC:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingSK:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingYT:
-              type: string
-              examples:
-              - OT
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: unspsc
+        physicalType: string
+        logicalType: string
+        examples:
+        - '51384533'
+      - name: productType
+        physicalType: string
+        logicalType: string
+        examples:
+        - EA
+      - name: hazardRatingSystemWHMISclassCode
+        physicalType: array
+        logicalType: array
+        examples:
+        - N
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: rxDosageForm
+        physicalType: string
+        logicalType: string
+        examples:
+        - CAPU
+      - name: rxRouteOfAdministration
+        physicalType: string
+        logicalType: string
+        examples:
+        - OR
+      - name: anatomicalTherapeuticChemical
+        physicalType: string
+        logicalType: string
+        examples:
+        - M01AE02
+      - name: markingLotNumber
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: drugMerchandising
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingBC
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingMB
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingNB
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingNF
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingNS
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingNT
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingNU
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingON
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingPE
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingQC
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingSK
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingYT
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+

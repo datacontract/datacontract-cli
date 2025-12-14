@@ -422,6 +422,24 @@
 
             <div
               class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+              {# Check if old array format (deprecated) or new Team object format (v3.1.0+) #}
+              {% if datacontract.team is sequence and datacontract.team is not string %}
+              {# Deprecated array format #}
+              {% set team_members = datacontract.team %}
+              {% else %}
+              {# New team format (v3.1.0+): object with name, description, members #}
+              {% if datacontract.team.name or datacontract.team.description %}
+              <div class="px-6 py-4 border-b border-gray-200">
+                {% if datacontract.team.name %}
+                <div class="text-sm font-medium text-gray-900">{{ datacontract.team.name }}</div>
+                {% endif %}
+                {% if datacontract.team.description %}
+                <div class="text-sm text-gray-500">{{ datacontract.team.description }}</div>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% set team_members = datacontract.team.members or [] %}
+              {% endif %}
               <table class="min-w-full divide-y divide-gray-300">
                 <thead class="bg-gray-50">
                 <tr>
@@ -448,7 +466,7 @@
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
-                {% for member in datacontract.team %}
+                {% for member in team_members %}
                 <tr>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{
                     member.username }}
