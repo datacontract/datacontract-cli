@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package models;
+
+import "common/address.proto";
+
+// Message representing a Person with an Address
+message Person {
+    string name = 1;
+    string email = 2;
+    common.Address address = 3;
+}

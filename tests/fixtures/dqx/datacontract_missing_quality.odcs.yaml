@@ -1,0 +1,143 @@
+version: 2.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: data-contract-example_user_interactions_enhanced
+name: user_interactions
+status: active
+
+servers:
+- server: development
+  type: databricks
+  catalog: dev_catalog
+  schema: dev_schema
+- server: production
+  type: databricks
+  catalog: prod_catalog
+  schema: prod_schema
+
+schema:
+- name: datacontract_test
+  physicalType: table
+  description: Table containing user interaction data on the platform.
+  properties:
+  - name: interaction_id
+    physicalType: string
+    description: Unique identifier for the interaction.
+    logicalType: string
+    required: true
+  - name: user_id
+    physicalType: string
+    description: Unique identifier for the user.
+    logicalType: string
+    required: true
+  - name: interaction_type
+    physicalType: string
+    description: Type of interaction (e.g., click, view, purchase).
+    logicalType: string
+    required: true
+  - name: interaction_timestamp
+    physicalType: timestamp
+    description: Timestamp of the interaction.
+    logicalType: timestamp
+    required: true
+  - name: item_id
+    physicalType: string
+    description: Identifier of the item interacted with.
+    logicalType: string
+    required: false
+  - name: interaction_value
+    physicalType: integer
+    description: Value associated with the interaction (e.g., amount spent).
+    logicalType: integer
+    required: false
+  - name: location
+    physicalType: string
+    description: User's location during the interaction.
+    logicalType: string
+    required: false
+  - name: device
+    physicalType: string
+    description: User's device during the interaction.
+    logicalType: string
+    required: false
+  - name: interaction_date
+    physicalType: string
+    description: Date of the interaction.
+    logicalType: string
+    required: true
+  - name: time_since_last_interaction
+    physicalType: integer
+    description: Time since the user's last interaction (in days).
+    logicalType: integer
+    required: false
+  - name: is_active
+    physicalType: boolean
+    description: Flag indicating if the user is still active
+    logicalType: boolean
+    required: false
+  - name: user_profile
+    physicalType: struct
+    description: User profile information.
+    logicalType: object
+    required: false
+    properties:
+    - name: age
+      physicalType: integer
+      description: User's age.
+      logicalType: integer
+      required: false
+    - name: gender
+      physicalType: string
+      description: User's gender.
+      logicalType: string
+      required: false
+    - name: location_details
+      physicalType: struct
+      description: Nested location information.
+      logicalType: object
+      required: false
+      properties:
+      - name: city
+        physicalType: string
+        description: User's city.
+        logicalType: string
+        required: false
+      - name: country
+        physicalType: string
+        description: User's country.
+        logicalType: string
+        required: false
+  - name: related_items
+    physicalType: array
+    description: List of item IDs related to this interaction.
+    logicalType: array
+    required: false
+    items:
+      name: item
+      physicalType: string
+      logicalType: string
+  - name: interaction_context
+    physicalType: struct
+    description: Contextual information about the interaction.
+    logicalType: object
+    required: false
+    properties:
+    - name: page_url
+      physicalType: string
+      description: URL of the page where the interaction occurred.
+      logicalType: string
+      required: false
+    - name: device_type
+      physicalType: string
+      description: Type of device used for the interaction.
+      logicalType: string
+      required: false
+
+team:
+  name: Example Team
+
+slaProperties:
+- property: generalAvailability
+  value: Available 24/7
+- property: retention
+  value: P1Y

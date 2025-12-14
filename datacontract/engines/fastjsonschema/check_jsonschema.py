@@ -7,10 +7,10 @@ from typing import Any, Callable, Generator, List, Optional
 
 import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
+from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
-from datacontract.export.jsonschema_converter import to_jsonschema
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
+from datacontract.export.jsonschema_exporter import to_jsonschema
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -231,7 +231,7 @@ def process_s3_file(run, server, schema, model_name, validate):
     process_exceptions(run, exceptions)
 
 
-def check_jsonschema(run: Run, data_contract: DataContractSpecification, server: Server):
+def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: Server):
     run.log_info("Running engine jsonschema")
 
     # Early exit conditions
@@ -248,14 +248,15 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
         run.log_warn("jsonschema: Server format is not 'json'. Skip jsonschema checks.")
         return
 
-    if not data_contract.models:
-        run.log_warn("jsonschema: No models found. Skip jsonschema checks.")
+    if not data_contract.schema_:
+        run.log_warn("jsonschema: No schema found. Skip jsonschema checks.")
         return
 
-    for model_name, model in iter(data_contract.models.items()):
+    for schema_obj in data_contract.schema_:
+        model_name = schema_obj.name
         # Process the model
         run.log_info(f"jsonschema: Converting model {model_name} to JSON Schema")
-        schema = to_jsonschema(model_name, model)
+        schema = to_jsonschema(model_name, schema_obj)
         run.log_info(f"jsonschema: {schema}")
 
         validate = fastjsonschema.compile(

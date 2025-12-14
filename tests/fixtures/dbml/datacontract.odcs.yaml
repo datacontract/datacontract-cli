@@ -1,0 +1,106 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: urn:datacontract:checkout:orders-latest
+name: Orders Latest
+version: 1.0.0
+status: active
+description:
+  purpose: |-
+    Successful customer orders in the webshop.
+    All orders since 2020-01-01.
+    Orders with their line items are in their current state (no history included).
+
+servers:
+- server: production
+  type: s3
+  location: s3://datacontract-example-orders-latest/data/{model}/*.json
+  format: json
+
+schema:
+- name: orders
+  description: One record per order. Includes cancelled and deleted orders.
+  physicalType: table
+  properties:
+  - name: order_id
+    description: An internal ID that identifies an order in the online shop.
+    logicalType: string
+    physicalType: string
+    required: true
+    unique: true
+    primaryKey: true
+  - name: order_timestamp
+    description: The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.
+    logicalType: timestamp
+    physicalType: timestamp
+    required: true
+  - name: order_total
+    description: Total amount the smallest monetary unit (e.g., cents).
+    logicalType: object
+    physicalType: object
+    required: true
+    properties:
+    - name: amount
+      description: The amount to pay
+      logicalType: object
+      physicalType: object
+      required: true
+      properties:
+      - name: sum
+        description: the sum to pay
+        logicalType: number
+        physicalType: number
+        required: true
+      - name: currency
+        description: the currency the amount is in
+        logicalType: string
+        physicalType: string
+        required: true
+    - name: due_date
+      description: the date by which the total must be paid
+      logicalType: date
+      physicalType: date
+      required: true
+    - name: discount
+      description: a discount as fraction of one (for percentages), if the customer gets discount
+      logicalType: number
+      physicalType: double
+  - name: customer_id
+    description: Unique identifier for the customer.
+    logicalType: string
+    physicalType: string
+  - name: customer_email_address
+    description: The email address, as entered by the customer. The email address was not verified.
+    logicalType: string
+    physicalType: string
+    required: true
+  - name: processed_timestamp
+    description: The timestamp when the record was processed by the data platform.
+    logicalType: timestamp
+    physicalType: timestamp
+    required: true
+
+- name: line_items
+  description: A single article that is part of an order.
+  physicalType: table
+  properties:
+  - name: lines_item_id
+    description: Primary key of the lines_item_id table
+    logicalType: string
+    physicalType: string
+    required: true
+    unique: true
+    primaryKey: true
+  - name: order_id
+    description: An internal ID that identifies an order in the online shop.
+    logicalType: string
+    physicalType: string
+    relationships:
+    - type: foreignKey
+      to: orders.order_id
+  - name: sku
+    description: The purchased article number
+    logicalType: string
+    physicalType: string
+
+team:
+  name: Checkout Team

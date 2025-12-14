@@ -1,4 +1,6 @@
+import logging
 import os
+import sys
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -11,16 +13,19 @@ from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat, Spec
+from datacontract.imports.importer import ImportFormat
 from datacontract.init.init_template import get_init_template
-from datacontract.integration.datamesh_manager import (
-    publish_data_contract_to_datamesh_manager,
+from datacontract.integration.entropy_data import (
+    publish_data_contract_to_entropy_data,
 )
-from datacontract.lint.resolve import resolve_data_contract_dict
+from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
+from datacontract.model.exceptions import DataContractException
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
 
 console = Console()
+
+debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
 
 
 class OrderedCommands(TyperGroup):
@@ -69,10 +74,13 @@ def init(
     ] = "datacontract.yaml",
     template: Annotated[str, typer.Option(help="URL of a template or data contract")] = None,
     overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
+    debug: debug_option = None,
 ):
     """
     Create an empty data contract.
     """
+    enable_debug_logging(debug)
+
     if not overwrite and os.path.exists(location):
         console.print("File already exists, use --overwrite to overwrite")
         raise typer.Exit(code=1)
@@ -90,7 +98,7 @@ def lint(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     output: Annotated[
         Path,
@@ -99,12 +107,22 @@ def lint(
         ),
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    debug: debug_option = None,
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
     """
+    enable_debug_logging(debug)
+
     run = DataContract(data_contract_file=location, schema_location=schema).lint()
     write_test_result(run, console, output_format, output)
+
+
+def enable_debug_logging(debug: bool):
+    if debug:
+        logging.basicConfig(
+            level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
+        )
 
 
 @app.command()
@@ -115,7 +133,7 @@ def test(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -142,10 +160,13 @@ def test(
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
+    debug: debug_option = None,
 ):
     """
     Run schema and quality tests on configured servers.
     """
+    enable_debug_logging(debug)
+
     console.print(f"Testing {location}")
     if server == "all":
         server = None
@@ -159,7 +180,11 @@ def test(
     ).test()
     if logs:
         _print_logs(run)
-    write_test_result(run, console, output_format, output)
+    try:
+        data_contract = resolve_data_contract(location, schema_location=schema)
+    except Exception:
+        data_contract = None
+    write_test_result(run, console, output_format, output, data_contract)
 
 
 @app.command()
@@ -172,12 +197,11 @@ def export(
         ),
     ] = None,
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
-    model: Annotated[
+    schema_name: Annotated[
         str,
         typer.Option(
-            help="Use the key of the model in the data contract yaml file "
-            "to refer to a model, e.g., `orders`, or `all` for all "
-            "models (default)."
+            help="The name of the schema to export, e.g., `orders`, or `all` for all "
+            "schemas (default)."
         ),
     ] = "all",
     # TODO: this should be a subcommand
@@ -202,7 +226,7 @@ def export(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     # TODO: this should be a subcommand
     engine: Annotated[
@@ -216,10 +240,13 @@ def export(
             help="The file path or URL of a template. For Excel format: path/URL to custom Excel template. For custom format: path to Jinja template."
         ),
     ] = None,
+    debug: debug_option = None,
 ):
     """
     Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
+    enable_debug_logging(debug)
+
     # Validate that Excel format requires an output file path
     if format == ExportFormat.excel and output is None:
         console.print("❌ Error: Excel export requires an output file path.")
@@ -230,7 +257,7 @@ def export(
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=format,
-        model=model,
+        schema_name=schema_name,
         server=server,
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,
@@ -264,10 +291,6 @@ def import_(
         Optional[str],
         typer.Option(help="The path to the file that should be imported."),
     ] = None,
-    spec: Annotated[
-        Spec,
-        typer.Option(help="The format of the data contract to import. "),
-    ] = Spec.datacontract_specification,
     dialect: Annotated[
         Optional[str],
         typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
@@ -313,11 +336,11 @@ def import_(
     ] = None,
     template: Annotated[
         Optional[str],
-        typer.Option(help="The location (url or path) of the Data Contract Specification Template"),
+        typer.Option(help="The location (url or path) of the ODCS template"),
     ] = None,
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     owner: Annotated[
         Optional[str],
@@ -327,14 +350,16 @@ def import_(
         Optional[str],
         typer.Option(help="The identifier for the the data contract."),
     ] = None,
+    debug: debug_option = None,
 ):
     """
     Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
     """
-    result = DataContract().import_from_source(
+    enable_debug_logging(debug)
+
+    result = DataContract.import_from_source(
         format=format,
         source=source,
-        spec=spec,
         template=template,
         schema=schema,
         dialect=dialect,
@@ -366,17 +391,20 @@ def publish(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
+    debug: debug_option = None,
 ):
     """
-    Publish the data contract to the Data Mesh Manager.
+    Publish the data contract to the Entropy Data.
     """
-    publish_data_contract_to_datamesh_manager(
+    enable_debug_logging(debug)
+
+    publish_data_contract_to_entropy_data(
         data_contract_dict=resolve_data_contract_dict(location),
         ssl_verification=ssl_verification,
     )
@@ -393,12 +421,15 @@ def catalog(
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
+    debug: debug_option = None,
 ):
     """
     Create a html catalog of data contracts.
     """
+    enable_debug_logging(debug)
+
     path = Path(output)
     path.mkdir(parents=True, exist_ok=True)
     console.print(f"Created {output}")
@@ -407,82 +438,15 @@ def catalog(
     for file in Path().rglob(files):
         try:
             create_data_contract_html(contracts, file, path, schema)
+        except DataContractException as e:
+            if e.reason == "Cannot parse ODPS product":
+                console.print(f"Skipped {file} due to error: {e.reason}")
+            else:
+                console.print(f"Skipped {file} due to error: {e}")
         except Exception as e:
             console.print(f"Skipped {file} due to error: {e}")
 
     create_index_html(contracts, path)
-
-
-@app.command()
-def breaking(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-):
-    """
-    Identifies breaking changes between data contracts. Prints to stdout.
-    """
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).breaking(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.breaking_str())
-
-    if not result.passed_checks():
-        raise typer.Exit(code=1)
-
-
-@app.command()
-def changelog(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-):
-    """
-    Generate a changelog between data contracts. Prints to stdout.
-    """
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.changelog_str())
-
-
-@app.command()
-def diff(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-):
-    """
-    PLACEHOLDER. Currently works as 'changelog' does.
-    """
-
-    # TODO change to diff output, not the changelog entries
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.changelog_str())
 
 
 def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict:
@@ -510,6 +474,7 @@ def api(
     host: Annotated[
         str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
     ] = "127.0.0.1",
+    debug: debug_option = None,
 ):
     """
     Start the datacontract CLI as server application with REST API.
@@ -527,6 +492,8 @@ def api(
     It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.:
     `datacontract api --port 1234 --root_path /datacontract`.
     """
+    enable_debug_logging(debug)
+
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG
 

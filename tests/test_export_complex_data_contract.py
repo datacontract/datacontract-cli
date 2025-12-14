@@ -9,7 +9,7 @@ def test_export_complex_data_contract():
     """
     data_contract = DataContract(
         data_contract_str="""
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: urn:datacontract:checkout:orders-latest
 info:
   title: Orders Latest
@@ -84,9 +84,9 @@ models:
 
     data_contract.lint()
     data_contract.test()
-    data_contract.export(export_format="avro", model="orders")
+    data_contract.export(export_format="avro", schema_name="orders")
     data_contract.export(export_format="odcs")
     data_contract.export(export_format="dbt")
     data_contract.export(export_format="dbt-sources")
-    data_contract.export(export_format="dbt-staging-sql", model="orders")
-    data_contract.export(export_format="jsonschema", model="orders")
+    data_contract.export(export_format="dbt-staging-sql", schema_name="orders")
+    data_contract.export(export_format="jsonschema", schema_name="orders")

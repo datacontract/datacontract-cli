@@ -2,32 +2,26 @@ import re
 from typing import Dict, Generator, List
 
 import boto3
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Field,
-    Model,
-    Server,
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
 )
 
 
 class GlueImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
-        return import_glue(data_contract_specification, source, import_args.get("glue_table"))
+        self, source: str, import_args: dict
+    ) -> OpenDataContractStandard:
+        return import_glue(source, import_args.get("glue_table"))
 
 
 def get_glue_database(database_name: str):
-    """Get the details Glue database.
-
-    Args:
-        database_name (str): glue database to request.
-
-    Returns:
-        set: catalogid and locationUri
-    """
+    """Get the details Glue database."""
     glue = boto3.client("glue")
     try:
         response = glue.get_database(Name=database_name)
@@ -35,7 +29,6 @@ def get_glue_database(database_name: str):
         print(f"Database not found {database_name}.")
         return (None, None)
     except Exception as e:
-        # todo catch all
         print(f"Error: {e}")
         return (None, None)
 
@@ -46,31 +39,18 @@ def get_glue_database(database_name: str):
 
 
 def get_glue_tables(database_name: str) -> List[str]:
-    """Get the list of tables in a Glue database.
-
-    Args:
-        database_name (str): Glue database to request.
-
-    Returns:
-        List[str]: List of table names
-    """
+    """Get the list of tables in a Glue database."""
     glue = boto3.client("glue")
-
-    # Set the paginator
     paginator = glue.get_paginator("get_tables")
-
-    # Initialize an empty list to store the table names
     table_names = []
+
     try:
-        # Paginate through the tables
         for page in paginator.paginate(DatabaseName=database_name, PaginationConfig={"PageSize": 100}):
-            # Add the tables from the current page to the list
             table_names.extend([table["Name"] for table in page["TableList"] if "Name" in table])
     except glue.exceptions.EntityNotFoundException:
         print(f"Database {database_name} not found.")
         return []
     except Exception as e:
-        # todo catch all
         print(f"Error: {e}")
         return []
 
@@ -78,32 +58,20 @@ def get_glue_tables(database_name: str) -> List[str]:
 
 
 def get_glue_table_schema(database_name: str, table_name: str) -> List[Dict]:
-    """Get the schema of a Glue table.
-
-    Args:
-        database_name (str): Glue database name.
-        table_name (str): Glue table name.
-
-    Returns:
-        dict: Table schema
-    """
-
+    """Get the schema of a Glue table."""
     glue = boto3.client("glue")
 
-    # Get the table schema
     try:
         response = glue.get_table(DatabaseName=database_name, Name=table_name)
     except glue.exceptions.EntityNotFoundException:
         print(f"Table {table_name} not found in database {database_name}.")
         return []
     except Exception as e:
-        # todo catch all
         print(f"Error: {e}")
         return []
 
     table_schema = response["Table"]["StorageDescriptor"]["Columns"]
 
-    # when using hive partition keys, the schema is stored in the PartitionKeys field
     if response["Table"].get("PartitionKeys") is not None:
         for pk in response["Table"]["PartitionKeys"]:
             table_schema.append(
@@ -118,119 +86,124 @@ def get_glue_table_schema(database_name: str, table_name: str) -> List[Dict]:
 
 
 def import_glue(
-    data_contract_specification: DataContractSpecification,
     source: str,
     table_names: List[str],
-) -> DataContractSpecification:
-    """Import the schema of a Glue database.
-
-    Args:
-        data_contract_specification (DataContractSpecification): The data contract specification to update.
-        source (str): The name of the Glue database.
-        table_names (List[str]): List of table names to import. If None, all tables in the database are imported.
-
-    Returns:
-        DataContractSpecification: The updated data contract specification.
-    """
+) -> OpenDataContractStandard:
+    """Import the schema of a Glue database."""
     catalogid, location_uri = get_glue_database(source)
 
-    # something went wrong
     if catalogid is None:
-        return data_contract_specification
+        return create_odcs()
 
     if table_names is None:
         table_names = get_glue_tables(source)
 
-    server_kwargs = {"type": "glue", "account": catalogid, "database": source}
+    odcs = create_odcs()
 
-    if location_uri:
-        server_kwargs["location"] = location_uri
+    # Create server
+    server = create_server(
+        name="production",
+        server_type="glue",
+        account=catalogid,
+        database=source,
+        location=location_uri,
+    )
+    odcs.servers = [server]
 
-    data_contract_specification.servers = {
-        "production": Server(**server_kwargs),
-    }
+    odcs.schema_ = []
 
     for table_name in table_names:
-        if data_contract_specification.models is None:
-            data_contract_specification.models = {}
-
         table_schema = get_glue_table_schema(source, table_name)
 
-        fields = {}
+        properties = []
         for column in table_schema:
-            field = create_typed_field(column["Type"])
+            prop = create_typed_property(column["Name"], column["Type"])
 
-            # hive partitions are required, but are not primary keys
+            # Hive partitions are required
             if column.get("Hive"):
-                field.required = True
+                prop.required = True
 
-            field.description = column.get("Comment")
-            fields[column["Name"]] = field
+            if column.get("Comment"):
+                prop.description = column.get("Comment")
 
-        data_contract_specification.models[table_name] = Model(
-            type="table",
-            fields=fields,
+            properties.append(prop)
+
+        schema_obj = create_schema_object(
+            name=table_name,
+            physical_type="table",
+            properties=properties,
         )
 
-    return data_contract_specification
+        odcs.schema_.append(schema_obj)
+
+    return odcs
 
 
-def create_typed_field(dtype: str) -> Field:
-    """Create a typed field based on the given data type.
-
-    Args:
-        dtype (str): The data type of the field.
-
-    Returns:
-        Field: The created field with the appropriate type.
-    """
-    field = Field()
+def create_typed_property(name: str, dtype: str) -> SchemaProperty:
+    """Create a typed SchemaProperty based on the given data type."""
     dtype = dtype.strip().lower().replace(" ", "")
-    # Example: array<string>
+
     if dtype.startswith("array"):
-        field.type = "array"
-        field.items = create_typed_field(dtype[6:-1])
-    # Example: struct<field1:float,field2:string>
+        inner_type = dtype[6:-1]
+        items_prop = create_typed_property("items", inner_type)
+        return create_property(
+            name=name,
+            logical_type="array",
+            physical_type=dtype,
+            items=items_prop,
+        )
     elif dtype.startswith("struct"):
-        field.type = "struct"
+        nested_props = []
         for f in split_struct(dtype[7:-1]):
-            field_name, field_key = f.split(":", 1)
-            field.fields[field_name] = create_typed_field(field_key)
-    # Example: map<string,int>
+            field_name, field_type = f.split(":", 1)
+            nested_props.append(create_typed_property(field_name, field_type))
+        return create_property(
+            name=name,
+            logical_type="object",
+            physical_type="struct",
+            properties=nested_props,
+        )
     elif dtype.startswith("map"):
-        field.type = "map"
-        map_match = re.match(r"map<(.+?),\s*(.+)>", dtype)
-        if map_match:
-            key_type = map_match.group(1)
-            value_type = map_match.group(2)
-            field.keys = create_typed_field(key_type)
-            field.values = create_typed_field(value_type)
-    # Example: decimal(38, 6) or decimal
+        return create_property(
+            name=name,
+            logical_type="object",
+            physical_type="map",
+        )
     elif dtype.startswith("decimal"):
-        field.type = "decimal"
+        precision = None
+        scale = None
         decimal_match = re.match(r"decimal\((\d+),\s*(\d+)\)", dtype)
-        if decimal_match:  # if precision specified
-            field.precision = int(decimal_match.group(1))
-            field.scale = int(decimal_match.group(2))
-    # Example: varchar(255) or varchar
+        if decimal_match:
+            precision = int(decimal_match.group(1))
+            scale = int(decimal_match.group(2))
+        return create_property(
+            name=name,
+            logical_type="number",
+            physical_type="decimal",
+            precision=precision,
+            scale=scale,
+        )
     elif dtype.startswith("varchar"):
-        field.type = "varchar"
+        max_length = None
         if len(dtype) > 7:
-            field.maxLength = int(dtype[8:-1])
+            max_length = int(dtype[8:-1])
+        return create_property(
+            name=name,
+            logical_type="string",
+            physical_type="varchar",
+            max_length=max_length,
+        )
     else:
-        field.type = map_type_from_sql(dtype)
-    return field
+        logical_type = map_glue_type_to_odcs(dtype)
+        return create_property(
+            name=name,
+            logical_type=logical_type,
+            physical_type=dtype,
+        )
 
 
 def split_fields(s: str) -> Generator[str, None, None]:
-    """Split a string of fields considering nested structures.
-
-    Args:
-        s (str): The string to split.
-
-    Yields:
-        str: The next field in the string.
-    """
+    """Split a string of fields considering nested structures."""
     counter: int = 0
     last: int = 0
     for i, x in enumerate(s):
@@ -245,39 +218,25 @@ def split_fields(s: str) -> Generator[str, None, None]:
 
 
 def split_struct(s: str) -> List[str]:
-    """Split a struct string into individual fields.
-
-    Args:
-        s (str): The struct string to split.
-
-    Returns:
-        List[str]: List of individual fields in the struct.
-    """
+    """Split a struct string into individual fields."""
     return list(split_fields(s=s))
 
 
-def map_type_from_sql(sql_type: str) -> str:
-    """Map an SQL type to a corresponding field type.
-
-    Args:
-        sql_type (str): The SQL type to map.
-
-    Returns:
-        str: The corresponding field type.
-    """
+def map_glue_type_to_odcs(sql_type: str) -> str:
+    """Map a Glue/SQL type to ODCS logical type."""
     if sql_type is None:
-        return None
+        return "string"
 
     sql_type = sql_type.lower()
 
     type_mapping = {
         "string": "string",
-        "int": "int",
-        "bigint": "bigint",
-        "float": "float",
-        "double": "double",
+        "int": "integer",
+        "bigint": "integer",
+        "float": "number",
+        "double": "number",
         "boolean": "boolean",
-        "timestamp": "timestamp",
+        "timestamp": "date",
         "date": "date",
     }
 
@@ -285,4 +244,4 @@ def map_type_from_sql(sql_type: str) -> str:
         if sql_type.startswith(prefix):
             return mapped_type
 
-    return "unknown"
+    return "string"
