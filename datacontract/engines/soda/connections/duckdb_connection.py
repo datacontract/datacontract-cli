@@ -1,15 +1,15 @@
 import os
-from typing import Any, Dict
+from typing import Any, List, Optional
 
 import duckdb
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
 from datacontract.model.run import Run
 
 
 def get_duckdb_connection(
-    data_contract: DataContractSpecification,
+    data_contract: OpenDataContractStandard,
     server: Server,
     run: Run,
     duckdb_connection: duckdb.DuckDBPyConnection | None = None,
@@ -31,99 +31,113 @@ def get_duckdb_connection(
     if server.type == "azure":
         path = server.location
         setup_azure_connection(con, server)
-    for model_name, model in data_contract.models.items():
-        model_path = path
-        if "{model}" in model_path:
-            model_path = model_path.format(model=model_name)
-        run.log_info(f"Creating table {model_name} for {model_path}")
 
-        if server.format == "json":
-            json_format = "auto"
-            if server.delimiter == "new_line":
-                json_format = "newline_delimited"
-            elif server.delimiter == "array":
-                json_format = "array"
-            columns = to_json_types(model)
-            if columns is None:
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            model_name = schema_obj.name
+            model_path = path
+            if "{model}" in model_path:
+                model_path = model_path.format(model=model_name)
+            run.log_info(f"Creating table {model_name} for {model_path}")
+
+            if server.format == "json":
+                json_format = "auto"
+                if server.delimiter == "new_line":
+                    json_format = "newline_delimited"
+                elif server.delimiter == "array":
+                    json_format = "array"
+                columns = to_json_types(schema_obj)
+                if columns is None:
+                    con.sql(f"""
+                            CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);
+                            """)
+                else:
+                    con.sql(
+                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
+                    )
+                    add_nested_views(con, model_name, schema_obj.properties)
+            elif server.format == "parquet":
                 con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);
-                        """)
-            else:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
-                )
-                add_nested_views(con, model_name, model.fields)
-        elif server.format == "parquet":
-            con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
-                        """)
-        elif server.format == "csv":
-            columns = to_csv_types(model)
-            run.log_info("Using columns: " + str(columns))
-            if columns is None:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""
-                )
-            else:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
-                )
-        elif server.format == "delta":
-            con.sql("update extensions;")  # Make sure we have the latest delta extension
-            con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
-        table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchdf()
-        if table_info is not None and not table_info.empty:
-            run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
+                            CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
+                            """)
+            elif server.format == "csv":
+                columns = to_csv_types(schema_obj)
+                run.log_info("Using columns: " + str(columns))
+                if columns is None:
+                    con.sql(
+                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""
+                    )
+                else:
+                    con.sql(
+                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
+                    )
+            elif server.format == "delta":
+                con.sql("update extensions;")  # Make sure we have the latest delta extension
+                con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
+            table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchdf()
+            if table_info is not None and not table_info.empty:
+                run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
     return con
 
 
-def to_csv_types(model) -> dict[Any, str | None] | None:
-    if model is None:
+def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
+    if schema_obj is None:
         return None
     columns = {}
-    # ['SQLNULL', 'BOOLEAN', 'BIGINT', 'DOUBLE', 'TIME', 'DATE', 'TIMESTAMP', 'VARCHAR']
-    for field_name, field in model.fields.items():
-        columns[field_name] = convert_to_duckdb_csv_type(field)
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            columns[prop.name] = convert_to_duckdb_csv_type(prop)
     return columns
 
 
-def to_json_types(model: Model) -> dict[Any, str | None] | None:
-    if model is None:
+def to_json_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
+    if schema_obj is None:
         return None
     columns = {}
-    for field_name, field in model.fields.items():
-        columns[field_name] = convert_to_duckdb_json_type(field)
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            columns[prop.name] = convert_to_duckdb_json_type(prop)
     return columns
 
 
-def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, fields: Dict[str, Field] | None):
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the type from a schema property. Prefers physicalType for accurate type checking."""
+    if prop.physicalType:
+        return prop.physicalType
+    if prop.logicalType:
+        return prop.logicalType
+    return None
+
+
+def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, properties: List[SchemaProperty] | None):
     model_name = model_name.strip('"')
-    if fields is None:
+    if properties is None:
         return
-    for field_name, field in fields.items():
-        if field.type is None or field.type.lower() not in ["array", "object"]:
+    for prop in properties:
+        prop_type = _get_type(prop)
+        if prop_type is None or prop_type.lower() not in ["array", "object"]:
             continue
-        field_type = field.type.lower()
-        if field_type == "array" and field.items is None:
+        field_type = prop_type.lower()
+        if field_type == "array" and prop.items is None:
             continue
-        elif field_type == "object" and (field.fields is None or len(field.fields) == 0):
+        elif field_type == "object" and (prop.properties is None or len(prop.properties) == 0):
             continue
 
-        nested_model_name = f"{model_name}__{field_name}"
+        nested_model_name = f"{model_name}__{prop.name}"
         max_depth = 2 if field_type == "array" else 1
 
-        ## if parent field is not required, the nested objects may respolve
+        ## if parent field is not required, the nested objects may resolve
         ## to a row of NULLs -- but if the objects themselves have required
         ## fields, this will fail the check.
-        where = "" if field.required else f" WHERE {field_name} IS NOT NULL"
+        where = "" if prop.required else f" WHERE {prop.name} IS NOT NULL"
         con.sql(f"""
             CREATE VIEW IF NOT EXISTS "{nested_model_name}" AS
-            SELECT unnest({field_name}, max_depth := {max_depth}) as {field_name} FROM "{model_name}" {where}
+            SELECT unnest({prop.name}, max_depth := {max_depth}) as {prop.name} FROM "{model_name}" {where}
             """)
         if field_type == "array":
-            add_nested_views(con, nested_model_name, field.items.fields)
+            add_nested_views(con, nested_model_name, prop.items.properties if prop.items else None)
         elif field_type == "object":
-            add_nested_views(con, nested_model_name, field.fields)
+            add_nested_views(con, nested_model_name, prop.properties)
 
 
 def setup_s3_connection(con, server):
@@ -168,20 +182,6 @@ def setup_s3_connection(con, server):
                     URL_STYLE '{url_style}'
                 );
             """)
-
-    #     con.sql(f"""
-    #                 SET s3_region = '{s3_region}';
-    #                 SET s3_access_key_id = '{s3_access_key_id}';
-    #                 SET s3_secret_access_key = '{s3_secret_access_key}';
-    #                 """)
-    # else:
-    #     con.sql("""
-    #                 RESET s3_region;
-    #                 RESET s3_access_key_id;
-    #                 RESET s3_secret_access_key;
-    #     """)
-    # con.sql("RESET s3_session_token")
-    # print(con.sql("SELECT * FROM duckdb_settings() WHERE name like 's3%'"))
 
 
 def setup_gcs_connection(con, server):

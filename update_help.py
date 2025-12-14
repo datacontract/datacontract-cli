@@ -15,9 +15,6 @@ commands = [
     "import",
     "publish",
     "catalog",
-    "breaking",
-    "changelog",
-    "diff",
     "api",
 ]
 

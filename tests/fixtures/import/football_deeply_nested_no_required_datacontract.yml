@@ -1,38 +1,46 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  FootballSchema:
-    description: Schema for football team and person details, where team is nested under the person
-    type: object
-    title: FootballSchema
-    fields:
-      person:
-        type: object
-        required: true
-        fields:
-          first_name:
-            type: string
-            required: true
-          last_name:
-            type: string
-            required: true
-          age:
-            type: integer
-            required: true
-          football_team:
-            type: object
-            required: false
-            fields:
-              name:
-                type: string
-                required: false
-              league:
-                type: string
-                required: false
-              year_founded:
-                type: integer
-                required: false
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: FootballSchema
+status: draft
+schema:
+- name: FootballSchema
+  physicalType: object
+  description: Schema for football team and person details, where team is nested under
+    the person
+  businessName: FootballSchema
+  logicalType: object
+  physicalName: FootballSchema
+  properties:
+  - name: person
+    physicalType: object
+    logicalType: object
+    required: true
+    properties:
+    - name: first_name
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: last_name
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: age
+      physicalType: integer
+      logicalType: integer
+      required: true
+    - name: football_team
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: name
+        physicalType: string
+        logicalType: string
+      - name: league
+        physicalType: string
+        logicalType: string
+      - name: year_founded
+        physicalType: integer
+        logicalType: integer
 

@@ -1,8 +1,7 @@
 import os
 
 import yaml
-
-from datacontract.model.data_contract_specification import Server
+from open_data_contract_standard.model import Server
 
 
 def initialize_client_and_create_soda_configuration(server: Server) -> str:
@@ -33,7 +32,7 @@ def to_oracle_soda_configuration(server: Server) -> str:
         schema: SYSTEM
     """
 
-    service_name = server.service_name or server.database
+    service_name = server.serviceName or server.database
     # with service account key, using an external json file
     soda_configuration = {
         f"data_source {server.type}": {
