@@ -108,7 +108,7 @@ def to_avro_idl_stream(contract: OpenDataContractStandard, stream: typing.TextIO
     """Serialize the provided data contract specification into Avro IDL."""
     ir = _contract_to_avro_idl_ir(contract)
     if ir.description:
-        stream.write(f"/** {contract.description} */\n")
+        stream.write(f"/** {ir.description} */\n")
     stream.write(f"protocol {ir.name or 'Unnamed'} {{\n")
     for model_type in ir.model_types:
         _write_model_type(model_type, stream)
@@ -278,7 +278,7 @@ def _contract_to_avro_idl_ir(contract: OpenDataContractStandard) -> AvroIDLProto
     inlined_contract = contract.model_copy()
     inline_definitions_into_data_contract(inlined_contract)
     protocol_name = _model_name_to_identifier(contract.name) if contract.name else None
-    description = contract.description if contract.description else None
+    description = contract.description.purpose if contract.description and contract.description.purpose else None
     return AvroIDLProtocol(name=protocol_name, description=description, model_types=generate_model_types(inlined_contract))
 
 
