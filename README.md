@@ -32,7 +32,7 @@ $ uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
 ```
 
 
-now, let's run the tests:
+Now, let's run the tests:
 
 ```bash
 $ export DATACONTRACT_POSTGRES_USERNAME=datacontract_cli.egzhawjonpfweuutedfy
@@ -172,7 +172,7 @@ uv run --with 'datacontract-cli[all]' datacontract --version
 ```
 
 ### pip
-Python 3.10, 3.11, and 3.12 are supported. We recommend to use Python 3.11.
+Python 3.10, 3.11, and 3.12 are supported. We recommend using Python 3.11.
 
 ```bash
 python3 -m pip install 'datacontract-cli[all]'
@@ -471,7 +471,7 @@ servers:
     regionName: eu-central-1
     stagingDir: s3://my-bucket/athena-results/
 models:
-  my_table: # corresponds to a table of view name
+  my_table: # corresponds to a table or view name
     type: table
     fields:
       my_column_1: # corresponds to a column
@@ -1098,7 +1098,7 @@ spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false�
 #### Great Expectations
 
 The `export` function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
-If the contract includes multiple models, you need to specify the names of the model you wish to export.
+If the contract includes multiple models, you need to specify the names of the schema/models you wish to export.
 
 ```shell
 datacontract export datacontract.yaml --format great-expectations --model orders
@@ -1540,7 +1540,7 @@ export DATACONTRACT_DATABRICKS_SERVER_HOSTNAME="https://xyz.cloud.databricks.com
 export DATACONTRACT_DATABRICKS_TOKEN=<token>
 datacontract import --format unity --unity-table-full-name <table_full_name>
 ```
- Please Refer to  [Databricks documentation](https://docs.databricks.com/aws/en/dev-tools/auth/unified-auth) on how to set up a profile
+ Please refer to [Databricks documentation](https://docs.databricks.com/aws/en/dev-tools/auth/unified-auth) on how to set up a profile
 ```bash
 # Example import single table from Unity Catalog via HTTP endpoint using Profile
 export DATACONTRACT_DATABRICKS_PROFILE="my-profile"
@@ -1564,7 +1564,7 @@ datacontract import --format dbt --source <manifest_path> --dbt-model <model_nam
 datacontract import --format dbt --source <manifest_path>
 ```
 
-### Excel
+#### Excel
 
 Importing from [ODCS Excel Template](https://github.com/datacontract/open-data-contract-standard-excel-template).
 
@@ -2011,7 +2011,7 @@ models:
 ## Development Setup
 
 - Install [uv](https://docs.astral.sh/uv/)
-- Python base interpreter should be 3.11.x .
+- Python base interpreter should be 3.11.x.
 - Docker engine must be running to execute the tests.
 
 ```bash
