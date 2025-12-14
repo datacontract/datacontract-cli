@@ -8,14 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11.1] - Unreleased
 
 This is a major release with breaking changes:
-We switch the internal data model from Data Contract Specification to Open Data Contract Standard (ODCS).
-Not all features that were available in the previous version are available in this version, as some features are not supported by the Open Data Contract Standard..
+We switched the internal data model from [Data Contract Specification](https://datacontract-specification.com) to [Open Data Contract Standard](https://datacontract.com/#odcs) (ODCS).
+
+Not all features that were available are supported in this version, as some features are not supported by the Open Data Contract Standard, such as:
+
+- Internal definitions using `$ref` (you can refer to external definitions via `authoritativeDefinition`)
+- Lineage (no real workaround, use customProperties or transformation object if needed)
+- Support for different physical types (no real workaround, use customProperties if needed)
+- Support for enums (use quality metric `invalidValues`)
+- Support for properties with type map and defining `keys` and `values` (use logical type map)
+- Support for `scale` and `precision` (define them in `physicalType`)
 
 The reason for this change is that the Data Contract Specification is deprecated, we focus on best possible support for the Open Data Contract Standard.
 We try to make this transition as seamless as possible. 
 If you face issues, please open an issue on GitHub.
 
-We recommend migrating to the Open Data Contract Standard as soon as possible: https://datacontract-specification.com/#migration
+We continue support reading [Data Contract Specification](https://datacontract-specification.com) data contracts during v0.11.x releases until end of 2026.
+To migrate existing data contracts to Open Data Contract Standard use this instruction: https://datacontract-specification.com/#migration
 
 ### Changed
 

@@ -98,7 +98,7 @@ def lint(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     output: Annotated[
         Path,
@@ -133,7 +133,7 @@ def test(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -336,11 +336,11 @@ def import_(
     ] = None,
     template: Annotated[
         Optional[str],
-        typer.Option(help="The location (url or path) of the Data Contract Specification Template"),
+        typer.Option(help="The location (url or path) of the ODCS template"),
     ] = None,
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     owner: Annotated[
         Optional[str],
@@ -391,7 +391,7 @@ def publish(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     ssl_verification: Annotated[
         bool,
@@ -400,7 +400,7 @@ def publish(
     debug: debug_option = None,
 ):
     """
-    Publish the data contract to the Data Mesh Manager.
+    Publish the data contract to the Entropy Data.
     """
     enable_debug_logging(debug)
 
@@ -421,7 +421,7 @@ def catalog(
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     debug: debug_option = None,
 ):
