@@ -56,9 +56,21 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
         odcs.name = dcs.info.title
         odcs.version = dcs.info.version
         if dcs.info.description:
-            odcs.description = dcs.info.description
+            odcs.description = Description(purpose=dcs.info.description)
         if dcs.info.owner:
-            odcs.team = Team(name=dcs.info.owner)
+            team = Team(name=dcs.info.owner)
+            # Add contact info to customProperties if available
+            if dcs.info.contact:
+                contact_props = []
+                if dcs.info.contact.name:
+                    contact_props.append(CustomProperty(property="contactName", value=dcs.info.contact.name))
+                if dcs.info.contact.url:
+                    contact_props.append(CustomProperty(property="contactUrl", value=dcs.info.contact.url))
+                if dcs.info.contact.email:
+                    contact_props.append(CustomProperty(property="contactEmail", value=dcs.info.contact.email))
+                if contact_props:
+                    team.customProperties = contact_props
+            odcs.team = team
 
     # Convert status
     if dcs.info and dcs.info.status:
@@ -75,6 +87,45 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
     # Convert service levels to SLA properties
     if dcs.servicelevels:
         odcs.slaProperties = _convert_servicelevels(dcs.servicelevels)
+
+    # Convert tags
+    if dcs.tags:
+        odcs.tags = dcs.tags
+
+    # Convert links to authoritativeDefinitions
+    if dcs.links:
+        from open_data_contract_standard.model import AuthoritativeDefinition
+        odcs.authoritativeDefinitions = [
+            AuthoritativeDefinition(type=key, url=value) for key, value in dcs.links.items()
+        ]
+
+    # Convert terms to Description fields
+    if dcs.terms:
+        if odcs.description is None:
+            odcs.description = Description()
+        if dcs.terms.usage:
+            odcs.description.usage = dcs.terms.usage
+        if dcs.terms.limitations:
+            odcs.description.limitations = dcs.terms.limitations
+        # Convert policies to authoritativeDefinitions
+        if dcs.terms.policies:
+            from open_data_contract_standard.model import AuthoritativeDefinition
+            policy_defs = [
+                AuthoritativeDefinition(type=p.name, description=getattr(p, "description", None), url=getattr(p, "url", None))
+                for p in dcs.terms.policies
+            ]
+            if odcs.authoritativeDefinitions:
+                odcs.authoritativeDefinitions.extend(policy_defs)
+            else:
+                odcs.authoritativeDefinitions = policy_defs
+        # Store billing, noticePeriod in customProperties
+        desc_custom_props = odcs.description.customProperties or []
+        if dcs.terms.billing:
+            desc_custom_props.append(CustomProperty(property="billing", value=dcs.terms.billing))
+        if dcs.terms.noticePeriod:
+            desc_custom_props.append(CustomProperty(property="noticePeriod", value=dcs.terms.noticePeriod))
+        if desc_custom_props:
+            odcs.description.customProperties = desc_custom_props
 
     return odcs
 
@@ -117,6 +168,11 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
             odcs_server.port = dcs_server.port
         if dcs_server.catalog:
             odcs_server.catalog = dcs_server.catalog
+        if dcs_server.description:
+            odcs_server.description = dcs_server.description
+        if dcs_server.roles:
+            from open_data_contract_standard.model import Role as ODCSRole
+            odcs_server.roles = [ODCSRole(role=r.name, description=r.description) for r in dcs_server.roles]
         if dcs_server.topic:
             # Store topic in customProperties since ODCS Server doesn't have a topic field
             if odcs_server.customProperties is None:
@@ -451,6 +507,15 @@ def _convert_field_to_property(
     if field.quality:
         prop.quality = _convert_quality_list(field.quality)
 
+    # Convert lineage
+    if field.lineage:
+        if hasattr(field.lineage, 'inputFields') and field.lineage.inputFields:
+            prop.transformSourceObjects = [f"{f.namespace}.{f.name}.{f.field}" if hasattr(f, 'namespace') and f.namespace else f"{f.name}.{f.field}" for f in field.lineage.inputFields]
+        if hasattr(field.lineage, 'transformationDescription') and field.lineage.transformationDescription:
+            prop.transformDescription = field.lineage.transformationDescription
+        if hasattr(field.lineage, 'transformationType') and field.lineage.transformationType:
+            prop.transformLogic = field.lineage.transformationType
+
     return prop
 
 
@@ -580,6 +645,56 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
                         element=freshness.timestampField,
                     )
                 )
+
+    if hasattr(servicelevels, "latency") and servicelevels.latency:
+        latency = servicelevels.latency
+        if hasattr(latency, "threshold") and latency.threshold:
+            value, unit = _parse_iso8601_duration(latency.threshold)
+            if value is not None and unit is not None:
+                element = None
+                if hasattr(latency, "sourceTimestampField") and latency.sourceTimestampField:
+                    element = latency.sourceTimestampField
+                sla_properties.append(
+                    ServiceLevelAgreementProperty(
+                        property="latency",
+                        value=value,
+                        unit=unit,
+                        element=element,
+                    )
+                )
+
+    if hasattr(servicelevels, "frequency") and servicelevels.frequency:
+        frequency = servicelevels.frequency
+        freq_value = frequency.interval if hasattr(frequency, "interval") and frequency.interval else (frequency.cron if hasattr(frequency, "cron") else None)
+        if freq_value:
+            sla_properties.append(
+                ServiceLevelAgreementProperty(
+                    property="frequency",
+                    value=freq_value,
+                )
+            )
+
+    if hasattr(servicelevels, "support") and servicelevels.support:
+        support = servicelevels.support
+        support_value = support.time if hasattr(support, "time") and support.time else (support.description if hasattr(support, "description") else None)
+        if support_value:
+            sla_properties.append(
+                ServiceLevelAgreementProperty(
+                    property="support",
+                    value=support_value,
+                )
+            )
+
+    if hasattr(servicelevels, "backup") and servicelevels.backup:
+        backup = servicelevels.backup
+        backup_value = backup.interval if hasattr(backup, "interval") and backup.interval else (backup.cron if hasattr(backup, "cron") else None)
+        if backup_value:
+            sla_properties.append(
+                ServiceLevelAgreementProperty(
+                    property="backup",
+                    value=backup_value,
+                )
+            )
 
     return sla_properties
 
