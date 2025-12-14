@@ -68,6 +68,8 @@ def create_property(
     pattern: str = None,
     minimum: float = None,
     maximum: float = None,
+    exclusive_minimum: float = None,
+    exclusive_maximum: float = None,
     precision: int = None,
     scale: int = None,
     format: str = None,
@@ -113,6 +115,10 @@ def create_property(
         logical_type_options["minimum"] = minimum
     if maximum is not None:
         logical_type_options["maximum"] = maximum
+    if exclusive_minimum is not None:
+        logical_type_options["exclusiveMinimum"] = exclusive_minimum
+    if exclusive_maximum is not None:
+        logical_type_options["exclusiveMaximum"] = exclusive_maximum
     if precision is not None:
         logical_type_options["precision"] = precision
     if scale is not None:

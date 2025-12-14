@@ -458,9 +458,17 @@ def _convert_field_to_property(
 
     # Convert config to customProperties
     custom_properties = []
-    # Note: enum is not allowed in logicalTypeOptions in ODCS 3.1.0, store in customProperties
+    # Handle enum as quality rule (invalidValues with validValues, mustBe: 0)
+    quality_rules = []
     if field.enum:
-        custom_properties.append(CustomProperty(property="enum", value=json.dumps(field.enum)))
+        quality_rules.append(
+            DataQuality(
+                type="library",
+                metric="invalidValues",
+                arguments={"validValues": field.enum},
+                mustBe=0,
+            )
+        )
     if field.pii is not None:
         custom_properties.append(CustomProperty(property="pii", value=str(field.pii)))
     if field.precision is not None:
@@ -508,9 +516,11 @@ def _convert_field_to_property(
     if custom_properties:
         prop.customProperties = custom_properties
 
-    # Convert quality rules
+    # Convert quality rules (merge enum quality rule with field-level quality)
     if field.quality:
-        prop.quality = _convert_quality_list(field.quality)
+        quality_rules.extend(_convert_quality_list(field.quality))
+    if quality_rules:
+        prop.quality = quality_rules
 
     # Convert lineage
     if field.lineage:

@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, List
 
 import fastjsonschema
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -105,10 +105,44 @@ def schema_to_property(
     max_length = prop_schema.get("maxLength")
     minimum = prop_schema.get("minimum")
     maximum = prop_schema.get("maximum")
-    exclusive_minimum = prop_schema.get("exclusiveMinimum")
-    exclusive_maximum = prop_schema.get("exclusiveMaximum")
-    enum = prop_schema.get("enum")
     format_val = prop_schema.get("format")
+
+    # Handle exclusiveMinimum/exclusiveMaximum (draft-04: boolean, draft-06+: number)
+    exclusive_minimum = None
+    exclusive_maximum = None
+    raw_exclusive_min = prop_schema.get("exclusiveMinimum")
+    raw_exclusive_max = prop_schema.get("exclusiveMaximum")
+
+    if isinstance(raw_exclusive_min, bool):
+        # Draft-04: boolean, use minimum value as exclusive
+        if raw_exclusive_min and minimum is not None:
+            exclusive_minimum = minimum
+            minimum = None
+    elif raw_exclusive_min is not None:
+        # Draft-06+: number value
+        exclusive_minimum = raw_exclusive_min
+
+    if isinstance(raw_exclusive_max, bool):
+        # Draft-04: boolean, use maximum value as exclusive
+        if raw_exclusive_max and maximum is not None:
+            exclusive_maximum = maximum
+            maximum = None
+    elif raw_exclusive_max is not None:
+        # Draft-06+: number value
+        exclusive_maximum = raw_exclusive_max
+
+    # Handle enum as quality rule (invalidValues with validValues, mustBe: 0)
+    quality_rules = []
+    enum_values = prop_schema.get("enum")
+    if enum_values:
+        quality_rules.append(
+            DataQuality(
+                type="library",
+                metric="invalidValues",
+                arguments={"validValues": enum_values},
+                mustBe=0,
+            )
+        )
 
     # Build custom properties for attributes not directly mapped
     custom_props = {}
@@ -152,6 +186,8 @@ def schema_to_property(
         max_length=max_length,
         minimum=minimum,
         maximum=maximum,
+        exclusive_minimum=exclusive_minimum,
+        exclusive_maximum=exclusive_maximum,
         format=format_val,
         properties=nested_properties,
         items=items_prop,
@@ -161,6 +197,10 @@ def schema_to_property(
     # Set title as businessName if present
     if title:
         prop.businessName = title
+
+    # Attach quality rules to property
+    if quality_rules:
+        prop.quality = quality_rules
 
     return prop
 

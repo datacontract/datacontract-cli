@@ -57,7 +57,7 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
 
 
 def _get_enum_values(prop: SchemaProperty):
-    """Get enum values from logicalTypeOptions or customProperties."""
+    """Get enum values from logicalTypeOptions, customProperties, or quality rules."""
     import json
     # First check logicalTypeOptions (legacy/direct ODCS)
     enum_values = _get_logical_type_option(prop, "enum")
@@ -69,7 +69,14 @@ def _get_enum_values(prop: SchemaProperty):
         try:
             return json.loads(enum_str)
         except (json.JSONDecodeError, TypeError):
-            return None
+            pass
+    # Finally check quality rules for invalidValues with validValues
+    if prop.quality:
+        for q in prop.quality:
+            if q.metric == "invalidValues" and q.arguments:
+                valid_values = q.arguments.get("validValues")
+                if valid_values:
+                    return valid_values
     return None
 
 
