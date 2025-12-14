@@ -1,0 +1,231 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract-id
+name: My Data Contract
+version: 0.0.1
+status: active
+servers:
+  - server: bigquery
+    type: bigquery
+    project: datameshexample-product
+    dataset: datacontract_cli_test_dataset
+schema:
+  - name: BQ_Example
+    description: This is a test contract containing all Datacontracts data types to check conversion to Bigquery
+    properties:
+      - name: string_field
+        logicalType: string
+        required: false
+        description: a simple nullable string field
+      - name: required_string_field
+        logicalType: string
+        required: true
+        description: a simple non-nullable string field
+      - name: maxlength_string_field
+        logicalType: string
+        required: false
+        description: a string field with a maximum length
+        logicalTypeOptions:
+          maxLength: 42
+      - name: maxlength_required_string_field
+        logicalType: string
+        required: true
+        description: a required string field with a maximum length
+        logicalTypeOptions:
+          maxLength: 42
+      - name: varchar_field
+        logicalType: string
+        physicalType: STRING
+        required: false
+        description: This is declared as varchar but should map to STRING
+      - name: text_field
+        logicalType: string
+        physicalType: STRING
+        required: false
+        description: This is declared as text but should map to STRING and allow a maximum length
+        logicalTypeOptions:
+          maxLength: 42
+      - name: bytes_field
+        logicalType: string
+        physicalType: BYTES
+        required: true
+        description: a required bytes field
+        logicalTypeOptions:
+          maxLength: 42
+      - name: int_field
+        logicalType: integer
+        physicalType: INTEGER
+        required: false
+        description: a simple int field
+      - name: integer_field
+        logicalType: integer
+        physicalType: INTEGER
+        required: false
+        description: a simple integer field
+      - name: long_field
+        logicalType: integer
+        physicalType: INT64
+        required: false
+        description: a simple long field
+      - name: bigint_field
+        logicalType: integer
+        physicalType: INT64
+        required: false
+        description: a simple bigint field
+      - name: float_field
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: a simple float field
+      - name: boolean_field
+        logicalType: boolean
+        required: false
+        description: a simple boolean field
+      - name: timestamp_field
+        logicalType: timestamp
+        physicalType: TIMESTAMP
+        required: false
+        description: a simple timestamp field
+      - name: timestamp_tz_field
+        logicalType: timestamp
+        physicalType: TIMESTAMP
+        required: false
+        description: a simple timestamp_tz field
+      - name: timestamp_ntz_field
+        logicalType: timestamp
+        physicalType: DATETIME
+        required: false
+        description: a simple timestamp_ntz field
+      - name: date_field
+        logicalType: date
+        required: false
+        description: a simple date field
+      - name: number_field
+        logicalType: number
+        physicalType: NUMERIC
+        required: false
+        description: a simple number field with precision 5 and scale 3
+        customProperties:
+          - property: precision
+            value: 5
+          - property: scale
+            value: 3
+      - name: decimal_field
+        logicalType: number
+        physicalType: NUMERIC
+        required: false
+        description: a simple decimal field with precision 5 and scale 3
+        customProperties:
+          - property: precision
+            value: "5"
+          - property: scale
+            value: "3"
+      - name: numeric_field
+        logicalType: number
+        physicalType: NUMERIC
+        required: false
+        description: a simple numeric field with precision 5 and scale 3
+        customProperties:
+          - property: precision
+            value: "5"
+          - property: scale
+            value: "3"
+      - name: double_field
+        logicalType: number
+        physicalType: BIGNUMERIC
+        required: false
+        description: a simple double field with precision 5 and scale 3
+        customProperties:
+          - property: precision
+            value: "5"
+          - property: scale
+            value: "3"
+      - name: null_field
+        logicalType: string
+        physicalType: STRING
+        required: false
+        description: a null field that should get mapped to STRING
+      - name: object_field
+        logicalType: object
+        physicalType: RECORD
+        required: false
+        description: an object field with two subfields
+        properties:
+          - name: subfield_1
+            logicalType: string
+            required: true
+            description: a required string field
+          - name: subfield_2
+            logicalType: string
+            required: false
+            description: a non required string field
+      - name: record_field
+        logicalType: object
+        physicalType: RECORD
+        required: false
+        description: an record field with two subfields
+        properties:
+          - name: subfield_1
+            logicalType: boolean
+            required: true
+            description: a required boolean field
+          - name: subfield_2
+            logicalType: date
+            required: false
+            description: a non required date field
+      - name: struct_field
+        logicalType: object
+        physicalType: STRUCT
+        required: false
+        description: an struct field with two subfields
+        properties:
+          - name: subfield_1
+            logicalType: string
+            physicalType: BYTES
+            required: true
+            description: a required bytes field
+          - name: subfield_2
+            logicalType: integer
+            physicalType: INTEGER
+            required: false
+            description: a non required int field
+      - name: string_array_field
+        logicalType: array
+        required: false
+        description: a string array
+        items:
+          logicalType: string
+      - name: int_array_field
+        logicalType: array
+        required: false
+        description: an int array
+        items:
+          logicalType: integer
+          physicalType: INTEGER
+      - name: complex_array_field
+        logicalType: array
+        required: false
+        description: an array of objects that has  multiple fields that should carry through
+        items:
+          logicalType: object
+          properties:
+            - name: Field1
+              logicalType: boolean
+              required: false
+              description: a boolean field
+            - name: Field2
+              logicalType: number
+              physicalType: BIGNUMERIC
+              required: true
+              description: a double field
+            - name: Field3
+              logicalType: array
+              required: true
+              description: nested array.
+              items:
+                logicalType: string
+      - name: custom_type_field
+        logicalType: string
+        physicalType: DATETIME
+        required: false
+        description: Change the datacontract type to a BigQuery type.

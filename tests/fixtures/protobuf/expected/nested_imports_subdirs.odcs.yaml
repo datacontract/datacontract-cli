@@ -1,0 +1,64 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: Company
+  physicalType: message
+  description: Details of Company.
+  logicalType: object
+  physicalName: Company
+  properties:
+  - name: name
+    physicalType: '9'
+    description: Field name
+    logicalType: string
+    required: false
+  - name: registration_number
+    physicalType: '9'
+    description: Field registration_number
+    logicalType: string
+    required: false
+  - name: contact
+    physicalType: message
+    description: Nested object of Person
+    logicalType: object
+    properties:
+    - name: name
+      physicalType: '9'
+      description: Field name
+      logicalType: string
+      required: false
+    - name: email
+      physicalType: '9'
+      description: Field email
+      logicalType: string
+      required: false
+    - name: address
+      physicalType: message
+      description: Nested object of Address
+      logicalType: object
+      properties:
+      - name: street
+        physicalType: '9'
+        description: Field street
+        logicalType: string
+        required: false
+      - name: city
+        physicalType: '9'
+        description: Field city
+        logicalType: string
+        required: false
+      - name: country
+        physicalType: '9'
+        description: Field country
+        logicalType: string
+        required: false
+      - name: postal_code
+        physicalType: '9'
+        description: Field postal_code
+        logicalType: string
+        required: false
+

@@ -1,0 +1,55 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: orders-unit-test
+name: Orders Unit Test
+version: 1.0.0
+status: active
+schema:
+- name: orders
+  description: test
+  properties:
+  - name: order_id
+    logicalType: string
+    physicalType: string
+    required: true
+  - name: order_timestamp
+    logicalType: timestamp
+    physicalType: timestamp
+    required: true
+  - name: processed_timestamp
+    logicalType: timestamp
+    physicalType: timestamp
+    required: true
+  - name: order_total
+    logicalType: integer
+    physicalType: integer
+    quality:
+    - type: sql
+      mustBeBetween:
+      - 1000
+      - 49900
+      query: |
+        SELECT quantile_cont(order_total, 0.95) AS percentile_95
+        FROM orders
+  quality:
+  - type: custom
+    engine: soda
+    implementation: |
+      checks for orders:
+        - row_count > 10
+- name: line_items
+  quality:
+  - type: custom
+    engine: soda
+    implementation: |
+      checks for line_items:
+        - row_count > 10:
+            name: Have at lease 10 line items
+slaProperties:
+- property: retention
+  value: P1Y
+  element: orders.processed_timestamp
+- property: freshness
+  value: 24
+  unit: h
+  element: orders.order_timestamp

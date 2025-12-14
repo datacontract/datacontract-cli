@@ -1,0 +1,453 @@
+version: 2.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: data-contract-example_user_interactions_enhanced
+name: user_interactions
+status: active
+
+servers:
+- server: development
+  type: databricks
+  catalog: dev_catalog
+  schema: dev_schema
+- server: production
+  type: databricks
+  catalog: prod_catalog
+  schema: prod_schema
+
+schema:
+- name: datacontract_test_with_quality
+  physicalType: table
+  description: Table containing user interaction data on the platform.
+  properties:
+  - name: interaction_id
+    physicalType: string
+    description: Unique identifier for the interaction.
+    logicalType: string
+    required: true
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: error
+        check:
+          function: is_not_null
+  - name: user_id
+    physicalType: string
+    description: Unique identifier for the user.
+    logicalType: string
+    required: true
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: error
+        check:
+          function: is_not_null
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: error
+        check:
+          function: foreign_key
+          arguments:
+            ref_columns:
+              - id
+            ref_table: catalog1.schema1.user
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: error
+        check:
+          function: is_unique
+  - name: interaction_type
+    physicalType: string
+    description: Type of interaction (e.g., click, view, purchase).
+    logicalType: string
+    required: true
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: error
+        check:
+          function: is_in_list
+          arguments:
+            allowed:
+              - click
+              - view
+              - purchase
+              - like
+              - share
+  - name: interaction_timestamp
+    physicalType: timestamp
+    description: Timestamp of the interaction.
+    logicalType: timestamp
+    required: true
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: error
+        check:
+          function: is_valid_timestamp
+          arguments:
+            timestamp_format: "yyyy-MM-dd HH:mm:ss"
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: warning
+        check:
+          function: not_in_future
+          arguments:
+            offset: 1h
+  - name: item_id
+    physicalType: string
+    description: Identifier of the item interacted with.
+    logicalType: string
+    required: false
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: minor
+        check:
+          function: is_not_null
+  - name: interaction_value
+    physicalType: integer
+    description: Value associated with the interaction (e.g., amount spent).
+    logicalType: integer
+    required: false
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: minor
+        check:
+          function: is_in_range
+          arguments:
+            min_limit: 0
+            max_limit: 1000
+  - name: location
+    physicalType: string
+    description: User's location during the interaction.
+    logicalType: string
+    required: false
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: minor
+        check:
+          function: regex_match
+          arguments:
+            regex: "^[A-Za-z]+(?:[\\s-][A-Za-z]+)*$"
+  - name: device
+    physicalType: string
+    description: User's device during the interaction.
+    logicalType: string
+    required: false
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: minor
+        check:
+          function: is_in_list
+          arguments:
+            allowed:
+              - mobile
+              - desktop
+              - tablet
+  - name: interaction_date
+    physicalType: string
+    description: Date of the interaction.
+    logicalType: string
+    required: true
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: error
+        check:
+          function: is_valid_date
+          arguments:
+            date_format: "yyyy-MM-dd"
+  - name: time_since_last_interaction
+    physicalType: integer
+    description: Time since the user's last interaction (in days).
+    logicalType: integer
+    required: false
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: minor
+        check:
+          function: is_older_than_n_days
+          arguments:
+            days: 30
+  - name: is_active
+    physicalType: boolean
+    description: Flag indicating if the user is still active
+    logicalType: boolean
+    required: false
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: minor
+        check:
+          function: sql_expression
+          arguments:
+            expression: "is_active IN ('true', 'false')"
+  - name: user_profile
+    physicalType: struct
+    description: User profile information.
+    logicalType: object
+    required: false
+    properties:
+    - name: age
+      physicalType: integer
+      description: User's age.
+      logicalType: integer
+      required: false
+      quality:
+      - type: custom
+        engine: dqx
+        implementation:
+          criticality: minor
+          check:
+            function: is_in_range
+            arguments:
+              min_limit: 13
+              max_limit: 120
+    - name: gender
+      physicalType: string
+      description: User's gender.
+      logicalType: string
+      required: false
+      quality:
+      - type: custom
+        engine: dqx
+        implementation:
+          criticality: minor
+          check:
+            function: is_in_list
+            arguments:
+              allowed:
+                - male
+                - female
+                - other
+    - name: location_details
+      physicalType: struct
+      description: Nested location information.
+      logicalType: object
+      required: false
+      properties:
+      - name: city
+        physicalType: string
+        description: User's city.
+        logicalType: string
+        required: false
+      - name: country
+        physicalType: string
+        description: User's country.
+        logicalType: string
+        required: false
+        quality:
+        - type: custom
+          engine: dqx
+          implementation:
+            criticality: minor
+            check:
+              function: regex_match
+              arguments:
+                regex: "^[A-Z]{2}$"
+  - name: related_items
+    physicalType: array
+    description: List of item IDs related to this interaction.
+    logicalType: array
+    required: false
+    quality:
+    - type: custom
+      engine: dqx
+      implementation:
+        criticality: minor
+        check:
+          function: is_not_null_and_not_empty_array
+    items:
+      name: item
+      physicalType: string
+      logicalType: string
+  - name: interaction_context
+    physicalType: struct
+    description: Contextual information about the interaction.
+    logicalType: object
+    required: false
+    properties:
+    - name: page_url
+      physicalType: string
+      description: URL of the page where the interaction occurred.
+      logicalType: string
+      required: false
+      quality:
+      - type: custom
+        engine: dqx
+        implementation:
+          criticality: minor
+          check:
+            function: regex_match
+            arguments:
+              regex: "^https?://.+$"
+    - name: device_type
+      physicalType: string
+      description: Type of device used for the interaction.
+      logicalType: string
+      required: false
+      quality:
+      - type: custom
+        engine: dqx
+        implementation:
+          criticality: minor
+          check:
+            function: is_in_list
+            arguments:
+              allowed:
+                - mobile
+                - desktop
+                - tablet
+                - tv
+  quality:
+  - description: All quality rules for valid user interactions.
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: "error"
+      filter: "interaction_type IN ('click', 'view', 'purchase')"
+      check:
+        function: "is_not_null"
+        for_each_column:
+          - user_id
+          - interaction_id
+          - interaction_type
+          - interaction_timestamp
+  - description: Item value present and within range for purchases.
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: "warning"
+      filter: "interaction_type = 'purchase'"
+      check:
+        function: "is_in_range"
+        arguments:
+          column: interaction_value
+          min_limit: 0
+          max_limit: 1000
+  - description: Valid device type for mobile interactions
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: "minor"
+      filter: "device = 'mobile'"
+      check:
+        function: "is_in_list"
+        arguments:
+          column: device
+          allowed:
+            - mobile
+            - tablet
+  - description: Age should be within limits
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: "minor"
+      filter: "user_profile.age IS NOT NULL"
+      check:
+        function: "is_in_range"
+        arguments:
+          column: user_profile.age
+          min_limit: 13
+          max_limit: 120
+  - description: User_id has to be unique per day.
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: error
+      check:
+        function: is_unique
+        arguments:
+          columns:
+            - user_id
+            - interaction_date
+  - description: Interaction value has to be under 1000
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: error
+      filter: "interaction_type = 'purchase'"
+      check:
+        function: is_aggr_not_greater_than
+        arguments:
+          column: interaction_value
+          aggr_type: max
+          limit: 1000
+  - description: User id age has to be greater than 21 years.
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: error
+      check:
+        function: is_aggr_not_less_than
+        arguments:
+          column: user_profile.age
+          aggr_type: min
+          group_by:
+            - user_id
+          limit: 21
+  - description: Check if you have exactly one line per hour.
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: error
+      check:
+        function: is_aggr_equal
+        arguments:
+          column: interaction_date
+          aggr_type: count
+          limit: 24
+  - description: Check if you have exactly one line per hour.
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: error
+      check:
+        function: foreign_key
+        arguments:
+          columns:
+            - user_id
+          ref_columns:
+            - id
+          ref_df_name: df_user
+  - description: Check if you have exactly one line per hour.
+    type: custom
+    engine: dqx
+    implementation:
+      criticality: error
+      check:
+        function: foreign_key
+        arguments:
+          columns:
+            - user_id
+          ref_columns:
+            - id
+          ref_table: catalog1.schema1.user
+
+team:
+  name: Example Team
+
+slaProperties:
+- property: generalAvailability
+  value: Available 24/7
+- property: retention
+  value: P1Y
