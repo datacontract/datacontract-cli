@@ -1,0 +1,58 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: jaffle_shop
+status: draft
+schema:
+- name: customers
+  physicalType: table
+  description: This table has basic information about a customer, as well as some
+    derived facts based on a customer's orders
+  customProperties:
+  - property: tags
+    value: TABLE_PII
+  logicalType: object
+  physicalName: customers
+  properties:
+  - name: customer_id
+    physicalType: integer
+    description: This is a unique identifier for a customer
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: integer
+    required: true
+    unique: true
+  - name: first_name
+    physicalType: varchar
+    description: Customer's first name. PII.
+    customProperties:
+    - property: tags
+      value: PII
+    logicalType: string
+  - name: last_name
+    physicalType: varchar
+    description: Customer's last name. PII.
+    customProperties:
+    - property: tags
+      value: PII
+    logicalType: string
+  - name: first_order
+    physicalType: date
+    description: Date (UTC) of a customer's first order
+    logicalType: date
+  - name: most_recent_order
+    physicalType: date
+    description: Date (UTC) of a customer's most recent order
+    logicalType: date
+  - name: number_of_orders
+    physicalType: bigint
+    description: Count of the number of orders a customer has placed
+    logicalType: integer
+  - name: customer_lifetime_value
+    physicalType: double
+    logicalType: number
+customProperties:
+- property: dbt_version
+  value: 1.8.0
+

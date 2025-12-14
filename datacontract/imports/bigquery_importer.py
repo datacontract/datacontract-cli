@@ -2,30 +2,32 @@ import json
 import logging
 from typing import List
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+)
 from datacontract.model.exceptions import DataContractException
 
 
 class BigQueryImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
+        self, source: str, import_args: dict
+    ) -> OpenDataContractStandard:
         if source is not None:
-            data_contract_specification = import_bigquery_from_json(data_contract_specification, source)
+            return import_bigquery_from_json(source)
         else:
-            data_contract_specification = import_bigquery_from_api(
-                data_contract_specification,
+            return import_bigquery_from_api(
                 import_args.get("bigquery_table"),
                 import_args.get("bigquery_project"),
                 import_args.get("bigquery_dataset"),
             )
-        return data_contract_specification
 
 
-def import_bigquery_from_json(
-    data_contract_specification: DataContractSpecification, source: str
-) -> DataContractSpecification:
+def import_bigquery_from_json(source: str) -> OpenDataContractStandard:
     try:
         with open(source, "r") as file:
             bigquery_schema = json.loads(file.read())
@@ -37,15 +39,14 @@ def import_bigquery_from_json(
             engine="datacontract",
             original_exception=e,
         )
-    return convert_bigquery_schema(data_contract_specification, bigquery_schema)
+    return convert_bigquery_schema(bigquery_schema)
 
 
 def import_bigquery_from_api(
-    data_contract_specification: DataContractSpecification,
     bigquery_tables: List[str],
     bigquery_project: str,
     bigquery_dataset: str,
-) -> DataContractSpecification:
+) -> OpenDataContractStandard:
     try:
         from google.cloud import bigquery
     except ImportError as e:
@@ -62,6 +63,9 @@ def import_bigquery_from_api(
 
     if bigquery_tables is None:
         bigquery_tables = fetch_table_names(client, bigquery_dataset)
+
+    odcs = create_odcs()
+    odcs.schema_ = []
 
     for table in bigquery_tables:
         try:
@@ -82,13 +86,14 @@ def import_bigquery_from_api(
                 type="request",
                 result="failed",
                 name="Query bigtable Schema from API",
-                reason=f"Table {table} bnot found on bigtable schema Project {bigquery_project}, dataset {bigquery_dataset}.",
+                reason=f"Table {table} not found on bigtable schema Project {bigquery_project}, dataset {bigquery_dataset}.",
                 engine="datacontract",
             )
 
-        convert_bigquery_schema(data_contract_specification, api_table.to_api_repr())
+        schema_obj = convert_bigquery_table_to_schema(api_table.to_api_repr())
+        odcs.schema_.append(schema_obj)
 
-    return data_contract_specification
+    return odcs
 
 
 def fetch_table_names(client, dataset: str) -> List[str]:
@@ -100,118 +105,149 @@ def fetch_table_names(client, dataset: str) -> List[str]:
     return table_names
 
 
-def convert_bigquery_schema(
-    data_contract_specification: DataContractSpecification, bigquery_schema: dict
-) -> DataContractSpecification:
-    if data_contract_specification.models is None:
-        data_contract_specification.models = {}
+def convert_bigquery_schema(bigquery_schema: dict) -> OpenDataContractStandard:
+    """Convert a BigQuery schema to ODCS format."""
+    odcs = create_odcs()
+    odcs.schema_ = [convert_bigquery_table_to_schema(bigquery_schema)]
+    return odcs
 
-    fields = import_table_fields(bigquery_schema.get("schema").get("fields"))
 
-    # Looking at actual export data, I guess this is always set and friendlyName isn't, though I couldn't say
-    # what exactly leads to friendlyName being set
-    table_id = bigquery_schema.get("tableReference").get("tableId")
+def convert_bigquery_table_to_schema(bigquery_schema: dict):
+    """Convert a BigQuery table definition to an ODCS SchemaObject."""
+    properties = import_table_fields(bigquery_schema.get("schema", {}).get("fields", []))
 
-    data_contract_specification.models[table_id] = Model(
-        fields=fields, type=map_bigquery_type(bigquery_schema.get("type"))
+    table_id = bigquery_schema.get("tableReference", {}).get("tableId", "unknown")
+    description = bigquery_schema.get("description")
+    title = bigquery_schema.get("friendlyName")
+    table_type = map_bigquery_type(bigquery_schema.get("type", "TABLE"))
+
+    schema_obj = create_schema_object(
+        name=table_id,
+        physical_type=table_type,
+        description=description,
+        properties=properties,
     )
 
-    # Copy the description, if it exists
-    if bigquery_schema.get("description") is not None:
-        data_contract_specification.models[table_id].description = bigquery_schema.get("description")
+    if title:
+        schema_obj.businessName = title
 
-    # Set the title from friendlyName if it exists
-    if bigquery_schema.get("friendlyName") is not None:
-        data_contract_specification.models[table_id].title = bigquery_schema.get("friendlyName")
-
-    return data_contract_specification
+    return schema_obj
 
 
-def import_table_fields(table_fields):
-    imported_fields = {}
+def import_table_fields(table_fields) -> List[SchemaProperty]:
+    """Import BigQuery table fields as ODCS SchemaProperties."""
+    properties = []
+
     for field in table_fields:
         field_name = field.get("name")
-        imported_fields[field_name] = Field()
-        imported_fields[field_name].required = field.get("mode") == "REQUIRED"
-        imported_fields[field_name].description = field.get("description")
+        required = field.get("mode") == "REQUIRED"
+        description = field.get("description")
+        field_type = field.get("type")
 
-        if field.get("type") == "RECORD":
-            imported_fields[field_name].type = "object"
-            imported_fields[field_name].fields = import_table_fields(field.get("fields"))
-        elif field.get("type") == "STRUCT":
-            imported_fields[field_name].type = "struct"
-            imported_fields[field_name].fields = import_table_fields(field.get("fields"))
-        elif field.get("type") == "RANGE":
-            # This is a range of date/datetime/timestamp but multiple values
-            # So we map it to an array
-            imported_fields[field_name].type = "array"
-            imported_fields[field_name].items = Field(
-                type=map_type_from_bigquery(field["rangeElementType"].get("type"))
+        if field_type == "RECORD":
+            nested_properties = import_table_fields(field.get("fields", []))
+            prop = create_property(
+                name=field_name,
+                logical_type="object",
+                physical_type="RECORD",
+                description=description,
+                required=required if required else None,
+                properties=nested_properties,
             )
-        else:  # primitive type
-            imported_fields[field_name].type = map_type_from_bigquery(field.get("type"))
+        elif field_type == "STRUCT":
+            nested_properties = import_table_fields(field.get("fields", []))
+            prop = create_property(
+                name=field_name,
+                logical_type="object",
+                physical_type="STRUCT",
+                description=description,
+                required=required if required else None,
+                properties=nested_properties,
+            )
+        elif field_type == "RANGE":
+            # Range of date/datetime/timestamp - multiple values, map to array
+            items_prop = create_property(
+                name="items",
+                logical_type=map_type_from_bigquery(field.get("rangeElementType", {}).get("type", "STRING")),
+                physical_type=field.get("rangeElementType", {}).get("type", "STRING"),
+            )
+            prop = create_property(
+                name=field_name,
+                logical_type="array",
+                physical_type="RANGE",
+                description=description,
+                required=required if required else None,
+                items=items_prop,
+            )
+        else:
+            logical_type = map_type_from_bigquery(field_type)
+            max_length = None
+            precision = None
+            scale = None
 
-        if field.get("type") == "STRING":
-            # in bigquery both string and bytes have maxLength but in the datacontracts
-            # spec it is only valid for strings
-            if field.get("maxLength") is not None:
-                imported_fields[field_name].maxLength = int(field.get("maxLength"))
+            if field_type == "STRING" and field.get("maxLength") is not None:
+                max_length = int(field.get("maxLength"))
 
-        if field.get("type") == "NUMERIC" or field.get("type") == "BIGNUMERIC":
-            if field.get("precision") is not None:
-                imported_fields[field_name].precision = int(field.get("precision"))
+            if field_type in ("NUMERIC", "BIGNUMERIC"):
+                if field.get("precision") is not None:
+                    precision = int(field.get("precision"))
+                if field.get("scale") is not None:
+                    scale = int(field.get("scale"))
 
-            if field.get("scale") is not None:
-                imported_fields[field_name].scale = int(field.get("scale"))
+            prop = create_property(
+                name=field_name,
+                logical_type=logical_type,
+                physical_type=field_type,
+                description=description,
+                required=required if required else None,
+                max_length=max_length,
+                precision=precision,
+                scale=scale,
+            )
 
-    return imported_fields
+        properties.append(prop)
+
+    return properties
 
 
-def map_type_from_bigquery(bigquery_type_str: str):
-    if bigquery_type_str == "STRING":
-        return "string"
-    elif bigquery_type_str == "BYTES":
-        return "bytes"
-    elif bigquery_type_str == "INTEGER":
-        return "int"
-    elif bigquery_type_str == "INT64":
-        return "bigint"
-    elif bigquery_type_str == "FLOAT":
-        return "float"
-    elif bigquery_type_str == "FLOAT64":
-        return "double"
-    elif bigquery_type_str == "BOOLEAN" or bigquery_type_str == "BOOL":
-        return "boolean"
-    elif bigquery_type_str == "TIMESTAMP":
-        return "timestamp"
-    elif bigquery_type_str == "DATE":
-        return "date"
-    elif bigquery_type_str == "TIME":
-        return "timestamp_ntz"
-    elif bigquery_type_str == "DATETIME":
-        return "timestamp"
-    elif bigquery_type_str == "NUMERIC":
-        return "numeric"
-    elif bigquery_type_str == "BIGNUMERIC":
-        return "double"
-    elif bigquery_type_str == "GEOGRAPHY":
-        return "object"
-    elif bigquery_type_str == "JSON":
-        return "object"
-    else:
-        raise DataContractException(
-            type="schema",
-            result="failed",
-            name="Map bigquery type to data contract type",
-            reason=f"Unsupported type {bigquery_type_str} in bigquery json definition.",
-            engine="datacontract",
-        )
+def map_type_from_bigquery(bigquery_type_str: str) -> str:
+    """Map BigQuery type to ODCS logical type."""
+    type_mapping = {
+        "STRING": "string",
+        "BYTES": "array",
+        "INTEGER": "integer",
+        "INT64": "integer",
+        "FLOAT": "number",
+        "FLOAT64": "number",
+        "BOOLEAN": "boolean",
+        "BOOL": "boolean",
+        "TIMESTAMP": "date",
+        "DATE": "date",
+        "TIME": "date",
+        "DATETIME": "date",
+        "NUMERIC": "number",
+        "BIGNUMERIC": "number",
+        "GEOGRAPHY": "object",
+        "JSON": "object",
+    }
+
+    if bigquery_type_str in type_mapping:
+        return type_mapping[bigquery_type_str]
+
+    raise DataContractException(
+        type="schema",
+        result="failed",
+        name="Map bigquery type to data contract type",
+        reason=f"Unsupported type {bigquery_type_str} in bigquery json definition.",
+        engine="datacontract",
+    )
 
 
 def map_bigquery_type(bigquery_type: str) -> str:
-    if bigquery_type == "TABLE" or bigquery_type == "EXTERNAL" or bigquery_type == "SNAPSHOT":
+    """Map BigQuery table type to ODCS physical type."""
+    if bigquery_type in ("TABLE", "EXTERNAL", "SNAPSHOT"):
         return "table"
-    elif bigquery_type == "VIEW" or bigquery_type == "MATERIALIZED_VIEW":
+    elif bigquery_type in ("VIEW", "MATERIALIZED_VIEW"):
         return "view"
     else:
         logger = logging.getLogger(__name__)

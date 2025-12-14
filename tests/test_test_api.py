@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from datacontract.data_contract import DataContract
@@ -7,7 +8,7 @@ from datacontract.data_contract import DataContract
 logging.basicConfig(level=logging.DEBUG, force=True)
 
 
-datacontract = "fixtures/api/weather-service.odcs.yaml"
+datacontract = Path(__file__).parent / "fixtures/api/weather-service.odcs.yaml"
 
 
 def mock_get(*args, **kwargs):
@@ -43,7 +44,7 @@ def mock_get(*args, **kwargs):
 
 
 @patch("datacontract.engines.data_contract_test.requests.get", side_effect=mock_get)
-def test_test_api(mock_get, monkeypatch):
+def test_test_api(_mock_get):
     with open(datacontract) as data_contract_file:
         data_contract_str = data_contract_file.read()
     data_contract = DataContract(data_contract_str=data_contract_str)

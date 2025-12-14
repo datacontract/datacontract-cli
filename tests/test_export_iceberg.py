@@ -5,7 +5,7 @@ from pyiceberg.schema import Schema, assign_fresh_schema_ids
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.iceberg_converter import IcebergExporter
+from datacontract.export.iceberg_exporter import IcebergExporter
 from datacontract.lint.resolve import resolve_data_contract
 
 
@@ -13,18 +13,19 @@ def test_cli():
     with tempfile.NamedTemporaryFile(delete=True) as tmp_input_file:
         # create temp file with content
         tmp_input_file.write(b"""
-        dataContractSpecification: 0.9.3
-        id: my-id
-        info:
-          title: My Title
-          version: 1.0.0
-        models:
-          orders:
-            fields:
-              order_id:
-                type: int
-                required: true
-                primaryKey: true
+kind: DataContract
+apiVersion: v3.1.0
+id: my-id
+name: My Title
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: integer
+        required: true
+        primaryKey: true
         """)
         tmp_input_file.flush()
 
@@ -39,82 +40,87 @@ def test_cli():
                 schema = Schema.model_validate_json(f.read())
 
     assert len(schema.fields) == 1
-    _assert_field(schema, "order_id", types.IntegerType(), True)
+    _assert_field(schema, "order_id", types.LongType(), True)
     assert schema.identifier_field_ids == [1]
 
 
 def test_type_conversion():
     datacontract = resolve_data_contract(
         data_contract_str="""
-            dataContractSpecification: 0.9.3
-            id: my-id
-            info:
-              title: My Title
-              version: 1.0.0
-            models:
-              datatypes:
-                fields:
-                  string_type:
-                    type: string
-                  text_type:
-                    type: text
-                  varchar_type:
-                    type: varchar
-                  number_type:
-                    type: number
-                  decimal_type:
-                    type: decimal
-                    precision: 4
-                    scale: 2
-                  numeric_type:
-                    type: numeric
-                  int_type:
-                    type: int
-                  integer_type:
-                    type: integer
-                  long_type:
-                    type: long
-                  bigint_type:
-                    type: bigint
-                  float_type:
-                    type: float
-                  double_type:
-                    type: double
-                  boolean_type:
-                    type: boolean
-                  timestamp_type:
-                    type: timestamp
-                  timestamp_tz_type:
-                    type: timestamp_tz
-                  timestamp_ntz_type:
-                    type: timestamp_ntz
-                  date_type:
-                    type: date
-                  array_type:
-                    type: array
-                    items:
-                      type: string
-                  map_type:
-                    type: map
-                    keys:
-                      type: string
-                    values:
-                      type: int
-                  object_type:
-                    type: object
-                    fields:
-                      object_field1:
-                        type: string
-                  record_type:
-                    type: record
-                    fields:
-                      record_field1:
-                        type: int
-                  struct_type:
-                    type: struct
-                    fields:
-                      struct_field1:
-                        type: float
+kind: DataContract
+apiVersion: v3.1.0
+id: my-id
+name: My Title
+version: 1.0.0
+status: active
+schema:
+  - name: datatypes
+    properties:
+      - name: string_type
+        logicalType: string
+      - name: text_type
+        physicalType: text
+      - name: varchar_type
+        physicalType: varchar
+      - name: number_type
+        logicalType: number
+      - name: decimal_type
+        physicalType: decimal
+        customProperties:
+          - property: precision
+            value: 4
+          - property: scale
+            value: 2
+      - name: numeric_type
+        physicalType: numeric
+      - name: int_type
+        physicalType: int
+      - name: integer_type
+        logicalType: integer
+      - name: long_type
+        physicalType: long
+      - name: bigint_type
+        physicalType: bigint
+      - name: float_type
+        physicalType: float
+      - name: double_type
+        physicalType: double
+      - name: boolean_type
+        logicalType: boolean
+      - name: timestamp_type
+        logicalType: timestamp
+      - name: timestamp_tz_type
+        physicalType: timestamp_tz
+      - name: timestamp_ntz_type
+        physicalType: timestamp_ntz
+      - name: date_type
+        logicalType: date
+      - name: array_type
+        logicalType: array
+        items:
+          logicalType: string
+      - name: map_type
+        physicalType: map
+        customProperties:
+          - property: mapKeyType
+            value: string
+          - property: mapValueType
+            value: int
+      - name: object_type
+        logicalType: object
+        properties:
+          - name: object_field1
+            logicalType: string
+      - name: record_type
+        physicalType: record
+        properties:
+          - name: record_field1
+            physicalType: int
+      - name: struct_type
+        physicalType: struct
+        properties:
+          - name: struct_field1
+            physicalType: float
             """,
         inline_definitions=True,
     )
@@ -129,7 +135,7 @@ def test_type_conversion():
     _assert_field(schema, "decimal_type", types.DecimalType(precision=4, scale=2), False)
     _assert_field(schema, "numeric_type", types.DecimalType(precision=38, scale=0), False)
     _assert_field(schema, "int_type", types.IntegerType(), False)
-    _assert_field(schema, "integer_type", types.IntegerType(), False)
+    _assert_field(schema, "integer_type", types.LongType(), False)
     _assert_field(schema, "long_type", types.LongType(), False)
     _assert_field(schema, "bigint_type", types.LongType(), False)
     _assert_field(schema, "float_type", types.FloatType(), False)

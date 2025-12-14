@@ -1,2346 +1,2982 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
 servers:
-  production:
-    type: local
-    format: json
-    path: .\tests\fixtures\import\json\product_detail.json
-models:
-  product_detail:
-    description: Generated from JSON object in .\tests\fixtures\import\json\product_detail.json
-    type: object
-    fields:
-      identification:
-        type: object
-        fields:
-          productType:
-            type: string
+- server: production
+  type: local
+  format: json
+  path: fixtures/import/json/product_detail.json
+schema:
+- name: product_detail
+  physicalType: object
+  description: Generated from JSON object in fixtures/import/json/product_detail.json
+  logicalType: object
+  physicalName: product_detail
+  properties:
+  - name: identification
+    physicalType: object
+    logicalType: object
+    properties:
+    - name: productType
+      physicalType: string
+      logicalType: string
+      examples:
+      - EA
+    - name: gtin
+      physicalType: string
+      logicalType: string
+      examples:
+      - '056500371706'
+    - name: gtin14
+      physicalType: string
+      logicalType: string
+      examples:
+      - '00056500371706'
+    - name: targetMarketCountryCode
+      physicalType: string
+      logicalType: string
+      examples:
+      - '124'
+    - name: catalogueGln
+      physicalType: string
+      logicalType: string
+      examples:
+      - 0068780060324
+    - name: dataProviderName
+      physicalType: string
+      logicalType: string
+      examples:
+      - Bayer Inc. Consumer Health
+    - name: gpc
+      physicalType: string
+      logicalType: string
+      examples:
+      - '10000856'
+    - name: gpcDescription
+      physicalType: string
+      logicalType: string
+      examples:
+      - General/Multi-use Pain Relief
+    - name: baseGln
+      physicalType: string
+      logicalType: string
+      examples:
+      - 0056500000019
+  - name: pharmaceuticalContent
+    physicalType: array
+    logicalType: array
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: extendedDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Back and Body Pain 220mg, 30s
+      - name: shortDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Back & Body 30s
+      - name: productLabelType
+        physicalType: string
+        logicalType: string
+        examples:
+        - CS
+      - name: dateAvailable
+        physicalType: string
+        customProperties:
+        - property: format
+          value: date
+        logicalType: string
+        examples:
+        - '2021-02-01'
+      - name: shapeDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Oval
+      - name: shapeDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Ovale
+        - ovale
+      - name: markingDirectEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: markingDirectFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: drugType
+        physicalType: string
+        logicalType: string
+        examples:
+        - T1
+      - name: controlledDrug
+        physicalType: string
+        logicalType: string
+        examples:
+        - CON4
+      - name: narcotic
+        physicalType: string
+        logicalType: string
+        examples:
+        - NAR4
+      - name: targetedSubstance
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: federalReportable
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: precursorStatus
+        physicalType: string
+        logicalType: string
+        examples:
+        - PN
+      - name: tempControlRangeMin
+        physicalType: string
+        logicalType: string
+        examples:
+        - '15'
+      - name: tempControlRangeMax
+        physicalType: string
+        logicalType: string
+        examples:
+        - '25'
+      - name: tempControlRangeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CE
+      - name: labelStorageConditionsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Store between 15C and 25C
+      - name: labelStorageConditionsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Conserver entre 15C et 25C
+      - name: sterile
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: shakable
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: colourDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Blue
+      - name: colourDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Bleu
+      - name: flavourDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - n/a
+      - name: flavourDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - n/a
+        - s.o.
+      - name: dateEffective
+        physicalType: string
+        customProperties:
+        - property: format
+          value: date
+        logicalType: string
+        examples:
+        - '2021-02-01'
+      - name: totalUnits
+        physicalType: string
+        logicalType: string
+        examples:
+        - '1'
+      - name: length
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.59'
+        - '5.72'
+      - name: lengthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: width
+        physicalType: string
+        logicalType: string
+        examples:
+        - '9.91'
+        - '10.03'
+      - name: widthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: height
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.59'
+        - '5.72'
+      - name: heightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: volume
+        physicalType: string
+        logicalType: string
+        examples:
+        - '310'
+      - name: volumeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CC
+      - name: grossWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.09'
+        - '0.08'
+      - name: grossWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - K
+      - name: packagingFormQual
+        physicalType: string
+        logicalType: string
+        examples:
+        - BOX
+      - name: packagingMaterialQual
+        physicalType: string
+        logicalType: string
+        examples:
+        - '31'
+        - '34'
+      - name: size
+        physicalType: string
+        logicalType: string
+        examples:
+        - '30'
+      - name: sizeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - EA
+      - name: originOfProductCountry
+        physicalType: string
+        logicalType: string
+        examples:
+        - US
+      - name: gpcClassificationCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10000856'
+      - name: barcodeSymbologyMulti
+        physicalType: array
+        logicalType: array
+        examples:
+        - '34'
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: unspsc
+        physicalType: string
+        logicalType: string
+        examples:
+        - '51384533'
+      - name: productType
+        physicalType: string
+        logicalType: string
+        examples:
+        - EA
+      - name: hazardRatingSystemWHMISclassCode
+        physicalType: array
+        logicalType: array
+        examples:
+        - N
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: rxDosageForm
+        physicalType: string
+        logicalType: string
+        examples:
+        - CAPU
+      - name: rxRouteOfAdministration
+        physicalType: string
+        logicalType: string
+        examples:
+        - OR
+      - name: anatomicalTherapeuticChemical
+        physicalType: string
+        logicalType: string
+        examples:
+        - M01AE02
+      - name: markingLotNumber
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: drugMerchandising
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingBC
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingMB
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingNB
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingNF
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingNS
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingNT
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingNU
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingON
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingPEI
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingPQ
+        physicalType: string
+        logicalType: string
+        examples:
+        - BC
+        - OT
+      - name: drugMerchandisingSK
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: drugMerchandisingYK
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+        - UN
+      - name: shortDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve mal de dos et douleu 30
+        - Aleve Mal de dos et douleur corp. 3
+        - Aleve Mal de dos et douleur corp 30
+      - name: extendedDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve mal de dos et douleur corporelle 30s
+        - Aleve Mal de dos et douleur corp. 30
+      - name: brand
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: brandFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: expectedProductLife
+        physicalType: string
+        logicalType: string
+        examples:
+        - '728'
+      - name: markingExpiryDate
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: drugAndHealthProductGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: ahfs
+            physicalType: array
+            logicalType: array
             examples:
-            - EA
-          gtin:
-            type: string
+            - 28:08.04.92
+            items:
+              name: items
+              physicalType: string
+              logicalType: string
+          - name: drugAndHealthProductNumber
+            physicalType: string
+            logicalType: string
             examples:
-            - '056500371706'
-          gtin14:
-            type: string
+            - '02436337'
+          - name: aiGroupNumber
+            physicalType: string
+            logicalType: string
+            examples:
+            - 0113934003
+          - name: drugAndHealthProductNumberType
+            physicalType: string
+            logicalType: string
+            examples:
+            - DIN
+          - name: activeIngredientGroup
+            physicalType: array
+            logicalType: array
+            items:
+              name: items
+              physicalType: object
+              logicalType: object
+              properties:
+              - name: activeIngredientNameEnglish
+                physicalType: string
+                logicalType: string
+                examples:
+                - Naproxen sodium
+              - name: activeIngredientStrength
+                physicalType: string
+                logicalType: string
+                examples:
+                - '220'
+              - name: activeIngredientStrengthUOM
+                physicalType: string
+                logicalType: string
+                examples:
+                - ME
+      - name: gpcClass
+        physicalType: string
+        logicalType: string
+        examples:
+        - Pain Relief Products
+      - name: gpcDescription
+        physicalType: string
+        logicalType: string
+        examples:
+        - General/Multi-use Pain Relief
+      - name: gpcFamily
+        physicalType: string
+        logicalType: string
+        examples:
+        - Health Treatments/Aids
+      - name: gpcSegment
+        physicalType: string
+        logicalType: string
+        examples:
+        - Healthcare
+      - name: pharmaceuticalComponent
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: gtin1
+            physicalType: string
+            logicalType: string
             examples:
             - '00056500371706'
-          targetMarketCountryCode:
-            type: string
+            - '056500371706'
+          - name: componentQuantity
+            physicalType: string
+            logicalType: string
             examples:
-            - '124'
-          catalogueGln:
-            type: string
+            - '1'
+            - '10'
+          - name: componentType
+            physicalType: string
+            logicalType: string
             examples:
-            - 0068780060324
-          dataProviderName:
-            type: string
+            - '4'
+            - '0'
+            - '1'
+          - name: componentIdentification
+            physicalType: string
+            logicalType: string
             examples:
-            - Bayer Inc. Consumer Health
-          gpc:
-            type: string
+            - '114'
+            - '110'
+            - '210'
+            - '314'
+            - '121'
+          - name: contextIdentification
+            physicalType: string
+            logicalType: string
             examples:
-            - '10000856'
-          gpcDescription:
-            type: string
-            examples:
-            - General/Multi-use Pain Relief
-          baseGln:
-            type: string
-            examples:
-            - 0056500000019
-      pharmaceuticalContent:
-        type: array
+            - '0'
+            - '110'
+            - '210'
+          - name: digitalAssetGroup
+            physicalType: array
+            logicalType: array
+            items:
+              name: items
+              physicalType: object
+              logicalType: object
+              properties:
+              - name: digitalAssetFacingPharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - '1'
+                - '7'
+                - '9'
+                - '2'
+                - '8'
+              - name: digitalAssetFormatPharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - JPG
+              - name: digitalAssetGDTIPharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - '75400000002020000852470'
+                - '75400000002020000852578'
+                - '75400000002020002241129'
+                - '75400000002020002241213'
+                - '75400000002020002241395'
+              - name: digitalAssetImageVersionDateTimePharmaceutical
+                physicalType: string
+                customProperties:
+                - property: format
+                  value: date-time
+                logicalType: string
+                examples:
+                - '2020-10-10T23:01:07.578-04:00'
+                - '2022-06-07T18:59:59.000-04:00'
+                - '2022-06-07T19:00:00.000-04:00'
+              - name: digitalAssetSequencePharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - '0'
+                - '1'
+                - '2'
+              - name: url
+                physicalType: string
+                logicalType: string
+                examples:
+                - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020000852470.JPG'
+                - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020000852578.JPG'
+                - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020002241129.JPG'
+                - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020002241213.JPG'
+                - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020002241395.JPG'
+              - name: digitalAssetAnglePharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - N
+              - name: digitalAssetImageCategoryPharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - '8'
+              - name: digitalAssetImageTypePharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - G
+              - name: digitalAssetLanguagePharmaceutical
+                physicalType: string
+                logicalType: string
+                examples:
+                - fr
+                - en
+              - name: digitalAssetStartDatePharmaceutical
+                physicalType: string
+                customProperties:
+                - property: format
+                  value: date
+                logicalType: string
+                examples:
+                - '2022-06-07'
+      - name: identification
+        physicalType: object
+        logicalType: object
+        properties:
+        - name: initialContentReceivedDate
+          physicalType: string
+          customProperties:
+          - property: format
+            value: date-time
+          logicalType: string
+          examples:
+          - '2020-10-10T23:01:07.578-04:00'
+          - '2022-06-07T19:00:00.000-04:00'
+        - name: dateUpdated
+          physicalType: string
+          customProperties:
+          - property: format
+            value: date-time
+          logicalType: string
+          examples:
+          - '2020-10-16T08:52:02.030-04:00'
+          - '2023-06-07T15:05:47.357-04:00'
+          - '2024-07-04T16:16:39.563-04:00'
+          - '2024-10-24T11:54:41.647-04:00'
+        - name: excellenceLevel
+          physicalType: string
+          logicalType: string
+          examples:
+          - '1'
+        - name: gln
+          physicalType: string
+          logicalType: string
+          examples:
+          - 0056500000019
+        - name: gtin
+          physicalType: string
+          logicalType: string
+          examples:
+          - '056500371706'
+        - name: loadingOption
+          physicalType: string
+          logicalType: string
+          examples:
+          - '7540000000999'
+        - name: pharmaceuticalStatus
+          physicalType: string
+          logicalType: string
+          examples:
+          - Certified
+        - name: systemVersion
+          physicalType: string
+          customProperties:
+          - property: format
+            value: date-time
+          logicalType: string
+          examples:
+          - '2020-10-15T05:16:28.097-04:00'
+          - '2023-06-01T00:36:26.517-04:00'
+          - '2024-04-10T10:43:06.997-04:00'
+          - '2024-10-16T15:06:45.697-04:00'
+      - name: barcodeSymbology
+        physicalType: string
+        logicalType: string
+        examples:
+        - '34'
+  - name: ecommerceContent
+    physicalType: array
+    logicalType: array
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: brandOwnerVersionCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - NA
+      - name: nutritionVersionCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - NA
+      - name: productNameEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Back & Body Pain 30 Liquid Filled Capsules
+      - name: productNameFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Mal de Dos et Douleur Corporelle 30 Capsules à Contenu Liquide
+      - name: functionalNameEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - back & body pain
+      - name: functionalNameFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - mal de dos et douleur corporelle
+      - name: brandNameEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: brandNameFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: gpcCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10000856'
+      - name: onPackProductClaimsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Fast relief of muscle pain, backache and body pain
+      - name: onPackProductClaimsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Soulagement rapide de la douleur musculaire et corporelle, et du mal de
+          dos
+      - name: netContentsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 30 liquid filled capsules
+        - 30 LIQUID FILLED CAPSULES
+      - name: netContentsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 30 capsules à contenu liquide
+        - 30 CAPSULES À CONTENU LIQUIDE
+      - name: din
+        physicalType: string
+        logicalType: string
+        examples:
+        - '02436337'
+      - name: onPackProductMarketingEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Naproxen sodium capsules, 220 mg
+
+
+          Strength to last up to 12 hours'
+      - name: onPackProductMarketingFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Capsules de naproxène sodique, 220 mg
+
+
+          Soulagement jusqu''à 12 heures'
+      - name: manufacturersAddressEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Bayer Inc.
+
+          Mississauga, ON L4W 5R6'
+      - name: manufacturersAddressFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Bayer Inc.
+
+          Mississauga, ON L4W 5R6'
+        - "Bayer Inc.\r\nMississauga, ON L4W 5R6"
+      - name: productCareandUseInstructionsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Directions
+
+          Adults (12 - 65 years): 1 capsule every 8 - 12 hours. Adults over 65 years:
+          1 capsule every 12 hours. Do not take more than 2 capsules in 24 hours.
+          Take with a full glass of water.'
+        - 'Directions Adults (12 - 65 years): 1 capsule every 8 - 12 hours. Adults
+          over 65 years: 1 capsule every 12 hours. Do not take more than 2 capsules
+          in a 24 hour period. Take with a full glass of water.'
+      - name: productCareandUseInstructionsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Mode d''emploi
+
+          Personnes âgées de 12 à 65 ans : 1 capsule toutes les 8 à 12 heures. Personnes
+          âgées de plus de 65 ans : 1 capsule toutes les 12 heures. Ne pas prendre
+          plus de 2 capsules en 24 heures. Prendre le médicament avec un grand verre
+          d''eau.'
+        - 'Mode d''emploi Personnes âgées de 12 à 65 ans : 1 capsule toutes les 8
+          à 12 heures. Personnes âgées de plus de 65 ans : 1 capsule toutes les 12
+          heures. Ne pas prendre plus de 2 capsules par période de 24 heures. Prendre
+          le médicament avec un grand verre d''eau.'
+      - name: storageEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Other information
+
+          Store at 15-25°C. Do not use if seal under cap is broken. Child resistant
+          package.'
+        - Other information Store at 15-25℃. Do not use if seal under cap is broken.
+          Child resistant package.
+      - name: storageFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Autres renseignements
+
+          Conserver entre 15 et 25 °C. N''utiliser que si le sceau sous le bouchon
+          est intact. Emballage à l''épreuve des enfants.'
+        - Autres renseignements Conserver entre 15 et 25 ℃. N'utiliser que si le sceau
+          sous le bouchon est intact. Emballage à l'épreuve des enfants. Le feuillet
+          d'emballage contient des renseignements supplémentaires.
+      - name: productWarningsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - "WARNINGS STOMACH BLEEDING WARNING - This may cause stomach bleeding\n-\
+          \ Symptoms may include - feeling faint - vomiting blood - bloody or black\
+          \ stools\n- The chance of stomach bleeding is higher if you - are age 60\
+          \ or older - have had stomach ulcers or bleeding problems - take a blood\
+          \ thinner or steroid drug - take with other drugs containing an NSAID like\
+          \ acetylsalicylic acid (ASA), ibuprofen, naproxen, or prescription anti-inflammatory\
+          \ drugs - have 3 or more alcoholic drinks every day while using this product.\
+          \ \n\nALLERGY ALERT - Stop use and get medical help right away if you have\
+          \ - hives - swelling of eyes and mouth - wheezing - shock - skin reddening\
+          \ - blisters - rash.\n\nDO NOT USE - if you are - allergic to naproxen,\
+          \ naproxen sodium, ASA, salicylates, NSAIDs - taking ASA for preventive\
+          \ therapy - in your third trimester of pregnancy\n- if you have - ulcers\
+          \ or stomach bleeding - history of recurrent ulceration - inflammatory bowel\
+          \ disease - liver or kidney disease\n- right before or after heart surgery.\n\
+          \nASK A DOCTOR OR PHARMACIST BEFORE USE IF YOU - have - asthma or diabetes\
+          \ - high blood pressure or heart disease - any other serious condition\n\
+          - take any other drug\n- are trying to conceive, pregnant or breastfeeding.\n\
+          \nWHEN USING THIS PRODUCT the risk of heart attack or stroke may increase\
+          \ if you use more than directed or for longer than directed.\n\nSTOP USE\
+          \ AND ASK A DOCTOR IF - fever lasts more than 3 days\n- pain lasts longer\
+          \ than 5 days\n- symptoms get worse or new ones appear.\n\nKEEP OUT OF REACH\
+          \ OF CHILDREN. This package contains enough drug to seriously harm a child.\
+          \ In case of overdose, call a poison control centre or get medical help\
+          \ right away."
+        - 'WARNINGS STOMACH BLEEDING WARNING
+
+          - This may cause stomach bleeding
+
+          - Symptoms may include, feeling faint, vomiting blood, bloody or black stools
+
+          - The chance of stomach bleeding is higher if you, are age 60 or older,
+          have had stomach ulcers or bleeding problems, take a blood thinner or steroid
+          drug, take with other drugs containing an NSAID like acetylsalicylic acid
+          (ASA), ibuprofen, naproxen, or prescription anti-inflammatory drugs, have
+          3 or more alcoholic drinks every day while using this product.
+
+
+          ALLERGY ALERT
+
+          - Stop use and get medical help right away if you have, hives, swelling
+          of eyes and mouth, wheezing, shock, skin reddening, blisters, rash.
+
+
+          DO NOT USE
+
+          - if you are, allergic to naproxen, naproxen sodium, ASA, salicylates, NSAIDs,
+          taking ASA for preventive therapy, in your third trimester of pregnancy
+
+          - if you have, ulcers or stomach bleeding, history of recurrent ulceration,
+          inflammatory bowel disease, liver or kidney disease
+
+          - right before or after heart surgery.
+
+
+          ASK A DOCTOR OR PHARMACIST BEFORE USE IF YOU
+
+          - have, asthma or diabetes, high blood pressure or heart disease, any other
+          serious condition
+
+          - take any other drug
+
+          - are trying to conceive, pregnant or breastfeeding.
+
+
+          WHEN USING THIS PRODUCT the risk of heart attack or stroke may increase
+          if you use more than directed or for longer than directed.
+
+
+          STOP USE AND ASK A DOCTOR IF
+
+          - fever lasts more than 3 days
+
+          - pain lasts longer than 5 days
+
+          - symptoms get worse or new ones appear.
+
+
+          KEEP OUT OF REACH OF CHILDREN. This package contains enough drug to seriously
+          harm a child. In case of overdose, call a poison control centre or get medical
+          help right away.'
+      - name: productWarningsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'MISES EN GARDE
+
+          AVERTISSEMENT - SAIGNEMENT GASTRIQUE - Peut provoquer des saignements gastriques
+
+          - Les symptômes peuvent comprendre - sensation de faiblesse - vomissement
+          de sang - selles noires ou sanglantes.
+
+          - Le risque de saignement gastrique est plus élevé dans les cas suivants
+          : - âge de 60 ans ou plus - antécédents d''ulcères gastriques ou de saignement
+          - prise d''anticoagulants ou de stéroïdes - prise d''autres médicaments
+          contenant un AINS comme l''acide acétylsalicylique (AAS), l''ibuprofène,
+          le naproxène ou des anti-inflammatoires sur ordonnance - consommation de
+          3 boissons alcoolisées ou plus par jour durant la prise de ce médicament.
+
+
+          ALERTE AUX ALLERGIES - Cesser l''utilisation et consulter immédiatement
+          un médecin en présence - d''urticaire - de gonflement des yeux et de la
+          bouche - de respiration sifflante - d''état de choc - de rougeur de la peau
+          - de cloques - d''éruption cutanée.
+
+
+          NE PAS UTILISER - si vous êtes - allergique au naproxène, au naproxène sodique,
+          à l''AAS, aux salicylates, aux AINS - en train de suivre un traitement préventif
+          par I''AAS - au troisième trimestre de votre grossesse
+
+          - si vous avez - des ulcères ou saignements gastriques - des antécédents
+          d''ulcérations récidivantes - une maladie inflammatoire de l''intestin -
+          une maladie hépatique ou rénale
+
+          - en cas de chirurgie cardiaque récente ou prochaine.
+
+
+          CONSULTEZ UN MÉDECIN OU UN PHARMACIEN AVANT L''UTILISATION SI VOUS
+
+          - souffrez - d''asthme ou de diabète - d''hypertension ou de maladie du
+          cœur - de maladie grave
+
+          - prenez d''autres médicaments
+
+          - êtes enceinte, tentez de concevoir ou allaitez.
+
+
+          LORSQUE VOUS UTILISEZ CE PRODUIT le risque de crise cardiaque ou d''accident
+          vasculaire cérébral peut être accru quand la dose ou la durée d''utilisation
+          dépasse celle recommandée.
+
+
+          CESSEZ D''UTILISER ET CONSULTEZ UN MÉDECIN SI - la fièvre dure plus de 3
+          jours
+
+          - la douleur dure plus de 5 jours
+
+          - les symptômes s''aggravent ou de nouveaux symptômes apparaissent.
+
+
+          GARDER HORS DE LA PORTÉE DES ENFANTS.
+
+          La quantité de médicament que contient cet emballage peut causer des effets
+          nocifs graves chez les enfants. En cas de surdosage, communiquer immédiatement
+          avec un centre antipoison ou un médecin.'
+        - 'MISES EN GRADE AVERTISSEMENT - SAIGNEMENT GASTRIQUE
+
+          - Peut provoquer des saignements gastriques
+
+          - Les symptômes peuvent comprendre, sensation de faiblesse, vomissement
+          de sang, selles noires ou sanglantes.
+
+          - Le risque de saignement gastrique est plus élevé dans les cas suivants
+          : âge de 60 ans ou plus, antécédents d''ulcères gastriques ou de saignement,
+          prise d''anticoagulants ou de stéroïdes, prise d''autres médicaments contenant
+          un AINS comme l''acide acétylsalicylique (AAS), l''ibuprofène, le naproxène
+          ou des anti-inflammatoires sur ordonnance, consommation de 3 boissons alcoolisées
+          ou plus par jour durant la prise de ce médicament.
+
+
+          ALERTE AUX ALLERGIES
+
+          - Cesser l''utilisation et consulter immédiatement un médecin en présence,
+          d''urticaire, de gonflement des yeux et de la bouche, de respiration sifflante,
+          d''état de choc, de rougeur de la peau, de cloques, d''éruption cutanée.
+
+
+          NE PAS UTILISER
+
+          - si vous êtes, allergique au naproxène, au naproxène sodique, à l''AAS,
+          aux salicylates, aux AINS, en train de suivre un traitement préventif par
+          l''AAS, au troisième trimestre de votre grossesse
+
+          - si vous avez, des ulcères ou saignements gastriques, des antécédents d''ulcérations
+          récidivantes, une maladie inflammatoire de l''intestin, une maladie hépatique
+          ou rénale, en cas de chirurgie cardiaque récente ou prochaine.
+
+
+          CONSULTEZ UN MÉDECIN OU UN PHARMACIEN AVANT L''UTILISATION SI VOUS
+
+          - souffrez, d''asthme ou de diabète, d''hypertension ou de maladie du cœur,
+          de maladie grave
+
+          - prenez d''autres médicaments
+
+          - êtes enceinte, tentez de concevoir ou allaitez.
+
+
+          LORSQUE VOUS UTILISEZ CE PRODUIT le risque de crise cardiaque ou d''accident
+          vasculaire cérébral peut être accru quand la dose ou la durée d''utilisation
+          dépasse celle recommandée.
+
+
+          CESSEZ D''UTILISER ET CONSULTEZ UN MÉDECIN SI
+
+          - la fièvre dure plus de 3 jours
+
+          - la douleur dure plus de 5 jours
+
+          - les symptômes s''aggravent ou de nouveaux symptômes apparaissent.
+
+
+          GARDER HORS DE LA PORTÉE DES ENFANTS. La quantité de médicament que contient
+          cet emballage peut causer des effets nocifs graves chez les enfants. En
+          cas de surdosage, communiquer immédiatement avec un centre antipoison ou
+          un médecin.'
+      - name: height
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.72'
+      - name: heightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: width
+        physicalType: string
+        logicalType: string
+        examples:
+        - '9.91'
+        - '10.03'
+      - name: widthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: depth
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.72'
+      - name: depthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: grossWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.076'
+      - name: grossWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - KG
+      - name: trademarkInformationEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - ® TM see www.bayer.ca/tm-mc
+      - name: trademarkInformationFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ® MC voir www.bayer.ca/tm-mc
+      - name: warrantyDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Questions?
+
+          Bayer Inc.
+
+          Mississauga, ON L4W 5R6
+
+          www.aleve.ca'
+        - "Questions?\r\nBayer Inc.\r\nMississauga, ON L4W 5R6\r\nwww.aleve.ca"
+      - name: warrantyDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Questions?
+
+          Bayer Inc.
+
+          Mississauga, ON L4W 5R6
+
+          www.aleve.ca'
+        - "Questions?\r\nBayer Inc.\r\nMississauga, ON L4W 5R6\r\nwww.aleve.ca"
+      - name: consumerProductVariantReasonCode
+        physicalType: array
+        logicalType: array
         items:
-          type: object
-          fields:
-            extendedDescriptionEnglish:
-              type: string
-              examples:
-              - Aleve Back and Body Pain 220mg, 30s
-            shortDescriptionEnglish:
-              type: string
-              examples:
-              - Aleve Back & Body 30s
-            productLabelType:
-              type: string
-              examples:
-              - CS
-            dateAvailable:
-              type: string
-              format: date
-              examples:
-              - '2021-02-01'
-            shapeDescriptionEnglish:
-              type: string
-              examples:
-              - Oval
-            shapeDescriptionFrench:
-              type: string
-              examples:
-              - Ovale
-              - ovale
-            markingDirectEnglish:
-              type: string
-              examples:
-              - Aleve
-            markingDirectFrench:
-              type: string
-              examples:
-              - Aleve
-            drugType:
-              type: string
-              examples:
-              - T1
-            controlledDrug:
-              type: string
-              examples:
-              - CON4
-            narcotic:
-              type: string
-              examples:
-              - NAR4
-            targetedSubstance:
-              type: string
-              examples:
-              - N
-            federalReportable:
-              type: string
-              examples:
-              - N
-            precursorStatus:
-              type: string
-              examples:
-              - PN
-            tempControlRangeMin:
-              type: string
-              examples:
-              - '15'
-            tempControlRangeMax:
-              type: string
-              examples:
-              - '25'
-            tempControlRangeUOM:
-              type: string
-              examples:
-              - CE
-            labelStorageConditionsEnglish:
-              type: string
-              examples:
-              - Store between 15C and 25C
-            labelStorageConditionsFrench:
-              type: string
-              examples:
-              - Conserver entre 15C et 25C
-            sterile:
-              type: string
-              examples:
-              - N
-            shakable:
-              type: string
-              examples:
-              - N
-            colourDescriptionEnglish:
-              type: string
-              examples:
-              - Blue
-            colourDescriptionFrench:
-              type: string
-              examples:
-              - Bleu
-            flavourDescriptionEnglish:
-              type: string
-              examples:
-              - n/a
-            flavourDescriptionFrench:
-              type: string
-              examples:
-              - n/a
-              - s.o.
-            dateEffective:
-              type: string
-              format: date
-              examples:
-              - '2021-02-01'
-            totalUnits:
-              type: string
-              examples:
-              - '1'
-            length:
-              type: string
-              examples:
-              - '5.59'
-              - '5.72'
-            lengthUOM:
-              type: string
-              examples:
-              - CM
-            width:
-              type: string
-              examples:
-              - '9.91'
-              - '10.03'
-            widthUOM:
-              type: string
-              examples:
-              - CM
-            height:
-              type: string
-              examples:
-              - '5.59'
-              - '5.72'
-            heightUOM:
-              type: string
-              examples:
-              - CM
-            volume:
-              type: string
-              examples:
-              - '310'
-            volumeUOM:
-              type: string
-              examples:
-              - CC
-            grossWeight:
-              type: string
-              examples:
-              - '0.09'
-              - '0.08'
-            grossWeightUOM:
-              type: string
-              examples:
-              - K
-            packagingFormQual:
-              type: string
-              examples:
-              - BOX
-            packagingMaterialQual:
-              type: string
-              examples:
-              - '31'
-              - '34'
-            size:
-              type: string
-              examples:
-              - '30'
-            sizeUOM:
-              type: string
-              examples:
-              - EA
-            originOfProductCountry:
-              type: string
-              examples:
-              - US
-            gpcClassificationCode:
-              type: string
-              examples:
-              - '10000856'
-            barcodeSymbologyMulti:
-              type: array
-              items:
-                type: string
-              examples:
-              - '34'
-            unspsc:
-              type: string
-              examples:
-              - '51384533'
-            productType:
-              type: string
-              examples:
-              - EA
-            hazardRatingSystemWHMISclassCode:
-              type: array
-              items:
-                type: string
-              examples:
-              - N
-            rxDosageForm:
-              type: string
-              examples:
-              - CAPU
-            rxRouteOfAdministration:
-              type: string
-              examples:
-              - OR
-            anatomicalTherapeuticChemical:
-              type: string
-              examples:
-              - M01AE02
-            markingLotNumber:
-              type: string
-              examples:
-              - Y
-            drugMerchandising:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingBC:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingMB:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingNB:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingNF:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingNS:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingNT:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingNU:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingON:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingPEI:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingPQ:
-              type: string
-              examples:
-              - BC
-              - OT
-            drugMerchandisingSK:
-              type: string
-              examples:
-              - OT
-              - UN
-            drugMerchandisingYK:
-              type: string
-              examples:
-              - OT
-              - UN
-            shortDescriptionFrench:
-              type: string
-              examples:
-              - Aleve mal de dos et douleu 30
-              - Aleve Mal de dos et douleur corp. 3
-              - Aleve Mal de dos et douleur corp 30
-            extendedDescriptionFrench:
-              type: string
-              examples:
-              - Aleve mal de dos et douleur corporelle 30s
-              - Aleve Mal de dos et douleur corp. 30
-            brand:
-              type: string
-              examples:
-              - Aleve
-            brandFrench:
-              type: string
-              examples:
-              - Aleve
-            expectedProductLife:
-              type: string
-              examples:
-              - '728'
-            markingExpiryDate:
-              type: string
-              examples:
-              - Y
-            drugAndHealthProductGroup:
-              type: array
-              items:
-                type: object
-                fields:
-                  ahfs:
-                    type: array
-                    items:
-                      type: string
-                    examples:
-                    - 28:08.04.92
-                  drugAndHealthProductNumber:
-                    type: string
-                    examples:
-                    - '02436337'
-                  aiGroupNumber:
-                    type: string
-                    examples:
-                    - 0113934003
-                  drugAndHealthProductNumberType:
-                    type: string
-                    examples:
-                    - DIN
-                  activeIngredientGroup:
-                    type: array
-                    items:
-                      type: object
-                      fields:
-                        activeIngredientNameEnglish:
-                          type: string
-                          examples:
-                          - Naproxen sodium
-                        activeIngredientStrength:
-                          type: string
-                          examples:
-                          - '220'
-                        activeIngredientStrengthUOM:
-                          type: string
-                          examples:
-                          - ME
-            gpcClass:
-              type: string
-              examples:
-              - Pain Relief Products
-            gpcDescription:
-              type: string
-              examples:
-              - General/Multi-use Pain Relief
-            gpcFamily:
-              type: string
-              examples:
-              - Health Treatments/Aids
-            gpcSegment:
-              type: string
-              examples:
-              - Healthcare
-            pharmaceuticalComponent:
-              type: array
-              items:
-                type: object
-                fields:
-                  gtin1:
-                    type: string
-                    examples:
-                    - '00056500371706'
-                    - '056500371706'
-                  componentQuantity:
-                    type: string
-                    examples:
-                    - '1'
-                    - '10'
-                  componentType:
-                    type: string
-                    examples:
-                    - '4'
-                    - '0'
-                    - '1'
-                  componentIdentification:
-                    type: string
-                    examples:
-                    - '114'
-                    - '110'
-                    - '210'
-                    - '314'
-                    - '121'
-                  contextIdentification:
-                    type: string
-                    examples:
-                    - '0'
-                    - '110'
-                    - '210'
-                  digitalAssetGroup:
-                    type: array
-                    items:
-                      type: object
-                      fields:
-                        digitalAssetFacingPharmaceutical:
-                          type: string
-                          examples:
-                          - '1'
-                          - '7'
-                          - '9'
-                          - '2'
-                          - '8'
-                        digitalAssetFormatPharmaceutical:
-                          type: string
-                          examples:
-                          - JPG
-                        digitalAssetGDTIPharmaceutical:
-                          type: string
-                          examples:
-                          - '75400000002020000852470'
-                          - '75400000002020000852578'
-                          - '75400000002020002241129'
-                          - '75400000002020002241213'
-                          - '75400000002020002241395'
-                        digitalAssetImageVersionDateTimePharmaceutical:
-                          type: string
-                          format: date-time
-                          examples:
-                          - '2020-10-10T23:01:07.578-04:00'
-                          - '2022-06-07T18:59:59.000-04:00'
-                          - '2022-06-07T19:00:00.000-04:00'
-                        digitalAssetSequencePharmaceutical:
-                          type: string
-                          examples:
-                          - '0'
-                          - '1'
-                          - '2'
-                        url:
-                          type: string
-                          examples:
-                          - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020000852470.JPG'
-                          - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020000852578.JPG'
-                          - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020002241129.JPG'
-                          - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020002241213.JPG'
-                          - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=pharmaceuticalContent/gtin=00056500371706/type=JPG/75400000002020002241395.JPG'
-                        digitalAssetAnglePharmaceutical:
-                          type: string
-                          examples:
-                          - N
-                        digitalAssetImageCategoryPharmaceutical:
-                          type: string
-                          examples:
-                          - '8'
-                        digitalAssetImageTypePharmaceutical:
-                          type: string
-                          examples:
-                          - G
-                        digitalAssetLanguagePharmaceutical:
-                          type: string
-                          examples:
-                          - fr
-                          - en
-                        digitalAssetStartDatePharmaceutical:
-                          type: string
-                          format: date
-                          examples:
-                          - '2022-06-07'
-            identification:
-              type: object
-              fields:
-                initialContentReceivedDate:
-                  type: string
-                  format: date-time
-                  examples:
-                  - '2020-10-10T23:01:07.578-04:00'
-                  - '2022-06-07T19:00:00.000-04:00'
-                dateUpdated:
-                  type: string
-                  format: date-time
-                  examples:
-                  - '2020-10-16T08:52:02.030-04:00'
-                  - '2023-06-07T15:05:47.357-04:00'
-                  - '2024-07-04T16:16:39.563-04:00'
-                  - '2024-10-24T11:54:41.647-04:00'
-                excellenceLevel:
-                  type: string
-                  examples:
-                  - '1'
-                gln:
-                  type: string
-                  examples:
-                  - 0056500000019
-                gtin:
-                  type: string
-                  examples:
-                  - '056500371706'
-                loadingOption:
-                  type: string
-                  examples:
-                  - '7540000000999'
-                pharmaceuticalStatus:
-                  type: string
-                  examples:
-                  - Certified
-                systemVersion:
-                  type: string
-                  format: date-time
-                  examples:
-                  - '2020-10-15T05:16:28.097-04:00'
-                  - '2023-06-01T00:36:26.517-04:00'
-                  - '2024-04-10T10:43:06.997-04:00'
-                  - '2024-10-16T15:06:45.697-04:00'
-            barcodeSymbology:
-              type: string
-              examples:
-              - '34'
-      ecommerceContent:
-        type: array
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: identification
+        physicalType: object
+        logicalType: object
+        properties:
+        - name: nameOfBrandOwnerOrSubmitter
+          physicalType: string
+          logicalType: string
+          examples:
+          - Bayer Inc. Consumer Health
+        - name: dateUpdated
+          physicalType: string
+          customProperties:
+          - property: format
+            value: date-time
+          logicalType: string
+          examples:
+          - '2022-05-11T12:25:11.477-04:00'
+          - '2024-10-24T12:25:58.887-04:00'
+        - name: ecommerceStatusNutritionStatus
+          physicalType: string
+          logicalType: string
+          examples:
+          - Certified
+        - name: excellenceLevel
+          physicalType: string
+          logicalType: string
+          examples:
+          - '1'
+        - name: gln
+          physicalType: string
+          logicalType: string
+          examples:
+          - 0056500000019
+        - name: gtin
+          physicalType: string
+          logicalType: string
+          examples:
+          - '00056500371706'
+        - name: systemVersion
+          physicalType: string
+          customProperties:
+          - property: format
+            value: date-time
+          logicalType: string
+          examples:
+          - '2022-04-29T20:16:17.523-04:00'
+          - '2024-10-09T18:06:55.420-04:00'
+      - name: featuresAndBenefits
+        physicalType: array
+        logicalType: array
         items:
-          type: object
-          fields:
-            brandOwnerVersionCode:
-              type: string
-              examples:
-              - NA
-            nutritionVersionCode:
-              type: string
-              examples:
-              - NA
-            productNameEnglish:
-              type: string
-              examples:
-              - Aleve Back & Body Pain 30 Liquid Filled Capsules
-            productNameFrench:
-              type: string
-              examples:
-              - Aleve Mal de Dos et Douleur Corporelle 30 Capsules à Contenu Liquide
-            functionalNameEnglish:
-              type: string
-              examples:
-              - back & body pain
-            functionalNameFrench:
-              type: string
-              examples:
-              - mal de dos et douleur corporelle
-            brandNameEnglish:
-              type: string
-              examples:
-              - Aleve
-            brandNameFrench:
-              type: string
-              examples:
-              - Aleve
-            gpcCode:
-              type: string
-              examples:
-              - '10000856'
-            onPackProductClaimsEnglish:
-              type: string
-              examples:
-              - Fast relief of muscle pain, backache and body pain
-            onPackProductClaimsFrench:
-              type: string
-              examples:
-              - Soulagement rapide de la douleur musculaire et corporelle, et du mal
-                de dos
-            netContentsEnglish:
-              type: string
-              examples:
-              - 30 liquid filled capsules
-              - 30 LIQUID FILLED CAPSULES
-            netContentsFrench:
-              type: string
-              examples:
-              - 30 capsules à contenu liquide
-              - 30 CAPSULES À CONTENU LIQUIDE
-            din:
-              type: string
-              examples:
-              - '02436337'
-            onPackProductMarketingEnglish:
-              type: string
-              examples:
-              - 'Naproxen sodium capsules, 220 mg
-
-
-                Strength to last up to 12 hours'
-            onPackProductMarketingFrench:
-              type: string
-              examples:
-              - 'Capsules de naproxène sodique, 220 mg
-
-
-                Soulagement jusqu''à 12 heures'
-            manufacturersAddressEnglish:
-              type: string
-              examples:
-              - 'Bayer Inc.
-
-                Mississauga, ON L4W 5R6'
-            manufacturersAddressFrench:
-              type: string
-              examples:
-              - 'Bayer Inc.
-
-                Mississauga, ON L4W 5R6'
-              - "Bayer Inc.\r\nMississauga, ON L4W 5R6"
-            productCareandUseInstructionsEnglish:
-              type: string
-              examples:
-              - 'Directions
-
-                Adults (12 - 65 years): 1 capsule every 8 - 12 hours. Adults over
-                65 years: 1 capsule every 12 hours. Do not take more than 2 capsules
-                in 24 hours. Take with a full glass of water.'
-              - 'Directions Adults (12 - 65 years): 1 capsule every 8 - 12 hours.
-                Adults over 65 years: 1 capsule every 12 hours. Do not take more than
-                2 capsules in a 24 hour period. Take with a full glass of water.'
-            productCareandUseInstructionsFrench:
-              type: string
-              examples:
-              - 'Mode d''emploi
-
-                Personnes âgées de 12 à 65 ans : 1 capsule toutes les 8 à 12 heures.
-                Personnes âgées de plus de 65 ans : 1 capsule toutes les 12 heures.
-                Ne pas prendre plus de 2 capsules en 24 heures. Prendre le médicament
-                avec un grand verre d''eau.'
-              - 'Mode d''emploi Personnes âgées de 12 à 65 ans : 1 capsule toutes
-                les 8 à 12 heures. Personnes âgées de plus de 65 ans : 1 capsule toutes
-                les 12 heures. Ne pas prendre plus de 2 capsules par période de 24
-                heures. Prendre le médicament avec un grand verre d''eau.'
-            storageEnglish:
-              type: string
-              examples:
-              - 'Other information
-
-                Store at 15-25°C. Do not use if seal under cap is broken. Child resistant
-                package.'
-              - Other information Store at 15-25℃. Do not use if seal under cap is
-                broken. Child resistant package.
-            storageFrench:
-              type: string
-              examples:
-              - 'Autres renseignements
-
-                Conserver entre 15 et 25 °C. N''utiliser que si le sceau sous le bouchon
-                est intact. Emballage à l''épreuve des enfants.'
-              - Autres renseignements Conserver entre 15 et 25 ℃. N'utiliser que si
-                le sceau sous le bouchon est intact. Emballage à l'épreuve des enfants.
-                Le feuillet d'emballage contient des renseignements supplémentaires.
-            productWarningsEnglish:
-              type: string
-              examples:
-              - "WARNINGS STOMACH BLEEDING WARNING - This may cause stomach bleeding\n\
-                - Symptoms may include - feeling faint - vomiting blood - bloody or\
-                \ black stools\n- The chance of stomach bleeding is higher if you\
-                \ - are age 60 or older - have had stomach ulcers or bleeding problems\
-                \ - take a blood thinner or steroid drug - take with other drugs containing\
-                \ an NSAID like acetylsalicylic acid (ASA), ibuprofen, naproxen, or\
-                \ prescription anti-inflammatory drugs - have 3 or more alcoholic\
-                \ drinks every day while using this product. \n\nALLERGY ALERT - Stop\
-                \ use and get medical help right away if you have - hives - swelling\
-                \ of eyes and mouth - wheezing - shock - skin reddening - blisters\
-                \ - rash.\n\nDO NOT USE - if you are - allergic to naproxen, naproxen\
-                \ sodium, ASA, salicylates, NSAIDs - taking ASA for preventive therapy\
-                \ - in your third trimester of pregnancy\n- if you have - ulcers or\
-                \ stomach bleeding - history of recurrent ulceration - inflammatory\
-                \ bowel disease - liver or kidney disease\n- right before or after\
-                \ heart surgery.\n\nASK A DOCTOR OR PHARMACIST BEFORE USE IF YOU -\
-                \ have - asthma or diabetes - high blood pressure or heart disease\
-                \ - any other serious condition\n- take any other drug\n- are trying\
-                \ to conceive, pregnant or breastfeeding.\n\nWHEN USING THIS PRODUCT\
-                \ the risk of heart attack or stroke may increase if you use more\
-                \ than directed or for longer than directed.\n\nSTOP USE AND ASK A\
-                \ DOCTOR IF - fever lasts more than 3 days\n- pain lasts longer than\
-                \ 5 days\n- symptoms get worse or new ones appear.\n\nKEEP OUT OF\
-                \ REACH OF CHILDREN. This package contains enough drug to seriously\
-                \ harm a child. In case of overdose, call a poison control centre\
-                \ or get medical help right away."
-              - 'WARNINGS STOMACH BLEEDING WARNING
-
-                - This may cause stomach bleeding
-
-                - Symptoms may include, feeling faint, vomiting blood, bloody or black
-                stools
-
-                - The chance of stomach bleeding is higher if you, are age 60 or older,
-                have had stomach ulcers or bleeding problems, take a blood thinner
-                or steroid drug, take with other drugs containing an NSAID like acetylsalicylic
-                acid (ASA), ibuprofen, naproxen, or prescription anti-inflammatory
-                drugs, have 3 or more alcoholic drinks every day while using this
-                product.
-
-
-                ALLERGY ALERT
-
-                - Stop use and get medical help right away if you have, hives, swelling
-                of eyes and mouth, wheezing, shock, skin reddening, blisters, rash.
-
-
-                DO NOT USE
-
-                - if you are, allergic to naproxen, naproxen sodium, ASA, salicylates,
-                NSAIDs, taking ASA for preventive therapy, in your third trimester
-                of pregnancy
-
-                - if you have, ulcers or stomach bleeding, history of recurrent ulceration,
-                inflammatory bowel disease, liver or kidney disease
-
-                - right before or after heart surgery.
-
-
-                ASK A DOCTOR OR PHARMACIST BEFORE USE IF YOU
-
-                - have, asthma or diabetes, high blood pressure or heart disease,
-                any other serious condition
-
-                - take any other drug
-
-                - are trying to conceive, pregnant or breastfeeding.
-
-
-                WHEN USING THIS PRODUCT the risk of heart attack or stroke may increase
-                if you use more than directed or for longer than directed.
-
-
-                STOP USE AND ASK A DOCTOR IF
-
-                - fever lasts more than 3 days
-
-                - pain lasts longer than 5 days
-
-                - symptoms get worse or new ones appear.
-
-
-                KEEP OUT OF REACH OF CHILDREN. This package contains enough drug to
-                seriously harm a child. In case of overdose, call a poison control
-                centre or get medical help right away.'
-            productWarningsFrench:
-              type: string
-              examples:
-              - 'MISES EN GARDE
-
-                AVERTISSEMENT - SAIGNEMENT GASTRIQUE - Peut provoquer des saignements
-                gastriques
-
-                - Les symptômes peuvent comprendre - sensation de faiblesse - vomissement
-                de sang - selles noires ou sanglantes.
-
-                - Le risque de saignement gastrique est plus élevé dans les cas suivants
-                : - âge de 60 ans ou plus - antécédents d''ulcères gastriques ou de
-                saignement - prise d''anticoagulants ou de stéroïdes - prise d''autres
-                médicaments contenant un AINS comme l''acide acétylsalicylique (AAS),
-                l''ibuprofène, le naproxène ou des anti-inflammatoires sur ordonnance
-                - consommation de 3 boissons alcoolisées ou plus par jour durant la
-                prise de ce médicament.
-
-
-                ALERTE AUX ALLERGIES - Cesser l''utilisation et consulter immédiatement
-                un médecin en présence - d''urticaire - de gonflement des yeux et
-                de la bouche - de respiration sifflante - d''état de choc - de rougeur
-                de la peau - de cloques - d''éruption cutanée.
-
-
-                NE PAS UTILISER - si vous êtes - allergique au naproxène, au naproxène
-                sodique, à l''AAS, aux salicylates, aux AINS - en train de suivre
-                un traitement préventif par I''AAS - au troisième trimestre de votre
-                grossesse
-
-                - si vous avez - des ulcères ou saignements gastriques - des antécédents
-                d''ulcérations récidivantes - une maladie inflammatoire de l''intestin
-                - une maladie hépatique ou rénale
-
-                - en cas de chirurgie cardiaque récente ou prochaine.
-
-
-                CONSULTEZ UN MÉDECIN OU UN PHARMACIEN AVANT L''UTILISATION SI VOUS
-
-                - souffrez - d''asthme ou de diabète - d''hypertension ou de maladie
-                du cœur - de maladie grave
-
-                - prenez d''autres médicaments
-
-                - êtes enceinte, tentez de concevoir ou allaitez.
-
-
-                LORSQUE VOUS UTILISEZ CE PRODUIT le risque de crise cardiaque ou d''accident
-                vasculaire cérébral peut être accru quand la dose ou la durée d''utilisation
-                dépasse celle recommandée.
-
-
-                CESSEZ D''UTILISER ET CONSULTEZ UN MÉDECIN SI - la fièvre dure plus
-                de 3 jours
-
-                - la douleur dure plus de 5 jours
-
-                - les symptômes s''aggravent ou de nouveaux symptômes apparaissent.
-
-
-                GARDER HORS DE LA PORTÉE DES ENFANTS.
-
-                La quantité de médicament que contient cet emballage peut causer des
-                effets nocifs graves chez les enfants. En cas de surdosage, communiquer
-                immédiatement avec un centre antipoison ou un médecin.'
-              - 'MISES EN GRADE AVERTISSEMENT - SAIGNEMENT GASTRIQUE
-
-                - Peut provoquer des saignements gastriques
-
-                - Les symptômes peuvent comprendre, sensation de faiblesse, vomissement
-                de sang, selles noires ou sanglantes.
-
-                - Le risque de saignement gastrique est plus élevé dans les cas suivants
-                : âge de 60 ans ou plus, antécédents d''ulcères gastriques ou de saignement,
-                prise d''anticoagulants ou de stéroïdes, prise d''autres médicaments
-                contenant un AINS comme l''acide acétylsalicylique (AAS), l''ibuprofène,
-                le naproxène ou des anti-inflammatoires sur ordonnance, consommation
-                de 3 boissons alcoolisées ou plus par jour durant la prise de ce médicament.
-
-
-                ALERTE AUX ALLERGIES
-
-                - Cesser l''utilisation et consulter immédiatement un médecin en présence,
-                d''urticaire, de gonflement des yeux et de la bouche, de respiration
-                sifflante, d''état de choc, de rougeur de la peau, de cloques, d''éruption
-                cutanée.
-
-
-                NE PAS UTILISER
-
-                - si vous êtes, allergique au naproxène, au naproxène sodique, à l''AAS,
-                aux salicylates, aux AINS, en train de suivre un traitement préventif
-                par l''AAS, au troisième trimestre de votre grossesse
-
-                - si vous avez, des ulcères ou saignements gastriques, des antécédents
-                d''ulcérations récidivantes, une maladie inflammatoire de l''intestin,
-                une maladie hépatique ou rénale, en cas de chirurgie cardiaque récente
-                ou prochaine.
-
-
-                CONSULTEZ UN MÉDECIN OU UN PHARMACIEN AVANT L''UTILISATION SI VOUS
-
-                - souffrez, d''asthme ou de diabète, d''hypertension ou de maladie
-                du cœur, de maladie grave
-
-                - prenez d''autres médicaments
-
-                - êtes enceinte, tentez de concevoir ou allaitez.
-
-
-                LORSQUE VOUS UTILISEZ CE PRODUIT le risque de crise cardiaque ou d''accident
-                vasculaire cérébral peut être accru quand la dose ou la durée d''utilisation
-                dépasse celle recommandée.
-
-
-                CESSEZ D''UTILISER ET CONSULTEZ UN MÉDECIN SI
-
-                - la fièvre dure plus de 3 jours
-
-                - la douleur dure plus de 5 jours
-
-                - les symptômes s''aggravent ou de nouveaux symptômes apparaissent.
-
-
-                GARDER HORS DE LA PORTÉE DES ENFANTS. La quantité de médicament que
-                contient cet emballage peut causer des effets nocifs graves chez les
-                enfants. En cas de surdosage, communiquer immédiatement avec un centre
-                antipoison ou un médecin.'
-            height:
-              type: string
-              examples:
-              - '5.72'
-            heightUOM:
-              type: string
-              examples:
-              - CM
-            width:
-              type: string
-              examples:
-              - '9.91'
-              - '10.03'
-            widthUOM:
-              type: string
-              examples:
-              - CM
-            depth:
-              type: string
-              examples:
-              - '5.72'
-            depthUOM:
-              type: string
-              examples:
-              - CM
-            grossWeight:
-              type: string
-              examples:
-              - '0.076'
-            grossWeightUOM:
-              type: string
-              examples:
-              - KG
-            trademarkInformationEnglish:
-              type: string
-              examples:
-              - ® TM see www.bayer.ca/tm-mc
-            trademarkInformationFrench:
-              type: string
-              examples:
-              - ® MC voir www.bayer.ca/tm-mc
-            warrantyDescriptionEnglish:
-              type: string
-              examples:
-              - 'Questions?
-
-                Bayer Inc.
-
-                Mississauga, ON L4W 5R6
-
-                www.aleve.ca'
-              - "Questions?\r\nBayer Inc.\r\nMississauga, ON L4W 5R6\r\nwww.aleve.ca"
-            warrantyDescriptionFrench:
-              type: string
-              examples:
-              - 'Questions?
-
-                Bayer Inc.
-
-                Mississauga, ON L4W 5R6
-
-                www.aleve.ca'
-              - "Questions?\r\nBayer Inc.\r\nMississauga, ON L4W 5R6\r\nwww.aleve.ca"
-            consumerProductVariantReasonCode:
-              type: array
-              items:
-                type: string
-            identification:
-              type: object
-              fields:
-                nameOfBrandOwnerOrSubmitter:
-                  type: string
-                  examples:
-                  - Bayer Inc. Consumer Health
-                dateUpdated:
-                  type: string
-                  format: date-time
-                  examples:
-                  - '2022-05-11T12:25:11.477-04:00'
-                  - '2024-10-24T12:25:58.887-04:00'
-                ecommerceStatusNutritionStatus:
-                  type: string
-                  examples:
-                  - Certified
-                excellenceLevel:
-                  type: string
-                  examples:
-                  - '1'
-                gln:
-                  type: string
-                  examples:
-                  - 0056500000019
-                gtin:
-                  type: string
-                  examples:
-                  - '00056500371706'
-                systemVersion:
-                  type: string
-                  format: date-time
-                  examples:
-                  - '2022-04-29T20:16:17.523-04:00'
-                  - '2024-10-09T18:06:55.420-04:00'
-            featuresAndBenefits:
-              type: array
-              items:
-                type: object
-                fields:
-                  featuresandBenefitsEnglish:
-                    type: string
-                    examples:
-                    - Fast relief of backache joint muscle and arthritis pain headache
-                  featuresandBenefitsFrench:
-                    type: string
-                    examples:
-                    - Soulagement rapide du mal de dos de la douleur musculaire articulaire
-                      et arthritique du mal de tête
-            imageGroup:
-              type: array
-              items:
-                type: object
-                fields:
-                  angle:
-                    type: string
-                    examples:
-                    - N
-                    - C
-                    - L
-                    - R
-                  facing:
-                    type: string
-                    examples:
-                    - '1'
-                  format:
-                    type: string
-                    examples:
-                    - TIF
-                  gdti:
-                    type: string
-                    examples:
-                    - '754000000025700000000057027034'
-                    - '754000000025700000000057027114'
-                    - '754000000014100000000099808157'
-                    - '754000000014100000000099808241'
-                    - '754000000014100000000099808360'
-                  imageCategory:
-                    type: string
-                    examples:
-                    - '9'
-                    - '2'
-                  imageType:
-                    type: string
-                    examples:
-                    - A
-                  language:
-                    type: string
-                    examples:
-                    - en
-                    - fr
-                  state:
-                    type: string
-                    examples:
-                    - '1'
-                  url:
-                    type: string
-                    examples:
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000025700000000057027034.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000025700000000057027114.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000014100000000099808157.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000014100000000099808241.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000014100000000099808360.TIF'
-            nutritionAndIngredients:
-              type: array
-              items:
-                type: object
-                fields:
-                  frontOfPackageNutritionSymbol:
-                    type: array
-                    items:
-                      type: string
-                  nutritionOtherTextEnglish:
-                    type: string
-                    examples:
-                    - '(NSAID)*
-
-                      *nonsteroidal anti-inflammatory drug'
-                    - '*nonsteroidal anti-inflammatory drug'
-                  nutritionOtherTextFrench:
-                    type: string
-                    examples:
-                    - '(AINS)*
-
-                      * anti-inflammatoire non stéroïdien'
-                    - '* anti-inflammatoire non stéroïden'
-                  ingredientsEnglish:
-                    type: string
-                    examples:
-                    - Inactive ingredients FD&C blue no. 1, gelatin, glycerin, hypromellose,
-                      lactic acid, mannitol, polyethylene glycol, povidone, propylene
-                      glycol, sorbitan, sorbitol, titanium dioxide, water.
-                    - 'Inactive ingredients
-
-                      FD&C blue no. 1, gelatin, glycerin, hypromellose, lactic acid,
-                      mannitol, polyethylene glycol, povidone, propylene glycol, sorbitan,
-                      sorbitol, titanium dioxide, water.'
-                  ingredientsFrench:
-                    type: string
-                    examples:
-                    - Ingrédients inactifs acide lactique, bleu FD&C n° 1, dioxyde
-                      de titane, eau, gélatine, glycérine, hypromellose, mannitol,
-                      polyéthylèneglycol, povidone, propylèneglycol, sorbitan, sorbitol.
-                    - 'Ingrédients inactifs
-
-                      Acide lactique, bleu FD&C n° 1, dioxyde de titane, eau, gélatine,
-                      glycérine, hypromellose, mannitol, polyéthylèneglycol, povidone,
-                      propylèneglycol, sorbitan, sorbitol.'
-                  nutritionCustomGridEnglish:
-                    type: object
-                    fields:
-                      headers:
-                        type: array
-                        items:
-                          type: string
-                        examples:
-                        - (Per capsule)
-                        - Purpose
-                        - Active ingredient (per capsule)
-                      rows:
-                        type: array
-                        items:
-                          type: array
-                          items:
-                            type: string
-                        examples:
-                        - - Active ingredient
-                        - - Naproxen sodium (NSAID)*
-                          - 220 mg
-                          - Pain reliever/fever reducer
-                        - - Naproxen sodium 220 mg (NSAID)*
-                          - Pain reliever/Fever reducer
-                  nutritionCustomGridFrench:
-                    type: object
-                    fields:
-                      headers:
-                        type: array
-                        items:
-                          type: string
-                        examples:
-                        - (Dans chaque capsule)
-                        - Utilité
-                        - Ingrédient actif (dans chaque capsule)
-                      rows:
-                        type: array
-                        items:
-                          type: array
-                          items:
-                            type: string
-                        examples:
-                        - - Ingrédient actif
-                        - - Naproxène sodique, (AINS)*
-                          - 220 mg
-                          - Analgésique/antipyrétique
-                        - - Naproxene sodique, 220 mg (AINS)*
-                          - Analgésique/antipyrétique
-            otherCertifications:
-              type: array
-              items:
-                type: string
-            productClaims:
-              type: array
-              items:
-                type: string
-            productRecommendation:
-              type: array
-              items:
-                type: string
-            components:
-              type: array
-              items:
-                type: string
-            addedFeaturesandBenefitsEnglish:
-              type: string
-              examples:
-              - 'Fast relief of backache joint muscle and arthritis pain headache
-
-                Fast relief of backache joint muscle and arthritis pain headache'
-            addedFeaturesandBenefitsFrench:
-              type: string
-              examples:
-              - 'Soulagement rapide du mal de dos de la douleur musculaire articulaire
-                et arthritique du mal de tête
-
-                Soulagement rapide du mal de dos de la douleur musculaire articulaire
-                et arthritique du mal de tête'
-      newItemSetup:
-        type: array
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: featuresandBenefitsEnglish
+            physicalType: string
+            logicalType: string
+            examples:
+            - Fast relief of backache joint muscle and arthritis pain headache
+          - name: featuresandBenefitsFrench
+            physicalType: string
+            logicalType: string
+            examples:
+            - Soulagement rapide du mal de dos de la douleur musculaire articulaire
+              et arthritique du mal de tête
+      - name: imageGroup
+        physicalType: array
+        logicalType: array
         items:
-          type: object
-          fields:
-            extendedDescriptionEnglish:
-              type: string
-              examples:
-              - Aleve Back and Body Pain 220mg, 30s
-            shortDescriptionEnglish:
-              type: string
-              examples:
-              - Aleve Back & Body 30s
-            productLabelType:
-              type: string
-              examples:
-              - CS
-            dateAvailable:
-              type: string
-              format: date
-              examples:
-              - '2021-02-01'
-            shapeDescriptionEnglish:
-              type: string
-              examples:
-              - Oval
-            shapeDescriptionFrench:
-              type: string
-              examples:
-              - ovale
-            markingDirectEnglish:
-              type: string
-              examples:
-              - Aleve
-            markingDirectFrench:
-              type: string
-              examples:
-              - Aleve
-            drugType:
-              type: string
-              examples:
-              - T1
-            controlledDrug:
-              type: string
-              examples:
-              - CON4
-            narcotic:
-              type: string
-              examples:
-              - NAR4
-            targetedSubstance:
-              type: string
-              examples:
-              - N
-            federalReportable:
-              type: string
-              examples:
-              - N
-            precursorStatus:
-              type: string
-              examples:
-              - PN
-            tempControlRangeMin:
-              type: string
-              examples:
-              - '15'
-            tempControlRangeMax:
-              type: string
-              examples:
-              - '25'
-            tempControlRangeUOM:
-              type: string
-              examples:
-              - CE
-            labelStorageConditionsEnglish:
-              type: string
-              examples:
-              - Store between 15C and 25C
-            labelStorageConditionsFrench:
-              type: string
-              examples:
-              - Conserver entre 15C et 25C
-            sterile:
-              type: string
-              examples:
-              - N
-            shakable:
-              type: string
-              examples:
-              - N
-            colourDescriptionEnglish:
-              type: string
-              examples:
-              - Blue
-            colourDescriptionFrench:
-              type: string
-              examples:
-              - Bleu
-            flavourDescriptionEnglish:
-              type: string
-              examples:
-              - n/a
-            flavourDescriptionFrench:
-              type: string
-              examples:
-              - s.o.
-            serialNumberLocationCode:
-              type: array
-              items:
-                type: string
-            dateEffective:
-              type: string
-              format: date
-              examples:
-              - '2021-02-01'
-            totalUnits:
-              type: string
-              examples:
-              - '1'
-            length:
-              type: string
-              examples:
-              - '5.72'
-            lengthUOM:
-              type: string
-              examples:
-              - CM
-            width:
-              type: string
-              examples:
-              - '10.03'
-            widthUOM:
-              type: string
-              examples:
-              - CM
-            height:
-              type: string
-              examples:
-              - '5.72'
-            heightUOM:
-              type: string
-              examples:
-              - CM
-            volume:
-              type: string
-              examples:
-              - '310'
-            volumeUOM:
-              type: string
-              examples:
-              - CC
-            grossWeight:
-              type: string
-              examples:
-              - '0.08'
-            grossWeightUOM:
-              type: string
-              examples:
-              - K
-            packagingFormQual:
-              type: string
-              examples:
-              - BOX
-            packagingMaterialQual:
-              type: string
-              examples:
-              - '34'
-            size:
-              type: string
-              examples:
-              - '30'
-            sizeUOM:
-              type: string
-              examples:
-              - EA
-            originOfProductCountry:
-              type: string
-              examples:
-              - US
-            brandOwnerGLN:
-              type: string
-              examples:
-              - 0056500000019
-            functionalNameEnglish:
-              type: string
-              examples:
-              - Pain
-            functionalNameFrench:
-              type: string
-              examples:
-              - Douleur
-            gpcClassificationCode:
-              type: string
-              examples:
-              - '10000856'
-            baseUnitIndicator:
-              type: string
-              examples:
-              - Y
-            isTradeItemAConsumerUnit:
-              type: string
-              examples:
-              - Y
-            dispatchUnitIndicator:
-              type: string
-              examples:
-              - Y
-            invoiceUnitIndicator:
-              type: string
-              examples:
-              - Y
-            orderingUnitIndicator:
-              type: string
-              examples:
-              - Y
-            variableWeightTradeItem:
-              type: string
-              examples:
-              - N
-            packagingMarkedReturnable:
-              type: string
-              examples:
-              - N
-            tradeItemDescriptionEnglish:
-              type: string
-              examples:
-              - Liquid Gels pain relief
-            tradeItemDescriptionFrench:
-              type: string
-              examples:
-              - Gélules Liquides soulagement de la douleur
-            netContent:
-              type: string
-              examples:
-              - '30'
-            netContentUOM:
-              type: string
-              examples:
-              - EA
-            brandOwnerName:
-              type: string
-              examples:
-              - Bayer Inc.
-            consumerProductVariantReasonCode:
-              type: array
-              items:
-                type: string
-            productContainsLatex:
-              type: string
-              examples:
-              - N
-            packagingContainsLatex:
-              type: string
-              examples:
-              - N
-            allergenClaimFreeFrom:
-              type: array
-              items:
-                type: string
-            productProcessingProvince:
-              type: array
-              items:
-                type: string
-            productPackagingProvince:
-              type: array
-              items:
-                type: string
-            subsidiaryClassTDG:
-              type: array
-              items:
-                type: string
-            nutritionFormatType:
-              type: string
-              examples:
-              - NDE
-            productLine:
-              type: string
-              examples:
-              - '26471'
-            cheeseType:
-              type: array
-              items:
-                type: string
-            fortificationClaim:
-              type: array
-              items:
-                type: string
-            manufacturerPreparationType:
-              type: array
-              items:
-                type: string
-            frontOfPackageNutritionSymbol:
-              type: array
-              items:
-                type: string
-            regulationTypeCode:
-              type: array
-              items:
-                type: string
-            preparationTypeCode:
-              type: array
-              items:
-                type: string
-            barcodeSymbologyMulti:
-              type: array
-              items:
-                type: string
-              examples:
-              - '34'
-            claim:
-              type: array
-              items:
-                type: string
-            regulationCompliance:
-              type: array
-              items:
-                type: string
-            productionIngredientCode:
-              type: array
-              items:
-                type: string
-            eccnetClassCode:
-              type: string
-              examples:
-              - 000238
-            unspsc:
-              type: string
-              examples:
-              - '51384533'
-            alternativeGtin:
-              type: array
-              items:
-                type: string
-            additionalProductIdentification:
-              type: string
-              examples:
-              - '87233235'
-            depositApplicablebyProvince:
-              type: array
-              items:
-                type: string
-            shipFromName:
-              type: string
-              examples:
-              - Accuristix
-            shipIdType:
-              type: string
-              examples:
-              - UL
-            shipDUNSGLN:
-              type: string
-              examples:
-              - 0897344000076
-            shipCity:
-              type: string
-              examples:
-              - Toronto
-            channelOfDistributionGrocery:
-              type: string
-              examples:
-              - Y
-            shipProvince:
-              type: string
-              examples:
-              - 'ON'
-            shipCountry:
-              type: string
-              examples:
-              - CA
-            channelOfDistributionPharmacy:
-              type: string
-              examples:
-              - Y
-            channelOfDistributionGeneralMerchandise:
-              type: string
-              examples:
-              - Y
-            mbiName:
-              type: string
-              examples:
-              - Bayer Inc.
-            mbiDUNSGLN:
-              type: string
-              examples:
-              - 0056500000019
-            mbiIdType:
-              type: string
-              examples:
-              - UL
-            productType:
-              type: string
-              examples:
-              - EA
-            hazardRatingSystemWHMISclassCode:
-              type: array
-              items:
-                type: string
-              examples:
-              - N
-            rxDosageForm:
-              type: string
-              examples:
-              - CAPU
-            rxRouteOfAdministration:
-              type: string
-              examples:
-              - OR
-            anatomicalTherapeuticChemical:
-              type: string
-              examples:
-              - M01AE02
-            markingExpiryDate:
-              type: string
-              examples:
-              - MEX
-            markingBestBeforeDate:
-              type: string
-              examples:
-              - N
-            markingLotNumber:
-              type: string
-              examples:
-              - Y
-            pstMB:
-              type: string
-              examples:
-              - 'true'
-            pstPQ:
-              type: string
-              examples:
-              - 'true'
-            pstSK:
-              type: string
-              examples:
-              - 'true'
-            drugMerchandising:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingBC:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingMB:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingNB:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingNF:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingNS:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingNT:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingNU:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingON:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingPEI:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingPQ:
-              type: string
-              examples:
-              - OT
-            drugMerchandisingSK:
-              type: string
-              examples:
-              - UN
-            drugMerchandisingYK:
-              type: string
-              examples:
-              - UN
-            gstAndHst:
-              type: string
-              examples:
-              - Y
-            shortDescriptionFrench:
-              type: string
-              examples:
-              - Aleve Mal de dos et douleur corp 30
-            extendedDescriptionFrench:
-              type: string
-              examples:
-              - Aleve Mal de dos et douleur corp. 30
-            brand:
-              type: string
-              examples:
-              - Aleve
-            brandFrench:
-              type: string
-              examples:
-              - Aleve
-            productLife:
-              type: string
-              examples:
-              - '728'
-            additionalTradeItemIdentificationgGroup:
-              type: array
-              items:
-                type: string
-            allergenCrustaceanTypeGroup:
-              type: array
-              items:
-                type: string
-            allergenFishTypeGroup:
-              type: array
-              items:
-                type: string
-            allergenShellfishTypeGroup:
-              type: array
-              items:
-                type: string
-            animalFeedingGroup:
-              type: array
-              items:
-                type: string
-            apparelSizeGroup:
-              type: array
-              items:
-                type: string
-            batteryGroup:
-              type: array
-              items:
-                type: string
-            certificationGroup:
-              type: array
-              items:
-                type: string
-            digitalAssetFoodservice:
-              type: array
-              items:
-                type: string
-            digitalAssetPlanogram:
-              type: array
-              items:
-                type: object
-                fields:
-                  digitalAssetFacingPlanogram:
-                    type: string
-                    examples:
-                    - '1'
-                    - '2'
-                    - '3'
-                    - '7'
-                    - '8'
-                  digitalAssetFormatPlanogram:
-                    type: string
-                    examples:
-                    - JPG
-                    - TGA
-                  digitalAssetGDTIPlanogram:
-                    type: string
-                    examples:
-                    - '754000000015800000000535768962'
-                    - '754000000015800000000535769073'
-                    - '754000000015800000000535769186'
-                    - '754000000015800000000535769268'
-                    - '754000000015800000000535769325'
-                  digitalAssetImageVersionDateTimePlanogram:
-                    type: string
-                    format: date-time
-                    examples:
-                    - '2024-10-08T18:15:01.827-04:00'
-                  digitalAssetLanguagePlanogram:
-                    type: string
-                    examples:
-                    - fr
-                    - en
-                  digitalAssetStartDatePlanogram:
-                    type: string
-                    format: date
-                    examples:
-                    - '2024-10-07'
-                  url:
-                    type: string
-                    examples:
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535768962.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769073.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769186.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769268.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769325.JPG'
-            dispensingGroup:
-              type: array
-              items:
-                type: string
-            drugAndHealthProductGroup:
-              type: array
-              items:
-                type: object
-                fields:
-                  ahfs:
-                    type: array
-                    items:
-                      type: string
-                    examples:
-                    - 28:08.04.92
-                  drugAndHealthProductNumber:
-                    type: string
-                    examples:
-                    - '02436337'
-                  aiGroupNumber:
-                    type: string
-                    examples:
-                    - 0113934003
-                  drugAndHealthProductNumberType:
-                    type: string
-                    examples:
-                    - DIN
-                  activeIngredientGroup:
-                    type: array
-                    items:
-                      type: object
-                      fields:
-                        activeIngredientNameEnglish:
-                          type: string
-                          examples:
-                          - Naproxen sodium
-                        activeIngredientStrength:
-                          type: string
-                          examples:
-                          - '220'
-                        activeIngredientStrengthUOM:
-                          type: string
-                          examples:
-                          - ME
-                        activeIngredientStrengthTypicalDose:
-                          type: string
-                          examples:
-                          - '1'
-                        activeIngredientStrengthTypicalDoseUOM:
-                          type: string
-                          examples:
-                          - QO
-            exportGroup:
-              type: array
-              items:
-                type: string
-            fishSpeciesGroup:
-              type: array
-              items:
-                type: string
-            footwearSizeGroup:
-              type: array
-              items:
-                type: string
-            importClassificationGroup:
-              type: array
-              items:
-                type: string
-            ingredientGroup:
-              type: array
-              items:
-                type: string
-            mineralClaimGroup:
-              type: array
-              items:
-                type: string
-            netContentGroup:
-              type: array
-              items:
-                type: string
-            identification:
-              type: object
-              fields:
-                excellenceLevel:
-                  type: string
-                  examples:
-                  - '3'
-            nextLowerLevels:
-              type: array
-              items:
-                type: string
-            nutContentGroup:
-              type: array
-              items:
-                type: string
-            nutrientClaimGroup:
-              type: array
-              items:
-                type: string
-            nutrientTypeGroup:
-              type: array
-              items:
-                type: string
-            primaryPackagingGroup:
-              type: array
-              items:
-                type: string
-            productRecommendationGroup:
-              type: array
-              items:
-                type: string
-            secondaryPackagingGroup:
-              type: array
-              items:
-                type: string
-            shortMarketingMessageGroup:
-              type: array
-              items:
-                type: string
-            stewardshipGroup:
-              type: array
-              items:
-                type: string
-            vitaminClaimGroup:
-              type: array
-              items:
-                type: string
-            tpnBrandEnglish:
-              type: string
-              examples:
-              - ALEVE
-            tpnBrandFrench:
-              type: string
-              examples:
-              - ALEVE
-            tpnCase:
-              type: string
-              examples:
-              - '24'
-            tpnDepthImp:
-              type: string
-              examples:
-              - '2.250'
-            tpnHeightImp:
-              type: string
-              examples:
-              - '2.250'
-            tpnVolumeImp:
-              type: string
-              examples:
-              - '20.00000'
-            tpnWidthImp:
-              type: string
-              examples:
-              - '3.950'
-            tpnDepth:
-              type: string
-              examples:
-              - '5.720'
-            tpnHeight:
-              type: string
-              examples:
-              - '5.720'
-            tpnVolume:
-              type: string
-              examples:
-              - '328.17000'
-            tpnWidth:
-              type: string
-              examples:
-              - '10.030'
-            tpnSize:
-              type: string
-              examples:
-              - 30 U
-            tpnShortDescEnglish:
-              type: string
-              examples:
-              - ALEVE NPRXN SOD 220MG BACK BODY
-            tpnShortDescFrench:
-              type: string
-              examples:
-              - ALEVE NPRXN SOD 220MG DOS CORP
-            barcodeSymbology:
-              type: string
-              examples:
-              - '34'
-      planoContent:
-        type: array
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: angle
+            physicalType: string
+            logicalType: string
+            examples:
+            - N
+            - C
+            - L
+            - R
+          - name: facing
+            physicalType: string
+            logicalType: string
+            examples:
+            - '1'
+          - name: format
+            physicalType: string
+            logicalType: string
+            examples:
+            - TIF
+          - name: gdti
+            physicalType: string
+            logicalType: string
+            examples:
+            - '754000000025700000000057027034'
+            - '754000000025700000000057027114'
+            - '754000000014100000000099808157'
+            - '754000000014100000000099808241'
+            - '754000000014100000000099808360'
+          - name: imageCategory
+            physicalType: string
+            logicalType: string
+            examples:
+            - '9'
+            - '2'
+          - name: imageType
+            physicalType: string
+            logicalType: string
+            examples:
+            - A
+          - name: language
+            physicalType: string
+            logicalType: string
+            examples:
+            - en
+            - fr
+          - name: state
+            physicalType: string
+            logicalType: string
+            examples:
+            - '1'
+          - name: url
+            physicalType: string
+            logicalType: string
+            examples:
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000025700000000057027034.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000025700000000057027114.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000014100000000099808157.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000014100000000099808241.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=ecommerceContent/gtin=00056500371706/type=TIF/754000000014100000000099808360.TIF'
+      - name: nutritionAndIngredients
+        physicalType: array
+        logicalType: array
         items:
-          type: object
-          fields:
-            digitalAssetPlanogram:
-              type: array
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: frontOfPackageNutritionSymbol
+            physicalType: array
+            logicalType: array
+            items:
+              name: items
+              physicalType: string
+              logicalType: string
+          - name: nutritionOtherTextEnglish
+            physicalType: string
+            logicalType: string
+            examples:
+            - '(NSAID)*
+
+              *nonsteroidal anti-inflammatory drug'
+            - '*nonsteroidal anti-inflammatory drug'
+          - name: nutritionOtherTextFrench
+            physicalType: string
+            logicalType: string
+            examples:
+            - '(AINS)*
+
+              * anti-inflammatoire non stéroïdien'
+            - '* anti-inflammatoire non stéroïden'
+          - name: ingredientsEnglish
+            physicalType: string
+            logicalType: string
+            examples:
+            - Inactive ingredients FD&C blue no. 1, gelatin, glycerin, hypromellose,
+              lactic acid, mannitol, polyethylene glycol, povidone, propylene glycol,
+              sorbitan, sorbitol, titanium dioxide, water.
+            - 'Inactive ingredients
+
+              FD&C blue no. 1, gelatin, glycerin, hypromellose, lactic acid, mannitol,
+              polyethylene glycol, povidone, propylene glycol, sorbitan, sorbitol,
+              titanium dioxide, water.'
+          - name: ingredientsFrench
+            physicalType: string
+            logicalType: string
+            examples:
+            - Ingrédients inactifs acide lactique, bleu FD&C n° 1, dioxyde de titane,
+              eau, gélatine, glycérine, hypromellose, mannitol, polyéthylèneglycol,
+              povidone, propylèneglycol, sorbitan, sorbitol.
+            - 'Ingrédients inactifs
+
+              Acide lactique, bleu FD&C n° 1, dioxyde de titane, eau, gélatine, glycérine,
+              hypromellose, mannitol, polyéthylèneglycol, povidone, propylèneglycol,
+              sorbitan, sorbitol.'
+          - name: nutritionCustomGridEnglish
+            physicalType: object
+            logicalType: object
+            properties:
+            - name: headers
+              physicalType: array
+              logicalType: array
+              examples:
+              - (Per capsule)
+              - Purpose
+              - Active ingredient (per capsule)
               items:
-                type: object
-                fields:
-                  digitalAssetFacingPlanogram:
-                    type: string
-                    examples:
-                    - '1'
-                    - '2'
-                    - '3'
-                    - '7'
-                    - '8'
-                  digitalAssetFormatPlanogram:
-                    type: string
-                    examples:
-                    - JPG
-                    - TGA
-                  digitalAssetGDTIPlanogram:
-                    type: string
-                    examples:
-                    - '754000000015800000000535768962'
-                    - '754000000015800000000535769073'
-                    - '754000000015800000000535769186'
-                    - '754000000015800000000535769268'
-                    - '754000000015800000000535769325'
-                  digitalAssetImageVersionDateTimePlanogram:
-                    type: string
-                    format: date-time
-                    examples:
-                    - '2024-10-08T18:15:01.827-04:00'
-                  digitalAssetLanguagePlanogram:
-                    type: string
-                    examples:
-                    - fr
-                    - ml
-                    - en
-                  digitalAssetStartDatePlanogram:
-                    type: string
-                    format: date
-                    examples:
-                    - '2024-10-07'
-                  url:
-                    type: string
-                    examples:
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535768962.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769073.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769186.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769268.JPG'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769325.JPG'
-            identification:
-              type: object
-              fields:
-                excellenceLevel:
-                  type: string
-                  examples:
-                  - '2'
-            tpnBrandEnglish:
-              type: string
+                name: items
+                physicalType: string
+                logicalType: string
+            - name: rows
+              physicalType: array
+              logicalType: array
+              items:
+                name: items
+                physicalType: array
+                logicalType: array
+                items:
+                  name: items
+                  physicalType: string
+                  logicalType: string
+          - name: nutritionCustomGridFrench
+            physicalType: object
+            logicalType: object
+            properties:
+            - name: headers
+              physicalType: array
+              logicalType: array
               examples:
-              - ALEVE
-            tpnBrandFrench:
-              type: string
-              examples:
-              - ALEVE
-            tpnCaseDimensionsUnitPerCase:
-              type: string
-              examples:
-              - '24'
-            tpnFlavorFraganceColorEnglish:
-              type: string
-              examples:
-              - 220MG BACK BODY PAIN
-            tpnFlavorFraganceColorFrench:
-              type: string
-              examples:
-              - 220MG MAL DOS DOULEUR CORPORELLE
-            tpnFunctionalNameEnglish:
-              type: string
-              examples:
-              - NAPROXEN SODIUM
-            tpnFunctionalNameFrench:
-              type: string
-              examples:
-              - NAPROXENE SODIQUE
-            tpnGeneralNutritionVersionCode:
-              type: string
-              examples:
-              - NA
-            tpnGeneralVendorPackagingCode:
-              type: string
-              examples:
-              - NA
-            tpnGPCCode:
-              type: string
-              examples:
-              - '10000856'
-            tpnIandVCode:
-              type: string
-              examples:
-              - '400101'
-            tpnItemDimensionsImperialDepth:
-              type: string
-              examples:
-              - '2.250'
-            tpnItemDimensionsImperialDepthUOM:
-              type: string
-              examples:
-              - IN
-            tpnItemDimensionsImperialHeight:
-              type: string
-              examples:
-              - '2.250'
-            tpnItemDimensionsImperialHeightUOM:
-              type: string
-              examples:
-              - IN
-            tpnItemDimensionsImperialVolume:
-              type: string
-              examples:
-              - '20.00000'
-            tpnItemDimensionsImperialVolumeUOM:
-              type: string
-              examples:
-              - CI
-            tpnItemDimensionsImperialWeight:
-              type: string
-              examples:
-              - '0.16800'
-            tpnItemDimensionsImperialWeightUOM:
-              type: string
-              examples:
-              - LB
-            tpnItemDimensionsImperialWidth:
-              type: string
-              examples:
-              - '3.950'
-            tpnItemDimensionsImperialWidthUOM:
-              type: string
-              examples:
-              - IN
-            tpnItemDimensionsMetricDepth:
-              type: string
-              examples:
-              - '5.720'
-            tpnItemDimensionsMetricDepthUOM:
-              type: string
-              examples:
-              - CM
-            tpnItemDimensionsMetricHeight:
-              type: string
-              examples:
-              - '5.720'
-            tpnItemDimensionsMetricHeightUOM:
-              type: string
-              examples:
-              - CM
-            tpnItemDimensionsMetricVolume:
-              type: string
-              examples:
-              - '328.17000'
-            tpnItemDimensionsMetricVolumeUOM:
-              type: string
-              examples:
-              - CC
-            tpnItemDimensionsMetricWeight:
-              type: string
-              examples:
-              - '0.07600'
-            tpnItemDimensionsMetricWeightUOM:
-              type: string
-              examples:
-              - KG
-            tpnItemDimensionsMetricWidth:
-              type: string
-              examples:
-              - '10.030'
-            tpnItemDimensionsMetricWidthUOM:
-              type: string
-              examples:
-              - CM
-            tpnPackagingForm:
-              type: string
-              examples:
-              - BOX
-            tpnPackagingMaterial:
-              type: string
-              examples:
-              - '76'
-            tpnsize:
-              type: string
-              examples:
-              - 30 U
-            tpnShortDescEnglish:
-              type: string
-              examples:
-              - ALEVE NPRXN SOD 220MG BACK BODY
-            tpnShortDescFrench:
-              type: string
-              examples:
-              - ALEVE NPRXN SOD 220MG DOS CORP
-      marketingContent:
-        type: array
+              - (Dans chaque capsule)
+              - Utilité
+              - Ingrédient actif (dans chaque capsule)
+              items:
+                name: items
+                physicalType: string
+                logicalType: string
+            - name: rows
+              physicalType: array
+              logicalType: array
+              items:
+                name: items
+                physicalType: array
+                logicalType: array
+                items:
+                  name: items
+                  physicalType: string
+                  logicalType: string
+      - name: otherCertifications
+        physicalType: array
+        logicalType: array
         items:
-          type: object
-          fields:
-            digitalAssetMarketing:
-              type: array
-              items:
-                type: object
-                fields:
-                  digitalAssetAngleMarketing:
-                    type: string
-                    examples:
-                    - C
-                    - L
-                    - R
-                  digitalAssetFacingMarketing:
-                    type: string
-                    examples:
-                    - '1'
-                  digitalAssetFormatMarketing:
-                    type: string
-                    examples:
-                    - TIF
-                  digitalAssetGDTIMarketing:
-                    type: string
-                    examples:
-                    - '754000000014100000000136307334'
-                    - '754000000014100000000136307448'
-                    - '754000000014100000000136307551'
-                    - '754000000014100000000136307692'
-                    - '754000000014100000000136307772'
-                  digitalAssetImageCategoryMarketing:
-                    type: string
-                    examples:
-                    - '2'
-                  digitalAssetImageTypeMarketing:
-                    type: string
-                    examples:
-                    - A
-                  digitalAssetImageVersionDateTimeMarketing:
-                    type: string
-                    format: date-time
-                    examples:
-                    - '2024-10-09T17:20:27.747-04:00'
-                  digitalAssetLanguageMarketing:
-                    type: string
-                    examples:
-                    - en
-                    - fr
-                  digitalAssetStateMarketing:
-                    type: string
-                    examples:
-                    - '1'
-                  url:
-                    type: string
-                    examples:
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307334.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307448.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307551.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307692.TIF'
-                    - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307772.TIF'
-            identification:
-              type: object
-              fields:
-                excellenceLevel:
-                  type: string
-                  examples:
-                  - '2'
-            tpnBrandEnglish:
-              type: string
-              examples:
-              - ALEVE
-            tpnBrandFrench:
-              type: string
-              examples:
-              - ALEVE
-            tpnFlavorFraganceColorEnglish:
-              type: string
-              examples:
-              - 220MG BACK BODY PAIN
-            tpnFlavorFraganceColorFrench:
-              type: string
-              examples:
-              - 220MG MAL DOS DOULEUR CORPORELLE
-            tpnFunctionalNameEnglish:
-              type: string
-              examples:
-              - NAPROXEN SODIUM
-            tpnFunctionalNameFrench:
-              type: string
-              examples:
-              - NAPROXENE SODIQUE
-            tpnGPCCode:
-              type: string
-              examples:
-              - '10000856'
-            tpnIandVCode:
-              type: string
-              examples:
-              - '400101'
-            tpnItemDimensionsImperialWeight:
-              type: string
-              examples:
-              - '0.16800'
-            tpnItemDimensionsImperialWeightUOM:
-              type: string
-              examples:
-              - LB
-            tpnItemDimensionsMetricWeight:
-              type: string
-              examples:
-              - '0.07600'
-            tpnItemDimensionsMetricWeightUOM:
-              type: string
-              examples:
-              - KG
-            tpnPackagingForm:
-              type: string
-              examples:
-              - BOX
-            tpnPackagingMaterial:
-              type: string
-              examples:
-              - '76'
-            tpnsize:
-              type: string
-              examples:
-              - 30 U
-            tpnShortDescEnglish:
-              type: string
-              examples:
-              - ALEVE NPRXN SOD 220MG BACK BODY
-            tpnShortDescFrench:
-              type: string
-              examples:
-              - ALEVE NPRXN SOD 220MG DOS CORP
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: productClaims
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: productRecommendation
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: components
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: addedFeaturesandBenefitsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Fast relief of backache joint muscle and arthritis pain headache
+
+          Fast relief of backache joint muscle and arthritis pain headache'
+      - name: addedFeaturesandBenefitsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'Soulagement rapide du mal de dos de la douleur musculaire articulaire et
+          arthritique du mal de tête
+
+          Soulagement rapide du mal de dos de la douleur musculaire articulaire et
+          arthritique du mal de tête'
+  - name: newItemSetup
+    physicalType: array
+    logicalType: array
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: extendedDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Back and Body Pain 220mg, 30s
+      - name: shortDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Back & Body 30s
+      - name: productLabelType
+        physicalType: string
+        logicalType: string
+        examples:
+        - CS
+      - name: dateAvailable
+        physicalType: string
+        customProperties:
+        - property: format
+          value: date
+        logicalType: string
+        examples:
+        - '2021-02-01'
+      - name: shapeDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Oval
+      - name: shapeDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ovale
+      - name: markingDirectEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: markingDirectFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: drugType
+        physicalType: string
+        logicalType: string
+        examples:
+        - T1
+      - name: controlledDrug
+        physicalType: string
+        logicalType: string
+        examples:
+        - CON4
+      - name: narcotic
+        physicalType: string
+        logicalType: string
+        examples:
+        - NAR4
+      - name: targetedSubstance
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: federalReportable
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: precursorStatus
+        physicalType: string
+        logicalType: string
+        examples:
+        - PN
+      - name: tempControlRangeMin
+        physicalType: string
+        logicalType: string
+        examples:
+        - '15'
+      - name: tempControlRangeMax
+        physicalType: string
+        logicalType: string
+        examples:
+        - '25'
+      - name: tempControlRangeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CE
+      - name: labelStorageConditionsEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Store between 15C and 25C
+      - name: labelStorageConditionsFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Conserver entre 15C et 25C
+      - name: sterile
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: shakable
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: colourDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Blue
+      - name: colourDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Bleu
+      - name: flavourDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - n/a
+      - name: flavourDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - s.o.
+      - name: serialNumberLocationCode
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: dateEffective
+        physicalType: string
+        customProperties:
+        - property: format
+          value: date
+        logicalType: string
+        examples:
+        - '2021-02-01'
+      - name: totalUnits
+        physicalType: string
+        logicalType: string
+        examples:
+        - '1'
+      - name: length
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.72'
+      - name: lengthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: width
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10.03'
+      - name: widthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: height
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.72'
+      - name: heightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: volume
+        physicalType: string
+        logicalType: string
+        examples:
+        - '310'
+      - name: volumeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CC
+      - name: grossWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.08'
+      - name: grossWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - K
+      - name: packagingFormQual
+        physicalType: string
+        logicalType: string
+        examples:
+        - BOX
+      - name: packagingMaterialQual
+        physicalType: string
+        logicalType: string
+        examples:
+        - '34'
+      - name: size
+        physicalType: string
+        logicalType: string
+        examples:
+        - '30'
+      - name: sizeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - EA
+      - name: originOfProductCountry
+        physicalType: string
+        logicalType: string
+        examples:
+        - US
+      - name: brandOwnerGLN
+        physicalType: string
+        logicalType: string
+        examples:
+        - 0056500000019
+      - name: functionalNameEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Pain
+      - name: functionalNameFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Douleur
+      - name: gpcClassificationCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10000856'
+      - name: baseUnitIndicator
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: isTradeItemAConsumerUnit
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: dispatchUnitIndicator
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: invoiceUnitIndicator
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: orderingUnitIndicator
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: variableWeightTradeItem
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: packagingMarkedReturnable
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: tradeItemDescriptionEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - Liquid Gels pain relief
+      - name: tradeItemDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Gélules Liquides soulagement de la douleur
+      - name: netContent
+        physicalType: string
+        logicalType: string
+        examples:
+        - '30'
+      - name: netContentUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - EA
+      - name: brandOwnerName
+        physicalType: string
+        logicalType: string
+        examples:
+        - Bayer Inc.
+      - name: consumerProductVariantReasonCode
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: productContainsLatex
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: packagingContainsLatex
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: allergenClaimFreeFrom
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: productProcessingProvince
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: productPackagingProvince
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: subsidiaryClassTDG
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: nutritionFormatType
+        physicalType: string
+        logicalType: string
+        examples:
+        - NDE
+      - name: productLine
+        physicalType: string
+        logicalType: string
+        examples:
+        - '26471'
+      - name: cheeseType
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: fortificationClaim
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: manufacturerPreparationType
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: frontOfPackageNutritionSymbol
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: regulationTypeCode
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: preparationTypeCode
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: barcodeSymbologyMulti
+        physicalType: array
+        logicalType: array
+        examples:
+        - '34'
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: claim
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: regulationCompliance
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: productionIngredientCode
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: eccnetClassCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - 000238
+      - name: unspsc
+        physicalType: string
+        logicalType: string
+        examples:
+        - '51384533'
+      - name: alternativeGtin
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: additionalProductIdentification
+        physicalType: string
+        logicalType: string
+        examples:
+        - '87233235'
+      - name: depositApplicablebyProvince
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: shipFromName
+        physicalType: string
+        logicalType: string
+        examples:
+        - Accuristix
+      - name: shipIdType
+        physicalType: string
+        logicalType: string
+        examples:
+        - UL
+      - name: shipDUNSGLN
+        physicalType: string
+        logicalType: string
+        examples:
+        - 0897344000076
+      - name: shipCity
+        physicalType: string
+        logicalType: string
+        examples:
+        - Toronto
+      - name: channelOfDistributionGrocery
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: shipProvince
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'ON'
+      - name: shipCountry
+        physicalType: string
+        logicalType: string
+        examples:
+        - CA
+      - name: channelOfDistributionPharmacy
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: channelOfDistributionGeneralMerchandise
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: mbiName
+        physicalType: string
+        logicalType: string
+        examples:
+        - Bayer Inc.
+      - name: mbiDUNSGLN
+        physicalType: string
+        logicalType: string
+        examples:
+        - 0056500000019
+      - name: mbiIdType
+        physicalType: string
+        logicalType: string
+        examples:
+        - UL
+      - name: productType
+        physicalType: string
+        logicalType: string
+        examples:
+        - EA
+      - name: hazardRatingSystemWHMISclassCode
+        physicalType: array
+        logicalType: array
+        examples:
+        - N
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: rxDosageForm
+        physicalType: string
+        logicalType: string
+        examples:
+        - CAPU
+      - name: rxRouteOfAdministration
+        physicalType: string
+        logicalType: string
+        examples:
+        - OR
+      - name: anatomicalTherapeuticChemical
+        physicalType: string
+        logicalType: string
+        examples:
+        - M01AE02
+      - name: markingExpiryDate
+        physicalType: string
+        logicalType: string
+        examples:
+        - MEX
+      - name: markingBestBeforeDate
+        physicalType: string
+        logicalType: string
+        examples:
+        - N
+      - name: markingLotNumber
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: pstMB
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'true'
+      - name: pstPQ
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'true'
+      - name: pstSK
+        physicalType: string
+        logicalType: string
+        examples:
+        - 'true'
+      - name: drugMerchandising
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingBC
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingMB
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingNB
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingNF
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingNS
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingNT
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingNU
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingON
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingPEI
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingPQ
+        physicalType: string
+        logicalType: string
+        examples:
+        - OT
+      - name: drugMerchandisingSK
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: drugMerchandisingYK
+        physicalType: string
+        logicalType: string
+        examples:
+        - UN
+      - name: gstAndHst
+        physicalType: string
+        logicalType: string
+        examples:
+        - Y
+      - name: shortDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Mal de dos et douleur corp 30
+      - name: extendedDescriptionFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve Mal de dos et douleur corp. 30
+      - name: brand
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: brandFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - Aleve
+      - name: productLife
+        physicalType: string
+        logicalType: string
+        examples:
+        - '728'
+      - name: additionalTradeItemIdentificationgGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: allergenCrustaceanTypeGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: allergenFishTypeGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: allergenShellfishTypeGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: animalFeedingGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: apparelSizeGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: batteryGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: certificationGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: digitalAssetFoodservice
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: digitalAssetPlanogram
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: digitalAssetFacingPlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - '1'
+            - '2'
+            - '3'
+            - '7'
+            - '8'
+          - name: digitalAssetFormatPlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - JPG
+            - TGA
+          - name: digitalAssetGDTIPlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - '754000000015800000000535768962'
+            - '754000000015800000000535769073'
+            - '754000000015800000000535769186'
+            - '754000000015800000000535769268'
+            - '754000000015800000000535769325'
+          - name: digitalAssetImageVersionDateTimePlanogram
+            physicalType: string
+            customProperties:
+            - property: format
+              value: date-time
+            logicalType: string
+            examples:
+            - '2024-10-08T18:15:01.827-04:00'
+          - name: digitalAssetLanguagePlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - fr
+            - en
+          - name: digitalAssetStartDatePlanogram
+            physicalType: string
+            customProperties:
+            - property: format
+              value: date
+            logicalType: string
+            examples:
+            - '2024-10-07'
+          - name: url
+            physicalType: string
+            logicalType: string
+            examples:
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535768962.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769073.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769186.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769268.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769325.JPG'
+      - name: dispensingGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: drugAndHealthProductGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: ahfs
+            physicalType: array
+            logicalType: array
+            examples:
+            - 28:08.04.92
+            items:
+              name: items
+              physicalType: string
+              logicalType: string
+          - name: drugAndHealthProductNumber
+            physicalType: string
+            logicalType: string
+            examples:
+            - '02436337'
+          - name: aiGroupNumber
+            physicalType: string
+            logicalType: string
+            examples:
+            - 0113934003
+          - name: drugAndHealthProductNumberType
+            physicalType: string
+            logicalType: string
+            examples:
+            - DIN
+          - name: activeIngredientGroup
+            physicalType: array
+            logicalType: array
+            items:
+              name: items
+              physicalType: object
+              logicalType: object
+              properties:
+              - name: activeIngredientNameEnglish
+                physicalType: string
+                logicalType: string
+                examples:
+                - Naproxen sodium
+              - name: activeIngredientStrength
+                physicalType: string
+                logicalType: string
+                examples:
+                - '220'
+              - name: activeIngredientStrengthUOM
+                physicalType: string
+                logicalType: string
+                examples:
+                - ME
+              - name: activeIngredientStrengthTypicalDose
+                physicalType: string
+                logicalType: string
+                examples:
+                - '1'
+              - name: activeIngredientStrengthTypicalDoseUOM
+                physicalType: string
+                logicalType: string
+                examples:
+                - QO
+      - name: exportGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: fishSpeciesGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: footwearSizeGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: importClassificationGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: ingredientGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: mineralClaimGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: netContentGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: identification
+        physicalType: object
+        logicalType: object
+        properties:
+        - name: excellenceLevel
+          physicalType: string
+          logicalType: string
+          examples:
+          - '3'
+      - name: nextLowerLevels
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: nutContentGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: nutrientClaimGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: nutrientTypeGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: primaryPackagingGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: productRecommendationGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: secondaryPackagingGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: shortMarketingMessageGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: stewardshipGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: vitaminClaimGroup
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: string
+          logicalType: string
+      - name: tpnBrandEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE
+      - name: tpnBrandFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE
+      - name: tpnCase
+        physicalType: string
+        logicalType: string
+        examples:
+        - '24'
+      - name: tpnDepthImp
+        physicalType: string
+        logicalType: string
+        examples:
+        - '2.250'
+      - name: tpnHeightImp
+        physicalType: string
+        logicalType: string
+        examples:
+        - '2.250'
+      - name: tpnVolumeImp
+        physicalType: string
+        logicalType: string
+        examples:
+        - '20.00000'
+      - name: tpnWidthImp
+        physicalType: string
+        logicalType: string
+        examples:
+        - '3.950'
+      - name: tpnDepth
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.720'
+      - name: tpnHeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.720'
+      - name: tpnVolume
+        physicalType: string
+        logicalType: string
+        examples:
+        - '328.17000'
+      - name: tpnWidth
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10.030'
+      - name: tpnSize
+        physicalType: string
+        logicalType: string
+        examples:
+        - 30 U
+      - name: tpnShortDescEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE NPRXN SOD 220MG BACK BODY
+      - name: tpnShortDescFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE NPRXN SOD 220MG DOS CORP
+      - name: barcodeSymbology
+        physicalType: string
+        logicalType: string
+        examples:
+        - '34'
+  - name: planoContent
+    physicalType: array
+    logicalType: array
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: digitalAssetPlanogram
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: digitalAssetFacingPlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - '1'
+            - '2'
+            - '3'
+            - '7'
+            - '8'
+          - name: digitalAssetFormatPlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - JPG
+            - TGA
+          - name: digitalAssetGDTIPlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - '754000000015800000000535768962'
+            - '754000000015800000000535769073'
+            - '754000000015800000000535769186'
+            - '754000000015800000000535769268'
+            - '754000000015800000000535769325'
+          - name: digitalAssetImageVersionDateTimePlanogram
+            physicalType: string
+            customProperties:
+            - property: format
+              value: date-time
+            logicalType: string
+            examples:
+            - '2024-10-08T18:15:01.827-04:00'
+          - name: digitalAssetLanguagePlanogram
+            physicalType: string
+            logicalType: string
+            examples:
+            - fr
+            - ml
+            - en
+          - name: digitalAssetStartDatePlanogram
+            physicalType: string
+            customProperties:
+            - property: format
+              value: date
+            logicalType: string
+            examples:
+            - '2024-10-07'
+          - name: url
+            physicalType: string
+            logicalType: string
+            examples:
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535768962.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769073.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769186.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769268.JPG'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=planoContent/gtin=00056500371706/type=JPG/754000000015800000000535769325.JPG'
+      - name: identification
+        physicalType: object
+        logicalType: object
+        properties:
+        - name: excellenceLevel
+          physicalType: string
+          logicalType: string
+          examples:
+          - '2'
+      - name: tpnBrandEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE
+      - name: tpnBrandFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE
+      - name: tpnCaseDimensionsUnitPerCase
+        physicalType: string
+        logicalType: string
+        examples:
+        - '24'
+      - name: tpnFlavorFraganceColorEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 220MG BACK BODY PAIN
+      - name: tpnFlavorFraganceColorFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 220MG MAL DOS DOULEUR CORPORELLE
+      - name: tpnFunctionalNameEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - NAPROXEN SODIUM
+      - name: tpnFunctionalNameFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - NAPROXENE SODIQUE
+      - name: tpnGeneralNutritionVersionCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - NA
+      - name: tpnGeneralVendorPackagingCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - NA
+      - name: tpnGPCCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10000856'
+      - name: tpnIandVCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '400101'
+      - name: tpnItemDimensionsImperialDepth
+        physicalType: string
+        logicalType: string
+        examples:
+        - '2.250'
+      - name: tpnItemDimensionsImperialDepthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - IN
+      - name: tpnItemDimensionsImperialHeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '2.250'
+      - name: tpnItemDimensionsImperialHeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - IN
+      - name: tpnItemDimensionsImperialVolume
+        physicalType: string
+        logicalType: string
+        examples:
+        - '20.00000'
+      - name: tpnItemDimensionsImperialVolumeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CI
+      - name: tpnItemDimensionsImperialWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.16800'
+      - name: tpnItemDimensionsImperialWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - LB
+      - name: tpnItemDimensionsImperialWidth
+        physicalType: string
+        logicalType: string
+        examples:
+        - '3.950'
+      - name: tpnItemDimensionsImperialWidthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - IN
+      - name: tpnItemDimensionsMetricDepth
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.720'
+      - name: tpnItemDimensionsMetricDepthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: tpnItemDimensionsMetricHeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '5.720'
+      - name: tpnItemDimensionsMetricHeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: tpnItemDimensionsMetricVolume
+        physicalType: string
+        logicalType: string
+        examples:
+        - '328.17000'
+      - name: tpnItemDimensionsMetricVolumeUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CC
+      - name: tpnItemDimensionsMetricWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.07600'
+      - name: tpnItemDimensionsMetricWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - KG
+      - name: tpnItemDimensionsMetricWidth
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10.030'
+      - name: tpnItemDimensionsMetricWidthUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - CM
+      - name: tpnPackagingForm
+        physicalType: string
+        logicalType: string
+        examples:
+        - BOX
+      - name: tpnPackagingMaterial
+        physicalType: string
+        logicalType: string
+        examples:
+        - '76'
+      - name: tpnsize
+        physicalType: string
+        logicalType: string
+        examples:
+        - 30 U
+      - name: tpnShortDescEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE NPRXN SOD 220MG BACK BODY
+      - name: tpnShortDescFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE NPRXN SOD 220MG DOS CORP
+  - name: marketingContent
+    physicalType: array
+    logicalType: array
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: digitalAssetMarketing
+        physicalType: array
+        logicalType: array
+        items:
+          name: items
+          physicalType: object
+          logicalType: object
+          properties:
+          - name: digitalAssetAngleMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - C
+            - L
+            - R
+          - name: digitalAssetFacingMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - '1'
+          - name: digitalAssetFormatMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - TIF
+          - name: digitalAssetGDTIMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - '754000000014100000000136307334'
+            - '754000000014100000000136307448'
+            - '754000000014100000000136307551'
+            - '754000000014100000000136307692'
+            - '754000000014100000000136307772'
+          - name: digitalAssetImageCategoryMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - '2'
+          - name: digitalAssetImageTypeMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - A
+          - name: digitalAssetImageVersionDateTimeMarketing
+            physicalType: string
+            customProperties:
+            - property: format
+              value: date-time
+            logicalType: string
+            examples:
+            - '2024-10-09T17:20:27.747-04:00'
+          - name: digitalAssetLanguageMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - en
+            - fr
+          - name: digitalAssetStateMarketing
+            physicalType: string
+            logicalType: string
+            examples:
+            - '1'
+          - name: url
+            physicalType: string
+            logicalType: string
+            examples:
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307334.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307448.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307551.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307692.TIF'
+            - ' https://dhgs1prd.z9.web.core.windows.net/api=media/content=marketingContent/gtin=00056500371706/type=TIF/754000000014100000000136307772.TIF'
+      - name: identification
+        physicalType: object
+        logicalType: object
+        properties:
+        - name: excellenceLevel
+          physicalType: string
+          logicalType: string
+          examples:
+          - '2'
+      - name: tpnBrandEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE
+      - name: tpnBrandFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE
+      - name: tpnFlavorFraganceColorEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - 220MG BACK BODY PAIN
+      - name: tpnFlavorFraganceColorFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - 220MG MAL DOS DOULEUR CORPORELLE
+      - name: tpnFunctionalNameEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - NAPROXEN SODIUM
+      - name: tpnFunctionalNameFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - NAPROXENE SODIQUE
+      - name: tpnGPCCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '10000856'
+      - name: tpnIandVCode
+        physicalType: string
+        logicalType: string
+        examples:
+        - '400101'
+      - name: tpnItemDimensionsImperialWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.16800'
+      - name: tpnItemDimensionsImperialWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - LB
+      - name: tpnItemDimensionsMetricWeight
+        physicalType: string
+        logicalType: string
+        examples:
+        - '0.07600'
+      - name: tpnItemDimensionsMetricWeightUOM
+        physicalType: string
+        logicalType: string
+        examples:
+        - KG
+      - name: tpnPackagingForm
+        physicalType: string
+        logicalType: string
+        examples:
+        - BOX
+      - name: tpnPackagingMaterial
+        physicalType: string
+        logicalType: string
+        examples:
+        - '76'
+      - name: tpnsize
+        physicalType: string
+        logicalType: string
+        examples:
+        - 30 U
+      - name: tpnShortDescEnglish
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE NPRXN SOD 220MG BACK BODY
+      - name: tpnShortDescFrench
+        physicalType: string
+        logicalType: string
+        examples:
+        - ALEVE NPRXN SOD 220MG DOS CORP
+

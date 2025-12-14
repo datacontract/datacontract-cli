@@ -1,4 +1,5 @@
 import pytest
+import yaml
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, NestedField
 from typer.testing import CliRunner
@@ -8,103 +9,117 @@ from datacontract.imports.iceberg_importer import load_and_validate_iceberg_sche
 from datacontract.model.exceptions import DataContractException
 
 expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  test-table:
-    type: table
-    title: test-table
-    fields:
-      foo:
-        title: foo
-        type: string
-        required: false
-        config:
-          icebergFieldId: 1
-      bar:
-        title: bar
-        type: integer
-        required: true
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+  - name: test-table
+    physicalType: table
+    logicalType: object
+    physicalName: test-table
+    properties:
+      - name: foo
+        logicalType: string
+        physicalType: string
+        customProperties:
+          - property: icebergFieldId
+            value: 1
+      - name: bar
+        logicalType: integer
+        physicalType: int
         primaryKey: true
-        config:
-          icebergFieldId: 2
-      baz:
-        title: baz
-        type: boolean
-        required: false
-        config:
-          icebergFieldId: 3
-      qux:
-        title: qux
-        type: array
+        primaryKeyPosition: 1
+        required: true
+        customProperties:
+          - property: icebergFieldId
+            value: 2
+      - name: baz
+        logicalType: boolean
+        physicalType: boolean
+        customProperties:
+          - property: icebergFieldId
+            value: 3
+      - name: qux
+        logicalType: array
+        physicalType: list<string>
         required: true
         items:
-          type: string
+          name: items
+          logicalType: string
+          physicalType: string
           required: true
-        config:
-          icebergFieldId: 4
-      quux:
-        title: quux
-        type: map
+        customProperties:
+          - property: icebergFieldId
+            value: 4
+      - name: quux
+        logicalType: object
+        physicalType: map
         required: true
-        keys:
-          type: string
-          required: true
-        values:
-          type: map
-          required: true
-          keys:
-            type: string
-            required: true
-          values:
-            type: integer
-            required: true
-        config:
-          icebergFieldId: 6
-      location:
-        title: location
-        type: array
+        customProperties:
+          - property: icebergFieldId
+            value: 6
+          - property: mapKeyType
+            value: string
+          - property: mapValueType
+            value: object
+          - property: mapValueRequired
+            value: 'true'
+          - property: mapValuePhysicalType
+            value: map
+          - property: mapNestedKeyType
+            value: string
+          - property: mapNestedValueType
+            value: integer
+          - property: mapNestedValueRequired
+            value: 'true'
+      - name: location
+        logicalType: array
+        physicalType: 'list<struct<13: latitude: optional float, 14: longitude: optional float>>'
         required: true
         items:
-          type: object
+          name: items
+          logicalType: object
+          physicalType: 'struct<13: latitude: optional float, 14: longitude: optional float>'
           required: true
-          fields:
-            latitude:
-              title: latitude
-              type: float
-              required: false
-              config:
-                icebergFieldId: 13
-            longitude:
-              title: longitude
-              type: float
-              required: false
-              config:
-                icebergFieldId: 14
-        config:
-          icebergFieldId: 11
-      person:
-        title: person
-        type: object
-        required: false
-        fields:
-          name:
-            title: name
-            type: string
-            required: false
-            config:
-              icebergFieldId: 16
-          age:
-            title: age
-            type: integer
+          properties:
+            - name: latitude
+              logicalType: number
+              physicalType: float
+              customProperties:
+                - property: icebergFieldId
+                  value: 13
+            - name: longitude
+              logicalType: number
+              physicalType: float
+              customProperties:
+                - property: icebergFieldId
+                  value: 14
+        customProperties:
+          - property: icebergFieldId
+            value: 11
+      - name: person
+        logicalType: object
+        physicalType: 'struct<16: name: optional string, 17: age: required int>'
+        properties:
+          - name: name
+            logicalType: string
+            physicalType: string
+            customProperties:
+              - property: icebergFieldId
+                value: 16
+          - name: age
+            logicalType: integer
+            physicalType: int
             required: true
-            config:
-              icebergFieldId: 17
-        config:
-          icebergFieldId: 15
+            customProperties:
+              - property: icebergFieldId
+                value: 17
+        customProperties:
+          - property: icebergFieldId
+            value: 15
     """
 
 
@@ -125,7 +140,7 @@ def test_cli():
 
     output = result.stdout
     assert result.exit_code == 0
-    assert output.strip() == expected.strip()
+    assert yaml.safe_load(output) == yaml.safe_load(expected)
 
 
 def test_load_and_validate_iceberg_schema_success():

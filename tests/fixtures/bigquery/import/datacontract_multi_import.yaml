@@ -1,46 +1,57 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  BQ_Table:
-    description: This is a test table
-    type: table
-    fields:
-      String_field:
-        type: string
-        required: false
-        description: A simple String field
-  BQ_External_Table:
-    description: This is a test table
-    type: table
-    fields:
-      String_field:
-        type: string
-        required: false
-        description: A simple String field
-  BQ_Snapshot:
-    description: This is a test table
-    type: table
-    fields:
-      String_field:
-        type: string
-        required: false
-        description: A simple String field
-  BQ_View:
-    description: This is a test table
-    type: view
-    fields:
-      String_field:
-        type: string
-        required: false
-        description: A simple String field
-  BQ_Materialized_View:
-    description: This is a test table
-    type: view
-    fields:
-      String_field:
-        type: string
-        required: false
-        description: A simple String field
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: BQ_Table
+  physicalType: table
+  description: This is a test table
+  logicalType: object
+  physicalName: BQ_Table
+  properties:
+  - name: String_field
+    physicalType: STRING
+    description: A simple String field
+    logicalType: string
+- name: BQ_External_Table
+  physicalType: table
+  description: This is a test table
+  logicalType: object
+  physicalName: BQ_External_Table
+  properties:
+  - name: String_field
+    physicalType: STRING
+    description: A simple String field
+    logicalType: string
+- name: BQ_Snapshot
+  physicalType: table
+  description: This is a test table
+  logicalType: object
+  physicalName: BQ_Snapshot
+  properties:
+  - name: String_field
+    physicalType: STRING
+    description: A simple String field
+    logicalType: string
+- name: BQ_View
+  physicalType: view
+  description: This is a test table
+  logicalType: object
+  physicalName: BQ_View
+  properties:
+  - name: String_field
+    physicalType: STRING
+    description: A simple String field
+    logicalType: string
+- name: BQ_Materialized_View
+  physicalType: view
+  description: This is a test table
+  logicalType: object
+  physicalName: BQ_Materialized_View
+  properties:
+  - name: String_field
+    physicalType: STRING
+    description: A simple String field
+    logicalType: string

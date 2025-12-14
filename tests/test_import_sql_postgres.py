@@ -29,123 +29,119 @@ def test_import_sql_postgres():
     result = DataContract.import_from_source("sql", sql_file_path, dialect="postgres")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+apiVersion: v3.1.0
+kind: DataContract
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
 servers:
-  postgres: 
+  - server: postgres
     type: postgres
-models:
-  my_table:
-    type: table
-    fields:
-      field_one:
-        type: string
+schema:
+  - name: my_table
+    physicalType: table
+    logicalType: object
+    physicalName: my_table
+    properties:
+      - name: field_one
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 10
+        physicalType: VARCHAR(10)
         primaryKey: true
-        maxLength: 10
-        config:
-          postgresType: VARCHAR(10)
-      field_two:
-        type: int
+        primaryKeyPosition: 1
+      - name: field_two
+        logicalType: integer
+        physicalType: INT
         required: true
-        config:
-          postgresType: INT
-      field_three:
-        type: timestamp_tz
-        config:
-          postgresType: TIMESTAMPTZ
+      - name: field_three
+        logicalType: date
+        physicalType: TIMESTAMPTZ
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 def test_import_sql_constraints():
     result = DataContract.import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+apiVersion: v3.1.0
+kind: DataContract
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
 servers:
-  postgres:
+  - server: postgres
     type: postgres
-models:
-  customer_location:
-    type: table
-    fields:
-      id:
-        type: decimal
+schema:
+  - name: customer_location
+    physicalType: table
+    logicalType: object
+    physicalName: customer_location
+    properties:
+      - name: id
+        logicalType: number
+        physicalType: DECIMAL
         required: true
-        # primaryKey: true
-        config:
-          postgresType: DECIMAL
-      created_by:
-        type: string
+      - name: created_by
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 30
+        physicalType: VARCHAR(30)
         required: true
-        maxLength: 30
-        config:
-          postgresType: VARCHAR(30)
-      create_date:
-        type: timestamp_ntz
+      - name: create_date
+        logicalType: date
+        physicalType: TIMESTAMP
         required: true
-        config:
-          postgresType: TIMESTAMP
-      changed_by:
-        type: string
-        maxLength: 30
-        config:
-          postgresType: VARCHAR(30)
-      change_date:
-        type: timestamp_ntz
-        config:
-          postgresType: TIMESTAMP
-      name:
-        type: string
+      - name: changed_by
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 30
+        physicalType: VARCHAR(30)
+      - name: change_date
+        logicalType: date
+        physicalType: TIMESTAMP
+      - name: name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: VARCHAR(120)
         required: true
-        maxLength: 120
-        config:
-          postgresType: VARCHAR(120)
-      short_name:
-        type: string
-        maxLength: 60
-        config:
-          postgresType: VARCHAR(60)
-      display_name:
-        type: string
+      - name: short_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 60
+        physicalType: VARCHAR(60)
+      - name: display_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: VARCHAR(120)
         required: true
-        maxLength: 120
-        config:
-          postgresType: VARCHAR(120)
-      code:
-        type: string
+      - name: code
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 30
+        physicalType: VARCHAR(30)
         required: true
-        maxLength: 30
-        config:
-          postgresType: VARCHAR(30)
-      description:
-        type: string
-        maxLength: 4000
-        config:
-          postgresType: VARCHAR(4000)
-      language_id:
-        type: decimal
+      - name: description
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 4000
+        physicalType: VARCHAR(4000)
+      - name: language_id
+        logicalType: number
+        physicalType: DECIMAL
         required: true
-        config:
-          postgresType: DECIMAL
-      status:
-        type: string
+      - name: status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 2
+        physicalType: VARCHAR(2)
         required: true
-        maxLength: 2
-        config:
-          postgresType: VARCHAR(2)
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()

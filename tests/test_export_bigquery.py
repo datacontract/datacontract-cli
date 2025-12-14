@@ -4,6 +4,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.export.exporter import ExportFormat
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -18,19 +19,19 @@ def test_cli():
             "bigquery",
             "--server",
             "bigquery",
-            "fixtures/bigquery/export/datacontract.yaml",
+            "fixtures/bigquery/export/datacontract.odcs.yaml",
         ],
     )
     assert result.exit_code == 0
 
 
 def test_exports_bigquery_schema():
-    data_contract_file: str = "fixtures/bigquery/export/datacontract.yaml"
+    data_contract_file: str = "fixtures/bigquery/export/datacontract.odcs.yaml"
     with open(data_contract_file) as file:
         file_content = file.read()
     data_contract = DataContract(data_contract_str=file_content, server="bigquery")
     assert data_contract.lint().has_passed()
-    result = data_contract.export("bigquery")
+    result = data_contract.export(ExportFormat.bigquery)
 
     print("Result:\n", result)
     with open("fixtures/bigquery/export/bq_table_schema.json") as file:

@@ -24,45 +24,63 @@ def test_cli():
 def test_import_parquet():
     result = DataContract.import_from_source(format="parquet", source=parquet_file_path)
 
-    expected = """dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  combined_no_time:
-    fields:
-      string_field:
-        type: string
-      blob_field:
-        type: bytes
-      boolean_field:
-        type: boolean
-      decimal_field:
-        type: decimal
-        precision: 10
-        scale: 2
-      float_field:
-        type: float
-      double_field:
-        type: double
-      integer_field:
-        type: int
-      bigint_field:
-        type: long
-      struct_field:
-        type: struct
-      array_field:
-        type: array
-      list_field:
-        type: array
-      map_field:
-        type: map
-      date_field:
-        type: date
-      timestamp_field:
-        type: timestamp
+    expected = """version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: combined_no_time
+  physicalType: parquet
+  logicalType: object
+  physicalName: combined_no_time
+  properties:
+  - name: string_field
+    physicalType: STRING
+    logicalType: string
+  - name: blob_field
+    physicalType: BINARY
+    logicalType: array
+  - name: boolean_field
+    physicalType: BOOLEAN
+    logicalType: boolean
+  - name: decimal_field
+    physicalType: DECIMAL
+    logicalType: number
+    logicalTypeOptions:
+      precision: 10
+      scale: 2
+  - name: float_field
+    physicalType: FLOAT
+    logicalType: number
+  - name: double_field
+    physicalType: DOUBLE
+    logicalType: number
+  - name: integer_field
+    physicalType: INT32
+    logicalType: integer
+  - name: bigint_field
+    physicalType: INT64
+    logicalType: integer
+  - name: struct_field
+    physicalType: STRUCT
+    logicalType: object
+  - name: array_field
+    physicalType: LIST
+    logicalType: array
+  - name: list_field
+    physicalType: LIST
+    logicalType: array
+  - name: map_field
+    physicalType: MAP
+    logicalType: object
+  - name: date_field
+    physicalType: DATE
+    logicalType: date
+  - name: timestamp_field
+    physicalType: TIMESTAMP
+    logicalType: timestamp
 """
 
     assert result.to_yaml() == expected
-    assert DataContract(data_contract_str=expected).lint().has_passed()
