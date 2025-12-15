@@ -8,11 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- Add Impala engine support for Soda scans via ODCS `impala` server type.
+
 ### Fixed
 
-- Restrict DuckDB dependency to < 1.4.0 (#972)
 
+## [0.11.2] - 2025-12-15
+
+### Added
+- Add Impala engine support for Soda scans via ODCS `impala` server type.
+### Fixed
+- Restrict DuckDB dependency to < 1.4.0 (#972)
 
 ## [0.11.1] - 2025-12-14
 
