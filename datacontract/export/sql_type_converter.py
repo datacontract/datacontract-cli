@@ -518,6 +518,64 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
     return None
 
 
+def convert_type_to_impala(field: Union[SchemaProperty, FieldLike]) -> None | str:
+    """Convert from supported data contract types to equivalent Impala types.
+
+    Used as a fallback when `physicalType` is not present.
+    """
+    # Allow an explicit override via config/customProperties
+    impala_type = _get_config_value(field, "impalaType")
+    if impala_type:
+        return impala_type
+
+    field_type = _get_type(field)
+    if not field_type:
+        return None
+
+    t = field_type.lower()
+
+    # String-like
+    if t in ["string", "varchar", "text"]:
+        return "STRING"
+
+    # Numeric / decimal
+    if t in ["number", "decimal", "numeric"]:
+        precision = _get_precision(field) or 38
+        scale = _get_scale(field) or 0
+        return f"DECIMAL({precision},{scale})"
+
+    if t == "float":
+        return "FLOAT"
+    if t == "double":
+        return "DOUBLE"
+
+    # Integers
+    if t in ["integer", "int"]:
+        return "INT"
+    if t in ["long", "bigint"]:
+        return "BIGINT"
+
+    # Boolean
+    if t == "boolean":
+        return "BOOLEAN"
+
+    # Temporal – Impala has a single TIMESTAMP type
+    if t in ["timestamp", "timestamp_ntz", "timestamp_tz"]:
+        return "TIMESTAMP"
+    if t == "date":
+        return "DATE"
+    # No dedicated TIME type in Impala → store as string
+    if t == "time":
+        return "STRING"
+
+    # Binary
+    if t in ["bytes", "binary"]:
+        return "BINARY"
+
+    # For complex / JSON-like types we currently do not emit a type check
+    # (returning None means no "has type" check is generated)
+    return None
+
 def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
     """Convert ODCS logical types to Oracle types.
 
