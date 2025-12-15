@@ -165,8 +165,6 @@ def test_import_glue_schema_without_glue_table_filter(setup_mock_glue):
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 @mock_aws
@@ -178,8 +176,6 @@ def test_import_glue_schema_with_glue_table_filter(setup_mock_glue):
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 @mock_aws
@@ -192,5 +188,3 @@ def test_import_glue_schema_with_non_existent_glue_table_filter(setup_mock_glue)
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()

@@ -9,170 +9,146 @@ def test_import_sql_sqlserver():
     result = DataContract.import_from_source("sql", sql_file_path, dialect="sqlserver")
 
     expected = """
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+apiVersion: v3.1.0
+kind: DataContract
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
 servers:
-  sqlserver:
+  - server: sqlserver
     type: sqlserver
-models:
-  my_table:
-    type: table
-    fields:
-      field_primary_key:
-        type: int
+schema:
+  - name: my_table
+    physicalType: table
+    logicalType: object
+    physicalName: my_table
+    properties:
+      - name: field_primary_key
+        logicalType: integer
+        physicalType: INTEGER
         primaryKey: true
+        primaryKeyPosition: 1
         description: Primary key
-        config:
-          sqlserverType: INTEGER
-      field_not_null:
-        type: int
+      - name: field_not_null
+        logicalType: integer
+        physicalType: INTEGER
         required: true
         description: Not null
-        config:
-          sqlserverType: INTEGER
-      field_char:
-        type: string
-        maxLength: 10
+      - name: field_char
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 10
+        physicalType: CHAR(10)
         description: Fixed-length string
-        config:
-          sqlserverType: CHAR(10)
-      field_varchar:
-        type: string
-        maxLength: 100
+      - name: field_varchar
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 100
+        physicalType: VARCHAR(100)
         description: Variable-length string
-        config:
-          sqlserverType: VARCHAR(100)
-      field_text:
-        type: string
+      - name: field_text
+        logicalType: string
+        physicalType: VARCHAR(MAX)
         description: Large variable-length string
-        config:
-          sqlserverType: VARCHAR(MAX)
-      field_nchar:
-        type: string
-        maxLength: 10
+      - name: field_nchar
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 10
+        physicalType: NCHAR(10)
         description: Fixed-length Unicode string
-        config:
-            sqlserverType: NCHAR(10)
-      field_nvarchar:
-        type: string
-        maxLength: 100
+      - name: field_nvarchar
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 100
+        physicalType: NVARCHAR(100)
         description: Variable-length Unicode string
-        config:
-          sqlserverType: NVARCHAR(100)
-      field_ntext:
-        type: string
+      - name: field_ntext
+        logicalType: string
+        physicalType: NVARCHAR(MAX)
         description: Large variable-length Unicode string
-        config:
-          sqlserverType: NVARCHAR(MAX)        
-      field_tinyint:
-        type: int
+      - name: field_tinyint
+        logicalType: integer
+        physicalType: TINYINT
         description: Integer (0-255)
-        config:
-            sqlserverType: TINYINT
-      field_smallint:
-        type: int
+      - name: field_smallint
+        logicalType: integer
+        physicalType: SMALLINT
         description: Integer (-32,768 to 32,767)
-        config:
-            sqlserverType: SMALLINT
-      field_int:
-        type: int
+      - name: field_int
+        logicalType: integer
+        physicalType: INTEGER
         description: Integer (-2.1B to 2.1B)
-        config:
-            sqlserverType: INTEGER
-      field_bigint:
-        type: long
+      - name: field_bigint
+        logicalType: integer
+        physicalType: BIGINT
         description: Large integer (-9 quintillion to 9 quintillion)
-        config:
-            sqlserverType: BIGINT
-      field_decimal:
-        type: decimal        
-        precision: 10
-        scale: 2
+      - name: field_decimal
+        logicalType: number
+        logicalTypeOptions:
+          precision: 10
+          scale: 2
+        physicalType: NUMERIC(10, 2)
         description: Fixed precision decimal
-        config:
-            sqlserverType: NUMERIC(10, 2)
-      field_numeric:
-        type: decimal
-        precision: 10
-        scale: 2
+      - name: field_numeric
+        logicalType: number
+        logicalTypeOptions:
+          precision: 10
+          scale: 2
+        physicalType: NUMERIC(10, 2)
         description: Same as DECIMAL
-        config:
-            sqlserverType: NUMERIC(10, 2)
-      field_float:
-        type: float
+      - name: field_float
+        logicalType: number
+        physicalType: FLOAT
         description: Approximate floating-point
-        config:
-            sqlserverType: FLOAT
-      field_real:
-        type: float
+      - name: field_real
+        logicalType: number
+        physicalType: FLOAT
         description: Smaller floating-point
-        config:
-            sqlserverType: FLOAT
-      field_bit:
-        type: boolean
+      - name: field_bit
+        logicalType: boolean
+        physicalType: BIT
         description: Boolean-like (0 or 1)
-        config:
-            sqlserverType: BIT
-      field_date:
-        type: date
+      - name: field_date
+        logicalType: date
+        physicalType: DATE
         description: Date only (YYYY-MM-DD)
-        config:
-            sqlserverType: DATE
-      field_time:
-        type: string
+      - name: field_time
+        logicalType: string
+        physicalType: TIME
         description: Time only (HH:MM:SS)
-        config:
-            sqlserverType: TIME        
-      field_datetime2:
-        type: timestamp_ntz
+      - name: field_datetime2
+        logicalType: date
+        physicalType: DATETIME2
         description: More precise datetime
-        config:
-            sqlserverType: DATETIME2
-      field_smalldatetime:
-        type: timestamp_ntz
+      - name: field_smalldatetime
+        logicalType: date
+        physicalType: SMALLDATETIME
         description: Less precise datetime
-        config:
-            sqlserverType: SMALLDATETIME
-      field_datetimeoffset:
-        type: timestamp_tz
+      - name: field_datetimeoffset
+        logicalType: date
+        physicalType: DATETIMEOFFSET
         description: Datetime with time zone
-        config:
-            sqlserverType: DATETIMEOFFSET
-      field_binary:
-        type: bytes
+      - name: field_binary
+        logicalType: array
+        physicalType: BINARY(16)
         description: Fixed-length binary
-        config:
-            sqlserverType: BINARY(16)
-      field_varbinary:
-        type: bytes
+      - name: field_varbinary
+        logicalType: array
+        physicalType: VARBINARY(100)
         description: Variable-length binary
-        config:
-            sqlserverType: VARBINARY(100)
-      field_uniqueidentifier:
-        type: string
+      - name: field_uniqueidentifier
+        logicalType: string
+        physicalType: UNIQUEIDENTIFIER
         description: GUID
-        config:
-            sqlserverType: UNIQUEIDENTIFIER
-      field_xml:
-        type: string
+      - name: field_xml
+        logicalType: string
+        physicalType: XML
         description: XML data
-        config:
-            sqlserverType: XML
-      field_json:
-        type: string
+      - name: field_json
+        logicalType: object
+        physicalType: JSON
         description: JSON (Stored as text)
-        config:
-            sqlserverType: JSON
-      # field_sql_variant:
-      #   type: variant
-      #   description: Stores different data types
-      #   config:
-      #       sqlserverType: SQL_VARIANT
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()

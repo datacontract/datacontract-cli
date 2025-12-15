@@ -1,99 +1,109 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  BQ_Example_Table:
-    description: This is a test table that contains all the possible field types for
-      testing
-    type: table
-    fields:
-      String_field:
-        type: string
-        required: false
-        description: A simple String field
-      Nonnullable_String_field:
-        type: string
-        required: true
-        description: A required String field
-      Maxlength_string_field:
-        type: string
-        required: true
-        description: A required String field with a maximum length
-        maxLength: 42
-      Bytes field:
-        type: bytes
-        required: false
-        description: A_nullable_bytes_field
-      Bytes_field_with_maxlength:
-        type: bytes
-        required: false
-        description: An bytes field with maxlength (which doesn't translate into datacontracts)
-      Int_field:
-        type: int
-        required: false
-        description: An Integer field
-      Float_field:
-        type: float
-        required: false
-        description: A float field
-      Boolean_field:
-        type: boolean
-        required: false
-        description: A boolean field
-      Timestamp_field:
-        type: timestamp
-        required: false
-        description: A Timestamp field
-      Date_field:
-        type: date
-        required: false
-        description: A Date field
-      Time_Field:
-        type: timestamp_ntz
-        required: false
-        description: A time field
-      Datetime_Field:
-        type: timestamp
-        required: false
-        description: A Datetime field
-      Numeric_Field:
-        type: numeric
-        required: false
-        description: A Numeric field with precision 5 and scale 3
-        precision: 5
-        scale: 3
-      Bignumeric_field:
-        type: double
-        required: false
-        description: A bignumeric field with precision 8 and sclae 4
-        precision: 8
-        scale: 4
-      Record_field:
-        type: object
-        required: false
-        description: A record field with two subfields
-        fields:
-          subfield_1:
-            type: string
-            required: false
-            description: subfield 1 of type string
-          subfield_2:
-            type: int
-            required: false
-            description: Subfield 2 of type integer
-      Range_field:
-        type: array
-        required: false
-        description: a datetime range
-        items:
-          type: timestamp
-      Geography_Field:
-        type: object
-        required: false
-        description: a geography field
-      JSON_Field:
-        type: object
-        required: false
-        description: a json field
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: BQ_Example_Table
+  physicalType: table
+  description: This is a test table that contains all the possible field types for
+    testing
+  logicalType: object
+  physicalName: BQ_Example_Table
+  properties:
+  - name: String_field
+    physicalType: STRING
+    description: A simple String field
+    logicalType: string
+  - name: Nonnullable_String_field
+    physicalType: STRING
+    description: A required String field
+    logicalType: string
+    required: true
+  - name: Maxlength_string_field
+    physicalType: STRING
+    description: A required String field with a maximum length
+    logicalType: string
+    logicalTypeOptions:
+      maxLength: 42
+    required: true
+  - name: Bytes field
+    physicalType: BYTES
+    description: A_nullable_bytes_field
+    logicalType: array
+  - name: Bytes_field_with_maxlength
+    physicalType: BYTES
+    description: An bytes field with maxlength (which doesn't translate into datacontracts)
+    logicalType: array
+  - name: Int_field
+    physicalType: INTEGER
+    description: An Integer field
+    logicalType: integer
+  - name: Float_field
+    physicalType: FLOAT
+    description: A float field
+    logicalType: number
+  - name: Boolean_field
+    physicalType: BOOLEAN
+    description: A boolean field
+    logicalType: boolean
+  - name: Timestamp_field
+    physicalType: TIMESTAMP
+    description: A Timestamp field
+    logicalType: date
+  - name: Date_field
+    physicalType: DATE
+    description: A Date field
+    logicalType: date
+  - name: Time_Field
+    physicalType: TIME
+    description: A time field
+    logicalType: date
+  - name: Datetime_Field
+    physicalType: DATETIME
+    description: A Datetime field
+    logicalType: date
+  - name: Numeric_Field
+    physicalType: NUMERIC
+    description: A Numeric field with precision 5 and scale 3
+    logicalType: number
+    logicalTypeOptions:
+      precision: 5
+      scale: 3
+  - name: Bignumeric_field
+    physicalType: BIGNUMERIC
+    description: A bignumeric field with precision 8 and sclae 4
+    logicalType: number
+    logicalTypeOptions:
+      precision: 8
+      scale: 4
+  - name: Record_field
+    physicalType: RECORD
+    description: A record field with two subfields
+    logicalType: object
+    properties:
+    - name: subfield_1
+      physicalType: STRING
+      description: subfield 1 of type string
+      logicalType: string
+    - name: subfield_2
+      physicalType: INTEGER
+      description: Subfield 2 of type integer
+      logicalType: integer
+  - name: Range_field
+    physicalType: RANGE
+    description: a datetime range
+    logicalType: array
+    items:
+      name: items
+      physicalType: DATETIME
+      logicalType: date
+  - name: Geography_Field
+    physicalType: GEOGRAPHY
+    description: a geography field
+    logicalType: object
+  - name: JSON_Field
+    physicalType: JSON
+    description: a json field
+    logicalType: object

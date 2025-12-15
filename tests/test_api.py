@@ -20,7 +20,7 @@ def test_lint():
     assert all([check["result"] == "passed" for check in response.json()["checks"]])
 
 
-def test_export_jsonschema():
+def test_export_jsonschema_dcs():
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
     response = client.post(

@@ -1,71 +1,78 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: Orders Latest
-  version: 0.0.1
-models:
-  orders:
-    description: One record per order. Includes cancelled and deleted orders.
-    namespace: test
-    fields:
-      order_id:
-        type: string
-        required: true
-        primaryKey: true
-        unique: true
-        description: An internal ID that identifies an order in the online shop.
-      order_timestamp:
-        type: timestamp_ntz
-        required: true
-        primaryKey: false
-        unique: false
-        description: The business timestamp in UTC when the order was successfully
-          registered in the source system and the payment was successful.
-      order_total:
-        type: variant
-        required: true
-        primaryKey: false
-        unique: false
-        description: Total amount the smallest monetary unit (e.g., cents).
-      customer_id:
-        type: string
-        required: false
-        primaryKey: false
-        unique: false
-        description: Unique identifier for the customer.
-      customer_email_address:
-        type: string
-        required: true
-        primaryKey: false
-        unique: false
-        description: The email address, as entered by the customer. The email address
-          was not verified.
-      processed_timestamp:
-        type: timestamp_ntz
-        required: true
-        primaryKey: false
-        unique: false
-        description: The timestamp when the record was processed by the data platform.
-  line_items:
-    description: A single article that is part of an order.
-    namespace: orders
-    fields:
-      lines_item_id:
-        type: string
-        required: true
-        primaryKey: true
-        unique: true
-        description: Primary key of the lines_item_id table
-      order_id:
-        type: string
-        required: false
-        primaryKey: false
-        unique: false
-        references: orders.order_id
-        description: An internal ID that identifies an order in the online shop.
-      sku:
-        type: string
-        required: false
-        primaryKey: false
-        unique: false
-        description: The purchased article number
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: Orders Latest
+status: draft
+schema:
+- name: orders
+  physicalType: table
+  description: One record per order. Includes cancelled and deleted orders.
+  customProperties:
+  - property: namespace
+    value: test
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: order_id
+    physicalType: text
+    description: An internal ID that identifies an order in the online shop.
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+    unique: true
+  - name: order_timestamp
+    physicalType: timestamp
+    description: The business timestamp in UTC when the order was successfully registered
+      in the source system and the payment was successful.
+    logicalType: date
+    required: true
+  - name: order_total
+    physicalType: record
+    description: Total amount the smallest monetary unit (e.g., cents).
+    logicalType: object
+    required: true
+  - name: customer_id
+    physicalType: text
+    description: Unique identifier for the customer.
+    logicalType: string
+  - name: customer_email_address
+    physicalType: text
+    description: The email address, as entered by the customer. The email address
+      was not verified.
+    logicalType: string
+    required: true
+  - name: processed_timestamp
+    physicalType: timestamp
+    description: The timestamp when the record was processed by the data platform.
+    logicalType: date
+    required: true
+- name: line_items
+  physicalType: table
+  description: A single article that is part of an order.
+  customProperties:
+  - property: namespace
+    value: orders
+  logicalType: object
+  physicalName: line_items
+  properties:
+  - name: lines_item_id
+    physicalType: text
+    description: Primary key of the lines_item_id table
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+    unique: true
+  - name: order_id
+    physicalType: text
+    description: An internal ID that identifies an order in the online shop.
+    customProperties:
+    - property: references
+      value: orders.order_id
+    logicalType: string
+  - name: sku
+    physicalType: text
+    description: The purchased article number
+    logicalType: string

@@ -1,0 +1,91 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: Product
+  physicalType: message
+  description: Details of Product.
+  logicalType: object
+  physicalName: Product
+  properties:
+  - name: id
+    physicalType: '9'
+    description: Field id
+    logicalType: string
+    required: false
+  - name: name
+    physicalType: '9'
+    description: Field name
+    logicalType: string
+    required: false
+  - name: price
+    physicalType: '1'
+    description: Field price
+    logicalType: number
+    required: false
+  - name: category
+    physicalType: enum
+    description: Enum field category
+    customProperties:
+    - property: enumValues
+      value:
+        CATEGORY_UNKNOWN: 0
+        CATEGORY_ELECTRONICS: 1
+        CATEGORY_CLOTHING: 2
+        CATEGORY_HOME_APPLIANCES: 3
+    logicalType: string
+    required: false
+  - name: tags
+    physicalType: '9'
+    description: Field tags
+    logicalType: string
+    required: false
+  - name: reviews
+    physicalType: repeated message
+    description: List of Review
+    logicalType: array
+    items:
+      name: items
+      physicalType: message
+      logicalType: object
+      properties:
+      - name: user
+        physicalType: '9'
+        description: Field user
+        logicalType: string
+        required: false
+      - name: rating
+        physicalType: '5'
+        description: Field rating
+        logicalType: integer
+        required: false
+      - name: comment
+        physicalType: '9'
+        description: Field comment
+        logicalType: string
+        required: false
+- name: Review
+  physicalType: message
+  description: Details of Review.
+  logicalType: object
+  physicalName: Review
+  properties:
+  - name: user
+    physicalType: '9'
+    description: Field user
+    logicalType: string
+    required: false
+  - name: rating
+    physicalType: '5'
+    description: Field rating
+    logicalType: integer
+    required: false
+  - name: comment
+    physicalType: '9'
+    description: Field comment
+    logicalType: string
+    required: false
+

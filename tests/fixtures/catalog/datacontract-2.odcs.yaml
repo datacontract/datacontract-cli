@@ -1,0 +1,24 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: urn:datacontract:test
+name: Test datacontract
+version: 0.0.1
+status: active
+description:
+  purpose: Test datacontract
+schema:
+  - name: model_test
+    description: A test model
+    physicalType: table
+    properties:
+      - name: user_id
+        businessName: User ID
+        logicalType: integer
+        description: An internal, autoincremental ID that identifies an user ID in the metricool app.
+        required: true
+        unique: true
+        primaryKey: true
+      - name: allowed_actions
+        logicalType: array
+        description: Allowed user actions
+        required: false

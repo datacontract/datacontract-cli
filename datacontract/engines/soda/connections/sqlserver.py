@@ -1,8 +1,16 @@
 import os
 
 import yaml
+from open_data_contract_standard.model import Server
 
-from datacontract.model.data_contract_specification import Server
+
+def _get_custom_property(server: Server, name: str) -> str | None:
+    """Get a custom property value from server.customProperties."""
+    if server.customProperties:
+        for prop in server.customProperties:
+            if prop.property == name:
+                return prop.value
+    return None
 
 
 def to_sqlserver_soda_configuration(server: Server) -> str:
@@ -35,7 +43,7 @@ def to_sqlserver_soda_configuration(server: Server) -> str:
             "trusted_connection": os.getenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", False),
             "trust_server_certificate": os.getenv("DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE", False),
             "encrypt": os.getenv("DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION", True),
-            "driver": server.driver or os.getenv("DATACONTRACT_SQLSERVER_DRIVER"),
+            "driver": _get_custom_property(server, "driver") or os.getenv("DATACONTRACT_SQLSERVER_DRIVER"),
         }
     }
 

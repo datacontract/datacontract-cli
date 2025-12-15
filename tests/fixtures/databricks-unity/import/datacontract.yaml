@@ -1,51 +1,62 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
-models:
-  test_table:
-    description: string
-    type: table
-    title: test_table
-    fields:
-      id:
-        type: int
-        required: true
-        config:
-          databricksType: int
-      name:
-        type: string
-        required: false
-        config:
-          databricksType: varchar(255)
-      age:
-        type: int
-        required: false
-        config:
-          databricksType: smallint
-      salary:
-        type: decimal
-        required: false
-        config:
-          databricksType: decimal(10,2)
-      join_date:
-        type: date
-        required: false
-        config:
-          databricksType: date
-      updated_at:
-        type: timestamp_ntz
-        required: false
-        config:
-          databricksType: timestamp
-      is_active:
-        type: boolean
-        required: false
-        config:
-          databricksType: boolean
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
 servers:
-  myserver:
-    type: databricks
-    catalog: mycatalog
-    schema: myschema
+- server: databricks
+  type: databricks
+  catalog: mycatalog
+  schema: myschema
+schema:
+- name: test_table
+  businessName: test_table
+  physicalName: test_table
+  logicalType: object
+  physicalType: table
+  description: string
+  properties:
+  - name: id
+    physicalType: int
+    customProperties:
+    - property: databricksType
+      value: int
+    logicalType: integer
+    required: true
+  - name: name
+    physicalType: varchar(255)
+    customProperties:
+    - property: databricksType
+      value: varchar(255)
+    logicalType: string
+  - name: age
+    physicalType: smallint
+    customProperties:
+    - property: databricksType
+      value: smallint
+    logicalType: integer
+  - name: salary
+    physicalType: decimal(10,2)
+    customProperties:
+    - property: databricksType
+      value: decimal(10,2)
+    logicalType: number
+  - name: join_date
+    physicalType: date
+    customProperties:
+    - property: databricksType
+      value: date
+    logicalType: date
+  - name: updated_at
+    physicalType: timestamp
+    customProperties:
+    - property: databricksType
+      value: timestamp
+    logicalType: date
+  - name: is_active
+    physicalType: boolean
+    customProperties:
+    - property: databricksType
+      value: boolean
+    logicalType: boolean
