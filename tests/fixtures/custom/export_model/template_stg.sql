@@ -1,6 +1,6 @@
 
 select
-{%- for field_name, field in model.fields.items() %}
-  try_cast({{ field_name }} as {{ field.type | lower }}) as {{ field_name }}
+{%- for field in schema.properties %}
+  try_cast({{ field.name }} as {{ field.physicalType | lower }}) as {{ field.name }}
 {%- endfor %}
-from {{ "{{" }} source('{{ data_contract.id.split(':')[-1] }}', '{{ model_name }}') {{ "}}" }}
+from {{ "{{" }} source('{{ data_contract.id.split(':')[-1] }}', '{{ schema_name }}') {{ "}}" }}

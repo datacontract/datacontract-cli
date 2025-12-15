@@ -1,10 +1,10 @@
 
 SELECT
-{%- for field_name, field in model.fields.items() %}
-  {%- if field.type == "timestamp" %}
-  DATETIME({{ field_name }}, "Asia/Tokyo") AS {{ field_name }},
+{%- for field in schema.properties %}
+  {%- if field.physicalType == "timestamp" %}
+  DATETIME({{ field.name }}, "Asia/Tokyo") AS {{ field.name }},
   {%- else %}
-  {{ field_name }} AS {{ field_name }},
+  {{ field.name }} AS {{ field.name }},
   {%- endif %}
 {%- endfor %}
-FROM {{ "{{" }} ref('{{ model_name }}') {{ "}}" }}
+FROM {{ "{{" }} ref('{{ schema_name }}') {{ "}}" }}
