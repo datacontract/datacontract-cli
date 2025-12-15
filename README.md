@@ -21,7 +21,7 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 Let's look at this data contract:
 [https://datacontract.com/orders-v1.odcs.yaml](https://datacontract.com/orders-v1.odcs.yaml)
 
-We have a _servers_ section with endpoint details to a Postgres database, _schema_ for the structure and semantics of the data, _slaAttributes_ and _quality_ attributes that describe the expected freshness and number of rows.
+We have a _servers_ section with endpoint details to a Postgres database, _schema_ for the structure and semantics of the data, _service levels_ and _quality_ attributes that describe the expected freshness and number of rows.
 
 This data contract contains all information to connect to the database and check that the actual data meets the defined schema specification and quality expectations.
 We can use this information to test if the actual data product is compliant to the data contract.
@@ -1470,38 +1470,25 @@ datacontract import --format sql --source my_ddl.sql --dialect postgres --output
 
 Available import options:
 
-| Type               | Description                                    | Status |
-|--------------------|------------------------------------------------|--------|
-| `avro`             | Import from AVRO schemas                       | ✅      |
-| `bigquery`         | Import from BigQuery Schemas                   | ✅      |
-| `csv`              | Import from CSV File                           | ✅      |
-| `dbml`             | Import from DBML models                        | ✅      |
-| `dbt`              | Import from dbt models                         | ✅      |
-| `excel`            | Import from ODCS Excel Template                | ✅      |
-| `glue`             | Import from AWS Glue DataCatalog               | ✅      |
-| `iceberg`          | Import from an Iceberg JSON Schema Definition  | partial |
-| `jsonschema`       | Import from JSON Schemas                       | ✅      |
-| `odcs`             | Import from Open Data Contract Standard (ODCS) | ✅      |
-| `parquet`          | Import from Parquet File Metadata              | ✅      |
-| `protobuf`         | Import from Protobuf schemas                   | ✅      |
-| `spark`            | Import from Spark StructTypes, Variant         | ✅      |
-| `sql`              | Import from SQL DDL                            | ✅      |
-| `unity`            | Import from Databricks Unity Catalog           | partial |
-| `excel`            | Import from ODCS Excel Template                | ✅      |
-| Missing something? | Please create an issue on GitHub               | TBD     |
+| Type               | Description                                   | Status  |
+|--------------------|-----------------------------------------------|---------|
+| `avro`             | Import from AVRO schemas                      | ✅       |
+| `bigquery`         | Import from BigQuery Schemas                  | ✅       |
+| `csv`              | Import from CSV File                          | ✅       |
+| `dbml`             | Import from DBML models                       | ✅       |
+| `dbt`              | Import from dbt models                        | ✅       |
+| `excel`            | Import from ODCS Excel Template               | ✅       |
+| `glue`             | Import from AWS Glue DataCatalog              | ✅       |
+| `iceberg`          | Import from an Iceberg JSON Schema Definition | partial |
+| `jsonschema`       | Import from JSON Schemas                      | ✅       |
+| `parquet`          | Import from Parquet File Metadata             | ✅       |
+| `protobuf`         | Import from Protobuf schemas                  | ✅       |
+| `spark`            | Import from Spark StructTypes, Variant        | ✅       |
+| `sql`              | Import from SQL DDL                           | ✅       |
+| `unity`            | Import from Databricks Unity Catalog          | partial |
+| `excel`            | Import from ODCS Excel Template               | ✅       |
+| Missing something? | Please create an issue on GitHub              | TBD     |
 
-
-#### ODCS
-
-Import from Open Data Contract Standard (ODCS) v2 or v3.
-The importer automatically detects the ODCS version and imports the data contract.
-
-Examples:
-
-```bash
-# Example import from ODCS
-datacontract import --format odcs --source my_data_contract.odcs.yaml
-```
 
 #### BigQuery
 
@@ -2103,8 +2090,7 @@ We are happy to receive your contributions. Propose your change in an issue or d
 
 ## Related Tools
 
-- [Data Contract Manager](https://www.datacontract-manager.com/) is a commercial tool to manage data contracts. It contains a web UI, access management, and data governance for a full enterprise data marketplace.
-- [Data Contract GPT](https://gpt.datacontract.com) is a custom GPT that can help you write data contracts.
+- [Entropy Data](https://www.entropy-data.com/) is a commercial tool to manage data contracts. It contains a web UI, access management, and data governance for a data product marketplace based on data contracts.
 - [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
 - [Data Contract Playground](https://data-catering.github.io/data-contract-playground/) allows you to validate and export your data contract to different formats within your browser.
 
