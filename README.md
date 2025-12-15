@@ -9,8 +9,8 @@
 </p>
 
 The `datacontract` CLI is an open-source command-line tool for working with [data contracts](https://datacontract.com).
-It natively supports the [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/latest/) to lint data contracts, connect to data sources and execute schema and quality tests, and export to different formats. 
-The tool is written in Python. 
+It natively supports the [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/latest/) to lint data contracts, connect to data sources and execute schema and quality tests, and export to different formats.
+The tool is written in Python.
 It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
@@ -129,7 +129,7 @@ $ datacontract import --format sql --source my-ddl.sql --dialect postgres --outp
 # import from Excel template
 $ datacontract import --format excel --source odcs.xlsx --output odcs.yaml
 
-# export to Excel template  
+# export to Excel template
 $ datacontract export --format excel --output odcs.xlsx odcs.yaml
 ```
 
@@ -266,12 +266,12 @@ Commands
 
 ### init
 ```
-                                                                                                    
- Usage: datacontract init [OPTIONS] [LOCATION]                                                      
-                                                                                                    
- Create an empty data contract.                                                                     
-                                                                                                    
-                                                                                                    
+
+ Usage: datacontract init [OPTIONS] [LOCATION]
+
+ Create an empty data contract.
+
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location of the data contract file to create.                    │
 │                             [default: datacontract.yaml]                                         │
@@ -288,12 +288,12 @@ Commands
 
 ### lint
 ```
-                                                                                                    
- Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
-                                                                                                    
- Validate that the datacontract.yaml is correctly formatted.                                        
-                                                                                                    
-                                                                                                    
+
+ Usage: datacontract lint [OPTIONS] [LOCATION]
+
+ Validate that the datacontract.yaml is correctly formatted.
+
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
 │                             [default: datacontract.yaml]                                         │
@@ -316,12 +316,12 @@ Commands
 
 ### test
 ```
-                                                                                                    
- Usage: datacontract test [OPTIONS] [LOCATION]                                                      
-                                                                                                    
- Run schema and quality tests on configured servers.                                                
-                                                                                                    
-                                                                                                    
+
+ Usage: datacontract test [OPTIONS] [LOCATION]
+
+ Run schema and quality tests on configured servers.
+
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
 │                             [default: datacontract.yaml]                                         │
@@ -926,7 +926,7 @@ models:
 
 #### API
 
-Data Contract CLI can test APIs that return data in JSON format. 
+Data Contract CLI can test APIs that return data in JSON format.
 Currently, only GET requests are supported.
 
 ##### Example
@@ -943,9 +943,9 @@ models:
   my_object: # corresponds to the root element of the JSON response
     type: object
     fields:
-      field1: 
+      field1:
         type: string
-      fields2: 
+      fields2:
         type: number
 ```
 
@@ -982,13 +982,13 @@ models:
 
 ### export
 ```
-                                                                                                    
- Usage: datacontract export [OPTIONS] [LOCATION]                                                    
-                                                                                                    
- Convert data contract to a specific format. Saves to file specified by `output` option if present, 
- otherwise prints to stdout.                                                                        
-                                                                                                    
-                                                                                                    
+
+ Usage: datacontract export [OPTIONS] [LOCATION]
+
+ Convert data contract to a specific format. Saves to file specified by `output` option if present,
+ otherwise prints to stdout.
+
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
 │                             [default: datacontract.yaml]                                         │
@@ -1230,7 +1230,7 @@ to limit your contract export to a single model.
 
 ```bash
  $ datacontract export --format iceberg --model orders https://datacontract.com/examples/orders-latest/datacontract.yaml --output /tmp/orders_iceberg.json
- 
+
  $ cat /tmp/orders_iceberg.json | jq '.'
 {
   "type": "struct",
@@ -1287,67 +1287,59 @@ The export function converts the data contract specification into the custom for
 datacontract export --format custom --template template.txt datacontract.yaml
 ```
 
-##### Jinja variables
+##### Jinja templates & variables
 
 You can directly use the Data Contract Specification as template variables.
 
 ```shell
 $ cat template.txt
 title: {{ data_contract.info.title }}
+models:
+{%- for model_name, model in data_contract.models.items() %}
+  - name: {{ model.name }}
+{%- endfor %}
 
 $ datacontract export --format custom --template template.txt datacontract.yaml
 title: Orders Latest
 ```
 
-##### Example Jinja Templates
+##### Example Jinja Templates for a customized dbt model
 
-###### Customized dbt model
+You can export a given dbt model containing any logic by adding the `schema-name` filter/parameter
 
-You can export the dbt models containing any logic.
+It adds jinja variable passed to your template.file:
+- `schema_name`: str
+- `schema`: SchemaObject from ODCS
 
 Below is an example of a dbt staging layer that converts a field of `type: timestamp` to a `DATETIME` type with time zone conversion.
 
-template.sql
-
-{% raw %}
-```sql
-{%- for model_name, model in data_contract.models.items() %}
-{#- Export only the first model #}
-{%- if loop.first -%}
-SELECT
-{%- for field_name, field in model.fields.items() %}
-  {%- if field.type == "timestamp" %}
-  DATETIME({{ field_name }}, "Asia/Tokyo") AS {{ field_name }},
-  {%- else %}
-  {{ field_name }} AS {{ field_name }},
-  {%- endif %}
-{%- endfor %}
-FROM
-  {{ "{{" }} ref('{{ model_name }}') {{ "}}" }} 
-{%- endif %}
-{%- endfor %}
-```
-{% endraw %}
-
-command
-
-```shell
-datacontract export --format custom --template template.sql --output output.sql datacontract.yaml
-```
-
-output.sql
-
-```sql
-SELECT
-  order_id AS order_id,
-  DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
-  order_total AS order_total,
-  customer_id AS customer_id,
-  customer_email_address AS customer_email_address,
-  DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
-FROM
-  {{ ref('orders') }}
-```
+- `template.sql`
+  ```sql
+  SELECT
+  {%- for field in schema.properties %}
+    {%- if field.physicalType == "timestamp" %}
+    DATETIME({{ field.name }}, "Asia/Tokyo") AS {{ field.name }},
+    {%- else %}
+    {{ field.name }} AS {{ field.name }},
+    {%- endif %}
+  {%- endfor %}
+  FROM {{ "{{" }} ref('{{ schema_name }}') {{ "}}" }}
+  ```
+- export command
+  ```shell
+  datacontract export datacontract.odcs.yaml --format custom --template template.sql --schema-name orders
+  ```
+- `output.sql`
+  ```sql
+  SELECT
+    order_id AS order_id,
+    DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
+    order_total AS order_total,
+    customer_id AS customer_id,
+    customer_email_address AS customer_email_address,
+    DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
+  FROM {{ ref('orders') }}
+  ```
 
 #### ODCS Excel Template
 
@@ -1367,13 +1359,13 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 
 ### import
 ```
-                                                                                                    
- Usage: datacontract import [OPTIONS]                                                               
-                                                                                                    
- Create a data contract from the given source location. Saves to file specified by `output` option  
- if present, otherwise prints to stdout.                                                            
-                                                                                                    
-                                                                                                    
+
+ Usage: datacontract import [OPTIONS]
+
+ Create a data contract from the given source location. Saves to file specified by `output` option
+ if present, otherwise prints to stdout.
+
+
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --format                                 [sql|avro|dbt|dbml|glue|  The format of the source   │
 │                                             jsonschema|json|bigquery  file.                      │
@@ -1598,7 +1590,7 @@ DataContract.import_from_source("spark", "users", dataframe = df_user)
 DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user)
 
 # Example: Import Spark table + table description
-DataContract.import_from_source("spark", "users", description = "description") 
+DataContract.import_from_source("spark", "users", description = "description")
 DataContract.import_from_source(format = "spark", source = "users", description = "description")
 
 # Example: Import Spark dataframe + table description
@@ -1612,7 +1604,7 @@ Importing from DBML Documents.
 **NOTE:** Since DBML does _not_ have strict requirements on the types of columns, this import _may_ create non-valid datacontracts, as not all types of fields can be properly mapped. In this case you will have to adapt the generated document manually.
 We also assume, that the description for models and fields is stored in a Note within the DBML model.
 
-You may give the `dbml-table` or `dbml-schema` parameter to enumerate the tables or schemas that should be imported. 
+You may give the `dbml-table` or `dbml-schema` parameter to enumerate the tables or schemas that should be imported.
 If no tables are given, _all_ available tables of the source will be imported. Likewise, if no schema is given, _all_ schemas are imported.
 
 Examples:
@@ -1659,7 +1651,7 @@ datacontract import --format csv --source "test.csv"
 
 #### protobuf
 
-Importing from protobuf File. Specify file in `source` parameter. 
+Importing from protobuf File. Specify file in `source` parameter.
 
 Example:
 
@@ -1670,12 +1662,12 @@ datacontract import --format protobuf --source "test.proto"
 
 ### catalog
 ```
-                                                                                                    
- Usage: datacontract catalog [OPTIONS]                                                              
-                                                                                                    
- Create a html catalog of data contracts.                                                           
-                                                                                                    
-                                                                                                    
+
+ Usage: datacontract catalog [OPTIONS]
+
+ Create a html catalog of data contracts.
+
+
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --files                   TEXT  Glob pattern for the data contract files to include in the       │
 │                                 catalog. Applies recursively to any subfolders.                  │
@@ -1701,12 +1693,12 @@ datacontract catalog --files "*.odcs.yaml"
 
 ### publish
 ```
-                                                                                                    
- Usage: datacontract publish [OPTIONS] [LOCATION]                                                   
-                                                                                                    
- Publish the data contract to the Entropy Data.                                                     
-                                                                                                    
-                                                                                                    
+
+ Usage: datacontract publish [OPTIONS] [LOCATION]
+
+ Publish the data contract to the Entropy Data.
+
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
 │                             [default: datacontract.yaml]                                         │
@@ -1726,22 +1718,22 @@ datacontract catalog --files "*.odcs.yaml"
 
 ### api
 ```
-                                                                                                    
- Usage: datacontract api [OPTIONS]                                                                  
-                                                                                                    
- Start the datacontract CLI as server application with REST API.                                    
-                                                                                                    
- The OpenAPI documentation as Swagger UI is available on http://localhost:4242. You can execute the 
- commands directly from the Swagger UI.                                                             
- To protect the API, you can set the environment variable DATACONTRACT_CLI_API_KEY to a secret API  
- key. To authenticate, requests must include the header 'x-api-key' with the correct API key. This  
- is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive   
- information.                                                                                       
- To connect to servers (such as a Snowflake data source), set the credentials as environment        
- variables as documented in https://cli.datacontract.com/#test                                      
- It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.: 
- `datacontract api --port 1234 --root_path /datacontract`.                                          
-                                                                                                    
+
+ Usage: datacontract api [OPTIONS]
+
+ Start the datacontract CLI as server application with REST API.
+
+ The OpenAPI documentation as Swagger UI is available on http://localhost:4242. You can execute the
+ commands directly from the Swagger UI.
+ To protect the API, you can set the environment variable DATACONTRACT_CLI_API_KEY to a secret API
+ key. To authenticate, requests must include the header 'x-api-key' with the correct API key. This
+ is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive
+ information.
+ To connect to servers (such as a Snowflake data source), set the credentials as environment
+ variables as documented in https://cli.datacontract.com/#test
+ It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.:
+ `datacontract api --port 1234 --root_path /datacontract`.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --port                   INTEGER  Bind socket to this port. [default: 4242]                      │
 │ --host                   TEXT     Bind socket to this host. Hint: For running in docker, set it  │
@@ -2016,7 +2008,7 @@ uv run pytest
 
 Run in wsl. (We need to fix the paths in the tests so that normal Windows will work, contributions are appreciated)
 
-#### PyCharm does not pick up the `.venv` 
+#### PyCharm does not pick up the `.venv`
 
 This [uv issue](https://github.com/astral-sh/uv/issues/12545) might be relevant.
 
