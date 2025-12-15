@@ -1,12 +1,21 @@
-from typing import Dict
+from typing import List, Optional
 
-from datacontract.model.data_contract_specification import Field
+from open_data_contract_standard.model import SchemaProperty
+
+
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the type from a schema property, checking both logical and physical type."""
+    if prop.logicalType:
+        return prop.logicalType
+    if prop.physicalType:
+        return prop.physicalType
+    return None
 
 
 # https://duckdb.org/docs/data/csv/overview.html
 # ['SQLNULL', 'BOOLEAN', 'BIGINT', 'DOUBLE', 'TIME', 'DATE', 'TIMESTAMP', 'VARCHAR']
-def convert_to_duckdb_csv_type(field) -> None | str:
-    datacontract_type = field.type
+def convert_to_duckdb_csv_type(prop: SchemaProperty) -> None | str:
+    datacontract_type = _get_type(prop)
     if datacontract_type is None:
         return "VARCHAR"
     if datacontract_type.lower() in ["string", "varchar", "text"]:
@@ -20,8 +29,7 @@ def convert_to_duckdb_csv_type(field) -> None | str:
     if datacontract_type.lower() in ["time"]:
         return "TIME"
     if datacontract_type.lower() in ["number", "decimal", "numeric"]:
-        # precision and scale not supported by data contract
-        return "VARCHAR"
+        return "DOUBLE"
     if datacontract_type.lower() in ["float", "double"]:
         return "DOUBLE"
     if datacontract_type.lower() in ["integer", "int", "long", "bigint"]:
@@ -41,17 +49,22 @@ def convert_to_duckdb_csv_type(field) -> None | str:
     return "VARCHAR"
 
 
-def convert_to_duckdb_json_type(field: Field) -> None | str:
-    datacontract_type = field.type
+def convert_to_duckdb_json_type(prop: SchemaProperty) -> None | str:
+    datacontract_type = _get_type(prop)
     if datacontract_type is None:
         return "VARCHAR"
     if datacontract_type.lower() in ["array"]:
-        return convert_to_duckdb_json_type(field.items) + "[]"  # type: ignore
+        if prop.items:
+            return convert_to_duckdb_json_type(prop.items) + "[]"  # type: ignore
+        return "VARCHAR[]"
     if datacontract_type.lower() in ["object", "record", "struct"]:
-        return convert_to_duckdb_object(field.fields)
-    return convert_to_duckdb_csv_type(field)
+        # If no properties are defined, treat as generic JSON
+        if prop.properties is None or len(prop.properties) == 0:
+            return "JSON"
+        return convert_to_duckdb_object(prop.properties)
+    return convert_to_duckdb_csv_type(prop)
 
 
-def convert_to_duckdb_object(fields: Dict[str, Field]):
-    columns = [f'"{x[0]}" {convert_to_duckdb_json_type(x[1])}' for x in fields.items()]
+def convert_to_duckdb_object(properties: List[SchemaProperty]):
+    columns = [f'"{prop.name}" {convert_to_duckdb_json_type(prop)}' for prop in properties]
     return f"STRUCT({', '.join(columns)})"

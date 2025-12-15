@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package main;
+
+import "models/person.proto";
+
+// Message representing a Company with a contact Person
+message Company {
+    string name = 1;
+    string registration_number = 2;
+    models.Person contact = 3;
+}

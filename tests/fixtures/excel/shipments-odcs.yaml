@@ -1,4 +1,4 @@
-version: 1.0.1
+version: 1.0.2
 kind: DataContract
 apiVersion: v3.0.0
 id: fulfillment_shipments_v1
@@ -172,9 +172,32 @@ schema:
       examples:
       - DE
   quality:
-  - description: Table shall contain at least 1 row
+  - description: testscenario for mustBeGreaterOrEqualTo
     type: sql
+    mustBeGreaterOrEqualTo: 1
     query: SELECT COUNT(*) FROM shipments
+  - description: testscenario for mustBe (integer)
+    type: sql
+    mustBe: 7
+    query: SELECT COUNT(*) FROM shipments
+  - description: testscenario for mustBe (float)
+    type: sql
+    mustBe: 3.5
+    query: SELECT AVG(duration) FROM shipments
+  - description: testscenario for mustBeLessThan (integer)
+    type: sql
+    mustBeLessThan: 1
+    query: SELECT COUNT(*) FROM shipments where carries='active'
+  - description: testscenario for mustBeLessThan (float)
+    type: sql
+    mustBeLessOrEqualTo: 6.8
+    query: SELECT AVG(duration) FROM shipments
+  - description: testscenario for mustBeBetween
+    type: sql
+    mustBeBetween:
+    - 25.0
+    - 75.0
+    query: SELECT AVG(*) FROM shipments
 support:
 - channel: slackname
   url: http://find.me.here

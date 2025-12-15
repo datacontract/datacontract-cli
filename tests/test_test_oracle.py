@@ -8,6 +8,7 @@ from datacontract.data_contract import DataContract
 oracleContainer = OracleDbContainer("gvenzl/oracle-free:slim-faststart")
 ORACLE_SERVER_PORT: int = 1521
 
+
 @pytest.fixture(scope="module", autouse=True)
 def oracle_container(request):
     oracleContainer.start()
@@ -18,13 +19,29 @@ def oracle_container(request):
     request.addfinalizer(remove_container)
 
 
-def test_test_oracle_contract(oracle_container, monkeypatch):
+def test_test_oracle_contract_dcs(oracle_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_ORACLE_USERNAME", "SYSTEM")
     monkeypatch.setenv("DATACONTRACT_ORACLE_PASSWORD", oracleContainer.oracle_password)
 
     _init_sql("fixtures/oracle/data/testcase.sql")
 
-    data_contract_str = _setup_datacontract("fixtures/oracle/datacontract-oracle.yaml")
+    data_contract_str = _setup_datacontract("fixtures/oracle/datacontract-oracle-dcs.yaml")
+    data_contract = DataContract(data_contract_str=data_contract_str)
+
+    run = data_contract.test()
+
+    print(run)
+    assert run.result == "passed"
+    assert all(check.result == "passed" for check in run.checks)
+
+
+def test_test_oracle_contract_odcs(oracle_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_ORACLE_USERNAME", "SYSTEM")
+    monkeypatch.setenv("DATACONTRACT_ORACLE_PASSWORD", oracleContainer.oracle_password)
+
+    _init_sql("fixtures/oracle/data/testcase.sql")
+
+    data_contract_str = _setup_datacontract("fixtures/oracle/datacontract-oracle-odcs.yaml")
     data_contract = DataContract(data_contract_str=data_contract_str)
 
     run = data_contract.test()
@@ -43,6 +60,7 @@ def _init_sql(sql_file_path):
                         cursor.execute(sql_command)
                     except DatabaseError as e:
                         print(f"Error executing SQL command: {e}", sql_command)
+
 
 def _setup_datacontract(datacontract):
     with open(datacontract) as data_contract_file:

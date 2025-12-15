@@ -20,8 +20,6 @@ description:
 customProperties:
 - property: "additionalField"
   value: "some value in a new major contract"
-- property: "owner"
-  value: "fulfillment"
 schema:
 - name: "shipments2"
   physicalType: "table"
@@ -35,8 +33,7 @@ schema:
   - type: "sql"
     description: "Table shall contain at least 1 row"
     query: "SELECT COUNT(*) FROM shipments"
-    thresholdType: "mustBeGreaterThanOrEqualTo"
-    mustBeGreaterThanOrEqualTo: 1
+    mustBeGreaterThan: 0
   properties:
   - name: "shipment_id"
     businessName: "Shipment ID"
@@ -201,13 +198,15 @@ price:
   priceCurrency: "EUR"
   priceUnit: "Per 1000 requests"
 team:
-- username: "vimportant"
-  role: "administrator"
-  dateIn: "2020-01-01"
-- username: "nimportant"
-  role: "reader"
-  dateIn: "2020-01-01"
-  dateOut: "2024-10-10"
+  name: fulfillment
+  members:
+  - username: "vimportant"
+    role: "administrator"
+    dateIn: "2020-01-01"
+  - username: "nimportant"
+    role: "reader"
+    dateIn: "2020-01-01"
+    dateOut: "2024-10-10"
 slaProperties:
 - property: "availability"
   value: "95%"

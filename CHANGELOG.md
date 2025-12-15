@@ -7,12 +7,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Restrict DuckDB dependency to < 1.4.0 (#972)
+
+
+## [0.11.1] - 2025-12-14
+
+This is a major release with breaking changes:
+We switched the internal data model from [Data Contract Specification](https://datacontract-specification.com) to [Open Data Contract Standard](https://datacontract.com/#odcs) (ODCS).
+
+Not all features that were available are supported in this version, as some features are not supported by the Open Data Contract Standard, such as:
+
+- Internal definitions using `$ref` (you can refer to external definitions via `authoritativeDefinition`)
+- Lineage (no real workaround, use customProperties or transformation object if needed)
+- Support for different physical types (no real workaround, use customProperties if needed)
+- Support for enums (use quality metric `invalidValues`)
+- Support for properties with type map and defining `keys` and `values` (use logical type map)
+- Support for `scale` and `precision` (define them in `physicalType`)
+
+The reason for this change is that the Data Contract Specification is deprecated, we focus on best possible support for the Open Data Contract Standard.
+We try to make this transition as seamless as possible. 
+If you face issues, please open an issue on GitHub.
+
+We continue support reading [Data Contract Specification](https://datacontract-specification.com) data contracts during v0.11.x releases until end of 2026.
+To migrate existing data contracts to Open Data Contract Standard use this instruction: https://datacontract-specification.com/#migration
+
+### Changed
+
+- ODCS v3.1.0 is now the default format for all imports.
+- Renamed `--model` option to `--schema-name` in the `export` command to align with ODCS terminology.
+- Renamed exporter files from `*_converter.py` to `*_exporter.py` for consistency (internal change).
+
+### Added
+
+- If an ODCS slaProperty "freshness" is defined with a reference to the element (column), the CLI will now test freshness of the data.
+- If an ODCS slaProperty "retention" is defined with a reference to the element (column), the CLI will now test retention of the data.
+- Support for custom Soda quality checks in ODCS using `type: custom` and `engine: soda` with raw SodaCL implementation.
+
+### Fixed
+
+- Oracle: Fix `service_name` attribute access to use ODCS field name `serviceName`
+
+### Removed
+
+- The `breaking`, `changelog`, and `diff` commands are now deleted (#925).
+- The `terraform` export format has been removed.
+
+
+## [0.10.41] - 2025-12-02
+
+### Changed
+
+- Great Expectations export: Update to Great Expectations 1.x format (#919)
+  - Changed `expectation_suite_name` to `name` in suite output
+  - Changed `expectation_type` to `type` in expectations
+  - Removed `data_asset_type` field from suite output
+  - **Breaking**: Users with custom quality definitions using `expectation_type` must update to use `type`
+
+### Added
+
+- test: Log server name and type in output (#963)
+- api: CORS is now enabled for all origins
+- quality: Support `{schema}` and `${schema}` placeholder in SQL quality checks to reference the server's database schema (#957)
+- SQL Server: Support `DATACONTRACT_SQLSERVER_DRIVER` environment variable to specify the ODBC driver (#959)
+- Excel: Add Oracle server type support for Excel export/import (#960)
+- Excel: Add local/CSV server type support for Excel export/import (#961)
+- Excel Export: Complete server types (glue, kafka, postgres, s3, snowflake, sqlserver, custom)
+
+### Fixed
+
+- Protobuf import: Fix transitive imports across subdirectories (#943)
+- Protobuf export now works without error (#951)
+- lint: YAML date values (e.g., `2022-01-15`) are now kept as strings instead of being converted to datetime objects, fixing ODCS schema validation
+- export: field annotation now matches to number/numeric/decimal types
+- Excel: Server port is now correctly parsed as integer instead of string for all server types
+- Excel: Remove invalid `table` and `view` fields from custom server import
+- Fixed DuckDB DDL generation to use `JSON` type instead of invalid empty `STRUCT()` for objects without defined properties ([#940](https://github.com/datacontract/datacontract-cli/issues/940))
+
+### Deprecated
+
+- The `breaking`, `changelog`, and `diff` commands are now deprecated and will be removed in a future version (#925)
+
+## [0.10.40] - 2025-11-25
+
+### Added
+
+- Support for ODCS v3.1.0
+
+## [0.10.39] - 2025-11-20
+
+### Added
+
+- Oracle DB: Client Directory for Connection Mode 'Thick' can now be specified in the `DATACONTRACT_ORACLE_CLIENT_DIR` environment variable (#949)
+
+### Fixed
+
+- Import composite primary keys from open data contract spec
+
+## [0.10.38] - 2025-11-11
+
 ### Added
 
 - Support for Oracle Database (>= 19C)
 
 ### Fixed
 
+- Athena: Now correctly uses the (optional) AWS session token specified in the `DATACONTRACT_S3_SESSION_TOKEN' environment variable when testing contracts (#934)
 
 ## [0.10.37] - 2025-11-03
 

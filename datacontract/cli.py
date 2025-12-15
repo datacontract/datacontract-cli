@@ -13,12 +13,12 @@ from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat, Spec
+from datacontract.imports.importer import ImportFormat
 from datacontract.init.init_template import get_init_template
-from datacontract.integration.datamesh_manager import (
-    publish_data_contract_to_datamesh_manager,
+from datacontract.integration.entropy_data import (
+    publish_data_contract_to_entropy_data,
 )
-from datacontract.lint.resolve import resolve_data_contract_dict
+from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
@@ -98,7 +98,7 @@ def lint(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     output: Annotated[
         Path,
@@ -133,7 +133,7 @@ def test(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -180,7 +180,11 @@ def test(
     ).test()
     if logs:
         _print_logs(run)
-    write_test_result(run, console, output_format, output)
+    try:
+        data_contract = resolve_data_contract(location, schema_location=schema)
+    except Exception:
+        data_contract = None
+    write_test_result(run, console, output_format, output, data_contract)
 
 
 @app.command()
@@ -193,12 +197,11 @@ def export(
         ),
     ] = None,
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
-    model: Annotated[
+    schema_name: Annotated[
         str,
         typer.Option(
-            help="Use the key of the model in the data contract yaml file "
-            "to refer to a model, e.g., `orders`, or `all` for all "
-            "models (default)."
+            help="The name of the schema to export, e.g., `orders`, or `all` for all "
+            "schemas (default)."
         ),
     ] = "all",
     # TODO: this should be a subcommand
@@ -223,7 +226,7 @@ def export(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     # TODO: this should be a subcommand
     engine: Annotated[
@@ -254,7 +257,7 @@ def export(
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=format,
-        model=model,
+        schema_name=schema_name,
         server=server,
         rdf_base=rdf_base,
         sql_server_type=sql_server_type,
@@ -288,10 +291,6 @@ def import_(
         Optional[str],
         typer.Option(help="The path to the file that should be imported."),
     ] = None,
-    spec: Annotated[
-        Spec,
-        typer.Option(help="The format of the data contract to import. "),
-    ] = Spec.datacontract_specification,
     dialect: Annotated[
         Optional[str],
         typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
@@ -337,11 +336,11 @@ def import_(
     ] = None,
     template: Annotated[
         Optional[str],
-        typer.Option(help="The location (url or path) of the Data Contract Specification Template"),
+        typer.Option(help="The location (url or path) of the ODCS template"),
     ] = None,
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     owner: Annotated[
         Optional[str],
@@ -361,7 +360,6 @@ def import_(
     result = DataContract.import_from_source(
         format=format,
         source=source,
-        spec=spec,
         template=template,
         schema=schema,
         dialect=dialect,
@@ -393,7 +391,7 @@ def publish(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     ssl_verification: Annotated[
         bool,
@@ -402,11 +400,11 @@ def publish(
     debug: debug_option = None,
 ):
     """
-    Publish the data contract to the Data Mesh Manager.
+    Publish the data contract to the Entropy Data.
     """
     enable_debug_logging(debug)
 
-    publish_data_contract_to_datamesh_manager(
+    publish_data_contract_to_entropy_data(
         data_contract_dict=resolve_data_contract_dict(location),
         ssl_verification=ssl_verification,
     )
@@ -423,7 +421,7 @@ def catalog(
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the Data Contract Specification JSON Schema"),
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     debug: debug_option = None,
 ):
@@ -449,84 +447,6 @@ def catalog(
             console.print(f"Skipped {file} due to error: {e}")
 
     create_index_html(contracts, path)
-
-
-@app.command()
-def breaking(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-    debug: debug_option = None,
-):
-    """
-    Identifies breaking changes between data contracts. Prints to stdout.
-    """
-    enable_debug_logging(debug)
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).breaking(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.breaking_str())
-
-    if not result.passed_checks():
-        raise typer.Exit(code=1)
-
-
-@app.command()
-def changelog(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-    debug: debug_option = None,
-):
-    """
-    Generate a changelog between data contracts. Prints to stdout.
-    """
-    enable_debug_logging(debug)
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.changelog_str())
-
-
-@app.command()
-def diff(
-    location_old: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the old data contract yaml."),
-    ],
-    location_new: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the new data contract yaml."),
-    ],
-    debug: debug_option = None,
-):
-    """
-    PLACEHOLDER. Currently works as 'changelog' does.
-    """
-    enable_debug_logging(debug)
-
-    # TODO change to diff output, not the changelog entries
-    result = DataContract(data_contract_file=location_old, inline_definitions=True).changelog(
-        DataContract(data_contract_file=location_new, inline_definitions=True)
-    )
-
-    console.print(result.changelog_str())
 
 
 def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict:

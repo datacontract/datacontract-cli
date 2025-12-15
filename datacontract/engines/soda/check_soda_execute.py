@@ -3,12 +3,13 @@ import typing
 import uuid
 
 from datacontract.engines.soda.connections.athena import to_athena_soda_configuration
-from datacontract.engines.soda.connections.oracle import to_oracle_soda_configuration
+from datacontract.engines.soda.connections.oracle import initialize_client_and_create_soda_configuration
 
 if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
 from duckdb.duckdb import DuckDBPyConnection
+from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 from datacontract.engines.soda.connections.databricks import to_databricks_soda_configuration
@@ -18,14 +19,13 @@ from datacontract.engines.soda.connections.postgres import to_postgres_soda_conf
 from datacontract.engines.soda.connections.snowflake import to_snowflake_soda_configuration
 from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_configuration
 from datacontract.engines.soda.connections.trino import to_trino_soda_configuration
-from datacontract.export.sodacl_converter import to_sodacl_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
+from datacontract.export.sodacl_exporter import to_sodacl_yaml
 from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
 def check_soda_execute(
     run: Run,
-    data_contract: DataContractSpecification,
+    data_contract: OpenDataContractStandard,
     server: Server,
     spark: "SparkSession" = None,
     duckdb_connection: DuckDBPyConnection = None,
@@ -106,7 +106,7 @@ def check_soda_execute(
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     elif server.type == "oracle":
-        soda_configuration_str = to_oracle_soda_configuration(server)
+        soda_configuration_str = initialize_client_and_create_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     elif server.type == "trino":

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package example;
+
+import "B.proto";
+
+// Message representing a Person with an Address
+message Person {
+    string name = 1;
+    string email = 2;
+    Address address = 3;
+}

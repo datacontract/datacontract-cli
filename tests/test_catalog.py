@@ -14,4 +14,4 @@ def test_cli(tmp_path: PosixPath):
     assert result.exit_code == 0
     assert os.path.exists(tmp_path / "index.html")
     assert os.path.exists(tmp_path / "fixtures/catalog/datacontract-1.html")
-    assert os.path.exists(tmp_path / "fixtures/catalog/datacontract-2.html")
+    assert os.path.exists(tmp_path / "fixtures/catalog/datacontract-2.odcs.html")

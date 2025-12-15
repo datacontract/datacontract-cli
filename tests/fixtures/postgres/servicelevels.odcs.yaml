@@ -1,0 +1,44 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: postgres
+name: postgres
+version: 0.0.1
+domain: my-domain-team
+status: active
+schema:
+- name: my_table
+  physicalName: my_table
+  logicalType: object
+  physicalType: table
+  properties:
+  - name: field_one
+    logicalType: string
+    physicalType: varchar
+    isNullable: false
+    isUnique: true
+    logicalTypeOptions:
+      pattern: '[A-Za-z]{2}-\d{3}-[A-Za-z]{2}$'
+  - name: field_two
+    logicalType: integer
+    physicalType: integer
+    isNullable: true
+    isUnique: false
+    logicalTypeOptions:
+      minimum: 10
+  - name: field_three
+    logicalType: date
+    physicalType: timestamp
+    isNullable: true
+    isUnique: false
+servers:
+- server: postgres
+  type: postgres
+  database: test
+  schema: public
+  host: localhost
+  port: 5432
+slaProperties:
+- property: freshness
+  value: 1
+  unit: h
+  element: my_table.field_three
