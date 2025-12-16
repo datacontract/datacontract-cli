@@ -165,7 +165,6 @@ def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
     return schema_object.name
 
 
-
 def check_property_is_present(model_name, field_name, quoting_config: QuotingConfig = QuotingConfig()) -> Check:
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -492,7 +491,9 @@ def check_property_enum(model_name: str, field_name: str, enum: list, quoting_co
     )
 
 
-def check_property_regex(model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()):
+def check_property_regex(
+    model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()
+):
     if quoting_config.quote_field_name:
         field_name_for_soda = f'"{field_name}"'
     else:
@@ -823,7 +824,9 @@ def check_quality_list(
                         )
                     )
                 else:
-                    checks.append(check_property_duplicate_values(schema_name, property_name, threshold, quoting_config))
+                    checks.append(
+                        check_property_duplicate_values(schema_name, property_name, threshold, quoting_config)
+                    )
             elif quality.metric == "nullValues":
                 if property_name is not None:
                     checks.append(check_property_null_values(schema_name, property_name, threshold, quoting_config))
@@ -833,7 +836,9 @@ def check_quality_list(
                 if property_name is not None:
                     valid_values = quality.arguments.get("validValues") if quality.arguments else None
                     checks.append(
-                        check_property_invalid_values(schema_name, property_name, threshold, valid_values, quoting_config)
+                        check_property_invalid_values(
+                            schema_name, property_name, threshold, valid_values, quoting_config
+                        )
                     )
                 else:
                     logger.warning("Quality check invalidValues is only supported at field level")
@@ -841,7 +846,9 @@ def check_quality_list(
                 if property_name is not None:
                     missing_values = quality.arguments.get("missingValues") if quality.arguments else None
                     checks.append(
-                        check_property_missing_values(schema_name, property_name, threshold, missing_values, quoting_config)
+                        check_property_missing_values(
+                            schema_name, property_name, threshold, missing_values, quoting_config
+                        )
                     )
                 else:
                     logger.warning("Quality check missingValues is only supported at field level")
@@ -1129,4 +1136,3 @@ def _parse_iso8601_to_seconds(duration: str) -> int | None:
         return int(match.group(1))
 
     return None
-
