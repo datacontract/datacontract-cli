@@ -661,7 +661,9 @@ def check_property_invalid_values(
     }
 
     if valid_values is not None:
-        sodacl_check_config["valid values"] = valid_values
+        # Escape single quotes for SQL by doubling them
+        escaped_values = [v.replace("'", "''") if isinstance(v, str) else v for v in valid_values]
+        sodacl_check_config["valid values"] = escaped_values
 
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
@@ -706,7 +708,9 @@ def check_property_missing_values(
     if missing_values is not None:
         filtered_missing_values = [v for v in missing_values if v is not None]
         if filtered_missing_values:
-            sodacl_check_config["missing values"] = filtered_missing_values
+            # Escape single quotes for SQL by doubling them
+            escaped_values = [v.replace("'", "''") if isinstance(v, str) else v for v in filtered_missing_values]
+            sodacl_check_config["missing values"] = escaped_values
 
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
