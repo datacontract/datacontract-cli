@@ -161,7 +161,7 @@ def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
     # Use physicalName if set (ODCS standard way to specify actual table name)
     if schema_object.physicalName:
         return schema_object.physicalName
-    
+
     return schema_object.name
 
 

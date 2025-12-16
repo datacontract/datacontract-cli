@@ -5,6 +5,7 @@ import duckdb
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
+from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.run import Run
 
 
@@ -57,20 +58,9 @@ def get_duckdb_connection(
                     )
                     add_nested_views(con, model_name, schema_obj.properties)
             elif server.format == "parquet":
-                con.sql(f"""
-                            CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
-                            """)
+                create_view_with_schema_union(con, schema_obj, model_path, "read_parquet", to_parquet_types)
             elif server.format == "csv":
-                columns = to_csv_types(schema_obj)
-                run.log_info("Using columns: " + str(columns))
-                if columns is None:
-                    con.sql(
-                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""
-                    )
-                else:
-                    con.sql(
-                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
-                    )
+                create_view_with_schema_union(con, schema_obj, model_path, "read_csv", to_csv_types)
             elif server.format == "delta":
                 con.sql("update extensions;")  # Make sure we have the latest delta extension
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
@@ -79,6 +69,28 @@ def get_duckdb_connection(
                 run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
     return con
 
+
+def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str, read_function: str, type_converter):
+    """Create a view by unioning empty schema table with data files using union_by_name"""
+    converted_types = type_converter(schema_obj)
+    model_name = schema_obj.name
+    if converted_types:
+        # Create empty table with contract schema
+        columns_def = [f'"{col_name}" {col_type}' for col_name, col_type in converted_types.items()]
+        create_empty_table = f"""CREATE TABLE "{model_name}_schema" ({', '.join(columns_def)});"""
+        con.sql(create_empty_table)
+
+        # Create view as UNION of empty schema table and data
+        create_view_sql = f"""CREATE VIEW "{model_name}" AS
+            SELECT * FROM "{model_name}_schema"
+            UNION ALL BY NAME
+            SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+        con.sql(create_view_sql)
+    else:
+        # Fallback
+        con.sql(
+            f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+        )
 
 def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     if schema_obj is None:
@@ -89,6 +101,15 @@ def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
             columns[prop.name] = convert_to_duckdb_csv_type(prop)
     return columns
 
+def to_parquet_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
+    """Get proper SQL types for Parquet (preserves decimals, etc.)"""
+    if schema_obj is None:
+        return None
+    columns = {}
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            columns[prop.name] = convert_to_duckdb(prop)
+    return columns
 
 def to_json_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     if schema_obj is None:
