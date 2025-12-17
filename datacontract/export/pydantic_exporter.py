@@ -19,9 +19,9 @@ def _get_description_str(description) -> str | None:
     if isinstance(description, str):
         return description
     # It's a Description object - get purpose or other meaningful field
-    if hasattr(description, 'purpose') and description.purpose:
+    if hasattr(description, "purpose") and description.purpose:
         return description.purpose
-    if hasattr(description, 'usage') and description.usage:
+    if hasattr(description, "usage") and description.usage:
         return description.usage
     return None
 
@@ -41,6 +41,7 @@ def to_pydantic_model_str(contract: OpenDataContractStandard) -> str:
                     ast.Name("datetime", ctx=ast.Load()),
                     ast.Name("typing", ctx=ast.Load()),
                     ast.Name("pydantic", ctx=ast.Load()),
+                    ast.Name("decimal", ctx=ast.Load()),
                 ]
             ),
             *documentation,
@@ -76,14 +77,23 @@ def _get_type(prop: SchemaProperty) -> Optional[str]:
     return prop.logicalType
 
 
+def _get_physical_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the physical type from a schema property."""
+    return prop.physicalType.lower() if prop.physicalType else None
+
+
 def constant_field_annotation(
     field_name: str, prop: SchemaProperty
 ) -> tuple[type_annotation_type, typing.Optional[ast.ClassDef]]:
     prop_type = _get_type(prop)
+    physical_type = _get_physical_type(prop)
+
     match prop_type:
         case "string":
             return (ast.Name("str", ctx=ast.Load()), None)
         case "number":
+            if physical_type == "decimal":
+                return (ast.Attribute(value=ast.Name(id="decimal", ctx=ast.Load()), attr="Decimal"), None)
             # Either integer or float in specification,
             # so we use float.
             return (ast.Name("float", ctx=ast.Load()), None)
@@ -103,7 +113,6 @@ def constant_field_annotation(
             return (ast.Name(field_name.capitalize(), ctx=ast.Load()), classdef)
         case _:
             # Check physical type for more specific mappings
-            physical_type = prop.physicalType.lower() if prop.physicalType else None
             if physical_type:
                 if physical_type in ["text", "varchar", "char", "nvarchar"]:
                     return (ast.Name("str", ctx=ast.Load()), None)
@@ -115,8 +124,10 @@ def constant_field_annotation(
                     return (ast.Name("float", ctx=ast.Load()), None)
                 elif physical_type in ["double", "float64"]:
                     return (ast.Name("float", ctx=ast.Load()), None)
-                elif physical_type in ["decimal", "numeric", "number"]:
+                elif physical_type in ["numeric", "number"]:
                     return (ast.Name("float", ctx=ast.Load()), None)
+                elif physical_type == "decimal":
+                    return (ast.Attribute(value=ast.Name(id="decimal", ctx=ast.Load()), attr="Decimal"), None)
                 elif physical_type in ["timestamp", "datetime", "timestamp_tz", "timestamp_ntz"]:
                     return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="datetime"), None)
                 elif physical_type == "date":
