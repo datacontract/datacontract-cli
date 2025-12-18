@@ -1,6 +1,6 @@
 """Helper functions for creating ODCS (OpenDataContractStandard) objects."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from open_data_contract_standard.model import (
     CustomProperty,
@@ -12,8 +12,8 @@ from open_data_contract_standard.model import (
 
 
 def create_odcs(
-    id: str = None,
-    name: str = None,
+    id: str | None = None,
+    name: str | None = None,
     version: str = "1.0.0",
     status: str = "draft",
 ) -> OpenDataContractStandard:
@@ -31,9 +31,9 @@ def create_odcs(
 def create_schema_object(
     name: str,
     physical_type: str = "table",
-    description: str = None,
-    business_name: str = None,
-    properties: List[SchemaProperty] = None,
+    description: str | None = None,
+    business_name: str | None = None,
+    properties: list[SchemaProperty] | None = None,
 ) -> SchemaObject:
     """Create a SchemaObject (equivalent to DCS Model)."""
     schema = SchemaObject(
@@ -54,28 +54,28 @@ def create_schema_object(
 def create_property(
     name: str,
     logical_type: str,
-    physical_type: str = None,
-    description: str = None,
-    required: bool = None,
-    primary_key: bool = None,
-    primary_key_position: int = None,
-    unique: bool = None,
-    classification: str = None,
-    tags: List[str] = None,
-    examples: List[Any] = None,
-    min_length: int = None,
-    max_length: int = None,
-    pattern: str = None,
-    minimum: float = None,
-    maximum: float = None,
-    exclusive_minimum: float = None,
-    exclusive_maximum: float = None,
-    precision: int = None,
-    scale: int = None,
-    format: str = None,
-    properties: List["SchemaProperty"] = None,
-    items: "SchemaProperty" = None,
-    custom_properties: Dict[str, Any] = None,
+    physical_type: str | None = None,
+    description: str | None = None,
+    required: bool = False,
+    primary_key: bool = False,
+    primary_key_position: int | None = None,
+    unique: bool = False,
+    classification: str | None = None,
+    tags: list[str] | None = None,
+    examples: list[Any] | None = None,
+    min_length: int | None = None,
+    max_length: int | None = None,
+    pattern: str | None = None,
+    minimum: float | None = None,
+    maximum: float | None = None,
+    exclusive_minimum: float | None = None,
+    exclusive_maximum: float | None = None,
+    precision: int | None = None,
+    scale: int | None = None,
+    format: str | None = None,
+    properties: list["SchemaProperty"] | None = None,
+    items: "SchemaProperty" | None = None,
+    custom_properties: dict[str, Any] | None = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field)."""
     prop = SchemaProperty(name=name)
@@ -130,9 +130,7 @@ def create_property(
 
     # Custom properties
     if custom_properties:
-        prop.customProperties = [
-            CustomProperty(property=k, value=v) for k, v in custom_properties.items()
-        ]
+        prop.customProperties = [CustomProperty(property=k, value=v) for k, v in custom_properties.items()]
 
     return prop
 
@@ -140,19 +138,19 @@ def create_property(
 def create_server(
     name: str,
     server_type: str,
-    environment: str = None,
-    host: str = None,
-    port: int = None,
-    database: str = None,
-    schema: str = None,
-    account: str = None,
-    project: str = None,
-    dataset: str = None,
-    path: str = None,
-    location: str = None,
-    catalog: str = None,
-    topic: str = None,
-    format: str = None,
+    environment: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    database: str | None = None,
+    schema: str | None = None,
+    account: str | None = None,
+    project: str | None = None,
+    dataset: str | None = None,
+    path: str | None = None,
+    location: str | None = None,
+    catalog: str | None = None,
+    topic: str | None = None,
+    format: str | None = None,
 ) -> Server:
     """Create a Server object."""
     server = Server(server=name, type=server_type)
