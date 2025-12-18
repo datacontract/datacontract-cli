@@ -67,7 +67,7 @@ def common(
     pass
 
 
-@app.command()
+@app.command(name="init")
 def init(
     location: Annotated[
         str, typer.Argument(help="The location of the data contract file to create.")
@@ -90,7 +90,7 @@ def init(
     console.print("📄 data contract written to " + location)
 
 
-@app.command()
+@app.command(name="lint")
 def lint(
     location: Annotated[
         str,
@@ -125,7 +125,7 @@ def enable_debug_logging(debug: bool):
         )
 
 
-@app.command()
+@app.command(name="test")
 def test(
     location: Annotated[
         str,
@@ -187,7 +187,7 @@ def test(
     write_test_result(run, console, output_format, output, data_contract)
 
 
-@app.command()
+@app.command(name="export")
 def export(
     format: Annotated[ExportFormat, typer.Option(help="The export format.")],
     output: Annotated[
@@ -467,7 +467,7 @@ def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict
     return default_args | dict(zip(trimmed_keys, context.args[1::2]))
 
 
-@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@app.command(name="api", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def api(
     ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
