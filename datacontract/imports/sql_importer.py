@@ -94,7 +94,7 @@ def import_sql(import_format: str, source: str, import_args: dict[str, str] | No
 
             prop = create_property(
                 name=column.this.name,
-                logical_type=(map_type_from_sql(col_type) if col_type is not None else "object"),
+                logical_type=(map_type_from_sql(col_type, dialect) if col_type is not None else "object"),
                 physical_type=col_type,
                 description=get_description(column),
                 max_length=get_max_length(column),
@@ -135,7 +135,7 @@ def get_primary_key(column: ColumnDef) -> bool:
     )
 
 
-def to_dialect(args_dialect: str) -> Dialects | None:
+def to_dialect(args_dialect: str | None) -> Dialects | None:
     """Convert import arguments to SQLGlot dialect.
 
     Args:
@@ -144,6 +144,8 @@ def to_dialect(args_dialect: str) -> Dialects | None:
     Returns:
         The corresponding SQLGlot dialect or None if not found.
     """
+    if args_dialect is None:
+        return None
     if args_dialect.lower() == "sqlserver":
         return Dialects.TSQL
     elif args_dialect.upper() in Dialects.__members__:
@@ -270,11 +272,12 @@ def get_precision_scale(column: ColumnDef) -> tuple[int | None, int | None]:
             return None, None
 
 
-def map_type_from_sql(sql_type: str) -> str:
+def map_type_from_sql(sql_type: str, dialect: Dialects | None = None) -> str:
     """Map SQL type to ODCS logical type.
 
     Args:
         sql_type: The SQL type string.
+        dialect: The SQLGlot dialect (optional).
 
     Returns:
         The corresponding ODCS logical type.
@@ -297,6 +300,10 @@ def map_type_from_sql(sql_type: str) -> str:
     if sql_type_normed.startswith(string_types) or sql_type_normed in ("clob", "nclob"):
         return "string"
 
+    # Handle BYTEINT (Teradata single-byte integer)
+    if sql_type_normed.startswith("byteint"):
+        return "integer"
+
     if (sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval")) or sql_type_normed.startswith(
         ("bigint", "tinyint", "smallint")
     ):
@@ -308,7 +315,11 @@ def map_type_from_sql(sql_type: str) -> str:
     if sql_type_normed.startswith(("bool", "bit")):
         return "boolean"
 
-    binary_types = ("binary", "varbinary", "raw")
+    # Handle INTERVAL types - Oracle as object, others as string
+    if sql_type_normed.startswith("interval"):
+        return "object" if dialect == Dialects.ORACLE else "string"
+
+    binary_types = ("binary", "varbinary", "raw", "byte", "varbyte")
     if sql_type_normed.startswith(binary_types) or sql_type_normed in ("blob", "bfile"):
         return "array"
 

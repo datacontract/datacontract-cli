@@ -1,5 +1,7 @@
 """Helper functions for creating ODCS (OpenDataContractStandard) objects."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from open_data_contract_standard.model import (
@@ -73,8 +75,8 @@ def create_property(
     precision: int | None = None,
     scale: int | None = None,
     format: str | None = None,
-    properties: list["SchemaProperty"] | None = None,
-    items: "SchemaProperty" | None = None,
+    properties: list[SchemaProperty] | None = None,
+    items: SchemaProperty | None = None,
     custom_properties: dict[str, Any] | None = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field)."""
@@ -85,7 +87,7 @@ def create_property(
         prop.physicalType = physical_type
     if description:
         prop.description = description
-    if required is not None:
+    if required:
         prop.required = required
     if primary_key:
         prop.primaryKey = primary_key
