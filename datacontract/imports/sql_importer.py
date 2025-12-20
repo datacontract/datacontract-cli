@@ -1,9 +1,17 @@
+"""SQL importer for data contracts.
+
+This module provides functionality to import SQL DDL statements and convert them
+into OpenDataContractStandard data contract specifications.
+"""
+
 import logging
-import os
+import pathlib
+from typing import Any
 
 import sqlglot
 from open_data_contract_standard.model import OpenDataContractStandard
 from sqlglot.dialects.dialect import Dialects
+from sqlglot.expressions import ColumnDef, Table
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -15,70 +23,87 @@ from datacontract.imports.odcs_helper import (
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 class SqlImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    """Importer for SQL DDL files."""
+
+    def import_source(self, source: str, import_args: dict[str, str]) -> OpenDataContractStandard:
+        """Import source into the data contract specification.
+
+        Args:
+            source: The source file path.
+            import_args: Additional import arguments.
+
+        Returns:
+            The populated data contract specification.
+        """
         return import_sql(self.import_format, source, import_args)
 
 
-def import_sql(
-    format: str, source: str, import_args: dict = None
-) -> OpenDataContractStandard:
+def import_sql(import_format: str, source: str, import_args: dict[str, str] | None = None) -> OpenDataContractStandard:
+    """Import SQL into the data contract specification.
+
+    Args:
+        import_format: The type of import format (e.g. "sql").
+        source: The source file path.
+        import_args: Additional import arguments.
+
+    Returns:
+        The populated data contract specification.
+    """
     sql = read_file(source)
-    dialect = to_dialect(import_args)
+
+    dialect = None
+    if import_args is not None and "dialect" in import_args:
+        dialect = to_dialect(import_args["dialect"])
 
     try:
         parsed = sqlglot.parse_one(sql=sql, read=dialect)
     except Exception as e:
-        logging.error(f"Error parsing SQL: {str(e)}")
+        logger.exception("Error parsing SQL")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
-            reason=f"Error parsing SQL: {str(e)}",
+            reason=f"Error parsing SQL: {e!s}",
             engine="datacontract",
             result=ResultEnum.error,
-        )
+        ) from e
 
     odcs = create_odcs()
     odcs.schema_ = []
 
-    server_type = to_server_type(source, dialect)
+    server_type = to_server_type(dialect) if dialect is not None else None
     if server_type is not None:
         odcs.servers = [create_server(name=server_type, server_type=server_type)]
 
-    tables = parsed.find_all(sqlglot.expressions.Table)
+    tables = parsed.find_all(Table)
 
     for table in tables:
         table_name = table.this.name
-        properties = []
+        properties: list[Any] = []
 
         primary_key_position = 1
-        for column in parsed.find_all(sqlglot.exp.ColumnDef):
-            if column.parent.this.name != table_name:
+        for column in parsed.find_all(ColumnDef):
+            if column.parent is None or column.parent.this.name != table_name:
                 continue
 
-            col_name = column.this.name
             col_type = to_col_type(column, dialect)
-            logical_type = map_type_from_sql(col_type)
-            col_description = get_description(column)
-            max_length = get_max_length(column)
-            precision, scale = get_precision_scale(column)
             is_primary_key = get_primary_key(column)
-            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+            precision, scale = get_precision_scale(column)
 
             prop = create_property(
-                name=col_name,
-                logical_type=logical_type,
+                name=column.this.name,
+                logical_type=(map_type_from_sql(col_type, dialect) if col_type is not None else "object"),
                 physical_type=col_type,
-                description=col_description,
-                max_length=max_length,
+                description=get_description(column),
+                max_length=get_max_length(column),
                 precision=precision,
                 scale=scale,
                 primary_key=is_primary_key,
                 primary_key_position=primary_key_position if is_primary_key else None,
-                required=is_required if is_required else None,
+                required=column.find(sqlglot.exp.NotNullColumnConstraint) is not None,
             )
 
             if is_primary_key:
@@ -96,51 +121,51 @@ def import_sql(
     return odcs
 
 
-def get_primary_key(column) -> bool | None:
-    if column.find(sqlglot.exp.PrimaryKeyColumnConstraint) is not None:
-        return True
-    if column.find(sqlglot.exp.PrimaryKey) is not None:
-        return True
-    return None
+def get_primary_key(column: ColumnDef) -> bool:
+    """Determine if the column is a primary key.
+
+    Args:
+        column: The SQLGlot column expression.
+
+    Returns:
+        True if primary key, False if not or undetermined.
+    """
+    return (
+        column.find(sqlglot.exp.PrimaryKeyColumnConstraint) is not None
+        or column.find(sqlglot.exp.PrimaryKey) is not None
+    )
 
 
-def to_dialect(import_args: dict) -> Dialects | None:
-    if import_args is None:
+def to_dialect(args_dialect: str | None) -> Dialects | None:
+    """Convert import arguments to SQLGlot dialect.
+
+    Args:
+        args_dialect: The dialect string from import arguments.
+
+    Returns:
+        The corresponding SQLGlot dialect or None if not found.
+    """
+    if args_dialect is None:
         return None
-    if "dialect" not in import_args:
-        return None
-    dialect = import_args.get("dialect")
-    if dialect is None:
-        return None
-    if dialect == "sqlserver":
+    if args_dialect.lower() == "sqlserver":
         return Dialects.TSQL
-    if dialect.upper() in Dialects.__members__:
-        return Dialects[dialect.upper()]
-    if dialect == "sqlserver":
-        return Dialects.TSQL
-    return None
-
-
-def to_physical_type_key(dialect: Dialects | str | None) -> str:
-    dialect_map = {
-        Dialects.TSQL: "sqlserverType",
-        Dialects.POSTGRES: "postgresType",
-        Dialects.BIGQUERY: "bigqueryType",
-        Dialects.SNOWFLAKE: "snowflakeType",
-        Dialects.REDSHIFT: "redshiftType",
-        Dialects.ORACLE: "oracleType",
-        Dialects.MYSQL: "mysqlType",
-        Dialects.DATABRICKS: "databricksType",
-    }
-    if isinstance(dialect, str):
-        dialect = Dialects[dialect.upper()] if dialect.upper() in Dialects.__members__ else None
-    return dialect_map.get(dialect, "physicalType")
-
-
-def to_server_type(source, dialect: Dialects | None) -> str | None:
-    if dialect is None:
+    elif args_dialect.upper() in Dialects.__members__:
+        return Dialects[args_dialect.upper()]
+    else:
+        logger.warning("Dialect '%s' not recognized, defaulting to None", args_dialect)
         return None
-    dialect_map = {
+
+
+def to_server_type(dialect: Dialects) -> str | None:
+    """Convert dialect to ODCS object server type.
+
+    Args:
+        dialect: The SQLGlot dialect.
+
+    Returns:
+        The corresponding server type or None if not found.
+    """
+    server_type = {
         Dialects.TSQL: "sqlserver",
         Dialects.POSTGRES: "postgres",
         Dialects.BIGQUERY: "bigquery",
@@ -149,150 +174,175 @@ def to_server_type(source, dialect: Dialects | None) -> str | None:
         Dialects.ORACLE: "oracle",
         Dialects.MYSQL: "mysql",
         Dialects.DATABRICKS: "databricks",
-    }
-    return dialect_map.get(dialect, None)
+        Dialects.TERADATA: "teradata",
+    }.get(dialect)
+
+    if server_type is None:
+        logger.warning("No server type mapping for dialect '%s', defaulting to None", dialect)
+    return server_type
 
 
-def to_col_type(column, dialect):
+def to_col_type(column: ColumnDef, dialect: Dialects | None) -> str | None:
+    """Convert column to SQL type string.
+
+    Args:
+        column: The SQLGlot column expression.
+        dialect: The SQLGlot dialect.
+
+    Returns:
+        The SQL type string or None if not found.
+    """
     col_type_kind = column.args["kind"]
-    if col_type_kind is None:
+    return col_type_kind.sql(dialect) if col_type_kind is not None else None
+
+
+def to_col_type_normalized(column: ColumnDef) -> str | None:
+    """Convert column to normalized SQL type string.
+
+    Args:
+        column: The SQLGlot column expression.
+
+    Returns:
+        The normalized SQL type string or None if not found.
+    """
+    if column.args["kind"] is None:
         return None
-
-    return col_type_kind.sql(dialect)
-
-
-def to_col_type_normalized(column):
     col_type = column.args["kind"].this.name
-    if col_type is None:
-        return None
-    return col_type.lower()
+    return col_type.lower() if col_type is not None else None
 
 
-def get_description(column: sqlglot.expressions.ColumnDef) -> str | None:
-    if column.comments is None:
-        return None
-    return " ".join(comment.strip() for comment in column.comments)
+def get_description(column: ColumnDef) -> str | None:
+    """Get the description from column comments.
+
+    Args:
+        column: The SQLGlot column expression.
+
+    Returns:
+        The description string or None if not found.
+    """
+    return " ".join(comment.strip() for comment in column.comments) if column.comments is not None else None
 
 
-def get_max_length(column: sqlglot.expressions.ColumnDef) -> int | None:
+def get_max_length(column: ColumnDef) -> int | None:
+    """Get the maximum length from column definition.
+
+    Args:
+        column: The SQLGlot column expression.
+
+    Returns:
+        The maximum length or None if not found.
+    """
     col_type = to_col_type_normalized(column)
-    if col_type is None:
+    if col_type is None or col_type not in ["varchar", "char", "nvarchar", "nchar"]:
         return None
-    if col_type not in ["varchar", "char", "nvarchar", "nchar"]:
-        return None
-    col_params = list(column.args["kind"].find_all(sqlglot.expressions.DataTypeParam))
+    col_params: list[Any] = list(column.args["kind"].find_all(sqlglot.expressions.DataTypeParam))
     max_length_str = None
-    if len(col_params) == 0:
-        return None
-    if len(col_params) == 1:
-        max_length_str = col_params[0].name
-    if len(col_params) == 2:
-        max_length_str = col_params[1].name
+    match len(col_params):
+        case 0:
+            return None
+        case 1:
+            max_length_str = col_params[0].name
+        case 2:
+            max_length_str = col_params[1].name
+
     if max_length_str is not None:
         return int(max_length_str) if max_length_str.isdigit() else None
 
 
-def get_precision_scale(column):
+def get_precision_scale(column: ColumnDef) -> tuple[int | None, int | None]:
+    """Get the precision and scale from column definition.
+
+    Args:
+        column: The SQLGlot column expression.
+
+    Returns:
+        The precision and scale or None if not found.
+    """
     col_type = to_col_type_normalized(column)
-    if col_type is None:
+    if col_type is None or col_type not in ["decimal", "numeric", "float", "number"]:
         return None, None
-    if col_type not in ["decimal", "numeric", "float", "number"]:
-        return None, None
+
     col_params = list(column.args["kind"].find_all(sqlglot.expressions.DataTypeParam))
-    if len(col_params) == 0:
-        return None, None
-    if len(col_params) == 1:
-        if not col_params[0].name.isdigit():
+
+    match col_params:
+        case []:
             return None, None
-        precision = int(col_params[0].name)
-        scale = 0
-        return precision, scale
-    if len(col_params) == 2:
-        if not col_params[0].name.isdigit() or not col_params[1].name.isdigit():
+        case [first] if first.name.isdigit():
+            return int(first.name), 0
+        case [first, second] if first.name.isdigit() and second.name.isdigit():
+            return int(first.name), int(second.name)
+        case _:
             return None, None
-        precision = int(col_params[0].name)
-        scale = int(col_params[1].name)
-        return precision, scale
-    return None, None
 
 
-def map_type_from_sql(sql_type: str) -> str | None:
-    """Map SQL type to ODCS logical type."""
-    if sql_type is None:
-        return None
+def map_type_from_sql(sql_type: str, dialect: Dialects | None = None) -> str:
+    """Map SQL type to ODCS logical type.
 
+    Args:
+        sql_type: The SQL type string.
+        dialect: The SQLGlot dialect (optional).
+
+    Returns:
+        The corresponding ODCS logical type.
+    """
     sql_type_normed = sql_type.lower().strip()
 
-    if sql_type_normed.startswith("varchar"):
+    # Check exact matches first
+    exact_matches: dict[str, str] = {
+        "date": "date",
+        "time": "string",
+        "uniqueidentifier": "string",
+        "json": "object",
+        "xml": "string",
+    }
+    if sql_type_normed in exact_matches:
+        return exact_matches[sql_type_normed]
+
+    # Check prefix and set matches
+    string_types = ("varchar", "char", "string", "nchar", "text", "nvarchar", "ntext")
+    if sql_type_normed.startswith(string_types) or sql_type_normed in ("clob", "nclob"):
         return "string"
-    elif sql_type_normed.startswith("char"):
-        return "string"
-    elif sql_type_normed.startswith("string"):
-        return "string"
-    elif sql_type_normed.startswith("nchar"):
-        return "string"
-    elif sql_type_normed.startswith("text"):
-        return "string"
-    elif sql_type_normed.startswith("nvarchar"):
-        return "string"
-    elif sql_type_normed.startswith("ntext"):
-        return "string"
-    elif sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval"):
+
+    # Handle BYTEINT (Teradata single-byte integer)
+    if sql_type_normed.startswith("byteint"):
         return "integer"
-    elif sql_type_normed.startswith("bigint"):
+
+    if (sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval")) or sql_type_normed.startswith(
+        ("bigint", "tinyint", "smallint")
+    ):
         return "integer"
-    elif sql_type_normed.startswith("tinyint"):
-        return "integer"
-    elif sql_type_normed.startswith("smallint"):
-        return "integer"
-    elif sql_type_normed.startswith("float"):
+
+    if sql_type_normed.startswith(("float", "double", "decimal", "numeric", "number")):
         return "number"
-    elif sql_type_normed.startswith("double"):
-        return "number"
-    elif sql_type_normed.startswith("decimal"):
-        return "number"
-    elif sql_type_normed.startswith("numeric"):
-        return "number"
-    elif sql_type_normed.startswith("bool"):
+
+    if sql_type_normed.startswith(("bool", "bit")):
         return "boolean"
-    elif sql_type_normed.startswith("bit"):
-        return "boolean"
-    elif sql_type_normed.startswith("binary"):
+
+    # Handle INTERVAL types - Oracle as object, others as string
+    if sql_type_normed.startswith("interval"):
+        return "object" if dialect == Dialects.ORACLE else "string"
+
+    binary_types = ("binary", "varbinary", "raw", "byte", "varbyte")
+    if sql_type_normed.startswith(binary_types) or sql_type_normed in ("blob", "bfile"):
         return "array"
-    elif sql_type_normed.startswith("varbinary"):
-        return "array"
-    elif sql_type_normed.startswith("raw"):
-        return "array"
-    elif sql_type_normed == "blob" or sql_type_normed == "bfile":
-        return "array"
-    elif sql_type_normed == "date":
+
+    datetime_types = ("datetime", "datetime2", "smalldatetime", "datetimeoffset")
+    if sql_type_normed.startswith("timestamp") or sql_type_normed in datetime_types:
         return "date"
-    elif sql_type_normed == "time":
-        return "string"
-    elif sql_type_normed.startswith("timestamp"):
-        return "date"
-    elif sql_type_normed == "datetime" or sql_type_normed == "datetime2":
-        return "date"
-    elif sql_type_normed == "smalldatetime":
-        return "date"
-    elif sql_type_normed == "datetimeoffset":
-        return "date"
-    elif sql_type_normed == "uniqueidentifier":  # tsql
-        return "string"
-    elif sql_type_normed == "json":
-        return "object"
-    elif sql_type_normed == "xml":  # tsql
-        return "string"
-    elif sql_type_normed.startswith("number"):
-        return "number"
-    elif sql_type_normed == "clob" or sql_type_normed == "nclob":
-        return "string"
-    else:
-        return "object"
+
+    return "object"
 
 
-def read_file(path):
-    if not os.path.exists(path):
+def read_file(path: str) -> str:
+    """Read the content of a file.
+
+    Args:
+        path: The file path.
+
+    Returns:
+        The content of the file.
+    """
+    if not pathlib.Path(path).exists():
         raise DataContractException(
             type="import",
             name=f"Reading source from {path}",
@@ -300,6 +350,14 @@ def read_file(path):
             engine="datacontract",
             result=ResultEnum.error,
         )
-    with open(path, "r") as file:
+    with pathlib.Path(path).open("r") as file:
         file_content = file.read()
+    if file_content.strip() == "":
+        raise DataContractException(
+            type="import",
+            name=f"Reading source from {path}",
+            reason=f"The file '{path}' is empty.",
+            engine="datacontract",
+            result=ResultEnum.error,
+        )
     return file_content
