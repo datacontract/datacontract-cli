@@ -91,6 +91,7 @@ def import_sql(import_format: str, source: str, import_args: dict[str, str] | No
 
             col_type = to_col_type(column, dialect)
             is_primary_key = get_primary_key(column)
+            precision, scale = get_precision_scale(column)
 
             prop = create_property(
                 name=column.this.name,
@@ -98,8 +99,8 @@ def import_sql(import_format: str, source: str, import_args: dict[str, str] | No
                 physical_type=col_type,
                 description=get_description(column),
                 max_length=get_max_length(column),
-                precision=get_precision_scale(column)[0],
-                scale=get_precision_scale(column)[1],
+                precision=precision,
+                scale=scale,
                 primary_key=is_primary_key,
                 primary_key_position=primary_key_position if is_primary_key else None,
                 required=column.find(sqlglot.exp.NotNullColumnConstraint) is not None,
@@ -204,6 +205,8 @@ def to_col_type_normalized(column: ColumnDef) -> str | None:
     Returns:
         The normalized SQL type string or None if not found.
     """
+    if column.args["kind"] is None:
+        return None
     col_type = column.args["kind"].this.name
     return col_type.lower() if col_type is not None else None
 
@@ -357,5 +360,4 @@ def read_file(path: str) -> str:
             engine="datacontract",
             result=ResultEnum.error,
         )
-    else:
-        return file_content
+    return file_content
