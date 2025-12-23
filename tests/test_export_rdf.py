@@ -109,12 +109,14 @@ def test_to_rdf_complex():
             odcs:classification "restricted" ;
             odcs:description "An internal ID that identifies an order in the online shop." ;
             odcsx:businessName "Order ID" ;
+            odcsx:examples "243c25e5-a081-43a9-aeab-6d5d5b6cb5e2" ;
             odcs:logicalType "string" ;
             odcs:name "order_id" ;
             odcs:physicalType "text" ],
         [ a odcs:Property ;
             odcs:description "The purchased article number" ;
             odcsx:businessName "Stock Keeping Unit" ;
+            odcsx:examples "96385074" ;
             odcs:logicalType "string" ;
             odcs:name "sku" ;
             odcs:physicalType "text" ],
@@ -132,6 +134,7 @@ def test_to_rdf_complex():
             odcs:classification "restricted" ;
             odcs:description "An internal ID that identifies an order in the online shop." ;
             odcsx:businessName "Order ID" ;
+            odcsx:examples "243c25e5-a081-43a9-aeab-6d5d5b6cb5e2" ;
             odcs:logicalType "string" ;
             odcs:name "order_id" ;
             odcs:physicalType "text" ;
