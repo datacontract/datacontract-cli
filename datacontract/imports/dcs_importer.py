@@ -29,9 +29,7 @@ logger = logging.getLogger(__name__)
 class DcsImporter(Importer):
     """Importer for Data Contract Specification (DCS) format."""
 
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         import yaml
 
         from datacontract.lint.resources import read_resource
@@ -99,6 +97,7 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
     # Convert links to authoritativeDefinitions
     if dcs.links:
         from open_data_contract_standard.model import AuthoritativeDefinition
+
         odcs.authoritativeDefinitions = [
             AuthoritativeDefinition(type=key, url=value) for key, value in dcs.links.items()
         ]
@@ -114,8 +113,11 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
         # Convert policies to authoritativeDefinitions
         if dcs.terms.policies:
             from open_data_contract_standard.model import AuthoritativeDefinition
+
             policy_defs = [
-                AuthoritativeDefinition(type=p.name, description=getattr(p, "description", None), url=getattr(p, "url", None))
+                AuthoritativeDefinition(
+                    type=p.name, description=getattr(p, "description", None), url=getattr(p, "url", None)
+                )
                 for p in dcs.terms.policies
             ]
             if odcs.authoritativeDefinitions:
@@ -176,6 +178,7 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
             odcs_server.description = dcs_server.description
         if dcs_server.roles:
             from open_data_contract_standard.model import Role as ODCSRole
+
             odcs_server.roles = [ODCSRole(role=r.name, description=r.description) for r in dcs_server.roles]
         if dcs_server.topic:
             # Store topic in customProperties since ODCS Server doesn't have a topic field
@@ -217,14 +220,14 @@ def _convert_models_to_schema(models: Dict[str, Model], definitions: Dict[str, F
                 schema_obj.physicalName = physical_name
 
         # Store namespace in customProperties for Avro export
-        if hasattr(model, 'namespace') and model.namespace:
+        if hasattr(model, "namespace") and model.namespace:
             if schema_obj.customProperties is None:
                 schema_obj.customProperties = []
             schema_obj.customProperties.append(CustomProperty(property="namespace", value=model.namespace))
 
         # Convert fields to properties
         # Pass model-level primaryKey list to set primaryKey and primaryKeyPosition on fields
-        model_primary_keys = model.primaryKey if hasattr(model, 'primaryKey') and model.primaryKey else []
+        model_primary_keys = model.primaryKey if hasattr(model, "primaryKey") and model.primaryKey else []
         if model.fields:
             schema_obj.properties = _convert_fields_to_properties(model.fields, model_primary_keys, definitions)
 
@@ -307,7 +310,7 @@ def _resolve_field_ref(field: Field, definitions: Dict[str, Field]) -> Field:
         elif resolved_value is not None:
             merged_data[attr] = resolved_value
     # Clear ref to avoid infinite recursion
-    merged_data['ref'] = None
+    merged_data["ref"] = None
     return Field(**merged_data)
 
 
@@ -355,7 +358,7 @@ def _resolve_local_ref(ref_path: str, definitions: Dict[str, Field]) -> Optional
         return None
 
     # Remove the #/definitions/ prefix
-    path_after_definitions = ref_path[len("#/definitions/"):]
+    path_after_definitions = ref_path[len("#/definitions/") :]
 
     # Check for simple case: #/definitions/name
     if "/" not in path_after_definitions:
@@ -439,7 +442,10 @@ def _convert_field_to_property(
         prop.classification = field.classification
     if field.tags:
         prop.tags = field.tags
-
+    if field.examples is not None:
+        prop.examples = field.examples
+    if field.example is not None:
+        prop.examples = [field.example]
     # Convert constraints to logicalTypeOptions
     logical_type_options = {}
     if field.minLength is not None:
@@ -483,7 +489,16 @@ def _convert_field_to_property(
         custom_properties.append(CustomProperty(property="scale", value=str(field.scale)))
     if field.config:
         # Server-specific type overrides physicalType
-        server_type_keys = ["oracleType", "snowflakeType", "postgresType", "bigqueryType", "databricksType", "sqlserverType", "trinoType", "physicalType"]
+        server_type_keys = [
+            "oracleType",
+            "snowflakeType",
+            "postgresType",
+            "bigqueryType",
+            "databricksType",
+            "sqlserverType",
+            "trinoType",
+            "physicalType",
+        ]
         for key in server_type_keys:
             if key in field.config:
                 prop.physicalType = field.config[key]
@@ -511,9 +526,13 @@ def _convert_field_to_property(
     # Convert keys/values (for map types) - store types in customProperties
     if field.keys or field.values:
         if field.keys and field.keys.type:
-            custom_properties.append(CustomProperty(property="mapKeyType", value=_convert_type_to_logical_type(field.keys.type)))
+            custom_properties.append(
+                CustomProperty(property="mapKeyType", value=_convert_type_to_logical_type(field.keys.type))
+            )
         if field.values and field.values.type:
-            custom_properties.append(CustomProperty(property="mapValueType", value=_convert_type_to_logical_type(field.values.type)))
+            custom_properties.append(
+                CustomProperty(property="mapValueType", value=_convert_type_to_logical_type(field.values.type))
+            )
             # For map with struct values, store the value fields in properties
             if field.values.fields:
                 prop.properties = _convert_fields_to_properties(field.values.fields, None, definitions)
@@ -530,11 +549,16 @@ def _convert_field_to_property(
 
     # Convert lineage
     if field.lineage:
-        if hasattr(field.lineage, 'inputFields') and field.lineage.inputFields:
-            prop.transformSourceObjects = [f"{f.namespace}.{f.name}.{f.field}" if hasattr(f, 'namespace') and f.namespace else f"{f.name}.{f.field}" for f in field.lineage.inputFields]
-        if hasattr(field.lineage, 'transformationDescription') and field.lineage.transformationDescription:
+        if hasattr(field.lineage, "inputFields") and field.lineage.inputFields:
+            prop.transformSourceObjects = [
+                f"{f.namespace}.{f.name}.{f.field}"
+                if hasattr(f, "namespace") and f.namespace
+                else f"{f.name}.{f.field}"
+                for f in field.lineage.inputFields
+            ]
+        if hasattr(field.lineage, "transformationDescription") and field.lineage.transformationDescription:
             prop.transformDescription = field.lineage.transformationDescription
-        if hasattr(field.lineage, 'transformationType') and field.lineage.transformationType:
+        if hasattr(field.lineage, "transformationType") and field.lineage.transformationType:
             prop.transformLogic = field.lineage.transformationType
 
     return prop
@@ -568,16 +592,16 @@ def _convert_type_to_logical_type(dcs_type: str) -> str:
         "timestamp_tz": "timestamp",
         "timestamp_ntz": "timestamp",
         "date": "date",
-        "time": "string",   # not supported in ODCS
+        "time": "string",  # not supported in ODCS
         "datetime": "timestamp",
         "array": "array",
         "object": "object",
         "record": "object",
         "struct": "object",
         "map": "object",
-        "bytes": "string",   # not supported in ODCS
+        "bytes": "string",  # not supported in ODCS
         "binary": "string",  # not supported in ODCS
-        "null": "string",    # not supported in ODCS
+        "null": "string",  # not supported in ODCS
     }
 
     return type_mapping.get(t, t)
@@ -637,7 +661,9 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
         sla_properties.append(
             ServiceLevelAgreementProperty(
                 property="generalAvailability",
-                value=servicelevels.availability.description if hasattr(servicelevels.availability, "description") else str(servicelevels.availability),
+                value=servicelevels.availability.description
+                if hasattr(servicelevels.availability, "description")
+                else str(servicelevels.availability),
             )
         )
 
@@ -655,7 +681,12 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
 
     if hasattr(servicelevels, "freshness") and servicelevels.freshness:
         freshness = servicelevels.freshness
-        if hasattr(freshness, "threshold") and freshness.threshold and hasattr(freshness, "timestampField") and freshness.timestampField:
+        if (
+            hasattr(freshness, "threshold")
+            and freshness.threshold
+            and hasattr(freshness, "timestampField")
+            and freshness.timestampField
+        ):
             value, unit = _parse_iso8601_duration(freshness.threshold)
             if value is not None and unit is not None:
                 sla_properties.append(
@@ -686,7 +717,11 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
 
     if hasattr(servicelevels, "frequency") and servicelevels.frequency:
         frequency = servicelevels.frequency
-        freq_value = frequency.interval if hasattr(frequency, "interval") and frequency.interval else (frequency.cron if hasattr(frequency, "cron") else None)
+        freq_value = (
+            frequency.interval
+            if hasattr(frequency, "interval") and frequency.interval
+            else (frequency.cron if hasattr(frequency, "cron") else None)
+        )
         if freq_value:
             sla_properties.append(
                 ServiceLevelAgreementProperty(
@@ -697,7 +732,11 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
 
     if hasattr(servicelevels, "support") and servicelevels.support:
         support = servicelevels.support
-        support_value = support.time if hasattr(support, "time") and support.time else (support.description if hasattr(support, "description") else None)
+        support_value = (
+            support.time
+            if hasattr(support, "time") and support.time
+            else (support.description if hasattr(support, "description") else None)
+        )
         if support_value:
             sla_properties.append(
                 ServiceLevelAgreementProperty(
@@ -708,7 +747,11 @@ def _convert_servicelevels(servicelevels: Any) -> List[ServiceLevelAgreementProp
 
     if hasattr(servicelevels, "backup") and servicelevels.backup:
         backup = servicelevels.backup
-        backup_value = backup.interval if hasattr(backup, "interval") and backup.interval else (backup.cron if hasattr(backup, "cron") else None)
+        backup_value = (
+            backup.interval
+            if hasattr(backup, "interval") and backup.interval
+            else (backup.cron if hasattr(backup, "cron") else None)
+        )
         if backup_value:
             sla_properties.append(
                 ServiceLevelAgreementProperty(
