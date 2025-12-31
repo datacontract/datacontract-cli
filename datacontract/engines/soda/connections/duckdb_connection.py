@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Any, List, Optional
 
 import duckdb
@@ -161,7 +162,7 @@ def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, properties
             add_nested_views(con, nested_model_name, prop.properties)
 
 
-def setup_s3_connection(con, server):
+def setup_s3_connection(con, server: Server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
@@ -205,7 +206,7 @@ def setup_s3_connection(con, server):
             """)
 
 
-def setup_gcs_connection(con, server):
+def setup_gcs_connection(con, server: Server):
     key_id = os.getenv("DATACONTRACT_GCS_KEY_ID")
     secret = os.getenv("DATACONTRACT_GCS_SECRET")
 
@@ -223,11 +224,14 @@ def setup_gcs_connection(con, server):
     """)
 
 
-def setup_azure_connection(con, server):
+def setup_azure_connection(con, server: Server):
     tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
     client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
     client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
-    storage_account = server.storageAccount
+    storage_account = (
+        to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location
+            else None
+        )
 
     if tenant_id is None:
         raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
@@ -260,3 +264,25 @@ def setup_azure_connection(con, server):
             CLIENT_SECRET '{client_secret}'
         );
         """)
+
+def to_azure_storage_account(location: str) -> str | None:
+    """
+    Converts a storage location string to extract the storage account name.
+    ODCS v3.0 has no explicit field for the storage account. It uses the location field, which is a URI.
+    This function parses a storage location string to identify and return the
+    storage account name. It handles two primary patterns:
+    1. Protocol://containerName@storageAccountName
+    2. Protocol://storageAccountName
+    :param location: The storage location string to parse, typically following
+                     the format protocol://containerName@storageAccountName. or
+                     protocol://storageAccountName.
+    :return: The extracted storage account name if found, otherwise None
+    """
+    # to catch protocol://containerName@storageAccountName. pattern from location
+    match = re.search(r"(?<=@)([^.]*)", location, re.IGNORECASE)
+    if match:
+        return match.group()
+    else:
+        # to catch protocol://storageAccountName. pattern from location
+        match = re.search(r"(?<=//)(?!@)([^.]*)", location, re.IGNORECASE)
+    return match.group() if match else None
