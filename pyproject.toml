@@ -25,7 +25,7 @@ dependencies = [
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<15.0",
   "sqlglot>=26.6.0,<29.0.0",
-  "duckdb>=1.0.0,<1.4.0",
+  "duckdb>=1.0.0,<1.5.0",
   "soda-core-duckdb>=3.3.20,<3.6.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
