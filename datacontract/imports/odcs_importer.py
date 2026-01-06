@@ -1,21 +1,22 @@
 import yaml
+from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
 from datacontract.lint.resources import read_resource, setup_sftp_filesystem
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-)
+
+from datacontract.lint.resources import read_resource
 from datacontract.model.exceptions import DataContractException
 
 
 class OdcsImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
-        return import_odcs(data_contract_specification, source)
+        self, source: str, import_args: dict
+    ) -> OpenDataContractStandard:
+        return import_odcs(source)
 
 
-def import_odcs(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
+def import_odcs(source: str) -> OpenDataContractStandard:
+    """Import an ODCS file directly - since ODCS is now the internal format, this is simpler."""
     try:
         if source.startswith("sftp://"):
             fs = setup_sftp_filesystem(source)
@@ -23,7 +24,7 @@ def import_odcs(data_contract_specification: DataContractSpecification, source: 
                 odcs_contract = yaml.safe_load(file.read())
         else:
             odcs_contract = yaml.safe_load(read_resource(source))
-
+            
     except Exception as e:
         raise DataContractException(
             type="schema",
@@ -33,10 +34,9 @@ def import_odcs(data_contract_specification: DataContractSpecification, source: 
             original_exception=e,
         )
 
-    odcs_kind = odcs_contract.get("kind")
-    odcs_api_version = odcs_contract.get("apiVersion")
+    odcs_kind = odcs_yaml.get("kind")
+    odcs_api_version = odcs_yaml.get("apiVersion")
 
-    # if odcs_kind is not DataContract throw exception
     if odcs_kind != "DataContract":
         raise DataContractException(
             type="schema",
@@ -49,13 +49,12 @@ def import_odcs(data_contract_specification: DataContractSpecification, source: 
         raise DataContractException(
             type="schema",
             name="Importing ODCS contract",
-            reason=f"Unsupported ODCS API version: {odcs_api_version}",
+            reason=f"Unsupported ODCS API version: {odcs_api_version}. Only v3.x is supported.",
             engine="datacontract",
         )
     elif odcs_api_version.startswith("v3."):
-        from datacontract.imports.odcs_v3_importer import import_odcs_v3_as_dcs
-
-        return import_odcs_v3_as_dcs(data_contract_specification, source)
+        # Parse directly as ODCS
+        return OpenDataContractStandard.model_validate(odcs_yaml)
     else:
         raise DataContractException(
             type="schema",

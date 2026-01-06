@@ -17,7 +17,6 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import DataContractSpecification
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +31,12 @@ class ExcelExporter(Exporter):
     def __init__(self, export_format):
         super().__init__(export_format)
 
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> bytes:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> bytes:
         """
         Export data contract to Excel using the official ODCS template
 
         Args:
-            data_contract: DataContractSpecification or OpenDataContractStandard to export
+            data_contract: OpenDataContractStandard to export
             model: Model name (not used for Excel export)
             server: Server name (not used for Excel export)
             sql_server_type: SQL server type (not used for Excel export)
@@ -46,13 +45,8 @@ class ExcelExporter(Exporter):
         Returns:
             Excel file as bytes
         """
-        # Convert to ODCS if needed
-        if isinstance(data_contract, DataContractSpecification):
-            # First convert DCS to ODCS format via YAML
-            yaml_content = data_contract.to_yaml()
-            odcs = OpenDataContractStandard.from_string(yaml_content)
-        else:
-            odcs = data_contract
+        # The data_contract is now always ODCS
+        odcs = data_contract
 
         # Get template from export_args if provided, otherwise use default
         template = export_args.get("template") if export_args else None

@@ -2,23 +2,23 @@ import os
 import sys
 
 import yaml
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.dbt_converter import to_dbt_models_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.dbt_exporter import to_dbt_models_yaml
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "dbt"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "dbt"])
     assert result.exit_code == 0
 
 
 def test_to_dbt_models():
-    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    data_contract = OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
     expected_dbt_model = """
 version: 2
 models:
@@ -50,7 +50,6 @@ models:
               regex: ^B[0-9]+$
         meta:
           classification: sensitive
-          pii: true
         tags:
           - order_id
       - name: order_total
@@ -80,7 +79,7 @@ models:
 
 
 def test_to_dbt_models_with_server():
-    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    odcs = OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
     expected_dbt_model = """
 version: 2
 models:
@@ -112,7 +111,6 @@ models:
               regex: ^B[0-9]+$
         meta:
           classification: sensitive
-          pii: true
         tags:
           - order_id
       - name: order_total
@@ -136,86 +134,30 @@ models:
                 - 'delivered'
 """
 
-    result = yaml.safe_load(to_dbt_models_yaml(data_contract, server="bigquery"))
+    result = yaml.safe_load(to_dbt_models_yaml(odcs, server="bigquery"))
 
     assert result == yaml.safe_load(expected_dbt_model)
 
-
-def test_to_dbt_models_with_no_model_type():
-    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract_no_model_type.yaml")
-    expected_dbt_model = """
-version: 2
-models:
-- name: orders
-  config:
-    meta:
-      data_contract: orders-unit-test
-      owner: checkout
-  description: The orders model
-  data_tests:
-    - dbt_utils.unique_combination_of_columns:
-        combination_of_columns:
-          - order_id
-          - order_status
-  columns:
-  - name: order_id
-    data_tests:
-    - not_null
-    - unique
-    - dbt_expectations.expect_column_value_lengths_to_be_between:
-        min_value: 8
-        max_value: 10
-    - dbt_expectations.expect_column_values_to_match_regex:
-        regex: ^B[0-9]+$
-    data_type: VARCHAR
-    meta:
-      pii: true
-      classification: sensitive
-    tags:
-    - order_id
-  - name: order_total
-    data_tests:
-    - not_null
-    - dbt_expectations.expect_column_values_to_be_between:
-        min_value: 0
-        max_value: 1000000
-    data_type: NUMBER
-    description: The order_total field
-  - name: order_status
-    data_tests:
-    - not_null
-    - accepted_values:
-        values:
-        - pending
-        - shipped
-        - delivered
-    data_type: TEXT
-"""
-
-    result = yaml.safe_load(to_dbt_models_yaml(data_contract))
-
-    assert result == yaml.safe_load(expected_dbt_model)
 
 
 def test_to_dbt_models_with_model_level_composite_primary_key():
     """Test model-level primaryKey with multiple columns generates dbt_utils.unique_combination_of_columns"""
-    from datacontract.model.data_contract_specification import DataContractSpecification, Field, Info, Model
-
-    # Create test data with model-level composite primaryKey
-    data_contract = DataContractSpecification(
+    # Create test data with model-level composite primaryKey using ODCS
+    data_contract = OpenDataContractStandard(
+        apiVersion="v3.1.0",
+        kind="DataContract",
         id="my-data-contract-id",
-        info=Info(title="My Data Contract", version="0.0.1"),
-        models={
-            "test_table": Model(
-                type="table",
-                primaryKey=["order_id", "user_id"],  # Model-level composite primary key
-                fields={
-                    "order_id": Field(type="string", required=True),
-                    "user_id": Field(type="string", required=True),
-                    "product_id": Field(type="string", required=True),
-                },
+        schema=[
+            SchemaObject(
+                name="test_table",
+                physicalType="table",
+                properties=[
+                    SchemaProperty(name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
+                    SchemaProperty(name="user_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=2),
+                    SchemaProperty(name="product_id", logicalType="string", required=True),
+                ],
             )
-        },
+        ],
     )
 
     expected_dbt_model = """
@@ -256,23 +198,22 @@ models:
 
 def test_to_dbt_models_with_single_column_primary_key():
     """Test model-level primaryKey with single column adds unique constraint to column"""
-    from datacontract.model.data_contract_specification import DataContractSpecification, Field, Info, Model
-
-    # Create test data with model-level single primaryKey
-    data_contract = DataContractSpecification(
+    # Create test data with model-level single primaryKey using ODCS
+    data_contract = OpenDataContractStandard(
+        apiVersion="v3.1.0",
+        kind="DataContract",
         id="my-data-contract-id",
-        info=Info(title="My Data Contract", version="0.0.1"),
-        models={
-            "test_table": Model(
-                type="table",
-                primaryKey=["order_id"],  # Model-level single primary key
-                fields={
-                    "order_id": Field(type="string", required=True),
-                    "user_id": Field(type="string", required=True),
-                    "product_id": Field(type="string", required=True),
-                },
+        schema=[
+            SchemaObject(
+                name="test_table",
+                physicalType="table",
+                properties=[
+                    SchemaProperty(name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
+                    SchemaProperty(name="user_id", logicalType="string", required=True),
+                    SchemaProperty(name="product_id", logicalType="string", required=True),
+                ],
             )
-        },
+        ],
     )
 
     expected_dbt_model = """

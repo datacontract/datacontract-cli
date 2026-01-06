@@ -1,24 +1,23 @@
-dataContractSpecification: 0.9.1
+kind: DataContract
+apiVersion: v3.1.0
 id: my-data-contract-id
-
-info:
-  title: Orders Unit Test
-  version: 1.0.0
-  owner: checkout
-  description: The orders data contract
-  contact:
-    email: team-orders@example.com
-    url: https://wiki.example.com/teams/checkout
-models:
-  orders:
+name: Orders Unit Test
+version: 1.0.0
+status: active
+description:
+  purpose: The orders data contract
+team:
+  name: checkout
+schema:
+  - name: orders
     description: test
-    fields:
-      order_id:
-        type: string
+    properties:
+      - name: order_id
+        logicalType: string
         required: true
     quality:
       - type: custom
-        engine: great-expectations
+        engine: greatExpectations
         implementation:
           type: expect_table_row_count_to_be_between
           kwargs:

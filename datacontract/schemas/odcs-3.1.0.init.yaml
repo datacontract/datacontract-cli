@@ -1,0 +1,36 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: my-data-contract-id
+name: My Data Contract
+version: 1.0.0
+status: draft
+
+#team:
+#  name: Owner
+#
+#description:
+#  purpose: Purpose of the dataset.
+#  usage: Intended usage of the dataset.
+#  limitations: Limitations of the dataset.
+#
+#schema:
+#  - name: my_table
+#    description: Description of the table
+#    properties:
+#      - name: my_field
+#        logicalType: string
+#        description: Description of the field
+#
+#servers:
+#  - server: production
+#    type: postgres
+#    host: localhost
+#    port: 5432
+#    database: my_database
+#    schema: public
+#
+#slaProperties:
+#  - property: latency
+#    value: 1h
+#  - property: availability
+#    value: 99.9%

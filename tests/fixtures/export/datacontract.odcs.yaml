@@ -1,0 +1,76 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: orders-unit-test
+name: Orders Unit Test
+version: 1.0.0
+status: active
+servers:
+- server: production
+  type: snowflake
+  environment: production
+  account: my-account
+  database: my-database
+  schema: my-schema
+description:
+  purpose: The orders data contract
+schema:
+- name: orders
+  physicalType: table
+  description: The orders model
+  properties:
+  - name: order_id
+    physicalType: varchar
+    businessName: Order ID
+    tags:
+    - order_id
+    customProperties:
+    - property: pii
+      value: 'True'
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    logicalTypeOptions:
+      minLength: 8
+      maxLength: 10
+      pattern: ^B[0-9]+$
+    required: true
+    unique: true
+    classification: sensitive
+  - name: order_total
+    physicalType: bigint
+    description: The order_total field
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 0
+      maximum: 1000000
+    required: true
+    quality:
+    - description: 95% of all order total values are expected to be between 10 and 499 EUR.
+      type: sql
+      mustBeBetween:
+      - 1000
+      - 49900
+      query: |
+        SELECT quantile_cont(order_total, 0.95) AS percentile_95
+        FROM orders
+  - name: order_status
+    physicalType: text
+    primaryKey: true
+    primaryKeyPosition: 2
+    logicalType: string
+    customProperties:
+      - property: enum
+        value:
+          - pending
+          - shipped
+          - delivered
+    required: true
+  quality:
+  - description: Row Count
+    type: sql
+    mustBeGreaterThan: 1000
+    query: |
+      SELECT COUNT(*) AS row_count
+      FROM orders
+team:
+  name: checkout

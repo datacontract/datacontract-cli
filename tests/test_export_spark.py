@@ -1,10 +1,11 @@
+from datacontract_specification.model import DataContractSpecification
 from pyspark.sql import types
 from pyspark.testing import assertSchemaEqual
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.spark_converter import to_spark_dict
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.spark_exporter import to_spark_dict
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -20,7 +21,8 @@ def test_cli():
 
 
 def test_to_spark_schema():
-    data_contract = DataContractSpecification.from_file("fixtures/spark/export/datacontract.yaml")
+    dcs = DataContractSpecification.from_file("fixtures/spark/export/datacontract.yaml")
+    data_contract = convert_dcs_to_odcs(dcs)
     result = to_spark_dict(data_contract)
 
     assert len(result) == 2

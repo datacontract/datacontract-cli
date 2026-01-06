@@ -2,16 +2,18 @@ import ast
 from textwrap import dedent
 
 import pytest
+from open_data_contract_standard.model import Description, OpenDataContractStandard, SchemaObject, SchemaProperty
 
-import datacontract.export.sqlalchemy_converter as conv
-import datacontract.model.data_contract_specification as spec
+import datacontract.export.sqlalchemy_exporter as conv
 
 
 # These tests would be easier if AST nodes were comparable.
 # Current string comparisons are very brittle.
 def test_simple_model_export():
-    m = spec.Model(fields={"f": spec.Field(type="string", primary=True)})
-    ast_class = conv.generate_model_class("Test", m)
+    schema = SchemaObject(
+        name="Test", properties=[SchemaProperty(name="f", logicalType="string", primaryKey=True, primaryKeyPosition=1)]
+    )
+    ast_class = conv.generate_model_class("Test", schema)
     assert (
         ast.unparse(ast_class)
         == dedent(
@@ -25,9 +27,11 @@ def test_simple_model_export():
     )
 
 
-def test_simple_model_export_with_primaryKey():
-    m = spec.Model(fields={"f": spec.Field(type="string", primaryKey=True)})
-    ast_class = conv.generate_model_class("Test", m)
+def test_simple_model_export_with_primary_key():
+    schema = SchemaObject(
+        name="Test", properties=[SchemaProperty(name="f", logicalType="string", primaryKey=True, primaryKeyPosition=1)]
+    )
+    ast_class = conv.generate_model_class("Test", schema)
     assert (
         ast.unparse(ast_class)
         == dedent(
@@ -42,8 +46,17 @@ def test_simple_model_export_with_primaryKey():
 
 
 def test_array_model_export():
-    m = spec.Model(fields={"f": spec.Field(type="array", items=spec.Field(type="string", required=True))})
-    ast_class = conv.generate_model_class("Test", m)
+    schema = SchemaObject(
+        name="Test",
+        properties=[
+            SchemaProperty(
+                name="f",
+                logicalType="array",
+                items=SchemaProperty(name="item", logicalType="string", required=True),
+            )
+        ],
+    )
+    ast_class = conv.generate_model_class("Test", schema)
     assert (
         ast.unparse(ast_class)
         == dedent(
@@ -58,24 +71,34 @@ def test_array_model_export():
 
 
 def test_object_model_export():
-    m = spec.Model(fields={"f": spec.Field(type="object", fields={"f1": spec.Field(type="string", required=True)})})
+    schema = SchemaObject(
+        name="Test",
+        properties=[
+            SchemaProperty(
+                name="f",
+                logicalType="object",
+                properties=[SchemaProperty(name="f1", logicalType="string", required=True)],
+            )
+        ],
+    )
     # Currently unsupported
     with pytest.raises(Exception):
-        conv.generate_model_class("Test", m)
+        conv.generate_model_class("Test", schema)
 
 
 def test_model_documentation_export():
-    m = spec.Model(
+    schema = SchemaObject(
+        name="Test",
         description="A test model",
-        fields={"f": spec.Field(type="string", description="A test field")},
+        properties=[SchemaProperty(name="f", logicalType="string", description="A test field")],
     )
-    ast_class = conv.generate_model_class("Test", m)
+    ast_class = conv.generate_model_class("Test", schema)
     assert (
         ast.unparse(ast_class)
         == dedent(
             """
         class Test(Base):
-            \"""A test model\"""
+            \"\"\"A test model\"\"\"
             __tablename__ = 'Test'
             __table_args__ = {'comment': 'A test model', 'schema': None}
             f = Column(String(None), nullable=True, comment='A test field', primary_key=None)
@@ -85,11 +108,13 @@ def test_model_documentation_export():
 
 
 def test_model_description_export():
-    m = spec.DataContractSpecification(
-        info=spec.Info(description="Contract description"),
-        models={"test_model": spec.Model(fields={"f": spec.Field(type="string")})},
+    contract = OpenDataContractStandard(
+        apiVersion="v3.1.0",
+        kind="DataContract",
+        description=Description(purpose="Contract description"),
+        schema=[SchemaObject(name="test_model", properties=[SchemaProperty(name="f", logicalType="string")])],
     )
-    result = conv.to_sqlalchemy_model_str(m)
+    result = conv.to_sqlalchemy_model_str(contract)
     assert result.strip().endswith(
         dedent(
             """

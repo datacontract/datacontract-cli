@@ -2,26 +2,31 @@ import logging
 import os
 
 import sqlglot
+from open_data_contract_standard.model import OpenDataContractStandard
 from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+)
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
 
 class SqlImporter(Importer):
     def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
-        return import_sql(data_contract_specification, self.import_format, source, import_args)
+        self, source: str, import_args: dict
+    ) -> OpenDataContractStandard:
+        return import_sql(self.import_format, source, import_args)
 
 
 def import_sql(
-    data_contract_specification: DataContractSpecification, format: str, source: str, import_args: dict = None
-) -> DataContractSpecification:
+    format: str, source: str, import_args: dict = None
+) -> OpenDataContractStandard:
     sql = read_file(source)
-
     dialect = to_dialect(import_args)
 
     try:
@@ -36,48 +41,59 @@ def import_sql(
             result=ResultEnum.error,
         )
 
-    server_type: str | None = to_server_type(source, dialect)
+    odcs = create_odcs()
+    odcs.schema_ = []
+
+    server_type = to_server_type(source, dialect)
     if server_type is not None:
-        data_contract_specification.servers[server_type] = Server(type=server_type)
+        odcs.servers = [create_server(name=server_type, server_type=server_type)]
 
     tables = parsed.find_all(sqlglot.expressions.Table)
 
     for table in tables:
-        if data_contract_specification.models is None:
-            data_contract_specification.models = {}
-
         table_name = table.this.name
+        properties = []
 
-        fields = {}
+        primary_key_position = 1
         for column in parsed.find_all(sqlglot.exp.ColumnDef):
             if column.parent.this.name != table_name:
                 continue
 
-            field = Field()
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
-            field.type = map_type_from_sql(col_type)
+            logical_type = map_type_from_sql(col_type)
             col_description = get_description(column)
-            field.description = col_description
-            field.maxLength = get_max_length(column)
+            max_length = get_max_length(column)
             precision, scale = get_precision_scale(column)
-            field.precision = precision
-            field.scale = scale
-            field.primaryKey = get_primary_key(column)
-            field.required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
-            physical_type_key = to_physical_type_key(dialect)
-            field.config = {
-                physical_type_key: col_type,
-            }
+            is_primary_key = get_primary_key(column)
+            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
 
-            fields[col_name] = field
+            prop = create_property(
+                name=col_name,
+                logical_type=logical_type,
+                physical_type=col_type,
+                description=col_description,
+                max_length=max_length,
+                precision=precision,
+                scale=scale,
+                primary_key=is_primary_key,
+                primary_key_position=primary_key_position if is_primary_key else None,
+                required=is_required if is_required else None,
+            )
 
-        data_contract_specification.models[table_name] = Model(
-            type="table",
-            fields=fields,
+            if is_primary_key:
+                primary_key_position += 1
+
+            properties.append(prop)
+
+        schema_obj = create_schema_object(
+            name=table_name,
+            physical_type="table",
+            properties=properties,
         )
+        odcs.schema_.append(schema_obj)
 
-    return data_contract_specification
+    return odcs
 
 
 def get_primary_key(column) -> bool | None:
@@ -201,6 +217,7 @@ def get_precision_scale(column):
 
 
 def map_type_from_sql(sql_type: str) -> str | None:
+    """Map SQL type to ODCS logical type."""
     if sql_type is None:
         return None
 
@@ -221,71 +238,57 @@ def map_type_from_sql(sql_type: str) -> str | None:
     elif sql_type_normed.startswith("ntext"):
         return "string"
     elif sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval"):
-        return "int"
+        return "integer"
     elif sql_type_normed.startswith("bigint"):
-        return "long"
+        return "integer"
     elif sql_type_normed.startswith("tinyint"):
-        return "int"
+        return "integer"
     elif sql_type_normed.startswith("smallint"):
-        return "int"
+        return "integer"
     elif sql_type_normed.startswith("float"):
-        return "float"
+        return "number"
     elif sql_type_normed.startswith("double"):
-        return "double"
+        return "number"
     elif sql_type_normed.startswith("decimal"):
-        return "decimal"
+        return "number"
     elif sql_type_normed.startswith("numeric"):
-        return "decimal"
+        return "number"
     elif sql_type_normed.startswith("bool"):
         return "boolean"
     elif sql_type_normed.startswith("bit"):
         return "boolean"
     elif sql_type_normed.startswith("binary"):
-        return "bytes"
+        return "array"
     elif sql_type_normed.startswith("varbinary"):
-        return "bytes"
+        return "array"
     elif sql_type_normed.startswith("raw"):
-        return "bytes"
+        return "array"
     elif sql_type_normed == "blob" or sql_type_normed == "bfile":
-        return "bytes"
+        return "array"
     elif sql_type_normed == "date":
         return "date"
     elif sql_type_normed == "time":
         return "string"
     elif sql_type_normed.startswith("timestamp"):
-        return map_timestamp(sql_type_normed)
+        return "date"
     elif sql_type_normed == "datetime" or sql_type_normed == "datetime2":
-        return "timestamp_ntz"
+        return "date"
     elif sql_type_normed == "smalldatetime":
-        return "timestamp_ntz"
+        return "date"
     elif sql_type_normed == "datetimeoffset":
-        return "timestamp_tz"
+        return "date"
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return "string"
     elif sql_type_normed == "json":
-        return "string"
+        return "object"
     elif sql_type_normed == "xml":  # tsql
         return "string"
     elif sql_type_normed.startswith("number"):
         return "number"
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
-        return "text"
+        return "string"
     else:
-        return "variant"
-
-
-def map_timestamp(timestamp_type: str) -> str:
-    match timestamp_type:
-        case "timestamp" | "timestampntz" | "timestamp_ntz":
-            return "timestamp_ntz"
-        case "timestamptz" | "timestamp_tz" | "timestamp with time zone":
-            return "timestamp_tz"
-        case localTimezone if localTimezone.startswith("timestampltz"):
-            return "timestamp_tz"
-        case timezoneWrittenOut if timezoneWrittenOut.endswith("time zone"):
-            return "timestamp_tz"
-        case _:
-            return "timestamp"
+        return "object"
 
 
 def read_file(path):

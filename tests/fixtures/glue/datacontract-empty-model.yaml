@@ -1,15 +1,17 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-    title: My Data Contract
-    version: 0.0.1
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
 servers:
-    production:
-        account: '123456789012'
-        database: test_database
-        location: s3://test_bucket/testdb
-        type: glue
-models:
-    table_1:
-        type: table
-        
+- server: production
+  type: glue
+  account: '123456789012'
+  database: test_database
+  location: s3://test_bucket/testdb
+schema:
+- name: table_1
+  physicalType: table
+  logicalType: object
+  physicalName: table_1

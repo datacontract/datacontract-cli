@@ -5,19 +5,19 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.data_caterer_converter import to_data_caterer_generate_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.data_caterer_exporter import to_data_caterer_generate_yaml
+from datacontract.lint.resolve import resolve_data_contract
 
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.yaml", "--format", "data-caterer"])
+    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "data-caterer"])
     assert result.exit_code == 0
 
 
 def test_to_data_caterer():
-    data_contract = DataContractSpecification.from_string(
-        read_file("fixtures/data-caterer/export/datacontract_nested.yaml")
+    data_contract = resolve_data_contract(
+        data_contract_str=read_file("fixtures/data-caterer/export/datacontract_nested.yaml")
     )
     expected_data_caterer_model = _get_expected_data_caterer_yaml("s3://covid19-lake/enigma-jhu/json/*.json")
 
@@ -28,8 +28,8 @@ def test_to_data_caterer():
 
 
 def test_to_data_caterer_with_server():
-    data_contract = DataContractSpecification.from_string(
-        read_file("fixtures/data-caterer/export/datacontract_nested.yaml")
+    data_contract = resolve_data_contract(
+        data_contract_str=read_file("fixtures/data-caterer/export/datacontract_nested.yaml")
     )
     expected_data_caterer_model = _get_expected_data_caterer_yaml("s3://covid19-lake-prod/enigma-jhu/json/*.json")
 
