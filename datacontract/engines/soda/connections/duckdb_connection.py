@@ -6,8 +6,8 @@ import duckdb
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
-from datacontract.imports.importer import setup_sftp_filesystem
 from datacontract.export.sql_type_converter import convert_to_duckdb
+from datacontract.imports.importer import setup_sftp_filesystem
 from datacontract.model.run import Run
 
 

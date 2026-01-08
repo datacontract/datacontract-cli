@@ -4,8 +4,7 @@ import pyarrow
 from open_data_contract_standard.model import OpenDataContractStandard
 from pyarrow import parquet
 
-
-from datacontract.imports.importer import Importer
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,

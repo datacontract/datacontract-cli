@@ -11,7 +11,6 @@ from datacontract.imports.odcs_helper import (
     create_schema_object,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
-from datacontract.lint.resources import setup_sftp_filesystem
 from datacontract.model.exceptions import DataContractException
 
 

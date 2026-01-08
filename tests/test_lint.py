@@ -1,9 +1,10 @@
 import os
 from time import sleep
+
 import paramiko
 from datacontract_specification.model import Server
-from testcontainers.sftp import SFTPContainer, SFTPUser
 from open_data_contract_standard.model import OpenDataContractStandard
+from testcontainers.sftp import SFTPContainer, SFTPUser
 from typer.testing import CliRunner
 
 from datacontract.cli import app

@@ -3,7 +3,6 @@ from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
 from datacontract.lint.resources import read_resource
-
 from datacontract.model.exceptions import DataContractException
 
 
@@ -17,7 +16,7 @@ class OdcsImporter(Importer):
 def import_odcs(source: str) -> OpenDataContractStandard:
     """Import an ODCS file directly - since ODCS is now the internal format, this is simpler."""
     try:
-        odcs_contract = yaml.safe_load(read_resource(source))
+        odcs_yaml = yaml.safe_load(read_resource(source))
 
     except Exception as e:
         raise DataContractException(

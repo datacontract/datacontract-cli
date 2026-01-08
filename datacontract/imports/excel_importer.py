@@ -3,7 +3,7 @@ import os
 from decimal import Decimal
 from io import BytesIO
 from typing import Any, Dict, List, Optional
-from tempfile import TemporaryDirectory
+
 import openpyxl
 from open_data_contract_standard.model import (
     AuthoritativeDefinition,

@@ -3,9 +3,9 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
