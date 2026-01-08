@@ -127,17 +127,12 @@ def test_import_sftp_csv(sftp_container):
     result = DataContract.import_from_source("csv", source)
     model = result.schema_[0].properties
     assert model is not None
-    fields = dict(map(lambda x: (x.name, x), model))
+    fields = {x.name:x for x in model}
     assert "field_one" in fields
     assert "field_two" in fields
     assert "field_three" in fields
 
     assert model is not None
-    fields = dict(map(lambda x : (x.name,x),model))
-    assert fields["string_field"].logicalType == "string"
-    assert fields["blob_field"].logicalType == "array"
-    assert fields["boolean_field"].logicalType == "boolean"
-    assert fields["struct_field"].logicalType == "object"
 
 
 
@@ -151,7 +146,7 @@ def test_import_sftp_parquet(sftp_container):
     result = DataContract.import_from_source("parquet", source)
     model = result.schema_[0].properties
     assert model is not None
-    fields = dict(map(lambda x : (x.name,x),model))
+    fields = {x.name:x for x in model}
     assert fields["string_field"].logicalType == "string"
     assert fields["blob_field"].logicalType == "array"
     assert fields["boolean_field"].logicalType == "boolean"
