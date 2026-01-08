@@ -78,15 +78,21 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
     if converted_types:
         # Create empty table with contract schema
         columns_def = [f'"{col_name}" {col_type}' for col_name, col_type in converted_types.items()]
-        create_empty_table = f"""CREATE TABLE "{model_name}_schema" ({', '.join(columns_def)});"""
+        create_empty_table = f"""CREATE TABLE "{model_name}" ({', '.join(columns_def)});"""
         con.sql(create_empty_table)
 
-        # Create view as UNION of empty schema table and data
-        create_view_sql = f"""CREATE VIEW "{model_name}" AS
-            SELECT * FROM "{model_name}_schema"
-            UNION ALL BY NAME
-            SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
-        con.sql(create_view_sql)
+        # Read columns existing in both current data contract and data
+        intersecting_columns = con.sql(f"""SELECT column_name
+            FROM (DESCRIBE SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1))
+            INTERSECT SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '{model_name}'""").fetchall()
+        selected_columns = ', '.join([column[0] for column in intersecting_columns])
+
+        # Insert data into table by name, but only columns existing in contract and data
+        insert_data_sql = f"""INSERT INTO {model_name} BY NAME
+            (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
+        con.sql(insert_data_sql)
     else:
         # Fallback
         con.sql(
