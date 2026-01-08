@@ -32,6 +32,7 @@ def import_csv(
     if source.startswith("sftp"):
         fs = setup_sftp_filesystem(source)
         duckdb.register_filesystem(filesystem=fs, connection=con)
+        con.register_filesystem(fs)
     con.sql(
         f"""CREATE VIEW "{table_name}" AS SELECT * FROM read_csv_auto('{source}', hive_partitioning=1, auto_type_candidates = ['BOOLEAN', 'INTEGER', 'BIGINT', 'DOUBLE', 'VARCHAR']);"""
     )

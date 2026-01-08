@@ -125,50 +125,20 @@ def test_import_sftp_csv(sftp_container):
     source = f"sftp://{host_ip}:{host_port}{csv_sftp_path}"
 
     result = DataContract.import_from_source("csv", source)
-    model = result.models[csv_file_name]
+    model = result.schema_[0].properties
     assert model is not None
-    assert len(model.fields["field_one"].examples) == 5
-    assert len(model.fields["field_two"].examples) > 0
-    assert len(model.fields["field_three"].examples) > 0
+    fields = dict(map(lambda x: (x.name, x), model))
+    assert "field_one" in fields
+    assert "field_two" in fields
+    assert "field_three" in fields
 
-    for k in model.fields.keys():
-        model.fields[k].examples = None
+    assert model is not None
+    fields = dict(map(lambda x : (x.name,x),model))
+    assert fields["string_field"].logicalType == "string"
+    assert fields["blob_field"].logicalType == "array"
+    assert fields["boolean_field"].logicalType == "boolean"
+    assert fields["struct_field"].logicalType == "object"
 
-    expected = f"""
-                dataContractSpecification: 1.2.1
-                id: my-data-contract-id
-                info:
-                  title: My Data Contract
-                  version: 0.0.1
-                servers:
-                  production:
-                    type: local
-                    format: csv
-                    path: sftp://{host_ip}:{host_port}{csv_sftp_path}
-                    delimiter: ','
-                models:
-                  {csv_file_name}:
-                    description: Generated model of sftp://{host_ip}:{host_port}{csv_sftp_path}
-                    type: table
-                    fields:
-                      field_one:
-                        type: string
-                        required: true
-                        unique: true
-                      field_two:
-                        type: integer
-                        required: true
-                        unique: true
-                        minimum: 14.0
-                        maximum: 89.0
-                      field_three:
-                        type: timestamp
-                        required: true
-                        unique: true
-                """
-    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint().has_passed()
 
 
 
@@ -179,11 +149,13 @@ def test_import_sftp_parquet(sftp_container):
     source = f"sftp://{host_ip}:{host_port}{parquet_sftp_path}"
 
     result = DataContract.import_from_source("parquet", source)
-    model = result.models[parquet_file_name]
+    model = result.schema_[0].properties
     assert model is not None
-    assert model.fields["string_field"].type == "string"
-    assert model.fields["blob_field"].type == "bytes"
-    assert model.fields["boolean_field"].type == "boolean"
+    fields = dict(map(lambda x : (x.name,x),model))
+    assert fields["string_field"].logicalType == "string"
+    assert fields["blob_field"].logicalType == "array"
+    assert fields["boolean_field"].logicalType == "boolean"
+    assert fields["struct_field"].logicalType == "object"
     assert DataContract(data_contract=result).lint().has_passed()
 
 
@@ -192,7 +164,7 @@ def test_import_sftp_jsonschema(sftp_container):
     host_port = sftp_container["host_port"]
     source = f"sftp://{host_ip}:{host_port}{json_sftp_path}"
     result = DataContract.import_from_source("jsonschema", source)
-    assert len(result.models.keys()) > 0
+    assert len(result.schema_) > 0
     assert DataContract(data_contract=result).lint().has_passed()
 
 

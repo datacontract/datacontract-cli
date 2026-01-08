@@ -33,7 +33,6 @@ def import_parquet(source: str) -> OpenDataContractStandard:
     else:
         arrow_schema = parquet.read_schema(source)
     properties = []
-    arrow_schema = parquet.read_schema(source)
     for field_name in arrow_schema.names:
         parquet_field = arrow_schema.field(field_name)
 

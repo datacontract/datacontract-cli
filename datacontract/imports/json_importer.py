@@ -21,8 +21,13 @@ class JsonImporter(Importer):
         return import_json(source)
 
 
-def is_ndjson(file_ctx) -> bool:
+def is_ndjson(file_path: str) -> bool:
     """Check if a file contains newline-delimited JSON."""
+    if file_path.startswith("sftp://"):
+        fs = setup_sftp_filesystem(file_path)
+        file_ctx = fs.open(file_path, "r")
+    else:
+        file_ctx = open(file_path, "r", encoding="utf-8")
     with file_ctx as file:
         for _ in range(5):
             line = file.readline().strip()
@@ -47,7 +52,7 @@ def import_json(source: str, include_examples: bool = False) -> OpenDataContract
         file_ctx = open(source, "r", encoding="utf-8")
         
     # check if file is newline-delimited JSON
-    if is_ndjson(file_ctx):
+    if is_ndjson(source):
 
         json_data = []
         with file_ctx as file:

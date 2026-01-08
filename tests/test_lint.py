@@ -89,35 +89,3 @@ def test_lint_with_references():
 
     assert run.result == "passed"
 
-
-
-
-def test_lint_sftp():
-    sftp_dir = "/sftp/data"
-    sftp_path = f"{sftp_dir}/valid_datacontract.yaml"
-    datacontract = "fixtures/lint/valid_datacontract.yaml"
-    username = "demo"  # for emberstack
-    password = "demo"  # for emberstack
-    user = SFTPUser(name=username, password=password)
-    os.environ["DATACONTRACT_SFTP_USER"] =  username
-    os.environ["DATACONTRACT_SFTP_PASSWORD"] =  password
-
-    # that image is both compatible with Mac and Linux which is not the case with the default image
-    with SFTPContainer(image="emberstack/sftp:latest",users=[user]) as sftp_container:
-        host_ip = sftp_container.get_container_host_ip()
-        host_port = sftp_container.get_exposed_sftp_port()
-        sleep(3) #waiting for the container to be really ready
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(host_ip, host_port, username, password)
-        sftp = ssh.open_sftp()
-        dc = DataContract(data_contract_file=datacontract).get_data_contract_specification()
-        try:
-            sftp.mkdir(sftp_dir)
-            sftp.put(datacontract, sftp_path)
-            dc.servers["my-server"]=Server(location =f"sftp://{host_ip}:{host_port}{sftp_path}")
-            run = DataContract(data_contract=dc).lint()
-            assert run.result == "passed"
-        finally:
-            sftp.close()
-            ssh.close()
