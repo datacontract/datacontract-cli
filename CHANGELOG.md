@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+### Fixed
+
+- Fix `datacontract init` to generate ODCS format instead of deprecated Data Contract Specification (#984)
+- Fix ODCS lint failing on optional relationship `type` field by updating open-data-contract-standard to v3.1.2 (#971)
+- Restrict DuckDB dependency to < 1.4.0 (#972)
+- Fixed schema evolution support for optional fields in CSV and Parquet formats. Optional fields marked with `required: false` are no longer incorrectly treated as required during validation, enabling proper schema evolution where optional fields can be added to contracts without breaking validation of historical data files (#977)
+- Fixed decimals in pydantic model export. Fields marked with `type: decimal` will be mapped to `decimal.Decimal` instead of `float`.
+
+## [0.11.2] - 2025-12-15
+
+### Added
+- Add Impala engine support for Soda scans via ODCS `impala` server type.
+### Fixed
+- Restrict DuckDB dependency to < 1.4.0 (#972)
+
+## [0.11.1] - 2025-12-14
+
+This is a major release with breaking changes:
+We switched the internal data model from [Data Contract Specification](https://datacontract-specification.com) to [Open Data Contract Standard](https://datacontract.com/#odcs) (ODCS).
+
+Not all features that were available are supported in this version, as some features are not supported by the Open Data Contract Standard, such as:
+
+- Internal definitions using `$ref` (you can refer to external definitions via `authoritativeDefinition`)
+- Lineage (no real workaround, use customProperties or transformation object if needed)
+- Support for different physical types (no real workaround, use customProperties if needed)
+- Support for enums (use quality metric `invalidValues`)
+- Support for properties with type map and defining `keys` and `values` (use logical type map)
+- Support for `scale` and `precision` (define them in `physicalType`)
+
+The reason for this change is that the Data Contract Specification is deprecated, we focus on best possible support for the Open Data Contract Standard.
+We try to make this transition as seamless as possible. 
+If you face issues, please open an issue on GitHub.
+
+We continue support reading [Data Contract Specification](https://datacontract-specification.com) data contracts during v0.11.x releases until end of 2026.
+To migrate existing data contracts to Open Data Contract Standard use this instruction: https://datacontract-specification.com/#migration
+
+### Changed
+
+- ODCS v3.1.0 is now the default format for all imports.
+- Renamed `--model` option to `--schema-name` in the `export` command to align with ODCS terminology.
+- Renamed exporter files from `*_converter.py` to `*_exporter.py` for consistency (internal change).
+
+### Added
+
+- If an ODCS slaProperty "freshness" is defined with a reference to the element (column), the CLI will now test freshness of the data.
+- If an ODCS slaProperty "retention" is defined with a reference to the element (column), the CLI will now test retention of the data.
+- Support for custom Soda quality checks in ODCS using `type: custom` and `engine: soda` with raw SodaCL implementation.
+
+### Fixed
+
+- Oracle: Fix `service_name` attribute access to use ODCS field name `serviceName`
+
+### Removed
+
+- The `breaking`, `changelog`, and `diff` commands are now deleted (#925).
+- The `terraform` export format has been removed.
+
+
+## [0.10.41] - 2025-12-02
+
 ### Changed
 
 - Great Expectations export: Update to Great Expectations 1.x format (#919)
@@ -33,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - export: field annotation now matches to number/numeric/decimal types
 - Excel: Server port is now correctly parsed as integer instead of string for all server types
 - Excel: Remove invalid `table` and `view` fields from custom server import
+- Fixed DuckDB DDL generation to use `JSON` type instead of invalid empty `STRUCT()` for objects without defined properties ([#940](https://github.com/datacontract/datacontract-cli/issues/940))
 
 ### Deprecated
 

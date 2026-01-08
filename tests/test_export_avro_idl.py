@@ -1,10 +1,11 @@
 from textwrap import dedent
 
+import yaml
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
-import datacontract.model.data_contract_specification as spec
 from datacontract.cli import app
-from datacontract.export.avro_idl_converter import (
+from datacontract.export.avro_idl_exporter import (
     AvroIDLProtocol,
     AvroModelType,
     AvroPrimitiveField,
@@ -69,21 +70,23 @@ def test_avro_idl_cli_export():
 
 
 def test_avro_idl_complex_type():
-    contract = spec.DataContractSpecification(
-        models={
-            "test_model": spec.Model(
-                description="Test model",
-                fields={
-                    "test_field": spec.Field(
-                        type="object",
-                        required=True,
-                        description="Complex field",
-                        fields={"nested_field_1": spec.Field(description="Primitive field", type="text")},
-                    )
-                },
-            )
-        }
-    )
+    odcs_yaml = """
+apiVersion: v3.1.0
+kind: DataContract
+schema:
+  - name: test_model
+    description: Test model
+    properties:
+      - name: test_field
+        logicalType: object
+        required: true
+        description: Complex field
+        properties:
+          - name: nested_field_1
+            description: Primitive field
+            logicalType: string
+"""
+    contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
     expected = dedent("""
     protocol Unnamed {
         /** Test model */
@@ -102,24 +105,26 @@ def test_avro_idl_complex_type():
 
 
 def test_avro_idl_array_type():
-    contract = spec.DataContractSpecification(
-        models={
-            "test_model": spec.Model(
-                description="Test model",
-                fields={
-                    "test_field": spec.Field(
-                        type="array",
-                        description="Array field",
-                        items=spec.Field(
-                            type="record",
-                            description="Record field",
-                            fields={"nested_field_1": spec.Field(type="text", description="Primitive field")},
-                        ),
-                    )
-                },
-            )
-        }
-    )
+    odcs_yaml = """
+apiVersion: v3.1.0
+kind: DataContract
+schema:
+  - name: test_model
+    description: Test model
+    properties:
+      - name: test_field
+        logicalType: array
+        description: Array field
+        items:
+          name: item
+          logicalType: object
+          description: Record field
+          properties:
+            - name: nested_field_1
+              logicalType: string
+              description: Primitive field
+"""
+    contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
     expected = dedent("""
     protocol Unnamed {
         /** Test model */

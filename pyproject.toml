@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.10.40"
+version = "0.11.2"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -25,8 +25,8 @@ dependencies = [
   "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<15.0",
-  "sqlglot>=26.6.0,<28.0.0",
-  "duckdb>=1.0.0,<2.0.0",
+  "sqlglot>=26.6.0,<29.0.0",
+  "duckdb>=1.0.0,<1.4.0",
   "soda-core-duckdb>=3.3.20,<3.6.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
@@ -35,8 +35,7 @@ dependencies = [
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
-  "open-data-contract-standard>=3.1.0,<4.0.0",
-
+  "open-data-contract-standard>=3.1.2,<4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -61,9 +60,9 @@ excel = [
 databricks = [
   "soda-core-spark-df>=3.3.20,<3.6.0",
   "soda-core-spark[databricks]>=3.3.20,<3.6.0",
-  "databricks-sql-connector>=3.7.0,<4.2.0",
+  "databricks-sql-connector>=3.7.0,<4.3.0",
   "databricks-sdk<0.74.0",
-  "pyspark>=3.5.5,<4.0.0",
+  "pyspark>=3.5.5,<5.0.0",
 ]
 
 iceberg = [
@@ -73,7 +72,7 @@ iceberg = [
 kafka = [
   "datacontract-cli[avro]",
   "soda-core-spark-df>=3.3.20,<3.6.0",
-  "pyspark>=3.5.5,<4.0.0",
+  "pyspark>=3.5.5,<5.0.0",
 ]
 
 postgres = [
@@ -86,7 +85,7 @@ s3 = [
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.1",
+  "snowflake-connector-python[pandas]>=3.6,<4.2",
   "soda-core-snowflake>=3.3.20,<3.6.0"
 ]
 
@@ -119,7 +118,7 @@ parquet = [
 ]
 
 rdf = [
-  "rdflib==7.0.0",
+  "rdflib==7.5.0",
 ]
 
 api = [
@@ -145,9 +144,9 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.17",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.1.17",
+  "moto==5.1.18",
   "pandas>=2.1.0",
-  "pre-commit>=3.7.1,<4.5.0",
+  "pre-commit>=3.7.1,<4.6.0",
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.9",

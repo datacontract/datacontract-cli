@@ -1,9 +1,11 @@
 import yaml
+from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.dbt_converter import to_dbt_sources_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.dbt_exporter import to_dbt_sources_yaml
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -11,7 +13,7 @@ from datacontract.model.data_contract_specification import DataContractSpecifica
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(
-        app, ["export", "./fixtures/export/datacontract.yaml", "--format", "dbt-sources", "--server", "production"]
+        app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "dbt-sources", "--server", "production"]
     )
     print(result.stdout)
     assert result.exit_code == 0
@@ -27,7 +29,7 @@ def test_cli_bigquery():
 
 
 def test_to_dbt_sources():
-    data_contract = DataContractSpecification.from_file("fixtures/export/datacontract.yaml")
+    data_contract = OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
     expected_dbt_model = """
 version: 2
 sources:
@@ -53,7 +55,6 @@ sources:
                   regex: ^B[0-9]+$
             meta:
               classification: sensitive
-              pii: true
             tags:
               - order_id
           - name: order_total
@@ -81,7 +82,7 @@ sources:
 
 
 def test_to_dbt_sources_bigquery():
-    data_contract = DataContractSpecification.from_file("./fixtures/dbt/export/datacontract.yaml")
+    odcs = convert_dcs_to_odcs(DataContractSpecification.from_file("./fixtures/dbt/export/datacontract.yaml"))
     expected_dbt_model = """
 version: 2
 sources:
@@ -107,7 +108,6 @@ sources:
                   regex: ^B[0-9]+$
             meta:
               classification: sensitive
-              pii: true
             tags:
               - order_id
           - name: order_total
@@ -144,6 +144,6 @@ sources:
             data_type: STRING
 """
 
-    result = to_dbt_sources_yaml(data_contract, "production")
+    result = to_dbt_sources_yaml(odcs, "production")
 
     assert yaml.safe_load(result) == yaml.safe_load(expected_dbt_model)

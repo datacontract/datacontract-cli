@@ -1,16 +1,18 @@
 import os
-from typing import Any, Dict
+import re
+from typing import Any, List, Optional
 
 import duckdb
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.imports.importer import setup_sftp_filesystem
-from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model, Server
+from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.run import Run
 
 
 def get_duckdb_connection(
-    data_contract: DataContractSpecification,
+    data_contract: OpenDataContractStandard,
     server: Server,
     run: Run,
     duckdb_connection: duckdb.DuckDBPyConnection | None = None,
@@ -37,102 +39,135 @@ def get_duckdb_connection(
             fs = setup_sftp_filesystem(server.location)
             duckdb.register_filesystem(filesystem=fs, connection=con)
             path = server.location
-    for model_name, model in data_contract.models.items():
-        model_path = path
-        if "{model}" in model_path:
-            model_path = model_path.format(model=model_name)
-        run.log_info(f"Creating table {model_name} for {model_path}")
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            model_name = schema_obj.name
+            model_path = path
+            if "{model}" in model_path:
+                model_path = model_path.format(model=model_name)
+            run.log_info(f"Creating table {model_name} for {model_path}")
 
-        if server.format == "json":
-            json_format = "auto"
-            if server.delimiter == "new_line":
-                json_format = "newline_delimited"
-            elif server.delimiter == "array":
-                json_format = "array"
-            columns = to_json_types(model)
-            if columns is None:
-                con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);
-                        """)
-            else:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
-                )
-                add_nested_views(con, model_name, model.fields)
-        elif server.format == "parquet":
-            con.sql(f"""
-                        CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
-                        """)
-        elif server.format == "csv":
-            columns = to_csv_types(model)
-            run.log_info("Using columns: " + str(columns))
-            if columns is None:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""
-                )
-            else:
-                con.sql(
-                    f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
-                )
-        elif server.format == "delta":
-            con.sql("update extensions;")  # Make sure we have the latest delta extension
-            con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
-        table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchdf()
-        if table_info is not None and not table_info.empty:
-            run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
+            if server.format == "json":
+                json_format = "auto"
+                if server.delimiter == "new_line":
+                    json_format = "newline_delimited"
+                elif server.delimiter == "array":
+                    json_format = "array"
+                columns = to_json_types(schema_obj)
+                if columns is None:
+                    con.sql(f"""
+                            CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);
+                            """)
+                else:
+                    con.sql(
+                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
+                    )
+                    add_nested_views(con, model_name, schema_obj.properties)
+            elif server.format == "parquet":
+                create_view_with_schema_union(con, schema_obj, model_path, "read_parquet", to_parquet_types)
+            elif server.format == "csv":
+                create_view_with_schema_union(con, schema_obj, model_path, "read_csv", to_csv_types)
+            elif server.format == "delta":
+                con.sql("update extensions;")  # Make sure we have the latest delta extension
+                con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
+            table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchdf()
+            if table_info is not None and not table_info.empty:
+                run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
     return con
 
 
-def to_csv_types(model) -> dict[Any, str | None] | None:
-    if model is None:
+def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str, read_function: str, type_converter):
+    """Create a view by unioning empty schema table with data files using union_by_name"""
+    converted_types = type_converter(schema_obj)
+    model_name = schema_obj.name
+    if converted_types:
+        # Create empty table with contract schema
+        columns_def = [f'"{col_name}" {col_type}' for col_name, col_type in converted_types.items()]
+        create_empty_table = f"""CREATE TABLE "{model_name}_schema" ({', '.join(columns_def)});"""
+        con.sql(create_empty_table)
+
+        # Create view as UNION of empty schema table and data
+        create_view_sql = f"""CREATE VIEW "{model_name}" AS
+            SELECT * FROM "{model_name}_schema"
+            UNION ALL BY NAME
+            SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+        con.sql(create_view_sql)
+    else:
+        # Fallback
+        con.sql(
+            f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+        )
+
+def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
+    if schema_obj is None:
         return None
     columns = {}
-    # ['SQLNULL', 'BOOLEAN', 'BIGINT', 'DOUBLE', 'TIME', 'DATE', 'TIMESTAMP', 'VARCHAR']
-    for field_name, field in model.fields.items():
-        columns[field_name] = convert_to_duckdb_csv_type(field)
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            columns[prop.name] = convert_to_duckdb_csv_type(prop)
+    return columns
+
+def to_parquet_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
+    """Get proper SQL types for Parquet (preserves decimals, etc.)"""
+    if schema_obj is None:
+        return None
+    columns = {}
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            columns[prop.name] = convert_to_duckdb(prop)
+    return columns
+
+def to_json_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
+    if schema_obj is None:
+        return None
+    columns = {}
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            columns[prop.name] = convert_to_duckdb_json_type(prop)
     return columns
 
 
-def to_json_types(model: Model) -> dict[Any, str | None] | None:
-    if model is None:
-        return None
-    columns = {}
-    for field_name, field in model.fields.items():
-        columns[field_name] = convert_to_duckdb_json_type(field)
-    return columns
+def _get_type(prop: SchemaProperty) -> Optional[str]:
+    """Get the type from a schema property. Prefers physicalType for accurate type checking."""
+    if prop.physicalType:
+        return prop.physicalType
+    if prop.logicalType:
+        return prop.logicalType
+    return None
 
 
-def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, fields: Dict[str, Field] | None):
+def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, properties: List[SchemaProperty] | None):
     model_name = model_name.strip('"')
-    if fields is None:
+    if properties is None:
         return
-    for field_name, field in fields.items():
-        if field.type is None or field.type.lower() not in ["array", "object"]:
+    for prop in properties:
+        prop_type = _get_type(prop)
+        if prop_type is None or prop_type.lower() not in ["array", "object"]:
             continue
-        field_type = field.type.lower()
-        if field_type == "array" and field.items is None:
+        field_type = prop_type.lower()
+        if field_type == "array" and prop.items is None:
             continue
-        elif field_type == "object" and field.fields is None:
+        elif field_type == "object" and (prop.properties is None or len(prop.properties) == 0):
             continue
 
-        nested_model_name = f"{model_name}__{field_name}"
+        nested_model_name = f"{model_name}__{prop.name}"
         max_depth = 2 if field_type == "array" else 1
 
-        ## if parent field is not required, the nested objects may respolve
+        ## if parent field is not required, the nested objects may resolve
         ## to a row of NULLs -- but if the objects themselves have required
         ## fields, this will fail the check.
-        where = "" if field.required else f" WHERE {field_name} IS NOT NULL"
+        where = "" if prop.required else f" WHERE {prop.name} IS NOT NULL"
         con.sql(f"""
             CREATE VIEW IF NOT EXISTS "{nested_model_name}" AS
-            SELECT unnest({field_name}, max_depth := {max_depth}) as {field_name} FROM "{model_name}" {where}
+            SELECT unnest({prop.name}, max_depth := {max_depth}) as {prop.name} FROM "{model_name}" {where}
             """)
         if field_type == "array":
-            add_nested_views(con, nested_model_name, field.items.fields)
+            add_nested_views(con, nested_model_name, prop.items.properties if prop.items else None)
         elif field_type == "object":
-            add_nested_views(con, nested_model_name, field.fields)
+            add_nested_views(con, nested_model_name, prop.properties)
 
 
-def setup_s3_connection(con, server):
+def setup_s3_connection(con, server: Server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
@@ -175,22 +210,8 @@ def setup_s3_connection(con, server):
                 );
             """)
 
-    #     con.sql(f"""
-    #                 SET s3_region = '{s3_region}';
-    #                 SET s3_access_key_id = '{s3_access_key_id}';
-    #                 SET s3_secret_access_key = '{s3_secret_access_key}';
-    #                 """)
-    # else:
-    #     con.sql("""
-    #                 RESET s3_region;
-    #                 RESET s3_access_key_id;
-    #                 RESET s3_secret_access_key;
-    #     """)
-    # con.sql("RESET s3_session_token")
-    # print(con.sql("SELECT * FROM duckdb_settings() WHERE name like 's3%'"))
 
-
-def setup_gcs_connection(con, server):
+def setup_gcs_connection(con, server: Server):
     key_id = os.getenv("DATACONTRACT_GCS_KEY_ID")
     secret = os.getenv("DATACONTRACT_GCS_SECRET")
 
@@ -208,11 +229,14 @@ def setup_gcs_connection(con, server):
     """)
 
 
-def setup_azure_connection(con, server):
+def setup_azure_connection(con, server: Server):
     tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
     client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
     client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
-    storage_account = server.storageAccount
+    storage_account = (
+        to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location
+            else None
+        )
 
     if tenant_id is None:
         raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
@@ -245,3 +269,25 @@ def setup_azure_connection(con, server):
             CLIENT_SECRET '{client_secret}'
         );
         """)
+
+def to_azure_storage_account(location: str) -> str | None:
+    """
+    Converts a storage location string to extract the storage account name.
+    ODCS v3.0 has no explicit field for the storage account. It uses the location field, which is a URI.
+    This function parses a storage location string to identify and return the
+    storage account name. It handles two primary patterns:
+    1. Protocol://containerName@storageAccountName
+    2. Protocol://storageAccountName
+    :param location: The storage location string to parse, typically following
+                     the format protocol://containerName@storageAccountName. or
+                     protocol://storageAccountName.
+    :return: The extracted storage account name if found, otherwise None
+    """
+    # to catch protocol://containerName@storageAccountName. pattern from location
+    match = re.search(r"(?<=@)([^.]*)", location, re.IGNORECASE)
+    if match:
+        return match.group()
+    else:
+        # to catch protocol://storageAccountName. pattern from location
+        match = re.search(r"(?<=//)(?!@)([^.]*)", location, re.IGNORECASE)
+    return match.group() if match else None

@@ -1,48 +1,50 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: Orders Latest
-  version: 0.0.1
-models:
-  orders:
-    description: One record per order. Includes cancelled and deleted orders.
-    namespace: test
-    fields:
-      order_id:
-        type: string
-        required: true
-        primaryKey: true
-        unique: true
-        description: An internal ID that identifies an order in the online shop.
-      order_timestamp:
-        type: timestamp_ntz
-        required: true
-        primaryKey: false
-        unique: false
-        description: The business timestamp in UTC when the order was successfully
-          registered in the source system and the payment was successful.
-      order_total:
-        type: variant
-        required: true
-        primaryKey: false
-        unique: false
-        description: Total amount the smallest monetary unit (e.g., cents).
-      customer_id:
-        type: string
-        required: false
-        primaryKey: false
-        unique: false
-        description: Unique identifier for the customer.
-      customer_email_address:
-        type: string
-        required: true
-        primaryKey: false
-        unique: false
-        description: The email address, as entered by the customer. The email address
-          was not verified.
-      processed_timestamp:
-        type: timestamp_ntz
-        required: true
-        primaryKey: false
-        unique: false
-        description: The timestamp when the record was processed by the data platform.
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: Orders Latest
+status: draft
+schema:
+- name: orders
+  physicalType: table
+  description: One record per order. Includes cancelled and deleted orders.
+  customProperties:
+  - property: namespace
+    value: test
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: order_id
+    physicalType: text
+    description: An internal ID that identifies an order in the online shop.
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+    unique: true
+  - name: order_timestamp
+    physicalType: timestamp
+    description: The business timestamp in UTC when the order was successfully registered
+      in the source system and the payment was successful.
+    logicalType: date
+    required: true
+  - name: order_total
+    physicalType: record
+    description: Total amount the smallest monetary unit (e.g., cents).
+    logicalType: object
+    required: true
+  - name: customer_id
+    physicalType: text
+    description: Unique identifier for the customer.
+    logicalType: string
+  - name: customer_email_address
+    physicalType: text
+    description: The email address, as entered by the customer. The email address
+      was not verified.
+    logicalType: string
+    required: true
+  - name: processed_timestamp
+    physicalType: timestamp
+    description: The timestamp when the record was processed by the data platform.
+    logicalType: date
+    required: true

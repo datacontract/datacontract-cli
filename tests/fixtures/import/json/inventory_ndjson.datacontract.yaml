@@ -1,40 +1,50 @@
-dataContractSpecification: 1.2.1
-id: my-data-contract-id
-info:
-  title: My Data Contract
-  version: 0.0.1
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
 servers:
-  production:
-    type: local
-    format: json
-    path: .\tests\fixtures\import\json\inventory_ndjson.json
-models:
-  inventory_ndjson:
-    description: Generated from JSON array in .\tests\fixtures\import\json\inventory_ndjson.json
-    type: table
-    fields:
-      updated_at:
-        type: string
-        format: date-time
-        examples:
-        - '2022-04-20T13:50:34.228811Z'
-        - '2022-04-20T13:50:34.589142Z'
-        - '2022-04-20T13:50:34.589501Z'
-        - '2022-04-20T13:50:34.589771Z'
-        - '2022-04-20T13:50:34.590008Z'
-      available:
-        type: integer
-        examples:
-        - 17
-        - 16
-        - 15
-        - 14
-        - 13
-      location:
-        type: string
-        examples:
-        - '18'
-      sku:
-        type: string
-        examples:
-        - '9521582929054'
+- server: production
+  type: local
+  format: json
+  path: fixtures/import/json/inventory_ndjson.json
+schema:
+- name: inventory_ndjson
+  physicalType: table
+  description: Generated from JSON array in fixtures/import/json/inventory_ndjson.json
+  logicalType: object
+  physicalName: inventory_ndjson
+  properties:
+  - name: updated_at
+    physicalType: string
+    customProperties:
+    - property: format
+      value: date-time
+    logicalType: string
+    examples:
+    - '2022-04-20T13:50:34.228811Z'
+    - '2022-04-20T13:50:34.589142Z'
+    - '2022-04-20T13:50:34.589501Z'
+    - '2022-04-20T13:50:34.589771Z'
+    - '2022-04-20T13:50:34.590008Z'
+  - name: available
+    physicalType: integer
+    logicalType: integer
+    examples:
+    - 17
+    - 16
+    - 15
+    - 14
+    - 13
+  - name: location
+    physicalType: string
+    logicalType: string
+    examples:
+    - '18'
+  - name: sku
+    physicalType: string
+    logicalType: string
+    examples:
+    - '9521582929054'
+

@@ -9,23 +9,24 @@ if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
 from duckdb.duckdb import DuckDBPyConnection
+from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
 from datacontract.engines.soda.connections.databricks import to_databricks_soda_configuration
 from datacontract.engines.soda.connections.duckdb_connection import get_duckdb_connection
+from datacontract.engines.soda.connections.impala import to_impala_soda_configuration
 from datacontract.engines.soda.connections.kafka import create_spark_session, read_kafka_topic
 from datacontract.engines.soda.connections.postgres import to_postgres_soda_configuration
 from datacontract.engines.soda.connections.snowflake import to_snowflake_soda_configuration
 from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_configuration
 from datacontract.engines.soda.connections.trino import to_trino_soda_configuration
-from datacontract.export.sodacl_converter import to_sodacl_yaml
-from datacontract.model.data_contract_specification import DataContractSpecification, Server
+from datacontract.export.sodacl_exporter import to_sodacl_yaml
 from datacontract.model.run import Check, Log, ResultEnum, Run
 
 
 def check_soda_execute(
     run: Run,
-    data_contract: DataContractSpecification,
+    data_contract: OpenDataContractStandard,
     server: Server,
     spark: "SparkSession" = None,
     duckdb_connection: DuckDBPyConnection = None,
@@ -95,6 +96,18 @@ def check_soda_execute(
             logging.info("Use Spark to connect to data source")
             scan.add_spark_session(spark, data_source_name="datacontract-cli")
             scan.set_data_source_name("datacontract-cli")
+    
+    # ------------------------------------------------------------------
+    # NEW: native Impala server type
+    # ------------------------------------------------------------------
+    elif server.type == "impala":
+        run.log_info("Connecting to Impala via Soda engine")
+        soda_configuration_str = to_impala_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        # data source name must match what we configure in to_impala_soda_configuration
+        scan.set_data_source_name("impala")
+
+    
     elif server.type == "kafka":
         if spark is None:
             spark = create_spark_session()

@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from open_data_contract_standard.model import OpenDataContractStandard
 from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from datacontract.model.data_contract_specification import DataContractSpecification
 from datacontract.model.run import Run
 from datacontract.output.junit_test_results import write_junit_test_results
 from datacontract.output.output_format import OutputFormat
@@ -17,13 +17,13 @@ def write_test_result(
     console: Console,
     output_format: OutputFormat,
     output_path: Path,
-    data_contract: Optional[DataContractSpecification] = None,
+    data_contract: Optional[OpenDataContractStandard] = None,
 ):
     if output_format == OutputFormat.junit:
         write_junit_test_results(run, console, output_path)
 
     if run.server and data_contract and data_contract.servers:
-        server = data_contract.servers.get(run.server)
+        server = next((s for s in data_contract.servers if s.server == run.server), None)
         if server:
             details = []
             if server.type:
@@ -50,8 +50,6 @@ def write_test_result(
                 details.append(f"location={server.location}")
             if server.path:
                 details.append(f"path={server.path}")
-            if server.topic:
-                details.append(f"topic={server.topic}")
             details_str = ", ".join(details) if details else ""
             if details_str:
                 console.print(f"Server: {run.server} ({details_str})")

@@ -24,9 +24,6 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from datacontract.imports.importer import Importer, setup_sftp_filesystem
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-)
 from datacontract.model.exceptions import DataContractException
 
 logger = logging.getLogger(__name__)
@@ -35,10 +32,9 @@ logger = logging.getLogger(__name__)
 class ExcelImporter(Importer):
     def import_source(
         self,
-        data_contract_specification: DataContractSpecification | OpenDataContractStandard,
         source: str,
         import_args: dict,
-    ) -> DataContractSpecification | OpenDataContractStandard:
+    ) -> OpenDataContractStandard:
         return import_excel_as_odcs(source)
 
 

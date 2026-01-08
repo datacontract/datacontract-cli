@@ -5,49 +5,51 @@ from datacontract.model.run import Run
 
 def test_nested_json():
     data_contract_str = """
-dataContractSpecification: 1.2.1
+kind: DataContract
+apiVersion: v3.1.0
 id: "61111-0002"
-info:
-  title: Sample data of nested types
-  version: 1.0.0
+name: Sample data of nested types
+version: 1.0.0
+status: active
 servers:
-  sample:
+  - server: sample
     type: local
     path: ./fixtures/local-json/data/nested_types.json
     format: json
     delimiter: array
-models:
-  sample_data:
-    type: object
-    fields:
-      id:
-        type: integer
+schema:
+  - name: sample_data
+    physicalType: object
+    properties:
+      - name: id
+        logicalType: integer
         required: true
-      tags:
-        type: array
+      - name: tags
+        logicalType: array
         required: true
         items:
-          type: object
-          fields:
-            foo:
-              type: string
+          logicalType: object
+          properties:
+            - name: foo
+              logicalType: string
               required: true
-            arr:
-              type: array
+            - name: arr
+              logicalType: array
               items:
-                type: integer
-      name:
-        type: object
+                logicalType: integer
+      - name: name
+        logicalType: object
         required: false
-        fields:
-          first:
-            type: string
-          last:
-            type: string
+        properties:
+          - name: first
+            logicalType: string
+          - name: last
+            logicalType: string
     """
     data_contract = resolve.resolve_data_contract(data_contract_str=data_contract_str)
     run = Run.create_run()
-    con = get_duckdb_connection(data_contract, data_contract.servers["sample"], run)
+    server = next(s for s in data_contract.servers if s.server == "sample")
+    con = get_duckdb_connection(data_contract, server, run)
     tbl = con.table("sample_data")
     assert tbl.columns == ["id", "tags", "name"]
     assert [x[1].lower() for x in tbl.description] == ["number", "list", "dict"]
@@ -75,3 +77,69 @@ models:
     assert tbl.columns == ["first", "last"]
     assert [x[1].lower() for x in tbl.description] == ["string", "string"]
     assert tbl.fetchall() == [("John", "Doe")]
+
+
+def test_empty_object():
+    """Test that objects without defined fields are handled as JSON and don't create nested views."""
+    data_contract_str = """
+kind: DataContract
+apiVersion: v3.1.0
+id: "empty-object-test"
+name: Test data with objects without fields
+version: 1.0.0
+status: active
+servers:
+  - server: sample
+    type: local
+    path: ./fixtures/local-json/data/empty_object.json
+    format: json
+    delimiter: array
+schema:
+  - name: sample_data
+    physicalType: object
+    properties:
+      - name: id
+        logicalType: integer
+        required: true
+      - name: metadata
+        logicalType: object
+        required: false
+        description: "Object with no fields defined - should be treated as JSON"
+      - name: name
+        logicalType: string
+        required: true
+      - name: settings
+        logicalType: object
+        required: false
+        description: "Object with explicitly empty fields - should be treated as JSON"
+    """
+    data_contract = resolve.resolve_data_contract(data_contract_str=data_contract_str)
+    run = Run.create_run()
+    server = next(s for s in data_contract.servers if s.server == "sample")
+    con = get_duckdb_connection(data_contract, server, run)
+
+    # Test main table exists and has correct columns
+    tbl = con.table("sample_data")
+    assert tbl.columns == ["id", "metadata", "name", "settings"]
+
+    # Test that the data can be read correctly
+    row1 = tbl.fetchone()
+    assert row1[0] == 1  # id
+    assert row1[2] == "Alice"  # name
+
+    row2 = tbl.fetchone()
+    assert row2[0] == 2  # id
+    assert row2[2] == "Bob"  # name
+
+    row3 = tbl.fetchone()
+    assert row3[0] == 3  # id
+    assert row3[2] == "Charlie"  # name
+
+    # Test that no nested views were created for empty objects
+    tables_result = con.sql("SHOW TABLES").fetchall()
+    table_names = [table[0] for table in tables_result]
+
+    # Should only have the main table, not nested views for metadata or settings
+    assert "sample_data" in table_names
+    assert "sample_data__metadata" not in table_names
+    assert "sample_data__settings" not in table_names

@@ -1,0 +1,192 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: jaffle_shop
+status: draft
+schema:
+- name: orders
+  physicalType: table
+  description: This table has basic information about orders, as well as some derived
+    facts based on payments
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: order_id
+    physicalType: INT64
+    description: This is a unique identifier for an order
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: integer
+    required: true
+    unique: true
+  - name: customer_id
+    physicalType: INT64
+    description: Foreign key to the customers table
+    customProperties:
+    - property: references
+      value: customers.customer_id
+    logicalType: integer
+    required: true
+  - name: order_date
+    physicalType: DATE
+    description: Date (UTC) that the order was placed
+    logicalType: date
+  - name: status
+    physicalType: STRING
+    description: 'Orders can be one of the following statuses:
+
+
+      | status         | description                                                                                                            |
+
+      |----------------|------------------------------------------------------------------------------------------------------------------------|
+
+      | placed         | The order has been placed but has not yet left the warehouse                                                           |
+
+      | shipped        | The order has ben shipped to the customer and is currently
+      in transit                                                  |
+
+      | completed      | The order has been received by the customer                                                                            |
+
+      | return_pending | The customer has indicated that they would like to return
+      the order, but it has not yet been received at the warehouse |
+
+      | returned       | The order has been returned by the customer and received
+      at the warehouse                                              |'
+    logicalType: string
+  - name: credit_card_amount
+    physicalType: FLOAT64
+    description: Amount of the order (AUD) paid for by credit card
+    logicalType: number
+    required: true
+  - name: coupon_amount
+    physicalType: FLOAT64
+    description: Amount of the order (AUD) paid for by coupon
+    logicalType: number
+    required: true
+  - name: bank_transfer_amount
+    physicalType: FLOAT64
+    description: Amount of the order (AUD) paid for by bank transfer
+    logicalType: number
+    required: true
+  - name: gift_card_amount
+    physicalType: FLOAT64
+    description: Amount of the order (AUD) paid for by gift card
+    logicalType: number
+    required: true
+  - name: amount
+    physicalType: FLOAT64
+    description: Total amount (AUD) of the order
+    logicalType: number
+    required: true
+- name: stg_customers
+  physicalType: table
+  logicalType: object
+  physicalName: stg_customers
+  properties:
+  - name: customer_id
+    physicalType: INT64
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: integer
+    required: true
+    unique: true
+  - name: first_name
+    physicalType: STRING
+    logicalType: string
+  - name: last_name
+    physicalType: STRING
+    logicalType: string
+- name: stg_orders
+  physicalType: table
+  logicalType: object
+  physicalName: stg_orders
+  properties:
+  - name: order_id
+    physicalType: INT64
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: integer
+    required: true
+    unique: true
+  - name: customer_id
+    physicalType: INT64
+    logicalType: integer
+  - name: order_date
+    physicalType: DATE
+    logicalType: date
+  - name: status
+    physicalType: STRING
+    logicalType: string
+- name: stg_payments
+  physicalType: table
+  logicalType: object
+  physicalName: stg_payments
+  properties:
+  - name: payment_id
+    physicalType: INT64
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: integer
+    required: true
+    unique: true
+  - name: order_id
+    physicalType: INT64
+    logicalType: integer
+  - name: payment_method
+    physicalType: STRING
+    logicalType: string
+  - name: amount
+    physicalType: FLOAT64
+    logicalType: number
+- name: customers
+  physicalType: table
+  description: This table has basic information about a customer, as well as some
+    derived facts based on a customer's orders
+  customProperties:
+  - property: tags
+    value: TABLE_PII
+  logicalType: object
+  physicalName: customers
+  properties:
+  - name: customer_id
+    physicalType: INT64
+    description: This is a unique identifier for a customer
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: integer
+    required: true
+    unique: true
+  - name: first_name
+    physicalType: STRING
+    description: Customer's first name. PII.
+    customProperties:
+    - property: tags
+      value: PII
+    logicalType: string
+  - name: last_name
+    physicalType: STRING
+    description: Customer's last name. PII.
+    customProperties:
+    - property: tags
+      value: PII
+    logicalType: string
+  - name: first_order
+    physicalType: DATE
+    description: Date (UTC) of a customer's first order
+    logicalType: date
+  - name: most_recent_order
+    physicalType: DATE
+    description: Date (UTC) of a customer's most recent order
+    logicalType: date
+  - name: number_of_orders
+    physicalType: INT64
+    description: Count of the number of orders a customer has placed
+    logicalType: integer
+  - name: customer_lifetime_value
+    physicalType: FLOAT64
+    logicalType: number
+customProperties:
+- property: dbt_version
+  value: 1.8.0
+

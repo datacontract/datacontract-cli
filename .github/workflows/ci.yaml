@@ -67,7 +67,7 @@ jobs:
       - name: Test datacontract test
         run: cd tests && datacontract test fixtures/local-delta/datacontract.yaml
       - name: Test datacontract export
-        run: datacontract export --format odcs tests/fixtures/export/datacontract.yaml
+        run: datacontract export --format sql tests/fixtures/export/datacontract.odcs.yaml
 
   docker:
     runs-on: ubuntu-latest
