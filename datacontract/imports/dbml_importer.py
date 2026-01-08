@@ -32,13 +32,8 @@ def import_dbml_from_source(
     import_tables: List[str],
 ) -> OpenDataContractStandard:
     try:
-        if source.startswith("sftp://"):
-            fs = setup_sftp_filesystem(source)
-            with fs.open(source, "r") as file:
-                dbml_schema = PyDBML(file)
-        else:
-            with open(source, "r") as file:
-                dbml_schema = PyDBML(file)
+        with open(source, "r") as file:
+            dbml_schema = PyDBML(file)
     except ParseException as e:
         raise DataContractException(
             type="schema",

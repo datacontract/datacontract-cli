@@ -5,13 +5,11 @@ from pyiceberg import types as iceberg_types
 from pyiceberg.schema import Schema
 
 from datacontract.imports.importer import Importer
-from datacontract.lint.resources import setup_sftp_filesystem
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
 )
-
 from datacontract.model.exceptions import DataContractException
 
 
@@ -27,21 +25,16 @@ class IcebergImporter(Importer):
 
 
 def load_and_validate_iceberg_schema(source: str) -> Schema:
-    if source.startswith("sftp://"):
-        fs = setup_sftp_filesystem(source)
-        with fs.open(source, "r") as file:
+    with open(source, "r") as file:
+        try:
             return Schema.model_validate_json(file.read())
-    else:
-        with open(source, "r") as file:
-            try:
-                return Schema.model_validate_json(file.read())
-            except ValidationError as e:
-                raise DataContractException(
-                    type="schema",
-                    name="Parse iceberg schema",
-                    reason=f"Failed to validate iceberg schema from {source}: {e}",
-                    engine="datacontract",
-                )
+        except ValidationError as e:
+            raise DataContractException(
+                type="schema",
+                name="Parse iceberg schema",
+                reason=f"Failed to validate iceberg schema from {source}: {e}",
+                engine="datacontract",
+            )
 
 
 def import_iceberg(schema: Schema, table_name: str) -> OpenDataContractStandard:

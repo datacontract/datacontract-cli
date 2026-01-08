@@ -9,7 +9,6 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.imports.bigquery_importer import map_type_from_bigquery
 from datacontract.imports.importer import Importer
-from datacontract.lint.resources import setup_sftp_filesystem
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
@@ -38,13 +37,8 @@ class DbtManifestImporter(Importer):
 
 def read_dbt_manifest(manifest_path: str) -> Manifest:
     """Read a manifest from file."""
-    if manifest_path.startswith("sftp://"):
-        fs = setup_sftp_filesystem(manifest_path)
-        with fs.open(manifest_path, "r") as f:
-            manifest_dict: dict = json.load(f)
-    else:
-        with open(file=manifest_path, mode="r", encoding="utf-8") as f:
-            manifest_dict: dict = json.load(f)
+    with open(file=manifest_path, mode="r", encoding="utf-8") as f:
+        manifest_dict: dict = json.load(f)
     manifest = Manifest.from_dict(manifest_dict)
     manifest.build_parent_and_child_maps()
     return manifest

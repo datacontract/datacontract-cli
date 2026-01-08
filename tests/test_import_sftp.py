@@ -1,4 +1,5 @@
 import os
+os.environ["TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"]="/var/run/docker.sock"
 from time import sleep
 
 import paramiko
@@ -9,6 +10,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.imports.excel_importer import import_excel_as_odcs
 
 sftp_dir = "/sftp/data"
 
@@ -44,11 +46,8 @@ odcs_file_name = "full-example"
 odcs_file_path = f"fixtures/odcs_v3/{odcs_file_name}.odcs.yaml"
 odcs_sftp_path = f"{sftp_dir}/{odcs_file_name}.odcs.yaml"
 
-protobuf_file_name = "sample_data"
-protobuf_file_path = f"fixtures/protobuf/data/{protobuf_file_name}.proto3.data"
-protobuf_sftp_path = f"{sftp_dir}/{protobuf_file_name}.proto3.data"
-
-
+excel_file_path = "./fixtures/excel/shipments-odcs.xlsx"
+excel_sftp_path = f"{sftp_dir}/shipments-odcs.xlsx"
 username = "demo"  # for emberstack
 password = "demo"  # for emberstack
 user = SFTPUser(name = username,password=password)
@@ -61,6 +60,7 @@ def sftp_container():
     Sets up the container, uploads the test file, and provides connection details.
     """
     # that image is both compatible with Mac and Linux which is not the case with the default image
+
     with SFTPContainer(image="emberstack/sftp:latest", users=[user]) as container:
         host_ip = container.get_container_host_ip()
         host_port = container.get_exposed_sftp_port()
@@ -87,7 +87,7 @@ def sftp_container():
             sftp.put(json_file_path, json_sftp_path)
             sftp.put(odcs_file_path, odcs_sftp_path)
             sftp.put(parquet_file_path, parquet_sftp_path)
-            sftp.put(protobuf_file_path, protobuf_sftp_path)
+            sftp.put(excel_file_path, excel_sftp_path)
         finally:
             sftp.close()
             ssh.close()
@@ -185,45 +185,6 @@ def test_import_sftp_parquet(sftp_container):
     assert model.fields["boolean_field"].type == "boolean"
     assert DataContract(data_contract=result).lint().has_passed()
 
-def test_import_sftp_avro(sftp_container):
-    host_ip = sftp_container["host_ip"]
-    host_port = sftp_container["host_port"]
-    source = f"sftp://{host_ip}:{host_port}{avro_sftp_path}"
-
-    result = DataContract.import_from_source("avro", source)
-    model = result.models[avro_file_name]
-    assert model is not None
-    assert model.fields["ordertime"].type == "long"
-    assert model.fields["orderid"].type == "int"
-    assert model.fields["itemid"].type == "string"
-    assert len(model.fields.keys()) == 9
-    assert DataContract(data_contract=result).lint().has_passed()
-
-def test_import_sftp_dbml(sftp_container):
-    host_ip = sftp_container["host_ip"]
-    host_port = sftp_container["host_port"]
-    source = f"sftp://{host_ip}:{host_port}{dbml_sftp_path}"
-
-    result = DataContract.import_from_source("dbml", source)
-    assert(len(result.models.keys())) == 2
-    assert DataContract(data_contract=result).lint().has_passed()
-
-def test_import_sftp_dbt(sftp_container):
-    host_ip = sftp_container["host_ip"]
-    host_port = sftp_container["host_port"]
-    source = f"sftp://{host_ip}:{host_port}{dbt_sftp_path}"
-    result = DataContract.import_from_source("dbt", source)
-    assert set(result.models.keys()) == {'orders', 'stg_customers', 'stg_orders', 'stg_payments', 'customers'}
-    assert DataContract(data_contract=result).lint().has_passed()
-
-def test_import_sftp_iceberg(sftp_container):
-    host_ip = sftp_container["host_ip"]
-    host_port = sftp_container["host_port"]
-    source = f"sftp://{host_ip}:{host_port}{iceberg_sftp_path}"
-
-    result = DataContract.import_from_source("iceberg", source)
-    assert len(result.models.keys()) > 0
-    assert DataContract(data_contract=result).lint().has_passed()
 
 def test_import_sftp_jsonschema(sftp_container):
     host_ip = sftp_container["host_ip"]
@@ -233,11 +194,19 @@ def test_import_sftp_jsonschema(sftp_container):
     assert len(result.models.keys()) > 0
     assert DataContract(data_contract=result).lint().has_passed()
 
-def test_import_sftp_odcs(sftp_container):
-    host_ip = sftp_container["host_ip"]
-    host_port = sftp_container["host_port"]
-    source = f"sftp://{host_ip}:{host_port}{odcs_sftp_path}"
-    result = DataContract.import_from_source("odcs", source)
-    model = result.models["tbl_1"]
-    assert model is not None
-    assert DataContract(data_contract=result).lint().has_passed()
+
+def test_import_excel_odcs(sftp_container):
+        host_ip = sftp_container["host_ip"]
+        host_port = sftp_container["host_port"]
+        source = f"sftp://{host_ip}:{host_port}{excel_sftp_path}"
+        result = import_excel_as_odcs(source)
+        expected_datacontract = read_file("fixtures/excel/shipments-odcs.yaml")
+        assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected_datacontract)
+
+def read_file(file):
+    if not os.path.exists(file):
+        print(f"The file '{file}' does not exist.")
+        raise FileNotFoundError(f"The file '{file}' does not exist.")
+    with open(file, "r") as file:
+        file_content = file.read()
+    return file_content
