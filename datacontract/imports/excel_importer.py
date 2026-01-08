@@ -1,8 +1,9 @@
 import logging
 import os
 from decimal import Decimal
+from io import BytesIO
 from typing import Any, Dict, List, Optional
-
+from tempfile import TemporaryDirectory
 import openpyxl
 from open_data_contract_standard.model import (
     AuthoritativeDefinition,
@@ -22,7 +23,7 @@ from openpyxl.cell.cell import Cell
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from datacontract.imports.importer import Importer
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
 )
@@ -51,8 +52,16 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
     Returns:
         OpenDataContractStandard object
     """
-    if not os.path.exists(excel_file_path):
+    if not (excel_file_path.startswith("sftp://") or os.path.exists(excel_file_path)):
         raise FileNotFoundError(f"Excel file not found: {excel_file_path}")
+
+    if excel_file_path.startswith("sftp://"):
+        fs = setup_sftp_filesystem(excel_file_path)
+        try:
+            with fs.open(excel_file_path) as excel_file:
+                excel_file_path = BytesIO(excel_file.read())
+        except FileNotFoundError:
+            raise FileNotFoundError(f"SftpConnection is a success but excel file not found: {excel_file_path}")
 
     try:
         workbook = openpyxl.load_workbook(excel_file_path, data_only=True)
@@ -988,7 +997,7 @@ def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dic
         # Single value for other operators
         try:
             # Try to parse as number
-            isFraction =  "." in threshold_value
+            isFraction = "." in threshold_value
             if threshold_value.replace(".", "").replace("-", "").isdigit():
                 if isFraction:
                     value = float(threshold_value)

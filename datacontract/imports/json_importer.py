@@ -3,7 +3,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from datacontract.imports.importer import Importer
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Server
 
 
@@ -14,9 +14,9 @@ class JsonImporter(Importer):
         return import_json(data_contract_specification, source)
 
 
-def is_ndjson(file_path: str) -> bool:
+def is_ndjson(file_ctx) -> bool:
     """Check if a file contains newline-delimited JSON."""
-    with open(file_path, "r", encoding="utf-8") as file:
+    with file_ctx as file:
         for _ in range(5):
             line = file.readline().strip()
             if not line:
@@ -34,12 +34,16 @@ def import_json(
 ) -> DataContractSpecification:
     # use the file name as base model name
     base_model_name = os.path.splitext(os.path.basename(source))[0]
-
+    if source.startswith("sftp://"):
+        fs = setup_sftp_filesystem(source)
+        file_ctx = fs.open(source, "r")
+    else:
+        file_ctx = open(source, "r", encoding="utf-8")
     # check if file is newline-delimited JSON
-    if is_ndjson(source):
+    if is_ndjson(file_ctx):
         # load NDJSON data
         json_data = []
-        with open(source, "r", encoding="utf-8") as file:
+        with file_ctx as file:
             for line in file:
                 line = line.strip()
                 if line:
@@ -49,7 +53,7 @@ def import_json(
                         continue
     else:
         # load regular JSON data
-        with open(source, "r", encoding="utf-8") as file:
+        with file_ctx as file:
             json_data = json.load(file)
 
     if data_contract_specification.servers is None:

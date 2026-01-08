@@ -5,7 +5,6 @@ from pyparsing import ParseException
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.sql_importer import map_type_from_sql
-from datacontract.lint.resources import setup_sftp_filesystem
 from datacontract.model.data_contract_specification import DataContractSpecification, Field, Model
 from datacontract.model.exceptions import DataContractException
 
@@ -30,13 +29,8 @@ def import_dbml_from_source(
     import_tables: List[str],
 ) -> DataContractSpecification:
     try:
-        if source.startswith("sftp://"):
-            fs = setup_sftp_filesystem(source)
-            with fs.open(source, "r") as file:
-                dbml_schema = PyDBML(file)
-        else:
-            with open(source, "r") as file:
-                dbml_schema = PyDBML(file)
+        with open(source, "r") as file:
+            dbml_schema = PyDBML(file)
     except ParseException as e:
         raise DataContractException(
             type="schema",

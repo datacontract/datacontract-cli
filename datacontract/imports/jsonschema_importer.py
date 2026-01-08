@@ -2,8 +2,7 @@ import json
 
 import fastjsonschema
 
-from datacontract.imports.importer import Importer
-from datacontract.lint.resources import setup_sftp_filesystem
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.model.data_contract_specification import DataContractSpecification, Definition, Field, Model
 from datacontract.model.exceptions import DataContractException
 

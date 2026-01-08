@@ -3,8 +3,7 @@ import os.path
 import pyarrow
 from pyarrow import parquet
 
-from datacontract.imports.importer import Importer
-from datacontract.lint.resources import setup_sftp_filesystem
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
     Field,
@@ -29,7 +28,7 @@ def import_parquet(data_contract_specification: DataContractSpecification, sourc
         fs = setup_sftp_filesystem(source)
         # Extract path without the sftp:// prefix and host
         path = source.split("//", 1)[1]  # Remove sftp://
-        path = '/' + path.split("/",1)[1]  # Remove host part
+        path = "/" + path.split("/", 1)[1]  # Remove host part
         arrow_schema = parquet.read_schema(path, filesystem=fs)
     else:
         arrow_schema = parquet.read_schema(source)

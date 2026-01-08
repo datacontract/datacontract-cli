@@ -3,8 +3,7 @@ from typing import Any, Dict, List
 
 import duckdb
 
-from datacontract.imports.importer import Importer
-from datacontract.lint.resources import setup_sftp_filesystem
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Server
 
 
@@ -23,7 +22,7 @@ def import_csv(
 
     # use duckdb to auto detect format, columns, etc.
     con = duckdb.connect(database=":memory:")
-    if source.startswith('sftp'):
+    if source.startswith("sftp"):
         fs = setup_sftp_filesystem(source)
         duckdb.register_filesystem(filesystem=fs, connection=con)
     con.sql(

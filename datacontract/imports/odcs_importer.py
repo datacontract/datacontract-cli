@@ -1,7 +1,7 @@
 import yaml
 
 from datacontract.imports.importer import Importer
-from datacontract.lint.resources import read_resource, setup_sftp_filesystem
+from datacontract.lint.resources import read_resource
 from datacontract.model.data_contract_specification import (
     DataContractSpecification,
 )
@@ -17,12 +17,7 @@ class OdcsImporter(Importer):
 
 def import_odcs(data_contract_specification: DataContractSpecification, source: str) -> DataContractSpecification:
     try:
-        if source.startswith("sftp://"):
-            fs = setup_sftp_filesystem(source)
-            with fs.open(source, "r") as file:
-                odcs_contract = yaml.safe_load(file.read())
-        else:
-            odcs_contract = yaml.safe_load(read_resource(source))
+        odcs_contract = yaml.safe_load(read_resource(source))
 
     except Exception as e:
         raise DataContractException(
