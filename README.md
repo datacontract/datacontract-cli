@@ -250,6 +250,7 @@ A list of available extras:
 | RDF                     | `pip install datacontract-cli[rdf]`        |
 | API (run as web server) | `pip install datacontract-cli[api]`        |
 | protobuf                | `pip install datacontract-cli[protobuf]`   |
+| Sftp server             | `pip install datacontract-cli[sftp]`       |
 
 
 ## Documentation
