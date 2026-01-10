@@ -125,12 +125,21 @@ api = [
   "uvicorn==0.38.0",
 ]
 
+mcp = [
+  "mcp>=1.0.0,<2.0.0",
+  "sqlalchemy>=2.0.0,<3.0.0",
+  "snowflake-sqlalchemy>=1.6.0,<2.0.0",
+  "databricks-sqlalchemy>=2.0.0,<3.0.0",
+  "sqlalchemy-bigquery>=1.9.0,<2.0.0",
+  "psycopg2-binary>=2.9.0,<3.0.0",
+]
+
 protobuf = [
   "grpcio-tools>=1.53",
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,athena,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,athena,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf,oracle,mcp]"
 ]
 
 # for development, we pin all libraries to an exact version

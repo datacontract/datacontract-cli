@@ -507,6 +507,49 @@ def api(
     uvicorn.run(**uvicorn_args)
 
 
+@app.command()
+def mcp(
+    port: Annotated[int, typer.Option(help="Port for HTTP server.")] = 8000,
+    host: Annotated[
+        str, typer.Option(help="Host to bind. Hint: For running in docker, set it to 0.0.0.0")
+    ] = "127.0.0.1",
+    debug: debug_option = None,
+):
+    """
+    Start an MCP (Model Context Protocol) server.
+
+    The MCP server exposes a tool 'execute_sql' that allows AI assistants
+    to execute read-only SQL queries against data sources defined in data contracts.
+
+    Supported server types: snowflake, databricks, postgres, bigquery.
+
+    To authenticate, set the environment variable DATACONTRACT_MCP_TOKEN to a secret token.
+    Clients must include the 'Authorization: Bearer <token>' header.
+
+    To connect to servers, set credentials as environment variables:
+    - PostgreSQL: DATACONTRACT_POSTGRES_USERNAME, DATACONTRACT_POSTGRES_PASSWORD
+    - Snowflake: DATACONTRACT_SNOWFLAKE_USERNAME, DATACONTRACT_SNOWFLAKE_PASSWORD
+    - Databricks: DATACONTRACT_DATABRICKS_TOKEN, DATACONTRACT_DATABRICKS_HTTP_PATH
+    - BigQuery: DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH or GOOGLE_APPLICATION_CREDENTIALS
+
+    The server uses Streamable HTTP transport (MCP spec 2025-03-26).
+    """
+    enable_debug_logging(debug)
+
+    try:
+        from datacontract.mcp import run_mcp_server
+    except ImportError as e:
+        console.print(
+            "[red]Error:[/red] MCP dependencies not installed. "
+            "Install with: pip install datacontract-cli[mcp]"
+        )
+        console.print(f"[dim]Details: {e}[/dim]")
+        raise typer.Exit(code=1)
+
+    console.print(f"Starting MCP server on {host}:{port}...")
+    run_mcp_server(host=host, port=port)
+
+
 def _print_logs(run):
     console.print("\nLogs:")
     for log in run.logs:
