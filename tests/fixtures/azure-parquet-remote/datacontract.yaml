@@ -6,8 +6,7 @@ info:
 servers:
   production:
     type: azure
-    storageAccount: datameshdatabricksdemo
-    location: abfss://dataproducts/inventory_events/*.parquet
+    location: abfss://datameshdatabricksdemo/inventory_events/*.parquet
     format: parquet
 models:
   orders:

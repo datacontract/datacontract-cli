@@ -9,7 +9,6 @@ def test_csv_optional_field_missing_from_old_data():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
 
@@ -21,7 +20,6 @@ def test_csv_optional_field_present_in_new_data():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
 
@@ -32,7 +30,6 @@ def test_data_from_historical_and_current_schema_csv_mixed():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
 
@@ -43,7 +40,6 @@ def test_csv_optional_field_with_invalid_values():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "failed"
     # Should have at least one failed check for constraint violation
     assert any(check.result == "failed" for check in run.checks)
@@ -55,7 +51,6 @@ def test_csv_required_field_missing_fails():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "failed"
 
 
@@ -70,7 +65,6 @@ def test_parquet_optional_field_missing_from_old_data():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
 
@@ -82,7 +76,6 @@ def test_parquet_optional_field_present_in_new_data():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
 
@@ -93,7 +86,6 @@ def test_data_from_historical_and_current_schema_parquet_mixed():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
 
@@ -104,7 +96,6 @@ def test_parquet_optional_field_with_invalid_values():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "failed"
     # Should have at least one failed check for constraint violation
     assert any(check.result == "failed" for check in run.checks)
@@ -116,5 +107,4 @@ def test_parquet_required_field_missing_fails():
 
     run = data_contract.test()
 
-    print(run)
     assert run.result == "failed"

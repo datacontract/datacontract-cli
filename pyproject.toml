@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.11.2"
+version = "0.11.3"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -15,12 +15,12 @@ classifiers = [
 ]
 requires-python = ">=3.10,<3.13"
 dependencies = [
-  "typer>=0.15.1,<0.20",
+  "typer>=0.15.1,<0.22",
   "pydantic>=2.8.2,<2.13.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.33",
   "fastjsonschema>=2.19.1,<2.22.0",
-  "fastparquet>=2024.5.0,<2025.0.0",
+  "fastparquet>=2024.5.0,<2026.0.0",
   "numpy>=1.26.4,<2.0.0", # transitive dependency, needs to be <2.0.0 https://github.com/datacontract/datacontract-cli/issues/575
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<15.0",
@@ -80,7 +80,7 @@ postgres = [
 
 s3 = [
   "s3fs>=2025.2.0,<2026.0.0",
-  "aiobotocore>=2.17.0,<2.26.0",
+  "aiobotocore>=2.17.0,<3.2.0",
 ]
 
 snowflake = [
@@ -117,12 +117,12 @@ parquet = [
 ]
 
 rdf = [
-  "rdflib==7.0.0",
+  "rdflib==7.5.0",
 ]
 
 api = [
   "fastapi==0.121.2",
-  "uvicorn==0.38.0",
+  "uvicorn==0.40.0",
 ]
 
 protobuf = [

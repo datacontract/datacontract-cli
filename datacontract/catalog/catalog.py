@@ -14,7 +14,7 @@ from datacontract.export.html_exporter import get_version
 
 def _get_owner(odcs: OpenDataContractStandard) -> Optional[str]:
     """Get the owner from ODCS customProperties or team."""
-    if odcs.team and odcs.team.name:
+    if odcs.team and hasattr(odcs.team, "name") and odcs.team.name:
         return odcs.team.name
     if odcs.customProperties:
         for prop in odcs.customProperties:
