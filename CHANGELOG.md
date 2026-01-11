@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
 
+- Spark exporter now supports decimal precision/scale via `customProperties` or parsing from `physicalType` (e.g., `decimal(10,2)`) (#996)
 
 ## [0.11.3] - 2026-01-10
 
