@@ -5,7 +5,6 @@ set -e
 # 1. Update release version in pyproject.toml
 # 2. Update CHANGELOG.md header
 # 3. Run ./release
-# 4. Update release notes in Github
 
 # pip install toml-cli
 VERSION=$(uvx --from toml-cli toml get --toml-path pyproject.toml project.version)
