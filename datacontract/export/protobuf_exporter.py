@@ -322,14 +322,15 @@ def to_protobuf_message(model_name: str, properties: List[SchemaProperty], descr
     number = 1
     for prop in properties:
         field_name = prop.name  # snake_case (preserve as in YAML)
-        field_type = _get_field_type(prop)  # includes "repeated" if needed
+        # field_type = _get_field_type(prop)  # includes "repeated" if needed
+        field_decl = _get_field_declaration(prop)  # Новая функция
         field_desc = prop.description or ""
         
         result += f"{indent(indent_level + 1)}"
         if field_desc:
             result += f"// {field_desc}\n{indent(indent_level + 1)}"
         
-        result += f"{field_type} {field_name} = {number};\n"
+        result += f"{field_decl} {field_name} = {number};\n"
         number += 1
 
     result += f"{indent(indent_level)}}}\n"
@@ -339,3 +340,16 @@ def to_protobuf_message(model_name: str, properties: List[SchemaProperty], descr
 def indent(indent_level: int) -> str:
     """Generate indentation string for Protobuf formatting."""
     return "  " * indent_level
+
+
+def _get_field_declaration(prop: SchemaProperty) -> str:
+    """
+    Returns field declaration with optional keyword if needed.
+    """
+    field_type = _get_field_type(prop)  # includes "repeated" if needed
+    
+    # Add 'optional' for non-required fields that are not arrays
+    if (hasattr(prop, 'required') and prop.required is False and
+        not (prop.logicalType and prop.logicalType.lower() == "array")):
+        return f"optional {field_type}"
+    return field_type
