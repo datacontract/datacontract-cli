@@ -48,6 +48,20 @@ schema:
         items:
           name: item
           logicalType: string
+
+      - name: users
+        logicalType: array
+        items:
+          name: User
+          logicalType: object
+          properties:
+          - name: id
+            logicalType: string
+
+      - name: geo_description
+        logicalType: string
+        required: False
+        
       - name: tags
         logicalType: string
         description: Field tags
