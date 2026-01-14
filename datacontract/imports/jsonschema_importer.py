@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 import fastjsonschema
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaProperty
 
-from datacontract.imports.importer import Importer
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
@@ -50,8 +50,13 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
 def load_and_validate_json_schema(source: str) -> dict:
     """Load and validate a JSON Schema file."""
     try:
-        with open(source, "r") as file:
-            json_schema = json.loads(file.read())
+        if source.startswith("sftp://"):
+            fs = setup_sftp_filesystem(source)
+            with fs.open(source, "r") as file:
+                json_schema = json.loads(file.read())
+        else:
+            with open(source, "r") as file:
+                json_schema = json.loads(file.read())
 
         validator = fastjsonschema.compile({})
         validator(json_schema)

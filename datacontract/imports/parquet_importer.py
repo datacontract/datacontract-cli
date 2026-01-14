@@ -4,7 +4,7 @@ import pyarrow
 from open_data_contract_standard.model import OpenDataContractStandard
 from pyarrow import parquet
 
-from datacontract.imports.importer import Importer
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
@@ -24,10 +24,15 @@ def import_parquet(source: str) -> OpenDataContractStandard:
     """Import a Parquet file and create an ODCS data contract."""
     # use filename as schema name, remove .parquet suffix, avoid breaking the yaml output by replacing dots
     schema_name = os.path.basename(source).removesuffix(".parquet").replace(".", "_")
-
+    if source.startswith("sftp://"):
+        fs = setup_sftp_filesystem(source)
+        # Extract path without the sftp:// prefix and host
+        path = source.split("//", 1)[1]  # Remove sftp://
+        path = "/" + path.split("/", 1)[1]  # Remove host part
+        arrow_schema = parquet.read_schema(path, filesystem=fs)
+    else:
+        arrow_schema = parquet.read_schema(source)
     properties = []
-
-    arrow_schema = parquet.read_schema(source)
     for field_name in arrow_schema.names:
         parquet_field = arrow_schema.field(field_name)
 

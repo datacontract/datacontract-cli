@@ -17,6 +17,7 @@ def import_odcs(source: str) -> OpenDataContractStandard:
     """Import an ODCS file directly - since ODCS is now the internal format, this is simpler."""
     try:
         odcs_yaml = yaml.safe_load(read_resource(source))
+
     except Exception as e:
         raise DataContractException(
             type="schema",

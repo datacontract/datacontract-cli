@@ -1,3 +1,4 @@
+
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
@@ -82,3 +83,4 @@ def test_lint_with_references():
     run = data_contract.lint()
 
     assert run.result == "passed"
+

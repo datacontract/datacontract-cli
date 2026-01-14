@@ -250,6 +250,7 @@ A list of available extras:
 | RDF                     | `pip install datacontract-cli[rdf]`        |
 | API (run as web server) | `pip install datacontract-cli[api]`        |
 | protobuf                | `pip install datacontract-cli[protobuf]`   |
+| Sftp server             | `pip install datacontract-cli[sftp]`       |
 
 
 ## Documentation
@@ -398,6 +399,7 @@ Supported server types:
 - [impala](#impala)
 - [api](#api)
 - [local](#local)
+- [sftp](#sftp)
 
 Supported formats:
 
@@ -1026,6 +1028,37 @@ models:
       my_column_2: # corresponds to a column
         type: string
 ```
+
+#### sftp
+
+Data Contract CLI can test sftp files in parquet, json, csv, or delta format.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  local:
+    type: sftp
+    path: sftp://data/*.parquet
+    format: parquet
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+      my_column_2: # corresponds to a column
+        type: string
+```
+
+##### Environment Variables
+
+| Environment Variable         | Example            | Description |
+|------------------------------|--------------------|-------------|
+| `DATACONTRACT_SFTP_USERNAME` | `admin`            | Username    |
+| `DATACONTRACT_SFTP_PASSWORD` | `mysecretpassword` | Password    |
+
 
 
 ### export
