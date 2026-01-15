@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Include searchable tags in catalog index.html
+
 ### Fixed
 
 - Fixed example(s) field mapping for Data Contract Specification importer (#992).
