@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Made `duckdb` an optional dependency. Install with `pip install datacontract-cli[duckdb]` for local/S3/GCS/Azure file testing.
+- Removed unused `fastparquet` and `numpy` dependencies.
+
 ### Added
 
 - Include searchable tags in catalog index.html

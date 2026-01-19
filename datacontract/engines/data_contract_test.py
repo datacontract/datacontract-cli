@@ -4,12 +4,12 @@ import tempfile
 import typing
 
 import requests
-from duckdb.duckdb import DuckDBPyConnection
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.data_contract_checks import create_checks
 
 if typing.TYPE_CHECKING:
+    from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
@@ -26,7 +26,7 @@ def execute_data_contract_test(
     run: Run,
     server_name: str = None,
     spark: "SparkSession" = None,
-    duckdb_connection: DuckDBPyConnection = None,
+    duckdb_connection: "DuckDBPyConnection" = None,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
