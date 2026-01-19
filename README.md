@@ -1103,6 +1103,7 @@ Available export options:
 | `html`               | Export to HTML                                          | ✅       |
 | `jsonschema`         | Export to JSON Schema                                   | ✅       |
 | `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅       |
+| `osi`                | Export to Open Semantic Interchange (OSI) format        | ✅       |
 | `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅       |
 | `dbt`                | Export to dbt models in YAML format                     | ✅       |
 | `dbt-sources`        | Export to dbt sources in YAML format                    | ✅       |
@@ -1529,6 +1530,7 @@ Available import options:
 | `glue`             | Import from AWS Glue DataCatalog              | ✅       |
 | `iceberg`          | Import from an Iceberg JSON Schema Definition | partial |
 | `jsonschema`       | Import from JSON Schemas                      | ✅       |
+| `osi`              | Import from Open Semantic Interchange (OSI)   | ✅       |
 | `parquet`          | Import from Parquet File Metadata             | ✅       |
 | `protobuf`         | Import from Protobuf schemas                  | ✅       |
 | `spark`            | Import from Spark StructTypes, Variant        | ✅       |
@@ -1625,6 +1627,22 @@ datacontract import --format glue --source <database_name> --glue-table <table_n
 ```bash
 # Example import from AWS Glue importing all tables in the database
 datacontract import --format glue --source <database_name>
+```
+
+#### OSI (Open Semantic Interchange)
+
+Importing from [Open Semantic Interchange (OSI)](https://github.com/open-semantic-interchange/OSI) semantic models. OSI is a vendor-neutral standard for semantic model exchange across BI, AI, and data analytics tools.
+
+Examples:
+
+```bash
+# Example import from OSI semantic model
+datacontract import --format osi --source semantic_model.yaml
+```
+
+```bash
+# Example export to OSI semantic model
+datacontract export --format osi datacontract.yaml
 ```
 
 #### Spark
