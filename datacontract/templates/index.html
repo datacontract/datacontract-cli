@@ -87,6 +87,9 @@
       for field_name, field in model.fields.items() %}
         {{ field_name|lower|e }} {{ field.description|lower|e if field.description else '' }} {%
       endfor %}
+    {% endfor %} {%
+    for tag in contract.spec.tags if contract.spec.tags %}
+      tag {{ tag|lower|e }}
     {% endfor %}
   ">
                 <a href="{{contract.html_link|e}}" >
@@ -117,6 +120,15 @@
                       {{contract.spec.info.description}}
                     </p>
                   </div>
+                  {% if contract.spec.tags %}
+                  <div class="flex w-full items-center px-6 pb-6">
+                    <div class="flex items-center flex-wrap gap-x-4">
+                      {% for tag in contract.spec.tags %}
+                        <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 mb-3 text-xs font-medium text-gray-600 inset-ring inset-ring-gray-500/10" data-tag="{{tag}}">{{tag}}</span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
 
                 </a>
               </li>
@@ -227,6 +239,21 @@
         noResults.classList.remove('hidden');  // Show the message if no items are visible
       } else {
         noResults.classList.add('hidden');     // Hide the message if there are visible items
+      }
+    });
+
+    // Handle clicking on tag pills to toggle searching for them
+    document.getElementById('catalog').addEventListener("click", function(event){
+      if (event.target.getAttribute('data-tag')) {
+        event.preventDefault()
+
+        const tagSearch = 'tag ' + event.target.getAttribute('data-tag')
+        if (searchInput.value.includes(tagSearch)) {
+          searchInput.value = ('' + searchInput.value).replace(tagSearch, '')
+        } else {
+          searchInput.value = tagSearch
+        }
+        searchInput.dispatchEvent(new Event('keyup'))
       }
     });
   });
