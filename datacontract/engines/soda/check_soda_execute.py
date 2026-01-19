@@ -6,9 +6,9 @@ from datacontract.engines.soda.connections.athena import to_athena_soda_configur
 from datacontract.engines.soda.connections.oracle import initialize_client_and_create_soda_configuration
 
 if typing.TYPE_CHECKING:
+    from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
-from duckdb.duckdb import DuckDBPyConnection
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.soda.connections.bigquery import to_bigquery_soda_configuration
@@ -29,7 +29,7 @@ def check_soda_execute(
     data_contract: OpenDataContractStandard,
     server: Server,
     spark: "SparkSession" = None,
-    duckdb_connection: DuckDBPyConnection = None,
+    duckdb_connection: "DuckDBPyConnection" = None,
 ):
     from soda.common.config_helper import ConfigHelper
 

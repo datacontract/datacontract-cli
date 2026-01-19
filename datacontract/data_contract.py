@@ -4,9 +4,8 @@ import typing
 from open_data_contract_standard.model import OpenDataContractStandard, Team
 
 if typing.TYPE_CHECKING:
+    from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
-
-from duckdb.duckdb import DuckDBPyConnection
 
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
@@ -29,7 +28,7 @@ class DataContract:
         server: str = None,
         publish_url: str = None,
         spark: "SparkSession" = None,
-        duckdb_connection: DuckDBPyConnection = None,
+        duckdb_connection: "DuckDBPyConnection" = None,
         inline_definitions: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
