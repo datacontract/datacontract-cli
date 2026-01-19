@@ -1,0 +1,27 @@
+semantic_model:
+  name: simple_model
+  description: Simple semantic model for basic testing
+  datasets:
+    - name: users
+      source: public.users
+      primary_key:
+        - id
+      fields:
+        - name: id
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: id
+          description: User ID
+        - name: name
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: name
+          description: User name
+        - name: active
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: active
+          description: Is user active

@@ -1,0 +1,78 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: orders_model
+status: draft
+schema:
+- name: orders
+  physicalType: table
+  description: 'Order transactions
+
+
+    AI Context: Main fact table for orders'
+  logicalType: object
+  physicalName: sales.orders
+  properties:
+  - name: order_id
+    description: Unique order identifier
+    businessName: Order ID
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+  - name: customer_id
+    description: Reference to customer
+    logicalType: string
+    relationships:
+    - type: foreignKey
+      to: customers.customer_id
+  - name: order_date
+    description: Date order was placed
+    logicalType: timestamp
+  - name: total_amount
+    description: Total order value
+    logicalType: string
+  - name: status
+    description: Order status
+    logicalType: string
+- name: customers
+  physicalType: table
+  description: Customer dimension
+  logicalType: object
+  physicalName: sales.customers
+  properties:
+  - name: customer_id
+    description: Unique customer identifier
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+  - name: customer_name
+    description: Full customer name
+    customProperties:
+    - property: osi_dialects
+      value:
+      - dialect: SNOWFLAKE
+        expression: CONCAT(first_name, ' ', last_name)
+    logicalType: string
+  - name: email
+    description: Customer email address
+    logicalType: string
+    unique: true
+  - name: created_at
+    description: Account creation timestamp
+    logicalType: timestamp
+customProperties:
+- property: osi_metrics
+  value:
+  - name: total_revenue
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: SUM(total_amount)
+    description: Total revenue from all orders
+  - name: order_count
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: COUNT(DISTINCT order_id)
+    description: Number of unique orders

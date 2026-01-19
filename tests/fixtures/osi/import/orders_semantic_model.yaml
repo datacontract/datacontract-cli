@@ -1,0 +1,105 @@
+semantic_model:
+  name: orders_model
+  description: Order management semantic model
+  ai_context: Use this model for sales and order analytics
+  datasets:
+    - name: orders
+      source: sales.orders
+      primary_key:
+        - order_id
+      description: Order transactions
+      ai_context: Main fact table for orders
+      fields:
+        - name: order_id
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: order_id
+          label: Order ID
+          description: Unique order identifier
+        - name: customer_id
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: customer_id
+          description: Reference to customer
+        - name: order_date
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: order_date
+          dimension:
+            is_time: true
+          description: Date order was placed
+        - name: total_amount
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: total_amount
+          description: Total order value
+        - name: status
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: status
+          description: Order status
+    - name: customers
+      source: sales.customers
+      primary_key:
+        - customer_id
+      unique_keys:
+        - - email
+      description: Customer dimension
+      fields:
+        - name: customer_id
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: customer_id
+          description: Unique customer identifier
+        - name: customer_name
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: "first_name || ' ' || last_name"
+              - dialect: SNOWFLAKE
+                expression: CONCAT(first_name, ' ', last_name)
+          description: Full customer name
+        - name: email
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: email
+          description: Customer email address
+        - name: created_at
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: created_at
+          dimension:
+            is_time: true
+          description: Account creation timestamp
+  relationships:
+    - name: orders_to_customers
+      from: orders
+      to: customers
+      from_columns:
+        - customer_id
+      to_columns:
+        - customer_id
+  metrics:
+    - name: total_revenue
+      expression:
+        dialects:
+          - dialect: ANSI_SQL
+            expression: SUM(total_amount)
+      description: Total revenue from all orders
+    - name: order_count
+      expression:
+        dialects:
+          - dialect: ANSI_SQL
+            expression: COUNT(DISTINCT order_id)
+      description: Number of unique orders
+  custom_extensions:
+    - vendor_name: DBT
+      data: '{"project": "sales_analytics"}'

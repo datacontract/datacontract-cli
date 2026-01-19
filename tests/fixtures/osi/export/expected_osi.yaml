@@ -1,0 +1,84 @@
+semantic_model:
+  name: orders-osi-test
+  description: Test data contract for OSI export
+  datasets:
+    - name: orders
+      source: sales.orders
+      primary_key:
+        - order_id
+      description: Order transactions
+      fields:
+        - name: order_id
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: order_id
+          description: Unique order identifier
+        - name: customer_id
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: customer_id
+          description: Reference to customer
+        - name: order_date
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: order_date
+          dimension:
+            is_time: true
+          description: Date order was placed
+        - name: total_amount
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: total_amount
+          description: Total order value
+        - name: status
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: status
+          description: Order status
+    - name: customers
+      source: sales.customers
+      primary_key:
+        - customer_id
+      unique_keys:
+        - - email
+      description: Customer dimension
+      fields:
+        - name: customer_id
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: customer_id
+          description: Unique customer identifier
+        - name: customer_name
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: customer_name
+          description: Full customer name
+        - name: email
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: email
+          description: Customer email address
+        - name: created_at
+          expression:
+            dialects:
+              - dialect: ANSI_SQL
+                expression: created_at
+          dimension:
+            is_time: true
+          description: Account creation timestamp
+  relationships:
+    - name: orders_customer_id_to_customers
+      from: orders
+      to: customers
+      from_columns:
+        - customer_id
+      to_columns:
+        - customer_id
