@@ -7,6 +7,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
+from datacontract.imports.importer import setup_sftp_filesystem
 from datacontract.model.run import Run
 
 
@@ -22,18 +23,22 @@ def get_duckdb_connection(
         con = duckdb_connection
 
     path: str = ""
-    if server.type == "local":
-        path = server.path
-    if server.type == "s3":
-        path = server.location
-        setup_s3_connection(con, server)
-    if server.type == "gcs":
-        path = server.location
-        setup_gcs_connection(con, server)
-    if server.type == "azure":
-        path = server.location
-        setup_azure_connection(con, server)
-
+    match server.type:
+        case "local":
+            path = server.path
+        case "s3":
+            path = server.location
+            setup_s3_connection(con, server)
+        case "gcs":
+            path = server.location
+            setup_gcs_connection(con, server)
+        case "azure":
+            path = server.location
+            setup_azure_connection(con, server)
+        case "sftp":
+            fs = setup_sftp_filesystem(server.location)
+            duckdb.register_filesystem(filesystem=fs, connection=con)
+            path = server.location
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
             model_name = schema_obj.name

@@ -14,6 +14,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 requires-python = ">=3.10,<3.13"
+
 dependencies = [
   "typer>=0.15.1,<0.22",
   "pydantic>=2.8.2,<2.13.0",
@@ -129,8 +130,12 @@ protobuf = [
   "grpcio-tools>=1.53",
 ]
 
+sftp = [
+  "paramiko>=4.0.0",
+  ]
+
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,athena,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,athena,trino,dbt,dbml,iceberg,parquet,rdf,api,protobuf,oracle,sftp]"
 ]
 
 # for development, we pin all libraries to an exact version

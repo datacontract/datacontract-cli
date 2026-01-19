@@ -4,7 +4,7 @@ from typing import Dict, List
 import duckdb
 from open_data_contract_standard.model import OpenDataContractStandard
 
-from datacontract.imports.importer import Importer
+from datacontract.imports.importer import Importer, setup_sftp_filesystem
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
@@ -29,6 +29,10 @@ def import_csv(
 
     # use duckdb to auto detect format, columns, etc.
     con = duckdb.connect(database=":memory:")
+    if source.startswith("sftp"):
+        fs = setup_sftp_filesystem(source)
+        duckdb.register_filesystem(filesystem=fs, connection=con)
+        con.register_filesystem(fs)
     con.sql(
         f"""CREATE VIEW "{table_name}" AS SELECT * FROM read_csv_auto('{source}', hive_partitioning=1, auto_type_candidates = ['BOOLEAN', 'INTEGER', 'BIGINT', 'DOUBLE', 'VARCHAR']);"""
     )
