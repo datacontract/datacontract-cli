@@ -72,7 +72,7 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     type1 = server.type if server and server.type else None
     config = QuotingConfig(
-        quote_field_name=type1 in ["postgres", "sqlserver"],
+        quote_field_name=type1 in ["postgres", "sqlserver", "azure"],
         quote_model_name=type1 in ["postgres", "sqlserver"],
         quote_model_name_with_backticks=type1 == "bigquery",
     )
