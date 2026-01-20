@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Fix BigQuery import for repeated fields 
+
 ## [0.11.4] - 2026-01-19
 
 ### Changed
@@ -23,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed example(s) field mapping for Data Contract Specification importer (#992).
 - Spark exporter now supports decimal precision/scale via `customProperties` or parsing from `physicalType` (e.g., `decimal(10,2)`) (#996)
 - Fix catalog/HTML export failing on ODCS contracts with no schema or no properties (#971)
-- Fix BigQuery import for repeated fields 
 
 ## [0.11.3] - 2026-01-10
 
