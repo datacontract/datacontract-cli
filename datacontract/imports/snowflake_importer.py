@@ -17,6 +17,7 @@ class SnowflakeImporter(Importer):
                 schema=import_args.get("schema"),
             )
 
+
 def import_Snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
     ## connect to snowflake and get cursor
     conn = snowflake_cursor(account, database, schema)
@@ -36,7 +37,8 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
 
         return OpenDataContractStandard.from_string(yaml.dump(json.loads(json_contract[0][0])))
 
-def snowflake_query(schema:str, schema_sfqid: str, businessKey_sfqid: str) -> str:
+
+def snowflake_query(schema: str, schema_sfqid: str, businessKey_sfqid: str) -> str:
     sqlStatement = """
     --SHOW COLUMNS;
     --SHOW PRIMARY KEYS;
@@ -208,7 +210,12 @@ OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
 'schema', "schema") as "DataContract (ODCS)"
 FROM SCHEMA_DEF
     """
-    return sqlStatement.replace("$schema_sfqid", schema_sfqid).replace("$businessKey_sfqid", businessKey_sfqid).replace("{schema}", schema)
+    return (
+        sqlStatement.replace("$schema_sfqid", schema_sfqid)
+        .replace("$businessKey_sfqid", businessKey_sfqid)
+        .replace("{schema}", schema)
+    )
+
 
 def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = "PUBLIC"):
     try:
@@ -231,7 +238,7 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
     user_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_USERNAME", None)
     password_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_PASSWORD", None)
     account_connect = account
-    role_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_ROLE",None)
+    role_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_ROLE", None)
     authenticator_connect = "externalbrowser" if password_connect is None else "snowflake"
     warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
     database_connect = databasename or "DEMO_DB"
