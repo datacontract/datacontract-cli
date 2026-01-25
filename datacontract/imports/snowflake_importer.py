@@ -247,7 +247,15 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
     private_key_file_pwd = None
 
     # build connection
-    if authenticator_connect == "externalbrowser":
+    if os.environ.get("SNOWFLAKE_DEFAULT_CONNECTION_NAME", None) is not None:
+        # use the default connection defined in the snowflake config file : connections.toml and config.toml
+        conn = connect(
+            session_parameters={
+                "QUERY_TAG": "datacontract-cli import",
+                "use_openssl_only": False,
+            }
+        )    
+    elif authenticator_connect == "externalbrowser":
         # use external browser auth
         conn = connect(
             user=user_connect,
@@ -277,14 +285,6 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
             role=role_connect,
             database=database_connect,
             schema=schema_connect,
-        )
-    elif os.environ.get("SNOWFLAKE_DEFAULT_CONNECTION_NAME", None) is not None:
-        # use the default connection defined in the snowflake config file : connections.toml and config.toml
-        conn = connect(
-            session_parameters={
-                "QUERY_TAG": "datacontract-cli import",
-                "use_openssl_only": False,
-            }
         )
     else:
         # use the login/password auth
