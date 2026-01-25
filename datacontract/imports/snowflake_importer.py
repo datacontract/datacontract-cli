@@ -281,7 +281,10 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
     private_key_file_pwd = None
 
     # build connection
-    if os.environ.get("SNOWFLAKE_DEFAULT_CONNECTION_NAME", None) is not None and os.environ.get("DATACONTRACT_SNOWFLAKE_PASSWORD", None) is None:
+    if (
+        os.environ.get("SNOWFLAKE_DEFAULT_CONNECTION_NAME", None) is not None
+        and os.environ.get("DATACONTRACT_SNOWFLAKE_PASSWORD", None) is None
+    ):
         # use the default connection defined in the snowflake config file : connections.toml and config.toml
         conn = connect(
             session_parameters={
