@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import json
 import os
+from collections import OrderedDict
+from typing import Any, Dict
 
-import oyaml as yaml
+import yaml
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
@@ -35,7 +39,28 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         # extract and save ddl script into sql file
         json_contract = cur.fetchall()
 
-        return OpenDataContractStandard.from_string(yaml.dump(json.loads(json_contract[0][0])))
+        # Try to Preserve order when dumping to yaml properties as columns order matters
+        yaml.add_representer(dict, map_representer, Dumper=yaml.Dumper)
+        yaml.add_representer(OrderedDict, map_representer, Dumper=yaml.Dumper)
+
+        if len(json_contract) == 0 or len(json_contract[0]) == 0:
+            raise DataContractException(
+                type="import",
+                result="failed",
+                name="snowflake import",
+                reason=f"No data contract returned from schema {schema} in database {database} please check connectivity and schema existence",
+                engine="datacontract",
+            )
+        result_set = json.loads(json_contract[0][0], object_pairs_hook=OrderedDict)
+        sorted_properties = sort_schema_by_name_properties_by_ordinalPosition(result_set)
+
+        toYaml = yaml.dump(sorted_properties, sort_keys=False)
+
+        return OpenDataContractStandard.from_string(toYaml)
+
+
+def map_representer(dumper, data):
+    return dumper.represent_dict(getattr(data, "items")())
 
 
 def snowflake_query(schema: str, schema_sfqid: str, businessKey_sfqid: str) -> str:
@@ -71,8 +96,10 @@ WITH INFO_SCHEMA_COLUMNS AS (
     WHEN 'TIMESTAMP_NTZ' THEN CONCAT('TIMESTAMP_NTZ','(',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')')
     ELSE GET_PATH(TRY_PARSE_JSON("data_type"),'type') END as PhysicalType,
     IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicatTypeOptions_maxlength,
-    IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), ARRAY_CONSTRUCT() ) as tags
-    FROM TABLE(RESULT_SCAN('$schema_sfqid'))
+    IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), NULL ) as tags,
+    IS_C.ORDINAL_POSITION
+    FROM TABLE(RESULT_SCAN('$schema_sfqid')) as T
+    JOIN INFORMATION_SCHEMA.COLUMNS as IS_C ON T."table_name"= IS_C.TABLE_NAME AND  T."schema_name" = IS_C.TABLE_SCHEMA AND T."column_name" = IS_C.COLUMN_NAME AND T."database_name" = IS_C.TABLE_CATALOG
 )
 ,
 INFO_SCHEMA_CONSTRAINTS AS (
@@ -105,17 +132,23 @@ ARRAY_AGG(OBJECT_CONSTRUCT(
     'unique',       C."unique",
     'description',  C.description,
     'logicalType',  C.LogicalType,
-    'logicalTypeOptions',OBJECT_CONSTRUCT('maxLength',logicatTypeOptions_maxlength::number),  
-    'physicalType', C.PhysicalType,
-    'primaryKey', COALESCE(BK.primaryKey,false),
-    'primaryKeyPosition', COALESCE(BK.primaryKeyPosition,0),
-    'tags', C.tags,
-    'customProperties', ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(
-                                        'property','scdType',    
-                                        'value', IFF( COALESCE(BK.primaryKey,false) ,0,1)),
+    IFF(logicatTypeOptions_maxlength::number IS NOT NULL,'logicalTypeOptions',NULL), IFF( logicatTypeOptions_maxlength::number IS NOT NULL , OBJECT_CONSTRUCT('maxLength',logicatTypeOptions_maxlength::number), NULL),  
+    'physicalType', TRIM(C.PhysicalType),
+    IFF(BK.primaryKey = true, 'primaryKey', NULL), IFF(BK.primaryKey = true,true, NULL),
+    IFF(BK.primaryKey = true, 'primaryKeyPosition', NULL), IFF(BK.primaryKey = true, BK.primaryKeyPosition, NULL),
+    IFF(C.tags IS NOT NULL,'tags',NULL) , IFF(C.tags IS NOT NULL, C.tags, NULL),
+    'customProperties', ARRAY_CONSTRUCT_COMPACT(
                                         OBJECT_CONSTRUCT(
+                                        'property', 'ordinal_position',
+                                        'value', C.ORDINAL_POSITION
+                                        ),
+                                        OBJECT_CONSTRUCT(
+                                        'property','scdType',    
+                                        'value', IFF( COALESCE(BK.primaryKey,false) ,0,1)
+                                        ),
+                                        IFF(BK.primaryKey = True AND Right(C."name",3) != '_SK', OBJECT_CONSTRUCT(
                                         'property','businessKey',
-                                        'value', IFF( COALESCE(BK.primaryKey,false) AND Right(C."name",3) != '_SK', True, False)))
+                                        'value', True), NULL))
                         )) as properties
 FROM INFO_SCHEMA_COLUMNS C
 LEFT JOIN INFO_SCHEMA_CONSTRAINTS BK ON (C.schema_name = BK.schema_name 
@@ -254,7 +287,7 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
                 "QUERY_TAG": "datacontract-cli import",
                 "use_openssl_only": False,
             }
-        )    
+        )
     elif authenticator_connect == "externalbrowser":
         # use external browser auth
         conn = connect(
@@ -303,3 +336,40 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
             schema=schema_connect,
         )
     return conn
+
+
+def _get_ordinal_position_value(col: Dict[str, Any]) -> Any:
+    """Extract customProperties value where property == 'ordinal_position'."""
+    for cp in col.get("customProperties") or []:
+        if isinstance(cp, dict) and cp.get("property") == "ordinal_position":
+            return cp.get("value")
+    return None
+
+
+def sort_schema_by_name_properties_by_ordinalPosition(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    - Does NOT reorder payload['schema'].
+    - For each schema element (table), sorts table['properties'] by ordinal_position.value.
+    - Does NOT sort customProperties themselves.
+    """
+    schema = payload.get("schema")
+    if not isinstance(schema, list):
+        return payload
+    new_schema = []
+    for table in schema:
+        props = table.get("properties")
+        if not isinstance(props, list):
+            continue
+
+        def col_key(col: Dict[str, Any]):
+            ord_val = _get_ordinal_position_value(col)
+            return (ord_val, f"{table.get('name').lower()}.{col.get('name').lower()}")
+
+        props.sort(key=col_key)
+        table["properties"] = props
+        new_schema.append(table)
+
+    new_schema.sort(key=lambda t: t.get("name").lower())
+
+    payload["schema"] = new_schema
+    return payload
