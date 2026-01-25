@@ -34,7 +34,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         businessKey_sfqid = str(cur.sfqid)
         # -- AS
         # SET(col, pk) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));"
-        cur.execute_async(snowflake_query(schema, schema_sfqid, businessKey_sfqid))
+        cur.execute_async(snowflake_query(account, schema, schema_sfqid, businessKey_sfqid))
         cur.get_results_from_sfqid(cur.sfqid)
         # extract and save ddl script into sql file
         json_contract = cur.fetchall()
@@ -63,7 +63,7 @@ def map_representer(dumper, data):
     return dumper.represent_dict(getattr(data, "items")())
 
 
-def snowflake_query(schema: str, schema_sfqid: str, businessKey_sfqid: str) -> str:
+def snowflake_query(account: str, schema: str, schema_sfqid: str, businessKey_sfqid: str) -> str:
     sqlStatement = """
     --SHOW COLUMNS;
     --SHOW PRIMARY KEYS;
@@ -191,9 +191,9 @@ OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
     OBJECT_CONSTRUCT(
         'server','snowflake_dev', 
         'type','snowflake',
-        'account', LOWER(CONCAT(CURRENT_ACCOUNT_NAME(),'.',CURRENT_REGION())),
+        'account', '{account}',
         'environment', 'dev',
-        'host', LOWER(CONCAT(CURRENT_ACCOUNT_NAME(),'.',CURRENT_REGION(),'.azure.snowflakecomputing.com')),
+        'host', '{account}.snowflakecomputing.com',
         'port', 443,
         'database', CURRENT_DATABASE(),
         'warehouse', CURRENT_WAREHOUSE(),
@@ -208,9 +208,9 @@ OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
     OBJECT_CONSTRUCT(
         'server','snowflake_uat', 
         'type','snowflake',
-        'account', LOWER(CONCAT(CURRENT_ACCOUNT_NAME(),'.',CURRENT_REGION())),
+        'account', '{account}',
         'environment', 'uat',
-        'host', LOWER(CONCAT(CURRENT_ACCOUNT_NAME(),'.',CURRENT_REGION(),'.azure.snowflakecomputing.com')),
+        'host', '{account}.snowflakecomputing.com',
         'port', 443,
         'database', CURRENT_DATABASE(),
         'warehouse', CURRENT_WAREHOUSE(),
@@ -225,9 +225,9 @@ OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
         OBJECT_CONSTRUCT(
         'server','snowflake', 
         'type','snowflake',
-        'account', LOWER(CONCAT(CURRENT_ACCOUNT_NAME(),'.',CURRENT_REGION())),
+        'account', '{account}',
         'environment', 'prd',
-        'host', LOWER(CONCAT(CURRENT_ACCOUNT_NAME(),'.',CURRENT_REGION(),'.azure.snowflakecomputing.com')),
+        'host', '{account}.snowflakecomputing.com',
         'port', 443,
         'database', CURRENT_DATABASE(),
         'warehouse', CURRENT_WAREHOUSE(),
@@ -247,6 +247,7 @@ FROM SCHEMA_DEF
         sqlStatement.replace("$schema_sfqid", schema_sfqid)
         .replace("$businessKey_sfqid", businessKey_sfqid)
         .replace("{schema}", schema)
+        .replace("{account}", account)
     )
 
 
