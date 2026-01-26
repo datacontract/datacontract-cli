@@ -24,12 +24,12 @@ class SqlImporter(Importer):
 
 def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataContractStandard:
     sql = read_file(source)
-    dialect = to_dialect(import_args)
+    dialect = to_dialect(import_args) or None
 
     parsed = None
 
     try:
-        parsed = sqlglot.parse_one(sql=sql, read=dialect.lower())
+        parsed = sqlglot.parse_one(sql=sql, read=dialect)
 
         tables = parsed.find_all(sqlglot.expressions.Table)
 
@@ -105,7 +105,7 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
         schema_obj = create_schema_object(
             name=table_name,
             physical_type="table",
-            table_description=table_description if table_comment_property else None,
+            description=table_description if table_comment_property else None,
             tags=table_tags if tags else None,
             properties=properties,
         )
@@ -160,22 +160,6 @@ def to_dialect(import_args: dict) -> Dialects | None:
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
     return "None"
-
-
-def to_physical_type_key(dialect: Dialects | str | None) -> str:
-    dialect_map = {
-        Dialects.TSQL: "sqlserverType",
-        Dialects.POSTGRES: "postgresType",
-        Dialects.BIGQUERY: "bigqueryType",
-        Dialects.SNOWFLAKE: "snowflakeType",
-        Dialects.REDSHIFT: "redshiftType",
-        Dialects.ORACLE: "oracleType",
-        Dialects.MYSQL: "mysqlType",
-        Dialects.DATABRICKS: "databricksType",
-    }
-    if isinstance(dialect, str):
-        dialect = Dialects[dialect.upper()] if dialect.upper() in Dialects.__members__ else None
-    return dialect_map.get(dialect, "physicalType")
 
 
 def to_server_type(source, dialect: Dialects | None) -> str | None:
@@ -291,34 +275,28 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "string"
     elif sql_type_normed.startswith("ntext"):
         return "string"
-    elif sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval"):
+    elif sql_type_normed.endswith("integer"):
         return "integer"
-    elif sql_type_normed.startswith("bigint"):
+    elif sql_type_normed.endswith("int"):  # covers int, bigint, smallint, tinyint
         return "integer"
-    elif sql_type_normed.startswith("tinyint"):
-        return "integer"
-    elif sql_type_normed.startswith("smallint"):
-        return "int"
-    elif sql_type_normed.startswith("bigint"):
-        return "long"
     elif sql_type_normed.startswith("float") or sql_type_normed.startswith("double") or sql_type_normed == "real":
-        return "float"
+        return "number"
     elif sql_type_normed.startswith("number"):
-        return "decimal"
+        return "number"
     elif sql_type_normed.startswith("numeric"):
-        return "decimal"
+        return "number"
     elif sql_type_normed.startswith("decimal"):
-        return "decimal"
+        return "number"
     elif sql_type_normed.startswith("money"):
-        return "decimal"
+        return "number"
     elif sql_type_normed.startswith("bool"):
         return "boolean"
     elif sql_type_normed.startswith("bit"):
         return "boolean"
     elif sql_type_normed.startswith("binary"):
-        return "array"
+        return "object"
     elif sql_type_normed.startswith("varbinary"):
-        return "array"
+        return "object"
     elif sql_type_normed.startswith("raw"):
         return "array"
     elif sql_type_normed == "blob" or sql_type_normed == "bfile":
@@ -327,20 +305,11 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "date"
     elif sql_type_normed == "time":
         return "string"
-    elif sql_type_normed == "timestamp":
-        return "timestamp_ntz"
-    elif (
-        sql_type_normed == "timestamptz"
-        or sql_type_normed == "timestamp_tz"
-        or sql_type_normed == "timestamp with time zone"
-        or sql_type_normed == "timestamp_ltz"
-    ):
-        return "timestamp_tz"
-    elif sql_type_normed == "timestampntz" or sql_type_normed == "timestamp_ntz":
-        return "timestamp_ntz"
+    elif sql_type_normed.startswith("timestamp"):
+        return "timestamp"
     elif sql_type_normed == "smalldatetime":
         return "date"
-    elif sql_type_normed == "datetimeoffset":
+    elif sql_type_normed.startswith("datetime"):  # tsql datatime2
         return "date"
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return "string"

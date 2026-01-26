@@ -130,11 +130,11 @@ schema:
         physicalType: DATETIMEOFFSET
         description: Datetime with time zone
       - name: field_binary
-        logicalType: array
+        logicalType: object
         physicalType: BINARY(16)
         description: Fixed-length binary
       - name: field_varbinary
-        logicalType: array
+        logicalType: object
         physicalType: VARBINARY(100)
         description: Variable-length binary
       - name: field_uniqueidentifier
