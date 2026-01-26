@@ -2,16 +2,18 @@ import importlib.resources as resources
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 import requests
 
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum
 
-DEFAULT_DATA_CONTRACT_SCHEMA = "datacontract-1.2.0.schema.json"
+DEFAULT_DATA_CONTRACT_SCHEMA = "datacontract-1.2.1.schema.json"
 
 
-def fetch_schema(location: str = None) -> Dict[str, Any]:
+def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
     """
     Fetch and return a JSON schema from a given location.
 
@@ -36,19 +38,26 @@ def fetch_schema(location: str = None) -> Dict[str, Any]:
         schema_file = schemas.joinpath("schemas", DEFAULT_DATA_CONTRACT_SCHEMA)
         with schema_file.open("r") as file:
             schema = json.load(file)
-    elif location.startswith("http://") or location.startswith("https://"):
-        response = requests.get(location)
-        schema = response.json()
     else:
-        if not os.path.exists(location):
-            raise DataContractException(
-                type="lint",
-                name=f"Reading schema from {location}",
-                reason=f"The file '{location}' does not exist.",
-                engine="datacontract",
-                result="error",
-            )
-        with open(location, "r") as file:
-            schema = json.load(file)
+        # Convert Path objects to strings for string operations
+        location_str = str(location)
+
+        if location_str.startswith("http://") or location_str.startswith("https://"):
+            logging.debug(f"Downloading schema from {location_str}")
+            response = requests.get(location_str)
+            schema = response.json()
+        else:
+            if not os.path.exists(location):
+                raise DataContractException(
+                    type="lint",
+                    name=f"Reading schema from {location}",
+                    reason=f"The file '{location}' does not exist.",
+                    engine="datacontract",
+                    result=ResultEnum.error,
+                )
+
+            logging.debug(f"Loading JSON schema locally at {location}")
+            with open(location, "r") as file:
+                schema = json.load(file)
 
     return schema

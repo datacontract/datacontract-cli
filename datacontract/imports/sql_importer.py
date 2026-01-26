@@ -3,39 +3,28 @@ import os
 import re
 
 import sqlglot
+from open_data_contract_standard.model import OpenDataContractStandard
 from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
-from datacontract.model.data_contract_specification import (
-    DataContractSpecification,
-    Field,
-    Model,
-    Server,
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
 
 class SqlImporter(Importer):
-    def import_source(
-        self, data_contract_specification: DataContractSpecification, source: str, import_args: dict
-    ) -> DataContractSpecification:
-        return import_sql(data_contract_specification, self.import_format, source, import_args)
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+        return import_sql(self.import_format, source, import_args)
 
 
-def import_sql(
-    data_contract_specification: DataContractSpecification,
-    format: str,
-    source: str,
-    import_args: dict = None,
-) -> DataContractSpecification:
-    dialect = to_dialect(import_args)
-
-    server_type: str | None = to_server_type(source, dialect)
-    if server_type is not None:
-        data_contract_specification.servers[server_type] = Server(type=server_type)
-
+def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataContractStandard:
     sql = read_file(source)
+    dialect = to_dialect(import_args)
 
     parsed = None
 
@@ -54,63 +43,75 @@ def import_sql(
             result=ResultEnum.error,
         )
 
+    odcs = create_odcs()
+    odcs.schema_ = []
+
+    server_type = to_server_type(source, dialect)
+    if server_type is not None:
+        odcs.servers = [create_server(name=server_type, server_type=server_type)]
+
+    tables = parsed.find_all(sqlglot.expressions.Table)
+
     for table in tables:
-        if data_contract_specification.models is None:
-            data_contract_specification.models = {}
+        table_name = table.this.name
+        properties = []
 
-        data_contract_specification.models[table.this.name] = get_model_from_parsed(
-            table_name=table.this.name, parsed=parsed, dialect=dialect
+        primary_key_position = 1
+        for column in parsed.find_all(sqlglot.exp.ColumnDef):
+            if column.parent.this.name != table_name:
+                continue
+
+            col_name = column.this.name
+            col_type = to_col_type(column, dialect)
+            logical_type = map_type_from_sql(col_type)
+            col_description = get_description(column)
+            max_length = get_max_length(column)
+            precision, scale = get_precision_scale(column)
+            is_primary_key = get_primary_key(column)
+            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+            tags = get_tags(column)
+
+            prop = create_property(
+                name=col_name,
+                logical_type=logical_type,
+                physical_type=col_type,
+                description=col_description,
+                max_length=max_length,
+                precision=precision,
+                scale=scale,
+                primary_key=is_primary_key,
+                primary_key_position=primary_key_position if is_primary_key else None,
+                required=is_required if is_required else None,
+                tags=tags,
+            )
+
+            if is_primary_key:
+                primary_key_position += 1
+
+            properties.append(prop)
+
+        table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+
+        if table_comment_property:
+            table_description = table_comment_property.this.this
+
+        prop = parsed.find(sqlglot.expressions.Properties)
+        if prop:
+            tags = prop.find(sqlglot.expressions.Tags)
+            if tags:
+                tag_enum = tags.find(sqlglot.expressions.Property)
+                table_tags = [str(t) for t in tag_enum]
+
+        schema_obj = create_schema_object(
+            name=table_name,
+            physical_type="table",
+            table_description=table_description if table_comment_property else None,
+            tags=table_tags if tags else None,
+            properties=properties,
         )
+        odcs.schema_.append(schema_obj)
 
-    return data_contract_specification
-
-
-def get_model_from_parsed(table_name, parsed, dialect) -> Model:
-    table_description = None
-    table_tags = None
-
-    table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
-    if table_comment_property:
-        table_description = table_comment_property.this.this
-
-    prop = parsed.find(sqlglot.expressions.Properties)
-    if prop:
-        tags = prop.find(sqlglot.expressions.Tags)
-        if tags:
-            tag_enum = tags.find(sqlglot.expressions.Property)
-            table_tags = [str(t) for t in tag_enum]
-
-    fields = {}
-    for column in parsed.find_all(sqlglot.exp.ColumnDef):
-        if column.parent.this.name != table_name:
-            continue
-
-        field = Field()
-        col_name = column.this.name
-        col_type = to_col_type(column, dialect)
-        field.type = map_type_from_sql(col_type)
-        col_description = get_description(column)
-        field.description = col_description
-        field.maxLength = get_max_length(column)
-        precision, scale = get_precision_scale(column)
-        field.precision = precision
-        field.scale = scale
-        field.primaryKey = get_primary_key(column)
-        field.required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
-        physical_type_key = to_physical_type_key(dialect)
-        field.tags = get_tags(column)
-        field.config = {
-            physical_type_key: col_type,
-        }
-
-        fields[col_name] = field
-
-    return Model(
-        type="table",
-        description=table_description,
-        tags=table_tags,
-        fields=fields,
-    )
+    return odcs
 
 
 def map_physical_type(column, dialect) -> str | None:
@@ -270,6 +271,7 @@ def get_precision_scale(column):
 
 
 def map_type_from_sql(sql_type: str) -> str | None:
+    """Map SQL type to ODCS logical type."""
     if sql_type is None:
         return None
 
@@ -289,10 +291,12 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "string"
     elif sql_type_normed.startswith("ntext"):
         return "string"
-    elif sql_type_normed.startswith("int"):
-        return "int"
+    elif sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval"):
+        return "integer"
+    elif sql_type_normed.startswith("bigint"):
+        return "integer"
     elif sql_type_normed.startswith("tinyint"):
-        return "int"
+        return "integer"
     elif sql_type_normed.startswith("smallint"):
         return "int"
     elif sql_type_normed.startswith("bigint"):
@@ -312,9 +316,13 @@ def map_type_from_sql(sql_type: str) -> str | None:
     elif sql_type_normed.startswith("bit"):
         return "boolean"
     elif sql_type_normed.startswith("binary"):
-        return "bytes"
+        return "array"
     elif sql_type_normed.startswith("varbinary"):
-        return "bytes"
+        return "array"
+    elif sql_type_normed.startswith("raw"):
+        return "array"
+    elif sql_type_normed == "blob" or sql_type_normed == "bfile":
+        return "array"
     elif sql_type_normed == "date":
         return "date"
     elif sql_type_normed == "time":
@@ -331,18 +339,18 @@ def map_type_from_sql(sql_type: str) -> str | None:
     elif sql_type_normed == "timestampntz" or sql_type_normed == "timestamp_ntz":
         return "timestamp_ntz"
     elif sql_type_normed == "smalldatetime":
-        return "timestamp_ntz"
-    elif sql_type_normed == "datetime":
-        return "timestamp_ntz"
-    elif sql_type_normed == "datetime2":
-        return "timestamp_ntz"
+        return "date"
     elif sql_type_normed == "datetimeoffset":
-        return "timestamp_tz"
+        return "date"
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return "string"
     elif sql_type_normed == "json":
-        return "string"
+        return "object"
     elif sql_type_normed == "xml":  # tsql
+        return "string"
+    elif sql_type_normed.startswith("number"):
+        return "number"
+    elif sql_type_normed == "clob" or sql_type_normed == "nclob":
         return "string"
     else:
         return "object"
@@ -352,7 +360,7 @@ def remove_variable_tokens(sql_script: str) -> str:
     ## to cleanse sql statement's script token like $(...) in sqlcmd for T-SQL langage,  ${...} for liquibase,  {{}} as Jinja
     ## https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-use-scripting-variables?view=sql-server-ver17#b-use-the-setvar-command-interactively
     ## https://docs.liquibase.com/concepts/changelogs/property-substitution.html
-    ## https://docs.getdbt.com/guides/using-jinja?step=1 
+    ## https://docs.getdbt.com/guides/using-jinja?step=1
     return re.sub(r"\$\((\w+)\)|\$\{(\w+)\}|\{\{(\w+)\}\}", r"\1", sql_script)
 
 

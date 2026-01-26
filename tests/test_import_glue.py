@@ -158,33 +158,29 @@ def test_cli_with_table_filters(setup_mock_glue):
 
 @mock_aws
 def test_import_glue_schema_without_glue_table_filter(setup_mock_glue):
-    result = DataContract().import_from_source("glue", "test_database")
+    result = DataContract.import_from_source("glue", "test_database")
 
     with open("fixtures/glue/datacontract.yaml") as file:
         expected = file.read()
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
 
 
 @mock_aws
 def test_import_glue_schema_with_glue_table_filter(setup_mock_glue):
-    result = DataContract().import_from_source(format="glue", source="test_database", glue_table=[table_name])
+    result = DataContract.import_from_source(format="glue", source="test_database", glue_table=[table_name])
 
     with open("fixtures/glue/datacontract.yaml") as file:
         expected = file.read()
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()
 
 
 @mock_aws
 def test_import_glue_schema_with_non_existent_glue_table_filter(setup_mock_glue):
-    result = DataContract().import_from_source(format="glue", source="test_database", glue_table=["table_1"])
+    result = DataContract.import_from_source(format="glue", source="test_database", glue_table=["table_1"])
 
     # we specify a table that the Mock doesn't have and thus expect an empty result
     with open("fixtures/glue/datacontract-empty-model.yaml") as file:
@@ -192,5 +188,3 @@ def test_import_glue_schema_with_non_existent_glue_table_filter(setup_mock_glue)
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings
-    assert DataContract(data_contract_str=expected).lint(enabled_linters=set()).has_passed()

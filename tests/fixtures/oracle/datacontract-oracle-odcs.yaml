@@ -1,0 +1,145 @@
+apiVersion: v3.0.2
+kind: DataContract
+
+id: oracle
+name: oracle
+version: 0.0.1
+tenant: my-domain-team
+status: active
+
+servers:
+  - server: oracle
+    type: oracle
+    host: localhost
+    port: __PORT__
+    serviceName: FREEPDB1
+
+schema:
+  - name: checks_testcase
+    logicalType: object
+    physicalType: table
+    physicalName: checks_testcase
+    properties:
+      - name: CTC_ID
+        description: Primary key
+        primaryKey: true
+        logicalType: number
+        physicalType: NUMBER
+      - name: DESCRIPTION
+        description: Decimal number
+        logicalType: string
+        physicalType: VARCHAR2
+      - name: AMOUNT
+        description: Amount purchased
+        logicalType: number
+        physicalType: NUMBER
+        quality:
+          - type: sql
+            description: There is a customer who bought a lot of items
+            query: SELECT {field} FROM {model} where {field} = 100
+            mustBeGreaterThan: 0
+      - name: QUALITY
+        description: Percentage of checks passed
+        logicalType: number
+        physicalType: NUMBER
+      - name: CUSTOM_ATTRIBUTES
+        description: Custom attributes
+        physicalType: CLOB
+      - name: FIELD_VARCHAR
+        description: Variable-length string
+        logicalType: string
+        logicalTypeOptions: { maxLength: 100 }
+        physicalType: VARCHAR
+      - name: FIELD_NVARCHAR
+        description: Variable-length Unicode string
+        logicalType: string
+        logicalTypeOptions: { maxLength: 100 }
+        physicalType: NVARCHAR2
+      - name: FIELD_NUMBER
+        description: Number
+        logicalType: number
+        physicalType: NUMBER
+      - name: FIELD_FLOAT
+        description: Float
+        logicalType: number
+        physicalType: FLOAT
+      - name: FIELD_DATE
+        description: Date and Time down to second precision
+        logicalType: date
+        physicalType: DATE
+      - name: FIELD_BINARY_FLOAT
+        description: 32-bit floating point number
+        logicalType: number
+        physicalType: BINARY_FLOAT
+      - name: FIELD_BINARY_DOUBLE
+        description: 64-bit floating point number
+        logicalType: number
+        physicalType: BINARY_DOUBLE
+      - name: FIELD_TIMESTAMP
+        description: Timestamp with fractional second precision of 6, no timezones
+        logicalType: date
+        physicalType: TIMESTAMP(6)
+      - name: FIELD_TIMESTAMP_TZ
+        description: Timestamp with fractional second precision of 6, with timezones
+            (TZ)
+        logicalType: date
+        physicalType: TIMESTAMP(6) WITH TIME ZONE
+      - name: FIELD_TIMESTAMP_LTZ
+        description: Timestamp with fractional second precision of 6, with local timezone
+            (LTZ)
+        logicalType: date
+        physicalType: TIMESTAMP(6) WITH LOCAL TIME ZONE
+      - name: FIELD_INTERVAL_YEAR
+        description: Interval of time in years and months with default (2) precision
+        logicalType: integer
+        physicalType: INTERVAL YEAR(2) TO MONTH
+      - name: FIELD_INTERVAL_DAY
+        description: Interval of time in days, hours, minutes and seconds with default
+            (2 / 6) precision
+        logicalType: integer
+        physicalType: INTERVAL DAY(2) TO SECOND(6)
+      - name: FIELD_RAW
+        description: Large raw binary data
+        logicalType: object
+        physicalType: RAW
+      - name: FIELD_ROWID
+        description: Base 64 string representing a unique row address
+        logicalType: object
+        physicalType: ROWID
+      - name: FIELD_UROWID
+        description: Base 64 string representing a unique row address
+        logicalType: object
+        physicalType: UROWID
+      - name: FIELD_CHAR
+        description: Fixed-length string
+        logicalType: string
+        logicalTypeOptions: { minLength: 10, maxLength: 10 }
+        physicalType: CHAR
+      - name: FIELD_NCHAR
+        description: Fixed-length string
+        logicalType: string
+        logicalTypeOptions: { minLength: 10, maxLength: 10 }
+        physicalType: NCHAR
+      - name: FIELD_CLOB
+        description: Character large object
+        logicalType: string
+        physicalType: CLOB
+      - name: FIELD_NCLOB
+        description: National character large object
+        logicalType: string
+        physicalType: NCLOB
+      - name: FIELD_BLOB
+        description: Binary large object
+        logicalType: object
+        physicalType: BLOB
+      - name: FIELD_BFILE
+        description: Binary file
+        logicalType: object
+        physicalType: BFILE
+    quality:
+        - type: sql
+          description: Row Count
+          query: |
+            SELECT count(*) as row_count
+            FROM {model}
+          mustBeGreaterThan: 5

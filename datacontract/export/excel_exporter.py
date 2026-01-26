@@ -17,7 +17,6 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import DataContractSpecification
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +31,12 @@ class ExcelExporter(Exporter):
     def __init__(self, export_format):
         super().__init__(export_format)
 
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> bytes:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> bytes:
         """
         Export data contract to Excel using the official ODCS template
 
         Args:
-            data_contract: DataContractSpecification or OpenDataContractStandard to export
+            data_contract: OpenDataContractStandard to export
             model: Model name (not used for Excel export)
             server: Server name (not used for Excel export)
             sql_server_type: SQL server type (not used for Excel export)
@@ -46,13 +45,8 @@ class ExcelExporter(Exporter):
         Returns:
             Excel file as bytes
         """
-        # Convert to ODCS if needed
-        if isinstance(data_contract, DataContractSpecification):
-            # First convert DCS to ODCS format via YAML
-            yaml_content = data_contract.to_yaml()
-            odcs = OpenDataContractStandard.from_string(yaml_content)
-        else:
-            odcs = data_contract
+        # The data_contract is now always ODCS
+        odcs = data_contract
 
         # Get template from export_args if provided, otherwise use default
         template = export_args.get("template") if export_args else None
@@ -283,7 +277,7 @@ def fill_single_property_template(
     sheet: Worksheet, row_index: int, prefix: str, property: SchemaProperty, header_map: dict
 ) -> int:
     """Fill a single property row using the template's column structure"""
-    property_name = f"{prefix}.{property.name}" if prefix else property.name
+    property_name = f"{prefix}{'.' + property.name if property.name else ''}" if prefix else property.name
 
     # Helper function to set cell value by header name
     def set_by_header(header_name: str, value: Any):
@@ -307,13 +301,14 @@ def fill_single_property_template(
     set_by_header("Classification", property.classification)
     set_by_header("Tags", ",".join(property.tags) if property.tags else "")
     set_by_header(
-        "Example(s)", ",".join(property.examples) if property.examples else ""
+        "Example(s)", ",".join(map(str, property.examples)) if property.examples else ""
     )  # Note: using "Example(s)" as in template
     set_by_header("Encrypted Name", property.encryptedName)
     set_by_header(
         "Transform Sources", ",".join(property.transformSourceObjects) if property.transformSourceObjects else ""
     )
     set_by_header("Transform Logic", property.transformLogic)
+    set_by_header("Critical Data Element Status", property.criticalDataElement)
 
     # Authoritative definitions
     if property.authoritativeDefinitions and len(property.authoritativeDefinitions) > 0:
@@ -404,7 +399,7 @@ def fill_properties_quality(
         if not property.name:
             continue
 
-        full_property_name = f"{prefix}.{property.name}" if prefix else property.name
+        full_property_name = f"{prefix}{'.' + property.name if property.name else ''}" if prefix else property.name
 
         # Add quality attributes for this property
         if property.quality:
@@ -482,10 +477,14 @@ def get_threshold_operator(quality: DataQuality) -> Optional[str]:
         return "mustBeGreaterThan"
     elif hasattr(quality, "mustBeGreaterThanOrEqualTo") and quality.mustBeGreaterThanOrEqualTo is not None:
         return "mustBeGreaterThanOrEqualTo"
+    elif hasattr(quality, "mustBeGreaterOrEqualTo") and quality.mustBeGreaterOrEqualTo is not None:
+        return "mustBeGreaterOrEqualTo"
     elif hasattr(quality, "mustBeLessThan") and quality.mustBeLessThan is not None:
         return "mustBeLessThan"
     elif hasattr(quality, "mustBeLessThanOrEqualTo") and quality.mustBeLessThanOrEqualTo is not None:
         return "mustBeLessThanOrEqualTo"
+    elif hasattr(quality, "mustBeLessOrEqualTo") and quality.mustBeLessOrEqualTo is not None:
+        return "mustBeLessOrEqualTo" 
     elif hasattr(quality, "mustBeBetween") and quality.mustBeBetween is not None:
         return "mustBeBetween"
     elif hasattr(quality, "mustNotBeBetween") and quality.mustNotBeBetween is not None:
@@ -503,10 +502,14 @@ def get_threshold_value(quality: DataQuality) -> Optional[str]:
         return str(quality.mustBeGreaterThan)
     elif hasattr(quality, "mustBeGreaterThanOrEqualTo") and quality.mustBeGreaterThanOrEqualTo is not None:
         return str(quality.mustBeGreaterThanOrEqualTo)
+    elif hasattr(quality, "mustBeGreaterOrEqualTo") and quality.mustBeGreaterOrEqualTo is not None:
+        return str(quality.mustBeGreaterOrEqualTo)
     elif hasattr(quality, "mustBeLessThan") and quality.mustBeLessThan is not None:
         return str(quality.mustBeLessThan)
     elif hasattr(quality, "mustBeLessThanOrEqualTo") and quality.mustBeLessThanOrEqualTo is not None:
         return str(quality.mustBeLessThanOrEqualTo)
+    elif hasattr(quality, "mustBeLessOrEqualTo") and quality.mustBeLessOrEqualTo is not None:
+        return str(quality.mustBeLessOrEqualTo)
     elif hasattr(quality, "mustBeBetween") and quality.mustBeBetween is not None and len(quality.mustBeBetween) >= 2:
         return f"[{quality.mustBeBetween[0]}, {quality.mustBeBetween[1]}]"
     elif (
@@ -711,7 +714,60 @@ def fill_servers(workbook: Workbook, odcs: OpenDataContractStandard):
                     set_cell_value_by_column_index(servers_sheet, "servers.databricks.catalog", index, server.catalog)
                     set_cell_value_by_column_index(servers_sheet, "servers.databricks.host", index, server.host)
                     set_cell_value_by_column_index(servers_sheet, "servers.databricks.schema", index, server.schema_)
-                # Add other server types as needed...
+                elif server_type == "glue":
+                    set_cell_value_by_column_index(servers_sheet, "servers.glue.account", index, server.account)
+                    set_cell_value_by_column_index(servers_sheet, "servers.glue.database", index, server.database)
+                    set_cell_value_by_column_index(servers_sheet, "servers.glue.format", index, server.format)
+                    set_cell_value_by_column_index(servers_sheet, "servers.glue.location", index, server.location)
+                elif server_type == "kafka":
+                    set_cell_value_by_column_index(servers_sheet, "servers.kafka.format", index, server.format)
+                    set_cell_value_by_column_index(servers_sheet, "servers.kafka.host", index, server.host)
+                elif server_type == "oracle":
+                    set_cell_value_by_column_index(servers_sheet, "servers.oracle.host", index, server.host)
+                    set_cell_value_by_column_index(servers_sheet, "servers.oracle.port", index, server.port)
+                    set_cell_value_by_column_index(servers_sheet, "servers.oracle.servicename", index, server.serviceName)
+                elif server_type == "postgres":
+                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.database", index, server.database)
+                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.host", index, server.host)
+                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.port", index, server.port)
+                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.schema", index, server.schema_)
+                elif server_type == "s3":
+                    set_cell_value_by_column_index(servers_sheet, "servers.s3.delimiter", index, server.delimiter)
+                    set_cell_value_by_column_index(servers_sheet, "servers.s3.endpointUrl", index, server.endpointUrl)
+                    set_cell_value_by_column_index(servers_sheet, "servers.s3.format", index, server.format)
+                    set_cell_value_by_column_index(servers_sheet, "servers.s3.location", index, server.location)
+                elif server_type == "snowflake":
+                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.account", index, server.account)
+                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.database", index, server.database)
+                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.host", index, server.host)
+                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.port", index, server.port)
+                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.schema", index, server.schema_)
+                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.warehouse", index, server.warehouse)
+                elif server_type == "sqlserver":
+                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.database", index, server.database)
+                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.host", index, server.host)
+                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.port", index, server.port)
+                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.schema", index, server.schema_)
+                else:
+                    # Custom/unknown server type - export all possible fields
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.account", index, server.account)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.catalog", index, server.catalog)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.database", index, server.database)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.dataset", index, server.dataset)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.delimiter", index, server.delimiter)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.endpointUrl", index, server.endpointUrl)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.format", index, server.format)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.host", index, server.host)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.location", index, server.location)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.path", index, server.path)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.port", index, server.port)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.project", index, server.project)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.schema", index, server.schema_)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.serviceName", index, server.serviceName)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.stagingDir", index, server.stagingDir)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.warehouse", index, server.warehouse)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.region", index, server.region)
+                    set_cell_value_by_column_index(servers_sheet, "servers.custom.regionName", index, server.regionName)
 
     except Exception as e:
         logger.warning(f"Error filling servers: {e}")

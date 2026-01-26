@@ -1,92 +1,57 @@
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.export.exporter import Exporter
-from datacontract.model.data_contract_specification import DataContractSpecification
 
 
 class MermaidExporter(Exporter):
-    def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_mermaid(data_contract)
 
 
-def to_mermaid(data_contract_spec: DataContractSpecification | OpenDataContractStandard) -> str | None:
-    if isinstance(data_contract_spec, DataContractSpecification):
-        return dcs_to_mermaid(data_contract_spec)
-    elif isinstance(data_contract_spec, OpenDataContractStandard):
-        return odcs_to_mermaid(data_contract_spec)
-    else:
-        return None
-
-
-def dcs_to_mermaid(data_contract_spec: DataContractSpecification) -> str | None:
+def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
+    """Convert ODCS data contract to Mermaid ER diagram."""
     try:
-        if not data_contract_spec.models:
+        if not data_contract.schema_:
             return None
 
         mmd_entity = "erDiagram\n"
         mmd_references = []
 
-        for model_name, model in data_contract_spec.models.items():
-            entity_block = ""
-
-            for field_name, field in model.fields.items():
-                clean_name = _sanitize_name(field_name)
-                indicators = ""
-
-                if field.primaryKey or (field.unique and field.required):
-                    indicators += "🔑"
-                if field.references:
-                    indicators += "⌘"
-
-                field_type = field.type or "unknown"
-                entity_block += f"\t{clean_name}{indicators} {field_type}\n"
-
-                if field.references:
-                    referenced_model = field.references.split(".")[0] if "." in field.references else ""
-                    if referenced_model:
-                        mmd_references.append(f'"📑{referenced_model}"' + "}o--{ ||" + f'"📑{model_name}"')
-
-            mmd_entity += f'\t"**{model_name}**"' + "{\n" + entity_block + "}\n"
-
-        if mmd_references:
-            mmd_entity += "\n" + "\n".join(mmd_references)
-
-        return f"{mmd_entity}\n"
-
-    except Exception as e:
-        print(f"Error generating DCS mermaid diagram: {e}")
-        return None
-
-
-def odcs_to_mermaid(data_contract_spec: OpenDataContractStandard) -> str | None:
-    try:
-        if not data_contract_spec.schema_:
-            return None
-
-        mmd_entity = "erDiagram\n"
-
-        for schema in data_contract_spec.schema_:
+        for schema in data_contract.schema_:
             schema_name = schema.name or schema.physicalName
+            clean_model = _sanitize_name(schema_name)
             entity_block = ""
 
             if schema.properties:
                 for prop in schema.properties:
                     clean_name = _sanitize_name(prop.name)
-                    indicators = ""
-
-                    if prop.primaryKey:
-                        indicators += "🔑"
-                    if getattr(prop, "partitioned", False):
-                        indicators += "🔀"
-                    if getattr(prop, "criticalDataElement", False):
-                        indicators += "⚠️"
-
                     prop_type = prop.logicalType or prop.physicalType or "unknown"
-                    entity_block += f"\t{clean_name}{indicators} {prop_type}\n"
 
-            mmd_entity += f'\t"**{schema_name}**"' + "{\n" + entity_block + "}\n"
+                    is_pk = bool(prop.primaryKey)
+                    is_uk = bool(prop.unique)
+                    is_fk = bool(prop.relationships)
 
-        return f"{mmd_entity}\n"
+                    entity_block += _field_line(clean_name, prop_type, pk=is_pk, uk=is_uk, fk=is_fk)
+
+                    # Handle references from relationships
+                    if prop.relationships:
+                        for rel in prop.relationships:
+                            ref_target = getattr(rel, 'to', None) or getattr(rel, 'ref', None)
+                            if ref_target:
+                                references = ref_target.replace(".", "·")
+                                parts = references.split("·")
+                                referenced_model = _sanitize_name(parts[0]) if len(parts) > 0 else ""
+                                referenced_field = _sanitize_name(parts[1]) if len(parts) > 1 else ""
+                                if referenced_model:
+                                    label = referenced_field or clean_name
+                                    mmd_references.append(f'"**{referenced_model}**" ||--o{{ "**{clean_model}**" : {label}')
+
+            mmd_entity += f'\t"**{clean_model}**" {{\n{entity_block}}}\n'
+
+        if mmd_references:
+            mmd_entity += "\n" + "\n".join(mmd_references)
+
+        return mmd_entity + "\n"
 
     except Exception as e:
         print(f"Error generating ODCS mermaid diagram: {e}")
@@ -95,3 +60,14 @@ def odcs_to_mermaid(data_contract_spec: OpenDataContractStandard) -> str | None:
 
 def _sanitize_name(name: str) -> str:
     return name.replace("#", "Nb").replace(" ", "_").replace("/", "by")
+
+
+def _field_line(name: str, field_type: str, pk: bool = False, uk: bool = False, fk: bool = False) -> str:
+    indicators = ""
+    if pk:
+        indicators += "🔑"
+    if uk:
+        indicators += "🔒"
+    if fk:
+        indicators += "⌘"
+    return f"\t{name}{indicators} {field_type}\n"

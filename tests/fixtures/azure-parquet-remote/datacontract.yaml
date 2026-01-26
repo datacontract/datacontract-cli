@@ -1,4 +1,4 @@
-dataContractSpecification: 1.2.0
+dataContractSpecification: 1.2.1
 id: orders-unit-test
 info:
   title: Orders Unit Test
@@ -6,8 +6,7 @@ info:
 servers:
   production:
     type: azure
-    storageAccount: datameshdatabricksdemo
-    location: abfss://dataproducts/inventory_events/*.parquet
+    location: abfss://datameshdatabricksdemo/inventory_events/*.parquet
     format: parquet
 models:
   orders:

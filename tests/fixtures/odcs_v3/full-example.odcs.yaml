@@ -33,7 +33,7 @@ schema:
         type: businessDefinition
       - url: https://youtu.be/jbY1BKFj9ec
         type: videoTutorial
-    tags: [ ]
+    tags: [ "table" ]
     dataGranularityDescription: Aggregation on columns txn_ref_dt, pmt_txn_id
     properties:
       - name: txn_ref_dt
@@ -47,7 +47,7 @@ schema:
         partitioned: true
         partitionKeyPosition: 1
         criticalDataElement: false
-        tags: [ ]
+        tags: [ "column" ]
         classification: public
         transformSourceObjects:
           - table_name_1
@@ -96,7 +96,8 @@ schema:
             type: implementation
         encryptedName: rcvr_cntry_code_encrypted
         quality:
-          - rule: nullCheck
+          - rule: nullValues
+            mustBe: 0
             description: column should not contain null values
             dimension: completeness # dropdown 7 values
             type: library
@@ -111,8 +112,15 @@ schema:
                 value:
               - property: COMPARISON_TYPE
                 value: Greater than
+      - name: array_of_array
+        logicalType: array
+        items:
+          logicalType: array
+          items:
+            logicalType: string
     quality:
-      - rule: countCheck
+      - rule: rowCount
+        mustBeGreaterThan: 1000
         type: library
         description: Ensure row count is within expected volume range
         dimension: completeness

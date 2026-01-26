@@ -1,10 +1,11 @@
 from pathlib import Path
 
+from datacontract_specification.model import DataContractSpecification
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.custom_converter import to_custom
-from datacontract.model.data_contract_specification import DataContractSpecification
+from datacontract.export.custom_exporter import to_custom
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -26,7 +27,8 @@ def test_cli():
 
 
 def test_to_custom():
-    data_contract = DataContractSpecification.from_file("fixtures/custom/export/datacontract.yaml")
+    dcs = DataContractSpecification.from_file("fixtures/custom/export/datacontract.yaml")
+    data_contract = convert_dcs_to_odcs(dcs)
     template = Path("fixtures/custom/export/template.sql")
     result = to_custom(data_contract, template)
 
