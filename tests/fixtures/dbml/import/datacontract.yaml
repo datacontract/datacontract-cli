@@ -46,7 +46,7 @@ schema:
   - name: processed_timestamp
     physicalType: timestamp
     description: The timestamp when the record was processed by the data platform.
-    logicalType: date
+    logicalType: timestamp
     required: true
 - name: line_items
   physicalType: table
