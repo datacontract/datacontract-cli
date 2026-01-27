@@ -139,7 +139,7 @@ ARRAY_AGG(OBJECT_CONSTRUCT(
     IFF(C.tags IS NOT NULL,'tags',NULL) , IFF(C.tags IS NOT NULL, C.tags, NULL),
     'customProperties', ARRAY_CONSTRUCT_COMPACT(
                                         OBJECT_CONSTRUCT(
-                                        'property', 'ordinal_position',
+                                        'property', 'ordinalPosition',
                                         'value', C.ORDINAL_POSITION
                                         ),
                                         OBJECT_CONSTRUCT(
@@ -343,9 +343,9 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
 
 
 def _get_ordinal_position_value(col: Dict[str, Any]) -> Any:
-    """Extract customProperties value where property == 'ordinal_position'."""
+    """Extract customProperties value where property == 'ordinalPosition'."""
     for cp in col.get("customProperties") or []:
-        if isinstance(cp, dict) and cp.get("property") == "ordinal_position":
+        if isinstance(cp, dict) and cp.get("property") == "ordinalPosition":
             return cp.get("value")
     return None
 
@@ -353,7 +353,7 @@ def _get_ordinal_position_value(col: Dict[str, Any]) -> Any:
 def sort_schema_by_name_properties_by_ordinalPosition(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     - Does NOT reorder payload['schema'].
-    - For each schema element (table), sorts table['properties'] by ordinal_position.value.
+    - For each schema element (table), sorts table['properties'] by property ordinalPosition value.
     - Does NOT sort customProperties themselves.
     """
     schema = payload.get("schema")
