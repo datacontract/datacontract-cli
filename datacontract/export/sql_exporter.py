@@ -144,7 +144,7 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
         current_field_index += 1
 
     # COMPOSITE KEY management in databricks with dedicated PRIMARY KEYS constraints
-    if server_type == "databricks" and pks and len(pks) > 1:
+    if server_type not in ["databricks","snowflake"] and pks and len(pks) > 1:
         result += f",\nCONSTRAINT PK_{model.name} PRIMARY KEY({','.join([pk.name for pk in pks])})"
     # COMPOSITE KEY management in snowflake with UNIQUE constraints
     if server_type == "snowflake" and pks and len(pks) > 1:
