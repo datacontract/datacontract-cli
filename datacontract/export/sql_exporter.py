@@ -123,8 +123,8 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
                 pk_list.append(p)
 
         return pk_list.sort(key=lambda p: p.get("primaryKeyPosition"))
-    
-    pks = _get_sorted_primary_keys(properties)    
+
+    pks = _get_sorted_primary_keys(properties)
 
     for prop in properties:
         type_str = convert_to_sql_type(prop, server_type)
@@ -145,7 +145,7 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
 
     # COMPOSITE KEY management in snowflake with UNIQUE constraints
     if server_type == "snowflake" and pks and len(pks) > 1:
-        result += f",\nUNIQUE({','.join([ pk.name for pk in pks if pk.primaryKeyPosition >= 0])})"
+        result += f",\nUNIQUE({','.join([pk.name for pk in pks if pk.primaryKeyPosition >= 0])})"
 
     result += ")"
     if server_type == "databricks" and model.description is not None:
