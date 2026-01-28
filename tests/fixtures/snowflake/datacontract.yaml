@@ -46,7 +46,7 @@ models:
         format: email
         required: true
       PROCESSING_TIMESTAMP:
-        description: The processing timestamp in the current session’s time zone.
+        description: The processing timestamp in the current session's time zone.
         type: timestamp
         required: true
         config:
