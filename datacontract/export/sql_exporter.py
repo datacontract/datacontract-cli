@@ -122,7 +122,7 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
             if p.primaryKey:
                 pk_list.append(p)
 
-        return pk_list.sort(key=lambda p: p.get("primaryKeyPosition",-1))
+        return pk_list.sort(key=lambda p: p.primaryKeyPosition)
 
     pks = _get_sorted_primary_keys(properties)
 
