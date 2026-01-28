@@ -116,12 +116,23 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
     fields = len(properties)
     current_field_index = 1
 
+    def _get_sorted_primary_keys(props: list) -> list:
+        pk_list = []
+        for p in props:
+            if p.primaryKey:
+                pk_list.append(p)
+
+        return pk_list.sort(key=lambda p: p.get("primaryKeyPosition"))
+    
+    pks = _get_sorted_primary_keys(properties)    
+
     for prop in properties:
         type_str = convert_to_sql_type(prop, server_type)
         result += f"  {prop.name} {type_str}"
         if prop.required:
             result += " not null"
-        if prop.primaryKey:
+        if prop.primaryKey and prop.primaryKeyPosition == -1 or len(pks) == 1:
+            # last position is the finest grain a.k.a the surroage key
             result += " primary key"
         if server_type == "databricks" and prop.description is not None:
             result += f' COMMENT "{_escape(prop.description)}"'
@@ -131,6 +142,11 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
             result += ","
         result += "\n"
         current_field_index += 1
+
+    # COMPOSITE KEY management in snowflake with UNIQUE constraints
+    if server_type == "snowflake" and len(pks) > 1:
+        result += f",\nUNIQUE({','.join([ pk.name for pk in pks if pk.primaryKeyPosition >= 0])})"
+
     result += ")"
     if server_type == "databricks" and model.description is not None:
         result += f' COMMENT "{_escape(model.description)}"'
