@@ -131,7 +131,7 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
         result += f"  {prop.name} {type_str}"
         if prop.required:
             result += " not null"
-        if (prop.primaryKey and prop.primaryKeyPosition == -1) or (pks and len(pks) == 1):
+        if (prop.primaryKey and ((prop.primaryKeyPosition == -1 or prop.primaryKeyPosition is None)) or (pks and len(pks) == 1)):
             # last position is the finest grain a.k.a the surroage key
             result += " primary key"
         if server_type == "databricks" and prop.description is not None:
@@ -143,6 +143,9 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
         result += "\n"
         current_field_index += 1
 
+    # COMPOSITE KEY management in databricks with dedicated PRIMARY KEYS constraints
+    if server_type == "databricks" and pks and len(pks) > 1:
+        result += f",\nCONSTRAINT PK_{model.name} PRIMARY KEY({','.join([pk.name for pk in pks])})"
     # COMPOSITE KEY management in snowflake with UNIQUE constraints
     if server_type == "snowflake" and pks and len(pks) > 1:
         result += f",\nUNIQUE({','.join([pk.name for pk in pks if pk.primaryKeyPosition >= 0])})"
