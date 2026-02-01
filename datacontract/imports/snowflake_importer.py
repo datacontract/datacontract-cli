@@ -17,7 +17,7 @@ class SnowflakeImporter(Importer):
         if source is not None:
             return import_Snowflake_from_connector(
                 account=source,
-                database=import_args.get("snowflake_db"),
+                database=import_args.get("database"),
                 schema=import_args.get("schema"),
             )
 

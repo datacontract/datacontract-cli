@@ -1720,7 +1720,7 @@ datacontract import --format protobuf --source "test.proto"
 
 #### snowflake
 
-Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `snowflake-db` and schema in `schema`. 
+Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
 Multiple authentification are supported, 
 login/password using the `DATACONTRACT_SNOWFLAKE_ ...` test environement variable are setup,
 MFA using external browser is selected when `DATACONTRACT_SNOWFLAKE_PASSWORD` is missing
@@ -1729,7 +1729,7 @@ TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CON
 Example:
 
 ```bash
-datacontract import --format snowflake --source account.canada-central.azure --snowflake-db databaseName --schema schemaName
+datacontract import --format snowflake --source account.canada-central.azure --database databaseName --schema schemaName
 ```
 
 

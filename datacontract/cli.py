@@ -350,7 +350,7 @@ def import_(
         Optional[str],
         typer.Option(help="The identifier for the the data contract."),
     ] = None,
-    snowflake_db: Annotated[
+    database: Annotated[
         Optional[str],
         typer.Option(help="The snowflake database name."),
     ] = None,
@@ -378,7 +378,7 @@ def import_(
         iceberg_table=iceberg_table,
         owner=owner,
         id=id,
-        snowflake_db=snowflake_db,
+        snowflake_db=database,
     )
     if output is None:
         console.print(result.to_yaml(), markup=False, soft_wrap=True)
