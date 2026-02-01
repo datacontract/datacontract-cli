@@ -1501,7 +1501,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │                                                                       [default: None]            │
 │    --id                                     TEXT                      The identifier for the the │
 │                                                                       data contract.             │
-│    --snowflake-db                           TEXT                      Snowflake target database  │
+│    --database                               TEXT                      Snowflake target database  │
 │                                                                       [default: None]            │
 │    --debug                    --no-debug                              Enable debug logging       │
 │                                                                       [default: no-debug]        │
