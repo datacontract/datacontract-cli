@@ -112,7 +112,7 @@ message User {
   repeated User users = 6;
   optional string geo_description = 7;
   // Field tags
-  string tags = 8; 
+  string tags = 8;
 }
 
 // Details of Review.
