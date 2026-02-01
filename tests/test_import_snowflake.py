@@ -1,7 +1,7 @@
-from typer.testing import CliRunner
+#from typer.testing import CliRunner
 
-from datacontract.cli import app
-from datacontract.data_contract import DataContract
+#from datacontract.cli import app
+#from datacontract.data_contract import DataContract
 
 # logging.basicConfig(level=logging.INFO, force=True)
 
