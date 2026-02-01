@@ -1,4 +1,3 @@
-import sys
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
