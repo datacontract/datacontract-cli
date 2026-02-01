@@ -119,10 +119,11 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
     def _get_sorted_primary_keys(props: list) -> list:
         pk_list = []
         for p in props:
-            if p.primaryKey:
+            if p.primaryKey is True:
                 pk_list.append(p)
 
-        return pk_list.sort(key=lambda p: p.primaryKeyPosition)
+        pk_list.sort(key=lambda p: p.primaryKeyPosition)
+        return pk_list
 
     pks = _get_sorted_primary_keys(properties)
 
@@ -145,10 +146,10 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
 
     # COMPOSITE KEY management in databricks with dedicated PRIMARY KEYS constraints
     if server_type not in ["databricks","snowflake"] and pks and len(pks) > 1:
-        result += f",\nCONSTRAINT PK_{model.name} PRIMARY KEY({','.join([pk.name for pk in pks])})"
+        result += f"  , CONSTRAINT PK_{model.name} PRIMARY KEY({','.join([pk.name for pk in pks])})"
     # COMPOSITE KEY management in snowflake with UNIQUE constraints
     if server_type == "snowflake" and pks and len(pks) > 1:
-        result += f",\nUNIQUE({','.join([pk.name for pk in pks if pk.primaryKeyPosition >= 0])})"
+        result += f"  , UNIQUE({','.join([pk.name for pk in pks if pk.primaryKeyPosition >= 0])})"
 
     result += ")"
     if server_type == "databricks" and model.description is not None:

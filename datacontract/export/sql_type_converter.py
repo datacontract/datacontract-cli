@@ -27,10 +27,11 @@ def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
 def _get_config(field: Union[SchemaProperty, FieldLike]) -> Optional[Dict[str, Any]]:
     """Get the config from a field, handling both ODCS and DCS."""
     if isinstance(field, SchemaProperty):
-        if field.customProperties is None:
-            return None
-        return {cp.property: cp.value for cp in field.customProperties}
-    return field.config
+        config = field.model_dump()
+        if field.customProperties:
+            config.update({cp.property: cp.value for cp in field.customProperties})
+        return config
+    return None
 
 
 def _get_config_value(field: Union[SchemaProperty, FieldLike], key: str) -> Optional[Any]:
@@ -94,8 +95,22 @@ def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Uni
 
 def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> str:
     physical_type = _get_config_value(field, "physicalType")
-    if physical_type:
+    if physical_type and physical_type.lower() not in ['array', 'object', 'record', 'struct'] :
         return physical_type
+    elif physical_type.lower() == 'array':
+        items = _get_items(field)
+        if items:
+            item_type = convert_to_sql_type(items, server_type)
+            return f"ARRAY<{item_type}>"
+        return "TEXT[]"
+    elif physical_type.lower() in ['object', 'record', 'struct']:
+        structure_field = "STRUCT<"
+        field_strings = []
+        for fieldKey, fieldValue in _get_nested_fields(field).items():
+            field_strings.append(f"{fieldKey}:{convert_to_sql_type(fieldValue, server_type)}")
+        structure_field += ", ".join(field_strings)
+        structure_field += ">"
+        return structure_field
 
     if server_type == "snowflake":
         return convert_to_snowflake(field)
