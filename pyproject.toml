@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.11.3"
+version = "0.11.4"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -143,7 +143,7 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.17",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.1.18",
+  "moto==5.1.20",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.6.0",
   "pytest",

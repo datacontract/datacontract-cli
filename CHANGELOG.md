@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Make Markdown export compatible with XHTML by replacing `<br>` with `<br />` (#1030)
+
+## [0.11.4] - 2026-01-19
+
 ### Changed
 
 - Made `duckdb` an optional dependency. Install with `pip install datacontract-cli[duckdb]` for local/S3/GCS/Azure file testing.
-- Removed unused `fastparquet` and `numpy` dependencies.
+- Removed unused `fastparquet` and `numpy` core dependencies.
 
 ### Added
 
