@@ -16,12 +16,15 @@ class FieldLike(Protocol):
 
 def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
     """Get the type from a field, handling both ODCS and DCS. Prefers physicalType for accuracy."""
-    if isinstance(field, SchemaProperty):
+    if field and isinstance(field, SchemaProperty):
         # Prefer physicalType for accurate type mapping
         if field.physicalType:
             return field.physicalType
         return field.logicalType
-    return field.type
+    if field and field.type:
+        return field.type
+
+    return "string"
 
 
 def _get_config(field: Union[SchemaProperty, FieldLike]) -> Optional[Dict[str, Any]]:
@@ -97,13 +100,13 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
     physical_type = _get_config_value(field, "physicalType")
     if physical_type and physical_type.lower() not in ['array', 'object', 'record', 'struct'] :
         return physical_type
-    elif physical_type.lower() == 'array':
+    elif physical_type and physical_type.lower() == 'array':
         items = _get_items(field)
         if items:
             item_type = convert_to_sql_type(items, server_type)
             return f"ARRAY<{item_type}>"
         return "TEXT[]"
-    elif physical_type.lower() in ['object', 'record', 'struct']:
+    elif physical_type and physical_type.lower() in ['object', 'record', 'struct']:
         structure_field = "STRUCT<"
         field_strings = []
         for fieldKey, fieldValue in _get_nested_fields(field).items():
