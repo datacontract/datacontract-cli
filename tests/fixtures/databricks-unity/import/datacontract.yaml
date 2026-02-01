@@ -53,7 +53,7 @@ schema:
     customProperties:
     - property: databricksType
       value: timestamp
-    logicalType: date
+    logicalType: timestamp
   - name: is_active
     physicalType: boolean
     customProperties:
