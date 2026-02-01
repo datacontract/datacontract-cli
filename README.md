@@ -236,6 +236,7 @@ A list of available extras:
 | Avro Support            | `pip install datacontract-cli[avro]`       |
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration  | `pip install datacontract-cli[databricks]` |
+| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |

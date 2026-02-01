@@ -1,7 +1,6 @@
 import os
 from typing import Dict, List
 
-import duckdb
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
@@ -24,6 +23,11 @@ def import_csv(
     source: str, include_examples: bool = False
 ) -> OpenDataContractStandard:
     """Import a CSV file and create an ODCS data contract."""
+    try:
+        import duckdb
+    except ImportError:
+        raise ImportError("duckdb is required for CSV import. Install with: pip install datacontract-cli[duckdb]")
+
     # use the file name as table name
     table_name = os.path.splitext(os.path.basename(source))[0]
 

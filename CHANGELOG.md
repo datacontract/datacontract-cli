@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix BigQuery import for repeated fields 
+- Make Markdown export compatible with XHTML by replacing `<br>` with `<br />` (#1030)
+
+## [0.11.4] - 2026-01-19
+
+### Changed
+
+- Made `duckdb` an optional dependency. Install with `pip install datacontract-cli[duckdb]` for local/S3/GCS/Azure file testing.
+- Removed unused `fastparquet` and `numpy` core dependencies.
+
+### Added
+
+- Include searchable tags in catalog index.html
+
+### Fixed
+
 - Fixed example(s) field mapping for Data Contract Specification importer (#992).
 - Spark exporter now supports decimal precision/scale via `customProperties` or parsing from `physicalType` (e.g., `decimal(10,2)`) (#996)
 - Fix catalog/HTML export failing on ODCS contracts with no schema or no properties (#971)
