@@ -1,21 +1,32 @@
 import os
 import re
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
-import duckdb
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.run import Run
 
+if TYPE_CHECKING:
+    import duckdb
+
+
+def _import_duckdb():
+    try:
+        import duckdb
+        return duckdb
+    except ImportError:
+        raise ImportError("duckdb is required for this server type. Install with: pip install datacontract-cli[duckdb]")
+
 
 def get_duckdb_connection(
     data_contract: OpenDataContractStandard,
     server: Server,
     run: Run,
-    duckdb_connection: duckdb.DuckDBPyConnection | None = None,
-) -> duckdb.DuckDBPyConnection:
+    duckdb_connection: "duckdb.DuckDBPyConnection | None" = None,
+) -> "duckdb.DuckDBPyConnection":
+    duckdb = _import_duckdb()
     if duckdb_connection is None:
         con = duckdb.connect(database=":memory:")
     else:
@@ -65,9 +76,9 @@ def get_duckdb_connection(
             elif server.format == "delta":
                 con.sql("update extensions;")  # Make sure we have the latest delta extension
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
-            table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchdf()
-            if table_info is not None and not table_info.empty:
-                run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
+            table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchall()
+            if table_info:
+                run.log_info(f"DuckDB Table Info: {table_info}")
     return con
 
 
@@ -137,7 +148,7 @@ def _get_type(prop: SchemaProperty) -> Optional[str]:
     return None
 
 
-def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, properties: List[SchemaProperty] | None):
+def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properties: List[SchemaProperty] | None):
     model_name = model_name.strip('"')
     if properties is None:
         return
