@@ -152,6 +152,26 @@
         "mode": "NULLABLE",
         "name": "JSON_Field",
         "type": "JSON"
+      },
+      {
+        "description": "list of string (REPEATED string)",
+        "mode": "REPEATED",
+        "name": "String_List_Field",
+        "type": "STRING"
+      },
+      {
+        "description": "list of records (REPEATED record)",
+        "fields": [
+          {
+            "description": "subfield 1 of type string",
+            "mode": "NULLABLE",
+            "name": "subfield_1",
+            "type": "STRING"
+          }
+        ],
+        "mode": "REPEATED",
+        "name": "Record_List_Field",
+        "type": "RECORD"
       }
     ]
   },
