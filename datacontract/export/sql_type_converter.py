@@ -117,15 +117,15 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
         items = _get_items(field)
         if items:
             item_type = convert_to_sql_type(items, server_type)
-            return f"ARRAY<{item_type}>"
+            return f"ARRAY({item_type})"
         return "TEXT[]"
     elif physical_type and physical_type.lower() in ["object", "record", "struct"]:
-        structure_field = "STRUCT<"
+        structure_field = "STRUCT("
         field_strings = []
         for fieldKey, fieldValue in _get_nested_fields(field).items():
-            field_strings.append(f"{fieldKey}:{convert_to_sql_type(fieldValue, server_type)}")
+            field_strings.append(f"{fieldKey} {convert_to_sql_type(fieldValue, server_type)}")
         structure_field += ", ".join(field_strings)
-        structure_field += ">"
+        structure_field += ")"
         return structure_field
 
     # when No physicalType provided switch to _getType on logicalType and `string` as default value

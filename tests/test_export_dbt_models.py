@@ -53,7 +53,7 @@ models:
         tags:
           - order_id
       - name: order_total
-        data_type: NUMBER
+        data_type: BIGINT
         constraints:
           - type: not_null
         description: The order_total field
@@ -99,7 +99,7 @@ models:
             - order_status
     columns:
       - name: order_id
-        data_type: STRING
+        data_type: VARCHAR
         constraints:
           - type: not_null
           - type: unique
@@ -114,7 +114,7 @@ models:
         tags:
           - order_id
       - name: order_total
-        data_type: INT64
+        data_type: BIGINT
         constraints:
           - type: not_null
         description: The order_total field
@@ -123,7 +123,7 @@ models:
                min_value: 0
                max_value: 1000000
       - name: order_status
-        data_type: STRING
+        data_type: TEXT
         constraints:
           - type: not_null
         data_tests:
@@ -152,9 +152,9 @@ def test_to_dbt_models_with_model_level_composite_primary_key():
                 name="test_table",
                 physicalType="table",
                 properties=[
-                    SchemaProperty(name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
-                    SchemaProperty(name="user_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=2),
-                    SchemaProperty(name="product_id", logicalType="string", required=True),
+                    SchemaProperty(name="order_id", physicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
+                    SchemaProperty(name="user_id", physicalType="string", required=True, primaryKey=True, primaryKeyPosition=2),
+                    SchemaProperty(name="product_id", physicalType="string", required=True),
                 ],
             )
         ],
@@ -208,9 +208,9 @@ def test_to_dbt_models_with_single_column_primary_key():
                 name="test_table",
                 physicalType="table",
                 properties=[
-                    SchemaProperty(name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
-                    SchemaProperty(name="user_id", logicalType="string", required=True),
-                    SchemaProperty(name="product_id", logicalType="string", required=True),
+                    SchemaProperty(name="order_id", physicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
+                    SchemaProperty(name="user_id", physicalType="string", required=True),
+                    SchemaProperty(name="product_id", physicalType="string", required=True),
                 ],
             )
         ],
