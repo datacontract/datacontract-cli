@@ -80,6 +80,8 @@ WITH INFO_SCHEMA_COLUMNS AS (
     coalesce(GET_PATH(TRY_PARSE_JSON("comment"),'description'), "comment") as description,
     CASE GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string
     WHEN 'TEXT' THEN 'string'
+    WHEN 'STRING' THEN 'string'
+    WHEN 'CHAR' THEN 'string'
     WHEN 'FIXED' THEN 'number'
     WHEN 'REAL' THEN 'number'
     WHEN 'BOOLEAN' THEN 'boolean'
@@ -90,7 +92,9 @@ WITH INFO_SCHEMA_COLUMNS AS (
     WHEN 'DATE' THEN 'date'
     ELSE 'object' END as LogicalType, -- FIXED NUMBER
     CASE GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string
-    WHEN 'TEXT' THEN CONCAT('STRING','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
+    WHEN 'TEXT' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
+    WHEN 'STRING' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
+    WHEN 'CHAR' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
     WHEN 'FIXED' THEN CONCAT('NUMBER','(',GET_PATH(TRY_PARSE_JSON("data_type"),'precision')::string,',',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')',' ',"autoincrement")
     WHEN 'BOOLEAN' THEN 'BOOLEAN'
     WHEN 'TIMESTAMP_NTZ' THEN CONCAT('TIMESTAMP_NTZ','(',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')')
