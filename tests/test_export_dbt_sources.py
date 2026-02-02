@@ -59,7 +59,7 @@ sources:
               - order_id
           - name: order_total
             description: The order_total field
-            data_type: NUMBER
+            data_type: BIGINT
             data_tests:
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
@@ -97,7 +97,7 @@ sources:
         description: The orders model
         columns:
           - name: order_id
-            data_type: STRING
+            data_type: VARCHAR
             data_tests:
               - not_null
               - unique
@@ -112,14 +112,14 @@ sources:
               - order_id
           - name: order_total
             description: The order_total field
-            data_type: INT64
+            data_type: BIGINT
             data_tests:
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
                    min_value: 0
                    max_value: 1000000
           - name: order_status
-            data_type: STRING
+            data_type: TEXT
             data_tests:
               - not_null
               - accepted_values:
@@ -133,7 +133,7 @@ sources:
               - relationships:
                   to: source("orders-unit-test", "users")
                   field: user_id
-            data_type: STRING
+            data_type: VARCHAR
       - name: users
         description: The users model
         columns:
@@ -141,7 +141,7 @@ sources:
             data_tests:
               - not_null
               - unique
-            data_type: STRING
+            data_type: VARCHAR
 """
 
     result = to_dbt_sources_yaml(odcs, "production")
