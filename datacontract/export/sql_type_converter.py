@@ -16,21 +16,25 @@ class FieldLike(Protocol):
 
 def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
     """Get the type from a field, handling both ODCS and DCS. Prefers physicalType for accuracy."""
-    if isinstance(field, SchemaProperty):
+    if field and isinstance(field, SchemaProperty):
         # Prefer physicalType for accurate type mapping
         if field.physicalType:
             return field.physicalType
         return field.logicalType
-    return field.type
+    if field and field.type:
+        return field.type
+
+    return "string"
 
 
 def _get_config(field: Union[SchemaProperty, FieldLike]) -> Optional[Dict[str, Any]]:
     """Get the config from a field, handling both ODCS and DCS."""
     if isinstance(field, SchemaProperty):
-        if field.customProperties is None:
-            return None
-        return {cp.property: cp.value for cp in field.customProperties}
-    return field.config
+        config = field.model_dump()
+        if field.customProperties:
+            config.update({cp.property: cp.value for cp in field.customProperties})
+        return config
+    return None
 
 
 def _get_config_value(field: Union[SchemaProperty, FieldLike], key: str) -> Optional[Any]:
