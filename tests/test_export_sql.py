@@ -59,7 +59,7 @@ CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.orders (
   order_total LONG not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
   customer_id STRING COMMENT "Unique identifier for the customer.",
   customer_email_address STRING not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
-  discounts ARRAY<STRUCT<discount_code:STRING,discount_amount:BIGINT>> COMMENT "This is an array of records"
+  discounts ARRAY<STRUCT<discount_code:STRING, discount_amount:LONG>> COMMENT "This is an array of records"
 ) COMMENT "One record per order. Includes cancelled and deleted orders.";
 CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.line_items (
   lines_item_id STRING not null COMMENT "Primary key of the lines_item_id table",
@@ -83,7 +83,7 @@ CREATE OR REPLACE TABLE datacontract_staging.orders_latest.orders (
   order_total LONG not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
   customer_id STRING COMMENT "Unique identifier for the customer.",
   customer_email_address STRING not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
-  discounts ARRAY<STRUCT<discount_code:STRING,discount_amount:BIGINT>> COMMENT "This is an array of records"
+  discounts ARRAY<STRUCT<discount_code:STRING, discount_amount:LONG>> COMMENT "This is an array of records"
 ) COMMENT "One record per order. Includes cancelled and deleted orders.";
 CREATE OR REPLACE TABLE datacontract_staging.orders_latest.line_items (
   lines_item_id STRING not null COMMENT "Primary key of the lines_item_id table",
@@ -91,4 +91,16 @@ CREATE OR REPLACE TABLE datacontract_staging.orders_latest.line_items (
   sku TEXT COMMENT "The purchased article number"
 ) COMMENT "A single article that is part of an order.";
 """.strip()
+    assert actual == expected
+
+def test_to_sql_ddl_snowflake_multiple_pk():
+    actual = DataContract(data_contract_file="fixtures/snowflake/dcMultiplePK.yaml", server="workspace1").export("sql")
+    expected = """
+-- Data Contract: urn:datacontract:example:composite-key-test
+-- SQL Dialect: snowflake
+CREATE TABLE my_database.public.MY_TABLE (
+  id_part1 VARCHAR(50) not null,
+  id_part2 VARCHAR(50) not null,
+  data_field VARCHAR(256)
+  , UNIQUE(id_part1,id_part2));""".strip()
     assert actual == expected

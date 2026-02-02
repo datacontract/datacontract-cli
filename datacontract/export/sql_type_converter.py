@@ -94,8 +94,23 @@ def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Uni
 
 def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> str:
     physical_type = _get_type(field)
-    if physical_type:
+        
+    if physical_type and physical_type.lower() not in ['array', 'object', 'record', 'struct'] :
         return physical_type.upper()
+    elif physical_type and physical_type.lower() == 'array':
+        items = _get_items(field)
+        if items:
+            item_type = convert_to_sql_type(items, server_type)
+            return f"ARRAY<{item_type}>"
+        return "TEXT[]"
+    elif physical_type and physical_type.lower() in ['object', 'record', 'struct']:
+        structure_field = "STRUCT<"
+        field_strings = []
+        for fieldKey, fieldValue in _get_nested_fields(field).items():
+            field_strings.append(f"{fieldKey}:{convert_to_sql_type(fieldValue, server_type)}")
+        structure_field += ", ".join(field_strings)
+        structure_field += ">"
+        return structure_field
 
     if server_type == "snowflake":
         return convert_to_snowflake(field)
