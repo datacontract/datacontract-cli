@@ -18,9 +18,9 @@ def test_to_sql_ddl_postgres():
 -- Data Contract: postgres
 -- SQL Dialect: postgres
 CREATE TABLE my_table (
-  field_one varchar not null,
-  field_two integer,
-  field_three timestamp
+  field_one VARCHAR not null,
+  field_two INTEGER,
+  field_three TIMESTAMP
 );
 """.strip()
     assert actual == expected
@@ -32,17 +32,17 @@ def test_to_sql_ddl_snowflake():
 -- Data Contract: urn:datacontract:checkout:snowflake_orders_pii_v2
 -- SQL Dialect: snowflake
 CREATE TABLE ORDER_DB.ORDERS_PII_V2.orders (
-  ORDER_ID text not null COMMENT 'An internal ID that identifies an order in the online shop.',
-  ORDER_TIMESTAMP timestamp not null COMMENT 'The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.',
-  ORDER_TOTAL number not null COMMENT 'Total amount the smallest monetary unit (e.g., cents).',
-  CUSTOMER_ID text COMMENT 'Unique identifier for the customer.',
-  CUSTOMER_EMAIL_ADDRESS text not null COMMENT 'The email address, as entered by the customer. The email address was not verified.',
+  ORDER_ID TEXT not null COMMENT 'An internal ID that identifies an order in the online shop.',
+  ORDER_TIMESTAMP TIMESTAMP not null COMMENT 'The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.',
+  ORDER_TOTAL NUMBER not null COMMENT 'Total amount the smallest monetary unit (e.g., cents).',
+  CUSTOMER_ID TEXT COMMENT 'Unique identifier for the customer.',
+  CUSTOMER_EMAIL_ADDRESS TEXT not null COMMENT 'The email address, as entered by the customer. The email address was not verified.',
   PROCESSING_TIMESTAMP TIMESTAMP_LTZ not null COMMENT 'The processing timestamp in the current session's time zone.'
 ) COMMENT='One record per order. Includes cancelled and deleted orders.';
 CREATE TABLE ORDER_DB.ORDERS_PII_V2.line_items (
-  LINE_ITEM_ID text not null COMMENT 'Primary key of the lines_item_id table',
-  ORDER_ID text COMMENT 'An internal ID that identifies an order in the online shop.',
-  SKU text COMMENT 'The purchased article number'
+  LINE_ITEM_ID TEXT not null COMMENT 'Primary key of the lines_item_id table',
+  ORDER_ID TEXT COMMENT 'An internal ID that identifies an order in the online shop.',
+  SKU TEXT COMMENT 'The purchased article number'
 ) COMMENT='A single article that is part of an order.';
 """.strip()
     assert actual == expected
@@ -54,17 +54,17 @@ def test_to_sql_ddl_databricks_unity_catalog():
 -- Data Contract: urn:datacontract:checkout:orders-latest
 -- SQL Dialect: databricks
 CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.orders (
-  order_id text not null COMMENT "An internal ID that identifies an order in the online shop.",
-  order_timestamp timestamp not null COMMENT "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.",
-  order_total long not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
-  customer_id string COMMENT "Unique identifier for the customer.",
-  customer_email_address string not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
-  discounts ARRAY<STRUCT<discount_code:string, discount_amount:long>> COMMENT "This is an array of records"
+  order_id TEXT not null COMMENT "An internal ID that identifies an order in the online shop.",
+  order_timestamp TIMESTAMP not null COMMENT "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.",
+  order_total LONG not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
+  customer_id STRING COMMENT "Unique identifier for the customer.",
+  customer_email_address STRING not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
+  discounts ARRAY<STRUCT<discount_code:STRING, discount_amount:LONG>> COMMENT "This is an array of records"
 ) COMMENT "One record per order. Includes cancelled and deleted orders.";
 CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.line_items (
-  lines_item_id string not null COMMENT "Primary key of the lines_item_id table",
-  order_id text COMMENT "An internal ID that identifies an order in the online shop.",
-  sku text COMMENT "The purchased article number"
+  lines_item_id STRING not null COMMENT "Primary key of the lines_item_id table",
+  order_id TEXT COMMENT "An internal ID that identifies an order in the online shop.",
+  sku TEXT COMMENT "The purchased article number"
 ) COMMENT "A single article that is part of an order.";
 """.strip()
     assert actual == expected
@@ -78,17 +78,17 @@ def test_to_sql_ddl_databricks_unity_catalog_staging():
 -- Data Contract: urn:datacontract:checkout:orders-latest
 -- SQL Dialect: databricks
 CREATE OR REPLACE TABLE datacontract_staging.orders_latest.orders (
-  order_id text not null COMMENT "An internal ID that identifies an order in the online shop.",
-  order_timestamp timestamp not null COMMENT "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.",
-  order_total long not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
-  customer_id string COMMENT "Unique identifier for the customer.",
-  customer_email_address string not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
-  discounts ARRAY<STRUCT<discount_code:string, discount_amount:long>> COMMENT "This is an array of records"
+  order_id TEXT not null COMMENT "An internal ID that identifies an order in the online shop.",
+  order_timestamp TIMESTAMP not null COMMENT "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful.",
+  order_total LONG not null COMMENT "Total amount the smallest monetary unit (e.g., cents).",
+  customer_id STRING COMMENT "Unique identifier for the customer.",
+  customer_email_address STRING not null COMMENT "The email address, as entered by the customer. The email address was not verified.",
+  discounts ARRAY<STRUCT<discount_code:STRING, discount_amount:LONG>> COMMENT "This is an array of records"
 ) COMMENT "One record per order. Includes cancelled and deleted orders.";
 CREATE OR REPLACE TABLE datacontract_staging.orders_latest.line_items (
-  lines_item_id string not null COMMENT "Primary key of the lines_item_id table",
-  order_id text COMMENT "An internal ID that identifies an order in the online shop.",
-  sku text COMMENT "The purchased article number"
+  lines_item_id STRING not null COMMENT "Primary key of the lines_item_id table",
+  order_id TEXT COMMENT "An internal ID that identifies an order in the online shop.",
+  sku TEXT COMMENT "The purchased article number"
 ) COMMENT "A single article that is part of an order.";
 """.strip()
     assert actual == expected
