@@ -21,7 +21,6 @@ from open_data_contract_standard.model import (
     Server as ODCSServer,
 )
 
-from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.imports.importer import Importer
 
 logger = logging.getLogger(__name__)
@@ -54,8 +53,6 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
         apiVersion="v3.1.0",
     )
 
-    serverType = "local"
-
     # Convert basic info
     if dcs.info:
         odcs.name = dcs.info.title
@@ -83,11 +80,11 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
 
     # Convert servers
     if dcs.servers:
-        odcs.servers, serverType = _convert_servers(dcs.servers)
+        odcs.servers = _convert_servers(dcs.servers)
 
     # Convert models to schema
     if dcs.models:
-        odcs.schema_ = _convert_models_to_schema(dcs.models, dcs.definitions, serverType)
+        odcs.schema_ = _convert_models_to_schema(dcs.models, dcs.definitions)
 
     # Convert service levels to SLA properties
     if dcs.servicelevels:
@@ -203,36 +200,16 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
 
         servers.append(odcs_server)
 
-    return servers, odcs_server.type
+    return servers
 
 
-def _convert_models_to_schema(
-    models: Dict[str, Model], definitions: Dict[str, Field] = None, serverType: str = None
-) -> List[SchemaObject]:
+def _convert_models_to_schema(models: Dict[str, Model], definitions: Dict[str, Field] = None) -> List[SchemaObject]:
     """Convert DCS models dict to ODCS schema list."""
     schema = []
-    serverType = ""
     for model_name, model in models.items():
-        if model.type in [
-            "snowflake",
-            "postgres",
-            "dataframe",
-            "databricks",
-            "local",
-            "s3",
-            "sqlserver",
-            "bigquery",
-            "trino",
-            "oracle",
-            None,
-        ]:
-            physical_type = convert_to_sql_type(model.type, serverType)
-        else:
-            physical_type = model.type
-
         schema_obj = SchemaObject(
             name=model_name,
-            physicalType=physical_type,
+            physicalType=model.type,
             description=model.description,
         )
 
