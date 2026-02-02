@@ -18,7 +18,7 @@ schema:
         required: true
       - name: processed_timestamp
         logicalType: timestamp
-        physicalType: TIMESTAMP
+        physicalType: TIMESTAMP_TZ
         required: true
     quality:
       - type: custom
