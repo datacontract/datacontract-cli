@@ -93,7 +93,7 @@ def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Uni
 
 
 def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> str:
-    physical_type = _get_config_value(field, "physicalType")
+    physical_type = _get_type(field)
     if physical_type:
         return physical_type
 
