@@ -5,6 +5,7 @@ from open_data_contract_standard.model import SchemaProperty
 
 class FieldLike(Protocol):
     """Protocol for field-like objects (DCS Field or PropertyAdapter)."""
+
     type: Optional[str]
     config: Optional[Dict[str, Any]]
     precision: Optional[int]
@@ -25,6 +26,17 @@ def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
         return field.type
 
     return "string"
+
+
+def _get_physicalType(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
+    """Get the type from a field, handling both ODCS and DCS. only physicalType for accuracy."""
+    if field and isinstance(field, SchemaProperty):
+        # Prefer physicalType for accurate type mapping
+        if field.physicalType:
+            return field.physicalType
+    if field and field.type:
+        return field.type
+    return None
 
 
 def _get_config(field: Union[SchemaProperty, FieldLike]) -> Optional[Dict[str, Any]]:
@@ -97,17 +109,17 @@ def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Uni
 
 
 def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> str:
-    physical_type = _get_type(field)
-        
-    if physical_type and physical_type.lower() not in ['array', 'object', 'record', 'struct'] :
+    physical_type = _get_physicalType(field)
+
+    if physical_type and physical_type.lower() not in ["array", "object", "record", "struct"]:
         return physical_type.upper()
-    elif physical_type and physical_type.lower() == 'array':
+    elif physical_type and physical_type.lower() == "array":
         items = _get_items(field)
         if items:
             item_type = convert_to_sql_type(items, server_type)
             return f"ARRAY<{item_type}>"
         return "TEXT[]"
-    elif physical_type and physical_type.lower() in ['object', 'record', 'struct']:
+    elif physical_type and physical_type.lower() in ["object", "record", "struct"]:
         structure_field = "STRUCT<"
         field_strings = []
         for fieldKey, fieldValue in _get_nested_fields(field).items():
@@ -115,6 +127,8 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
         structure_field += ", ".join(field_strings)
         structure_field += ">"
         return structure_field
+
+    # when No physicalType provided switch to _getType on logicalType and `string` as default value
 
     if server_type == "snowflake":
         return convert_to_snowflake(field)
@@ -289,11 +303,7 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
 def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str:
     type = _get_type(field)
     databricks_type = _get_config_value(field, "databricksType")
-    if (
-        databricks_type
-        and type
-        and type.lower() not in ["array", "object", "record", "struct"]
-    ):
+    if databricks_type and type and type.lower() not in ["array", "object", "record", "struct"]:
         return databricks_type
     if type is None:
         return None
@@ -594,6 +604,7 @@ def convert_type_to_impala(field: Union[SchemaProperty, FieldLike]) -> None | st
     # For complex / JSON-like types we currently do not emit a type check
     # (returning None means no "has type" check is generated)
     return None
+
 
 def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
     """Convert ODCS logical types to Oracle types.
