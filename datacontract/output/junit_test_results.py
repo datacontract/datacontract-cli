@@ -2,7 +2,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.dom import minidom
 
-import time
 import yaml
 
 from datacontract.model.run import ResultEnum, Run
