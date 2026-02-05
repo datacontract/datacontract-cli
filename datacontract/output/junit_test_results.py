@@ -78,9 +78,12 @@ def write_junit_test_results(run: Run, console, output_path: Path):
 
     xml_str: str = ET.tostring(testsuite, xml_declaration=True, encoding="utf-8")
     xml_str_pretty = minidom.parseString(xml_str).toprettyxml(indent="  ")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(xml_str_pretty)
-    console.print(f"JUnit test results written to {output_path}")
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True) 
+    finally:
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(xml_str_pretty)
+        console.print(f"JUnit test results written to {output_path}")
 
 
 def to_testcase_name(check):
