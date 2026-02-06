@@ -37,13 +37,16 @@ def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
                     if prop.relationships:
                         for rel in prop.relationships:
                             ref_target = getattr(rel, 'to', None) or getattr(rel, 'ref', None)
+                            custom_properties = getattr(rel, 'customProperties', None)
+                            if custom_properties:
+                                custom_label = getattr(custom_properties, 'label', None)
                             if ref_target:
                                 references = ref_target.replace(".", "·")
                                 parts = references.split("·")
                                 referenced_model = _sanitize_name(parts[0]) if len(parts) > 0 else ""
                                 referenced_field = _sanitize_name(parts[1]) if len(parts) > 1 else ""
                                 if referenced_model:
-                                    label = referenced_field or clean_name
+                                    label = custom_label or referenced_field or clean_name
                                     mmd_references.append(f'"**{referenced_model}**" ||--o{{ "**{clean_model}**" : {label}')
 
             mmd_entity += f'\t"**{clean_model}**" {{\n{entity_block}}}\n'
