@@ -70,7 +70,43 @@ def snowflake_query(account: str, schema: str, schema_sfqid: str, businessKey_sf
 
     --SET(schema_sfqid, businessKey_sfqid) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));
 
-WITH Server_Roles AS (
+WITH Quality_Metric AS (
+    SELECT 
+    TABLE_NAME, 
+    TYPES, 
+    COLUMN_NAME, 
+    ARRAY_AGG(quality) as qualities
+FROM (
+    SELECT  
+        TABLE_NAME, 
+        IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 AND ARGUMENT_TYPES[0]::string = 'COLUMN', 'COLUMN', 'RECORD') as TYPES , 
+        ARRAY_TO_STRING(ARGUMENT_NAMES, ',') as COLUMN_NAME,   
+        OBJECT_CONSTRUCT(
+        'id', CONCAT(LOWER(TABLE_NAME),'_',LOWER(
+                        IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 AND ARGUMENT_TYPES[0]::string = 'COLUMN', 'COLUMN', 'RECORD')
+                        ),
+                    '_',
+                    LOWER(METRIC_NAME),
+                    '_',
+                    LOWER(ARRAY_TO_STRING(ARGUMENT_NAMES, ',')),
+                    '_id'),
+        'metric', COALESCE(ODCS_RULES.odcs_metric, METRIC_NAME),
+        COALESCE(odcs_operator,'mustBe'), VALUE
+        ) as quality,
+    FROM SNOWFLAKE.LOCAL.DATA_QUALITY_MONITORING_RESULTS
+    -- https://bitol-io.github.io/open-data-contract-standard/latest/data-quality/#metrics
+    LEFT JOIN (VALUES('NULL_COUNT', 'nullValues', 'mustBe'), 
+                     ('BLANK_COUNT','missingValues', 'mustBe'), 
+                     ('ROW_COUNT', 'rowCount','mustBeGreaterOrEqualTo'),
+                     ('ACCEPTED_VALUES', 'invalidValues','mustBeLessThan'),
+                     ('DUPLICATE_COUNT', 'duplicateValues','mustBeLessThan')                 
+                     ) as ODCS_RULES(snowflake_metricName, odcs_metric, odcs_operator) ON METRIC_NAME = snowflake_metricName
+    WHERE TABLE_DATABASE = CURRENT_DATABASE() AND TABLE_SCHEMA = CURRENT_SCHEMA()
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY TABLE_NAME, ARGUMENT_TYPES, METRIC_NAME, ARGUMENT_NAMES ORDER BY MEASUREMENT_TIME DESC) = 1
+    ) as DMF_METRICS_RESULT
+    GROUP BY TABLE_NAME, TYPES, COLUMN_NAME
+),
+Server_Roles AS (
     SELECT P.TABLE_SCHEMA as table_schema, ARRAY_AGG(
     OBJECT_CONSTRUCT(
         'role', P.GRANTEE,
@@ -128,11 +164,19 @@ INFO_SCHEMA_COLUMNS AS (
     GET_PATH(TRY_PARSE_JSON("data_type"),'scale') as CP_scale,
     "autoincrement" as CP_autoIncrement,
     "default" as CP_default,
+    Q.qualities
     FROM TABLE(RESULT_SCAN('$schema_sfqid')) as T
-    JOIN INFORMATION_SCHEMA.COLUMNS as IS_C ON T."table_name"= IS_C.TABLE_NAME AND  T."schema_name" = IS_C.TABLE_SCHEMA AND T."column_name" = IS_C.COLUMN_NAME AND T."database_name" = IS_C.TABLE_CATALOG
-    LEFT JOIN TagRef TR ON T."table_name" = TR.OBJECT_NAME AND T."schema_name" = TR.OBJECT_SCHEMA  AND T."column_name" = TR.COLUMN_NAME
-)
-,
+    JOIN INFORMATION_SCHEMA.COLUMNS as IS_C ON T."table_name"= IS_C.TABLE_NAME 
+                                            AND  T."schema_name" = IS_C.TABLE_SCHEMA 
+                                            AND T."column_name" = IS_C.COLUMN_NAME 
+                                            AND T."database_name" = IS_C.TABLE_CATALOG
+    LEFT JOIN TagRef TR ON T."table_name" = TR.OBJECT_NAME 
+                        AND T."schema_name" = TR.OBJECT_SCHEMA  
+                        AND T."column_name" = TR.COLUMN_NAME
+    LEFT JOIN Quality_Metric Q  ON( T."table_name" = Q.TABLE_NAME 
+                                AND T."column_name" = Q.COLUMN_NAME
+                                AND 'COLUMN' = Q.TYPES)
+),
 INFO_SCHEMA_CONSTRAINTS AS (
 SELECT 
     "schema_name" as schema_name, 
@@ -149,8 +193,11 @@ SELECT
     UPPER(CONCAT(T.TABLE_SCHEMA,'.',T.TABLE_NAME)) as physical_name,
     NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
     'object' as logicalType,
-    lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType
+    lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType,
+    'quality', Q.qualities
 FROM INFORMATION_SCHEMA.TABLES as T
+LEFT JOIN Quality_Metric Q ON (T.TABLE_NAME= Q.TABLE_NAME 
+                            AND 'RECORD' = Q.TYPES)
 ),
 PROPERTIES AS (
 SELECT 
@@ -169,35 +216,37 @@ ARRAY_AGG(OBJECT_CONSTRUCT(
     IFF(BK.primaryKey = true, 'primaryKeyPosition', NULL), IFF(BK.primaryKey = true, BK.primaryKeyPosition, NULL),
     IFF(C.tags IS NOT NULL,'tags',NULL) , IFF(C.tags IS NOT NULL, C.tags, NULL),
     'customProperties', ARRAY_CONSTRUCT_COMPACT(
-                                        OBJECT_CONSTRUCT(
-                                        'property', 'ordinalPosition',
-                                        'value', C.ORDINAL_POSITION
-                                        ),
-                                        OBJECT_CONSTRUCT(
-                                        'property','scdType',    
-                                        'value', IFF( COALESCE(BK.primaryKey,false) ,0,1)
-                                        ),
-                                        IFF(BK.primaryKey = True AND Right(C."name",3) != '_SK', OBJECT_CONSTRUCT(
-                                        'property','businessKey',
-                                        'value', True), NULL),
-                                        IFF(C.CP_precision IS NOT NULL, OBJECT_CONSTRUCT(
-                                        'property','precision',
-                                        'value', C.CP_precision), NULL),
-                                        IFF(C.CP_scale IS NOT NULL, OBJECT_CONSTRUCT(
-                                        'property','scale',
-                                        'value', C.CP_scale), NULL),
-                                        IFF(NULLIF(C.CP_autoIncrement,'') IS NOT NULL, OBJECT_CONSTRUCT(
-                                        'property','autoIncrement',
-                                        'value', C.CP_autoIncrement), NULL),
-                                        IFF(NULLIF(C.CP_default,'') IS NOT NULL, OBJECT_CONSTRUCT(
-                                        'property','defaultValue',
-                                        'value', C.CP_default), NULL)                                     
-                                        )
+            OBJECT_CONSTRUCT(
+            'property', 'ordinalPosition',
+            'value', C.ORDINAL_POSITION
+            ),
+            OBJECT_CONSTRUCT(
+            'property','scdType',    
+            'value', IFF( COALESCE(BK.primaryKey,false) ,0,1)
+            ),
+            IFF(BK.primaryKey = True AND Right(C."name",3) != '_SK', OBJECT_CONSTRUCT(
+            'property','businessKey',
+            'value', True), NULL),
+            IFF(C.CP_precision IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','precision',
+            'value', C.CP_precision), NULL),
+            IFF(C.CP_scale IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','scale',
+            'value', C.CP_scale), NULL),
+            IFF(NULLIF(C.CP_autoIncrement,'') IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','autoIncrement',
+            'value', C.CP_autoIncrement), NULL),
+            IFF(NULLIF(C.CP_default,'') IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','defaultValue',
+            'value', C.CP_default), NULL)                                     
+            ),
+    'quality', C.qualities
                         )) as properties
 FROM INFO_SCHEMA_COLUMNS C
 LEFT JOIN INFO_SCHEMA_CONSTRAINTS BK ON (C.schema_name = BK.schema_name 
                             AND C.table_name = BK.table_name 
                             AND C."name" = BK."name")
+
 GROUP BY C.schema_name, C.table_name
 )
 , SCHEMA_DEF AS (
@@ -210,7 +259,9 @@ ARRAY_AGG( OBJECT_CONSTRUCT(
     'logicalType',T.logicalType,
     'physicalType',T.physicalType,
     'description',T.description,
-    'properties', P.properties))
+    'properties', P.properties,
+    'quality', T.qualities)
+    )
     as "schema"
 FROM PROPERTIES P
 LEFT JOIN INFO_SCHEMA_TABLES T ON (P.schema_name = T.table_schema 
