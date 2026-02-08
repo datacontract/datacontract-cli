@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from collections import OrderedDict
+from pathlib import Path
 from typing import Any, Dict
 
 import yaml
@@ -17,7 +18,7 @@ class SnowflakeImporter(Importer):
         if source is not None:
             return import_Snowflake_from_connector(
                 account=source,
-                database=import_args.get("database"),
+                database=import_args.get("snowflake_db"),
                 schema=import_args.get("schema"),
             )
 
@@ -99,7 +100,7 @@ WITH INFO_SCHEMA_COLUMNS AS (
     WHEN 'BOOLEAN' THEN 'BOOLEAN'
     WHEN 'TIMESTAMP_NTZ' THEN CONCAT('TIMESTAMP_NTZ','(',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')')
     ELSE GET_PATH(TRY_PARSE_JSON("data_type"),'type') END as PhysicalType,
-    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicatTypeOptions_maxlength,
+    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicalTypeOptions_maxlength,
     IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), NULL ) as tags,
     IS_C.ORDINAL_POSITION
     FROM TABLE(RESULT_SCAN('$schema_sfqid')) as T
@@ -136,7 +137,7 @@ ARRAY_AGG(OBJECT_CONSTRUCT(
     'unique',       C."unique",
     'description',  C.description,
     'logicalType',  C.LogicalType,
-    IFF(logicatTypeOptions_maxlength::number IS NOT NULL,'logicalTypeOptions',NULL), IFF( logicatTypeOptions_maxlength::number IS NOT NULL , OBJECT_CONSTRUCT('maxLength',logicatTypeOptions_maxlength::number), NULL),  
+    IFF(logicalTypeOptions_maxlength::number IS NOT NULL,'logicalTypeOptions',NULL), IFF( logicalTypeOptions_maxlength::number IS NOT NULL , OBJECT_CONSTRUCT('maxLength',logicalTypeOptions_maxlength::number), NULL),  
     'physicalType', TRIM(C.PhysicalType),
     IFF(BK.primaryKey = true, 'primaryKey', NULL), IFF(BK.primaryKey = true,true, NULL),
     IFF(BK.primaryKey = true, 'primaryKeyPosition', NULL), IFF(BK.primaryKey = true, BK.primaryKeyPosition, NULL),
@@ -281,27 +282,63 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
     warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
     database_connect = databasename or "DEMO_DB"
     schema_connect = schema or "PUBLIC"
-    private_key_file = None
-    private_key_file_pwd = None
+    snowflake_home = os.environ.get("DATACONTRACT_SNOWFLAKE_HOME") or os.environ.get("SNOWFLAKE_HOME")
+    snowflake_connections_file = os.environ.get("DATACONTRACT_SNOWFLAKE_CONNECTIONS_FILE") or os.environ.get(
+        "SNOWFLAKE_CONNECTIONS_FILE"
+    )
+    if not snowflake_connections_file and snowflake_home:
+        snowflake_connections_file = os.path.join(snowflake_home, "connections.toml")
+
+    default_connection = os.environ.get("DATACONTRACT_SNOWFLAKE_DEFAULT_CONNECTION_NAME") or os.environ.get(
+        "SNOWFLAKE_DEFAULT_CONNECTION_NAME"
+    )
+
+    private_key_file = os.environ.get("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE") or os.environ.get(
+        "SNOWFLAKE_PRIVATE_KEY_FILE"
+    )
+    private_key_file_pwd = os.environ.get("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD") or os.environ.get(
+        "SNOWFLAKE_PRIVATE_KEY_FILE_PWD"
+    )
 
     # build connection
-    if (
-        os.environ.get("SNOWFLAKE_DEFAULT_CONNECTION_NAME", None) is not None
-        and os.environ.get("DATACONTRACT_SNOWFLAKE_PASSWORD", None) is None
-    ):
+    if default_connection is not None and password_connect is None:
         # use the default connection defined in the snowflake config file : connections.toml and config.toml
+
+        # optional connection params (will override the defaults if set)
+        connection_params = {}
+        if default_connection:
+            connection_params["connection_name"] = default_connection
+        if snowflake_connections_file:
+            connection_params["connections_file_path"] = Path(snowflake_connections_file)
+        if role_connect:
+            connection_params["role"] = role_connect
+        if account_connect:
+            connection_params["account"] = account_connect
+        # don't override default connection with defaults set above
+        if database_connect and database_connect != "DEMO_DB":
+            connection_params["database"] = database_connect
+        if schema_connect and schema_connect != "PUBLIC":
+            connection_params["schema"] = schema_connect
+        if warehouse_connect and warehouse_connect != "COMPUTE_WH":
+            connection_params["warehouse"] = warehouse_connect
+
         conn = connect(
             session_parameters={
                 "QUERY_TAG": "datacontract-cli import",
                 "use_openssl_only": False,
-            }
+            },
+            **connection_params,
         )
-    elif authenticator_connect == "externalbrowser":
-        # use external browser auth
+    elif private_key_file is not None:
+        # use private key auth
+        if not os.path.exists(private_key_file):
+            raise FileNotFoundError(f"Private key file not found at: {private_key_file}")
+
         conn = connect(
             user=user_connect,
             account=account_connect,
-            authenticator=authenticator_connect,
+            private_key_file=private_key_file,
+            private_key_file_pwd=private_key_file_pwd,
             session_parameters={
                 "QUERY_TAG": "datacontract-cli import",
                 "use_openssl_only": False,
@@ -311,13 +348,12 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
             database=database_connect,
             schema=schema_connect,
         )
-    elif private_key_file is not None:
-        # use private key auth
+    elif authenticator_connect == "externalbrowser":
+        # use external browser auth
         conn = connect(
             user=user_connect,
             account=account_connect,
-            private_key_file=private_key_file,
-            private_key_fil_pwd=private_key_file_pwd.encode("UTF-8"),
+            authenticator=authenticator_connect,
             session_parameters={
                 "QUERY_TAG": "datacontract-cli import",
                 "use_openssl_only": False,
