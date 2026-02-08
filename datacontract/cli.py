@@ -378,7 +378,7 @@ def import_(
         iceberg_table=iceberg_table,
         owner=owner,
         id=id,
-        snowflake_db=database,
+        database=database,
     )
     if output is None:
         console.print(result.to_yaml(), markup=False, soft_wrap=True)

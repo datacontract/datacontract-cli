@@ -71,7 +71,29 @@ def snowflake_query(account: str, schema: str, schema_sfqid: str, businessKey_sf
 
     --SET(schema_sfqid, businessKey_sfqid) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));
 
-WITH INFO_SCHEMA_COLUMNS AS (
+WITH Server_Roles AS (
+    SELECT P.TABLE_SCHEMA as table_schema, ARRAY_AGG(
+    OBJECT_CONSTRUCT(
+        'role', P.GRANTEE,
+        'access',LOWER(P.PRIVILEGE_TYPE),
+        'firstLevelApprovers', P.GRANTOR
+        ))   as Roles
+    FROM information_schema.table_privileges P
+    WHERE P.GRANTED_TO = 'ROLE' AND P.TABLE_SCHEMA = '{schema}' 
+    GROUP BY P.TABLE_CATALOG, P.TABLE_SCHEMA
+), 
+TagRef AS (
+    SELECT 
+        OBJECT_SCHEMA, 
+        OBJECT_NAME, 
+        COLUMN_NAME, 
+        ARRAY_AGG(CONCAT(TAG_NAME,'=',TAG_VALUE)) as Tags
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_SCHEMA = CURRENT_SCHEMA()
+      AND OBJECT_DATABASE = CURRENT_DATABASE()
+    GROUP BY OBJECT_SCHEMA, OBJECT_NAME, COLUMN_NAME
+),
+INFO_SCHEMA_COLUMNS AS (
     SELECT 
     "schema_name" as schema_name,
     "table_name" as table_name,
@@ -100,11 +122,16 @@ WITH INFO_SCHEMA_COLUMNS AS (
     WHEN 'BOOLEAN' THEN 'BOOLEAN'
     WHEN 'TIMESTAMP_NTZ' THEN CONCAT('TIMESTAMP_NTZ','(',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')')
     ELSE GET_PATH(TRY_PARSE_JSON("data_type"),'type') END as PhysicalType,
-    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicalTypeOptions_maxlength,
-    IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), NULL ) as tags,
-    IS_C.ORDINAL_POSITION
+    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicatTypeOptions_maxlength,
+    IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), TR.Tags ) as tags,
+    IS_C.ORDINAL_POSITION,
+    GET_PATH(TRY_PARSE_JSON("data_type"),'precision') as CP_precision,
+    GET_PATH(TRY_PARSE_JSON("data_type"),'scale') as CP_scale,
+    "autoincrement" as CP_autoIncrement,
+    "default" as CP_default,
     FROM TABLE(RESULT_SCAN('$schema_sfqid')) as T
     JOIN INFORMATION_SCHEMA.COLUMNS as IS_C ON T."table_name"= IS_C.TABLE_NAME AND  T."schema_name" = IS_C.TABLE_SCHEMA AND T."column_name" = IS_C.COLUMN_NAME AND T."database_name" = IS_C.TABLE_CATALOG
+    LEFT JOIN TagRef TR ON T."table_name" = TR.OBJECT_NAME AND T."schema_name" = TR.OBJECT_SCHEMA  AND T."column_name" = TR.COLUMN_NAME
 )
 ,
 INFO_SCHEMA_CONSTRAINTS AS (
@@ -118,9 +145,9 @@ FROM(TABLE(RESULT_SCAN('$businessKey_sfqid')))
 ),
 INFO_SCHEMA_TABLES AS (
 SELECT 
-    TABLE_SCHEMA as table_schema, 
-    TABLE_NAME as "name",
-    UPPER(CONCAT(T.table_schema,'.',T.table_name)) as physical_name,
+    T.TABLE_SCHEMA as table_schema, 
+    T.TABLE_NAME as "name",
+    UPPER(CONCAT(T.TABLE_SCHEMA,'.',T.TABLE_NAME)) as physical_name,
     NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
     'object' as logicalType,
     lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType
@@ -153,7 +180,20 @@ ARRAY_AGG(OBJECT_CONSTRUCT(
                                         ),
                                         IFF(BK.primaryKey = True AND Right(C."name",3) != '_SK', OBJECT_CONSTRUCT(
                                         'property','businessKey',
-                                        'value', True), NULL))
+                                        'value', True), NULL),
+                                        IFF(C.CP_precision IS NOT NULL, OBJECT_CONSTRUCT(
+                                        'property','precision',
+                                        'value', C.CP_precision), NULL),
+                                        IFF(C.CP_scale IS NOT NULL, OBJECT_CONSTRUCT(
+                                        'property','scale',
+                                        'value', C.CP_scale), NULL),
+                                        IFF(NULLIF(C.CP_autoIncrement,'') IS NOT NULL, OBJECT_CONSTRUCT(
+                                        'property','autoIncrement',
+                                        'value', C.CP_autoIncrement), NULL),
+                                        IFF(NULLIF(C.CP_default,'') IS NOT NULL, OBJECT_CONSTRUCT(
+                                        'property','defaultValue',
+                                        'value', C.CP_default), NULL)                                     
+                                        )
                         )) as properties
 FROM INFO_SCHEMA_COLUMNS C
 LEFT JOIN INFO_SCHEMA_CONSTRAINTS BK ON (C.schema_name = BK.schema_name 
@@ -183,7 +223,7 @@ SELECT
 OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
 'kind','DataContract',
 'id', UUID_STRING(),
-'name',table_schema,
+'name',SCHEMA_DEF.table_schema,
 'version','0.0.1',
 'domain','dataplatform',
 'status','development',
@@ -202,51 +242,13 @@ OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
         'port', 443,
         'database', CURRENT_DATABASE(),
         'warehouse', CURRENT_WAREHOUSE(),
-        'schema', table_schema,
-        'roles', ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(
-            'role', CURRENT_ROLE(),
-            'access','write',
-            'firstLevelApprovers', CURRENT_USER()
-            )                                                                                    
-                                    )
-                    ),
-    OBJECT_CONSTRUCT(
-        'server','snowflake_uat', 
-        'type','snowflake',
-        'account', '{account}',
-        'environment', 'uat',
-        'host', '{account}.snowflakecomputing.com',
-        'port', 443,
-        'database', CURRENT_DATABASE(),
-        'warehouse', CURRENT_WAREHOUSE(),
-        'schema', table_schema,
-        'roles', ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(
-            'role', CURRENT_ROLE(),
-            'access','write',
-            'firstLevelApprovers', CURRENT_USER()
-            )                                                                                    
-        )
-                    ),                
-        OBJECT_CONSTRUCT(
-        'server','snowflake', 
-        'type','snowflake',
-        'account', '{account}',
-        'environment', 'prd',
-        'host', '{account}.snowflakecomputing.com',
-        'port', 443,
-        'database', CURRENT_DATABASE(),
-        'warehouse', CURRENT_WAREHOUSE(),
-        'schema', table_schema,
-        'roles', ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(
-            'role', CURRENT_ROLE(),
-            'access','write',
-            'firstLevelApprovers', CURRENT_USER()
-            )                                                                                    
-        )
-                    )
-        ),                                       
+        'schema', SCHEMA_DEF.table_schema,
+        'roles', Server_Roles.Roles
+                    )),                                    
 'schema', "schema") as "DataContract (ODCS)"
 FROM SCHEMA_DEF
+LEFT JOIN Server_Roles ON SCHEMA_DEF.table_schema = Server_Roles.table_schema
+WHERE SCHEMA_DEF.table_schema IS NOT NULL
     """
     return (
         sqlStatement.replace("$schema_sfqid", schema_sfqid)
