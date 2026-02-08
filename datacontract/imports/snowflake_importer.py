@@ -18,7 +18,7 @@ class SnowflakeImporter(Importer):
         if source is not None:
             return import_Snowflake_from_connector(
                 account=source,
-                database=import_args.get("snowflake_db"),
+                database=import_args.get("database"),
                 schema=import_args.get("schema"),
             )
 
@@ -122,7 +122,7 @@ INFO_SCHEMA_COLUMNS AS (
     WHEN 'BOOLEAN' THEN 'BOOLEAN'
     WHEN 'TIMESTAMP_NTZ' THEN CONCAT('TIMESTAMP_NTZ','(',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')')
     ELSE GET_PATH(TRY_PARSE_JSON("data_type"),'type') END as PhysicalType,
-    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicatTypeOptions_maxlength,
+    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicalTypeOptions_maxlength,
     IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), TR.Tags ) as tags,
     IS_C.ORDINAL_POSITION,
     GET_PATH(TRY_PARSE_JSON("data_type"),'precision') as CP_precision,
