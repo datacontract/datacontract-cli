@@ -159,7 +159,8 @@ def test_import_snowflake_from_connector_success():
         assert mock_cursor.execute_async.called
         args, _ = mock_cursor.execute_async.call_args
         query = args[0]
-        assert "WITH INFO_SCHEMA_COLUMNS AS" in query
+        assert "WITH Quality_Metric AS" in query
+        assert "Server_Roles AS " in query
         assert f"WHERE T.table_schema = '{schema}'" in query
 
         mock_cursor.get_results_from_sfqid.assert_called_with("mock_sfqid")
