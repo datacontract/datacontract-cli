@@ -102,12 +102,12 @@ schema:
     description: Double precision floating-point (synonym for FLOAT)
     logicalType: number
   - name: field_float
-    physicalType: FLOAT
+    physicalType: DOUBLE
     description: Approximate floating-point
     logicalType: number
   - name: field_real
-    physicalType: FLOAT
-    description: Snowflake doesn't have REAL, use FLOAT
+    physicalType: DOUBLE
+    description: Snowflake doesn't have REAL, use DOUBLE as synonym of FLOAT
     logicalType: number
   - name: field_bit
     physicalType: BOOLEAN
