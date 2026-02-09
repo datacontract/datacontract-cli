@@ -18,7 +18,7 @@ CREATE OR REPLACE TABLE mytable (
     field_number NUMBER(38, 0),                  -- Default numeric type (more flexible than DECIMAL)
     field_double DOUBLE,                         -- Double precision floating-point (synonym for FLOAT)
     field_float FLOAT,                           -- Approximate floating-point
-    field_real FLOAT,                            -- Snowflake doesn't have REAL, use FLOAT
+    field_real FLOAT,                            -- Snowflake doesn't have REAL, use DOUBLE as synonym of FLOAT
     field_bit BOOLEAN,                           -- Boolean (TRUE/FALSE)
     field_date DATE,                             -- Date only (YYYY-MM-DD)
     field_time TIME,                             -- Time only (HH:MM:SS)
