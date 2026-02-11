@@ -27,7 +27,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
     ## connect to snowflake and get cursor
     conn = snowflake_cursor(account, database, schema)
     try:
-        # To catch double_quoted identifier 
+        # To catch double_quoted identifier
         from snowflake.connector.errors import ProgrammingError
     except ImportError as e:
         raise DataContractException(
@@ -40,14 +40,13 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         )
 
     with conn.cursor() as cur:
-        
         try:
             cur.execute(f"USE SCHEMA {database}.{schema}")
             schema_identifier = schema
         except ProgrammingError:
             # schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
             cur.execute(f'USE SCHEMA {database}."{schema}"')
-            schema_identifier = f'"{schema}"'      
+            schema_identifier = f'"{schema}"'
 
         cur.execute(f"SHOW COLUMNS IN SCHEMA {database}.{schema_identifier}")
         schema_sfqid = str(cur.sfqid)
