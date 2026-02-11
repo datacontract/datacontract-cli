@@ -26,12 +26,32 @@ class SnowflakeImporter(Importer):
 def import_Snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
     ## connect to snowflake and get cursor
     conn = snowflake_cursor(account, database, schema)
-    with conn.cursor() as cur:
-        cur.execute(f"USE SCHEMA {database}.{schema}")
+    try:
+        # To catch double_quoted identifier 
+        from snowflake.connector.errors import ProgrammingError
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="snowflake extra missing",
+            reason="Install the extra datacontract-cli[snowflake] to use snowflake",
+            engine="datacontract",
+            original_exception=e,
+        )
 
-        cur.execute(f"SHOW COLUMNS IN SCHEMA {database}.{schema}")
+    with conn.cursor() as cur:
+        
+        try:
+            cur.execute(f"USE SCHEMA {database}.{schema}")
+            schema_identifier = schema
+        except ProgrammingError:
+            # schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
+            cur.execute(f'USE SCHEMA {database}."{schema}"')
+            schema_identifier = f'"{schema}"'      
+
+        cur.execute(f"SHOW COLUMNS IN SCHEMA {database}.{schema_identifier}")
         schema_sfqid = str(cur.sfqid)
-        cur.execute(f"SHOW PRIMARY KEYS IN SCHEMA {database}.{schema}")
+        cur.execute(f"SHOW PRIMARY KEYS IN SCHEMA {database}.{schema_identifier}")
         businessKey_sfqid = str(cur.sfqid)
         # -- AS
         # SET(col, pk) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));"

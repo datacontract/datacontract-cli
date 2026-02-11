@@ -819,6 +819,16 @@ For example:
 | `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
 | `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
 
+##### EV Authentication options
+
+| Soda optionnal parameter | Environment Variable                            |
+|--------------------------|-------------------------------------------------|
+| `authenticator`          | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR`          |
+| `private_key`            | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`            |
+| `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
+| `private_key_path`       | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`       |
+
+
 Beware, that parameters:
 * `account`
 * `database`
