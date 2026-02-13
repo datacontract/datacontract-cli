@@ -5,6 +5,7 @@ from open_data_contract_standard.model import SchemaProperty
 
 class FieldLike(Protocol):
     """Protocol for field-like objects (DCS Field or PropertyAdapter)."""
+
     type: Optional[str]
     config: Optional[Dict[str, Any]]
     precision: Optional[int]
@@ -287,11 +288,7 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
 def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str:
     type = _get_type(field)
     databricks_type = _get_config_value(field, "databricksType")
-    if (
-        databricks_type
-        and type
-        and type.lower() not in ["array", "object", "record", "struct"]
-    ):
+    if databricks_type and type and type.lower() not in ["array", "object", "record", "struct"]:
         return databricks_type
     if type is None:
         return None
@@ -360,6 +357,7 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
 
     # Prepare
     type_mapping = {
+        "nvarchar": "VARCHAR",
         "varchar": "VARCHAR",
         "string": "VARCHAR",
         "text": "VARCHAR",
@@ -387,10 +385,15 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return type_mapping[type_lower]
 
     # convert decimal numbers with precision and scale
-    if type_lower == "decimal" or type_lower == "number" or type_lower == "numeric":
+    if "decimal" in type_lower or "number" in type_lower or "numeric" in type_lower:
+        # try CustomProperties
         precision = _get_precision(field)
         scale = _get_scale(field)
-        return f"DECIMAL({precision},{scale})"
+        if precision and scale:
+            return f"DECIMAL({precision},{scale})"
+        else:
+            # force physicalType as is
+            return type
 
     # Check list and map
     if type_lower == "list" or type_lower == "array":
@@ -592,6 +595,7 @@ def convert_type_to_impala(field: Union[SchemaProperty, FieldLike]) -> None | st
     # For complex / JSON-like types we currently do not emit a type check
     # (returning None means no "has type" check is generated)
     return None
+
 
 def convert_type_to_oracle(field: Union[SchemaProperty, FieldLike]) -> None | str:
     """Convert field types to Oracle types.

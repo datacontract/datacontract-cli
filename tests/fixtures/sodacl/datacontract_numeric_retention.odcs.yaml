@@ -1,0 +1,23 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: orders-numeric-retention-test
+name: Orders Numeric Retention Test
+version: 1.0.0
+status: active
+schema:
+- name: orders
+  description: test
+  properties:
+  - name: order_id
+    logicalType: string
+    physicalType: string
+    required: true
+  - name: processed_timestamp
+    logicalType: timestamp
+    physicalType: timestamp
+    required: true
+slaProperties:
+- property: retention
+  value: 3
+  unit: y
+  element: orders.processed_timestamp
