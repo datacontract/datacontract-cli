@@ -1,6 +1,14 @@
+import yaml
 from open_data_contract_standard.model import DataQuality, Server
 
-from datacontract.engines.data_contract_checks import QuotingConfig, prepare_query
+from datacontract.engines.data_contract_checks import (
+    QuotingConfig,
+    check_property_is_present,
+    check_property_required,
+    check_property_type,
+    check_property_unique,
+    prepare_query,
+)
 
 
 def test_prepare_query_schema_placeholder():
@@ -72,3 +80,65 @@ def test_prepare_query_all_placeholders_with_dollar():
     result = prepare_query(quality, "my_table", "my_field", QuotingConfig(), server)
 
     assert result == "SELECT my_field FROM my_schema.my_table"
+
+
+def test_prepare_query_field_backtick_quoting():
+    """Test that field placeholders use backticks for databricks."""
+    quality = DataQuality(type="sql", query="SELECT {field} FROM {model}")
+    quoting_config = QuotingConfig(quote_field_name_with_backticks=True)
+
+    result = prepare_query(quality, "my_table", "loc/dep", quoting_config, None)
+
+    assert result == "SELECT `loc/dep` FROM my_table"
+
+
+def test_check_property_required_backtick_quoting():
+    """Test that field names with special chars are backtick-quoted for databricks."""
+    quoting_config = QuotingConfig(quote_field_name_with_backticks=True)
+
+    check = check_property_required("my_table", "loc/dep", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for my_table"]
+    assert any("missing_count(`loc/dep`) = 0" in str(c) for c in checks)
+
+
+def test_check_property_unique_backtick_quoting():
+    """Test that field names with special chars are backtick-quoted for unique checks."""
+    quoting_config = QuotingConfig(quote_field_name_with_backticks=True)
+
+    check = check_property_unique("my_table", "loc/dep", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for my_table"]
+    assert any("duplicate_count(`loc/dep`) = 0" in str(c) for c in checks)
+
+
+def test_check_property_is_present_no_backtick_quoting():
+    """Test that field_is_present schema checks do not backtick-quote field names.
+
+    Schema checks use metadata comparison, not SQL identifiers.
+    """
+    quoting_config = QuotingConfig(quote_field_name_with_backticks=True)
+
+    check = check_property_is_present("my_table", "loc/dep", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for my_table"]
+    schema_check = checks[0]["schema"]
+    assert schema_check["fail"]["when required column missing"] == ["loc/dep"]
+
+
+def test_check_property_type_no_backtick_quoting():
+    """Test that field_type schema checks do not backtick-quote field names.
+
+    Schema checks use metadata comparison, not SQL identifiers.
+    """
+    quoting_config = QuotingConfig(quote_field_name_with_backticks=True)
+
+    check = check_property_type("my_table", "loc/dep", "string", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for my_table"]
+    schema_check = checks[0]["schema"]
+    assert schema_check["fail"]["when wrong column type"] == {"loc/dep": "string"}

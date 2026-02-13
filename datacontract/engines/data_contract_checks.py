@@ -20,8 +20,20 @@ from datacontract.model.run import Check
 @dataclass
 class QuotingConfig:
     quote_field_name: bool = False
+    quote_field_name_with_backticks: bool = False
     quote_model_name: bool = False
     quote_model_name_with_backticks: bool = False
+
+
+def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
+    """Quote a field name according to the quoting configuration."""
+    if field_name is None:
+        return field_name
+    if quoting_config.quote_field_name:
+        return f'"{field_name}"'
+    elif quoting_config.quote_field_name_with_backticks:
+        return f"`{field_name}`"
+    return field_name
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -73,6 +85,7 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
     type1 = server.type if server and server.type else None
     config = QuotingConfig(
         quote_field_name=type1 in ["postgres", "sqlserver", "azure"],
+        quote_field_name_with_backticks=type1 in ["databricks"],
         quote_model_name=type1 in ["postgres", "sqlserver"],
         quote_model_name_with_backticks=type1 == "bigquery",
     )
@@ -229,10 +242,7 @@ def check_property_type(
 
 
 def check_property_required(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_required"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -260,10 +270,7 @@ def check_property_required(model_name: str, field_name: str, quoting_config: Qu
 
 
 def check_property_unique(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_unique"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -293,10 +300,7 @@ def check_property_unique(model_name: str, field_name: str, quoting_config: Quot
 def check_property_min_length(
     model_name: str, field_name: str, min_length: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_min_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -327,10 +331,7 @@ def check_property_min_length(
 def check_property_max_length(
     model_name: str, field_name: str, max_length: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_max_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -361,10 +362,7 @@ def check_property_max_length(
 def check_property_minimum(
     model_name: str, field_name: str, minimum: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_minimum"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -395,10 +393,7 @@ def check_property_minimum(
 def check_property_maximum(
     model_name: str, field_name: str, maximum: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_maximum"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -429,10 +424,7 @@ def check_property_maximum(
 def check_property_not_equal(
     model_name: str, field_name: str, value: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_not_equal"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -461,10 +453,7 @@ def check_property_not_equal(
 
 
 def check_property_enum(model_name: str, field_name: str, enum: list, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_enum"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -493,10 +482,7 @@ def check_property_enum(model_name: str, field_name: str, enum: list, quoting_co
 
 
 def check_property_regex(model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_regex"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -553,7 +539,7 @@ def check_model_duplicate_values(
 ):
     check_type = "model_duplicate_values"
     check_key = f"{model_name}__{check_type}"
-    col_joined = ", ".join(cols)
+    col_joined = ", ".join(_quote_field_name(col, quoting_config) for col in cols)
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
             {
@@ -578,10 +564,7 @@ def check_model_duplicate_values(
 def check_property_duplicate_values(
     model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_duplicate_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -611,10 +594,7 @@ def check_property_duplicate_values(
 def check_property_null_values(
     model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_null_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -648,10 +628,7 @@ def check_property_invalid_values(
     valid_values: list = None,
     quoting_config: QuotingConfig = QuotingConfig(),
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_invalid_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -691,10 +668,7 @@ def check_property_missing_values(
     missing_values: list = None,
     quoting_config: QuotingConfig = QuotingConfig(),
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_missing_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -863,10 +837,7 @@ def prepare_query(
 
     query = quality.query
 
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     if quoting_config.quote_model_name:
         model_name_for_soda = f'"{model_name}"'
