@@ -78,7 +78,15 @@ def write_junit_test_results(run: Run, console, output_path: Path):
 
     xml_str: str = ET.tostring(testsuite, xml_declaration=True, encoding="utf-8")
     xml_str_pretty = minidom.parseString(xml_str).toprettyxml(indent="  ")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        # Workaround for CPython TOCTOU race condition (python/cpython#142916):
+        # mkdir(exist_ok=True) can still raise FileExistsError in concurrent
+        # environments (e.g., GitHub Actions) when a directory is deleted between
+        # the os.mkdir() call and the subsequent is_dir() check.
+        if not output_path.parent.is_dir():
+            raise
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(xml_str_pretty)
     console.print(f"JUnit test results written to {output_path}")
