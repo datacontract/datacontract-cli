@@ -372,6 +372,7 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
 
     # Prepare
     type_mapping = {
+        "nvarchar": "VARCHAR",
         "varchar": "VARCHAR",
         "string": "VARCHAR",
         "text": "VARCHAR",
@@ -399,10 +400,15 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return type_mapping[type_lower]
 
     # convert decimal numbers with precision and scale
-    if type_lower == "decimal" or type_lower == "number" or type_lower == "numeric":
+    if "decimal" in type_lower or "number" in type_lower or "numeric" in type_lower:
+        # try CustomProperties
         precision = _get_precision(field)
         scale = _get_scale(field)
-        return f"DECIMAL({precision},{scale})"
+        if precision and scale:
+            return f"DECIMAL({precision},{scale})"
+        else:
+            # force physicalType as is
+            return type
 
     # Check list and map
     if type_lower == "list" or type_lower == "array":
