@@ -1021,11 +1021,12 @@ def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla
         logger.info(f"Model {model_name} not found in schema, skipping retention check")
         return None
 
-    # Parse ISO 8601 duration to seconds
-    retention_period = sla.value
-    seconds = _parse_iso8601_to_seconds(retention_period)
+    # Convert retention value to seconds
+    # Supports both numeric value + unit (ODCS style: value=3, unit=y)
+    # and ISO 8601 duration strings (e.g., "P1Y")
+    seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
-        logger.info(f"Could not parse retention period {retention_period}, skipping retention check")
+        logger.info(f"Could not parse retention period (value={sla.value}, unit={sla.unit}), skipping retention check")
         return None
 
     check_type = "servicelevel_retention"
@@ -1052,6 +1053,43 @@ def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla
         language="sodacl",
         implementation=yaml.dump(sodacl_check_dict),
     )
+
+
+def _retention_value_to_seconds(value, unit: str | None) -> int | None:
+    """Convert a retention value to seconds.
+
+    Supports:
+    - Numeric value with unit (ODCS style): value=3, unit="y"
+    - ISO 8601 duration string: value="P1Y"
+    """
+    if value is None:
+        return None
+
+    # If value is numeric, use the unit to convert to seconds
+    if isinstance(value, (int, float)):
+        numeric_value = int(value)
+        unit_lower = unit.lower() if unit else "d"
+        if unit_lower in ("y", "yr", "year", "years"):
+            return numeric_value * 365 * 24 * 60 * 60
+        elif unit_lower in ("m", "mo", "month", "months"):
+            return numeric_value * 30 * 24 * 60 * 60
+        elif unit_lower in ("d", "day", "days"):
+            return numeric_value * 24 * 60 * 60
+        elif unit_lower in ("h", "hr", "hour", "hours"):
+            return numeric_value * 60 * 60
+        elif unit_lower in ("min", "minute", "minutes"):
+            return numeric_value * 60
+        elif unit_lower in ("s", "sec", "second", "seconds"):
+            return numeric_value
+        else:
+            logger.info(f"Unsupported retention unit: {unit}")
+            return None
+
+    # If value is a string, try ISO 8601 parsing
+    if isinstance(value, str):
+        return _parse_iso8601_to_seconds(value)
+
+    return None
 
 
 def _parse_iso8601_to_seconds(duration: str) -> int | None:
