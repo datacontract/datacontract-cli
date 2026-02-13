@@ -142,3 +142,62 @@ def test_check_property_type_no_backtick_quoting():
     checks = impl["checks for my_table"]
     schema_check = checks[0]["schema"]
     assert schema_check["fail"]["when wrong column type"] == {"loc/dep": "string"}
+
+
+def test_prepare_query_snowflake_field_quoting():
+    """Test that field placeholders use double quotes for snowflake."""
+    quality = DataQuality(type="sql", query="SELECT {field} FROM {model}")
+    quoting_config = QuotingConfig(quote_field_name=True, quote_model_name=True)
+    server = Server(**{"type": "snowflake", "schema": "my_schema"})
+
+    result = prepare_query(quality, "my_table", "name", quoting_config, server)
+
+    assert result == 'SELECT "name" FROM "my_table"'
+
+
+def test_prepare_query_snowflake_schema_model_quoting():
+    """Test that schema and model placeholders use double quotes for snowflake."""
+    quality = DataQuality(type="sql", query="SELECT * FROM {schema}.{model}")
+    quoting_config = QuotingConfig(quote_field_name=True, quote_model_name=True)
+    server = Server(**{"type": "snowflake", "schema": "my_schema"})
+
+    result = prepare_query(quality, "my_table", None, quoting_config, server)
+
+    assert result == 'SELECT * FROM "my_schema"."my_table"'
+
+
+def test_check_property_required_snowflake_quoting():
+    """Test that field names are double-quoted for snowflake required checks."""
+    quoting_config = QuotingConfig(quote_field_name=True, quote_model_name=True)
+
+    check = check_property_required("my_table", "name", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl['checks for "my_table"']
+    assert any('missing_count("name") = 0' in str(c) for c in checks)
+
+
+def test_check_property_unique_snowflake_quoting():
+    """Test that field names are double-quoted for snowflake unique checks."""
+    quoting_config = QuotingConfig(quote_field_name=True, quote_model_name=True)
+
+    check = check_property_unique("my_table", "name", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl['checks for "my_table"']
+    assert any('duplicate_count("name") = 0' in str(c) for c in checks)
+
+
+def test_check_property_is_present_no_snowflake_quoting():
+    """Test that field_is_present schema checks do not double-quote field names for snowflake.
+
+    Schema checks use metadata comparison, not SQL identifiers.
+    """
+    quoting_config = QuotingConfig(quote_field_name=True, quote_model_name=True)
+
+    check = check_property_is_present("my_table", "name", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl['checks for "my_table"']
+    schema_check = checks[0]["schema"]
+    assert schema_check["fail"]["when required column missing"] == ["name"]
