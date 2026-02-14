@@ -14,9 +14,11 @@ schema:
     properties:
       - name: order_id
         logicalType: string
+        physicalType: varchar
         required: true
       - name: processed_timestamp
         logicalType: timestamp
+        physicalType: TIMESTAMP_TZ
         required: true
     quality:
       - type: custom

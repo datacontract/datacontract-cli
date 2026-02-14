@@ -1,0 +1,32 @@
+version: 0.1.1
+kind: DataContract
+apiVersion: v3.1.0
+id: urn:datacontract:example:composite-key-test
+name: Composite Key Example
+status: active
+servers:
+- server: workspace1
+  type: snowflake
+  account: my_account
+  database: my_database
+  schema: public
+schema:
+- name: MY_TABLE
+  logicalType: object
+  physicalType: table
+  properties:
+  - name: id_part1
+    physicalType: VARCHAR(50)
+    logicalType: string
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+  - name: id_part2
+    physicalType: VARCHAR(50)
+    logicalType: string
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+  - name: data_field
+    physicalType: VARCHAR(256)
+    logicalType: string
