@@ -65,7 +65,7 @@ class _SpecView:
 
     info: _InfoView
     models: dict
-    tags: Optional[list[str]]
+    tags: list[str] | None = None
 
 
 @dataclass
