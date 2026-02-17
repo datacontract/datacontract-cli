@@ -87,10 +87,10 @@
       for field_name, field in model.fields.items() %}
         {{ field_name|lower|e }} {{ field.description|lower|e if field.description else '' }} {%
       endfor %}
-    {% endfor %} {%
-    for tag in contract.spec.tags if contract.spec.tags %}
+    {% endfor %} {% if contract.spec.tags %}{%
+    for tag in contract.spec.tagss %}
       tag {{ tag|lower|e }}
-    {% endfor %}
+    {% endfor %}{% endif %}
   ">
                 <a href="{{contract.html_link|e}}" >
                   <div class="flex w-full justify-between space-x-1 p-6 pb-4">
