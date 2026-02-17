@@ -63,6 +63,7 @@ class _SpecView:
     """Unified spec view for templates, compatible with DCS template structure."""
     info: _InfoView
     models: dict
+    tags: Optional[list[str]]
 
 
 @dataclass
@@ -107,6 +108,7 @@ class DataContractView:
                 description=description,
             ),
             models=models,
+            tags=self.odcs.tags,
         )
 
 
