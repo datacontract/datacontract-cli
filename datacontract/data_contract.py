@@ -32,6 +32,7 @@ class DataContract:
         inline_definitions: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
+        test_engine: str = "soda",
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -44,6 +45,7 @@ class DataContract:
         self._duckdb_connection = duckdb_connection
         self._inline_definitions = inline_definitions
         self._ssl_verification = ssl_verification
+        self._test_engine = test_engine
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -103,7 +105,14 @@ class DataContract:
                 inline_definitions=self._inline_definitions,
             )
 
-            execute_data_contract_test(data_contract, run, self._server, self._spark, self._duckdb_connection)
+            execute_data_contract_test(
+                data_contract,
+                run,
+                self._server,
+                self._spark,
+                self._duckdb_connection,
+                self._test_engine,
+            )
 
         except DataContractException as e:
             run.checks.append(

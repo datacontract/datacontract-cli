@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
 )
+from datacontract.engines.dqx.check_dqx_execute import check_dqx_execute
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.soda.check_soda_execute import check_soda_execute
 from datacontract.model.exceptions import DataContractException
@@ -27,6 +28,7 @@ def execute_data_contract_test(
     server_name: str = None,
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
+    test_engine: str = "soda",
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -53,13 +55,28 @@ def execute_data_contract_test(
     if server.type == "api":
         server = process_api_response(run, server)
 
-    run.checks.extend(create_checks(data_contract, server))
+    normalized_test_engine = test_engine.lower() if test_engine is not None else "soda"
+
+    if normalized_test_engine not in ["soda", "dqx"]:
+        raise DataContractException(
+            type="test",
+            name="Check that test engine is supported",
+            result=ResultEnum.error,
+            reason=f"Unsupported test engine '{test_engine}'. Supported values are: soda, dqx.",
+            engine="datacontract",
+        )
+
+    if normalized_test_engine == "soda":
+        run.checks.extend(create_checks(data_contract, server))
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
-    if server.format == "json" and server.type != "kafka":
-        check_jsonschema(run, data_contract, server)
-    check_soda_execute(run, data_contract, server, spark, duckdb_connection)
+    if normalized_test_engine == "dqx":
+        check_dqx_execute(run, data_contract, server, spark)
+    else:
+        if server.format == "json" and server.type != "kafka":
+            check_jsonschema(run, data_contract, server)
+        check_soda_execute(run, data_contract, server, spark, duckdb_connection)
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:

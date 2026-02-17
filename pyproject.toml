@@ -62,6 +62,10 @@ databricks = [
   "numpy>=1.26.4,<2.0.0",  # pyspark incompatible with numpy 2.0
 ]
 
+dqx = [
+  "databricks-labs-dqx[datacontract]>=0.13.0,<1.0.0",
+]
+
 iceberg = [
   "pyiceberg==0.10.0"
 ]
@@ -134,7 +138,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,athena,trino,dbt,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,dqx,sqlserver,s3,athena,trino,dbt,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version
