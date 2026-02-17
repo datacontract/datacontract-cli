@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix mkdir TOCTOU race causing silent JUnit write failure (#1050)
 - Fix validation failure for field names with special chars on Databricks (#1049)
 - Add Azure support for field name quoting in schema checks (#1025)
+- Fixed catalog export SpecView not having a tags property for the index.html template
 
 ## [0.11.4] - 2026-01-19
 
