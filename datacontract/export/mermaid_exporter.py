@@ -1,4 +1,4 @@
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, Relationship
 
 from datacontract.export.exporter import Exporter
 
@@ -7,7 +7,7 @@ class MermaidExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_mermaid(data_contract)
 
-def _get_custom_property_value(prop: SchemaProperty, key: str):
+def _get_custom_property_value(prop: Relationship, key: str):
     """Get a custom property value."""
     if prop.customProperties is None:
         return None
