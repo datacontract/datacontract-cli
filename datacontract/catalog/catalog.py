@@ -32,7 +32,11 @@ def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
     odcs = data_contract.get_data_contract()
     file_without_suffix = file.with_suffix(".html")
     html_filepath = path / file_without_suffix
-    html_filepath.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        html_filepath.parent.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        if not html_filepath.parent.is_dir():
+            raise
     with open(html_filepath, "w", encoding="utf-8") as f:
         f.write(html)
     contracts.append(

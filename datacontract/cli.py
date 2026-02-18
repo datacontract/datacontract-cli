@@ -431,7 +431,11 @@ def catalog(
     enable_debug_logging(debug)
 
     path = Path(output)
-    path.mkdir(parents=True, exist_ok=True)
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        if not path.is_dir():
+            raise
     console.print(f"Created {output}")
 
     contracts = []
