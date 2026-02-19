@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix BigQuery import for repeated fields 
 - Make Markdown export compatible with XHTML by replacing `<br>` with `<br />` (#1030)
+- Add ADC/WIF and impersonation support for BigQuery (#1064)
+
 
 ## [0.11.4] - 2026-01-19
 
