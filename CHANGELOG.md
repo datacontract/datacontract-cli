@@ -7,21 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
-
-- Added JSON output format for test results (`--output-format json`)
+## [0.11.5] - 2026-02-19
 
 ### Fixed
 
-
-## [0.11.5] - 2026-02-20
-
-### Fixed
-
-- Fix BigQuery import for repeated fields 
+- Fix BigQuery import for repeated fields (#1017)
 - Make Markdown export compatible with XHTML by replacing `<br>` with `<br />` (#1030)
 - Add ADC/WIF and impersonation support for BigQuery (#1064)
-
+- Fix Snowflake quoted identifiers by enabling double-quote quoting (#1053)
+- Fix retention duration crash for numeric ODCS values (#1051)
+- Fix physicalType bypass for precision and scale conversion (#1043)
+- Fix mkdir TOCTOU race causing silent JUnit write failure (#1050)
+- Fix validation failure for field names with special chars on Databricks (#1049)
+- Add Azure support for field name quoting in schema checks (#1025)
+- Added JSON output format for test results (`--output-format json`)
 
 ## [0.11.4] - 2026-01-19
 
