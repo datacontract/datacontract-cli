@@ -48,6 +48,20 @@ schema:
         items:
           name: item
           logicalType: string
+
+      - name: users
+        logicalType: array
+        items:
+          name: User
+          logicalType: object
+          properties:
+          - name: id
+            logicalType: string
+
+      - name: geo_description
+        logicalType: string
+        required: false
+        
       - name: tags
         logicalType: string
         description: Field tags
@@ -81,6 +95,10 @@ enum Category {
 
 // Details of Product.
 message Product {
+message User {
+    string id = 1;
+  }
+
   // Enum field category
   Category category = 1;
   // Field id
@@ -91,8 +109,10 @@ message Product {
   double price = 4;
   // List of Review
   repeated string reviews = 5;
+  repeated User users = 6;
+  optional string geo_description = 7;
   // Field tags
-  string tags = 6;
+  string tags = 8;
 }
 
 // Details of Review.
@@ -105,8 +125,8 @@ message Review {
   string user = 3;
 }
 
-""".strip()
 
+    """.strip()
     result = to_protobuf(data_contract).strip()
 
     assert result == expected_protobuf
