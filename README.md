@@ -521,10 +521,11 @@ servers:
 
 #### BigQuery
 
-We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
+We support authentication to BigQuery using Service Account Key or Application Default Credentials (ADC). ADC supports Workload Identity Federation (WIF), GCE metadata server, and `gcloud auth application-default login`. The used Service Account should include the roles:
 * BigQuery Job User
 * BigQuery Data Viewer
 
+When no `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is set, the CLI falls back to ADC/WIF automatically via Soda's `use_context_auth`.
 
 ##### Example
 
@@ -545,7 +546,8 @@ models:
 
 | Environment Variable                         | Example                   | Description                                             |
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
-| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery. If this environment variable isn't set, the cli tries to use `GOOGLE_APPLICATION_CREDENTIALS` as a fallback, so if you have that set for using their Python library anyway, it should work seamlessly. |
+| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
+| `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
 
 
 #### Azure
