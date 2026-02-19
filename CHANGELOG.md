@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add ADC/WIF and impersonation support for BigQuery (#1064)
 
 
+### Added
+
+- Mermaid Exporter - Added mapping `relationships[].customProperties.label` to override the default display of the relationship property/name so diagrams can show UML-like "Association Names" when desired.
+
 ## [0.11.4] - 2026-01-19
 
 ### Changed

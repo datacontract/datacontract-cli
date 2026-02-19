@@ -1,4 +1,4 @@
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import OpenDataContractStandard, Relationship
 
 from datacontract.export.exporter import Exporter
 
@@ -7,6 +7,14 @@ class MermaidExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_mermaid(data_contract)
 
+def _get_custom_property_value(prop: Relationship, key: str):
+    """Get a custom property value."""
+    if prop.customProperties is None:
+        return None
+    for cp in prop.customProperties:
+        if cp.property == key:
+            return cp.value
+    return None
 
 def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
     """Convert ODCS data contract to Mermaid ER diagram."""
@@ -37,13 +45,15 @@ def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
                     if prop.relationships:
                         for rel in prop.relationships:
                             ref_target = getattr(rel, 'to', None) or getattr(rel, 'ref', None)
+                            custom_label = _get_custom_property_value(rel, "label")
+                            
                             if ref_target:
                                 references = ref_target.replace(".", "·")
                                 parts = references.split("·")
                                 referenced_model = _sanitize_name(parts[0]) if len(parts) > 0 else ""
                                 referenced_field = _sanitize_name(parts[1]) if len(parts) > 1 else ""
                                 if referenced_model:
-                                    label = referenced_field or clean_name
+                                    label = custom_label or referenced_field or clean_name
                                     mmd_references.append(f'"**{referenced_model}**" ||--o{{ "**{clean_model}**" : {label}')
 
             mmd_entity += f'\t"**{clean_model}**" {{\n{entity_block}}}\n'
