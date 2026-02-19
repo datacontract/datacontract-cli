@@ -101,19 +101,19 @@ Orders with their line items are in their current state (no history included).''
 
 Table orders {{
     note: "One record per order. Includes cancelled and deleted orders."
-    order_id VARCHAR [pk, unique, not null, note: "An internal ID that identifies an order in the online shop."]
-    order_timestamp TIMESTAMP WITH TIME ZONE [not null, note: "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful."]
-    order_total STRUCT(amount STRUCT(sum number, currency VARCHAR), due_date DATE, discount DOUBLE) [not null, note: "Total amount the smallest monetary unit (e.g., cents)."]
-    customer_id VARCHAR [null, note: "Unique identifier for the customer."]
-    customer_email_address VARCHAR [not null, note: "The email address, as entered by the customer. The email address was not verified."]
-    processed_timestamp TIMESTAMP WITH TIME ZONE [not null, note: "The timestamp when the record was processed by the data platform."]
+    order_id STRING [pk, unique, not null, note: "An internal ID that identifies an order in the online shop."]
+    order_timestamp TIMESTAMP [not null, note: "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful."]
+    order_total STRUCT(amount STRUCT(sum NUMBER, currency STRING), due_date DATE, discount DOUBLE) [not null, note: "Total amount the smallest monetary unit (e.g., cents)."]
+    customer_id STRING [null, note: "Unique identifier for the customer."]
+    customer_email_address STRING [not null, note: "The email address, as entered by the customer. The email address was not verified."]
+    processed_timestamp TIMESTAMP [not null, note: "The timestamp when the record was processed by the data platform."]
 }}
 
 Table line_items {{
     note: "A single article that is part of an order."
-    lines_item_id VARCHAR [pk, unique, not null, note: "Primary key of the lines_item_id table"]
-    order_id VARCHAR [null, note: "An internal ID that identifies an order in the online shop."]
-    sku VARCHAR [null, note: "The purchased article number"]
+    lines_item_id STRING [pk, unique, not null, note: "Primary key of the lines_item_id table"]
+    order_id STRING [null, note: "An internal ID that identifies an order in the online shop."]
+    sku STRING [null, note: "The purchased article number"]
 }}
 Ref: line_items.order_id > orders.order_id
 """.format(formatted_date, datacontract_cli_version)

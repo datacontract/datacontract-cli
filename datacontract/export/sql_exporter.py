@@ -1,4 +1,3 @@
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
@@ -62,9 +61,7 @@ def _to_sql_query(model_name: str, model_value: SchemaObject, server_type: str) 
     return result
 
 
-def to_sql_ddl(
-    data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None
-) -> str:
+def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None) -> str:
     if data_contract is None:
         return ""
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -81,6 +78,7 @@ def to_sql_ddl(
     for srv in servers:
         if srv.type == "snowflake":
             server_type = "snowflake"
+            table_prefix = srv.database + "." + srv.schema_ + "."
             break
         if srv.type == "postgres":
             server_type = "postgres"
@@ -98,7 +96,10 @@ def to_sql_ddl(
     result += f"-- SQL Dialect: {server_type}\n"
 
     for schema_obj in data_contract.schema_:
-        result += _to_sql_table(table_prefix + schema_obj.name, schema_obj, server_type)
+        if schema_obj.physicalType == "table" or None:
+            result += _to_sql_table(table_prefix + schema_obj.name, schema_obj, server_type)
+        elif schema_obj.physicalType == "view":
+            result += _to_sql_view(table_prefix + schema_obj.name, schema_obj, server_type)
 
     return result.strip()
 
@@ -115,12 +116,24 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
     fields = len(properties)
     current_field_index = 1
 
+    def _get_sorted_primary_keys(props: list) -> list:
+        pk_list = []
+        for p in props:
+            if p.primaryKey is True:
+                pk_list.append(p)
+
+        pk_list.sort(key=lambda p: p.primaryKeyPosition)
+        return pk_list
+
+    pks = _get_sorted_primary_keys(properties)
+
     for prop in properties:
         type_str = convert_to_sql_type(prop, server_type)
         result += f"  {prop.name} {type_str}"
         if prop.required:
             result += " not null"
-        if prop.primaryKey:
+        if (prop.primaryKey and ((prop.primaryKeyPosition == -1 or prop.primaryKeyPosition is None)) or (pks and len(pks) == 1)):
+            # last position is the finest grain a.k.a the surroage key
             result += " primary key"
         if server_type == "databricks" and prop.description is not None:
             result += f' COMMENT "{_escape(prop.description)}"'
@@ -130,6 +143,14 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
             result += ","
         result += "\n"
         current_field_index += 1
+
+    # COMPOSITE KEY management in databricks with dedicated PRIMARY KEYS constraints
+    if server_type not in ["databricks","snowflake"] and pks and len(pks) > 1:
+        result += f"  , CONSTRAINT PK_{model.name} PRIMARY KEY({','.join([pk.name for pk in pks])})"
+    # COMPOSITE KEY management in snowflake with UNIQUE constraints
+    if server_type == "snowflake" and pks and len(pks) > 1:
+        result += f"  , UNIQUE({','.join([pk.name for pk in pks if pk.primaryKeyPosition >= 0])})"
+
     result += ")"
     if server_type == "databricks" and model.description is not None:
         result += f' COMMENT "{_escape(model.description)}"'
@@ -143,3 +164,43 @@ def _escape(text: str | None) -> str | None:
     if text is None:
         return None
     return text.replace('"', '\\"')
+
+
+def _to_sql_view(model_name: str, model: SchemaObject, server_type: str = "snowflake") -> str:
+    if server_type in ("databricks", "snowflake", "postgres"):
+        # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
+        # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-view
+        # For Snowflake and Postgres, CREATE OR REPLACE VIEW is also supported
+        result = f"CREATE OR REPLACE VIEW {model_name} (\n"
+    else:
+        result = f"CREATE VIEW {model_name} (\n"
+
+    properties = model.properties or []
+    fields = len(properties)
+    current_field_index = 1
+    select_statement = "\nSELECT\n"
+    transformSourceObjects = {}
+
+    for prop in properties:
+        if prop.transformSourceObjects:
+            transformSourceObjects = {object for object in prop.transformSourceObjects}
+
+        result += f"  {prop.name}"
+        select_statement += f"    {prop.name},\n"
+
+        if server_type == "databricks" and prop.description is not None:
+            result += f' COMMENT "{_escape(prop.description)}"'
+        if server_type == "snowflake" and prop.description is not None and prop.description != "":
+            result += f" COMMENT '{_escape(prop.description)}'"
+
+        if current_field_index < fields:
+            result += ","
+        result += "\n"
+        current_field_index += 1
+    result += ")"
+    if server_type == "databricks" and model.description is not None:
+        result += f' COMMENT "{_escape(model.description)}"'
+    if server_type == "snowflake" and model.description is not None and model.description != "":
+        result += f" COMMENT='{_escape(model.description)}'"
+    result += f" AS {select_statement.strip()[:-1]}\n FROM {' JOIN '.join(transformSourceObjects)};\n"
+    return result
