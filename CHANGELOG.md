@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix BigQuery import for repeated fields 
 - Make Markdown export compatible with XHTML by replacing `<br>` with `<br />` (#1030)
-- Fix parser error for CSV / Parquet table names containing special characters 
+- Fix parser error for DuckDB table/column names containing special characters (#1063)
 
 ## [0.11.4] - 2026-01-19
 
