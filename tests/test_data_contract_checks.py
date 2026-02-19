@@ -201,3 +201,26 @@ def test_check_property_is_present_no_snowflake_quoting():
     checks = impl['checks for "my_table"']
     schema_check = checks[0]["schema"]
     assert schema_check["fail"]["when required column missing"] == ["name"]
+
+
+def test_check_property_is_present_duckdb_hyphenated_model_name():
+    """Test that model names with hyphens are double-quoted for DuckDB-backed sources (s3/gcs/azure/local)."""
+    quoting_config = QuotingConfig(quote_model_name=True)
+
+    check = check_property_is_present("test-1", "name", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl['checks for "test-1"']
+    schema_check = checks[0]["schema"]
+    assert schema_check["fail"]["when required column missing"] == ["name"]
+
+
+def test_check_property_required_duckdb_hyphenated_model_name():
+    """Test that model names with hyphens are double-quoted in required checks for DuckDB sources."""
+    quoting_config = QuotingConfig(quote_model_name=True)
+
+    check = check_property_required("test-1", "name", quoting_config)
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl['checks for "test-1"']
+    assert any("missing_count(name) = 0" in str(c) for c in checks)

@@ -86,7 +86,7 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
     config = QuotingConfig(
         quote_field_name=type1 in ["postgres", "sqlserver", "azure", "snowflake"],
         quote_field_name_with_backticks=type1 in ["databricks"],
-        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake"],
+        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake", "s3", "gcs", "azure", "local"],
         quote_model_name_with_backticks=type1 == "bigquery",
     )
     quoting_config = config
