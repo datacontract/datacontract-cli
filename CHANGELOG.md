@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Fix parser error for CSV / Parquet table names containing special characters (#1065)
+
 ## [0.11.5] - 2026-02-19
 
 ### Fixed
