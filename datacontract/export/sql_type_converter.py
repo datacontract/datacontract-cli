@@ -16,9 +16,13 @@ class FieldLike(Protocol):
 
 
 def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
-    """Get the type from a field, handling both ODCS and DCS. Prefers physicalType for accuracy."""
+    """Get the type from a field, handling both ODCS and DCS.
+
+    For ODCS SchemaProperty, prefers physicalType when available as it carries
+    more precision (e.g. "long" vs "integer" for 64-bit integers). Falls back
+    to logicalType when physicalType is not set.
+    """
     if isinstance(field, SchemaProperty):
-        # Prefer physicalType for accurate type mapping
         if field.physicalType:
             return field.physicalType
         return field.logicalType
@@ -94,7 +98,20 @@ def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Uni
 
 
 def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> str:
-    physical_type = _get_config_value(field, "physicalType")
+    # Check for explicit physical type override.
+    # For ODCS SchemaProperty: use physicalType directly when logicalType is not
+    # set, indicating the user explicitly set a native SQL type (e.g. "TIMESTAMP(6)",
+    # "VARCHAR(255)"). When both are set, physicalType may contain generic
+    # source-system types (e.g. Avro's "long", DCS's "varchar") that need
+    # server-specific mapping via the converters below.
+    # Also check customProperties for a "physicalType" override (explicit).
+    # For legacy DCS fields: check config["physicalType"].
+    if isinstance(field, SchemaProperty):
+        physical_type = _get_config_value(field, "physicalType")
+        if not physical_type and field.physicalType and not field.logicalType:
+            physical_type = field.physicalType
+    else:
+        physical_type = _get_config_value(field, "physicalType")
     if physical_type:
         return physical_type
 
@@ -580,19 +597,28 @@ def convert_type_to_impala(field: Union[SchemaProperty, FieldLike]) -> None | st
     return None
 
 
-def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
-    """Convert ODCS logical types to Oracle types.
+def convert_type_to_oracle(field: Union[SchemaProperty, FieldLike]) -> None | str:
+    """Convert field types to Oracle types.
 
-    Uses physicalType if set, otherwise maps ODCS logical types to Oracle equivalents.
+    For ODCS SchemaProperty: uses physicalType directly when set (Oracle contracts
+    explicitly set physicalType to native Oracle types like TIMESTAMP(6), VARCHAR2),
+    then falls back to logicalType mapping.
     Reference: https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Data-Types.html
     """
-    if schema_property.physicalType:
-        return schema_property.physicalType
+    oracle_type = _get_config_value(field, "oracleType")
+    if oracle_type:
+        return oracle_type
 
-    if not schema_property.logicalType:
+    # For Oracle, physicalType is typically the native Oracle type set by the user
+    if isinstance(field, SchemaProperty):
+        if field.physicalType:
+            return field.physicalType
+        logical_type = field.logicalType
+    else:
+        logical_type = field.type
+
+    if not logical_type:
         return None
-
-    logical_type = schema_property.logicalType
 
     # ODCS logical type mappings
     mapping = {
