@@ -83,15 +83,15 @@ schema:
         physicalType: DOUBLE PRECISION
         description: 64-bit floating point number
       - name: field_timestamp
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
         description: Timestamp with fractional second precision of 6, no timezones
       - name: field_timestamp_tz
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP WITH TIME ZONE
         description: Timestamp with fractional second precision of 6, with timezones (TZ)
       - name: field_timestamp_ltz
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMPLTZ
         description: Timestamp with fractional second precision of 6, with local timezone (LTZ)
       - name: field_interval_year
@@ -176,7 +176,7 @@ schema:
         physicalType: VARCHAR(30)
         required: true
       - name: create_date
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
         required: true
       - name: changed_by
@@ -185,7 +185,7 @@ schema:
           maxLength: 30
         physicalType: VARCHAR(30)
       - name: change_date
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
       - name: name
         logicalType: string

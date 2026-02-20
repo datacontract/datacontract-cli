@@ -34,6 +34,7 @@ def create_schema_object(
     description: str = None,
     business_name: str = None,
     properties: List[SchemaProperty] = None,
+    tags: List[str] = None,
 ) -> SchemaObject:
     """Create a SchemaObject (equivalent to DCS Model)."""
     schema = SchemaObject(
@@ -48,6 +49,8 @@ def create_schema_object(
         schema.businessName = business_name
     if properties:
         schema.properties = properties
+    if tags:
+        schema.tags = tags
     return schema
 
 
