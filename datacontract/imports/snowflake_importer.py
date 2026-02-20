@@ -350,7 +350,7 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
     password_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_PASSWORD", None)
     account_connect = account
     role_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_ROLE", None)
-    authenticator_connect = "externalbrowser" if password_connect is None else "snowflake"
+    authenticator_connect = "externalbrowser" if password_connect is None else os.environ.get("DATACONTRACT_SNOWFLAKE_AUTHENTICATOR", "snowflake")
     warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
     database_connect = databasename or "DEMO_DB"
     schema_connect = schema or "PUBLIC"
