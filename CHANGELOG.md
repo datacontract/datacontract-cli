@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added JSON output format for test results (`--output-format json`)
+
 ## [0.11.5] - 2026-02-19
 
 ### Fixed
@@ -20,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix mkdir TOCTOU race causing silent JUnit write failure (#1050)
 - Fix validation failure for field names with special chars on Databricks (#1049)
 - Add Azure support for field name quoting in schema checks (#1025)
-- Added JSON output format for test results (`--output-format json`)
 
 ## [0.11.4] - 2026-01-19
 
