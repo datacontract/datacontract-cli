@@ -821,6 +821,16 @@ For example:
 | `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
 | `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
 
+##### EV Authentication options
+
+| Soda optionnal parameter | Environment Variable                            |
+|--------------------------|-------------------------------------------------|
+| `authenticator`          | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR`          |
+| `private_key`            | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`            |
+| `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
+| `private_key_path`       | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`       |
+
+
 Beware, that parameters:
 * `account`
 * `database`
@@ -1439,6 +1449,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │                                                                       [default: None]            │
 │    --source                                 TEXT                      The path to the file that  │
 │                                                                       should be imported.        │
+│                                                                       also snowflake account     │
 │                                                                       [default: None]            │
 │    --dialect                                TEXT                      The SQL dialect to use     │
 │                                                                       when importing SQL files,  │
@@ -1502,6 +1513,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │                                                                       [default: None]            │
 │    --id                                     TEXT                      The identifier for the the │
 │                                                                       data contract.             │
+│    --database                               TEXT                      Snowflake target database  │
 │                                                                       [default: None]            │
 │    --debug                    --no-debug                              Enable debug logging       │
 │                                                                       [default: no-debug]        │
@@ -1716,6 +1728,20 @@ Example:
 
 ```bash
 datacontract import --format protobuf --source "test.proto"
+```
+
+#### snowflake
+
+Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
+Multiple authentification are supported, 
+login/password using the `DATACONTRACT_SNOWFLAKE_ ...` test environement variable are setup,
+MFA using external browser is selected when `DATACONTRACT_SNOWFLAKE_PASSWORD` is missing
+TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CONNECTION_NAME` environment variable is defined
+
+Example:
+
+```bash
+datacontract import --format snowflake --source account.canada-central.azure --database databaseName --schema schemaName
 ```
 
 
