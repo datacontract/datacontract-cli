@@ -14,9 +14,7 @@ from datacontract.imports.odcs_helper import (
 
 
 class GlueImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_glue(source, import_args.get("glue_table"))
 
 

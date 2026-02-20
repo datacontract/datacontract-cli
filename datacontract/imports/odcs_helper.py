@@ -130,9 +130,7 @@ def create_property(
 
     # Custom properties
     if custom_properties:
-        prop.customProperties = [
-            CustomProperty(property=k, value=v) for k, v in custom_properties.items()
-        ]
+        prop.customProperties = [CustomProperty(property=k, value=v) for k, v in custom_properties.items()]
 
     return prop
 

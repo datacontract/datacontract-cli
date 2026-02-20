@@ -41,9 +41,7 @@ def data_contract_complex() -> OpenDataContractStandard:
 
 @pytest.fixture
 def odcs() -> OpenDataContractStandard:
-    return resolve.resolve_data_contract_from_location(
-        "./fixtures/great-expectations/odcs.yaml"
-    )
+    return resolve.resolve_data_contract_from_location("./fixtures/great-expectations/odcs.yaml")
 
 
 @pytest.fixture

@@ -95,6 +95,7 @@ def import_dbt_manifest(
 
     # Store dbt version as custom property
     from open_data_contract_standard.model import CustomProperty
+
     odcs.customProperties = [CustomProperty(property="dbt_version", value=manifest.metadata.dbt_version)]
 
     adapter_type = manifest.metadata.adapter_type

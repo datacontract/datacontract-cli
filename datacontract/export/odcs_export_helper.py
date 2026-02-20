@@ -10,9 +10,7 @@ from open_data_contract_standard.model import (
 )
 
 
-def get_schema_by_name(
-    data_contract: OpenDataContractStandard, name: str
-) -> Optional[SchemaObject]:
+def get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[SchemaObject]:
     """Get a schema object by name from the data contract."""
     if data_contract.schema_ is None:
         return None
@@ -26,9 +24,7 @@ def get_all_schema_names(data_contract: OpenDataContractStandard) -> List[str]:
     return [s.name for s in data_contract.schema_]
 
 
-def get_server_by_name(
-    data_contract: OpenDataContractStandard, name: str
-) -> Optional[Server]:
+def get_server_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[Server]:
     """Get a server by name from the data contract."""
     if data_contract.servers is None:
         return None
@@ -204,7 +200,7 @@ class PropertyAdapter:
         if self._prop.relationships is None:
             return None
         for rel in self._prop.relationships:
-            if hasattr(rel, 'ref'):
+            if hasattr(rel, "ref"):
                 return rel.ref
         return None
 
@@ -237,6 +233,7 @@ class PropertyAdapter:
             return None
         # Create a minimal property for the key type
         from open_data_contract_standard.model import SchemaProperty
+
         key_prop = SchemaProperty(name="key")
         key_prop.logicalType = keys_prop if isinstance(keys_prop, str) else "string"
         return PropertyAdapter(key_prop)
@@ -248,6 +245,7 @@ class PropertyAdapter:
         if values_prop is None:
             return None
         from open_data_contract_standard.model import SchemaProperty
+
         val_prop = SchemaProperty(name="value")
         val_prop.logicalType = values_prop if isinstance(values_prop, str) else "string"
         return PropertyAdapter(val_prop)
@@ -295,10 +293,7 @@ class SchemaAdapter:
         """Get primary key columns."""
         if self._schema.properties is None:
             return None
-        pk_cols = [
-            p.name for p in self._schema.properties
-            if p.primaryKey
-        ]
+        pk_cols = [p.name for p in self._schema.properties if p.primaryKey]
         return pk_cols if pk_cols else None
 
     @property

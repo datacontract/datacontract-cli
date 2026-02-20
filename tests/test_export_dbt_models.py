@@ -139,7 +139,6 @@ models:
     assert result == yaml.safe_load(expected_dbt_model)
 
 
-
 def test_to_dbt_models_with_model_level_composite_primary_key():
     """Test model-level primaryKey with multiple columns generates dbt_utils.unique_combination_of_columns"""
     # Create test data with model-level composite primaryKey using ODCS
@@ -152,8 +151,12 @@ def test_to_dbt_models_with_model_level_composite_primary_key():
                 name="test_table",
                 physicalType="table",
                 properties=[
-                    SchemaProperty(name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
-                    SchemaProperty(name="user_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=2),
+                    SchemaProperty(
+                        name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1
+                    ),
+                    SchemaProperty(
+                        name="user_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=2
+                    ),
                     SchemaProperty(name="product_id", logicalType="string", required=True),
                 ],
             )
@@ -208,7 +211,9 @@ def test_to_dbt_models_with_single_column_primary_key():
                 name="test_table",
                 physicalType="table",
                 properties=[
-                    SchemaProperty(name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1),
+                    SchemaProperty(
+                        name="order_id", logicalType="string", required=True, primaryKey=True, primaryKeyPosition=1
+                    ),
                     SchemaProperty(name="user_id", logicalType="string", required=True),
                     SchemaProperty(name="product_id", logicalType="string", required=True),
                 ],

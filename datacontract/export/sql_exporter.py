@@ -1,4 +1,3 @@
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
@@ -62,9 +61,7 @@ def _to_sql_query(model_name: str, model_value: SchemaObject, server_type: str) 
     return result
 
 
-def to_sql_ddl(
-    data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None
-) -> str:
+def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None) -> str:
     if data_contract is None:
         return ""
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:

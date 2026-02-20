@@ -7,11 +7,7 @@ import yaml
 from datacontract.model.run import ResultEnum, Run
 
 
-def write_junit_test_results(run: Run, console, output_path: Path):
-    if not output_path:
-        console.print("No output path specified for JUnit test results. Skip writing JUnit test results.")
-        return
-
+def write_junit_test_results(run: Run, output_path: Path):
     testsuite = ET.Element(
         "testsuite",
         id=str(run.runId),
@@ -89,7 +85,6 @@ def write_junit_test_results(run: Run, console, output_path: Path):
             raise
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(xml_str_pretty)
-    console.print(f"JUnit test results written to {output_path}")
 
 
 def to_testcase_name(check):

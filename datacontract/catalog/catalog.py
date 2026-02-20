@@ -52,6 +52,7 @@ def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
 @dataclass
 class _InfoView:
     """Unified info view for templates."""
+
     title: str
     version: str
     owner: Optional[str]
@@ -61,6 +62,7 @@ class _InfoView:
 @dataclass
 class _SpecView:
     """Unified spec view for templates, compatible with DCS template structure."""
+
     info: _InfoView
     models: dict
 

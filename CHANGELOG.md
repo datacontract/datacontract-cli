@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added JSON output format for test results (`--output-format json`)
+
+### Fixed
+
+
+## [0.11.5] - 2026-02-20
+
 ### Fixed
 
 - Fix BigQuery import for repeated fields 

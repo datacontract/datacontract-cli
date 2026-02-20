@@ -279,7 +279,9 @@ def _contract_to_avro_idl_ir(contract: OpenDataContractStandard) -> AvroIDLProto
     inline_definitions_into_data_contract(inlined_contract)
     protocol_name = _model_name_to_identifier(contract.name) if contract.name else None
     description = contract.description.purpose if contract.description and contract.description.purpose else None
-    return AvroIDLProtocol(name=protocol_name, description=description, model_types=generate_model_types(inlined_contract))
+    return AvroIDLProtocol(
+        name=protocol_name, description=description, model_types=generate_model_types(inlined_contract)
+    )
 
 
 def _write_indent(indent: int, stream: typing.TextIO):

@@ -45,9 +45,7 @@ def send_messages_to_topic(kafka: KafkaContainer, messages_file_path: str, topic
     # This prevents race conditions with Spark trying to read before topic metadata is available
     _ensure_topic_exists(bootstrap_server, topic_name)
 
-    producer = KafkaProducer(
-        bootstrap_servers=bootstrap_server, value_serializer=lambda v: v.encode("utf-8")
-    )
+    producer = KafkaProducer(bootstrap_servers=bootstrap_server, value_serializer=lambda v: v.encode("utf-8"))
     messages_sent = 0
 
     with open(messages_file_path) as messages_file:

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 def _import_duckdb():
     try:
         import duckdb
+
         return duckdb
     except ImportError:
         raise ImportError("duckdb is required for this server type. Install with: pip install datacontract-cli[duckdb]")
@@ -89,7 +90,7 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
     if converted_types:
         # Create empty table with contract schema
         columns_def = [f'"{col_name}" {col_type}' for col_name, col_type in converted_types.items()]
-        create_empty_table = f"""CREATE TABLE "{model_name}" ({', '.join(columns_def)});"""
+        create_empty_table = f"""CREATE TABLE "{model_name}" ({", ".join(columns_def)});"""
         con.sql(create_empty_table)
 
         # Read columns existing in both current data contract and data
@@ -98,7 +99,7 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
             INTERSECT SELECT column_name
             FROM information_schema.columns
             WHERE table_name = '{model_name}'""").fetchall()
-        selected_columns = ', '.join([column[0] for column in intersecting_columns])
+        selected_columns = ", ".join([column[0] for column in intersecting_columns])
 
         # Insert data into table by name, but only columns existing in contract and data
         insert_data_sql = f"""INSERT INTO {model_name} BY NAME
@@ -110,6 +111,7 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
             f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
         )
 
+
 def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     if schema_obj is None:
         return None
@@ -118,6 +120,7 @@ def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
         for prop in schema_obj.properties:
             columns[prop.name] = convert_to_duckdb_csv_type(prop)
     return columns
+
 
 def to_parquet_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     """Get proper SQL types for Parquet (preserves decimals, etc.)"""
@@ -128,6 +131,7 @@ def to_parquet_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
         for prop in schema_obj.properties:
             columns[prop.name] = convert_to_duckdb(prop)
     return columns
+
 
 def to_json_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     if schema_obj is None:
@@ -246,9 +250,8 @@ def setup_azure_connection(con, server: Server):
     client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
     client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
     storage_account = (
-        to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location
-            else None
-        )
+        to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
+    )
 
     if tenant_id is None:
         raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
@@ -281,6 +284,7 @@ def setup_azure_connection(con, server: Server):
             CLIENT_SECRET '{client_secret}'
         );
         """)
+
 
 def to_azure_storage_account(location: str) -> str | None:
     """

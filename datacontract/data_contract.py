@@ -202,9 +202,7 @@ class DataContract:
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        odcs_imported = importer_factory.create(format).import_source(
-            source=source, import_args=kwargs
-        )
+        odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
 
         cls._overwrite_id_in_odcs(odcs_imported, id)
         cls._overwrite_owner_in_odcs(odcs_imported, owner)

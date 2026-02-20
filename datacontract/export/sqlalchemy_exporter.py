@@ -41,9 +41,7 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
-def to_sqlalchemy_model_str(
-    odcs: OpenDataContractStandard, sql_server_type: str = "", server=None
-) -> str:
+def to_sqlalchemy_model_str(odcs: OpenDataContractStandard, sql_server_type: str = "", server=None) -> str:
     server_obj = _get_server_by_name(odcs, server) if server else None
     classdefs = []
     if odcs.schema_:
@@ -160,7 +158,10 @@ def constant_field_value(field_name: str, prop: SchemaProperty) -> tuple[ast.Cal
         raise RuntimeError(f"Unsupported field type {prop_type}.")
 
     return Column(
-        new_type, nullable=not prop.required, comment=prop.description, primary_key=prop.primaryKey if prop.primaryKey else None
+        new_type,
+        nullable=not prop.required,
+        comment=prop.description,
+        primary_key=prop.primaryKey if prop.primaryKey else None,
     ), None
 
 

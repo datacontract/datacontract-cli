@@ -58,9 +58,7 @@ def resolve_data_contract(
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
     if data_contract_location is not None:
-        return resolve_data_contract_from_location(
-            data_contract_location, schema_location, inline_definitions
-        )
+        return resolve_data_contract_from_location(data_contract_location, schema_location, inline_definitions)
     elif data_contract_str is not None:
         return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
     elif data_contract is not None:

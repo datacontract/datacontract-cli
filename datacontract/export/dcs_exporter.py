@@ -88,13 +88,13 @@ def to_dcs(data_contract: OpenDataContractStandard) -> DataContractSpecification
     if data_contract.description:
         terms = Terms()
         # Check for structured description
-        if hasattr(data_contract, 'description') and data_contract.description:
+        if hasattr(data_contract, "description") and data_contract.description:
             if isinstance(data_contract.description, str):
                 terms.description = data_contract.description
-            elif hasattr(data_contract.description, 'purpose'):
+            elif hasattr(data_contract.description, "purpose"):
                 terms.description = data_contract.description.purpose
-                terms.usage = getattr(data_contract.description, 'usage', None)
-                terms.limitations = getattr(data_contract.description, 'limitations', None)
+                terms.usage = getattr(data_contract.description, "usage", None)
+                terms.limitations = getattr(data_contract.description, "limitations", None)
         dcs.terms = terms
 
     # Convert SLA properties to service levels

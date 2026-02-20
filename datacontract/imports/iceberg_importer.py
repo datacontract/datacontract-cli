@@ -1,4 +1,3 @@
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 from pydantic import ValidationError
 from pyiceberg import types as iceberg_types
@@ -14,9 +13,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 class IcebergImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         schema = load_and_validate_iceberg_schema(source)
         return import_iceberg(
             schema,
@@ -85,7 +82,9 @@ def _property_from_nested_field(nested_field: iceberg_types.NestedField) -> Sche
     physical_type = str(nested_field.field_type)
 
     if logical_type == "array":
-        items_prop = _type_to_property("items", nested_field.field_type.element_type, nested_field.field_type.element_required)
+        items_prop = _type_to_property(
+            "items", nested_field.field_type.element_type, nested_field.field_type.element_required
+        )
     elif isinstance(nested_field.field_type, iceberg_types.MapType):
         # For map types, store key/value types in customProperties and use "map" as physicalType
         physical_type = "map"

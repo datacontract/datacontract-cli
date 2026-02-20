@@ -484,7 +484,7 @@ def get_threshold_operator(quality: DataQuality) -> Optional[str]:
     elif hasattr(quality, "mustBeLessThanOrEqualTo") and quality.mustBeLessThanOrEqualTo is not None:
         return "mustBeLessThanOrEqualTo"
     elif hasattr(quality, "mustBeLessOrEqualTo") and quality.mustBeLessOrEqualTo is not None:
-        return "mustBeLessOrEqualTo" 
+        return "mustBeLessOrEqualTo"
     elif hasattr(quality, "mustBeBetween") and quality.mustBeBetween is not None:
         return "mustBeBetween"
     elif hasattr(quality, "mustNotBeBetween") and quality.mustNotBeBetween is not None:
@@ -725,7 +725,9 @@ def fill_servers(workbook: Workbook, odcs: OpenDataContractStandard):
                 elif server_type == "oracle":
                     set_cell_value_by_column_index(servers_sheet, "servers.oracle.host", index, server.host)
                     set_cell_value_by_column_index(servers_sheet, "servers.oracle.port", index, server.port)
-                    set_cell_value_by_column_index(servers_sheet, "servers.oracle.servicename", index, server.serviceName)
+                    set_cell_value_by_column_index(
+                        servers_sheet, "servers.oracle.servicename", index, server.serviceName
+                    )
                 elif server_type == "postgres":
                     set_cell_value_by_column_index(servers_sheet, "servers.postgres.database", index, server.database)
                     set_cell_value_by_column_index(servers_sheet, "servers.postgres.host", index, server.host)
@@ -742,7 +744,9 @@ def fill_servers(workbook: Workbook, odcs: OpenDataContractStandard):
                     set_cell_value_by_column_index(servers_sheet, "servers.snowflake.host", index, server.host)
                     set_cell_value_by_column_index(servers_sheet, "servers.snowflake.port", index, server.port)
                     set_cell_value_by_column_index(servers_sheet, "servers.snowflake.schema", index, server.schema_)
-                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.warehouse", index, server.warehouse)
+                    set_cell_value_by_column_index(
+                        servers_sheet, "servers.snowflake.warehouse", index, server.warehouse
+                    )
                 elif server_type == "sqlserver":
                     set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.database", index, server.database)
                     set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.host", index, server.host)
@@ -755,7 +759,9 @@ def fill_servers(workbook: Workbook, odcs: OpenDataContractStandard):
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.database", index, server.database)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.dataset", index, server.dataset)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.delimiter", index, server.delimiter)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.endpointUrl", index, server.endpointUrl)
+                    set_cell_value_by_column_index(
+                        servers_sheet, "servers.custom.endpointUrl", index, server.endpointUrl
+                    )
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.format", index, server.format)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.host", index, server.host)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.location", index, server.location)
@@ -763,7 +769,9 @@ def fill_servers(workbook: Workbook, odcs: OpenDataContractStandard):
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.port", index, server.port)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.project", index, server.project)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.schema", index, server.schema_)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.serviceName", index, server.serviceName)
+                    set_cell_value_by_column_index(
+                        servers_sheet, "servers.custom.serviceName", index, server.serviceName
+                    )
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.stagingDir", index, server.stagingDir)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.warehouse", index, server.warehouse)
                     set_cell_value_by_column_index(servers_sheet, "servers.custom.region", index, server.region)

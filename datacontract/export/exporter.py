@@ -90,7 +90,9 @@ def _check_schema_name_for_export(
     else:
         schema_obj = next((s for s in data_contract.schema_ if s.name == schema_name), None)
         if schema_obj is None:
-            raise RuntimeError(f"Schema '{schema_name}' not found in the data contract. Available schemas: {schema_names}")
+            raise RuntimeError(
+                f"Schema '{schema_name}' not found in the data contract. Available schemas: {schema_names}"
+            )
 
         return schema_name, schema_obj
 

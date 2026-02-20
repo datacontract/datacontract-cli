@@ -207,7 +207,7 @@ def make_map(prop: SchemaProperty) -> types.MapType:
             key_type=_type_str_to_iceberg_type(nested_key_type),
             value_id=0,
             value_type=_type_str_to_iceberg_type(nested_value_type),
-            value_required=nested_value_required
+            value_required=nested_value_required,
         )
     elif value_type_str:
         value_type = _type_str_to_iceberg_type(value_type_str)

@@ -36,11 +36,7 @@ def execute_data_contract_test(
             reason="Schema block is missing. Skip executing tests.",
             engine="datacontract",
         )
-    if (
-        server_name is None
-        and data_contract.servers is not None
-        and len(data_contract.servers) > 0
-    ):
+    if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
     server = get_server(data_contract, server_name)
     run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")

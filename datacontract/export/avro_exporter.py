@@ -22,7 +22,9 @@ def to_avro_schema_json(model_name: str, model: SchemaObject) -> str:
     return json.dumps(schema, indent=2, sort_keys=False)
 
 
-def to_avro_record(name: str, properties: List[SchemaProperty], description: Optional[str], namespace: Optional[str]) -> dict:
+def to_avro_record(
+    name: str, properties: List[SchemaProperty], description: Optional[str], namespace: Optional[str]
+) -> dict:
     schema = {"type": "record", "name": name}
     if description is not None:
         schema["doc"] = description
@@ -59,6 +61,7 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
 def _get_enum_values(prop: SchemaProperty):
     """Get enum values from logicalTypeOptions, customProperties, or quality rules."""
     import json
+
     # First check logicalTypeOptions (legacy/direct ODCS)
     enum_values = _get_logical_type_option(prop, "enum")
     if enum_values:
@@ -187,6 +190,7 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         if values_type:
             # Parse JSON array if values is a string like '["string", "long"]'
             import json
+
             try:
                 parsed_values = json.loads(values_type)
                 return {"type": "map", "values": parsed_values}

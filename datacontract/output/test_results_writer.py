@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from datacontract.model.run import Run
+from datacontract.output.json_test_results import write_json_test_results
 from datacontract.output.junit_test_results import write_junit_test_results
 from datacontract.output.output_format import OutputFormat
 
@@ -19,8 +20,14 @@ def write_test_result(
     output_path: Path,
     data_contract: Optional[OpenDataContractStandard] = None,
 ):
-    if output_format == OutputFormat.junit:
-        write_junit_test_results(run, console, output_path)
+    if output_format is not None and not output_path:
+        console.print(f"No output path specified for {output_format.value} test results. Skip writing test results.")
+    elif output_format == OutputFormat.json:
+        write_json_test_results(run, output_path)
+        console.print(f"Written {output_format.value} test results to {output_path}")
+    elif output_format == OutputFormat.junit:
+        write_junit_test_results(run, output_path)
+        console.print(f"Written {output_format.value} test results to {output_path}")
 
     if run.server and data_contract and data_contract.servers:
         server = next((s for s in data_contract.servers if s.server == run.server), None)
