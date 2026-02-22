@@ -71,7 +71,31 @@ def check_dqx_execute(
                 )
         return
 
+    # Resolve or create a Spark session.
+    # Priority:
+    #   1. Explicitly provided Spark session (programmatic API).
+    #   2. Existing active session (e.g. running on Databricks cluster).
+    #   3. Databricks Connect session (if databricks-connect is installed).
+    #   4. Fallback SparkSession.builder.getOrCreate() (e.g. local Spark).
     spark_session = spark or SparkSession.getActiveSession()
+
+    if spark_session is None:
+        # Try Databricks Connect first (optional dependency).
+        try:
+            from databricks.connect import DatabricksSession  # type: ignore[import-not-found]
+
+            run.log_info("Creating Spark session via Databricks Connect (DatabricksSession).")
+            spark_session = DatabricksSession.builder.getOrCreate()
+        except Exception:
+            spark_session = None
+
+    if spark_session is None:
+        try:
+            run.log_info("Creating Spark session via SparkSession.builder.getOrCreate().")
+            spark_session = SparkSession.builder.getOrCreate()
+        except Exception:
+            spark_session = None
+
     if spark_session is None:
         run.log_warn("Cannot run engine dqx, as no active Spark session is available.")
         for schema_name, dqx_rules in rules_by_schema:
@@ -104,6 +128,7 @@ def check_dqx_execute(
         try:
             model_df = spark_session.read.table(schema_name)
         except Exception as exc:
+            run.log_error(str(exc))
             for index, dqx_rule in enumerate(dqx_rules):
                 check_name = _get_rule_check_name(dqx_rule, index)
                 run.checks.append(
@@ -158,6 +183,7 @@ def check_dqx_execute(
                     )
                 )
             except Exception as exc:
+                run.log_error(str(exc))
                 run.checks.append(
                     Check(
                         id=str(uuid.uuid4()),
