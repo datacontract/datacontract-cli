@@ -323,11 +323,18 @@ async def test(
             examples=["https://api.datamesh-manager.com/api/test-results"],
         ),
     ] = None,
+    test_engine: Annotated[
+      str,
+      Query(
+        description="The engine used for quality checks. Supported values: soda (default), dqx (Databricks only).",
+        examples=["soda", "dqx"],
+      ),
+    ] = "soda",
 ) -> Run:
     check_api_key(api_key)
     logging.info("Testing data contract...")
     logging.info(body)
-    return DataContract(data_contract_str=body, server=server, publish_url=publish_url).test()
+    return DataContract(data_contract_str=body, server=server, publish_url=publish_url, test_engine=test_engine).test()
 
 
 @app.post(

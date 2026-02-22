@@ -142,6 +142,31 @@ run = data_contract.test()
 if not run.has_passed():
     print("Data quality validation failed.")
     # Abort pipeline, alert, or take corrective actions...
+
+# run quality checks with DQX engine (Databricks server type only)
+# requires: pip install datacontract-cli[dqx]
+data_contract_dqx = DataContract(
+  data_contract_file="odcs.yaml",
+  server="production",
+  test_engine="dqx",
+)
+run_dqx = data_contract_dqx.test()
+
+# access all executed DQX rule checks
+all_checks = run_dqx.checks
+
+# access failed/error/warning DQX rule checks
+failed_checks = [c for c in run_dqx.checks if c.result in ("failed", "error", "warning")]
+
+for check in failed_checks:
+  print(f"[{check.result}] {check.name} ({check.model})")
+  print(f"reason: {check.reason}")
+
+# full structured output
+print(run_dqx.pretty())
+
+if not run_dqx.has_passed():
+  print("DQX data quality validation failed.")
 ```
 
 ## How to
@@ -236,6 +261,7 @@ A list of available extras:
 | Avro Support            | `pip install datacontract-cli[avro]`       |
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration  | `pip install datacontract-cli[databricks]` |
+| DQX (Databricks quality checks) | `pip install datacontract-cli[dqx]` |
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |

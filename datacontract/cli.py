@@ -161,6 +161,12 @@ def test(
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
     debug: debug_option = None,
+    test_engine: Annotated[
+        str,
+        typer.Option(
+            help="The engine used for quality checks. Supported values: `soda` (default), `dqx` (Databricks only)."
+        ),
+    ] = "soda",
 ):
     """
     Run schema and quality tests on configured servers.
@@ -177,6 +183,7 @@ def test(
         publish_url=publish,
         server=server,
         ssl_verification=ssl_verification,
+        test_engine=test_engine,
     ).test()
     if logs:
         _print_logs(run)
