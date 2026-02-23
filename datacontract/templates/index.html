@@ -88,7 +88,7 @@
         {{ field_name|lower|e }} {{ field.description|lower|e if field.description else '' }} {%
       endfor %}
     {% endfor %} {% if contract.spec.tags %}{%
-    for tag in contract.spec.tagss %}
+    for tag in contract.spec.tags %}
       tag {{ tag|lower|e }}
     {% endfor %}{% endif %}
   ">
