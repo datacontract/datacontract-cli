@@ -1,0 +1,495 @@
+from __future__ import annotations
+
+import json
+import os
+from collections import OrderedDict
+from pathlib import Path
+from typing import Any, Dict
+
+import yaml
+from open_data_contract_standard.model import OpenDataContractStandard
+
+from datacontract.imports.importer import Importer
+from datacontract.model.exceptions import DataContractException
+
+
+class SnowflakeImporter(Importer):
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+        if source is not None:
+            return import_Snowflake_from_connector(
+                account=source,
+                database=import_args.get("database"),
+                schema=import_args.get("schema"),
+            )
+
+
+def import_Snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
+    ## connect to snowflake and get cursor
+    conn = snowflake_cursor(account, database, schema)
+    try:
+        # To catch double_quoted identifier
+        from snowflake.connector.errors import ProgrammingError
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="snowflake extra missing",
+            reason="Install the extra datacontract-cli[snowflake] to use snowflake",
+            engine="datacontract",
+            original_exception=e,
+        )
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(f"USE SCHEMA {database}.{schema}")
+            schema_identifier = schema
+        except ProgrammingError:
+            # schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
+            cur.execute(f'USE SCHEMA {database}."{schema}"')
+            schema_identifier = f'"{schema}"'
+
+        cur.execute(f"SHOW COLUMNS IN SCHEMA {database}.{schema_identifier}")
+        schema_sfqid = str(cur.sfqid)
+        cur.execute(f"SHOW PRIMARY KEYS IN SCHEMA {database}.{schema_identifier}")
+        businessKey_sfqid = str(cur.sfqid)
+        # -- AS
+        # SET(col, pk) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));"
+        cur.execute_async(snowflake_query(account, schema, schema_sfqid, businessKey_sfqid))
+        cur.get_results_from_sfqid(cur.sfqid)
+        # extract and save ddl script into sql file
+        json_contract = cur.fetchall()
+
+        # Try to Preserve order when dumping to yaml properties as columns order matters
+        yaml.add_representer(dict, map_representer, Dumper=yaml.Dumper)
+        yaml.add_representer(OrderedDict, map_representer, Dumper=yaml.Dumper)
+
+        if len(json_contract) == 0 or len(json_contract[0]) == 0:
+            raise DataContractException(
+                type="import",
+                result="failed",
+                name="snowflake import",
+                reason=f"No data contract returned from schema {schema} in database {database} please check connectivity and schema existence",
+                engine="datacontract",
+            )
+        result_set = json.loads(json_contract[0][0], object_pairs_hook=OrderedDict)
+        sorted_properties = sort_schema_by_name_properties_by_ordinalPosition(result_set)
+
+        toYaml = yaml.dump(sorted_properties, sort_keys=False)
+
+        return OpenDataContractStandard.from_string(toYaml)
+
+
+def map_representer(dumper, data):
+    return dumper.represent_dict(getattr(data, "items")())
+
+
+def snowflake_query(account: str, schema: str, schema_sfqid: str, businessKey_sfqid: str) -> str:
+    sqlStatement = """
+    --SHOW COLUMNS;
+    --SHOW PRIMARY KEYS;
+
+    --SET(schema_sfqid, businessKey_sfqid) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));
+
+WITH Quality_Metric AS (
+    SELECT 
+    TABLE_NAME, 
+    TYPES, 
+    COLUMN_NAME, 
+    ARRAY_AGG(quality) as qualities
+FROM (
+    SELECT  
+        TABLE_NAME, 
+        IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 AND ARGUMENT_TYPES[0]::string = 'COLUMN', 'COLUMN', 'RECORD') as TYPES , 
+        ARRAY_TO_STRING(ARGUMENT_NAMES, ',') as COLUMN_NAME,   
+        OBJECT_CONSTRUCT(
+        'id', CONCAT(LOWER(TABLE_NAME),'_',LOWER(
+                        IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 AND ARGUMENT_TYPES[0]::string = 'COLUMN', 'COLUMN', 'RECORD')
+                        ),
+                    '_',
+                    LOWER(METRIC_NAME),
+                    '_',
+                    LOWER(ARRAY_TO_STRING(ARGUMENT_NAMES, ',')),
+                    '_id'),
+        'metric', COALESCE(ODCS_RULES.odcs_metric, METRIC_NAME),
+        COALESCE(odcs_operator,'mustBe'), VALUE
+        ) as quality,
+    FROM SNOWFLAKE.LOCAL.DATA_QUALITY_MONITORING_RESULTS
+    -- https://bitol-io.github.io/open-data-contract-standard/latest/data-quality/#metrics
+    LEFT JOIN (VALUES('NULL_COUNT', 'nullValues', 'mustBe'), 
+                     ('BLANK_COUNT','missingValues', 'mustBe'), 
+                     ('ROW_COUNT', 'rowCount','mustBeGreaterOrEqualTo'),
+                     ('ACCEPTED_VALUES', 'invalidValues','mustBeLessThan'),
+                     ('DUPLICATE_COUNT', 'duplicateValues','mustBeLessThan')                 
+                     ) as ODCS_RULES(snowflake_metricName, odcs_metric, odcs_operator) ON METRIC_NAME = snowflake_metricName
+    WHERE TABLE_DATABASE = CURRENT_DATABASE() AND TABLE_SCHEMA = CURRENT_SCHEMA()
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY TABLE_NAME, ARGUMENT_TYPES, METRIC_NAME, ARGUMENT_NAMES ORDER BY MEASUREMENT_TIME DESC) = 1
+    ) as DMF_METRICS_RESULT
+    GROUP BY TABLE_NAME, TYPES, COLUMN_NAME
+),
+Server_Roles AS (
+    SELECT P.TABLE_SCHEMA as table_schema, ARRAY_AGG(
+    OBJECT_CONSTRUCT(
+        'role', P.GRANTEE,
+        'access',LOWER(P.PRIVILEGE_TYPE),
+        'firstLevelApprovers', P.GRANTOR
+        ))   as Roles
+    FROM information_schema.table_privileges P
+    WHERE P.GRANTED_TO = 'ROLE' AND P.TABLE_SCHEMA = '{schema}' 
+    GROUP BY P.TABLE_CATALOG, P.TABLE_SCHEMA
+), 
+TagRef AS (
+    SELECT 
+        OBJECT_SCHEMA, 
+        OBJECT_NAME, 
+        COLUMN_NAME, 
+        ARRAY_AGG(CONCAT(TAG_NAME,'=',TAG_VALUE)) as Tags
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+    WHERE OBJECT_SCHEMA = CURRENT_SCHEMA()
+      AND OBJECT_DATABASE = CURRENT_DATABASE()
+    GROUP BY OBJECT_SCHEMA, OBJECT_NAME, COLUMN_NAME
+),
+INFO_SCHEMA_COLUMNS AS (
+    SELECT 
+    "schema_name" as schema_name,
+    "table_name" as table_name,
+    "column_name" as "name", 
+    "null?" = 'NOT_NULL' as required,
+    RIGHT("column_name",3) = '_SK' as "unique",
+    coalesce(GET_PATH(TRY_PARSE_JSON("comment"),'description'), "comment") as description,
+    CASE GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string
+    WHEN 'TEXT' THEN 'string'
+    WHEN 'STRING' THEN 'string'
+    WHEN 'CHAR' THEN 'string'
+    WHEN 'FIXED' THEN 'number'
+    WHEN 'REAL' THEN 'number'
+    WHEN 'BOOLEAN' THEN 'boolean'
+    WHEN 'VARIANT' THEN 'object'
+    WHEN 'TIMESTAMP_TZ' THEN 'timestamp'
+    WHEN 'TIMESTAMP_NTZ' THEN 'timestamp'
+    WHEN 'TIMESTAMP_LTZ' THEN 'timestamp'
+    WHEN 'DATE' THEN 'date'
+    ELSE 'object' END as LogicalType, -- FIXED NUMBER
+    CASE GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string
+    WHEN 'TEXT' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
+    WHEN 'STRING' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
+    WHEN 'CHAR' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
+    WHEN 'FIXED' THEN CONCAT('NUMBER','(',GET_PATH(TRY_PARSE_JSON("data_type"),'precision')::string,',',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')',' ',"autoincrement")
+    WHEN 'BOOLEAN' THEN 'BOOLEAN'
+    WHEN 'TIMESTAMP_NTZ' THEN CONCAT('TIMESTAMP_NTZ','(',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')')
+    ELSE GET_PATH(TRY_PARSE_JSON("data_type"),'type') END as PhysicalType,
+    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicalTypeOptions_maxlength,
+    IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), TR.Tags ) as tags,
+    IS_C.ORDINAL_POSITION,
+    GET_PATH(TRY_PARSE_JSON("data_type"),'precision') as CP_precision,
+    GET_PATH(TRY_PARSE_JSON("data_type"),'scale') as CP_scale,
+    "autoincrement" as CP_autoIncrement,
+    "default" as CP_default,
+    Q.qualities
+    FROM TABLE(RESULT_SCAN('$schema_sfqid')) as T
+    JOIN INFORMATION_SCHEMA.COLUMNS as IS_C ON T."table_name"= IS_C.TABLE_NAME 
+                                            AND  T."schema_name" = IS_C.TABLE_SCHEMA 
+                                            AND T."column_name" = IS_C.COLUMN_NAME 
+                                            AND T."database_name" = IS_C.TABLE_CATALOG
+    LEFT JOIN TagRef TR ON T."table_name" = TR.OBJECT_NAME 
+                        AND T."schema_name" = TR.OBJECT_SCHEMA  
+                        AND T."column_name" = TR.COLUMN_NAME
+    LEFT JOIN Quality_Metric Q  ON( T."table_name" = Q.TABLE_NAME 
+                                AND T."column_name" = Q.COLUMN_NAME
+                                AND 'COLUMN' = Q.TYPES)
+),
+INFO_SCHEMA_CONSTRAINTS AS (
+SELECT 
+    "schema_name" as schema_name, 
+    "table_name" as table_name,
+    "column_name" as "name", 
+    IFF(RIGHT("column_name",3)='_SK', -1, "key_sequence") as primaryKeyPosition,
+        true as primaryKey, 
+FROM(TABLE(RESULT_SCAN('$businessKey_sfqid')))
+),
+INFO_SCHEMA_TABLES AS (
+SELECT 
+    T.TABLE_SCHEMA as table_schema, 
+    T.TABLE_NAME as "name",
+    UPPER(CONCAT(T.TABLE_SCHEMA,'.',T.TABLE_NAME)) as physical_name,
+    NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
+    'object' as logicalType,
+    lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType,
+    'quality', Q.qualities
+FROM INFORMATION_SCHEMA.TABLES as T
+LEFT JOIN Quality_Metric Q ON (T.TABLE_NAME= Q.TABLE_NAME 
+                            AND 'RECORD' = Q.TYPES)
+),
+PROPERTIES AS (
+SELECT 
+C.schema_name,
+C.table_name,
+ARRAY_AGG(OBJECT_CONSTRUCT(
+    'id',           C."name"||'_propId',
+    'name',         C."name",
+    'required',     C.required,
+    'unique',       C."unique",
+    'description',  C.description,
+    'logicalType',  C.LogicalType,
+    IFF(logicalTypeOptions_maxlength::number IS NOT NULL,'logicalTypeOptions',NULL), IFF( logicalTypeOptions_maxlength::number IS NOT NULL , OBJECT_CONSTRUCT('maxLength',logicalTypeOptions_maxlength::number), NULL),  
+    'physicalType', TRIM(C.PhysicalType),
+    IFF(BK.primaryKey = true, 'primaryKey', NULL), IFF(BK.primaryKey = true,true, NULL),
+    IFF(BK.primaryKey = true, 'primaryKeyPosition', NULL), IFF(BK.primaryKey = true, BK.primaryKeyPosition, NULL),
+    IFF(C.tags IS NOT NULL,'tags',NULL) , IFF(C.tags IS NOT NULL, C.tags, NULL),
+    'customProperties', ARRAY_CONSTRUCT_COMPACT(
+            OBJECT_CONSTRUCT(
+            'property', 'ordinalPosition',
+            'value', C.ORDINAL_POSITION
+            ),
+            OBJECT_CONSTRUCT(
+            'property','scdType',    
+            'value', IFF( COALESCE(BK.primaryKey,false) ,0,1)
+            ),
+            IFF(BK.primaryKey = True AND Right(C."name",3) != '_SK', OBJECT_CONSTRUCT(
+            'property','businessKey',
+            'value', True), NULL),
+            IFF(C.CP_precision IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','precision',
+            'value', C.CP_precision), NULL),
+            IFF(C.CP_scale IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','scale',
+            'value', C.CP_scale), NULL),
+            IFF(NULLIF(C.CP_autoIncrement,'') IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','autoIncrement',
+            'value', C.CP_autoIncrement), NULL),
+            IFF(NULLIF(C.CP_default,'') IS NOT NULL, OBJECT_CONSTRUCT(
+            'property','defaultValue',
+            'value', C.CP_default), NULL)                                     
+            ),
+    'quality', C.qualities
+                        )) as properties
+FROM INFO_SCHEMA_COLUMNS C
+LEFT JOIN INFO_SCHEMA_CONSTRAINTS BK ON (C.schema_name = BK.schema_name 
+                            AND C.table_name = BK.table_name 
+                            AND C."name" = BK."name")
+
+GROUP BY C.schema_name, C.table_name
+)
+, SCHEMA_DEF AS (
+SELECT
+T.table_schema,
+ARRAY_AGG( OBJECT_CONSTRUCT( 
+    'id', T."name" ||'_schId',
+    'name',T."name",
+    'physicalName',T.physical_name,
+    'logicalType',T.logicalType,
+    'physicalType',T.physicalType,
+    'description',T.description,
+    'properties', P.properties,
+    'quality', T.qualities)
+    )
+    as "schema"
+FROM PROPERTIES P
+LEFT JOIN INFO_SCHEMA_TABLES T ON (P.schema_name = T.table_schema 
+                        AND P.table_name = T."name")
+WHERE T.table_schema = '{schema}' -- Ignore PUBLIC (default)
+GROUP BY T.table_schema
+)
+SELECT 
+OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
+'kind','DataContract',
+'id', UUID_STRING(),
+'name',SCHEMA_DEF.table_schema,
+'version','0.0.1',
+'domain','dataplatform',
+'status','development',
+'description', OBJECT_CONSTRUCT(
+    'purpose','This data can be used for analytical purposes', 
+    'limitations', 'not defined',
+    'usage', 'not defined'),
+'customProperties', ARRAY_CONSTRUCT( OBJECT_CONSTRUCT('property','owner', 'value','dataplatform')),
+'servers', ARRAY_CONSTRUCT( 
+    OBJECT_CONSTRUCT(
+        'server','snowflake_dev', 
+        'type','snowflake',
+        'account', '{account}',
+        'environment', 'dev',
+        'host', '{account}.snowflakecomputing.com',
+        'port', 443,
+        'database', CURRENT_DATABASE(),
+        'warehouse', CURRENT_WAREHOUSE(),
+        'schema', SCHEMA_DEF.table_schema,
+        'roles', Server_Roles.Roles
+                    )),                                    
+'schema', "schema") as "DataContract (ODCS)"
+FROM SCHEMA_DEF
+LEFT JOIN Server_Roles ON SCHEMA_DEF.table_schema = Server_Roles.table_schema
+WHERE SCHEMA_DEF.table_schema IS NOT NULL
+    """
+    return (
+        sqlStatement.replace("$schema_sfqid", schema_sfqid)
+        .replace("$businessKey_sfqid", businessKey_sfqid)
+        .replace("{schema}", schema)
+        .replace("{account}", account)
+    )
+
+
+def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = "PUBLIC"):
+    try:
+        from snowflake.connector import connect
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="snowflake extra missing",
+            reason="Install the extra datacontract-cli[snowflake] to use snowflake",
+            engine="datacontract",
+            original_exception=e,
+        )
+
+    ###
+    ## Snowflake connection
+    ## https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect
+    ###
+    # gather connection parameters from environment variables
+    user_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_USERNAME", None)
+    password_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_PASSWORD", None)
+    account_connect = account
+    role_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_ROLE", None)
+    authenticator_connect = (
+        "externalbrowser"
+        if password_connect is None
+        else os.environ.get("DATACONTRACT_SNOWFLAKE_AUTHENTICATOR", "snowflake")
+    )
+    warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
+    database_connect = databasename or "DEMO_DB"
+    schema_connect = schema or "PUBLIC"
+    snowflake_home = os.environ.get("DATACONTRACT_SNOWFLAKE_HOME") or os.environ.get("SNOWFLAKE_HOME")
+    snowflake_connections_file = os.environ.get("DATACONTRACT_SNOWFLAKE_CONNECTIONS_FILE") or os.environ.get(
+        "SNOWFLAKE_CONNECTIONS_FILE"
+    )
+    if not snowflake_connections_file and snowflake_home:
+        snowflake_connections_file = os.path.join(snowflake_home, "connections.toml")
+
+    default_connection = os.environ.get("DATACONTRACT_SNOWFLAKE_DEFAULT_CONNECTION_NAME") or os.environ.get(
+        "SNOWFLAKE_DEFAULT_CONNECTION_NAME"
+    )
+
+    private_key_file = os.environ.get("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE") or os.environ.get(
+        "SNOWFLAKE_PRIVATE_KEY_FILE"
+    )
+    private_key_file_pwd = os.environ.get("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD") or os.environ.get(
+        "SNOWFLAKE_PRIVATE_KEY_FILE_PWD"
+    )
+
+    # build connection
+    if default_connection is not None and password_connect is None:
+        # use the default connection defined in the snowflake config file : connections.toml and config.toml
+
+        # optional connection params (will override the defaults if set)
+        connection_params = {}
+        if default_connection:
+            connection_params["connection_name"] = default_connection
+        if snowflake_connections_file:
+            connection_params["connections_file_path"] = Path(snowflake_connections_file)
+        if role_connect:
+            connection_params["role"] = role_connect
+        if account_connect:
+            connection_params["account"] = account_connect
+        # don't override default connection with defaults set above
+        if database_connect and database_connect != "DEMO_DB":
+            connection_params["database"] = database_connect
+        if schema_connect and schema_connect != "PUBLIC":
+            connection_params["schema"] = schema_connect
+        if warehouse_connect and warehouse_connect != "COMPUTE_WH":
+            connection_params["warehouse"] = warehouse_connect
+
+        conn = connect(
+            session_parameters={
+                "QUERY_TAG": "datacontract-cli import",
+                "use_openssl_only": False,
+            },
+            **connection_params,
+        )
+    elif private_key_file is not None:
+        # use private key auth
+        if not os.path.exists(private_key_file):
+            raise FileNotFoundError(f"Private key file not found at: {private_key_file}")
+
+        conn = connect(
+            user=user_connect,
+            account=account_connect,
+            private_key_file=private_key_file,
+            private_key_file_pwd=private_key_file_pwd,
+            session_parameters={
+                "QUERY_TAG": "datacontract-cli import",
+                "use_openssl_only": False,
+            },
+            warehouse=warehouse_connect,
+            role=role_connect,
+            database=database_connect,
+            schema=schema_connect,
+        )
+    elif authenticator_connect == "externalbrowser":
+        # use external browser auth
+        conn = connect(
+            user=user_connect,
+            account=account_connect,
+            authenticator=authenticator_connect,
+            session_parameters={
+                "QUERY_TAG": "datacontract-cli import",
+                "use_openssl_only": False,
+            },
+            warehouse=warehouse_connect,
+            role=role_connect,
+            database=database_connect,
+            schema=schema_connect,
+        )
+    else:
+        # use the login/password auth
+        conn = connect(
+            user=user_connect,
+            password=password_connect,
+            account=account_connect,
+            authenticator=authenticator_connect,
+            session_parameters={
+                "QUERY_TAG": "datacontract-cli import",
+                "use_openssl_only": False,
+            },
+            warehouse=warehouse_connect,
+            role=role_connect,
+            database=database_connect,
+            schema=schema_connect,
+        )
+    return conn
+
+
+def _get_ordinal_position_value(col: Dict[str, Any]) -> Any:
+    """Extract customProperties value where property == 'ordinalPosition'."""
+    for cp in col.get("customProperties") or []:
+        if isinstance(cp, dict) and cp.get("property") == "ordinalPosition":
+            return cp.get("value")
+    return None
+
+
+def sort_schema_by_name_properties_by_ordinalPosition(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    - Does NOT reorder payload['schema'].
+    - For each schema element (table), sorts table['properties'] by property ordinalPosition value.
+    - Does NOT sort customProperties themselves.
+    """
+    schema = payload.get("schema")
+    if not isinstance(schema, list):
+        return payload
+    new_schema = []
+    for table in schema:
+        props = table.get("properties")
+        if not isinstance(props, list):
+            continue
+
+        def col_key(col: Dict[str, Any]):
+            ord_val = _get_ordinal_position_value(col)
+            return (ord_val, f"{table.get('name').lower()}.{col.get('name').lower()}")
+
+        props.sort(key=col_key)
+        table["properties"] = props
+        new_schema.append(table)
+
+    new_schema.sort(key=lambda t: t.get("name").lower())
+
+    payload["schema"] = new_schema
+    return payload
