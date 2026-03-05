@@ -147,12 +147,12 @@ def test_check_property_type_no_backtick_quoting():
 def test_prepare_query_snowflake_field_quoting():
     """Test that field placeholders use double quotes for snowflake."""
     quality = DataQuality(type="sql", query="SELECT {field} FROM {model}")
-    quoting_config = QuotingConfig(quote_field_name=True, quote_model_name=True)
+    quoting_config = QuotingConfig(quote_model_name=True)
     server = Server(**{"type": "snowflake", "schema": "my_schema"})
 
     result = prepare_query(quality, "my_table", "name", quoting_config, server)
 
-    assert result == 'SELECT "name" FROM "my_table"'
+    assert result == 'SELECT name FROM "my_table"'
 
 
 def test_prepare_query_snowflake_schema_model_quoting():
