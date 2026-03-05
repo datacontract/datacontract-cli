@@ -126,3 +126,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.json_importer",
     class_name="JsonImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.osi,
+    module_path="datacontract.imports.osi_importer",
+    class_name="OsiImporter",
+)
