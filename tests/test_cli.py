@@ -16,3 +16,9 @@ def test_file_does_not_exist():
     result = runner.invoke(app, ["test", "unknown.yaml"])
     assert result.exit_code == 1
     assert "The file 'unknown.yaml' does not \nexist." in result.stdout
+
+
+def test_file_does_not_exist_with_dqx_test_engine():
+    result = runner.invoke(app, ["test", "unknown.yaml", "--test-engine", "dqx"])
+    assert result.exit_code == 1
+    assert "The file 'unknown.yaml' does not \nexist." in result.stdout

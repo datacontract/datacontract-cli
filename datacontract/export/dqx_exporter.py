@@ -59,6 +59,13 @@ def process_quality_rule(rule: DataQuality, column_name: str) -> Dict[str, Any]:
     implementation = rule.implementation
     check = implementation[DqxKeys.CHECK]
 
+    # Ensure each rule has a stable name so that DQX doesn't
+    # try to infer it from the Spark column expression (which can
+    # trigger issues with certain Spark Connect representations).
+    if "name" not in implementation:
+        function_name = check.get(DqxKeys.FUNCTION, "dqx_rule")
+        implementation["name"] = f"{column_name}__{function_name}" if column_name else function_name
+
     if column_name:
         arguments = check.setdefault(DqxKeys.ARGUMENTS, {})
 
