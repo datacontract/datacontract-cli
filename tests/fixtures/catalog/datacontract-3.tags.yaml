@@ -1,0 +1,11 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: urn:datacontract:testcatalog
+name: Catalog Test
+version: 0.0.1
+status: active
+description:
+  purpose: Test for catalog export
+tags:
+- expected-tag
+schema: []
