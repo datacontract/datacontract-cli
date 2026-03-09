@@ -24,6 +24,10 @@ def postgres_container(request):
 def test_test_postgres(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/postgres/data/data.sql")
 
     datacontract_file = "fixtures/postgres/datacontract.yaml"
@@ -40,6 +44,10 @@ def test_test_postgres(postgres_container, monkeypatch):
 def test_test_postgres_odcs(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/postgres/data/data.sql")
 
     datacontract_file = "fixtures/postgres/odcs.yaml"
@@ -56,6 +64,10 @@ def test_test_postgres_odcs(postgres_container, monkeypatch):
 def test_test_postgres_case_sensitive_table_name(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/postgres/data/data_case_sensitive.sql")
 
     datacontract_file = "fixtures/postgres/datacontract_case_sensitive.yaml"
@@ -72,6 +84,10 @@ def test_test_postgres_case_sensitive_table_name(postgres_container, monkeypatch
 def test_test_postgres_case_sensitive_table_name_odcs(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/postgres/data/data_case_sensitive.sql")
 
     datacontract_file = "fixtures/postgres/odcs_case_sensitive.odcs.yaml"
@@ -88,6 +104,10 @@ def test_test_postgres_case_sensitive_table_name_odcs(postgres_container, monkey
 def test_test_postgres_servicelevels_freshness_should_fail(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/postgres/data/data.sql")
 
     datacontract_file = "fixtures/postgres/datacontract_servicelevels.yaml"
@@ -103,6 +123,10 @@ def test_test_postgres_servicelevels_freshness_should_fail(postgres_container, m
 def test_test_postgres_servicelevels_freshness_should_fail_odcs(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/postgres/data/data.sql")
 
     datacontract_file = "fixtures/postgres/servicelevels.odcs.yaml"
