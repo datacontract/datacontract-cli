@@ -21,6 +21,10 @@ def postgres_container(request):
 def test_test_quality_valid(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/quality/data/data.valid.sql")
     datacontract_file = "fixtures/quality/datacontract.yaml"
     data_contract_str = _setup_datacontract(datacontract_file)
@@ -36,6 +40,10 @@ def test_test_quality_valid(postgres_container, monkeypatch):
 def test_test_quality_invalid(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", server.host),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PORT", server.port),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_DATABASE", server.database),
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", server.schema_),
     _init_sql("fixtures/quality/data/data.invalid.sql")
     datacontract_file = "fixtures/quality/datacontract.yaml"
     data_contract_str = _setup_datacontract(datacontract_file)
