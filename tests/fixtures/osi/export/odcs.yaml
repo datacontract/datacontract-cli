@@ -1,0 +1,71 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: orders-osi-test
+name: Orders OSI Test
+version: 1.0.0
+status: active
+description:
+  purpose: Test data contract for OSI export
+schema:
+- name: orders
+  physicalType: table
+  physicalName: sales.orders
+  description: Order transactions
+  properties:
+  - name: order_id
+    physicalType: varchar
+    description: Unique order identifier
+    primaryKey: true
+    logicalType: string
+    required: true
+  - name: customer_id
+    physicalType: integer
+    description: Reference to customer
+    logicalType: integer
+    required: true
+    relationships:
+    - type: foreignKey
+      to: customers.customer_id
+  - name: order_date
+    physicalType: date
+    description: Date order was placed
+    logicalType: date
+    required: true
+  - name: total_amount
+    physicalType: decimal
+    description: Total order value
+    logicalType: number
+    required: false
+  - name: status
+    physicalType: varchar
+    description: Order status
+    logicalType: string
+    required: true
+- name: customers
+  physicalType: table
+  physicalName: sales.customers
+  description: Customer dimension
+  properties:
+  - name: customer_id
+    physicalType: integer
+    description: Unique customer identifier
+    primaryKey: true
+    logicalType: integer
+    required: true
+    unique: true
+  - name: customer_name
+    physicalType: varchar
+    description: Full customer name
+    logicalType: string
+    required: true
+  - name: email
+    physicalType: varchar
+    description: Customer email address
+    logicalType: string
+    required: true
+    unique: true
+  - name: created_at
+    physicalType: timestamp
+    description: Account creation timestamp
+    logicalType: timestamp
+    required: false
