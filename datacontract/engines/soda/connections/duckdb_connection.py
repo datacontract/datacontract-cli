@@ -99,7 +99,7 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
             INTERSECT SELECT column_name
             FROM information_schema.columns
             WHERE table_name = '{model_name}'""").fetchall()
-        selected_columns = ", ".join([column[0] for column in intersecting_columns])
+        selected_columns = ", ".join([f'"{column[0]}"' for column in intersecting_columns])
 
         # Insert data into table by name, but only columns existing in contract and data
         insert_data_sql = f"""INSERT INTO {model_name} BY NAME
