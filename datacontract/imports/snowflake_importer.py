@@ -224,7 +224,7 @@ SELECT
 C.schema_name,
 C.table_name,
 ARRAY_AGG(OBJECT_CONSTRUCT(
-    'id',           C."name"||'_propId',
+    'id',           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(C."name", ' ', '_'), '(', ''), ')',''),'/','vs'),'.','_'),'&','and') ||'_propId',
     'name',         C."name",
     'required',     C.required,
     'unique',       C."unique",
@@ -273,7 +273,7 @@ GROUP BY C.schema_name, C.table_name
 SELECT
 T.table_schema,
 ARRAY_AGG( OBJECT_CONSTRUCT( 
-    'id', T."name" ||'_schId',
+    'id', REPLACE(T."name", ' ', '_') ||'_schId',
     'name',T."name",
     'physicalName',T.physical_name,
     'logicalType',T.logicalType,
