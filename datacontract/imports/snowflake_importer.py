@@ -210,7 +210,7 @@ INFO_SCHEMA_TABLES AS (
 SELECT 
     T.TABLE_SCHEMA as table_schema, 
     T.TABLE_NAME as "name",
-    UPPER(CONCAT(T.TABLE_SCHEMA,'.',T.TABLE_NAME)) as physical_name,
+    UPPER(T.TABLE_NAME) as physical_name,
     NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
     'object' as logicalType,
     lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType,
