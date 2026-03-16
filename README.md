@@ -603,14 +603,17 @@ models:
 
 ##### Environment Variables
 
-| Environment Variable                              | Example| Description                                  |
-|---------------------------------------------------|--------|----------------------------------------------|
-| `DATACONTRACT_SQLSERVER_USERNAME`                 | `root` | Username                                     |
-| `DATACONTRACT_SQLSERVER_PASSWORD`                 | `toor` | Password                                     |
-| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True` | Use windows authentication, instead of login |
-| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate                |
-| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True` | Use SSL                                      |
-| `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name   |
+| Environment Variable                              | Example                                | Description                                                                                                                                                   |
+|---------------------------------------------------|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `DATACONTRACT_SQLSERVER_AUTHENTICATION`           | `sql`                                  | Authentication mode (default: `sql`). Supported: `sql`, `windows`, `ActiveDirectoryPassword`, `ActiveDirectoryServicePrincipal`, `ActiveDirectoryInteractive` |
+| `DATACONTRACT_SQLSERVER_USERNAME`                 | `root`                                 | Username (for `sql`, `ActiveDirectoryPassword`, `ActiveDirectoryInteractive`)                                                                                 |
+| `DATACONTRACT_SQLSERVER_PASSWORD`                 | `toor`                                 | Password (for `sql` and `ActiveDirectoryPassword`)                                                                                                            |
+| `DATACONTRACT_SQLSERVER_CLIENT_ID`                | `a3cf5d29-b1a7-4e3d-9c62-8f47e6b2d104` | Application/Client ID (for `ActiveDirectoryServicePrincipal`)                                                                                                 |
+| `DATACONTRACT_SQLSERVER_CLIENT_SECRET`            | `kX9~Qr2Lm.Tz4Wp8Yv6Bn0Dj3Fs5Hk7Ag1Eo` | Client secret (for `ActiveDirectoryServicePrincipal`)                                                                                                         |
+| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True`                                 | Trust self-signed certificate                                                                                                                                 |
+| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True`                                 | Use SSL                                                                                                                                                       |
+| `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server`        | ODBC driver name                                                                                                                                              |
+| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True`                                 | Deprecated. Equivalent to `AUTHENTICATION=windows`                                                                                                            |
 
 
 
