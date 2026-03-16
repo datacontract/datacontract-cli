@@ -322,7 +322,7 @@ def to_protobuf_message(model_name: str, properties: List[SchemaProperty], descr
     for prop in properties:
         field_name = prop.name  # snake_case (preserve as in YAML)
         # field_type = _get_field_type(prop)  # includes "repeated" if needed
-        field_decl = _get_field_declaration(prop)  # Новая функция
+        field_decl = _get_field_declaration(prop)
         field_desc = prop.description or ""
         
         result += f"{indent(indent_level + 1)}"
