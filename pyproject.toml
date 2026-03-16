@@ -121,7 +121,7 @@ parquet = [
 ]
 
 rdf = [
-  "rdflib==7.5.0",
+  "rdflib==7.6.0",
 ]
 
 api = [
