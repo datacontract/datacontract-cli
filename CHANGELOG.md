@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Fixed
-- Fix parser error for CSV / Parquet table names containing special characters (#1065)
+- Fix parser error for CSV / Parquet table names containing special characters (#1066)
+
+### Added
+- Added JSON output format for test results (`--output-format json`)
 
 ## [0.11.5] - 2026-02-19
 
@@ -23,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix mkdir TOCTOU race causing silent JUnit write failure (#1050)
 - Fix validation failure for field names with special chars on Databricks (#1049)
 - Add Azure support for field name quoting in schema checks (#1025)
-- Added JSON output format for test results (`--output-format json`)
 
 ## [0.11.4] - 2026-01-19
 

@@ -1537,7 +1537,6 @@ Available import options:
 | `spark`            | Import from Spark StructTypes, Variant        | ✅       |
 | `sql`              | Import from SQL DDL                           | ✅       |
 | `unity`            | Import from Databricks Unity Catalog          | partial |
-| `excel`            | Import from ODCS Excel Template               | ✅       |
 | Missing something? | Please create an issue on GitHub              | TBD     |
 
 
