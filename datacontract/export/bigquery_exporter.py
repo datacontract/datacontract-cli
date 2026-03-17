@@ -108,42 +108,39 @@ def _get_custom_property(prop: SchemaProperty, key: str):
     return None
 
 
+_BQ_TYPES = {
+    "STRING",
+    "BYTES",
+    "INT64",
+    "INTEGER",
+    "FLOAT64",
+    "NUMERIC",
+    "BIGNUMERIC",
+    "BOOL",
+    "TIMESTAMP",
+    "DATE",
+    "TIME",
+    "DATETIME",
+    "GEOGRAPHY",
+    "JSON",
+    "RECORD",
+    "STRUCT",
+    "ARRAY",
+}
+
+
 def map_type_to_bigquery(prop: SchemaProperty) -> str:
     """Map a schema property type to BigQuery type.
 
-    Maps both physicalType and logicalType to their BigQuery equivalents.
-    PhysicalType is preferred if set.
+    If physicalType is a valid BigQuery type (including parameterized types like NUMERIC(18, 4)),
+    return it directly. Otherwise, map the type via the logical type mapping.
     """
-    # If physicalType is already a BigQuery type, return it directly
     if prop.physicalType:
-        bq_types = {
-            "STRING",
-            "BYTES",
-            "INT64",
-            "INTEGER",
-            "FLOAT64",
-            "NUMERIC",
-            "BIGNUMERIC",
-            "BOOL",
-            "TIMESTAMP",
-            "DATE",
-            "TIME",
-            "DATETIME",
-            "GEOGRAPHY",
-            "JSON",
-            "RECORD",
-            "STRUCT",
-            "ARRAY",
-        }
-        if prop.physicalType.upper() in bq_types or prop.physicalType.upper().startswith(
-            ("STRUCT<", "ARRAY<", "RANGE<")
-        ):
+        base_type = prop.physicalType.upper().split("(")[0].strip()
+        if base_type in _BQ_TYPES:
             return prop.physicalType
 
-    # Determine which type to map (prefer physicalType)
     type_to_map = prop.physicalType or prop.logicalType
-
-    # Map the type to BigQuery type
     return _map_logical_type_to_bigquery(type_to_map, prop.properties)
 
 
