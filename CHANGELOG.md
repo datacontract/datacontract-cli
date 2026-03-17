@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
+### Fixed
+- Fix parser error for CSV / Parquet table names containing special characters (#1066)
 
+### Added
 - Added JSON output format for test results (`--output-format json`)
 - Added Azure AD / Entra ID authentication support for SQL Server (`ActiveDirectoryPassword`, `ActiveDirectoryServicePrincipal`, `ActiveDirectoryInteractive`)
 
