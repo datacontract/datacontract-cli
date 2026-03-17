@@ -59,6 +59,17 @@ def test_active_directory_service_principal(monkeypatch):
     assert ds["client_secret"] == "app-secret"
 
 
+def test_cli_auth(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "cli")
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", raising=False)
+
+    result = yaml.safe_load(to_sqlserver_soda_configuration(_make_server()))
+    ds = result["data_source sqlserver"]
+
+    assert ds["authentication"] == "cli"
+    assert ds["trusted_connection"] is False
+
+
 def test_windows_auth(monkeypatch):
     monkeypatch.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "windows")
     monkeypatch.delenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", raising=False)
