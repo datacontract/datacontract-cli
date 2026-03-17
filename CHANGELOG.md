@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.11.6] - 2026-03-17
+
 ### Fixed
 - Fix parser error for CSV / Parquet table names containing special characters (#1066)
 - Fix BigQuery export failing with "Unsupported type" for parameterized physicalType like `NUMERIC(18, 4)` (#1083)
