@@ -77,6 +77,18 @@ def _get_format(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
     return field.format
 
 
+def _get_max_length(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
+    """Get maxLength from a field's logicalTypeOptions or customProperties."""
+    if isinstance(field, SchemaProperty):
+        if field.logicalTypeOptions and field.logicalTypeOptions.get("maxLength"):
+            return field.logicalTypeOptions.get("maxLength")
+        val = _get_config_value(field, "maxLength")
+        if val:
+            return int(val)
+        return None
+    return None
+
+
 def _get_items(field: Union[SchemaProperty, FieldLike]) -> Optional[Union[SchemaProperty, FieldLike]]:
     """Get items from an array field."""
     if isinstance(field, SchemaProperty):
@@ -97,6 +109,10 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
     physical_type = _get_config_value(field, "physicalType")
     if physical_type:
         return physical_type
+
+    # Respect the physicalType set directly on an ODCS SchemaProperty as-is.
+    if isinstance(field, SchemaProperty) and field.physicalType:
+        return field.physicalType
 
     if server_type == "snowflake":
         return convert_to_snowflake(field)
@@ -137,6 +153,9 @@ def convert_to_snowflake(field: Union[SchemaProperty, FieldLike]) -> None | str:
     if type is None:
         return None
     if type.lower() in ["string", "varchar", "text"]:
+        max_length = _get_max_length(field)
+        if max_length:
+            return f"varchar({max_length})"
         return type.upper()  # STRING, TEXT, VARCHAR are all the same in snowflake
     if type.lower() in ["timestamp", "timestamp_tz"]:
         return "TIMESTAMP_TZ"
@@ -178,6 +197,9 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
     if type.lower() in ["string", "varchar", "text"]:
         if format == "uuid":
             return "uuid"
+        max_length = _get_max_length(field)
+        if max_length:
+            return f"varchar({max_length})"
         return "text"  # STRING does not exist, TEXT and VARCHAR are all the same in postrges
     if type.lower() in ["timestamp", "timestamp_tz"]:
         return "timestamptz"
@@ -364,7 +386,12 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
     }
 
     # Convert simple mappings
+    _varchar_types = {"nvarchar", "varchar", "string", "text"}
     if type_lower in type_mapping:
+        if type_lower in _varchar_types:
+            max_length = _get_max_length(field)
+            if max_length:
+                return f"VARCHAR({max_length})"
         return type_mapping[type_lower]
 
     # convert decimal numbers with precision and scale
@@ -421,6 +448,9 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
     if field_type in ["string", "varchar", "text"]:
         if format == "uuid":
             return "uniqueidentifier"
+        max_length = _get_max_length(field)
+        if max_length:
+            return f"varchar({max_length})"
         return "varchar"
     if field_type in ["timestamp", "timestamp_tz"]:
         return "datetimeoffset"
@@ -499,6 +529,9 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return None
     field_type = field_type.lower()
     if field_type in ["string", "text", "varchar"]:
+        max_length = _get_max_length(field)
+        if max_length:
+            return f"varchar({max_length})"
         return "varchar"
     # tinyint, smallint not supported by data contract
     if field_type in ["number", "decimal", "numeric"]:
