@@ -60,7 +60,6 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
             logical_type = map_type_from_sql(col_type)
             col_description = get_description(column)
             max_length = get_max_length(column)
-            precision, scale = get_precision_scale(column)
             is_primary_key = get_primary_key(column)
             is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
 
@@ -70,8 +69,6 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
                 physical_type=col_type,
                 description=col_description,
                 max_length=max_length,
-                precision=precision,
-                scale=scale,
                 primary_key=is_primary_key,
                 primary_key_position=primary_key_position if is_primary_key else None,
                 required=is_required if is_required else None,

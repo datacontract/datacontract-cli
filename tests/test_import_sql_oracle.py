@@ -228,3 +228,57 @@ schema:
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+
+
+def test_import_sql_oracle_number_precision_in_custom_properties():
+    """Test that Oracle NUMBER(p, s) types store precision/scale in customProperties, not logicalTypeOptions."""
+    result = DataContract.import_from_source(
+        "sql", "fixtures/oracle/import/ddl_with_precision.sql", dialect="oracle"
+    )
+
+    expected = """
+apiVersion: v3.1.0
+kind: DataContract
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
+servers:
+  - server: oracle
+    type: oracle
+schema:
+  - name: customers
+    physicalType: table
+    logicalType: object
+    physicalName: customers
+    properties:
+      - name: customer_id
+        logicalType: number
+        physicalType: NUMBER(9, 0)
+        description: Integer-like number with precision
+      - name: customer_score
+        logicalType: number
+        physicalType: NUMBER(5, 2)
+        description: Decimal number with precision and scale
+      - name: balance
+        logicalType: number
+        physicalType: NUMBER(15, 4)
+        description: Large decimal number
+      - name: amount
+        logicalType: number
+        physicalType: NUMBER(10)
+        description: Number with only precision
+      - name: plain_number
+        logicalType: number
+        physicalType: NUMBER
+        description: Plain number without precision or scale
+    """
+    print("Result", result.to_yaml())
+    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+
+    # Verify precision and scale are NOT in logicalTypeOptions (which would violate ODCS schema)
+    parsed = yaml.safe_load(result.to_yaml())
+    for prop in parsed["schema"][0]["properties"]:
+        log_type_opts = prop.get("logicalTypeOptions", {})
+        assert "precision" not in log_type_opts, f"precision must not be in logicalTypeOptions for {prop['name']}"
+        assert "scale" not in log_type_opts, f"scale must not be in logicalTypeOptions for {prop['name']}"

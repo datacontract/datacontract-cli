@@ -48,9 +48,11 @@ schema:
   - name: decimal_field
     physicalType: DECIMAL
     logicalType: number
-    logicalTypeOptions:
-      precision: 10
-      scale: 2
+    customProperties:
+    - property: precision
+      value: 10
+    - property: scale
+      value: 2
   - name: float_field
     physicalType: FLOAT
     logicalType: number

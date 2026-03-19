@@ -35,10 +35,16 @@ def _get_type(prop: SchemaProperty) -> Optional[str]:
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
-    """Get a logical type option value."""
-    if prop.logicalTypeOptions is None:
-        return None
-    return prop.logicalTypeOptions.get(key)
+    """Get a logical type option value, checking logicalTypeOptions and customProperties."""
+    if prop.logicalTypeOptions is not None:
+        val = prop.logicalTypeOptions.get(key)
+        if val is not None:
+            return val
+    if prop.customProperties is not None:
+        for cp in prop.customProperties:
+            if cp.property == key:
+                return cp.value
+    return None
 
 
 def to_sqlalchemy_model_str(odcs: OpenDataContractStandard, sql_server_type: str = "", server=None) -> str:
