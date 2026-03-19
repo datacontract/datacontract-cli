@@ -11,7 +11,6 @@ from datacontract.export.sql_type_converter import (
     convert_type_to_trino,
 )
 
-
 # ---------------------------------------------------------------------------
 # _get_max_length helper
 # ---------------------------------------------------------------------------
