@@ -25,6 +25,19 @@ uv python pin 3.11
 uv pip install -e '.[dev]'
 ```
 
+### Java (required for PySpark tests)
+
+Tests that use PySpark (e.g., `test_test_kafka.py`, `test_test_delta.py`, `test_test_dataframe.py`, `test_import_spark.py`) require Java 21. Set `JAVA_HOME` to a Java 21 installation before running these tests.
+
+```bash
+# Using SDKMAN
+source ~/.sdkman/bin/sdkman-init.sh
+sdk use java 21-open
+
+# Or set JAVA_HOME directly
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+```
+
 ## Common Commands
 
 ### Testing

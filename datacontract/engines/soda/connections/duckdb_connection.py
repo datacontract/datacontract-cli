@@ -77,7 +77,7 @@ def get_duckdb_connection(
             elif server.format == "delta":
                 con.sql("update extensions;")  # Make sure we have the latest delta extension
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
-            table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchall()
+            table_info = con.sql(f'PRAGMA table_info("{model_name}");').fetchall()
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
     return con
@@ -99,12 +99,13 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
             INTERSECT SELECT column_name
             FROM information_schema.columns
             WHERE table_name = '{model_name}'""").fetchall()
-        selected_columns = ", ".join([column[0] for column in intersecting_columns])
 
         # Insert data into table by name, but only columns existing in contract and data
-        insert_data_sql = f"""INSERT INTO {model_name} BY NAME
-            (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
-        con.sql(insert_data_sql)
+        if intersecting_columns:
+            selected_columns = ", ".join(f'"{column[0]}"' for column in intersecting_columns)
+            insert_data_sql = f"""INSERT INTO "{model_name}" BY NAME
+                (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
+            con.sql(insert_data_sql)
     else:
         # Fallback
         con.sql(
