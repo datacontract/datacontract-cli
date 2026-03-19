@@ -52,6 +52,7 @@ def _get_custom_property_value(prop: SchemaProperty, key: str):
 def _get_enum_values(prop: SchemaProperty):
     """Get enum values from logicalTypeOptions, customProperties, or quality rules."""
     import json
+
     # First check logicalTypeOptions
     enum_values = _get_logical_type_option(prop, "enum")
     if enum_values:

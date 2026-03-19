@@ -1,4 +1,3 @@
-
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
@@ -47,7 +46,7 @@ def _to_sql_query(model_name: str, model_value: SchemaObject, server_type: str) 
     if model_value.properties:
         for prop in model_value.properties:
             # TODO escape SQL reserved key words, probably dependent on server type
-            columns.append(prop.name)
+            columns.append(prop.physicalName or prop.name)
 
     result = "select\n"
     current_column_index = 1
@@ -62,9 +61,7 @@ def _to_sql_query(model_name: str, model_value: SchemaObject, server_type: str) 
     return result
 
 
-def to_sql_ddl(
-    data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None
-) -> str:
+def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None) -> str:
     if data_contract is None:
         return ""
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -117,7 +114,8 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
 
     for prop in properties:
         type_str = convert_to_sql_type(prop, server_type)
-        result += f"  {prop.name} {type_str}"
+        column_name = prop.physicalName or prop.name
+        result += f"  {column_name} {type_str}"
         if prop.required:
             result += " not null"
         if prop.primaryKey:

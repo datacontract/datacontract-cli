@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
-from rich.console import Console
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -41,7 +40,6 @@ def test_write_junit_handles_mkdir_file_exists_error(tmp_path):
     run.finish()
 
     output_path = tmp_path / "subdir" / "TEST-results.xml"
-    console = Console()
 
     original_mkdir = Path.mkdir
 
@@ -52,7 +50,7 @@ def test_write_junit_handles_mkdir_file_exists_error(tmp_path):
         raise FileExistsError(f"Simulated TOCTOU race for {self}")
 
     with patch.object(Path, "mkdir", mkdir_raising_file_exists):
-        write_junit_test_results(run, console, output_path)
+        write_junit_test_results(run, output_path)
 
     assert output_path.exists(), "JUnit file should be written despite FileExistsError from mkdir"
     content = output_path.read_text()

@@ -1,0 +1,31 @@
+version: 0.0.1
+kind: DataContract
+apiVersion: v3.0.0
+id: postgres-physical-name
+name: postgres-physical-name
+status: draft
+team:
+  name: my-domain-team
+servers:
+- server: production
+  type: postgres
+  host: localhost
+  port: 4567
+  database: test
+  schema: public
+schema:
+- name: my_table
+  physicalType: table
+  properties:
+  - name: field_one
+    logicalType: string
+    physicalType: varchar
+    physicalName: FIELD_ONE
+    required: true
+  - name: field_two
+    logicalType: integer
+    physicalType: integer
+    physicalName: FIELD_TWO
+  - name: field_three
+    logicalType: timestamp
+    physicalType: timestamp

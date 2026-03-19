@@ -521,10 +521,11 @@ servers:
 
 #### BigQuery
 
-We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
+We support authentication to BigQuery using Service Account Key or Application Default Credentials (ADC). ADC supports Workload Identity Federation (WIF), GCE metadata server, and `gcloud auth application-default login`. The used Service Account should include the roles:
 * BigQuery Job User
 * BigQuery Data Viewer
 
+When no `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is set, the CLI falls back to ADC/WIF automatically via Soda's `use_context_auth`.
 
 ##### Example
 
@@ -545,7 +546,8 @@ models:
 
 | Environment Variable                         | Example                   | Description                                             |
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
-| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery. If this environment variable isn't set, the cli tries to use `GOOGLE_APPLICATION_CREDENTIALS` as a fallback, so if you have that set for using their Python library anyway, it should work seamlessly. |
+| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
+| `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
 
 
 #### Azure
@@ -577,7 +579,7 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 
 #### Sqlserver
 
-Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool).
+Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric).
 
 ##### Example
 
@@ -601,14 +603,17 @@ models:
 
 ##### Environment Variables
 
-| Environment Variable                              | Example| Description                                  |
-|---------------------------------------------------|--------|----------------------------------------------|
-| `DATACONTRACT_SQLSERVER_USERNAME`                 | `root` | Username                                     |
-| `DATACONTRACT_SQLSERVER_PASSWORD`                 | `toor` | Password                                     |
-| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True` | Use windows authentication, instead of login |
-| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate                |
-| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True` | Use SSL                                      |
-| `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name   |
+| Environment Variable                              | Example                         | Description                                                                                                                       |
+|---------------------------------------------------|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `DATACONTRACT_SQLSERVER_AUTHENTICATION`           | `sql`                           | Supported: `sql` (default), `cli` (uses `az login` session), `windows`, `ActiveDirectoryPassword`, `ActiveDirectoryServicePrincipal`, `ActiveDirectoryInteractive` |
+| `DATACONTRACT_SQLSERVER_USERNAME`                 | `root`                          | Username (for `sql`, `ActiveDirectoryPassword`, `ActiveDirectoryInteractive`)                                                     |
+| `DATACONTRACT_SQLSERVER_PASSWORD`                 | `toor`                          | Password (for `sql` and `ActiveDirectoryPassword`)                                                                                |
+| `DATACONTRACT_SQLSERVER_CLIENT_ID`                | `a3cf5d29-b1a7-...`             | Application/Client ID (for `ActiveDirectoryServicePrincipal`)                                                                     |
+| `DATACONTRACT_SQLSERVER_CLIENT_SECRET`            | `kX9~Qr2Lm.Tz4W...`             | Client secret (for `ActiveDirectoryServicePrincipal`)                                                                             |
+| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True`                          | Trust self-signed certificate                                                                                                     |
+| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True`                          | Use SSL                                                                                                                           |
+| `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name                                                                                                                  |
+| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True`                          | Deprecated. Equivalent to `AUTHENTICATION=windows`                                                                                |
 
 
 
@@ -1535,7 +1540,6 @@ Available import options:
 | `spark`            | Import from Spark StructTypes, Variant        | ✅       |
 | `sql`              | Import from SQL DDL                           | ✅       |
 | `unity`            | Import from Databricks Unity Catalog          | partial |
-| `excel`            | Import from ODCS Excel Template               | ✅       |
 | Missing something? | Please create an issue on GitHub              | TBD     |
 
 

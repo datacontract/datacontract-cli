@@ -148,7 +148,9 @@ def to_suite(expectations: List[Dict[str, Any]], expectation_suite_name: str) ->
     )
 
 
-def model_to_expectations(properties: List[SchemaProperty], engine: str | None, sql_server_type: str) -> List[Dict[str, Any]]:
+def model_to_expectations(
+    properties: List[SchemaProperty], engine: str | None, sql_server_type: str
+) -> List[Dict[str, Any]]:
     """Converts model properties to a list of expectations.
 
     Args:
@@ -343,7 +345,11 @@ def get_quality_checks(qualities: List[DataQuality], field_name: str | None = No
     """
     quality_specification = []
     for quality in qualities:
-        if quality is not None and quality.engine is not None and quality.engine.lower() in ("great-expectations", "greatexpectations"):
+        if (
+            quality is not None
+            and quality.engine is not None
+            and quality.engine.lower() in ("great-expectations", "greatexpectations")
+        ):
             ge_expectation = quality.implementation
             if field_name is not None and isinstance(ge_expectation, dict):
                 ge_expectation["column"] = field_name

@@ -199,10 +199,7 @@ def export(
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     schema_name: Annotated[
         str,
-        typer.Option(
-            help="The name of the schema to export, e.g., `orders`, or `all` for all "
-            "schemas (default)."
-        ),
+        typer.Option(help="The name of the schema to export, e.g., `orders`, or `all` for all schemas (default)."),
     ] = "all",
     # TODO: this should be a subcommand
     rdf_base: Annotated[
