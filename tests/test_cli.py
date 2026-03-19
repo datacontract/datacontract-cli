@@ -16,3 +16,10 @@ def test_file_does_not_exist():
     result = runner.invoke(app, ["test", "unknown.yaml"])
     assert result.exit_code == 1
     assert "The file 'unknown.yaml' does not \nexist." in result.stdout
+
+
+def test_test_schema_name_option_in_help():
+    """Test that --schema-name option is available in test command help."""
+    result = runner.invoke(app, ["test", "--help"])
+    assert result.exit_code == 0
+    assert "--schema-name" in result.stdout

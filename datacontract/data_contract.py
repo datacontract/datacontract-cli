@@ -91,7 +91,7 @@ class DataContract:
         run.finish()
         return run
 
-    def test(self) -> Run:
+    def test(self, schema_name: str = "all") -> Run:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
@@ -103,7 +103,9 @@ class DataContract:
                 inline_definitions=self._inline_definitions,
             )
 
-            execute_data_contract_test(data_contract, run, self._server, self._spark, self._duckdb_connection)
+            execute_data_contract_test(
+                data_contract, run, self._server, self._spark, self._duckdb_connection, schema_name=schema_name
+            )
 
         except DataContractException as e:
             run.checks.append(

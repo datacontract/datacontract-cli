@@ -27,6 +27,7 @@ def execute_data_contract_test(
     server_name: str = None,
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
+    schema_name: str = "all",
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -49,7 +50,7 @@ def execute_data_contract_test(
     if server.type == "api":
         server = process_api_response(run, server)
 
-    run.checks.extend(create_checks(data_contract, server))
+    run.checks.extend(create_checks(data_contract, server, schema_name=schema_name))
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
