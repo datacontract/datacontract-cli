@@ -46,7 +46,7 @@ def _to_sql_query(model_name: str, model_value: SchemaObject, server_type: str) 
     if model_value.properties:
         for prop in model_value.properties:
             # TODO escape SQL reserved key words, probably dependent on server type
-            columns.append(prop.name)
+            columns.append(prop.physicalName or prop.name)
 
     result = "select\n"
     current_column_index = 1
@@ -114,7 +114,8 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
 
     for prop in properties:
         type_str = convert_to_sql_type(prop, server_type)
-        result += f"  {prop.name} {type_str}"
+        column_name = prop.physicalName or prop.name
+        result += f"  {column_name} {type_str}"
         if prop.required:
             result += " not null"
         if prop.primaryKey:
