@@ -1,0 +1,31 @@
+dataProduct: string-types-test
+version: 1.0.0
+status: current
+id: string-types-postgres-test
+
+kind: DataContract
+apiVersion: v3.0.0
+
+servers:
+  - server: production
+    type: postgres
+    host: localhost
+    port: 5432
+    database: mydb
+    schema: public
+
+schema:
+  - name: my_table
+    physicalType: table
+    properties:
+      - name: field_physical_type
+        logicalType: string
+        physicalType: VARCHAR(255)
+      - name: field_max_length
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 100
+      - name: field_plain_string
+        logicalType: string
+      - name: field_integer
+        logicalType: integer
