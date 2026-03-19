@@ -70,6 +70,20 @@ CREATE OR REPLACE TABLE datacontract_test_2.orders_latest.line_items (
     assert actual == expected
 
 
+def test_to_sql_ddl_physical_name():
+    actual = DataContract(data_contract_file="fixtures/postgres-export-physical-name/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: postgres-physical-name
+-- SQL Dialect: postgres
+CREATE TABLE my_table (
+  FIELD_ONE text not null,
+  FIELD_TWO integer,
+  field_three timestamptz
+);
+""".strip()
+    assert actual == expected
+
+
 def test_to_sql_ddl_databricks_unity_catalog_staging():
     actual = DataContract(data_contract_file="fixtures/databricks-sql/datacontract.yaml").export(
         "sql", server="staging"
