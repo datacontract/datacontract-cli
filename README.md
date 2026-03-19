@@ -236,6 +236,7 @@ A list of available extras:
 | Avro Support            | `pip install datacontract-cli[avro]`       |
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
 | Databricks Integration  | `pip install datacontract-cli[databricks]` |
+| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
@@ -243,6 +244,7 @@ A list of available extras:
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
 | Trino                   | `pip install datacontract-cli[trino]`      |
+| Impala                  | `pip install datacontract-cli[impala]` 	   |
 | dbt                     | `pip install datacontract-cli[dbt]`        |
 | DBML                    | `pip install datacontract-cli[dbml]`       |
 | Parquet                 | `pip install datacontract-cli[parquet]`    |
@@ -394,6 +396,7 @@ Supported server types:
 - [kafka](#kafka)
 - [postgres](#postgres)
 - [trino](#trino)
+- [impala](#impala)
 - [api](#api)
 - [local](#local)
 
@@ -518,10 +521,11 @@ servers:
 
 #### BigQuery
 
-We support authentication to BigQuery using Service Account Key. The used Service Account should include the roles:
+We support authentication to BigQuery using Service Account Key or Application Default Credentials (ADC). ADC supports Workload Identity Federation (WIF), GCE metadata server, and `gcloud auth application-default login`. The used Service Account should include the roles:
 * BigQuery Job User
 * BigQuery Data Viewer
 
+When no `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is set, the CLI falls back to ADC/WIF automatically via Soda's `use_context_auth`.
 
 ##### Example
 
@@ -542,7 +546,8 @@ models:
 
 | Environment Variable                         | Example                   | Description                                             |
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
-| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Access key as saved on key creation by BigQuery. If this environment variable isn't set, the cli tries to use `GOOGLE_APPLICATION_CREDENTIALS` as a fallback, so if you have that set for using their Python library anyway, it should work seamlessly. |
+| `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
+| `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
 
 
 #### Azure
@@ -556,8 +561,7 @@ datacontract.yaml
 servers:
   production:
     type: azure
-    storageAccount: datameshdatabricksdemo
-    location: abfss://dataproducts/inventory_events/*.parquet
+    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/inventory_events/*.parquet
     format: parquet
 ```
 
@@ -575,7 +579,7 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 
 #### Sqlserver
 
-Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool).
+Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric).
 
 ##### Example
 
@@ -599,14 +603,17 @@ models:
 
 ##### Environment Variables
 
-| Environment Variable                              | Example| Description                                  |
-|---------------------------------------------------|--------|----------------------------------------------|
-| `DATACONTRACT_SQLSERVER_USERNAME`                 | `root` | Username                                     |
-| `DATACONTRACT_SQLSERVER_PASSWORD`                 | `toor` | Password                                     |
-| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True` | Use windows authentication, instead of login |
-| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate                |
-| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True` | Use SSL                                      |
-| `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name   |
+| Environment Variable                              | Example                         | Description                                                                                                                       |
+|---------------------------------------------------|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `DATACONTRACT_SQLSERVER_AUTHENTICATION`           | `sql`                           | Supported: `sql` (default), `cli` (uses `az login` session), `windows`, `ActiveDirectoryPassword`, `ActiveDirectoryServicePrincipal`, `ActiveDirectoryInteractive` |
+| `DATACONTRACT_SQLSERVER_USERNAME`                 | `root`                          | Username (for `sql`, `ActiveDirectoryPassword`, `ActiveDirectoryInteractive`)                                                     |
+| `DATACONTRACT_SQLSERVER_PASSWORD`                 | `toor`                          | Password (for `sql` and `ActiveDirectoryPassword`)                                                                                |
+| `DATACONTRACT_SQLSERVER_CLIENT_ID`                | `a3cf5d29-b1a7-...`             | Application/Client ID (for `ActiveDirectoryServicePrincipal`)                                                                     |
+| `DATACONTRACT_SQLSERVER_CLIENT_SECRET`            | `kX9~Qr2Lm.Tz4W...`             | Client secret (for `ActiveDirectoryServicePrincipal`)                                                                             |
+| `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True`                          | Trust self-signed certificate                                                                                                     |
+| `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION`     | `True`                          | Use SSL                                                                                                                           |
+| `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name                                                                                                                  |
+| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True`                          | Deprecated. Equivalent to `AUTHENTICATION=windows`                                                                                |
 
 
 
@@ -923,6 +930,53 @@ models:
 | `DATACONTRACT_TRINO_USERNAME` | `trino`            | Username    |
 | `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
 
+
+#### Impala
+
+Data Contract CLI can run Soda checks against an Apache Impala cluster.
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  impala:
+    type: impala
+    host: my-impala-host
+    port: 443
+    # Optional default database used for Soda scans
+    database: my_database
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    # fields as usual …
+```
+
+##### Environment Variables
+
+| Environment Variable                      | Example               | Description                                               |
+|-------------------------------            |--------------------   |-------------                                              |
+| `DATACONTRACT_IMPALA_USERNAME`            | `analytics_user`      | Username used to connect to Impala                        |
+| `DATACONTRACT_IMPALA_PASSWORD`            | `mysecretpassword`    | Password for the Impala user                              |
+| `DATACONTRACT_IMPALA_USE_SSL`             | `true`                | Whether to use SSL; defaults to true if unset             |
+| `DATACONTRACT_IMPALA_AUTH_MECHANISM`      | `LDAP`                | Authentication mechanism; defaults to LDAP                |
+| `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`  | `true`                | Whether to use the HTTP transport; defaults to true       |
+| `DATACONTRACT_IMPALA_HTTP_PATH`           | `cliservice`          | HTTP path for the Impala service; defaults to cliservice  |
+
+### Type-mapping note (logicalType → Impala type)
+
+If `physicalType` is not specified in the schema, we recommend the following mapping from `logicalType` to Impala column types:
+
+|logicalType | Recommended Impala type |
+|------------|-------------------------|
+| `integer`  | `INT` or `BIGINT`       |
+| `number`   | `DOUBLE`/`decimal(..)`  |
+| `string`   | `STRING` or `VARCHAR`   |
+| `boolean`  | `BOOLEAN`               |
+| `date`     | `DATE`                  |
+| `datetime` | `TIMESTAMP`             |
+
+This keeps the Impala schema compatible with the expectations of the Soda checks generated by datacontract-cli.
 
 #### API
 
@@ -1478,7 +1532,6 @@ Available import options:
 | `spark`            | Import from Spark StructTypes, Variant        | ✅       |
 | `sql`              | Import from SQL DDL                           | ✅       |
 | `unity`            | Import from Databricks Unity Catalog          | partial |
-| `excel`            | Import from ODCS Excel Template               | ✅       |
 | Missing something? | Please create an issue on GitHub              | TBD     |
 
 

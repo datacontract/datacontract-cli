@@ -1,19 +1,33 @@
 import os
-from typing import Any, List, Optional
+import re
+from typing import TYPE_CHECKING, Any, List, Optional
 
-import duckdb
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
+from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.run import Run
+
+if TYPE_CHECKING:
+    import duckdb
+
+
+def _import_duckdb():
+    try:
+        import duckdb
+
+        return duckdb
+    except ImportError:
+        raise ImportError("duckdb is required for this server type. Install with: pip install datacontract-cli[duckdb]")
 
 
 def get_duckdb_connection(
     data_contract: OpenDataContractStandard,
     server: Server,
     run: Run,
-    duckdb_connection: duckdb.DuckDBPyConnection | None = None,
-) -> duckdb.DuckDBPyConnection:
+    duckdb_connection: "duckdb.DuckDBPyConnection | None" = None,
+) -> "duckdb.DuckDBPyConnection":
+    duckdb = _import_duckdb()
     if duckdb_connection is None:
         con = duckdb.connect(database=":memory:")
     else:
@@ -57,27 +71,46 @@ def get_duckdb_connection(
                     )
                     add_nested_views(con, model_name, schema_obj.properties)
             elif server.format == "parquet":
-                con.sql(f"""
-                            CREATE VIEW "{model_name}" AS SELECT * FROM read_parquet('{model_path}', hive_partitioning=1);
-                            """)
+                create_view_with_schema_union(con, schema_obj, model_path, "read_parquet", to_parquet_types)
             elif server.format == "csv":
-                columns = to_csv_types(schema_obj)
-                run.log_info("Using columns: " + str(columns))
-                if columns is None:
-                    con.sql(
-                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1);"""
-                    )
-                else:
-                    con.sql(
-                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_csv('{model_path}', hive_partitioning=1, columns={columns});"""
-                    )
+                create_view_with_schema_union(con, schema_obj, model_path, "read_csv", to_csv_types)
             elif server.format == "delta":
                 con.sql("update extensions;")  # Make sure we have the latest delta extension
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
-            table_info = con.sql(f"PRAGMA table_info('{model_name}');").fetchdf()
-            if table_info is not None and not table_info.empty:
-                run.log_info(f"DuckDB Table Info: {table_info.to_string(index=False)}")
+            table_info = con.sql(f'PRAGMA table_info("{model_name}");').fetchall()
+            if table_info:
+                run.log_info(f"DuckDB Table Info: {table_info}")
     return con
+
+
+def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str, read_function: str, type_converter):
+    """Create a view by unioning empty schema table with data files using union_by_name"""
+    converted_types = type_converter(schema_obj)
+    model_name = schema_obj.name
+    if converted_types:
+        # Create empty table with contract schema
+        columns_def = [f'"{col_name}" {col_type}' for col_name, col_type in converted_types.items()]
+        create_empty_table = f"""CREATE TABLE "{model_name}" ({", ".join(columns_def)});"""
+        con.sql(create_empty_table)
+
+        # Read columns existing in both current data contract and data
+        intersecting_columns = con.sql(f"""SELECT column_name
+            FROM (DESCRIBE SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1))
+            INTERSECT SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '{model_name}'""").fetchall()
+
+        # Insert data into table by name, but only columns existing in contract and data
+        if intersecting_columns:
+            selected_columns = ", ".join(f'"{column[0]}"' for column in intersecting_columns)
+            insert_data_sql = f"""INSERT INTO "{model_name}" BY NAME
+                (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
+            con.sql(insert_data_sql)
+    else:
+        # Fallback
+        con.sql(
+            f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+        )
 
 
 def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
@@ -87,6 +120,17 @@ def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     if schema_obj.properties:
         for prop in schema_obj.properties:
             columns[prop.name] = convert_to_duckdb_csv_type(prop)
+    return columns
+
+
+def to_parquet_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
+    """Get proper SQL types for Parquet (preserves decimals, etc.)"""
+    if schema_obj is None:
+        return None
+    columns = {}
+    if schema_obj.properties:
+        for prop in schema_obj.properties:
+            columns[prop.name] = convert_to_duckdb(prop)
     return columns
 
 
@@ -109,7 +153,7 @@ def _get_type(prop: SchemaProperty) -> Optional[str]:
     return None
 
 
-def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, properties: List[SchemaProperty] | None):
+def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properties: List[SchemaProperty] | None):
     model_name = model_name.strip('"')
     if properties is None:
         return
@@ -140,7 +184,7 @@ def add_nested_views(con: duckdb.DuckDBPyConnection, model_name: str, properties
             add_nested_views(con, nested_model_name, prop.properties)
 
 
-def setup_s3_connection(con, server):
+def setup_s3_connection(con, server: Server):
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
@@ -184,7 +228,7 @@ def setup_s3_connection(con, server):
             """)
 
 
-def setup_gcs_connection(con, server):
+def setup_gcs_connection(con, server: Server):
     key_id = os.getenv("DATACONTRACT_GCS_KEY_ID")
     secret = os.getenv("DATACONTRACT_GCS_SECRET")
 
@@ -202,11 +246,13 @@ def setup_gcs_connection(con, server):
     """)
 
 
-def setup_azure_connection(con, server):
+def setup_azure_connection(con, server: Server):
     tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
     client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
     client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
-    storage_account = server.storageAccount
+    storage_account = (
+        to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
+    )
 
     if tenant_id is None:
         raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
@@ -239,3 +285,26 @@ def setup_azure_connection(con, server):
             CLIENT_SECRET '{client_secret}'
         );
         """)
+
+
+def to_azure_storage_account(location: str) -> str | None:
+    """
+    Converts a storage location string to extract the storage account name.
+    ODCS v3.0 has no explicit field for the storage account. It uses the location field, which is a URI.
+    This function parses a storage location string to identify and return the
+    storage account name. It handles two primary patterns:
+    1. Protocol://containerName@storageAccountName
+    2. Protocol://storageAccountName
+    :param location: The storage location string to parse, typically following
+                     the format protocol://containerName@storageAccountName. or
+                     protocol://storageAccountName.
+    :return: The extracted storage account name if found, otherwise None
+    """
+    # to catch protocol://containerName@storageAccountName. pattern from location
+    match = re.search(r"(?<=@)([^.]*)", location, re.IGNORECASE)
+    if match:
+        return match.group()
+    else:
+        # to catch protocol://storageAccountName. pattern from location
+        match = re.search(r"(?<=//)(?!@)([^.]*)", location, re.IGNORECASE)
+    return match.group() if match else None

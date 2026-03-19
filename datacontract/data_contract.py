@@ -4,9 +4,8 @@ import typing
 from open_data_contract_standard.model import OpenDataContractStandard, Team
 
 if typing.TYPE_CHECKING:
+    from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
-
-from duckdb.duckdb import DuckDBPyConnection
 
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
@@ -29,7 +28,7 @@ class DataContract:
         server: str = None,
         publish_url: str = None,
         spark: "SparkSession" = None,
-        duckdb_connection: DuckDBPyConnection = None,
+        duckdb_connection: "DuckDBPyConnection" = None,
         inline_definitions: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
@@ -203,9 +202,7 @@ class DataContract:
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        odcs_imported = importer_factory.create(format).import_source(
-            source=source, import_args=kwargs
-        )
+        odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
 
         cls._overwrite_id_in_odcs(odcs_imported, id)
         cls._overwrite_owner_in_odcs(odcs_imported, owner)

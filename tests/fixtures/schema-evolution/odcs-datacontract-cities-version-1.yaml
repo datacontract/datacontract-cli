@@ -1,0 +1,35 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: cities
+name: Cities
+status: active
+servers:
+  - server: dev-csv
+    type: local
+    environment: DEV
+    format: csv
+    path: ./fixtures/schema-evolution/cities-version-1.csv
+  - server: dev-parquet
+    type: local
+    environment: DEV
+    format: parquet
+    path: ./fixtures/schema-evolution/cities-version-1.parquet
+schema:
+  - name: cities
+    physicalType: file
+    logicalType: object
+    properties:
+      - name: city_id
+        physicalType: varchar
+        logicalType: string
+        required: true
+        unique: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        examples:
+          - 12374430-dc44-4f75-874b-86c0ea26aeea
+      - name: name
+        physicalType: varchar
+        logicalType: string
+        required: true

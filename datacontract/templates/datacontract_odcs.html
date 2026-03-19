@@ -1,6 +1,6 @@
 {% macro render_nested_properties(properties, level) %}
   <tr>
-    {% for property in properties %}
+    {% for property in properties or [] %}
     <td class="px-4 py-4 whitespace-nowrap">
       
       <div class="text-sm font-medium text-gray-900">
@@ -268,7 +268,7 @@
               </div>
             </div>
 
-            {% for schema in datacontract.schema_ %}
+            {% for schema in datacontract.schema_ or [] %}
 
             <div class="mt-3 flow-root">
               <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">

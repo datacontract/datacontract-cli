@@ -1,7 +1,6 @@
 import os
 from typing import Dict, List
 
-import duckdb
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
@@ -14,16 +13,17 @@ from datacontract.imports.odcs_helper import (
 
 
 class CsvImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_csv(source)
 
 
-def import_csv(
-    source: str, include_examples: bool = False
-) -> OpenDataContractStandard:
+def import_csv(source: str, include_examples: bool = False) -> OpenDataContractStandard:
     """Import a CSV file and create an ODCS data contract."""
+    try:
+        import duckdb
+    except ImportError:
+        raise ImportError("duckdb is required for CSV import. Install with: pip install datacontract-cli[duckdb]")
+
     # use the file name as table name
     table_name = os.path.splitext(os.path.basename(source))[0]
 
@@ -56,6 +56,7 @@ def import_csv(
     # Set delimiter as custom property on server if needed
     if delimiter:
         from open_data_contract_standard.model import CustomProperty
+
         odcs.servers[0].customProperties = [CustomProperty(property="delimiter", value=delimiter)]
 
     rowcount = tbl.shape[0]

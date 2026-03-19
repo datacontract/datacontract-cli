@@ -14,7 +14,7 @@ from datacontract.export.html_exporter import get_version
 
 def _get_owner(odcs: OpenDataContractStandard) -> Optional[str]:
     """Get the owner from ODCS customProperties or team."""
-    if odcs.team and odcs.team.name:
+    if odcs.team and hasattr(odcs.team, "name") and odcs.team.name:
         return odcs.team.name
     if odcs.customProperties:
         for prop in odcs.customProperties:
@@ -32,7 +32,11 @@ def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
     odcs = data_contract.get_data_contract()
     file_without_suffix = file.with_suffix(".html")
     html_filepath = path / file_without_suffix
-    html_filepath.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        html_filepath.parent.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        if not html_filepath.parent.is_dir():
+            raise
     with open(html_filepath, "w", encoding="utf-8") as f:
         f.write(html)
     contracts.append(
@@ -48,6 +52,7 @@ def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
 @dataclass
 class _InfoView:
     """Unified info view for templates."""
+
     title: str
     version: str
     owner: Optional[str]
@@ -57,6 +62,7 @@ class _InfoView:
 @dataclass
 class _SpecView:
     """Unified spec view for templates, compatible with DCS template structure."""
+
     info: _InfoView
     models: dict
 

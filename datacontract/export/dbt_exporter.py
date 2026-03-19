@@ -59,6 +59,7 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
 def _get_enum_values(prop: SchemaProperty):
     """Get enum values from logicalTypeOptions, customProperties, or quality rules."""
     import json
+
     # First check logicalTypeOptions
     enum_values = _get_logical_type_option(prop, "enum")
     if enum_values:
@@ -341,13 +342,9 @@ def _to_column(
         column["data_tests"].append({"dbt_expectations.expect_column_values_to_be_between": range_test})
     else:
         if minimum is not None:
-            column["data_tests"].append(
-                {"dbt_expectations.expect_column_values_to_be_between": {"min_value": minimum}}
-            )
+            column["data_tests"].append({"dbt_expectations.expect_column_values_to_be_between": {"min_value": minimum}})
         if maximum is not None:
-            column["data_tests"].append(
-                {"dbt_expectations.expect_column_values_to_be_between": {"max_value": maximum}}
-            )
+            column["data_tests"].append({"dbt_expectations.expect_column_values_to_be_between": {"max_value": maximum}})
         if exclusive_minimum is not None:
             column["data_tests"].append(
                 {
@@ -371,7 +368,7 @@ def _to_column(
     references = None
     if prop.relationships:
         for rel in prop.relationships:
-            if hasattr(rel, 'to') and rel.to:
+            if hasattr(rel, "to") and rel.to:
                 references = rel.to
                 break
     if references is not None:

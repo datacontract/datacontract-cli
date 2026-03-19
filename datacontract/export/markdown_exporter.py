@@ -105,7 +105,7 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
         return ""
     if is_in_table_cell:
         bullet_char = "•"
-        newline_char = "<br>"
+        newline_char = "<br />"
     else:
         bullet_char = "-"
         newline_char = "\n"
@@ -247,12 +247,12 @@ def description_to_markdown(description) -> str:
     if description is None:
         return "No description."
     if isinstance(description, str):
-        return description.replace("\n", "<br>")
+        return description.replace("\n", "<br />")
     # Handle Description object - use purpose as the primary description
     if hasattr(description, "purpose") and description.purpose:
-        return description.purpose.replace("\n", "<br>")
+        return description.purpose.replace("\n", "<br />")
     if hasattr(description, "usage") and description.usage:
-        return description.usage.replace("\n", "<br>")
+        return description.usage.replace("\n", "<br />")
     return "No description."
 
 
@@ -285,7 +285,7 @@ def array_of_dict_to_markdown(array: List[Dict[str, str]]) -> str:
         markdown_parts.append(
             "| "
             + " | ".join(
-                f"{str(element.get(header, ''))}".replace("\n", "<br>").replace("\t", TAB) for header in headers
+                f"{str(element.get(header, ''))}".replace("\n", "<br />").replace("\t", TAB) for header in headers
             )
             + " |"
         )
@@ -352,7 +352,7 @@ def extra_to_markdown(obj: BaseModel, is_in_table_cell: bool = False) -> str:
 
     bullet_char = "•"
     value_line_ending = "" if is_in_table_cell else "\n"
-    row_suffix = "<br>" if is_in_table_cell else ""
+    row_suffix = "<br />" if is_in_table_cell else ""
 
     def render_header(key: str) -> str:
         return f"{bullet_char} **{key}:** " if is_in_table_cell else f"\n### {key.capitalize()}\n"

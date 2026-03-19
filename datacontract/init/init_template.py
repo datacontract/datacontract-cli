@@ -3,7 +3,7 @@ import logging
 
 import requests
 
-DEFAULT_DATA_CONTRACT_INIT_TEMPLATE = "datacontract-1.2.1.init.yaml"
+DEFAULT_DATA_CONTRACT_INIT_TEMPLATE = "odcs-3.1.0.init.yaml"
 
 
 def get_init_template(location: str = None) -> str:

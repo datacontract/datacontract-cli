@@ -7,10 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.11.6] - 2026-03-17
+
+### Fixed
+- Fix parser error for CSV / Parquet table names containing special characters (#1066)
+- Fix BigQuery export failing with "Unsupported type" for parameterized physicalType like `NUMERIC(18, 4)` (#1083)
+
+### Added
+- Added JSON output format for test results (`--output-format json`)
+- Added Azure AD / Entra ID authentication support for SQL Server and Microsoft Fabric
+
+## [0.11.5] - 2026-02-19
+
 ### Fixed
 
-- Restrict DuckDB dependency to < 1.4.0 (#972)
+- Fix BigQuery import for repeated fields (#1017)
+- Make Markdown export compatible with XHTML by replacing `<br>` with `<br />` (#1030)
+- Add ADC/WIF and impersonation support for BigQuery (#1064)
+- Fix Snowflake quoted identifiers by enabling double-quote quoting (#1053)
+- Fix retention duration crash for numeric ODCS values (#1051)
+- Fix physicalType bypass for precision and scale conversion (#1043)
+- Fix mkdir TOCTOU race causing silent JUnit write failure (#1050)
+- Fix validation failure for field names with special chars on Databricks (#1049)
+- Add Azure support for field name quoting in schema checks (#1025)
 
+## [0.11.4] - 2026-01-19
+
+### Changed
+
+- Made `duckdb` an optional dependency. Install with `pip install datacontract-cli[duckdb]` for local/S3/GCS/Azure file testing.
+- Removed unused `fastparquet` and `numpy` core dependencies.
+
+### Added
+
+- Include searchable tags in catalog index.html
+
+### Fixed
+
+- Fixed example(s) field mapping for Data Contract Specification importer (#992).
+- Spark exporter now supports decimal precision/scale via `customProperties` or parsing from `physicalType` (e.g., `decimal(10,2)`) (#996)
+- Fix catalog/HTML export failing on ODCS contracts with no schema or no properties (#971)
+
+## [0.11.3] - 2026-01-10
+
+### Fixed
+
+- Fix `datacontract init` to generate ODCS format instead of deprecated Data Contract Specification (#984)
+- Fix ODCS lint failing on optional relationship `type` field by updating open-data-contract-standard to v3.1.2 (#971)
+- Restrict DuckDB dependency to < 1.4.0 (#972)
+- Fixed schema evolution support for optional fields in CSV and Parquet formats. Optional fields marked with `required: false` are no longer incorrectly treated as required during validation, enabling proper schema evolution where optional fields can be added to contracts without breaking validation of historical data files (#977)
+- Fixed decimals in pydantic model export. Fields marked with `type: decimal` will be mapped to `decimal.Decimal` instead of `float`.
+- Fix BigQuery test failure for fields with FLOAT or BOOLEAN types by mapping them to equivalent types (BOOL and FLOAT64)
+
+## [0.11.2] - 2025-12-15
+
+### Added
+- Add Impala engine support for Soda scans via ODCS `impala` server type.
+### Fixed
+- Restrict DuckDB dependency to < 1.4.0 (#972)
 
 ## [0.11.1] - 2025-12-14
 

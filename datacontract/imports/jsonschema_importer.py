@@ -14,9 +14,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 class JsonSchemaImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_jsonschema(source)
 
 
@@ -75,9 +73,7 @@ def load_and_validate_json_schema(source: str) -> dict:
     return json_schema
 
 
-def jsonschema_to_properties(
-    json_properties: Dict[str, Any], required_properties: List[str]
-) -> List[SchemaProperty]:
+def jsonschema_to_properties(json_properties: Dict[str, Any], required_properties: List[str]) -> List[SchemaProperty]:
     """Convert JSON Schema properties to ODCS SchemaProperty list."""
     properties = []
 
@@ -89,9 +85,7 @@ def jsonschema_to_properties(
     return properties
 
 
-def schema_to_property(
-    name: str, prop_schema: Dict[str, Any], is_required: bool = None
-) -> SchemaProperty:
+def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool = None) -> SchemaProperty:
     """Convert a JSON Schema property to an ODCS SchemaProperty."""
     # Determine the type
     property_type = determine_type(prop_schema)

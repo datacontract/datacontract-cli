@@ -64,10 +64,13 @@ jobs:
         run: datacontract --version
       - name: Test datacontract init
         run: datacontract init new-datacontract.yaml
-      - name: Test datacontract test
-        run: cd tests && datacontract test fixtures/local-delta/datacontract.yaml
       - name: Test datacontract export
         run: datacontract export --format sql tests/fixtures/export/datacontract.odcs.yaml
+      - name: Install dependencies with duckdb
+        run: |
+          pip install -e '.[duckdb]'
+      - name: Test datacontract test
+        run: cd tests && datacontract test fixtures/local-delta/datacontract.yaml
 
   docker:
     runs-on: ubuntu-latest

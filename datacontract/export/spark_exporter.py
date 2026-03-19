@@ -1,4 +1,5 @@
 import json
+import re
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
@@ -119,6 +120,34 @@ def _get_custom_property_value(prop: SchemaProperty, key: str) -> Optional[str]:
     return None
 
 
+def _parse_decimal_precision_scale(physical_type: str) -> tuple[Optional[int], Optional[int]]:
+    """Parse precision and scale from physicalType like 'decimal(10,2)' or 'numeric(18,4)'."""
+    match = re.match(r"(?:decimal|numeric)\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)", physical_type, re.IGNORECASE)
+    if match:
+        return int(match.group(1)), int(match.group(2))
+    return None, None
+
+
+def _get_decimal_type(prop: SchemaProperty) -> types.DecimalType:
+    """Get DecimalType: first from customProperties, then parse from physicalType, else Spark defaults."""
+    # First check customProperties
+    precision_str = _get_custom_property_value(prop, "precision")
+    scale_str = _get_custom_property_value(prop, "scale")
+    if precision_str is not None or scale_str is not None:
+        precision = int(precision_str) if precision_str else types.DecimalType().precision
+        scale = int(scale_str) if scale_str else types.DecimalType().scale
+        return types.DecimalType(precision=precision, scale=scale)
+
+    # Fallback: parse from physicalType
+    if prop.physicalType:
+        precision, scale = _parse_decimal_precision_scale(prop.physicalType)
+        if precision is not None:
+            return types.DecimalType(precision=precision, scale=scale if scale is not None else 0)
+
+    # Use Spark defaults
+    return types.DecimalType()
+
+
 def _logical_type_to_spark_type(logical_type: str) -> types.DataType:
     """Convert a logical type string to a Spark DataType."""
     if logical_type is None:
@@ -216,10 +245,8 @@ def to_spark_data_type(prop: SchemaProperty) -> types.DataType:
     if physical_type:
         if physical_type in ["string", "varchar", "text", "char", "nvarchar"]:
             return types.StringType()
-        if physical_type in ["decimal", "numeric"]:
-            precision = _get_logical_type_option(prop, "precision") or 38
-            scale = _get_logical_type_option(prop, "scale") or 0
-            return types.DecimalType(precision=precision, scale=scale)
+        if physical_type in ["decimal", "numeric"] or physical_type.startswith(("decimal(", "numeric(")):
+            return _get_decimal_type(prop)
         if physical_type in ["integer", "int", "int32"]:
             return types.IntegerType()
         if physical_type in ["long", "bigint", "int64"]:
@@ -244,9 +271,7 @@ def to_spark_data_type(prop: SchemaProperty) -> types.DataType:
         case "string":
             return types.StringType()
         case "number":
-            precision = _get_logical_type_option(prop, "precision") or 38
-            scale = _get_logical_type_option(prop, "scale") or 0
-            return types.DecimalType(precision=precision, scale=scale)
+            return _get_decimal_type(prop)
         case "integer":
             return types.LongType()
         case "boolean":

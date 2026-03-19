@@ -4,12 +4,12 @@ import tempfile
 import typing
 
 import requests
-from duckdb.duckdb import DuckDBPyConnection
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.data_contract_checks import create_checks
 
 if typing.TYPE_CHECKING:
+    from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
@@ -26,7 +26,7 @@ def execute_data_contract_test(
     run: Run,
     server_name: str = None,
     spark: "SparkSession" = None,
-    duckdb_connection: DuckDBPyConnection = None,
+    duckdb_connection: "DuckDBPyConnection" = None,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -36,11 +36,7 @@ def execute_data_contract_test(
             reason="Schema block is missing. Skip executing tests.",
             engine="datacontract",
         )
-    if (
-        server_name is None
-        and data_contract.servers is not None
-        and len(data_contract.servers) > 0
-    ):
+    if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
     server = get_server(data_contract, server_name)
     run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")

@@ -53,7 +53,6 @@ def test_to_odcs():
 
 
 def assert_equals_odcs_yaml_str(expected, actual):
-
     expected_yaml = OpenDataContractStandard.from_string(expected).to_yaml()
     print(expected_yaml)
     assert expected_yaml == actual

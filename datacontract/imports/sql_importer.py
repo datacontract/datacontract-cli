@@ -17,15 +17,11 @@ from datacontract.model.run import ResultEnum
 
 
 class SqlImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_sql(self.import_format, source, import_args)
 
 
-def import_sql(
-    format: str, source: str, import_args: dict = None
-) -> OpenDataContractStandard:
+def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataContractStandard:
     sql = read_file(source)
     dialect = to_dialect(import_args)
 

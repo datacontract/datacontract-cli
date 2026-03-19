@@ -1,0 +1,72 @@
+version: 2.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: cities
+name: Cities
+status: active
+servers:
+  - server: historical-csv
+    type: local
+    environment: DEV
+    format: csv
+    path: ./fixtures/schema-evolution/cities-version-1.csv
+  - server: current-csv
+    type: local
+    environment: DEV
+    format: csv
+    path: ./fixtures/schema-evolution/cities-version-2.csv
+  - server: mixed-schema-csv
+    type: local
+    environment: DEV
+    format: csv
+    path: ./fixtures/schema-evolution/*.csv
+  - server: current-csv-invalid
+    type: local
+    environment: DEV
+    format: csv
+    path: ./fixtures/schema-evolution/invalid/cities-version-2-invalid.csv
+  - server: historical-parquet
+    type: local
+    environment: DEV
+    format: parquet
+    path: ./fixtures/schema-evolution/cities-version-1.parquet
+  - server: current-parquet
+    type: local
+    environment: DEV
+    format: parquet
+    path: ./fixtures/schema-evolution/cities-version-2.parquet
+  - server: mixed-schema-parquet
+    type: local
+    environment: DEV
+    format: parquet
+    path: ./fixtures/schema-evolution/*.parquet
+  - server: current-parquet-invalid
+    type: local
+    environment: DEV
+    format: parquet
+    path: ./fixtures/schema-evolution/invalid/cities-version-2-invalid.parquet
+schema:
+  - name: cities
+    physicalType: file
+    logicalType: object
+    properties:
+      - name: city_id
+        physicalType: varchar
+        logicalType: string
+        required: true
+        unique: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        examples:
+          - 12374430-dc44-4f75-874b-86c0ea26aeea
+      - name: name
+        physicalType: varchar
+        logicalType: string
+        required: true
+      - name: population
+        physicalType: bigint
+        logicalType: integer
+        required: false
+        logicalTypeOptions:
+          minimum: 10000
+          maximum: 5000000

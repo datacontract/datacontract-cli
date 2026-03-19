@@ -110,7 +110,9 @@ def _to_protobuf_message_name(name: str) -> str:
     return name[0].upper() + name[1:] if name else name
 
 
-def to_protobuf_message(model_name: str, properties: List[SchemaProperty], description: str, indent_level: int = 0) -> str:
+def to_protobuf_message(
+    model_name: str, properties: List[SchemaProperty], description: str, indent_level: int = 0
+) -> str:
     """
     Generates a Protobuf message definition from the model's fields.
     Handles nested messages for complex types.

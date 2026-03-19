@@ -140,11 +140,27 @@ def test_model_description_export():
         result
         == dedent(
             """
-        import datetime, typing, pydantic
+        import datetime, typing, pydantic, decimal
         'Contract description'
 
         class Test_model(pydantic.BaseModel):
             f: typing.Optional[str]
         """
+        ).strip()
+    )
+
+
+def test_decimal_model_export():
+    schema = SchemaObject(
+        name="test_model", properties=[SchemaProperty(name="f", logicalType="number", physicalType="decimal")]
+    )
+    ast_class = conv.generate_model_class("Test", schema)
+    assert (
+        ast.unparse(ast_class)
+        == dedent(
+            """
+    class Test(pydantic.BaseModel):
+        f: typing.Optional[decimal.Decimal]
+    """
         ).strip()
     )
