@@ -1,5 +1,3 @@
-"""Unit tests for sql_type_converter.py – physicalType pass-through and maxLength support."""
-
 import pytest
 from open_data_contract_standard.model import SchemaProperty
 
