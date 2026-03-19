@@ -891,10 +891,10 @@ models:
 |----------------------------------|--------------------|-------------|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
-| `DATACONTRACT_POSTGRES_HOST` | `localhost` | Hostname |
-| `DATACONTRACT_POSTGRES_PORT` | `5432` | Port |
-| `DATACONTRACT_POSTGRES_DATABASE` | `dbname` | Database name |
-| `DATACONTRACT_POSTGRES_SCHEMA` | `public` | Schema |
+| `DATACONTRACT_POSTGRES_HOST`     | `localhost`        | Hostname    |
+| `DATACONTRACT_POSTGRES_PORT`     | `5432`             | Port        |
+| `DATACONTRACT_POSTGRES_DATABASE` | `dbname`           | Database    |
+| `DATACONTRACT_POSTGRES_SCHEMA`   | `public`           | Schema      |
 
 
 #### Trino
