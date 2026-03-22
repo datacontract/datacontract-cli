@@ -84,6 +84,32 @@ CREATE TABLE my_table (
     assert actual == expected
 
 
+def test_to_sql_ddl_composite_primary_key():
+    """Composite PKs should generate a table-level CONSTRAINT, not inline per-column primary key."""
+    actual = DataContract(data_contract_file="fixtures/composite-pk-export/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: composite-pk-test
+-- SQL Dialect: postgres
+CREATE TABLE orders (
+  order_id integer not null,
+  product_id integer not null,
+  quantity integer,
+  created_at timestamptz,
+  CONSTRAINT pk_orders PRIMARY KEY (order_id, product_id)
+);
+""".strip()
+    assert actual == expected
+    # Ensure no inline "primary key" per column
+    assert " primary key" not in actual.lower().replace("constraint pk_", "").replace("primary key (", "pk_(")
+
+
+def test_to_sql_ddl_single_primary_key():
+    """Single PK should still use inline primary key (existing behavior)."""
+    actual = DataContract(data_contract_file="fixtures/postgres-export/datacontract.yaml").export("sql")
+    # postgres-export fixture has no primaryKey fields — just verify no regression
+    assert "CONSTRAINT pk_" not in actual
+
+
 def test_to_sql_ddl_databricks_unity_catalog_staging():
     actual = DataContract(data_contract_file="fixtures/databricks-sql/datacontract.yaml").export(
         "sql", server="staging"

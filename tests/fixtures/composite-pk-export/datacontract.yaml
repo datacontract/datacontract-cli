@@ -1,0 +1,30 @@
+dataContractSpecification: 1.2.1
+id: composite-pk-test
+info:
+  title: Composite Primary Key Test
+  version: 0.0.1
+servers:
+  production:
+    type: postgres
+    host: localhost
+    port: 5432
+    database: test
+    schema: public
+models:
+  orders:
+    type: table
+    fields:
+      order_id:
+        type: integer
+        primaryKey: true
+        primaryKeyPosition: 1
+        required: true
+      product_id:
+        type: integer
+        primaryKey: true
+        primaryKeyPosition: 2
+        required: true
+      quantity:
+        type: integer
+      created_at:
+        type: timestamp
