@@ -1,3 +1,9 @@
+import os
+import tempfile
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -84,3 +90,38 @@ schema:
 """
 
     assert result.to_yaml() == expected
+
+
+@pytest.mark.parametrize(
+    "field_name, arrow_type, expected_logical, expected_physical",
+    [
+        ("large_string_field", pa.large_string(), "string", "LARGE_STRING"),
+        ("large_binary_field", pa.large_binary(), "bytes", "LARGE_BINARY"),
+        ("large_list_field", pa.large_list(pa.int32()), "array", "LARGE_LIST"),
+        ("half_float_field", pa.float16(), "number", "HALF_FLOAT"),
+        ("time32_field", pa.time32("s"), "time", "TIME"),
+        ("time64_field", pa.time64("us"), "time", "TIME"),
+        ("duration_field", pa.duration("s"), "string", "DURATION"),
+        ("fixed_size_binary_field", pa.binary(16), "bytes", "FIXED_SIZE_BINARY(16)"),
+        ("fixed_size_list_field", pa.list_(pa.int32(), 4), "array", "FIXED_SIZE_LIST"),
+    ],
+)
+def test_import_parquet_large_types(field_name, arrow_type, expected_logical, expected_physical):
+    """Test that large and extended PyArrow types are imported without raising an exception."""
+    schema = pa.schema([pa.field(field_name, arrow_type)])
+    table = pa.table({field_name: pa.array([], type=arrow_type)}, schema=schema)
+
+    with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        pq.write_table(table, tmp_path)
+        result = DataContract.import_from_source(format="parquet", source=tmp_path)
+        schema_obj = result.schema_[0]
+        prop = schema_obj.properties[0]
+        assert prop.logicalType == expected_logical, f"Expected logicalType={expected_logical}, got {prop.logicalType}"
+        assert prop.physicalType == expected_physical, (
+            f"Expected physicalType={expected_physical}, got {prop.physicalType}"
+        )
+    finally:
+        os.unlink(tmp_path)
