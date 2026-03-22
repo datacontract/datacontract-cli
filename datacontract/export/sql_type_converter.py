@@ -93,10 +93,22 @@ def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Uni
     return field.fields if field.fields else {}
 
 
+def _extract_base_type(type_str: str) -> str:
+    """Extract the base type from a parameterized type string, e.g. 'VARCHAR(255)' -> 'VARCHAR'."""
+    if "(" in type_str:
+        return type_str[: type_str.index("(")].strip()
+    return type_str
+
+
 def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> str:
     physical_type = _get_config_value(field, "physicalType")
     if physical_type:
         return physical_type
+
+    # ODCS: if physicalType is already a parameterized type (e.g., VARCHAR(255), DECIMAL(10,2)),
+    # return it directly rather than trying to match the full string in per-server converters.
+    if isinstance(field, SchemaProperty) and field.physicalType and "(" in field.physicalType:
+        return field.physicalType
 
     if server_type == "snowflake":
         return convert_to_snowflake(field)
