@@ -103,7 +103,7 @@ Table orders {{
     note: "One record per order. Includes cancelled and deleted orders."
     order_id VARCHAR [pk, unique, not null, note: "An internal ID that identifies an order in the online shop."]
     order_timestamp TIMESTAMP WITH TIME ZONE [not null, note: "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful."]
-    order_total STRUCT(amount STRUCT(sum DECIMAL(None,None), currency VARCHAR), due_date DATE, discount DOUBLE) [not null, note: "Total amount the smallest monetary unit (e.g., cents)."]
+    order_total STRUCT(amount STRUCT(sum number, currency VARCHAR), due_date DATE, discount DOUBLE) [not null, note: "Total amount the smallest monetary unit (e.g., cents)."]
     customer_id VARCHAR [null, note: "Unique identifier for the customer."]
     customer_email_address VARCHAR [not null, note: "The email address, as entered by the customer. The email address was not verified."]
     processed_timestamp TIMESTAMP WITH TIME ZONE [not null, note: "The timestamp when the record was processed by the data platform."]

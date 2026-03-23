@@ -75,7 +75,9 @@ def process_quality_rule(rule: DataQuality, column_name: str) -> Dict[str, Any]:
     return implementation
 
 
-def extract_quality_rules(data: Union[SchemaObject, SchemaProperty, DataQuality], column_path: str = "") -> List[Dict[str, Any]]:
+def extract_quality_rules(
+    data: Union[SchemaObject, SchemaProperty, DataQuality], column_path: str = ""
+) -> List[Dict[str, Any]]:
     """
     Recursively extracts all quality rules from a data contract structure.
 

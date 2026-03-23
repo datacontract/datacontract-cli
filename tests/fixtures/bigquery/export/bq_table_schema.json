@@ -258,6 +258,12 @@
         ]
       },
       {
+        "name": "parameterized_numeric_field",
+        "type": "NUMERIC(18, 4)",
+        "mode": "NULLABLE",
+        "description": "a numeric field with precision and scale in physicalType"
+      },
+      {
         "name": "custom_type_field",
         "type": "DATETIME",
         "mode": "NULLABLE",

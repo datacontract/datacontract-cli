@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class OutputFormat(str, Enum):
-    # json = "json" # coming soon
+    json = "json"
     junit = "junit"
 
     @classmethod

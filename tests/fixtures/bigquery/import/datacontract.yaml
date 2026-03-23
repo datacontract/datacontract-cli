@@ -107,3 +107,22 @@ schema:
     physicalType: JSON
     description: a json field
     logicalType: object
+  - name: String_List_Field
+    description: list of string (REPEATED string)
+    logicalType: array
+    items:
+      name: items
+      physicalType: STRING
+      logicalType: string
+  - name: Record_List_Field
+    description: list of records (REPEATED record)
+    logicalType: array
+    items:
+      name: items
+      physicalType: RECORD
+      logicalType: object
+      properties:
+        - name: subfield_1
+          physicalType: STRING
+          description: subfield 1 of type string
+          logicalType: string

@@ -199,10 +199,7 @@ def export(
     server: Annotated[str, typer.Option(help="The server name to export.")] = None,
     schema_name: Annotated[
         str,
-        typer.Option(
-            help="The name of the schema to export, e.g., `orders`, or `all` for all "
-            "schemas (default)."
-        ),
+        typer.Option(help="The name of the schema to export, e.g., `orders`, or `all` for all schemas (default)."),
     ] = "all",
     # TODO: this should be a subcommand
     rdf_base: Annotated[
@@ -431,7 +428,11 @@ def catalog(
     enable_debug_logging(debug)
 
     path = Path(output)
-    path.mkdir(parents=True, exist_ok=True)
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        if not path.is_dir():
+            raise
     console.print(f"Created {output}")
 
     contracts = []
