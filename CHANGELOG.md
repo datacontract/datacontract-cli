@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
+### Fixed
+- Escape single quotes in string values for SodaCL checks (#1090)
 
+### Added
+- Support additional PyArrow types in Parquet importer (#1091)
+
+## [0.11.6] - 2026-03-17
+
+### Fixed
+- Fix parser error for CSV / Parquet table names containing special characters (#1066)
+- Fix BigQuery export failing with "Unsupported type" for parameterized physicalType like `NUMERIC(18, 4)` (#1083)
+
+### Added
 - Added JSON output format for test results (`--output-format json`)
+- Added Azure AD / Entra ID authentication support for SQL Server and Microsoft Fabric
 
 ## [0.11.5] - 2026-02-19
 

@@ -25,6 +25,18 @@ class QuotingConfig:
     quote_model_name_with_backticks: bool = False
 
 
+def _escape_sql_string_values(values):
+    """Escape single quotes in string values for use in SodaCL checks.
+
+    SodaCL renders valid/invalid values directly into SQL IN clauses, so single
+    quotes inside string values (e.g. "peter's") must be escaped as two single
+    quotes (e.g. "peter''s") to produce valid SQL.
+    """
+    if values is None:
+        return None
+    return [v.replace("'", "''") if isinstance(v, str) else v for v in values]
+
+
 def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
     """Quote a field name according to the quoting configuration."""
     if field_name is None:
@@ -84,9 +96,9 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     type1 = server.type if server and server.type else None
     config = QuotingConfig(
-        quote_field_name=type1 in ["postgres", "sqlserver", "azure", "snowflake"],
+        quote_field_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
         quote_field_name_with_backticks=type1 in ["databricks"],
-        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake"],
+        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
         quote_model_name_with_backticks=type1 == "bigquery",
     )
     quoting_config = config
@@ -432,7 +444,7 @@ def check_property_not_equal(
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
-                    "invalid values": [value],
+                    "invalid values": _escape_sql_string_values([value]),
                 },
             }
         ],
@@ -461,7 +473,7 @@ def check_property_enum(model_name: str, field_name: str, enum: list, quoting_co
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
-                    "valid values": enum,
+                    "valid values": _escape_sql_string_values(enum),
                 },
             }
         ],
@@ -639,7 +651,7 @@ def check_property_invalid_values(
     }
 
     if valid_values is not None:
-        sodacl_check_config["valid values"] = valid_values
+        sodacl_check_config["valid values"] = _escape_sql_string_values(valid_values)
 
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
@@ -681,7 +693,7 @@ def check_property_missing_values(
     if missing_values is not None:
         filtered_missing_values = [v for v in missing_values if v is not None]
         if filtered_missing_values:
-            sodacl_check_config["missing values"] = filtered_missing_values
+            sodacl_check_config["missing values"] = _escape_sql_string_values(filtered_missing_values)
 
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [

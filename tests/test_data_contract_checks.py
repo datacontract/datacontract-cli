@@ -3,7 +3,12 @@ from open_data_contract_standard.model import DataQuality, Server
 
 from datacontract.engines.data_contract_checks import (
     QuotingConfig,
+    _escape_sql_string_values,
+    check_property_enum,
+    check_property_invalid_values,
     check_property_is_present,
+    check_property_missing_values,
+    check_property_not_equal,
     check_property_required,
     check_property_type,
     check_property_unique,
@@ -147,12 +152,12 @@ def test_check_property_type_no_backtick_quoting():
 def test_prepare_query_snowflake_field_quoting():
     """Test that field placeholders use double quotes for snowflake."""
     quality = DataQuality(type="sql", query="SELECT {field} FROM {model}")
-    quoting_config = QuotingConfig(quote_field_name=True, quote_model_name=True)
+    quoting_config = QuotingConfig(quote_model_name=True)
     server = Server(**{"type": "snowflake", "schema": "my_schema"})
 
     result = prepare_query(quality, "my_table", "name", quoting_config, server)
 
-    assert result == 'SELECT "name" FROM "my_table"'
+    assert result == 'SELECT name FROM "my_table"'
 
 
 def test_prepare_query_snowflake_schema_model_quoting():
@@ -201,3 +206,107 @@ def test_check_property_is_present_no_snowflake_quoting():
     checks = impl['checks for "my_table"']
     schema_check = checks[0]["schema"]
     assert schema_check["fail"]["when required column missing"] == ["name"]
+
+
+def test_check_property_required_duckdb_hyphenated_model_name():
+    """Test that model names with hyphens are double-quoted in required checks for DuckDB-backed sources (s3/gcs/azure/local)."""
+    quoting_config = QuotingConfig(quote_model_name=True)
+    check = check_property_required("test-1", "name", quoting_config)
+    impl = yaml.safe_load(check.implementation)
+    checks = impl['checks for "test-1"']
+    assert any("missing_count(name) = 0" in str(c) for c in checks)
+
+
+def test_check_property_is_present_duckdb_hyphenated_model_name():
+    """Test that model names with hyphens are double-quoted for DuckDB-backed sources (s3/gcs/azure/local)."""
+    quoting_config = QuotingConfig(quote_model_name=True)
+    check = check_property_is_present("test-1", "name", quoting_config)
+    impl = yaml.safe_load(check.implementation)
+    checks = impl['checks for "test-1"']
+    schema_check = checks[0]["schema"]
+    assert schema_check["fail"]["when required column missing"] == ["name"]
+
+
+# --- Tests for single-quote escaping in SodaCL checks (issue #980) ---
+
+
+def test_escape_sql_string_values_plain():
+    """Values without quotes are returned unchanged."""
+    assert _escape_sql_string_values(["active", "inactive"]) == ["active", "inactive"]
+
+
+def test_escape_sql_string_values_single_quote():
+    """Single quotes inside string values are doubled for SQL safety."""
+    assert _escape_sql_string_values(["peter's", "normal"]) == ["peter''s", "normal"]
+
+
+def test_escape_sql_string_values_multiple_quotes():
+    """Multiple single quotes are all escaped."""
+    assert _escape_sql_string_values(["it's a dog's life"]) == ["it''s a dog''s life"]
+
+
+def test_escape_sql_string_values_non_string_passthrough():
+    """Non-string values (int, None) are left untouched."""
+    assert _escape_sql_string_values([42, None, "ok"]) == [42, None, "ok"]
+
+
+def test_escape_sql_string_values_none_input():
+    """None input returns None."""
+    assert _escape_sql_string_values(None) is None
+
+
+def test_check_property_invalid_values_escapes_single_quotes():
+    """check_property_invalid_values escapes single quotes in valid_values for SodaCL."""
+    check = check_property_invalid_values(
+        model_name="orders",
+        field_name="status",
+        threshold="= 0",
+        valid_values=["peter's", "normal"],
+    )
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_config = checks[0]["invalid_count(status) = 0"]
+    assert "peter''s" in check_config["valid values"]
+    assert "normal" in check_config["valid values"]
+
+
+def test_check_property_enum_escapes_single_quotes():
+    """check_property_enum escapes single quotes in enum values for SodaCL."""
+    check = check_property_enum(
+        model_name="orders",
+        field_name="status",
+        enum=["it's fine", "ok"],
+    )
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_config = checks[0]["invalid_count(status) = 0"]
+    assert "it''s fine" in check_config["valid values"]
+    assert "ok" in check_config["valid values"]
+
+
+def test_check_property_not_equal_escapes_single_quotes():
+    """check_property_not_equal escapes single quotes in the invalid value for SodaCL."""
+    check = check_property_not_equal(
+        model_name="orders",
+        field_name="status",
+        value="peter's",
+    )
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_config = checks[0]["invalid_count(status) = 0"]
+    assert "peter''s" in check_config["invalid values"]
+
+
+def test_check_property_missing_values_escapes_single_quotes():
+    """check_property_missing_values escapes single quotes in missing_values for SodaCL."""
+    check = check_property_missing_values(
+        model_name="orders",
+        field_name="status",
+        threshold="= 0",
+        missing_values=["n/a", "peter's"],
+    )
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_config = checks[0]["missing_count(status) = 0"]
+    assert "peter''s" in check_config["missing values"]
+    assert "n/a" in check_config["missing values"]

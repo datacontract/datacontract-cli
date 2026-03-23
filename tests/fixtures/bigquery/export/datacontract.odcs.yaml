@@ -224,6 +224,11 @@ schema:
               description: nested array.
               items:
                 logicalType: string
+      - name: parameterized_numeric_field
+        logicalType: number
+        physicalType: "NUMERIC(18, 4)"
+        required: false
+        description: a numeric field with precision and scale in physicalType
       - name: custom_type_field
         logicalType: string
         physicalType: DATETIME
