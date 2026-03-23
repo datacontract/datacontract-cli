@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Escape single quotes in string values for SodaCL checks (#1090)
+
 ### Added
 - Support additional PyArrow types in Parquet importer (#1091)
 
