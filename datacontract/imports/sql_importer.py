@@ -19,20 +19,15 @@ from datacontract.model.run import ResultEnum
 
 class SqlImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_sql(self.import_format, source, import_args)
+        return import_sql(source, import_args)
 
 
-def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataContractStandard:
+def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandard:
     sql = read_file(source)
-    dialect = to_dialect(import_args) or None
-
-    parsed = None
+    dialect = to_dialect(import_args)
 
     try:
         parsed = sqlglot.parse_one(sql=sql, read=dialect)
-
-        tables = parsed.find_all(sqlglot.expressions.Table)
-
     except Exception as e:
         logging.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
@@ -92,9 +87,11 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
 
         table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
 
+        table_description = None
         if table_comment_property:
             table_description = table_comment_property.this.this
 
+        table_tags = None
         prop = parsed.find(sqlglot.expressions.Properties)
         if prop:
             tags = prop.find(sqlglot.expressions.Tags)
@@ -105,38 +102,14 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
         schema_obj = create_schema_object(
             name=table_name,
             physical_type="table",
-            description=table_description if table_comment_property else None,
-            tags=table_tags if tags else None,
+            description=table_description,
+            tags=table_tags,
             properties=properties,
         )
         odcs.schema_.append(schema_obj)
 
     return odcs
 
-
-def map_physical_type(column, dialect) -> str | None:
-    autoincrement = ""
-    if column.get("autoincrement") and dialect == Dialects.SNOWFLAKE:
-        autoincrement = " AUTOINCREMENT" + " START " + str(column.get("start")) if column.get("start") else ""
-        autoincrement += " INCREMENT " + str(column.get("increment")) if column.get("increment") else ""
-        autoincrement += " NOORDER" if not column.get("increment_order") else ""
-    elif column.get("autoincrement"):
-        autoincrement = " IDENTITY"
-
-    if column.get("size") and isinstance(column.get("size"), tuple):
-        return (
-            column.get("type")
-            + "("
-            + str(column.get("size")[0])
-            + ","
-            + str(column.get("size")[1])
-            + ")"
-            + autoincrement
-        )
-    elif column.get("size"):
-        return column.get("type") + "(" + str(column.get("size")) + ")" + autoincrement
-    else:
-        return column.get("type") + autoincrement
 
 
 def get_primary_key(column) -> bool | None:
@@ -159,7 +132,7 @@ def to_dialect(import_args: dict) -> Dialects | None:
         return Dialects.TSQL
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
-    return "None"
+    return None
 
 
 def to_server_type(source, dialect: Dialects | None) -> str | None:
@@ -279,7 +252,11 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "integer"
     elif sql_type_normed.endswith("int"):  # covers int, bigint, smallint, tinyint
         return "integer"
-    elif sql_type_normed.startswith("float") or sql_type_normed.startswith("double") or sql_type_normed == "real":
+    elif sql_type_normed.startswith("float"):
+        return "number"
+    elif sql_type_normed.startswith("double"):
+        return "number"
+    elif sql_type_normed == "real":
         return "number"
     elif sql_type_normed.startswith("number"):
         return "number"
@@ -317,8 +294,6 @@ def map_type_from_sql(sql_type: str) -> str | None:
         return "object"
     elif sql_type_normed == "xml":  # tsql
         return "string"
-    elif sql_type_normed.startswith("number"):
-        return "number"
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
         return "string"
     else:
@@ -326,11 +301,13 @@ def map_type_from_sql(sql_type: str) -> str | None:
 
 
 def remove_variable_tokens(sql_script: str) -> str:
-    ## to cleanse sql statement's script token like $(...) in sqlcmd for T-SQL langage,  ${...} for liquibase,  {{}} as Jinja
-    ## https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-use-scripting-variables?view=sql-server-ver17#b-use-the-setvar-command-interactively
-    ## https://docs.liquibase.com/concepts/changelogs/property-substitution.html
-    ## https://docs.getdbt.com/guides/using-jinja?step=1
-    return re.sub(r"\$\((\w+)\)|\$\{(\w+)\}|\{\{(\w+)\}\}", r"\1", sql_script)
+    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL."""
+    variable_pattern = re.compile(
+        r"\$\((\w+)\)"      # $(var) — sqlcmd (T-SQL)
+        r"|\$\{(\w+)\}"     # ${var} — Liquibase
+        r"|\{\{(\w+)\}\}"   # {{var}} — Jinja / dbt
+    )
+    return variable_pattern.sub(lambda m: m.group(1) or m.group(2) or m.group(3), sql_script)
 
 
 def read_file(path):
