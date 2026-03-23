@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
+
 ## [0.11.7] - 2026-03-24
 
 ### Fixed
