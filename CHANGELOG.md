@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Escape single quotes in string values for SodaCL checks (#1090)
+- Fixed catalog export SpecView not having a tags property for the index.html template (#1059)
 
 ### Added
 - Support additional PyArrow types in Parquet importer (#1091)
