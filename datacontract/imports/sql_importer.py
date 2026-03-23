@@ -111,7 +111,6 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     return odcs
 
 
-
 def get_primary_key(column) -> bool | None:
     if column.find(sqlglot.exp.PrimaryKeyColumnConstraint) is not None:
         return True
@@ -303,9 +302,9 @@ def map_type_from_sql(sql_type: str) -> str | None:
 def remove_variable_tokens(sql_script: str) -> str:
     """Replace templating placeholders with bare variable names so sqlglot can parse the SQL."""
     variable_pattern = re.compile(
-        r"\$\((\w+)\)"      # $(var) — sqlcmd (T-SQL)
-        r"|\$\{(\w+)\}"     # ${var} — Liquibase
-        r"|\{\{(\w+)\}\}"   # {{var}} — Jinja / dbt
+        r"\$\((\w+)\)"  # $(var) — sqlcmd (T-SQL)
+        r"|\$\{(\w+)\}"  # ${var} — Liquibase
+        r"|\{\{(\w+)\}\}"  # {{var}} — Jinja / dbt
     )
     return variable_pattern.sub(lambda m: m.group(1) or m.group(2) or m.group(3), sql_script)
 

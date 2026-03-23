@@ -14,15 +14,7 @@ def test_cli():
     runner = CliRunner()
     result = runner.invoke(
         app,
-        [
-            "import",
-            "--format",
-            "sql",
-            "--source",
-            sql_file_path,
-            "--dialect",
-            "postgres"
-        ],
+        ["import", "--format", "sql", "--source", sql_file_path, "--dialect", "postgres"],
     )
     assert result.exit_code == 0
 
