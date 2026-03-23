@@ -92,12 +92,11 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             table_description = table_comment_property.this.this
 
         table_tags = None
-        prop = parsed.find(sqlglot.expressions.Properties)
-        if prop:
-            tags = prop.find(sqlglot.expressions.Tags)
+        table_props = parsed.find(sqlglot.expressions.Properties)
+        if table_props:
+            tags = table_props.find(sqlglot.expressions.Tags)
             if tags:
-                tag_enum = tags.find(sqlglot.expressions.Property)
-                table_tags = [str(t) for t in tag_enum]
+                table_tags = [str(t) for t in tags.expressions]
 
         schema_obj = create_schema_object(
             name=table_name,
@@ -175,11 +174,10 @@ def get_description(column: sqlglot.expressions.ColumnDef) -> str | None:
     return " ".join(comment.strip() for comment in column.comments)
 
 
-def get_tags(column: sqlglot.expressions.ColumnDef) -> str | None:
+def get_tags(column: sqlglot.expressions.ColumnDef) -> list[str] | None:
     tags = column.find(sqlglot.expressions.Tags)
     if tags:
-        tag_enum = tags.find(sqlglot.expressions.Property)
-        return [str(t) for t in tag_enum]
+        return [str(t) for t in tags.expressions]
     else:
         return None
 
