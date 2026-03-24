@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Escape single quotes in string values for SodaCL checks (#1090)
 - Escape BigQuery field and model names with backticks for SodaCL checks (#736)
+- Escape Databricks model names with backticks for SodaCL checks
 - Fixed catalog export SpecView not having a tags property for the index.html template (#1059)
 - Fix SQL importer type mappings: binary types, datetime/time, uuid now map to correct ODCS logicalType and format (#790)
 
