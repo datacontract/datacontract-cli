@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.11.7] - 2026-03-24
+
 ### Fixed
 - Escape single quotes in string values for SodaCL checks (#1090)
 - Escape BigQuery field and model names with backticks for SodaCL checks (#736)
