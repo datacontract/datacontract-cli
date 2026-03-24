@@ -17,21 +17,35 @@ def test_to_dqx():
     actual = DataContract(data_contract_file="fixtures/dqx/datacontract.odcs.yaml").export("dqx")
     # Expected quality rules (based on the data contract)
     expected_rules = [
-        {"check": {"arguments": {"column": "interaction_id"}, "function": "is_not_null"}, "criticality": "error"},
-        {"check": {"arguments": {"column": "user_id"}, "function": "is_not_null"}, "criticality": "error"},
+        {
+            "check": {"arguments": {"column": "interaction_id"}, "function": "is_not_null"},
+            "name": "interaction_id__is_not_null",
+            "criticality": "error",
+        },
+        {
+            "check": {"arguments": {"column": "user_id"}, "function": "is_not_null"},
+            "name": "user_id__is_not_null",
+            "criticality": "error",
+        },
         {
             "check": {
                 "arguments": {"columns": ["user_id"], "ref_columns": ["id"], "ref_table": "catalog1.schema1.user"},
                 "function": "foreign_key",
             },
+            "name": "user_id__foreign_key",
             "criticality": "error",
         },
-        {"check": {"arguments": {"columns": ["user_id"]}, "function": "is_unique"}, "criticality": "error"},
+        {
+            "check": {"arguments": {"columns": ["user_id"]}, "function": "is_unique"},
+            "name": "user_id__is_unique",
+            "criticality": "error",
+        },
         {
             "check": {
                 "arguments": {"allowed": ["click", "view", "purchase", "like", "share"], "column": "interaction_type"},
                 "function": "is_in_list",
             },
+            "name": "interaction_type__is_in_list",
             "criticality": "error",
         },
         {
@@ -39,18 +53,25 @@ def test_to_dqx():
                 "arguments": {"column": "interaction_timestamp", "timestamp_format": "yyyy-MM-dd HH:mm:ss"},
                 "function": "is_valid_timestamp",
             },
+            "name": "interaction_timestamp__is_valid_timestamp",
             "criticality": "error",
         },
         {
             "check": {"arguments": {"column": "interaction_timestamp", "offset": "1h"}, "function": "not_in_future"},
+            "name": "interaction_timestamp__not_in_future",
             "criticality": "warning",
         },
-        {"check": {"arguments": {"column": "item_id"}, "function": "is_not_null"}, "criticality": "minor"},
+        {
+            "check": {"arguments": {"column": "item_id"}, "function": "is_not_null"},
+            "name": "item_id__is_not_null",
+            "criticality": "minor",
+        },
         {
             "check": {
                 "arguments": {"column": "interaction_value", "max_limit": 1000, "min_limit": 0},
                 "function": "is_in_range",
             },
+            "name": "interaction_value__is_in_range",
             "criticality": "minor",
         },
         {
@@ -58,6 +79,7 @@ def test_to_dqx():
                 "arguments": {"column": "location", "regex": "^[A-Za-z]+(?:[\\s-][A-Za-z]+)*$"},
                 "function": "regex_match",
             },
+            "name": "location__regex_match",
             "criticality": "minor",
         },
         {
@@ -65,6 +87,7 @@ def test_to_dqx():
                 "arguments": {"allowed": ["mobile", "desktop", "tablet"], "column": "device"},
                 "function": "is_in_list",
             },
+            "name": "device__is_in_list",
             "criticality": "minor",
         },
         {
@@ -72,6 +95,7 @@ def test_to_dqx():
                 "arguments": {"column": "interaction_date", "date_format": "yyyy-MM-dd"},
                 "function": "is_valid_date",
             },
+            "name": "interaction_date__is_valid_date",
             "criticality": "error",
         },
         {
@@ -79,6 +103,7 @@ def test_to_dqx():
                 "arguments": {"column": "time_since_last_interaction", "days": 30},
                 "function": "is_older_than_n_days",
             },
+            "name": "time_since_last_interaction__is_older_than_n_days",
             "criticality": "minor",
         },
         {
@@ -86,6 +111,7 @@ def test_to_dqx():
                 "arguments": {"column": "is_active", "expression": "is_active IN ('true', 'false')"},
                 "function": "sql_expression",
             },
+            "name": "is_active__sql_expression",
             "criticality": "minor",
         },
         {
@@ -93,6 +119,7 @@ def test_to_dqx():
                 "arguments": {"column": "user_profile.age", "max_limit": 120, "min_limit": 13},
                 "function": "is_in_range",
             },
+            "name": "user_profile.age__is_in_range",
             "criticality": "minor",
         },
         {
@@ -100,6 +127,7 @@ def test_to_dqx():
                 "arguments": {"allowed": ["male", "female", "other"], "column": "user_profile.gender"},
                 "function": "is_in_list",
             },
+            "name": "user_profile.gender__is_in_list",
             "criticality": "minor",
         },
         {
@@ -107,10 +135,12 @@ def test_to_dqx():
                 "arguments": {"column": "user_profile.location_details.country", "regex": "^[A-Z]{2}$"},
                 "function": "regex_match",
             },
+            "name": "user_profile.location_details.country__regex_match",
             "criticality": "minor",
         },
         {
             "check": {"arguments": {"column": "related_items"}, "function": "is_not_null_and_not_empty_array"},
+            "name": "related_items__is_not_null_and_not_empty_array",
             "criticality": "minor",
         },
         {
@@ -118,6 +148,7 @@ def test_to_dqx():
                 "arguments": {"column": "interaction_context.page_url", "regex": "^https?://.+$"},
                 "function": "regex_match",
             },
+            "name": "interaction_context.page_url__regex_match",
             "criticality": "minor",
         },
         {
@@ -128,6 +159,7 @@ def test_to_dqx():
                 },
                 "function": "is_in_list",
             },
+            "name": "interaction_context.device_type__is_in_list",
             "criticality": "minor",
         },
         {
@@ -135,6 +167,7 @@ def test_to_dqx():
                 "for_each_column": ["user_id", "interaction_id", "interaction_type", "interaction_timestamp"],
                 "function": "is_not_null",
             },
+            "name": "is_not_null",
             "criticality": "error",
             "filter": "interaction_type IN ('click', 'view', 'purchase')",
         },
@@ -143,11 +176,13 @@ def test_to_dqx():
                 "arguments": {"column": "interaction_value", "max_limit": 1000, "min_limit": 0},
                 "function": "is_in_range",
             },
+            "name": "is_in_range",
             "criticality": "warning",
             "filter": "interaction_type = 'purchase'",
         },
         {
             "check": {"arguments": {"allowed": ["mobile", "tablet"], "column": "device"}, "function": "is_in_list"},
+            "name": "is_in_list",
             "criticality": "minor",
             "filter": "device = 'mobile'",
         },
@@ -156,11 +191,13 @@ def test_to_dqx():
                 "arguments": {"column": "user_profile.age", "max_limit": 120, "min_limit": 13},
                 "function": "is_in_range",
             },
+            "name": "is_in_range",
             "criticality": "minor",
             "filter": "user_profile.age IS NOT NULL",
         },
         {
             "check": {"arguments": {"columns": ["user_id", "interaction_date"]}, "function": "is_unique"},
+            "name": "is_unique",
             "criticality": "error",
         },
         {
@@ -168,6 +205,7 @@ def test_to_dqx():
                 "arguments": {"aggr_type": "max", "column": "interaction_value", "limit": 1000},
                 "function": "is_aggr_not_greater_than",
             },
+            "name": "is_aggr_not_greater_than",
             "criticality": "error",
             "filter": "interaction_type = 'purchase'",
         },
@@ -176,6 +214,7 @@ def test_to_dqx():
                 "arguments": {"aggr_type": "min", "column": "user_profile.age", "group_by": ["user_id"], "limit": 21},
                 "function": "is_aggr_not_less_than",
             },
+            "name": "is_aggr_not_less_than",
             "criticality": "error",
         },
         {
@@ -183,6 +222,7 @@ def test_to_dqx():
                 "arguments": {"aggr_type": "count", "column": "interaction_date", "limit": 24},
                 "function": "is_aggr_equal",
             },
+            "name": "is_aggr_equal",
             "criticality": "error",
         },
         {
@@ -190,6 +230,7 @@ def test_to_dqx():
                 "arguments": {"columns": ["user_id"], "ref_columns": ["id"], "ref_df_name": "df_user"},
                 "function": "foreign_key",
             },
+            "name": "foreign_key",
             "criticality": "error",
         },
         {
@@ -197,6 +238,7 @@ def test_to_dqx():
                 "arguments": {"columns": ["user_id"], "ref_columns": ["id"], "ref_table": "catalog1.schema1.user"},
                 "function": "foreign_key",
             },
+            "name": "foreign_key",
             "criticality": "error",
         },
     ]
