@@ -73,6 +73,11 @@ kafka = [
   "numpy>=1.26.4,<2.0.0",  # pyspark incompatible with numpy 2.0
 ]
 
+mysql = [
+  "soda-core-mysql>=3.3.20,<3.6.0",
+  "mysql-connector-python>=8.0.30,<10.0.0",
+]
+
 postgres = [
   "soda-core-postgres>=3.3.20,<3.6.0"
 ]
@@ -134,7 +139,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,databricks,sqlserver,s3,athena,trino,dbt,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,mysql,databricks,sqlserver,s3,athena,trino,dbt,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version
@@ -150,7 +155,7 @@ dev = [
   "pytest-xdist",
   "pymssql==2.3.13",
   "ruff==0.15.2",
-  "testcontainers[minio,postgres,kafka,mssql]==4.14.1",
+  "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.1",
   "trino==0.336.0",
 ]
 
@@ -164,6 +169,14 @@ datacontract = "datacontract.cli:app"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.uv]
+# soda-core-mysql pins mysql-connector-python==8.0.30 (from 2022) which requires
+# protobuf<=3.20.1, conflicting with dbt-core. Newer mysql-connector-python (9.x)
+# works fine with soda and resolves the conflict. See: https://github.com/sodadata/soda-core/issues/2515
+override-dependencies = [
+    "mysql-connector-python>=8.0.30,<10.0.0",
+]
 
 [tool.pytest.ini_options]
 #addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command

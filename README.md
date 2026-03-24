@@ -239,6 +239,7 @@ A list of available extras:
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |
+| MySQL Integration       | `pip install datacontract-cli[mysql]`      |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
 | S3 Integration          | `pip install datacontract-cli[s3]`         |
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
@@ -395,6 +396,7 @@ Supported server types:
 - [snowflake](#snowflake)
 - [kafka](#kafka)
 - [postgres](#postgres)
+- [mysql](#mysql)
 - [trino](#trino)
 - [impala](#impala)
 - [api](#api)
@@ -894,6 +896,36 @@ models:
 |----------------------------------|--------------------|-------------|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
+
+
+#### MySQL
+
+Data Contract CLI can test data in MySQL or MySQL-compliant databases (e.g., MariaDB).
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  mysql:
+    type: mysql
+    host: localhost
+    port: 3306
+    database: mydb
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+##### Environment Variables
+
+| Environment Variable          | Example            | Description |
+|-------------------------------|--------------------|-------------|
+| `DATACONTRACT_MYSQL_USERNAME` | `root`             | Username    |
+| `DATACONTRACT_MYSQL_PASSWORD` | `mysecretpassword` | Password    |
 
 
 #### Trino
