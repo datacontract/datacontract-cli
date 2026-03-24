@@ -127,7 +127,7 @@ schema:
   - name: field_time
     physicalType: TIME
     description: Time only (HH:MM:SS)
-    logicalType: string
+    logicalType: time
   - name: field_timestamp
     physicalType: TIMESTAMP
     description: More precise datetime
@@ -149,11 +149,15 @@ schema:
   - name: field_binary
     physicalType: BINARY(16)
     description: Fixed-length binary
-    logicalType: object
+    logicalType: string
+    logicalTypeOptions:
+      format: binary
   - name: field_varbinary
     physicalType: VARBINARY(100)
     description: Variable-length binary
-    logicalType: object
+    logicalType: string
+    logicalTypeOptions:
+      format: binary
   - name: field_variant
     physicalType: VARIANT
     description: VARIANT data
@@ -165,5 +169,3 @@ schema:
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
-    # Disable linters so we don't get "missing description" warnings account, db, schema name are required
-    # assert DataContract(data_contract_str=expected).lint().has_passed()

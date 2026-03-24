@@ -103,7 +103,9 @@ schema:
         physicalType: INTERVAL DAY TO SECOND
         description: Interval of time in days, hours, minutes and seconds with default (2 / 6) precision
       - name: field_raw
-        logicalType: array
+        logicalType: string
+        logicalTypeOptions:
+          format: binary
         physicalType: RAW
         description: Large raw binary data
       - name: field_rowid
@@ -135,11 +137,15 @@ schema:
         physicalType: NCLOB
         description: National character large object
       - name: field_blob
-        logicalType: array
+        logicalType: string
+        logicalTypeOptions:
+          format: binary
         physicalType: BLOB
         description: Binary large object
       - name: field_bfile
-        logicalType: array
+        logicalType: string
+        logicalTypeOptions:
+          format: binary
         physicalType: BFILE
     """
     print("Result", result.to_yaml())

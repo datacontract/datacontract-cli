@@ -58,7 +58,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
-            logical_type = map_type_from_sql(col_type)
+            logical_type, format = map_type_from_sql(col_type)
             col_description = get_description(column)
             max_length = get_max_length(column)
             precision, scale = get_precision_scale(column)
@@ -74,6 +74,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 max_length=max_length,
                 precision=precision,
                 scale=scale,
+                format=format,
                 primary_key=is_primary_key,
                 primary_key_position=primary_key_position if is_primary_key else None,
                 required=is_required if is_required else None,
@@ -224,77 +225,87 @@ def get_precision_scale(column):
     return None, None
 
 
-def map_type_from_sql(sql_type: str) -> str | None:
-    """Map SQL type to ODCS logical type."""
+def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
+    """Map SQL type to ODCS logical type and optional format.
+
+    Returns (logicalType, format).
+    The format corresponds to ODCS logicalTypeOptions.format (e.g. "binary", "uuid").
+    """
     if sql_type is None:
-        return None
+        return ("string", None)
 
     sql_type_normed = sql_type.lower().strip()
 
     if sql_type_normed.startswith("varchar"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("char"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("string"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("nchar"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("text"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("nvarchar"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("ntext"):
-        return "string"
+        return ("string", None)
+    elif sql_type_normed.endswith("int") and not sql_type_normed.endswith("point"):
+        return ("integer", None)
     elif sql_type_normed.endswith("integer"):
-        return "integer"
-    elif sql_type_normed.endswith("int"):  # covers int, bigint, smallint, tinyint
-        return "integer"
+        return ("integer", None)
     elif sql_type_normed.startswith("float"):
-        return "number"
+        return ("number", None)
     elif sql_type_normed.startswith("double"):
-        return "number"
+        return ("number", None)
     elif sql_type_normed == "real":
-        return "number"
+        return ("number", None)
     elif sql_type_normed.startswith("number"):
-        return "number"
+        return ("number", None)
     elif sql_type_normed.startswith("numeric"):
-        return "number"
+        return ("number", None)
     elif sql_type_normed.startswith("decimal"):
-        return "number"
+        return ("number", None)
     elif sql_type_normed.startswith("money"):
-        return "number"
+        return ("number", None)
     elif sql_type_normed.startswith("bool"):
-        return "boolean"
+        return ("boolean", None)
     elif sql_type_normed.startswith("bit"):
-        return "boolean"
+        return ("boolean", None)
     elif sql_type_normed.startswith("binary"):
-        return "object"
+        return ("string", "binary")
     elif sql_type_normed.startswith("varbinary"):
-        return "object"
+        return ("string", "binary")
     elif sql_type_normed.startswith("raw"):
-        return "array"
-    elif sql_type_normed == "blob" or sql_type_normed == "bfile":
-        return "array"
+        return ("string", "binary")
+    elif sql_type_normed == "blob":
+        return ("string", "binary")
+    elif sql_type_normed == "bfile":
+        return ("string", "binary")
+    elif sql_type_normed.startswith("bytea"):
+        return ("string", "binary")
+    elif sql_type_normed == "image":
+        return ("string", "binary")
     elif sql_type_normed == "date":
-        return "date"
+        return ("date", None)
     elif sql_type_normed == "time":
-        return "string"
+        return ("time", None)
     elif sql_type_normed.startswith("timestamp"):
-        return "timestamp"
+        return ("timestamp", None)
     elif sql_type_normed == "smalldatetime":
-        return "date"
-    elif sql_type_normed.startswith("datetime"):  # tsql datatime2
-        return "date"
+        return ("timestamp", None)
+    elif sql_type_normed.startswith("datetime"):  # tsql datetime2, datetimeoffset
+        return ("timestamp", None)
     elif sql_type_normed == "uniqueidentifier":  # tsql
-        return "string"
+        return ("string", "uuid")
     elif sql_type_normed == "json":
-        return "object"
+        return ("object", None)
     elif sql_type_normed == "xml":  # tsql
-        return "string"
+        return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
-        return "string"
+        return ("string", None)
     else:
-        return "object"
+        return ("object", None)
 
 
 def remove_variable_tokens(sql_script: str) -> str:
