@@ -254,7 +254,6 @@ def test_prepare_query_schema_placeholder_backticks_databricks():
     assert result == "SELECT * FROM `my_schema`.`my_table`"
 
 
-
 def test_field_and_model_names_have_backticks_in_quality_databricks():
     """Test that field and model names are encapsulated with backticks for Databricks servers in quality checks."""
     data_contract = DataContract(data_contract_file="fixtures/bigquery/datacontract_with_quality_rules.odcs.yaml")
