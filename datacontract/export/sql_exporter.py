@@ -82,6 +82,9 @@ def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snow
         if srv.type == "postgres":
             server_type = "postgres"
             break
+        if srv.type == "mysql":
+            server_type = "mysql"
+            break
         if srv.type == "databricks":
             server_type = "databricks"
             if srv.catalog is not None and srv.schema_ is not None:

@@ -102,6 +102,8 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
         return convert_to_snowflake(field)
     elif server_type == "postgres":
         return convert_type_to_postgres(field)
+    elif server_type == "mysql":
+        return convert_type_to_mysql(field)
     elif server_type == "dataframe":
         return convert_to_dataframe(field)
     elif server_type == "databricks":
@@ -211,6 +213,55 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         if items:
             return convert_to_sql_type(items, "postgres") + "[]"
         return "text[]"
+    return None
+
+
+# https://dev.mysql.com/doc/refman/8.0/en/data-types.html
+def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str:
+    mysql_type = _get_config_value(field, "mysqlType")
+    if mysql_type:
+        return mysql_type
+
+    type = _get_type(field)
+    if type is None:
+        return None
+    format = _get_format(field)
+    if type.lower() in ["string", "varchar", "text"]:
+        if format == "uuid":
+            return "varchar(36)"
+        if type.lower() == "varchar":
+            return "varchar"
+        if type.lower() == "text":
+            return "text"
+        return "varchar"
+    if type.lower() in ["timestamp", "timestamp_tz"]:
+        return "timestamp"
+    if type.lower() in ["timestamp_ntz"]:
+        return "datetime"
+    if type.lower() in ["date"]:
+        return "date"
+    if type.lower() in ["time"]:
+        return "time"
+    if type.lower() in ["number", "decimal", "numeric"]:
+        if type.lower() == "number":
+            return "decimal"
+        return type.lower()
+    if type.lower() in ["float"]:
+        return "float"
+    if type.lower() in ["double"]:
+        return "double"
+    if type.lower() in ["integer", "int"]:
+        return "int"
+    if type.lower() in ["long", "bigint"]:
+        return "bigint"
+    if type.lower() in ["boolean"]:
+        return "boolean"
+    if type.lower() in ["object", "record", "struct"]:
+        return "json"
+    if type.lower() in ["bytes"]:
+        return "blob"
+    if type.lower() in ["array"]:
+        return "json"
     return None
 
 
