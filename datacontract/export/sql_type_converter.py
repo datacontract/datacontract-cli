@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Protocol, Union
+from typing import Any, Dict, FrozenSet, Optional, Protocol, Union
 
 from open_data_contract_standard.model import SchemaProperty
 
@@ -100,16 +100,163 @@ def _extract_base_type(type_str: str) -> str:
     return type_str
 
 
+def _extract_params(type_str: str) -> Optional[str]:
+    """Extract the parameter portion from a parameterized type string, e.g. 'VARCHAR(255)' -> '255'.
+    Returns None if the type has no parameters."""
+    if "(" in type_str and type_str.endswith(")"):
+        return type_str[type_str.index("(") + 1 : -1]
+    return None
+
+
+# Per-server sets of SQL types that accept precision/length parameters.
+# Types NOT listed here will have parameters stripped when re-attaching after conversion.
+_TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
+    "snowflake": frozenset(
+        [
+            "varchar",
+            "char",
+            "character",
+            "nchar",
+            "nvarchar",
+            "string",
+            "text",
+            "number",
+            "decimal",
+            "numeric",
+            "float",
+        ]
+    ),
+    "postgres": frozenset(
+        [
+            "varchar",
+            "character varying",
+            "char",
+            "character",
+            "numeric",
+            "decimal",
+            "bit",
+            "bit varying",
+        ]
+    ),
+    "databricks": frozenset(
+        [
+            "varchar",
+            "char",
+            "decimal",
+            "numeric",
+        ]
+    ),
+    "bigquery": frozenset(
+        [
+            "string",
+            "bytes",
+            "numeric",
+            "bignumeric",
+        ]
+    ),
+    "trino": frozenset(
+        [
+            "varchar",
+            "char",
+            "decimal",
+            "varbinary",
+            "timestamp",
+            "time",
+        ]
+    ),
+    "sqlserver": frozenset(
+        [
+            "varchar",
+            "nvarchar",
+            "char",
+            "nchar",
+            "binary",
+            "varbinary",
+            "numeric",
+            "decimal",
+            "float",
+            "datetimeoffset",
+            "datetime2",
+            "time",
+        ]
+    ),
+    "local": frozenset(
+        [
+            "varchar",
+            "char",
+            "decimal",
+            "numeric",
+            "blob",
+        ]
+    ),
+    "s3": frozenset(
+        [
+            "varchar",
+            "char",
+            "decimal",
+            "numeric",
+            "blob",
+        ]
+    ),
+    "dataframe": frozenset(
+        [
+            "varchar",
+            "char",
+            "decimal",
+            "numeric",
+            "string",
+        ]
+    ),
+    "oracle": frozenset(
+        [
+            "varchar2",
+            "nvarchar2",
+            "char",
+            "nchar",
+            "number",
+            "float",
+            "raw",
+            "timestamp",
+        ]
+    ),
+}
+
+
+def _translated_type_accepts_params(translated_type: str, server_type: str) -> bool:
+    """Return True if the translated type accepts precision/length parameters for the given server."""
+    accepting = _TYPES_ACCEPTING_PARAMS.get(server_type, frozenset())
+    return translated_type.lower() in accepting
+
+
 def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> str:
     physical_type = _get_config_value(field, "physicalType")
     if physical_type:
         return physical_type
 
-    # ODCS: if physicalType is already a parameterized type (e.g., VARCHAR(255), DECIMAL(10,2)),
-    # return it directly rather than trying to match the full string in per-server converters.
+    # ODCS: if physicalType contains parameters (e.g. VARCHAR(255), DECIMAL(10,2)):
+    # 1. Strip the parameter and run the base type through the server-specific converter.
+    # 2. Re-attach the parameter to the translated type only if that type accepts parameters
+    #    on this server.  This ensures e.g. NVARCHAR(50) on Postgres becomes VARCHAR(50)
+    #    instead of either NULL or the original NVARCHAR(50) being passed through unchanged.
     if isinstance(field, SchemaProperty) and field.physicalType and "(" in field.physicalType:
-        return field.physicalType
+        params = _extract_params(field.physicalType)
+        base_type = _extract_base_type(field.physicalType)
+        # Build a synthetic field whose physicalType is just the base type so that
+        # the per-server converter can do its job on it.
+        base_field = SchemaProperty(name=field.name, physicalType=base_type, logicalType=field.logicalType)
+        translated = _convert_base_to_sql_type(base_field, server_type)
+        if translated is None:
+            # Converter didn't know the base type — return verbatim as fallback
+            return field.physicalType
+        if params and _translated_type_accepts_params(translated, server_type):
+            return f"{translated}({params})"
+        return translated
 
+    return _convert_base_to_sql_type(field, server_type)
+
+
+def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: str) -> Optional[str]:
+    """Route a field (with a plain, non-parameterized type) to the server-specific converter."""
     if server_type == "snowflake":
         return convert_to_snowflake(field)
     elif server_type == "postgres":
@@ -130,8 +277,7 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
         return convert_type_to_trino(field)
     elif server_type == "oracle":
         return convert_type_to_oracle(field)
-
-    return _get_type(field)
+    return None
 
 
 # snowflake data types:
