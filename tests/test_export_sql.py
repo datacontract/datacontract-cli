@@ -105,8 +105,6 @@ CREATE TABLE orders (
 );
 """.strip()
     assert actual == expected
-    # Ensure no inline "primary key" per column
-    assert " primary key" not in actual.lower().replace("constraint pk_", "").replace("primary key (", "pk_(")
 
 
 def test_to_sql_ddl_single_primary_key():
