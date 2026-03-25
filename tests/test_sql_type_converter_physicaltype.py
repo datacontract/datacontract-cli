@@ -13,7 +13,6 @@ from datacontract.export.sql_type_converter import (
     convert_to_sql_type,
 )
 
-
 # ---------------------------------------------------------------------------
 # _extract_base_type helper
 # ---------------------------------------------------------------------------
