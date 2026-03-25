@@ -1,0 +1,25 @@
+dataContractSpecification: 1.2.1
+id: single-pk-test
+info:
+  title: Single Primary Key Test
+  version: 0.0.1
+servers:
+  production:
+    type: postgres
+    host: localhost
+    port: 5432
+    database: test
+    schema: public
+models:
+  users:
+    type: table
+    fields:
+      user_id:
+        type: integer
+        primaryKey: true
+        required: true
+      username:
+        type: text
+        required: true
+      email:
+        type: text

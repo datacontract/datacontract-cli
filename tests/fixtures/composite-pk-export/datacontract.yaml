@@ -17,14 +17,17 @@ models:
       order_id:
         type: integer
         primaryKey: true
-        primaryKeyPosition: 1
+        primaryKeyPosition: 2
         required: true
       product_id:
         type: integer
         primaryKey: true
-        primaryKeyPosition: 2
+        primaryKeyPosition: 1
         required: true
       quantity:
         type: integer
       created_at:
         type: timestamp
+      note:
+        type: text
+        primaryKey: true

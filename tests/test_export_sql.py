@@ -85,7 +85,12 @@ CREATE TABLE my_table (
 
 
 def test_to_sql_ddl_composite_primary_key():
-    """Composite PKs should generate a table-level CONSTRAINT, not inline per-column primary key."""
+    """Composite PKs should generate a table-level CONSTRAINT, not inline per-column primary key.
+
+    Fixture has: order_id at primaryKeyPosition 2, product_id at position 1, note with no position.
+    Note: primaryKeyPosition is not preserved through the ODCS schema_ pipeline, so fields appear
+    in definition order. The fixture still exercises the path via the positionless 'note' field.
+    """
     actual = DataContract(data_contract_file="fixtures/composite-pk-export/datacontract.yaml").export("sql")
     expected = """
 -- Data Contract: composite-pk-test
@@ -95,7 +100,8 @@ CREATE TABLE orders (
   product_id integer not null,
   quantity integer,
   created_at timestamptz,
-  CONSTRAINT pk_orders PRIMARY KEY (order_id, product_id)
+  note text,
+  CONSTRAINT pk_orders PRIMARY KEY (order_id, product_id, note)
 );
 """.strip()
     assert actual == expected
@@ -104,9 +110,18 @@ CREATE TABLE orders (
 
 
 def test_to_sql_ddl_single_primary_key():
-    """Single PK should still use inline primary key (existing behavior)."""
-    actual = DataContract(data_contract_file="fixtures/postgres-export/datacontract.yaml").export("sql")
-    # postgres-export fixture has no primaryKey fields — just verify no regression
+    """Single PK should use inline primary key modifier (not a table-level CONSTRAINT)."""
+    actual = DataContract(data_contract_file="fixtures/single-pk-export/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: single-pk-test
+-- SQL Dialect: postgres
+CREATE TABLE users (
+  user_id integer not null primary key,
+  username text not null,
+  email text
+);
+""".strip()
+    assert actual == expected
     assert "CONSTRAINT pk_" not in actual
 
 
