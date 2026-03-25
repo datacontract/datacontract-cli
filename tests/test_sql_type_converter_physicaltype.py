@@ -5,13 +5,12 @@ DECIMAL(10,2)) must be translated through the server-specific converter rather t
 returned verbatim or discarded.
 """
 
-import pytest
 from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.export.sql_type_converter import (
-    convert_to_sql_type,
     _extract_base_type,
     _extract_params,
+    convert_to_sql_type,
 )
 
 
