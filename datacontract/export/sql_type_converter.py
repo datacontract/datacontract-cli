@@ -233,12 +233,22 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
     if physical_type:
         return physical_type
 
-    # ODCS: if physicalType contains parameters (e.g. VARCHAR(255), DECIMAL(10,2)):
+    # ODCS: if physicalType is a simple parameterized type (e.g. VARCHAR(255), DECIMAL(10,2)):
     # 1. Strip the parameter and run the base type through the server-specific converter.
     # 2. Re-attach the parameter to the translated type only if that type accepts parameters
     #    on this server.  This ensures e.g. NVARCHAR(50) on Postgres becomes VARCHAR(50)
     #    instead of either NULL or the original NVARCHAR(50) being passed through unchanged.
-    if isinstance(field, SchemaProperty) and field.physicalType and "(" in field.physicalType:
+    #
+    # Only applies to the simple TYPE(params) pattern — strings that end with ")" and have
+    # exactly one "(" — so compound Oracle types like TIMESTAMP(6) WITH TIME ZONE and
+    # INTERVAL DAY(2) TO SECOND(6) are NOT intercepted and pass through verbatim.
+    _is_simple_parameterized = (
+        isinstance(field, SchemaProperty)
+        and field.physicalType
+        and field.physicalType.endswith(")")
+        and field.physicalType.count("(") == 1
+    )
+    if _is_simple_parameterized:
         params = _extract_params(field.physicalType)
         base_type = _extract_base_type(field.physicalType)
         # Build a synthetic field whose physicalType is just the base type so that
