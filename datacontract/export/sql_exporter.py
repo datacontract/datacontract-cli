@@ -117,7 +117,7 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
     fields = len(properties)
     # When using a table-level composite PK constraint, we need an extra line for it
     total_lines = fields + (1 if composite_pk else 0)
-    current_field_index = 1
+    current_line = 1
 
     for prop in properties:
         type_str = convert_to_sql_type(prop, server_type)
@@ -131,10 +131,10 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
             result += f' COMMENT "{_escape(prop.description)}"'
         if server_type == "snowflake" and prop.description is not None:
             result += f" COMMENT '{_escape(prop.description)}'"
-        if current_field_index < total_lines:
+        if current_line < total_lines:
             result += ","
         result += "\n"
-        current_field_index += 1
+        current_line += 1
 
     if composite_pk:
         # Sort by primaryKeyPosition (treat None as infinity so un-positioned cols go last)
