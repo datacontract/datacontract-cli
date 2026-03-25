@@ -277,7 +277,8 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
         return convert_type_to_trino(field)
     elif server_type == "oracle":
         return convert_type_to_oracle(field)
-    return None
+    # Fallback: return the raw type string (preserves original behavior for unknown/None server_type)
+    return _get_type(field)
 
 
 # snowflake data types:
