@@ -62,7 +62,7 @@ def common(
 
     It uses data contract YAML files to lint the data contract,
     connect to data sources and execute schema and quality tests,
-    detect breaking changes, and export to different formats.
+    and export to different formats.
     """
     pass
 
