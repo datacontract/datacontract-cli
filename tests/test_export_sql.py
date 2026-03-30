@@ -87,9 +87,8 @@ CREATE TABLE my_table (
 def test_to_sql_ddl_composite_primary_key():
     """Composite PKs should generate a table-level CONSTRAINT, not inline per-column primary key.
 
-    Fixture has: order_id at primaryKeyPosition 2, product_id at position 1, note with no position.
-    Note: primaryKeyPosition is not preserved through the ODCS schema_ pipeline, so fields appear
-    in definition order. The fixture still exercises the path via the positionless 'note' field.
+    Fixture (ODCS) has: order_id at primaryKeyPosition 2, product_id at position 1, note with no position.
+    The constraint should list columns ordered by primaryKeyPosition (nulls last).
     """
     actual = DataContract(data_contract_file="fixtures/composite-pk-export/datacontract.yaml").export("sql")
     expected = """
@@ -101,7 +100,7 @@ CREATE TABLE orders (
   quantity integer,
   created_at timestamptz,
   note text,
-  CONSTRAINT pk_orders PRIMARY KEY (order_id, product_id, note)
+  CONSTRAINT pk_orders PRIMARY KEY (product_id, order_id, note)
 );
 """.strip()
     assert actual == expected
