@@ -111,7 +111,6 @@ def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Uni
     return field.fields if field.fields else {}
 
 
-
 def _attach_params_if_present(
     base_type: str, field: Union[SchemaProperty, FieldLike], *, default: Optional[str] = None
 ) -> str:
@@ -502,7 +501,11 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
     if sqlserver_type:
         return sqlserver_type
     if base_type in ["string", "varchar", "text"]:
-        return "uniqueidentifier" if _get_format(field) == "uuid" else _attach_params_if_present("varchar", field, default="max")
+        return (
+            "uniqueidentifier"
+            if _get_format(field) == "uuid"
+            else _attach_params_if_present("varchar", field, default="max")
+        )
     if base_type in ["timestamp", "timestamp_tz"]:
         return _attach_params_if_present("datetimeoffset", field)
     if base_type in ["timestamp_ntz"]:

@@ -105,5 +105,3 @@ def _get_custom_property(prop: SchemaProperty, key: str):
         if cp.property == key:
             return cp.value
     return None
-
-
