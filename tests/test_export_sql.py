@@ -84,6 +84,44 @@ CREATE TABLE my_table (
     assert actual == expected
 
 
+def test_to_sql_ddl_composite_primary_key():
+    """Composite PKs should generate a table-level CONSTRAINT, not inline per-column primary key.
+
+    Fixture (ODCS) has: order_id at primaryKeyPosition 2, product_id at position 1, note with no position.
+    The constraint should list columns ordered by primaryKeyPosition (nulls last).
+    """
+    actual = DataContract(data_contract_file="fixtures/composite-pk-export/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: composite-pk-test
+-- SQL Dialect: postgres
+CREATE TABLE orders (
+  order_id integer not null,
+  product_id integer not null,
+  quantity integer,
+  created_at timestamptz,
+  note text,
+  CONSTRAINT pk_orders PRIMARY KEY (product_id, order_id, note)
+);
+""".strip()
+    assert actual == expected
+
+
+def test_to_sql_ddl_single_primary_key():
+    """Single PK should use inline primary key modifier (not a table-level CONSTRAINT)."""
+    actual = DataContract(data_contract_file="fixtures/single-pk-export/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: single-pk-test
+-- SQL Dialect: postgres
+CREATE TABLE users (
+  user_id integer not null primary key,
+  username text not null,
+  email text
+);
+""".strip()
+    assert actual == expected
+    assert "CONSTRAINT pk_" not in actual
+
+
 def test_to_sql_ddl_databricks_unity_catalog_staging():
     actual = DataContract(data_contract_file="fixtures/databricks-sql/datacontract.yaml").export(
         "sql", server="staging"

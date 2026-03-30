@@ -1,0 +1,40 @@
+version: 0.0.1
+kind: DataContract
+apiVersion: v3.1.0
+id: composite-pk-test
+name: Composite Primary Key Test
+status: draft
+servers:
+- server: production
+  type: postgres
+  database: test
+  host: localhost
+  port: 5432
+  schema: public
+schema:
+- name: orders
+  physicalType: table
+  properties:
+  - name: order_id
+    physicalType: integer
+    primaryKey: true
+    primaryKeyPosition: 2
+    logicalType: integer
+    required: true
+  - name: product_id
+    physicalType: integer
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: integer
+    required: true
+  - name: quantity
+    physicalType: integer
+    logicalType: integer
+  - name: created_at
+    physicalType: timestamp
+    logicalType: timestamp
+  - name: note
+    physicalType: text
+    primaryKey: true
+    logicalType: string
+
