@@ -358,6 +358,10 @@ Commands
 │                                                                 results.                         │
 │                                                                 [default: None]                  │
 │ --logs                    --no-logs                             Print logs [default: no-logs]    │
+│ --ci                      --no-ci                               Optimize output for CI/CD        │
+│                                                                 pipelines. Emits GitHub Actions   │
+│                                                                 annotations and step summary.     │
+│                                                                 [default: no-ci]                 │
 │ --ssl-verification        --no-ssl-verification                 SSL verification when publishing │
 │                                                                 the data contract.               │
 │                                                                 [default: ssl-verification]      │
@@ -372,6 +376,17 @@ Data Contract CLI connects to a data source and runs schema and quality tests to
 
 ```bash
 $ datacontract test --server production datacontract.yaml
+```
+
+#### CI/CD Usage
+
+Use the `--ci` flag for CI/CD-optimized output. When running in GitHub Actions, it automatically emits:
+- **Annotations**: Inline `::error` and `::warning` annotations for failed checks
+- **Step Summary**: A markdown results table in the GitHub Actions job summary
+
+```bash
+$ datacontract test --ci datacontract.yaml
+$ datacontract lint --ci datacontract.yaml
 ```
 
 To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection.
@@ -1881,10 +1896,11 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract lint
    ```
 
-4. Set up a CI pipeline that executes daily for continuous quality checks. You can also report the
+4. Set up a CI pipeline that executes daily for continuous quality checks. Use the `--ci` flag for
+   CI-optimized output (GitHub Actions annotations and step summary). You can also report the
    test results to tools like [Data Mesh Manager](https://datamesh-manager.com)
    ```bash
-   $ datacontract test --publish https://api.datamesh-manager.com/api/test-results
+   $ datacontract test --ci --publish https://api.datamesh-manager.com/api/test-results
    ```
 
 ### Contract-First
