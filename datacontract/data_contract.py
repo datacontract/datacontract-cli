@@ -26,6 +26,7 @@ class DataContract:
         data_contract: OpenDataContractStandard = None,
         schema_location: str = None,
         server: str = None,
+        schema_name: str = "all",
         publish_url: str = None,
         spark: "SparkSession" = None,
         duckdb_connection: "DuckDBPyConnection" = None,
@@ -38,6 +39,7 @@ class DataContract:
         self._data_contract = data_contract
         self._schema_location = schema_location
         self._server = server
+        self._schema_name = schema_name
         self._publish_url = publish_url
         self._publish_test_results = publish_test_results
         self._spark = spark
@@ -91,7 +93,7 @@ class DataContract:
         run.finish()
         return run
 
-    def test(self, schema_name: str = "all") -> Run:
+    def test(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
@@ -104,7 +106,7 @@ class DataContract:
             )
 
             execute_data_contract_test(
-                data_contract, run, self._server, self._spark, self._duckdb_connection, schema_name=schema_name
+                data_contract, run, self._server, self._spark, self._duckdb_connection, schema_name=self._schema_name
             )
 
         except DataContractException as e:

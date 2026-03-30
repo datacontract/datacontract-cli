@@ -180,8 +180,9 @@ def test(
         publish_test_results=publish_test_results,
         publish_url=publish,
         server=server,
+        schema_name=schema_name,
         ssl_verification=ssl_verification,
-    ).test(schema_name=schema_name)
+    ).test()
     if logs:
         _print_logs(run)
     try:
