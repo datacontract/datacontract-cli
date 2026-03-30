@@ -329,7 +329,9 @@ fabric.properties
 
 # Generated test files
 **/.tmp
-/.claude/settings.local.json
+
+# Claude Code
+.claude/
 
 # Auto Claude data directory
 .auto-claude/
