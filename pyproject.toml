@@ -18,7 +18,7 @@ dependencies = [
   "typer>=0.18.0,<0.25",
   "pydantic>=2.8.2,<2.13.0",
   "pyyaml~=6.0.1",
-  "requests>=2.31,<2.33",
+  "requests>=2.31,<2.34",
   "fastjsonschema>=2.19.1,<2.22.0",
   "pytz>=2024.1",
   "python-multipart>=0.0.20,<1.0.0",
@@ -84,7 +84,7 @@ postgres = [
 
 s3 = [
   "s3fs>=2025.2.0,<2027.0.0",
-  "aiobotocore>=2.17.0,<3.2.0",
+  "aiobotocore>=2.17.0,<3.4.0",
 ]
 
 snowflake = [
@@ -117,7 +117,7 @@ dbml = [
 ]
 
 duckdb = [
-  "duckdb>=1.0.0,<1.5.0",
+  "duckdb>=1.0.0,<1.6.0",
   "soda-core-duckdb>=3.3.20,<3.6.0",
 ]
 
@@ -130,8 +130,8 @@ rdf = [
 ]
 
 api = [
-  "fastapi==0.129.0",
-  "uvicorn==0.40.0",
+  "fastapi==0.135.1",
+  "uvicorn==0.42.0",
 ]
 
 protobuf = [
@@ -154,7 +154,7 @@ dev = [
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.13",
-  "ruff==0.15.2",
+  "ruff==0.15.7",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.1",
   "trino==0.336.0",
 ]
