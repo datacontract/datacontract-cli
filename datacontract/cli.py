@@ -108,10 +108,6 @@ def lint(
         ),
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
-    ci: Annotated[
-        bool,
-        typer.Option(help="Optimize output for CI/CD pipelines. Emits GitHub Actions annotations and step summary."),
-    ] = False,
     debug: debug_option = None,
 ):
     """
@@ -120,8 +116,6 @@ def lint(
     enable_debug_logging(debug)
 
     run = DataContract(data_contract_file=location, schema_location=schema).lint()
-    if ci:
-        write_ci_output(run, location)
     write_test_result(run, console, output_format, output)
 
 
@@ -163,10 +157,6 @@ def test(
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
-    ci: Annotated[
-        bool,
-        typer.Option(help="Optimize output for CI/CD pipelines. Emits GitHub Actions annotations and step summary."),
-    ] = False,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
@@ -195,8 +185,65 @@ def test(
         data_contract = resolve_data_contract(location, schema_location=schema)
     except Exception:
         data_contract = None
-    if ci:
-        write_ci_output(run, location)
+    write_test_result(run, console, output_format, output, data_contract)
+
+
+@app.command(name="ci")
+def ci(
+    location: Annotated[
+        str,
+        typer.Argument(help="The location (url or path) of the data contract yaml."),
+    ] = "datacontract.yaml",
+    schema: Annotated[
+        str,
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    server: Annotated[
+        str,
+        typer.Option(
+            help="The server configuration to run the schema and quality tests. "
+            "Use the key of the server object in the data contract yaml file "
+            "to refer to a server, e.g., `production`, or `all` for all "
+            "servers (default)."
+        ),
+    ] = "all",
+    publish: Annotated[str, typer.Option(help="The url to publish the results after the test.")] = None,
+    output: Annotated[
+        Path,
+        typer.Option(
+            help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
+        ),
+    ] = None,
+    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    logs: Annotated[bool, typer.Option(help="Print logs")] = False,
+    ssl_verification: Annotated[
+        bool,
+        typer.Option(help="SSL verification when publishing the data contract."),
+    ] = True,
+    debug: debug_option = None,
+):
+    """
+    Run lint and tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
+    """
+    enable_debug_logging(debug)
+
+    console.print(f"Testing {location}")
+    if server == "all":
+        server = None
+    run = DataContract(
+        data_contract_file=location,
+        schema_location=schema,
+        publish_url=publish,
+        server=server,
+        ssl_verification=ssl_verification,
+    ).test()
+    if logs:
+        _print_logs(run)
+    try:
+        data_contract = resolve_data_contract(location, schema_location=schema)
+    except Exception:
+        data_contract = None
+    write_ci_output(run, location)
     write_test_result(run, console, output_format, output, data_contract)
 
 

@@ -135,23 +135,17 @@ def test_step_summary_markdown_structure():
         os.unlink(summary_path)
 
 
-def test_test_ci_flag():
-    result = runner.invoke(app, ["test", "--ci", "--help"])
+def test_ci_help():
+    result = runner.invoke(app, ["ci", "--help"])
     assert result.exit_code == 0
-    assert "--ci" in result.stdout
+    assert "CI/CD" in result.stdout
 
 
-def test_lint_ci_flag():
-    result = runner.invoke(app, ["lint", "--ci", "--help"])
-    assert result.exit_code == 0
-    assert "--ci" in result.stdout
-
-
-def test_test_ci_flag_with_valid_contract():
-    result = runner.invoke(app, ["test", "--ci", "fixtures/lint/valid_datacontract.yaml"])
+def test_ci_with_valid_contract():
+    result = runner.invoke(app, ["ci", "fixtures/lint/valid_datacontract.yaml"])
     assert result.exit_code == 0
 
 
-def test_lint_ci_flag_with_valid_contract():
-    result = runner.invoke(app, ["lint", "--ci", "fixtures/lint/valid_datacontract.yaml"])
-    assert result.exit_code == 0
+def test_ci_with_missing_file():
+    result = runner.invoke(app, ["ci", "nonexistent.yaml"])
+    assert result.exit_code == 1

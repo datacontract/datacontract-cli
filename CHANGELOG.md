@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- Added `--ci` flag to `test` and `lint` commands for CI/CD-optimized output: GitHub Actions annotations and step summary
+- Added `ci` command for CI/CD-optimized test runs: GitHub Actions annotations and step summary
 
 ### Fixed
 - Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
