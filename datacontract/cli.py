@@ -120,9 +120,9 @@ def lint(
     enable_debug_logging(debug)
 
     run = DataContract(data_contract_file=location, schema_location=schema).lint()
-    write_test_result(run, console, output_format, output)
     if ci:
         write_ci_output(run, location)
+    write_test_result(run, console, output_format, output)
 
 
 def enable_debug_logging(debug: bool):
@@ -195,9 +195,9 @@ def test(
         data_contract = resolve_data_contract(location, schema_location=schema)
     except Exception:
         data_contract = None
-    write_test_result(run, console, output_format, output, data_contract)
     if ci:
         write_ci_output(run, location)
+    write_test_result(run, console, output_format, output, data_contract)
 
 
 @app.command(name="export")
