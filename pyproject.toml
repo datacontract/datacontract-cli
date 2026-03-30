@@ -63,7 +63,7 @@ databricks = [
 ]
 
 iceberg = [
-  "pyiceberg==0.11.0"
+  "pyiceberg==0.11.1"
 ]
 
 kafka = [
