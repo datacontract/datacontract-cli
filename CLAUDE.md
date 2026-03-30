@@ -122,6 +122,7 @@ The project uses factory patterns for extensibility:
 - Tests are organized in the `tests/` directory
 - Many tests use fixtures in `tests/fixtures/` which provide sample data contracts and test data
 - Supports integration testing with various databases and data stores
+- **Tests describe expected behavior, not actual behavior.** Write the test for what the code *should* do. If the test fails, fix the code under test, not the test (unless there is a justified reason for simplification).
 
 ## Code Conventions
 
