@@ -20,6 +20,7 @@ from datacontract.integration.entropy_data import (
 )
 from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
+from datacontract.output.ci_output import write_ci_output
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
 
@@ -107,6 +108,10 @@ def lint(
         ),
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    ci: Annotated[
+        bool,
+        typer.Option(help="Optimize output for CI/CD pipelines. Emits GitHub Actions annotations and step summary."),
+    ] = False,
     debug: debug_option = None,
 ):
     """
@@ -116,6 +121,8 @@ def lint(
 
     run = DataContract(data_contract_file=location, schema_location=schema).lint()
     write_test_result(run, console, output_format, output)
+    if ci:
+        write_ci_output(run, location)
 
 
 def enable_debug_logging(debug: bool):
@@ -156,6 +163,10 @@ def test(
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
+    ci: Annotated[
+        bool,
+        typer.Option(help="Optimize output for CI/CD pipelines. Emits GitHub Actions annotations and step summary."),
+    ] = False,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
@@ -185,6 +196,8 @@ def test(
     except Exception:
         data_contract = None
     write_test_result(run, console, output_format, output, data_contract)
+    if ci:
+        write_ci_output(run, location)
 
 
 @app.command(name="export")
