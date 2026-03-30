@@ -123,7 +123,10 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "number",
             "decimal",
             "numeric",
-            "float",
+            "binary",
+            "timestamp_tz",
+            "timestamp_ntz",
+            "time",
         ]
     ),
     "postgres": frozenset(
@@ -136,6 +139,9 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "decimal",
             "bit",
             "bit varying",
+            "timestamptz",
+            "timestamp",
+            "time",
         ]
     ),
     "databricks": frozenset(
@@ -152,6 +158,8 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "bytes",
             "numeric",
             "bignumeric",
+            "decimal",
+            "bigdecimal",
         ]
     ),
     "trino": frozenset(
@@ -159,7 +167,6 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "varchar",
             "char",
             "decimal",
-            "varbinary",
             "timestamp",
             "time",
         ]
@@ -186,7 +193,6 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "char",
             "decimal",
             "numeric",
-            "blob",
         ]
     ),
     "s3": frozenset(
@@ -195,7 +201,6 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "char",
             "decimal",
             "numeric",
-            "blob",
         ]
     ),
     "dataframe": frozenset(
@@ -204,7 +209,6 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "char",
             "decimal",
             "numeric",
-            "string",
         ]
     ),
     "oracle": frozenset(
@@ -217,6 +221,18 @@ _TYPES_ACCEPTING_PARAMS: Dict[str, FrozenSet[str]] = {
             "float",
             "raw",
             "timestamp",
+        ]
+    ),
+    "mysql": frozenset(
+        [
+            "varchar",
+            "char",
+            "decimal",
+            "numeric",
+            "float",
+            "timestamp",
+            "datetime",
+            "time",
         ]
     ),
 }
