@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 import sqlglot
 from open_data_contract_standard.model import OpenDataContractStandard
@@ -18,17 +19,17 @@ from datacontract.model.run import ResultEnum
 
 class SqlImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_sql(self.import_format, source, import_args)
+        return import_sql(source, import_args)
 
 
-def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataContractStandard:
+def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandard:
     sql = read_file(source)
     dialect = to_dialect(import_args)
 
     try:
         parsed = sqlglot.parse_one(sql=sql, read=dialect)
     except Exception as e:
-        logging.error(f"Error parsing SQL: {str(e)}")
+        logging.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
@@ -57,12 +58,13 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
 
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
-            logical_type = map_type_from_sql(col_type)
+            logical_type, format = map_type_from_sql(col_type)
             col_description = get_description(column)
             max_length = get_max_length(column)
             precision, scale = get_precision_scale(column)
             is_primary_key = get_primary_key(column)
             is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+            tags = get_tags(column)
 
             prop = create_property(
                 name=col_name,
@@ -72,9 +74,11 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
                 max_length=max_length,
                 precision=precision,
                 scale=scale,
+                format=format,
                 primary_key=is_primary_key,
                 primary_key_position=primary_key_position if is_primary_key else None,
                 required=is_required if is_required else None,
+                tags=tags,
             )
 
             if is_primary_key:
@@ -82,9 +86,24 @@ def import_sql(format: str, source: str, import_args: dict = None) -> OpenDataCo
 
             properties.append(prop)
 
+        table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+
+        table_description = None
+        if table_comment_property:
+            table_description = table_comment_property.this.this
+
+        table_tags = None
+        table_props = parsed.find(sqlglot.expressions.Properties)
+        if table_props:
+            tags = table_props.find(sqlglot.expressions.Tags)
+            if tags:
+                table_tags = [str(t) for t in tags.expressions]
+
         schema_obj = create_schema_object(
             name=table_name,
             physical_type="table",
+            description=table_description,
+            tags=table_tags,
             properties=properties,
         )
         odcs.schema_.append(schema_obj)
@@ -112,25 +131,7 @@ def to_dialect(import_args: dict) -> Dialects | None:
         return Dialects.TSQL
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
-    if dialect == "sqlserver":
-        return Dialects.TSQL
     return None
-
-
-def to_physical_type_key(dialect: Dialects | str | None) -> str:
-    dialect_map = {
-        Dialects.TSQL: "sqlserverType",
-        Dialects.POSTGRES: "postgresType",
-        Dialects.BIGQUERY: "bigqueryType",
-        Dialects.SNOWFLAKE: "snowflakeType",
-        Dialects.REDSHIFT: "redshiftType",
-        Dialects.ORACLE: "oracleType",
-        Dialects.MYSQL: "mysqlType",
-        Dialects.DATABRICKS: "databricksType",
-    }
-    if isinstance(dialect, str):
-        dialect = Dialects[dialect.upper()] if dialect.upper() in Dialects.__members__ else None
-    return dialect_map.get(dialect, "physicalType")
 
 
 def to_server_type(source, dialect: Dialects | None) -> str | None:
@@ -166,8 +167,20 @@ def to_col_type_normalized(column):
 
 def get_description(column: sqlglot.expressions.ColumnDef) -> str | None:
     if column.comments is None:
-        return None
+        description = column.find(sqlglot.expressions.CommentColumnConstraint)
+        if description:
+            return description.this.this
+        else:
+            return None
     return " ".join(comment.strip() for comment in column.comments)
+
+
+def get_tags(column: sqlglot.expressions.ColumnDef) -> list[str] | None:
+    tags = column.find(sqlglot.expressions.Tags)
+    if tags:
+        return [str(t) for t in tags.expressions]
+    else:
+        return None
 
 
 def get_max_length(column: sqlglot.expressions.ColumnDef) -> int | None:
@@ -212,79 +225,97 @@ def get_precision_scale(column):
     return None, None
 
 
-def map_type_from_sql(sql_type: str) -> str | None:
-    """Map SQL type to ODCS logical type."""
+def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
+    """Map SQL type to ODCS logical type and optional format.
+
+    Returns (logicalType, format).
+    The format corresponds to ODCS logicalTypeOptions.format (e.g. "binary", "uuid").
+    """
     if sql_type is None:
-        return None
+        return ("string", None)
 
     sql_type_normed = sql_type.lower().strip()
 
     if sql_type_normed.startswith("varchar"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("char"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("string"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("nchar"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("text"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("nvarchar"):
-        return "string"
+        return ("string", None)
     elif sql_type_normed.startswith("ntext"):
-        return "string"
-    elif sql_type_normed.startswith("int") and not sql_type_normed.startswith("interval"):
-        return "integer"
-    elif sql_type_normed.startswith("bigint"):
-        return "integer"
-    elif sql_type_normed.startswith("tinyint"):
-        return "integer"
-    elif sql_type_normed.startswith("smallint"):
-        return "integer"
+        return ("string", None)
+    elif sql_type_normed.endswith("int") and not sql_type_normed.endswith("point"):
+        return ("integer", None)
+    elif sql_type_normed.endswith("integer"):
+        return ("integer", None)
     elif sql_type_normed.startswith("float"):
-        return "number"
+        return ("number", None)
     elif sql_type_normed.startswith("double"):
-        return "number"
-    elif sql_type_normed.startswith("decimal"):
-        return "number"
-    elif sql_type_normed.startswith("numeric"):
-        return "number"
-    elif sql_type_normed.startswith("bool"):
-        return "boolean"
-    elif sql_type_normed.startswith("bit"):
-        return "boolean"
-    elif sql_type_normed.startswith("binary"):
-        return "array"
-    elif sql_type_normed.startswith("varbinary"):
-        return "array"
-    elif sql_type_normed.startswith("raw"):
-        return "array"
-    elif sql_type_normed == "blob" or sql_type_normed == "bfile":
-        return "array"
-    elif sql_type_normed == "date":
-        return "date"
-    elif sql_type_normed == "time":
-        return "string"
-    elif sql_type_normed.startswith("timestamp"):
-        return "date"
-    elif sql_type_normed == "datetime" or sql_type_normed == "datetime2":
-        return "date"
-    elif sql_type_normed == "smalldatetime":
-        return "date"
-    elif sql_type_normed == "datetimeoffset":
-        return "date"
-    elif sql_type_normed == "uniqueidentifier":  # tsql
-        return "string"
-    elif sql_type_normed == "json":
-        return "object"
-    elif sql_type_normed == "xml":  # tsql
-        return "string"
+        return ("number", None)
+    elif sql_type_normed == "real":
+        return ("number", None)
     elif sql_type_normed.startswith("number"):
-        return "number"
+        return ("number", None)
+    elif sql_type_normed.startswith("numeric"):
+        return ("number", None)
+    elif sql_type_normed.startswith("decimal"):
+        return ("number", None)
+    elif sql_type_normed.startswith("money"):
+        return ("number", None)
+    elif sql_type_normed.startswith("bool"):
+        return ("boolean", None)
+    elif sql_type_normed.startswith("bit"):
+        return ("boolean", None)
+    elif sql_type_normed.startswith("binary"):
+        return ("string", "binary")
+    elif sql_type_normed.startswith("varbinary"):
+        return ("string", "binary")
+    elif sql_type_normed.startswith("raw"):
+        return ("string", "binary")
+    elif sql_type_normed == "blob":
+        return ("string", "binary")
+    elif sql_type_normed == "bfile":
+        return ("string", "binary")
+    elif sql_type_normed.startswith("bytea"):
+        return ("string", "binary")
+    elif sql_type_normed == "image":
+        return ("string", "binary")
+    elif sql_type_normed == "date":
+        return ("date", None)
+    elif sql_type_normed == "time":
+        return ("time", None)
+    elif sql_type_normed.startswith("timestamp"):
+        return ("timestamp", None)
+    elif sql_type_normed == "smalldatetime":
+        return ("timestamp", None)
+    elif sql_type_normed.startswith("datetime"):  # tsql datetime2, datetimeoffset
+        return ("timestamp", None)
+    elif sql_type_normed == "uniqueidentifier":  # tsql
+        return ("string", "uuid")
+    elif sql_type_normed == "json":
+        return ("object", None)
+    elif sql_type_normed == "xml":  # tsql
+        return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
-        return "string"
+        return ("string", None)
     else:
-        return "object"
+        return ("object", None)
+
+
+def remove_variable_tokens(sql_script: str) -> str:
+    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL."""
+    variable_pattern = re.compile(
+        r"\$\((\w+)\)"  # $(var) — sqlcmd (T-SQL)
+        r"|\$\{(\w+)\}"  # ${var} — Liquibase
+        r"|\{\{(\w+)\}\}"  # {{var}} — Jinja / dbt
+    )
+    return variable_pattern.sub(lambda m: m.group(1) or m.group(2) or m.group(3), sql_script)
 
 
 def read_file(path):
@@ -298,4 +329,5 @@ def read_file(path):
         )
     with open(path, "r") as file:
         file_content = file.read()
-    return file_content
+
+    return remove_variable_tokens(file_content)

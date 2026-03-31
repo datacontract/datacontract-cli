@@ -89,12 +89,6 @@ datacontract export --format html datacontract.yaml --output datacontract.html
 
 # Import from a different format
 datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
-
-# Find differences between data contracts
-datacontract diff datacontract-v1.yaml datacontract-v2.yaml
-
-# Check for breaking changes
-datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 ```
 
 ## Project Architecture
@@ -116,8 +110,6 @@ The Data Contract CLI is an open-source command-line tool for working with data 
    - `datacontract/imports/`: Importers from formats like SQL, Avro, JSON Schema, etc.
 
 5. **Linting (`datacontract/lint/`)**: Tools for validating data contract files against schema and best practices.
-
-6. **Breaking Change Detection (`datacontract/breaking/`)**: Logic for identifying breaking changes between versions.
 
 ### Extension Pattern
 

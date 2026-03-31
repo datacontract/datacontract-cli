@@ -43,3 +43,19 @@ select
 from orders
 """
     assert actual.strip() == expected.strip()
+
+
+def test_to_sql_query_physical_name():
+    actual = DataContract(data_contract_file="fixtures/postgres-export-physical-name/datacontract.yaml").export(
+        "sql-query"
+    )
+    expected = """
+-- Data Contract: postgres-physical-name
+-- SQL Dialect: postgres
+select
+    FIELD_ONE,
+    FIELD_TWO,
+    field_three
+from my_table
+"""
+    assert actual.strip() == expected.strip()
