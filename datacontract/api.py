@@ -1,12 +1,14 @@
 import logging
 import os
-from typing import Annotated, Optional
+import tempfile
+from typing import Annotated, Literal, Optional
 
 import typer
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
+from pydantic import BaseModel
 
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.run import Run
@@ -224,6 +226,13 @@ app = FastAPI(
             },
         },
         {
+            "name": "diff",
+            "externalDocs": {
+                "description": "Documentation",
+                "url": "https://cli.datacontract.com/#diff",
+            },
+        },
+        {
             "name": "export",
             "externalDocs": {
                 "description": "Documentation",
@@ -356,6 +365,56 @@ async def lint(
     data_contract = DataContract(data_contract_str=body, schema_location=schema)
     lint_result = data_contract.lint()
     return {"result": lint_result.result, "checks": lint_result.checks}
+
+
+class DiffRequest(BaseModel):
+    v1: str = DATA_CONTRACT_EXAMPLE_PAYLOAD
+    v2: str = DATA_CONTRACT_EXAMPLE_PAYLOAD
+
+
+@app.post(
+    "/diff",
+    tags=["diff"],
+    summary="Show a diff between two data contracts.",
+    description="""
+        Compare two ODCS data contract YAMLs and return a diff report.
+        POST a JSON body with `v1` (source/before) and `v2` (target/after) as YAML strings.
+        Use the `format` query parameter to choose between `text` (default) and `html` output.
+    """,
+)
+async def diff(
+    body: DiffRequest,
+    api_key: Annotated[str | None, Depends(api_key_header)] = None,
+    format: Annotated[
+        Literal["text", "html"],
+        Query(description="Output format: 'text' (default) or 'html'."),
+    ] = "text",
+):
+    check_api_key(api_key)
+    from datacontract.reports.diff.contract_diff_report import ContractDiffReport
+    from datacontract.reports.diff.diff import ContractDiff
+    from datacontract.reports.diff.html_contract_diff_renderer import HtmlContractDiffRenderer
+    from datacontract.reports.diff.text_contract_diff_renderer import TextContractDiffRenderer
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f1:
+        f1.write(body.v1)
+        v1_path = f1.name
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f2:
+        f2.write(body.v2)
+        v2_path = f2.name
+
+    try:
+        contracts_diff = ContractDiff().generate(v1_path, v2_path)
+        report_data = ContractDiffReport().build_report_data(contracts_diff, source_label="v1", target_label="v2")
+        if format == "html":
+            content = HtmlContractDiffRenderer(report_data=report_data).render()
+            return HTMLResponse(content=content)
+        else:
+            content = TextContractDiffRenderer(report_data=report_data).render()
+            return PlainTextResponse(content=content)
+    finally:
+        os.unlink(v1_path)
+        os.unlink(v2_path)
 
 
 @app.post(

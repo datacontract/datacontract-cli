@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ODCS Diff — tests/fixtures/diff/integration/report_renderer_integration_v1.yaml → tests/fixtures/diff/integration/report_renderer_integration_v2.yaml</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f6f8fa;
+  --surface:   #ffffff;
+  --border:    #d0d7de;
+  --text:      #24292f;
+  --muted:     #6e7781;
+  --error:     #cf222e;
+  --error-bg:  #fff0ee;
+  --warning:   #9a6700;
+  --warning-bg:#fff8c5;
+  --info:      #0969da;
+  --info-bg:   #ddf4ff;
+  --success:   #1a7f37;
+  --success-bg:#dafbe1;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'IBM Plex Sans', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 40px 24px;
+  min-height: 100vh;
+}
+
+.container { max-width: 1040px; margin: 0 auto; }
+
+/* Header */
+.header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px; margin-bottom: 32px; gap: 16px;
+}
+.header-left h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+.header-left .subtitle { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.badge {
+  font-size: 11px; font-family: var(--mono);
+  padding: 3px 10px; border-radius: 20px; font-weight: 500; border: 1px solid;
+}
+.badge.error   { color: var(--error);   background: var(--error-bg);   border-color: #ffcecb; }
+.badge.warning { color: var(--warning); background: var(--warning-bg); border-color: #d4a72c; }
+.badge.info    { color: var(--info);    background: var(--info-bg);    border-color: #80ccff; }
+.badge.success { color: var(--success); background: var(--success-bg); border-color: #aceebb; }
+
+/* Section */
+.section { margin-bottom: 32px; }
+.section-title {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text); margin-bottom: 12px;
+}
+
+/* Diff table */
+.diff-table {
+  width: 100%; border-collapse: collapse;
+  font-family: var(--mono); font-size: 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+.diff-table th {
+  text-align: left; padding: 8px 14px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #444c56;
+  background: #e6eaf0; border-bottom: 2px solid #c8d0da;
+}
+.diff-table td { padding: 6px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.diff-table tr:last-child td { border-bottom: none; }
+/* Ultra-compact field and change columns, reduced padding for new/old */
+.diff-table th:nth-child(1),
+.diff-table td:nth-child(1) {
+  width: 25%; /* field column - very compact */
+}
+.diff-table th:nth-child(2),
+.diff-table td:nth-child(2) {
+  width: 5%; /* change column - ultra minimal */
+}
+.diff-table th:nth-child(3),
+.diff-table th:nth-child(4),
+.diff-table td:nth-child(3),
+.diff-table td:nth-child(4) {
+  width: 35%; /* new and old columns - maximum space */
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.diff-table .key  { color: var(--text); }
+.diff-table .old  { color: var(--error); text-decoration: line-through; opacity: 0.8; }
+.diff-table .new  { color: var(--success); }
+/* monospace indent: each level = 2ch, dash+space = 2ch so children align exactly */
+  .diff-table .path  { font-family: inherit; }
+
+/* Pills */
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 500; padding: 2px 8px;
+  border-radius: 12px; border: 1px solid; white-space: nowrap;
+}
+.pill.added   { color: var(--success); background: var(--success-bg); border-color: #aceebb; }
+.pill.removed { color: var(--error);   background: var(--error-bg);   border-color: #ffcecb; }
+.pill.changed { color: var(--warning); background: var(--warning-bg); border-color: #d4a72c; }
+
+</style>
+</head>
+<body>
+<div class="container">
+  
+        <div class="header">
+          <div class="header-left">
+            <h1>ODCS Data Contract Diff</h1>
+            <div class="subtitle">tests/fixtures/diff/integration/report_renderer_integration_v1.yaml → tests/fixtures/diff/integration/report_renderer_integration_v2.yaml</div>
+            <div class="subtitle" style="margin-top:4px;">Generated: 2025-01-01 00:00:00 UTC</div>
+          </div>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Change Summary &nbsp;·&nbsp; 7 change(s)</div>
+          <div class="badges" style="margin:16px 0;"><span class="badge error">1 Removed</span><span class="badge warning">4 Changed</span><span class="badge success">2 Added</span></div>
+          <table class="diff-table">
+            <thead><tr><th>field</th><th>change</th></tr></thead>
+            <tbody><tr><td class="path">schema.customers</td><td><span class="pill added">Added</span></td></tr><tr><td class="path">schema.orders.properties.customer_id</td><td><span class="pill removed">Removed</span></td></tr><tr><td class="path">schema.orders.properties.order_date</td><td><span class="pill changed">Changed</span></td></tr><tr><td class="path">schema.orders.properties.order_id</td><td><span class="pill changed">Changed</span></td></tr><tr><td class="path">schema.orders.properties.region</td><td><span class="pill added">Added</span></td></tr><tr><td class="path">schema.orders.properties.total_amount</td><td><span class="pill changed">Changed</span></td></tr><tr><td class="path">slaProperties.availability</td><td><span class="pill changed">Changed</span></td></tr></tbody>
+          </table>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Change Details</div>
+          <table class="diff-table">
+            <thead>
+              <tr><th>field</th><th>change</th><th>new</th><th>old</th></tr>
+            </thead>
+            <tbody><tr><td class="path" style="padding-left:calc(14px + 0ch)"><span class="key">schema</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 2ch)"><span class="key">- customers</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 4ch)"><span class="key">physicalName</span></td><td><span class="pill added">Added</span></td><td class="new">customers_tbl</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 4ch)"><span class="key">properties</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- country</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill added">Added</span></td><td class="new">string</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">partitionKeyPosition</span></td><td><span class="pill added">Added</span></td><td class="new">1</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">partitioned</span></td><td><span class="pill added">Added</span></td><td class="new">True</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill added">Added</span></td><td class="new">False</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- created_at</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">description</span></td><td><span class="pill added">Added</span></td><td class="new">Record creation timestamp</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill added">Added</span></td><td class="new">timestamp</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill added">Added</span></td><td class="new">True</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- customer_id</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">description</span></td><td><span class="pill added">Added</span></td><td class="new">Unique order ID</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill added">Added</span></td><td class="new">string</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">primaryKey</span></td><td><span class="pill added">Added</span></td><td class="new">True</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill added">Added</span></td><td class="new">True</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- date_of_birth</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">classification</span></td><td><span class="pill added">Added</span></td><td class="new">restricted</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill added">Added</span></td><td class="new">date</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill added">Added</span></td><td class="new">False</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- email</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">classification</span></td><td><span class="pill added">Added</span></td><td class="new">confidential</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">encryptedName</span></td><td><span class="pill added">Added</span></td><td class="new">email_encrypt</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill added">Added</span></td><td class="new">string</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill added">Added</span></td><td class="new">True</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- full_name</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">businessName</span></td><td><span class="pill added">Added</span></td><td class="new">Customer Full Name</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill added">Added</span></td><td class="new">string</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill added">Added</span></td><td class="new">True</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 2ch)"><span class="key">- orders</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 4ch)"><span class="key">properties</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- customer_id</span></td><td><span class="pill removed">Removed</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill removed">Removed</span></td><td class="new"></td><td class="old">string</td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill removed">Removed</span></td><td class="new"></td><td class="old">True</td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- order_date</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill changed">Changed</span></td><td class="new">date</td><td class="old">string</td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- order_id</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">description</span></td><td><span class="pill changed">Changed</span></td><td class="new">Unique order ID and another rather lenghty description that should be wrapped in the table</td><td class="old">Unique order ID and a rather lenghty description that should be wrapped in the table</td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- region</span></td><td><span class="pill added">Added</span></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">logicalType</span></td><td><span class="pill added">Added</span></td><td class="new">string</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill added">Added</span></td><td class="new">False</td><td class="old"></td></tr><tr><td class="path" style="padding-left:calc(14px + 6ch)"><span class="key">- total_amount</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 8ch)"><span class="key">required</span></td><td><span class="pill changed">Changed</span></td><td class="new">True</td><td class="old">False</td></tr><tr><td class="path" style="padding-left:calc(14px + 0ch)"><span class="key">slaProperties</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 2ch)"><span class="key">- availability</span></td><td></td><td></td><td></td></tr><tr><td class="path" style="padding-left:calc(14px + 4ch)"><span class="key">value</span></td><td><span class="pill changed">Changed</span></td><td class="new">99.5%</td><td class="old">99.9%</td></tr></tbody>
+          </table>
+        </div>
+</div>
+</body>
+</html>

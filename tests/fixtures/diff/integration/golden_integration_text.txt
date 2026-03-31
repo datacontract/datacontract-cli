@@ -1,0 +1,80 @@
+====================================================================================================
+                                      ODCS Data Contract Diff                                       
+
+tests/fixtures/diff/integration/report_renderer_integration_v1.yaml →                               
+tests/fixtures/diff/integration/report_renderer_integration_v2.yaml                                 
+
+Generated: 2025-01-01 00:00:00 UTC                                                                  
+====================================================================================================
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  CHANGE SUMMARY  ·  7 change(s)  [ 1 Removed ]  [ 4 Changed ]  [ 2 Added ]
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Field                                  Change
+------------------------------------------------
+schema.customers                       Added
+schema.orders.properties.customer_id   Removed
+schema.orders.properties.order_date    Changed
+schema.orders.properties.order_id      Changed
+schema.orders.properties.region        Added
+schema.orders.properties.total_amount  Changed
+slaProperties.availability             Changed
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  CHANGE DETAILS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Field                         Change   New                           Old
+----------------------------------------------------------------------------------------------------
+schema
+  - customers                 Added                                  
+    physicalName              Added    customers_tbl                 
+    properties                Added                                  
+      - country               Added                                  
+        logicalType           Added    string                        
+        partitionKeyPosition  Added    1                             
+        partitioned           Added    True                          
+        required              Added    False                         
+      - created_at            Added                                  
+        description           Added    Record creation timestamp     
+        logicalType           Added    timestamp                     
+        required              Added    True                          
+      - customer_id           Added                                  
+        description           Added    Unique order ID               
+        logicalType           Added    string                        
+        primaryKey            Added    True                          
+        required              Added    True                          
+      - date_of_birth         Added                                  
+        classification        Added    restricted                    
+        logicalType           Added    date                          
+        required              Added    False                         
+      - email                 Added                                  
+        classification        Added    confidential                  
+        encryptedName         Added    email_encrypt                 
+        logicalType           Added    string                        
+        required              Added    True                          
+      - full_name             Added                                  
+        businessName          Added    Customer Full Name            
+        logicalType           Added    string                        
+        required              Added    True                          
+  - orders
+    properties
+      - customer_id           Removed                                
+        logicalType           Removed                                string
+        required              Removed                                True
+      - order_date
+        logicalType           Changed  date                          string
+      - order_id
+        description           Changed  Unique order ID and another   Unique order ID and a rather
+                                       rather lenghty description    lenghty description that
+                                       that should be wrapped in     should be wrapped in the
+                                       the table                     table
+      - region                Added                                  
+        logicalType           Added    string                        
+        required              Added    False                         
+      - total_amount
+        required              Changed  True                          False
+slaProperties
+  - availability
+    value                     Changed  99.5%                         99.9%

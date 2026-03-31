@@ -103,6 +103,31 @@ curl -X POST "http://localhost:4242/export?format=sql" \
   --data-binary @datacontract.yaml
 ```
 
+## Diff Two Data Contracts
+
+Compare two ODCS data contracts and receive a diff report. POST a JSON body with `v1` (source/before) and `v2` (target/after) as YAML strings. Use `?format=text` (default) or `?format=html`.
+
+```bash
+curl -X POST "http://localhost:4242/diff?format=text" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "v1": "'"$(cat v1.odcs.yaml)"'",
+    "v2": "'"$(cat v2.odcs.yaml)"'"
+  }'
+```
+
+To get an HTML report:
+
+```bash
+curl -X POST "http://localhost:4242/diff?format=html" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "v1": "'"$(cat v1.odcs.yaml)"'",
+    "v2": "'"$(cat v2.odcs.yaml)"'"
+  }' \
+  -o diff_report.html
+```
+
 ## Try it out
 
 You can also use the Swagger UI to execute the commands directly.

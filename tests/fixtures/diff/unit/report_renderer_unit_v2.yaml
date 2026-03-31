@@ -1,0 +1,13 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: unit-test-001
+schema:
+  - name: events
+    physicalName: events_tbl
+    properties:
+      - name: event_id
+        logicalType: string
+        required: true
+slaProperties:
+  - property: availability
+    value: "99.5%"

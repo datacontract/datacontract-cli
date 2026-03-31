@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output
+- Added data contract semantic diff command and API endpoint
 
 ### Fixed
 - Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
@@ -25,20 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix SQL importer type mappings: binary types, datetime/time, uuid now map to correct ODCS logicalType and format (#790)
 
 ### Added
-- Added support for MySQL for data contract tests (#1101)
-- Support additional PyArrow types in Parquet importer (#1091)
-- Populate `logicalTypeOptions.format` for SQL import from binary and uuid types (#790)
-- Snowflake DDL import with tags, descriptions, and template variable handling (#790)
 
-## [0.11.6] - 2026-03-17
-
-### Fixed
-- Fix parser error for CSV / Parquet table names containing special characters (#1066)
-- Fix BigQuery export failing with "Unsupported type" for parameterized physicalType like `NUMERIC(18, 4)` (#1083)
-
-### Added
 - Added JSON output format for test results (`--output-format json`)
-- Added Azure AD / Entra ID authentication support for SQL Server and Microsoft Fabric
+- Added Azure AD / Entra ID authentication support for SQL Server (`ActiveDirectoryPassword`, `ActiveDirectoryServicePrincipal`, `ActiveDirectoryInteractive`)
 
 ## [0.11.5] - 2026-02-19
 
@@ -53,7 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix mkdir TOCTOU race causing silent JUnit write failure (#1050)
 - Fix validation failure for field names with special chars on Databricks (#1049)
 - Add Azure support for field name quoting in schema checks (#1025)
-
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
 ## [0.11.4] - 2026-01-19
 
 ### Changed

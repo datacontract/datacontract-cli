@@ -33,3 +33,14 @@ def test_export_jsonschema_dcs():
         expected_json_schema = file.read()
     print(expected_json_schema)
     assert response.text == expected_json_schema
+
+
+def test_diff():
+    with open("fixtures/diff/integration/report_renderer_integration_v1.yaml", "r") as f:
+        v1 = f.read()
+    with open("fixtures/diff/integration/report_renderer_integration_v2.yaml", "r") as f:
+        v2 = f.read()
+    response = client.post(url="/diff", json={"v1": v1, "v2": v2})
+    assert response.status_code == 200
+    assert "CHANGE SUMMARY" in response.text
+    assert "CHANGE DETAILS" in response.text

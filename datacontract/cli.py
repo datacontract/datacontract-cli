@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -125,6 +126,48 @@ def enable_debug_logging(debug: bool):
         logging.basicConfig(
             level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
         )
+
+
+class DiffOutputFormat(str, Enum):
+    text = "text"
+    html = "html"
+
+
+@app.command(name="diff")
+def diff(
+    v1: Annotated[
+        str,
+        typer.Argument(help="The location (path) of the source (before) data contract YAML."),
+    ],
+    v2: Annotated[
+        str,
+        typer.Argument(help="The location (path) of the target (after) data contract YAML."),
+    ],
+    format: Annotated[
+        DiffOutputFormat,
+        typer.Option(help="The output format for the diff report."),
+    ] = DiffOutputFormat.text,
+    output: Annotated[
+        Optional[Path],
+        typer.Option(
+            help="Specify the file path where the diff report will be saved. If no path is provided, the output will be printed to stdout."
+        ),
+    ] = None,
+    debug: debug_option = None,
+):
+    """
+    Show a diff between two data contracts.
+    """
+    enable_debug_logging(debug)
+
+    from datacontract.reports.diff.contract_diff_report import ContractDiffReport
+
+    ContractDiffReport().generate(
+        v1_path=v1,
+        v2_path=v2,
+        fmt=format.value,
+        output_path=str(output) if output is not None else None,
+    )
 
 
 @app.command(name="test")

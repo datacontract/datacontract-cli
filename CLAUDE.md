@@ -89,6 +89,10 @@ datacontract export --format html datacontract.yaml --output datacontract.html
 
 # Import from a different format
 datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
+
+# Find differences between data contracts
+datacontract diff datacontract-v1.yaml datacontract-v2.yaml
+
 ```
 
 ## Project Architecture
@@ -110,6 +114,10 @@ The Data Contract CLI is an open-source command-line tool for working with data 
    - `datacontract/imports/`: Importers from formats like SQL, Avro, JSON Schema, etc.
 
 5. **Linting (`datacontract/lint/`)**: Tools for validating data contract files against schema and best practices.
+
+6. **Semantic Diff (`datacontract/reports/diff/`)**: Semantic diff engine with HTML and text report renderers.
+
+   **Normalization — planned improvement**: The natural keys used to match list items (e.g. `schema[].name`, `customProperties[].property`) are currently hardcoded in `diff.py` as a 20-line path-to-key table, backed by six helper methods (`_normalize_by`, `_normalize_schema_fields`, `_normalize_quality`, `_normalize_auth_defs`, `_normalize_relationships`, `_normalize_properties`). The intended long-term fix is to encode these natural keys directly in the ODCS JSON Schema — as an `x-natural-key` extension or similar — and carry that through to the upstream `open-data-contract-standard` Pydantic models (via a `__natural_key__` class var or `Field` annotation). This is an improvement beyond just simplifying this code: it makes the identity semantics of each model explicit and authoritative in the schema itself, rather than having them implied by convention or rediscovered by downstream consumers. Once that lands, all six helpers and the key table collapse into a single ~15-line recursive function that walks the model tree by reflection — adding or changing a list field in the ODCS schema would require no changes here. See the `NOTE` in `ContractDiff._normalize()` for the exact upstream change required.
 
 ### Extension Pattern
 

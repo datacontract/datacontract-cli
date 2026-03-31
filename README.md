@@ -117,6 +117,12 @@ $ datacontract init odcs.yaml
 # lint the odcs.yaml
 $ datacontract lint odcs.yaml
 
+# show a semantic diff between two data contracts (plain-text by default)
+$ datacontract diff v1.odcs.yaml v2.odcs.yaml
+
+# show a diff as a self-contained HTML report
+$ datacontract diff v1.odcs.yaml v2.odcs.yaml --format html --output diff.html
+
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
 
@@ -260,6 +266,7 @@ Commands
 
 - [init](#init)
 - [lint](#lint)
+- [diff](#diff)
 - [test](#test)
 - [ci](#ci)
 - [export](#export)
@@ -318,10 +325,40 @@ Commands
 
 ```
 
+### diff
+```
+                                                                                                    
+ Usage: datacontract diff [OPTIONS] V1 V2                                                           
+                                                                                                    
+ Show a diff between two data contracts.                                                            
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    v1      TEXT  The location (path) of the source (before) data contract YAML. [required]     │
+│ *    v2      TEXT  The location (path) of the target (after) data contract YAML. [required]      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --format                  [text|html]  The output format for the diff report. [default: text]    │
+│ --output                  PATH         Specify the file path where the diff report will be       │
+│                                        saved. If no path is provided, the output will be printed │
+│                                        to stdout.                                                │
+│ --debug     --no-debug                 Enable debug logging                                      │
+│ --help                                 Show this message and exit.                               │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+```
+
+```bash
+# Plain-text diff to stdout
+$ datacontract diff v1.odcs.yaml v2.odcs.yaml
+
+# HTML diff saved to a file
+$ datacontract diff v1.odcs.yaml v2.odcs.yaml --format html --output diff.html
+```
+
 ### test
 ```
                                                                                                     
- Usage: datacontract test [OPTIONS] [LOCATION]                                                      
+ Usage: datacontract test [OPTIONS] [LOCATION]
                                                                                                     
  Run schema and quality tests on configured servers.                                                
                                                                                                     
