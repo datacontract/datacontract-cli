@@ -504,11 +504,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
     if sqlserver_type:
         return sqlserver_type
     if base_type in ["string", "varchar", "text"]:
-        return (
-            "uniqueidentifier"
-            if _get_format(field) == "uuid"
-            else _attach_params_if_present("varchar", field)
-        )
+        return "uniqueidentifier" if _get_format(field) == "uuid" else _attach_params_if_present("varchar", field)
     if base_type in ["timestamp", "timestamp_tz"]:
         return _attach_params_if_present("datetimeoffset", field)
     if base_type in ["timestamp_ntz"]:
