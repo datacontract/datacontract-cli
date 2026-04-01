@@ -198,7 +198,7 @@ def test_step_summary_sanitizes_reason():
         with open(summary_path) as f:
             content = f.read()
         # Newlines in reason must be collapsed, pipes must be escaped
-        table_lines = [l for l in content.splitlines() if l.startswith("|") and "Test Data Contract" in l]
+        table_lines = [line for line in content.splitlines() if line.startswith("|") and "Test Data Contract" in line]
         assert len(table_lines) == 1, "Check should be on a single table row"
         assert "\\|" in table_lines[0], "Pipe in reason should be escaped"
         assert "\n" not in table_lines[0]

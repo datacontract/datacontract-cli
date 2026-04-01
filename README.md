@@ -1203,6 +1203,7 @@ steps:
       versionSpec: "3.11"
   - script: pip install datacontract-cli
     displayName: "Install datacontract-cli"
+  # Test one or more data contracts (supports globs, e.g. contracts/*.yaml)
   - script: datacontract ci datacontract.yaml
     displayName: "Run data contract tests"
 ```
