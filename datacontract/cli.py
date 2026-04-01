@@ -5,6 +5,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
 
+import click
 import typer
 from click import Context
 from rich.console import Console
@@ -220,7 +221,8 @@ def ci(
     fail_on: Annotated[
         str,
         typer.Option(
-            help="Minimum severity that causes a non-zero exit code: 'warning', 'error', or 'never'."
+            click_type=click.Choice(["warning", "error", "never"], case_sensitive=False),
+            help="Minimum severity that causes a non-zero exit code.",
         ),
     ] = "error",
     ssl_verification: Annotated[
@@ -240,11 +242,15 @@ def ci(
     if server == "all":
         server = None
 
-    # When --json is used, send human-readable output to stderr so stdout is clean JSON.
-    out = Console(stderr=True) if json_output else console
+    # Plain text output for CI logs; --json sends human output to stderr.
+    out = Console(stderr=True, no_color=True) if json_output else Console(no_color=True)
 
     results = []
-    severity_levels = {"warning": 0, "failed": 1, "error": 2}
+    fail_results = {
+        "warning": {"warning", "failed", "error"},
+        "error": {"failed", "error"},
+        "never": set(),
+    }
     should_fail = False
 
     for location in locations:
@@ -268,10 +274,8 @@ def ci(
             write_test_result(run, out, output_format, output, data_contract)
         except typer.Exit:
             pass
-        if fail_on != "never" and run.result in severity_levels:
-            fail_on_level = severity_levels.get(fail_on, 0)
-            if severity_levels[run.result] >= fail_on_level:
-                should_fail = True
+        if run.result in fail_results[fail_on]:
+            should_fail = True
 
     write_ci_summary(results)
     if json_output:

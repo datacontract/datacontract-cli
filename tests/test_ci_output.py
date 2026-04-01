@@ -7,7 +7,13 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.output.ci_output import _sanitize_md_cell, write_ci_output, write_ci_summary, write_json_results
+from datacontract.output.ci_output import (
+    _sanitize_annotation,
+    _sanitize_md_cell,
+    write_ci_output,
+    write_ci_summary,
+    write_json_results,
+)
 
 runner = CliRunner()
 
@@ -80,7 +86,10 @@ def test_azure_annotations_emitted(capsys):
 
     captured = capsys.readouterr()
     assert "##vso[task.logissue type=error;sourcepath=datacontract.yaml]Check col types: type mismatch" in captured.out
-    assert "##vso[task.logissue type=warning;sourcepath=datacontract.yaml]Check nullability: nullable changed" in captured.out
+    assert (
+        "##vso[task.logissue type=warning;sourcepath=datacontract.yaml]Check nullability: nullable changed"
+        in captured.out
+    )
     assert "Check row count" not in captured.out
 
 
@@ -94,7 +103,10 @@ def test_azure_annotation_format_for_errors(capsys):
         write_ci_output(run, "my/contract.yaml")
 
     captured = capsys.readouterr()
-    assert captured.out.strip() == "##vso[task.logissue type=error;sourcepath=my/contract.yaml]freshness: connection timeout"
+    assert (
+        captured.out.strip()
+        == "##vso[task.logissue type=error;sourcepath=my/contract.yaml]freshness: connection timeout"
+    )
 
 
 # --- Step summary tests ---
@@ -179,13 +191,14 @@ def test_sanitize_md_cell():
     assert _sanitize_md_cell("foo | bar\nbaz") == "foo \\| bar baz"
 
 
+def test_sanitize_annotation():
+    assert _sanitize_annotation("error\non line 2\r\nand line 3") == "error on line 2 and line 3"
+    assert _sanitize_annotation(None) == ""
+
+
 def test_step_summary_multi_contract():
-    run_passed = _make_run(
-        [Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)]
-    )
-    run_failed = _make_run(
-        [Check(type="schema", name="Check nulls", result=ResultEnum.failed, reason="not nullable")]
-    )
+    run_passed = _make_run([Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)])
+    run_failed = _make_run([Check(type="schema", name="Check nulls", result=ResultEnum.failed, reason="not nullable")])
     with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
         summary_path = f.name
 
@@ -199,7 +212,7 @@ def test_step_summary_multi_contract():
             content = f.read()
         # Aggregate header
         assert "## Data Contract CI" in content
-        assert "1/2 contracts successful" in content
+        assert "1/2 contracts passed" in content
         assert "| Result | Contract |" in content
         assert "orders.yaml" in content
         assert "customers.yaml" in content
@@ -237,9 +250,7 @@ def test_ci_multiple_files():
 
 
 def test_ci_multiple_files_with_failure():
-    result = runner.invoke(
-        app, ["ci", "fixtures/lint/valid_datacontract.yaml", "nonexistent.yaml"]
-    )
+    result = runner.invoke(app, ["ci", "fixtures/lint/valid_datacontract.yaml", "nonexistent.yaml"])
     assert result.exit_code == 1
 
 
@@ -262,9 +273,7 @@ def test_ci_fail_on_error_is_default():
 
 def test_ci_continues_after_failure():
     """CI should test all contracts even if one fails."""
-    result = runner.invoke(
-        app, ["ci", "nonexistent.yaml", "fixtures/lint/valid_datacontract.yaml"]
-    )
+    result = runner.invoke(app, ["ci", "nonexistent.yaml", "fixtures/lint/valid_datacontract.yaml"])
     # Should still report on the second file
     assert "fixtures/lint/valid_datacontract.yaml" in result.stdout
     # But exit 1 because the first failed
@@ -275,9 +284,7 @@ def test_ci_continues_after_failure():
 
 
 def test_json_output_single(capsys):
-    run = _make_run(
-        [Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)]
-    )
+    run = _make_run([Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)])
     write_json_results([("datacontract.yaml", run)])
     captured = capsys.readouterr()
     data = json.loads(captured.out)
@@ -286,12 +293,8 @@ def test_json_output_single(capsys):
 
 
 def test_json_output_multi(capsys):
-    run1 = _make_run(
-        [Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)]
-    )
-    run2 = _make_run(
-        [Check(type="schema", name="Check nulls", result=ResultEnum.failed, reason="not nullable")]
-    )
+    run1 = _make_run([Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)])
+    run2 = _make_run([Check(type="schema", name="Check nulls", result=ResultEnum.failed, reason="not nullable")])
     write_json_results([("orders.yaml", run1), ("customers.yaml", run2)])
     captured = capsys.readouterr()
     data = json.loads(captured.out)

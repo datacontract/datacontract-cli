@@ -27,20 +27,31 @@ def write_ci_summary(results: List[Tuple[str, Run]]):
     _write_github_step_summary(results, summary_path)
 
 
+def _sanitize_annotation(text: str | None) -> str:
+    """Collapse newlines and trim text for use in CI annotations."""
+    if not text:
+        return ""
+    return text.replace("\r\n", " ").replace("\r", " ").replace("\n", " ").strip()
+
+
 def _write_github_annotations(run: Run, data_contract_file: str):
     for check in run.checks:
+        name = _sanitize_annotation(check.name)
+        reason = _sanitize_annotation(check.reason)
         if check.result in ("failed", "error"):
-            print(f"::error file={data_contract_file}::{check.name}: {check.reason}")
+            print(f"::error file={data_contract_file}::{name}: {reason}")
         elif check.result == "warning":
-            print(f"::warning file={data_contract_file}::{check.name}: {check.reason}")
+            print(f"::warning file={data_contract_file}::{name}: {reason}")
 
 
 def _write_azure_annotations(run: Run, data_contract_file: str):
     for check in run.checks:
+        name = _sanitize_annotation(check.name)
+        reason = _sanitize_annotation(check.reason)
         if check.result in ("failed", "error"):
-            print(f"##vso[task.logissue type=error;sourcepath={data_contract_file}]{check.name}: {check.reason}")
+            print(f"##vso[task.logissue type=error;sourcepath={data_contract_file}]{name}: {reason}")
         elif check.result == "warning":
-            print(f"##vso[task.logissue type=warning;sourcepath={data_contract_file}]{check.name}: {check.reason}")
+            print(f"##vso[task.logissue type=warning;sourcepath={data_contract_file}]{name}: {reason}")
 
 
 RESULT_EMOJI = {
@@ -57,11 +68,19 @@ def _write_github_step_summary(results: List[Tuple[str, Run]], summary_path: str
     # Aggregate header (only when multiple contracts)
     if len(results) > 1:
         n_total = len(results)
-        n_passed = sum(1 for _, run in results if run.result == "passed")
-        overall = "🟢 passed" if n_passed == n_total else "🔴 failed"
+        result_values = [run.result for _, run in results]
+        has_failures = any(r in ("failed", "error") for r in result_values)
+        has_warnings = any(r == "warning" for r in result_values)
+        if has_failures:
+            overall = "🔴 failed"
+        elif has_warnings:
+            overall = "🟠 warning"
+        else:
+            overall = "🟢 passed"
         lines.append("## Data Contract CI")
         lines.append("")
-        lines.append(f"**{overall}** — {n_passed}/{n_total} contracts successful")
+        n_passed = sum(1 for r in result_values if r == "passed")
+        lines.append(f"**{overall}** — {n_passed}/{n_total} contracts passed")
         lines.append("")
         lines.append("| Result | Contract |")
         lines.append("|--------|----------|")
@@ -80,12 +99,16 @@ def _write_github_step_summary(results: List[Tuple[str, Run]], summary_path: str
         n_warnings = sum(1 for c in run.checks if c.result == "warning") if run.checks else 0
         n_errors = sum(1 for c in run.checks if c.result == "error") if run.checks else 0
 
-        duration = (run.timestampEnd - run.timestampStart).total_seconds() if run.timestampStart and run.timestampEnd else 0
+        duration = (
+            (run.timestampEnd - run.timestampStart).total_seconds() if run.timestampStart and run.timestampEnd else 0
+        )
 
         heading_level = "###" if len(results) > 1 else "##"
         lines.append(f"{heading_level} Data Contract CI: {data_contract_file}")
         lines.append("")
-        lines.append(f"**Result: {result_display}** | {n_total} checks | {n_passed} passed | {n_failed} failed | {n_warnings} warnings | {n_errors} errors | {duration:.1f}s")
+        lines.append(
+            f"**Result: {result_display}** | {n_total} checks | {n_passed} passed | {n_failed} failed | {n_warnings} warnings | {n_errors} errors | {duration:.1f}s"
+        )
         lines.append("")
 
         if run.checks:
