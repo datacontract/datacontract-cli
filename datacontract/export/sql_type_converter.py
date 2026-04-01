@@ -504,7 +504,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
         return (
             "uniqueidentifier"
             if _get_format(field) == "uuid"
-            else _attach_params_if_present("varchar", field, default="max")
+            else _attach_params_if_present("varchar", field)
         )
     if base_type in ["timestamp", "timestamp_tz"]:
         return _attach_params_if_present("datetimeoffset", field)
@@ -535,7 +535,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
     if base_type in ["object", "record", "struct"]:
         return "nvarchar(max)"
     if base_type in ["bytes"]:
-        return _attach_params_if_present("varbinary", field, default="max")
+        return _attach_params_if_present("varbinary", field)
     if base_type in ["array"]:
         raise NotImplementedError("SQLServer does not support array types.")
     if _get_params(field):
