@@ -1,50 +1,48 @@
 """
-Tests for SQL type converter handling of parameterized physicalType values.
-Covers issue #1086: physicalType with precision/length constraints (e.g. VARCHAR(255),
-DECIMAL(10,2)) must be translated through the server-specific converter rather than
-returned verbatim or discarded.
+Tests for SQL type converter handling of parameterized physicalType values
+and comprehensive type coverage across all server types.
 """
 
 from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.export.sql_type_converter import (
-    _extract_base_type,
-    _extract_params,
+    _get_type,
     convert_to_sql_type,
 )
 
 # ---------------------------------------------------------------------------
-# _extract_base_type helper
+# _get_type helper
 # ---------------------------------------------------------------------------
 
 
-def test_extract_base_type_parameterized():
-    assert _extract_base_type("VARCHAR(255)") == "VARCHAR"
+def test_get_type_parameterized():
+    field = SchemaProperty(name="col", physicalType="VARCHAR(255)")
+    assert _get_type(field) == "VARCHAR(255)"
 
 
-def test_extract_base_type_decimal():
-    assert _extract_base_type("DECIMAL(10,2)") == "DECIMAL"
+def test_get_type_decimal():
+    field = SchemaProperty(name="col", physicalType="DECIMAL(10,2)")
+    assert _get_type(field) == "DECIMAL(10,2)"
 
 
-def test_extract_base_type_no_params():
-    assert _extract_base_type("TEXT") == "TEXT"
+def test_get_type_no_params():
+    field = SchemaProperty(name="col", physicalType="TEXT")
+    assert _get_type(field) == "TEXT"
 
 
-# ---------------------------------------------------------------------------
-# _extract_params helper
-# ---------------------------------------------------------------------------
+def test_get_type_prefers_physical_type():
+    field = SchemaProperty(name="col", physicalType="VARCHAR(255)", logicalType="string")
+    assert _get_type(field) == "VARCHAR(255)"
 
 
-def test_extract_params_single():
-    assert _extract_params("VARCHAR(255)") == "255"
+def test_get_type_falls_back_to_logical_type():
+    field = SchemaProperty(name="col", logicalType="string")
+    assert _get_type(field) == "string"
 
 
-def test_extract_params_multiple():
-    assert _extract_params("DECIMAL(10,2)") == "10,2"
-
-
-def test_extract_params_no_params():
-    assert _extract_params("TEXT") is None
+def test_get_type_none_when_empty():
+    field = SchemaProperty(name="col")
+    assert _get_type(field) is None
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +55,6 @@ def test_bare_varchar_physicaltype_postgres():
     """A bare physicalType like 'varchar' (no parens) goes through the postgres converter."""
     field = SchemaProperty(name="col", physicalType="varchar")
     result = convert_to_sql_type(field, "postgres")
-    # The postgres converter maps "varchar" -> "text"
     assert result == "text"
 
 
@@ -112,12 +109,10 @@ def test_decimal_precision_postgres():
 
 
 def test_nvarchar_50_postgres():
-    """NVARCHAR(50) on postgres: postgres has no NVARCHAR type. The converter returns None
-    for unknown base types -> fallback to verbatim 'NVARCHAR(50)'."""
+    """NVARCHAR(50) on postgres: nvarchar maps to 'text', which doesn't accept params -> 'text'."""
     field = SchemaProperty(name="col", physicalType="NVARCHAR(50)")
     result = convert_to_sql_type(field, "postgres")
-    # nvarchar is not in the postgres converter's mapping -> fallback verbatim
-    assert result == "NVARCHAR(50)"
+    assert result == "text"
 
 
 def test_nvarchar_500_sqlserver():
@@ -148,7 +143,6 @@ def test_char_10_snowflake():
     """CHAR(10) on snowflake: 'char' is unknown in snowflake converter -> None -> fallback verbatim."""
     field = SchemaProperty(name="col", physicalType="CHAR(10)")
     result = convert_to_sql_type(field, "snowflake")
-    # snowflake converter doesn't handle 'char' explicitly -> returns None -> fallback verbatim
     assert result == "CHAR(10)"
 
 
@@ -159,15 +153,137 @@ def test_char_10_sqlserver():
     assert result == "CHAR(10)"
 
 
-def test_varchar_255_not_none_postgres():
-    """Regression: VARCHAR(255) must NOT return None from the postgres converter path."""
-    field = SchemaProperty(name="amount", physicalType="VARCHAR(255)")
-    result = convert_to_sql_type(field, "postgres")
-    assert result is not None
+def test_varchar_255_mysql():
+    """VARCHAR(255) on mysql: 'varchar' -> 'varchar', accepts params -> 'varchar(255)'."""
+    field = SchemaProperty(name="col", physicalType="VARCHAR(255)")
+    result = convert_to_sql_type(field, "mysql")
+    assert result == "varchar(255)"
 
 
-def test_decimal_precision_not_none_snowflake():
-    """Regression: DECIMAL(10,2) must NOT return None from the snowflake converter path."""
+def test_decimal_10_2_mysql():
+    """DECIMAL(10,2) on mysql: 'decimal' -> 'decimal', accepts params -> 'decimal(10,2)'."""
     field = SchemaProperty(name="price", physicalType="DECIMAL(10,2)")
-    result = convert_to_sql_type(field, "snowflake")
-    assert result is not None
+    result = convert_to_sql_type(field, "mysql")
+    assert result == "decimal(10,2)"
+
+
+def test_float_24_mysql():
+    """FLOAT(24) on mysql: 'float' -> 'float', accepts params -> 'float(24)'."""
+    field = SchemaProperty(name="col", physicalType="FLOAT(24)")
+    result = convert_to_sql_type(field, "mysql")
+    assert result == "float(24)"
+
+
+def test_decimal_10_2_bigquery():
+    """DECIMAL(10,2) on bigquery: 'decimal' -> 'NUMERIC', accepts params -> 'NUMERIC(10,2)'."""
+    field = SchemaProperty(name="price", physicalType="DECIMAL(10,2)")
+    result = convert_to_sql_type(field, "bigquery")
+    assert result == "NUMERIC(10,2)"
+
+
+def test_varchar_100_databricks():
+    """VARCHAR(100) on databricks: 'varchar' -> 'STRING'."""
+    field = SchemaProperty(name="col", physicalType="VARCHAR(100)")
+    result = convert_to_sql_type(field, "databricks")
+    assert result == "STRING"
+
+
+def test_decimal_18_4_trino():
+    """DECIMAL(18,4) on trino: 'decimal' -> 'decimal', accepts params -> 'decimal(18,4)'."""
+    field = SchemaProperty(name="col", physicalType="DECIMAL(18,4)")
+    result = convert_to_sql_type(field, "trino")
+    assert result == "decimal(18,4)"
+
+
+def test_varchar_255_local_duckdb():
+    """VARCHAR(255) on local (DuckDB): 'varchar' -> 'VARCHAR', accepts params -> 'VARCHAR(255)'."""
+    field = SchemaProperty(name="col", physicalType="VARCHAR(255)")
+    result = convert_to_sql_type(field, "local")
+    assert result == "VARCHAR(255)"
+
+
+def test_number_10_2_oracle():
+    """NUMBER(10,2) on oracle: physicalType returned verbatim by oracle converter."""
+    field = SchemaProperty(name="col", physicalType="NUMBER(10,2)")
+    result = convert_to_sql_type(field, "oracle")
+    assert result == "NUMBER(10,2)"
+
+
+# ---------------------------------------------------------------------------
+# Compound types
+# ---------------------------------------------------------------------------
+
+
+def test_compound_timestamp_with_timezone():
+    """TIMESTAMP(6) WITH TIME ZONE is valid postgres SQL and should pass through verbatim."""
+    field = SchemaProperty(name="col", physicalType="TIMESTAMP(6) WITH TIME ZONE")
+    result = convert_to_sql_type(field, "postgres")
+    assert result == "TIMESTAMP(6) WITH TIME ZONE"
+
+
+def test_compound_interval_passthrough():
+    """INTERVAL DAY(2) TO SECOND(6) passes through verbatim."""
+    field = SchemaProperty(name="col", physicalType="INTERVAL DAY(2) TO SECOND(6)")
+    result = convert_to_sql_type(field, "oracle")
+    assert result == "INTERVAL DAY(2) TO SECOND(6)"
+
+
+# ---------------------------------------------------------------------------
+# Logical type mapping: spot-check that each server maps common types to
+# the correct SQL type (not just non-None).
+# ---------------------------------------------------------------------------
+
+
+def test_logical_string_snowflake():
+    field = SchemaProperty(name="col", logicalType="string")
+    assert convert_to_sql_type(field, "snowflake") == "STRING"
+
+
+def test_logical_timestamp_postgres():
+    field = SchemaProperty(name="col", logicalType="timestamp")
+    assert convert_to_sql_type(field, "postgres") == "timestamptz"
+
+
+def test_logical_boolean_mysql():
+    field = SchemaProperty(name="col", logicalType="boolean")
+    assert convert_to_sql_type(field, "mysql") == "boolean"
+
+
+def test_logical_date_bigquery():
+    field = SchemaProperty(name="col", logicalType="date")
+    assert convert_to_sql_type(field, "bigquery") == "DATE"
+
+
+def test_logical_integer_sqlserver():
+    field = SchemaProperty(name="col", logicalType="integer")
+    assert convert_to_sql_type(field, "sqlserver") == "INT"
+
+
+def test_logical_double_trino():
+    field = SchemaProperty(name="col", logicalType="double")
+    assert convert_to_sql_type(field, "trino") == "double"
+
+
+def test_logical_bytes_oracle():
+    field = SchemaProperty(name="col", logicalType="bytes")
+    assert convert_to_sql_type(field, "oracle") == "RAW(2000)"
+
+
+def test_logical_time_databricks():
+    field = SchemaProperty(name="col", logicalType="time")
+    assert convert_to_sql_type(field, "databricks") == "STRING"
+
+
+def test_logical_decimal_local():
+    field = SchemaProperty(name="col", logicalType="decimal")
+    assert convert_to_sql_type(field, "local") == "decimal"
+
+
+def test_logical_long_s3():
+    field = SchemaProperty(name="col", logicalType="long")
+    assert convert_to_sql_type(field, "s3") == "BIGINT"
+
+
+def test_logical_float_dataframe():
+    field = SchemaProperty(name="col", logicalType="float")
+    assert convert_to_sql_type(field, "dataframe") == "FLOAT"
