@@ -13,19 +13,18 @@ def _sanitize_md_cell(text: str) -> str:
 
 def write_ci_output(run: Run, data_contract_file: str):
     """Write CI-specific output for a single contract: annotations only."""
-    _write_annotations(run, data_contract_file)
-
-
-def write_ci_summary(results: List[Tuple[str, Run]]):
-    """Write aggregated CI step summary for all contracts."""
-    _write_github_step_summary(results)
-
-
-def _write_annotations(run: Run, data_contract_file: str):
     if os.environ.get("GITHUB_ACTIONS") == "true":
         _write_github_annotations(run, data_contract_file)
     elif os.environ.get("TF_BUILD") == "True":
         _write_azure_annotations(run, data_contract_file)
+
+
+def write_ci_summary(results: List[Tuple[str, Run]]):
+    """Write aggregated CI step summary for all contracts."""
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return
+    _write_github_step_summary(results, summary_path)
 
 
 def _write_github_annotations(run: Run, data_contract_file: str):
@@ -44,10 +43,6 @@ def _write_azure_annotations(run: Run, data_contract_file: str):
             print(f"##vso[task.logissue type=warning;sourcepath={data_contract_file}]{check.name}: {check.reason}")
 
 
-def _result_str(run: Run) -> str:
-    return run.result.value if hasattr(run.result, "value") else run.result
-
-
 RESULT_EMOJI = {
     "passed": "🟢 passed",
     "warning": "🟠 warning",
@@ -56,46 +51,41 @@ RESULT_EMOJI = {
 }
 
 
-def _write_github_step_summary(results: List[Tuple[str, Run]]):
-    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not summary_path:
-        return
-
+def _write_github_step_summary(results: List[Tuple[str, Run]], summary_path: str):
     lines = []
 
     # Aggregate header (only when multiple contracts)
     if len(results) > 1:
-        total_contracts = len(results)
-        passed_contracts = sum(1 for _, run in results if _result_str(run) == "passed")
-        failed_contracts = total_contracts - passed_contracts
-        overall = "🟢 passed" if failed_contracts == 0 else "🔴 failed"
+        n_total = len(results)
+        n_passed = sum(1 for _, run in results if run.result == "passed")
+        overall = "🟢 passed" if n_passed == n_total else "🔴 failed"
         lines.append("## Data Contract CI")
         lines.append("")
-        lines.append(f"**{overall}** | {total_contracts} contracts | {passed_contracts} passed | {failed_contracts} failed")
+        lines.append(f"**{overall}** — {n_passed}/{n_total} contracts successful")
         lines.append("")
         lines.append("| Result | Contract |")
         lines.append("|--------|----------|")
         for data_contract_file, run in results:
-            result = RESULT_EMOJI.get(_result_str(run), _result_str(run))
+            result = RESULT_EMOJI.get(run.result, run.result)
             lines.append(f"| {result} | {data_contract_file} |")
         lines.append("")
 
     # Per-contract detail sections
     for data_contract_file, run in results:
-        result_display = RESULT_EMOJI.get(_result_str(run), _result_str(run))
+        result_display = RESULT_EMOJI.get(run.result, run.result)
 
-        total = len(run.checks) if run.checks else 0
-        passed = sum(1 for c in run.checks if c.result == "passed") if run.checks else 0
-        failed = sum(1 for c in run.checks if c.result == "failed") if run.checks else 0
-        warnings = sum(1 for c in run.checks if c.result == "warning") if run.checks else 0
-        errors = sum(1 for c in run.checks if c.result == "error") if run.checks else 0
+        n_total = len(run.checks) if run.checks else 0
+        n_passed = sum(1 for c in run.checks if c.result == "passed") if run.checks else 0
+        n_failed = sum(1 for c in run.checks if c.result == "failed") if run.checks else 0
+        n_warnings = sum(1 for c in run.checks if c.result == "warning") if run.checks else 0
+        n_errors = sum(1 for c in run.checks if c.result == "error") if run.checks else 0
 
         duration = (run.timestampEnd - run.timestampStart).total_seconds() if run.timestampStart and run.timestampEnd else 0
 
         heading_level = "###" if len(results) > 1 else "##"
         lines.append(f"{heading_level} Data Contract CI: {data_contract_file}")
         lines.append("")
-        lines.append(f"**Result: {result_display}** | {total} checks | {passed} passed | {failed} failed | {warnings} warnings | {errors} errors | {duration:.1f}s")
+        lines.append(f"**Result: {result_display}** | {n_total} checks | {n_passed} passed | {n_failed} failed | {n_warnings} warnings | {n_errors} errors | {duration:.1f}s")
         lines.append("")
 
         if run.checks:
@@ -105,8 +95,7 @@ def _write_github_step_summary(results: List[Tuple[str, Run]]):
                 field = _sanitize_md_cell(to_field(run, check) or "")
                 reason = _sanitize_md_cell(check.reason or "")
                 name = _sanitize_md_cell(check.name or "")
-                result_val = check.result.value if hasattr(check.result, "value") else check.result
-                lines.append(f"| {result_val} | {name} | {field} | {reason} |")
+                lines.append(f"| {check.result} | {name} | {field} | {reason} |")
             lines.append("")
 
     with open(summary_path, "a") as f:
@@ -116,7 +105,7 @@ def _write_github_step_summary(results: List[Tuple[str, Run]]):
 def write_json_results(results: List[Tuple[str, Run]]):
     """Print test results as JSON to stdout."""
     if len(results) == 1:
-        print(results[0][1].model_dump_json(indent=2))
+        print(results[0][1].model_dump_json(indent=2, exclude_none=True))
     else:
-        output = [json.loads(run.model_dump_json()) for _, run in results]
+        output = [json.loads(run.model_dump_json(exclude_none=True)) for _, run in results]
         print(json.dumps(output, indent=2))

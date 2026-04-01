@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
+from datacontract.output.ci_output import _sanitize_md_cell, write_ci_output, write_ci_summary, write_json_results
 
 runner = CliRunner()
 
@@ -175,35 +175,8 @@ def test_step_summary_markdown_structure():
         os.unlink(summary_path)
 
 
-def test_step_summary_sanitizes_reason():
-    run = _make_run(
-        [
-            Check(
-                type="schema",
-                name="Test Data Contract",
-                result=ResultEnum.error,
-                reason="1 validation error\ninfo.title\n  Input should be a string | got int",
-            ),
-        ]
-    )
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
-        summary_path = f.name
-
-    try:
-        env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
-        env["GITHUB_STEP_SUMMARY"] = summary_path
-        with patch.dict(os.environ, env, clear=True):
-            write_ci_summary([("datacontract.yaml", run)])
-
-        with open(summary_path) as f:
-            content = f.read()
-        # Newlines in reason must be collapsed, pipes must be escaped
-        table_lines = [line for line in content.splitlines() if line.startswith("|") and "Test Data Contract" in line]
-        assert len(table_lines) == 1, "Check should be on a single table row"
-        assert "\\|" in table_lines[0], "Pipe in reason should be escaped"
-        assert "\n" not in table_lines[0]
-    finally:
-        os.unlink(summary_path)
+def test_sanitize_md_cell():
+    assert _sanitize_md_cell("foo | bar\nbaz") == "foo \\| bar baz"
 
 
 def test_step_summary_multi_contract():
@@ -226,9 +199,7 @@ def test_step_summary_multi_contract():
             content = f.read()
         # Aggregate header
         assert "## Data Contract CI" in content
-        assert "2 contracts" in content
-        assert "1 passed" in content
-        assert "1 failed" in content
+        assert "1/2 contracts successful" in content
         assert "| Result | Contract |" in content
         assert "orders.yaml" in content
         assert "customers.yaml" in content
@@ -333,9 +304,7 @@ def test_json_output_multi(capsys):
 def test_ci_json_flag():
     result = runner.invoke(app, ["ci", "--json", "fixtures/lint/valid_datacontract.yaml"])
     assert result.exit_code == 0
-    # stdout contains JSON — find it after the rich table output
-    # The JSON starts with '{'
-    json_start = result.stdout.index("{")
-    data = json.loads(result.stdout[json_start:])
+    # With --json, stdout should be clean JSON (human output goes to stderr)
+    data = json.loads(result.stdout)
     assert "result" in data
     assert "checks" in data

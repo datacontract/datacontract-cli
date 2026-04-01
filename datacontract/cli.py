@@ -240,12 +240,15 @@ def ci(
     if server == "all":
         server = None
 
+    # When --json is used, send human-readable output to stderr so stdout is clean JSON.
+    out = Console(stderr=True) if json_output else console
+
     results = []
     severity_levels = {"warning": 0, "failed": 1, "error": 2}
     should_fail = False
 
     for location in locations:
-        console.print(f"Testing {location}")
+        out.print(f"Testing {location}")
         run = DataContract(
             data_contract_file=location,
             schema_location=schema,
@@ -254,7 +257,7 @@ def ci(
             ssl_verification=ssl_verification,
         ).test()
         if logs:
-            _print_logs(run)
+            _print_logs(run, out)
         results.append((location, run))
         write_ci_output(run, location)
         try:
@@ -262,13 +265,12 @@ def ci(
         except Exception:
             data_contract = None
         try:
-            write_test_result(run, console, output_format, output, data_contract)
+            write_test_result(run, out, output_format, output, data_contract)
         except typer.Exit:
             pass
-        result_str = run.result.value if hasattr(run.result, "value") else run.result
-        if fail_on != "never" and result_str in severity_levels:
+        if fail_on != "never" and run.result in severity_levels:
             fail_on_level = severity_levels.get(fail_on, 0)
-            if severity_levels[result_str] >= fail_on_level:
+            if severity_levels[run.result] >= fail_on_level:
                 should_fail = True
 
     write_ci_summary(results)
@@ -600,10 +602,12 @@ def api(
     uvicorn.run(**uvicorn_args)
 
 
-def _print_logs(run):
-    console.print("\nLogs:")
+def _print_logs(run, out=None):
+    if out is None:
+        out = console
+    out.print("\nLogs:")
     for log in run.logs:
-        console.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
+        out.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
 
 
 if __name__ == "__main__":
