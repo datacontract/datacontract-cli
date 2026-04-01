@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 from unittest.mock import patch
@@ -6,7 +7,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.output.ci_output import write_ci_output, write_ci_summary
+from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 
 runner = CliRunner()
 
@@ -174,6 +175,37 @@ def test_step_summary_markdown_structure():
         os.unlink(summary_path)
 
 
+def test_step_summary_sanitizes_reason():
+    run = _make_run(
+        [
+            Check(
+                type="schema",
+                name="Test Data Contract",
+                result=ResultEnum.error,
+                reason="1 validation error\ninfo.title\n  Input should be a string | got int",
+            ),
+        ]
+    )
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+        summary_path = f.name
+
+    try:
+        env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
+        env["GITHUB_STEP_SUMMARY"] = summary_path
+        with patch.dict(os.environ, env, clear=True):
+            write_ci_summary([("datacontract.yaml", run)])
+
+        with open(summary_path) as f:
+            content = f.read()
+        # Newlines in reason must be collapsed, pipes must be escaped
+        table_lines = [l for l in content.splitlines() if l.startswith("|") and "Test Data Contract" in l]
+        assert len(table_lines) == 1, "Check should be on a single table row"
+        assert "\\|" in table_lines[0], "Pipe in reason should be escaped"
+        assert "\n" not in table_lines[0]
+    finally:
+        os.unlink(summary_path)
+
+
 def test_step_summary_multi_contract():
     run_passed = _make_run(
         [Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)]
@@ -266,3 +298,44 @@ def test_ci_continues_after_failure():
     assert "fixtures/lint/valid_datacontract.yaml" in result.stdout
     # But exit 1 because the first failed
     assert result.exit_code == 1
+
+
+# --- JSON output tests ---
+
+
+def test_json_output_single(capsys):
+    run = _make_run(
+        [Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)]
+    )
+    write_json_results([("datacontract.yaml", run)])
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["result"] == "passed"
+    assert len(data["checks"]) == 1
+
+
+def test_json_output_multi(capsys):
+    run1 = _make_run(
+        [Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)]
+    )
+    run2 = _make_run(
+        [Check(type="schema", name="Check nulls", result=ResultEnum.failed, reason="not nullable")]
+    )
+    write_json_results([("orders.yaml", run1), ("customers.yaml", run2)])
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert isinstance(data, list)
+    assert len(data) == 2
+    assert data[0]["result"] == "passed"
+    assert data[1]["result"] == "failed"
+
+
+def test_ci_json_flag():
+    result = runner.invoke(app, ["ci", "--json", "fixtures/lint/valid_datacontract.yaml"])
+    assert result.exit_code == 0
+    # stdout contains JSON — find it after the rich table output
+    # The JSON starts with '{'
+    json_start = result.stdout.index("{")
+    data = json.loads(result.stdout[json_start:])
+    assert "result" in data
+    assert "checks" in data

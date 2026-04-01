@@ -20,7 +20,7 @@ from datacontract.integration.entropy_data import (
 )
 from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
-from datacontract.output.ci_output import write_ci_output, write_ci_summary
+from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
 
@@ -216,6 +216,7 @@ def ci(
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
     fail_on: Annotated[
         str,
         typer.Option(
@@ -271,6 +272,8 @@ def ci(
                 should_fail = True
 
     write_ci_summary(results)
+    if json_output:
+        write_json_results(results)
 
     if should_fail:
         raise typer.Exit(code=1)
