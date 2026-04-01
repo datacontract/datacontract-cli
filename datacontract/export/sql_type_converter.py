@@ -1,6 +1,9 @@
+import logging
 from typing import Any, Dict, Optional, Protocol, Union
 
 from open_data_contract_standard.model import SchemaProperty
+
+from datacontract.model.exceptions import DataContractException
 
 
 class FieldLike(Protocol):
@@ -541,17 +544,118 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
     return None
 
 
+_BQ_TYPES = {
+    "STRING",
+    "BYTES",
+    "INT64",
+    "INTEGER",
+    "FLOAT64",
+    "NUMERIC",
+    "BIGNUMERIC",
+    "BOOL",
+    "TIMESTAMP",
+    "DATE",
+    "TIME",
+    "DATETIME",
+    "GEOGRAPHY",
+    "JSON",
+    "RECORD",
+    "STRUCT",
+    "ARRAY",
+}
+
+
+def map_type_to_bigquery(prop: SchemaProperty) -> str:
+    """Map a schema property type to a flat BigQuery type.
+
+    If physicalType is a valid BigQuery type (including parameterized types like NUMERIC(18, 4)),
+    return it directly. Otherwise, strip any parameters, map the base type via the logical type
+    mapping, and re-attach parameters to the result.
+
+    Used by the BigQuery exporter for JSON schema output. For string-based syntax
+    (ARRAY<STRING>, STRUCT<field1 TYPE1>) needed by SodaCL, use convert_type_to_bigquery.
+    """
+    if prop.physicalType:
+        base_type = prop.physicalType.upper().split("(")[0].strip()
+        if base_type in _BQ_TYPES:
+            return prop.physicalType
+
+    type_to_map = prop.physicalType or prop.logicalType
+
+    # Strip parameters (e.g. "DECIMAL(10,2)" -> "DECIMAL") before mapping,
+    # then re-attach them to the translated type.
+    params = None
+    if type_to_map and "(" in type_to_map and type_to_map.endswith(")"):
+        params = type_to_map[type_to_map.index("(") + 1 : -1]
+        type_to_map = type_to_map[: type_to_map.index("(")].strip()
+
+    result = _map_logical_type_to_bigquery(type_to_map, prop.properties)
+    if params and result:
+        return f"{result}({params})"
+    return result
+
+
+def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
+    """Map a logical type to the corresponding BigQuery type."""
+    logger = logging.getLogger(__name__)
+
+    if not logical_type:
+        return None
+
+    if logical_type.lower() in ["string", "varchar", "text"]:
+        return "STRING"
+    elif logical_type.lower() == "json":
+        return "JSON"
+    elif logical_type.lower() == "bytes":
+        return "BYTES"
+    elif logical_type.lower() in ["int", "integer"]:
+        return "INTEGER"
+    elif logical_type.lower() in ["long", "bigint"]:
+        return "INT64"
+    elif logical_type.lower() == "float":
+        return "FLOAT64"
+    elif logical_type.lower() == "boolean":
+        return "BOOL"
+    elif logical_type.lower() in ["timestamp", "timestamp_tz"]:
+        return "TIMESTAMP"
+    elif logical_type.lower() == "date":
+        return "DATE"
+    elif logical_type.lower() == "timestamp_ntz":
+        return "DATETIME"
+    elif logical_type.lower() in ["number", "decimal", "numeric"]:
+        return "NUMERIC"
+    elif logical_type.lower() == "double":
+        return "BIGNUMERIC"
+    elif logical_type.lower() in ["object", "record"] and not nested_fields:
+        return "JSON"
+    elif logical_type.lower() in ["object", "record", "array"]:
+        return "RECORD"
+    elif logical_type.lower() == "struct":
+        return "STRUCT"
+    elif logical_type.lower() == "null":
+        logger.info(
+            "Can't properly map field to bigquery Schema, as 'null' is not supported as a type. Mapping it to STRING."
+        )
+        return "STRING"
+    else:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="Map datacontract type to bigquery data type",
+            reason=f"Unsupported type {logical_type} in data contract definition.",
+            engine="datacontract",
+        )
+
+
 def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | str:
     """Convert from supported datacontract types to equivalent bigquery types.
     Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 
-    Note: the BigQuery exporter uses its own map_type_to_bigquery() for flat type mapping,
-    because the exporter handles complex types (arrays, structs) via JSON structure rather
-    than type strings. This function produces string-based syntax (e.g. ARRAY<STRING>,
-    STRUCT<field1 TYPE1>) needed by SodaCL and other callers.
+    Wraps map_type_to_bigquery with recursive expansion of complex types into
+    string-based syntax (e.g. ARRAY<STRING>, STRUCT<field1 TYPE1>) for SodaCL.
     """
-    base_type = _get_base_type(field)
-    if not base_type:
+    field_type = _get_type(field)
+    if not field_type:
         return None
 
     bigquery_type = _get_config_value(field, "bigqueryType")
@@ -559,13 +663,13 @@ def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | 
         return bigquery_type
 
     # Complex types need string-based syntax for SodaCL
-    if base_type in ["array"]:
+    if field_type.lower() in ["array"]:
         items = _get_items(field)
         if items:
             item_type = convert_type_to_bigquery(items)
             return f"ARRAY<{item_type}>"
         return "ARRAY<STRING>"
-    if base_type in ["object", "record", "struct"]:
+    if field_type.lower() in ["object", "record", "struct"]:
         nested_fields = []
         for nested_field_name, nested_field in _get_nested_fields(field).items():
             nested_field_type = convert_type_to_bigquery(nested_field)
@@ -573,39 +677,7 @@ def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | 
         return f"STRUCT<{', '.join(nested_fields)}>"
 
     # Simple types
-    if base_type in ["string", "varchar", "text"]:
-        return _attach_params_if_present("STRING", field)
-    if base_type in ["json"]:
-        return "JSON"
-    if base_type in ["bytes"]:
-        return _attach_params_if_present("BYTES", field)
-    if base_type in ["int", "integer"]:
-        return "INTEGER"
-    if base_type in ["long", "bigint", "int64"]:
-        return "INT64"
-    if base_type in ["float", "float64"]:
-        return "FLOAT64"
-    if base_type in ["boolean", "bool"]:
-        return "BOOL"
-    if base_type in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP"
-    if base_type in ["date"]:
-        return "DATE"
-    if base_type in ["time"]:
-        return "TIME"
-    if base_type in ["timestamp_ntz", "datetime"]:
-        return "DATETIME"
-    if base_type in ["number", "decimal", "numeric"]:
-        return _attach_params_if_present("NUMERIC", field)
-    if base_type in ["double", "bignumeric"]:
-        return _attach_params_if_present("BIGNUMERIC", field)
-    if base_type in ["geography"]:
-        return "GEOGRAPHY"
-    if base_type in ["null"]:
-        return "STRING"
-    if _get_params(field):
-        return _get_type(field)
-    return None
+    return map_type_to_bigquery(field)
 
 
 def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str:
