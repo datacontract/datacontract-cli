@@ -182,10 +182,10 @@ def test_decimal_10_2_bigquery():
 
 
 def test_varchar_100_databricks():
-    """VARCHAR(100) on databricks: produces a non-None result."""
+    """VARCHAR(100) on databricks: 'varchar' -> 'STRING'."""
     field = SchemaProperty(name="col", physicalType="VARCHAR(100)")
     result = convert_to_sql_type(field, "databricks")
-    assert result is not None
+    assert result == "STRING"
 
 
 def test_decimal_18_4_trino():
