@@ -20,7 +20,7 @@ from datacontract.integration.entropy_data import (
 )
 from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
-from datacontract.output.ci_output import write_ci_output
+from datacontract.output.ci_output import write_ci_output, write_ci_summary
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
 
@@ -190,10 +190,10 @@ def test(
 
 @app.command(name="ci")
 def ci(
-    location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
-    ] = "datacontract.yaml",
+    locations: Annotated[
+        Optional[list[str]],
+        typer.Argument(help="The location(s) (url or path) of the data contract yaml file(s)."),
+    ] = None,
     schema: Annotated[
         str,
         typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
@@ -216,6 +216,12 @@ def ci(
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
+    fail_on: Annotated[
+        str,
+        typer.Option(
+            help="Minimum severity that causes a non-zero exit code: 'warning', 'error', or 'never'."
+        ),
+    ] = "error",
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
@@ -223,28 +229,51 @@ def ci(
     debug: debug_option = None,
 ):
     """
-    Run lint and tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
+    Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
     """
     enable_debug_logging(debug)
 
-    console.print(f"Testing {location}")
+    if not locations:
+        locations = ["datacontract.yaml"]
+
     if server == "all":
         server = None
-    run = DataContract(
-        data_contract_file=location,
-        schema_location=schema,
-        publish_url=publish,
-        server=server,
-        ssl_verification=ssl_verification,
-    ).test()
-    if logs:
-        _print_logs(run)
-    try:
-        data_contract = resolve_data_contract(location, schema_location=schema)
-    except Exception:
-        data_contract = None
-    write_ci_output(run, location)
-    write_test_result(run, console, output_format, output, data_contract)
+
+    results = []
+    severity_levels = {"warning": 0, "failed": 1, "error": 2}
+    should_fail = False
+
+    for location in locations:
+        console.print(f"Testing {location}")
+        run = DataContract(
+            data_contract_file=location,
+            schema_location=schema,
+            publish_url=publish,
+            server=server,
+            ssl_verification=ssl_verification,
+        ).test()
+        if logs:
+            _print_logs(run)
+        results.append((location, run))
+        write_ci_output(run, location)
+        try:
+            data_contract = resolve_data_contract(location, schema_location=schema)
+        except Exception:
+            data_contract = None
+        try:
+            write_test_result(run, console, output_format, output, data_contract)
+        except typer.Exit:
+            pass
+        result_str = run.result.value if hasattr(run.result, "value") else run.result
+        if fail_on != "never" and result_str in severity_levels:
+            fail_on_level = severity_levels.get(fail_on, 0)
+            if severity_levels[result_str] >= fail_on_level:
+                should_fail = True
+
+    write_ci_summary(results)
+
+    if should_fail:
+        raise typer.Exit(code=1)
 
 
 @app.command(name="export")
