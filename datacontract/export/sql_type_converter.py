@@ -522,10 +522,8 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
         return _attach_params_if_present("decimal", field)
     if base_type in ["numeric"]:
         return _attach_params_if_present("numeric", field)
-    if base_type in ["float"]:
+    if base_type in ["float", "double"]:
         return _attach_params_if_present("float", field)
-    if base_type in ["double"]:
-        return "float"
     if base_type in ["integer", "int"]:
         return "INT"
     if base_type in ["bigint", "long"]:
@@ -546,6 +544,11 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
 def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | str:
     """Convert from supported datacontract types to equivalent bigquery types.
     Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+
+    Note: the BigQuery exporter uses its own map_type_to_bigquery() for flat type mapping,
+    because the exporter handles complex types (arrays, structs) via JSON structure rather
+    than type strings. This function produces string-based syntax (e.g. ARRAY<STRING>,
+    STRUCT<field1 TYPE1>) needed by SodaCL and other callers.
     """
     base_type = _get_base_type(field)
     if not base_type:
@@ -555,6 +558,21 @@ def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | 
     if bigquery_type:
         return bigquery_type
 
+    # Complex types need string-based syntax for SodaCL
+    if base_type in ["array"]:
+        items = _get_items(field)
+        if items:
+            item_type = convert_type_to_bigquery(items)
+            return f"ARRAY<{item_type}>"
+        return "ARRAY<STRING>"
+    if base_type in ["object", "record", "struct"]:
+        nested_fields = []
+        for nested_field_name, nested_field in _get_nested_fields(field).items():
+            nested_field_type = convert_type_to_bigquery(nested_field)
+            nested_fields.append(f"{nested_field_name} {nested_field_type}")
+        return f"STRUCT<{', '.join(nested_fields)}>"
+
+    # Simple types
     if base_type in ["string", "varchar", "text"]:
         return _attach_params_if_present("STRING", field)
     if base_type in ["json"]:
@@ -581,12 +599,6 @@ def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | 
         return _attach_params_if_present("NUMERIC", field)
     if base_type in ["double", "bignumeric"]:
         return _attach_params_if_present("BIGNUMERIC", field)
-    if base_type in ["object", "record"]:
-        return "RECORD"
-    if base_type in ["struct"]:
-        return "STRUCT"
-    if base_type in ["array"]:
-        return "RECORD"
     if base_type in ["geography"]:
         return "GEOGRAPHY"
     if base_type in ["null"]:

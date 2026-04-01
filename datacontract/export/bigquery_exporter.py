@@ -1,10 +1,11 @@
 import json
+import logging
 from typing import Dict, List
 
 from open_data_contract_standard.model import SchemaObject, SchemaProperty, Server
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
-from datacontract.export.sql_type_converter import convert_type_to_bigquery
+from datacontract.model.exceptions import DataContractException
 
 
 class BigQueryExporter(Exporter):
@@ -54,7 +55,7 @@ def to_bigquery_fields_array(properties: List[SchemaProperty]) -> List[Dict]:
 
 
 def to_bigquery_field(prop: SchemaProperty) -> dict:
-    bq_type = convert_type_to_bigquery(prop)
+    bq_type = map_type_to_bigquery(prop)
     field_name = prop.physicalName or prop.name
     bq_field = {
         "name": field_name,
@@ -74,7 +75,7 @@ def to_bigquery_field(prop: SchemaProperty) -> dict:
                 # in case the array type is a complex object, we want to copy all its fields
                 bq_field["fields"] = to_bigquery_fields_array(prop.items.properties or [])
             else:
-                bq_field["type"] = convert_type_to_bigquery(prop.items)
+                bq_field["type"] = map_type_to_bigquery(prop.items)
 
     # all of these can carry other fields
     elif bq_type.lower() in ["record", "struct"]:
@@ -105,3 +106,91 @@ def _get_custom_property(prop: SchemaProperty, key: str):
         if cp.property == key:
             return cp.value
     return None
+
+
+_BQ_TYPES = {
+    "STRING",
+    "BYTES",
+    "INT64",
+    "INTEGER",
+    "FLOAT64",
+    "NUMERIC",
+    "BIGNUMERIC",
+    "BOOL",
+    "TIMESTAMP",
+    "DATE",
+    "TIME",
+    "DATETIME",
+    "GEOGRAPHY",
+    "JSON",
+    "RECORD",
+    "STRUCT",
+    "ARRAY",
+}
+
+
+def map_type_to_bigquery(prop: SchemaProperty) -> str:
+    """Map a schema property type to BigQuery type.
+
+    If physicalType is a valid BigQuery type (including parameterized types like NUMERIC(18, 4)),
+    return it directly. Otherwise, map the type via the logical type mapping.
+    """
+    if prop.physicalType:
+        base_type = prop.physicalType.upper().split("(")[0].strip()
+        if base_type in _BQ_TYPES:
+            return prop.physicalType
+
+    type_to_map = prop.physicalType or prop.logicalType
+    return _map_logical_type_to_bigquery(type_to_map, prop.properties)
+
+
+def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
+    """Map a logical type to the corresponding BigQuery type."""
+    logger = logging.getLogger(__name__)
+
+    if not logical_type:
+        return None
+
+    if logical_type.lower() in ["string", "varchar", "text"]:
+        return "STRING"
+    elif logical_type.lower() == "json":
+        return "JSON"
+    elif logical_type.lower() == "bytes":
+        return "BYTES"
+    elif logical_type.lower() in ["int", "integer"]:
+        return "INTEGER"
+    elif logical_type.lower() in ["long", "bigint"]:
+        return "INT64"
+    elif logical_type.lower() == "float":
+        return "FLOAT64"
+    elif logical_type.lower() == "boolean":
+        return "BOOL"
+    elif logical_type.lower() in ["timestamp", "timestamp_tz"]:
+        return "TIMESTAMP"
+    elif logical_type.lower() == "date":
+        return "DATE"
+    elif logical_type.lower() == "timestamp_ntz":
+        return "DATETIME"
+    elif logical_type.lower() in ["number", "decimal", "numeric"]:
+        return "NUMERIC"
+    elif logical_type.lower() == "double":
+        return "BIGNUMERIC"
+    elif logical_type.lower() in ["object", "record"] and not nested_fields:
+        return "JSON"
+    elif logical_type.lower() in ["object", "record", "array"]:
+        return "RECORD"
+    elif logical_type.lower() == "struct":
+        return "STRUCT"
+    elif logical_type.lower() == "null":
+        logger.info(
+            "Can't properly map field to bigquery Schema, as 'null' is not supported as a type. Mapping it to STRING."
+        )
+        return "STRING"
+    else:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="Map datacontract type to bigquery data type",
+            reason=f"Unsupported type {logical_type} in data contract definition.",
+            engine="datacontract",
+        )
