@@ -193,6 +193,7 @@ def test_step_summary_markdown_structure():
 
 def test_sanitize_md_cell():
     assert _sanitize_md_cell("foo | bar\nbaz") == "foo \\| bar baz"
+    assert _sanitize_md_cell("line1\r\nline2\rline3") == "line1 line2 line3"
 
 
 def test_sanitize_annotation():

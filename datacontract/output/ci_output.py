@@ -9,7 +9,7 @@ from datacontract.output.test_results_writer import to_field
 
 def _sanitize_md_cell(text: str) -> str:
     """Escape pipe characters and collapse newlines for use in markdown table cells."""
-    return text.replace("|", "\\|").replace("\n", " ").strip()
+    return text.replace("|", "\\|").replace("\r\n", " ").replace("\r", " ").replace("\n", " ").strip()
 
 
 def write_ci_output(run: Run, data_contract_file: str, json_mode: bool = False):
@@ -87,13 +87,13 @@ def _write_github_step_summary(results: List[Tuple[str, Run]], summary_path: str
         lines.append("| Result | Contract |")
         lines.append("|--------|----------|")
         for data_contract_file, run in results:
-            result = RESULT_EMOJI.get(run.result, run.result)
+            result = RESULT_EMOJI.get(run.result, run.result.value if hasattr(run.result, "value") else str(run.result))
             lines.append(f"| {result} | {data_contract_file} |")
         lines.append("")
 
     # Per-contract detail sections
     for data_contract_file, run in results:
-        result_display = RESULT_EMOJI.get(run.result, run.result)
+        result_display = RESULT_EMOJI.get(run.result, run.result.value if hasattr(run.result, "value") else str(run.result))
 
         n_total = len(run.checks) if run.checks else 0
         n_passed = sum(1 for c in run.checks if c.result == "passed") if run.checks else 0
