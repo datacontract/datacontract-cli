@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
 - Preserve parametrized physicalTypes for SQL export (#1086)
 - Fix incorrect SQL type mappings: SQL Server `double`/`jsonb`, MySQL bare `varchar`, missing Trino types (#1110)
-- Fix ODCS HTML export not rendering schemas due to wrong attribute name (`schema` vs `schema_`) (#880)
 
 ## [0.11.7] - 2026-03-24
 
