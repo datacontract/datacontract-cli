@@ -81,7 +81,9 @@ def test_azure_annotations_emitted(capsys):
             Check(type="schema", name="Check row count", result=ResultEnum.passed, reason=None),
         ]
     )
-    with patch.dict(os.environ, {"TF_BUILD": "True"}):
+    env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
+    env["TF_BUILD"] = "True"
+    with patch.dict(os.environ, env, clear=True):
         write_ci_output(run, "datacontract.yaml")
 
     captured = capsys.readouterr()
@@ -99,7 +101,9 @@ def test_azure_annotation_format_for_errors(capsys):
             Check(type="quality", name="freshness", result=ResultEnum.error, reason="connection timeout"),
         ]
     )
-    with patch.dict(os.environ, {"TF_BUILD": "True"}):
+    env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
+    env["TF_BUILD"] = "True"
+    with patch.dict(os.environ, env, clear=True):
         write_ci_output(run, "my/contract.yaml")
 
     captured = capsys.readouterr()
@@ -194,6 +198,7 @@ def test_sanitize_md_cell():
 def test_sanitize_annotation():
     assert _sanitize_annotation("error\non line 2\r\nand line 3") == "error on line 2 and line 3"
     assert _sanitize_annotation(None) == ""
+    assert _sanitize_annotation("50% done") == "50%25 done"
 
 
 def test_step_summary_multi_contract():
@@ -280,6 +285,23 @@ def test_ci_continues_after_failure():
     assert result.exit_code == 1
 
 
+def test_ci_output_rejects_multi_with_output():
+    result = runner.invoke(
+        app,
+        [
+            "ci",
+            "--output",
+            "results.xml",
+            "--output-format",
+            "junit",
+            "fixtures/lint/valid_datacontract.yaml",
+            "fixtures/lint/valid_datacontract.yaml",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "cannot be used with multiple contracts" in result.stdout
+
+
 # --- JSON output tests ---
 
 
@@ -289,6 +311,7 @@ def test_json_output_single(capsys):
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["result"] == "passed"
+    assert data["location"] == "datacontract.yaml"
     assert len(data["checks"]) == 1
 
 
@@ -301,13 +324,18 @@ def test_json_output_multi(capsys):
     assert isinstance(data, list)
     assert len(data) == 2
     assert data[0]["result"] == "passed"
+    assert data[0]["location"] == "orders.yaml"
     assert data[1]["result"] == "failed"
+    assert data[1]["location"] == "customers.yaml"
 
 
 def test_ci_json_flag():
-    result = runner.invoke(app, ["ci", "--json", "fixtures/lint/valid_datacontract.yaml"])
+    env = {k: v for k, v in os.environ.items() if k not in ("GITHUB_ACTIONS", "TF_BUILD")}
+    with patch.dict(os.environ, env, clear=True):
+        result = runner.invoke(app, ["ci", "--json", "fixtures/lint/valid_datacontract.yaml"])
     assert result.exit_code == 0
     # With --json, stdout should be clean JSON (human output goes to stderr)
     data = json.loads(result.stdout)
     assert "result" in data
+    assert "location" in data
     assert "checks" in data

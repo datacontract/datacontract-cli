@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from typing import List, Tuple
 
 from datacontract.model.run import Run
@@ -11,12 +12,13 @@ def _sanitize_md_cell(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
 
 
-def write_ci_output(run: Run, data_contract_file: str):
+def write_ci_output(run: Run, data_contract_file: str, json_mode: bool = False):
     """Write CI-specific output for a single contract: annotations only."""
+    out = sys.stderr if json_mode else sys.stdout
     if os.environ.get("GITHUB_ACTIONS") == "true":
-        _write_github_annotations(run, data_contract_file)
+        _write_github_annotations(run, data_contract_file, out)
     elif os.environ.get("TF_BUILD") == "True":
-        _write_azure_annotations(run, data_contract_file)
+        _write_azure_annotations(run, data_contract_file, out)
 
 
 def write_ci_summary(results: List[Tuple[str, Run]]):
@@ -31,27 +33,27 @@ def _sanitize_annotation(text: str | None) -> str:
     """Collapse newlines and trim text for use in CI annotations."""
     if not text:
         return ""
-    return text.replace("\r\n", " ").replace("\r", " ").replace("\n", " ").strip()
+    return text.replace("%", "%25").replace("\r\n", " ").replace("\r", " ").replace("\n", " ").strip()
 
 
-def _write_github_annotations(run: Run, data_contract_file: str):
+def _write_github_annotations(run: Run, data_contract_file: str, out=sys.stdout):
     for check in run.checks:
         name = _sanitize_annotation(check.name)
         reason = _sanitize_annotation(check.reason)
         if check.result in ("failed", "error"):
-            print(f"::error file={data_contract_file}::{name}: {reason}")
+            print(f"::error file={data_contract_file}::{name}: {reason}", file=out)
         elif check.result == "warning":
-            print(f"::warning file={data_contract_file}::{name}: {reason}")
+            print(f"::warning file={data_contract_file}::{name}: {reason}", file=out)
 
 
-def _write_azure_annotations(run: Run, data_contract_file: str):
+def _write_azure_annotations(run: Run, data_contract_file: str, out=sys.stdout):
     for check in run.checks:
         name = _sanitize_annotation(check.name)
         reason = _sanitize_annotation(check.reason)
         if check.result in ("failed", "error"):
-            print(f"##vso[task.logissue type=error;sourcepath={data_contract_file}]{name}: {reason}")
+            print(f"##vso[task.logissue type=error;sourcepath={data_contract_file}]{name}: {reason}", file=out)
         elif check.result == "warning":
-            print(f"##vso[task.logissue type=warning;sourcepath={data_contract_file}]{name}: {reason}")
+            print(f"##vso[task.logissue type=warning;sourcepath={data_contract_file}]{name}: {reason}", file=out)
 
 
 RESULT_EMOJI = {
@@ -114,21 +116,36 @@ def _write_github_step_summary(results: List[Tuple[str, Run]], summary_path: str
         if run.checks:
             lines.append("| Result | Check | Field | Details |")
             lines.append("|--------|-------|-------|---------|")
-            for check in sorted(run.checks, key=lambda c: (c.result or "", c.model or "", c.field or "")):
+            for check in sorted(
+                run.checks,
+                key=lambda c: (
+                    c.result.value if hasattr(c.result, "value") else str(c.result or ""),
+                    c.model or "",
+                    c.field or "",
+                ),
+            ):
                 field = _sanitize_md_cell(to_field(run, check) or "")
                 reason = _sanitize_md_cell(check.reason or "")
                 name = _sanitize_md_cell(check.name or "")
-                lines.append(f"| {check.result} | {name} | {field} | {reason} |")
+                result = check.result.value if hasattr(check.result, "value") else str(check.result)
+                lines.append(f"| {result} | {name} | {field} | {reason} |")
             lines.append("")
 
-    with open(summary_path, "a") as f:
+    with open(summary_path, "a", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
 
 def write_json_results(results: List[Tuple[str, Run]]):
     """Print test results as JSON to stdout."""
     if len(results) == 1:
-        print(results[0][1].model_dump_json(indent=2, exclude_none=True))
+        location, run = results[0]
+        obj = json.loads(run.model_dump_json(exclude_none=True))
+        obj["location"] = location
+        print(json.dumps(obj, indent=2))
     else:
-        output = [json.loads(run.model_dump_json(exclude_none=True)) for _, run in results]
+        output = []
+        for location, run in results:
+            obj = json.loads(run.model_dump_json(exclude_none=True))
+            obj["location"] = location
+            output.append(obj)
         print(json.dumps(output, indent=2))

@@ -239,6 +239,10 @@ def ci(
     if not locations:
         locations = ["datacontract.yaml"]
 
+    if output and len(locations) > 1:
+        console.print("Error: --output cannot be used with multiple contracts (results would overwrite each other).")
+        raise typer.Exit(code=1)
+
     if server == "all":
         server = None
 
@@ -265,13 +269,9 @@ def ci(
         if logs:
             _print_logs(run, out)
         results.append((location, run))
-        write_ci_output(run, location)
+        write_ci_output(run, location, json_mode=json_output)
         try:
-            data_contract = resolve_data_contract(location, schema_location=schema)
-        except Exception:
-            data_contract = None
-        try:
-            write_test_result(run, out, output_format, output, data_contract)
+            write_test_result(run, out, output_format, output)
         except typer.Exit:
             pass
         if run.result in fail_results[fail_on]:
