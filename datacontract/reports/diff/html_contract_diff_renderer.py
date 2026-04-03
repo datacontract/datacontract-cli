@@ -12,11 +12,11 @@ from __future__ import annotations
 from datacontract.reports.common.html_base_renderer import (
     _CSS,  # noqa: F401 — re-exported for any callers that import it directly
     HtmlContractBaseRenderer,
-    _e,
-    _format_value,
     _infer_ancestors,
-    _path_td,
-    _pill,
+    e,
+    format_value,
+    path_td,
+    pill,
 )
 from datacontract.reports.common.report_helpers import LIST_CONTAINERS
 
@@ -25,10 +25,10 @@ from datacontract.reports.common.report_helpers import LIST_CONTAINERS
 # import surface of html_report_renderer is unchanged.
 __all__ = [
     "HtmlContractDiffRenderer",
-    "_e",
-    "_format_value",
-    "_path_td",
-    "_pill",
+    "e",
+    "format_value", 
+    "path_td",
+    "pill",
     "_render_detail_rows",
 ]
 
@@ -53,24 +53,24 @@ def _render_detail_rows(changes: list) -> list[str]:
         key = segs[-1]
         depth = len(segs) - 1
         is_list_item = len(segs) > 1 and segs[-2] in LIST_CONTAINERS
-        td = _path_td(key, depth, is_list_item)
+        td = path_td(key, depth, is_list_item)
 
         if c.get("_ancestor"):
             rows.append(f"<tr>{td}<td></td><td></td><td></td></tr>")
             continue
 
         change_type = c["changeType"].lower()
-        pill = _pill(change_type)
+        pill_html = pill(change_type)
         old_v = c.get("old_value")
         new_v = c.get("new_value")
 
         if old_v is None and new_v is None:
-            rows.append(f"<tr>{td}<td>{pill}</td><td></td><td></td></tr>")
+            rows.append(f"<tr>{td}<td>{pill_html}</td><td></td><td></td></tr>")
         else:
-            old_html = _format_value(old_v) if old_v is not None else ""
-            new_html = _format_value(new_v) if new_v is not None else ""
+            old_html = format_value(old_v) if old_v is not None else ""
+            new_html = format_value(new_v) if new_v is not None else ""
             rows.append(
-                f'<tr>{td}<td>{pill}</td><td class="new">{new_html}</td><td class="old">{old_html}</td></tr>'
+                f'<tr>{td}<td>{pill_html}</td><td class="new">{new_html}</td><td class="old">{old_html}</td></tr>'
             )
 
     return rows
@@ -119,8 +119,8 @@ class HtmlContractDiffRenderer(HtmlContractBaseRenderer):
 
         rows = []
         for ch in changes:
-            pill = _pill(ch["changeType"].lower())
-            rows.append(f'<tr><td class="path">{_e(ch["path"])}</td><td>{pill}</td></tr>')
+            pill_html = pill(ch["changeType"].lower())
+            rows.append(f'<tr><td class="path">{e(ch["path"])}</td><td>{pill_html}</td></tr>')
 
         total = counts["added"] + counts["removed"] + counts["changed"]
         summary_header = self._render_summary_html(total, badges_html)

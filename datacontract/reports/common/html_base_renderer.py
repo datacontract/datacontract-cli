@@ -7,16 +7,12 @@ ODCS report renderers. It includes CSS styling, HTML escaping, formatting
 utilities, and base renderer classes.
 
 NOTE: The functions in this module are tested indirectly through the HTML renderer tests.
-The module-level functions (_e, _pill, _path_td, _format_value, etc.) are re-exported by
-HtmlContractDiffRenderer and tested in tests/test_reports_diff_html_renderer.py.
-This approach encapsulates the base renderer as an internal implementation detail while
-ensuring thorough testing of the functionality in the context where it's actually used.
 
 """
 
 from __future__ import annotations
 
-import html as _html
+import html
 from typing import Any
 
 from datacontract.reports.common.report_helpers import LIST_CONTAINERS, _infer_ancestors  # noqa: F401 — re-exported
@@ -157,12 +153,12 @@ _CSS = _css()
 # fragments (a string, a span, a <td>) and are imported directly by renderers.
 # ---------------------------------------------------------------------------
 
-def _e(s: Any) -> str:
+def e(s: Any) -> str:
     """HTML-escape a value."""
-    return _html.escape(str(s))
+    return html.escape(str(s))
 
 
-def _format_value(val: Any) -> str:
+def format_value(val: Any) -> str:
     """Format a cell value for display in the diff table.
 
     dict   → key summary span:  { key1, key2, ... }
@@ -174,11 +170,11 @@ def _format_value(val: Any) -> str:
     if isinstance(val, dict):
         keys = list(val.keys())
         summary = f"{{ {', '.join(keys[:4])}{'...' if len(keys) > 4 else ''} }}"
-        return f'<span class="obj">{_e(summary)}</span>'
-    return _e(str(val))
+        return f'<span class="obj">{e(summary)}</span>'
+    return e(str(val))
 
 
-def _pill(change_type: str) -> str:
+def pill(change_type: str) -> str:
     """Render a coloured change-type pill span.
 
     Accepts 'added', 'removed', or 'changed'. Unknown types are capitalised
@@ -191,7 +187,7 @@ def _pill(change_type: str) -> str:
     return f'<span class="pill {css}">{label}</span>'
 
 
-def _path_td(key: str, depth: int, is_list_item: bool) -> str:
+def path_td(key: str, depth: int, is_list_item: bool) -> str:
     """Build a depth-indented <td> for the path column.
 
     depth        — number of ancestor segments; drives the padding-left calc
@@ -199,7 +195,7 @@ def _path_td(key: str, depth: int, is_list_item: bool) -> str:
                    causing a "- " prefix so the item reads as a list entry
     """
     pad = f"padding-left:calc(14px + {depth * 2}ch)"
-    label = f"- {_e(key)}" if is_list_item else _e(key)
+    label = f"- {e(key)}" if is_list_item else e(key)
     return f'<td class="path" style="{pad}"><span class="key">{label}</span></td>'
 
 
@@ -248,9 +244,9 @@ class HtmlContractBaseRenderer:
         return f"""
         <div class="header">
           <div class="header-left">
-            <h1>{_e(title)}</h1>
-            <div class="subtitle">{_e(subtitle)}</div>
-            <div class="subtitle" style="margin-top:4px;">Generated: {_e(generated_at)}</div>
+            <h1>{e(title)}</h1>
+            <div class="subtitle">{e(subtitle)}</div>
+            <div class="subtitle" style="margin-top:4px;">Generated: {e(generated_at)}</div>
           </div>
         </div>"""
 
@@ -274,7 +270,7 @@ class HtmlContractBaseRenderer:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{_e(page_title)} — {_e(source_label)} → {_e(target_label)}</title>
+<title>{e(page_title)} — {e(source_label)} → {e(target_label)}</title>
 <style>{_CSS}</style>
 </head>
 <body>
