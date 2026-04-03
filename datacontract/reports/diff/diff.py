@@ -3,6 +3,27 @@ diff — ODCS data contract diff engine
 ------------------------------------------
 Semantic diff of two data contract YAML files.
 
+Normalization — planned improvement:
+Natural keys are hardcoded from the ODCS JSON Schema required declarations.
+The long-term fix is to encode these natural keys directly in the ODCS JSON Schema
+(as an x-natural-key extension) and carry that through to the upstream 
+open-data-contract-standard Pydantic models (via a __natural_key__ class var or 
+Field annotation). This would collapse the helper methods and key table into 
+a single reflection-based loop. See NOTE below for exact upstream change required.
+
+Current hardcoded natural keys:
+schema[]                                SchemaObject   -> .name     (required: [name])
+schema[].properties[]                   SchemaProperty -> .name     (required: [name], recursive)
+slaProperties[]                          SLAProperty    -> .property
+servers[]                                Server         -> .server
+servers[].roles[]                        Role           -> .role
+servers[].customProperties[]             CustomProperty -> .property
+support[]                                SupportItem    -> .channel
+roles[]                                  Role           -> .role
+team.members[]                           TeamMember     -> .username
+authoritativeDefinitions[]               AuthoritativeDefinition -> .url
+description.authoritativeDefinitions[]   AuthoritativeDefinition -> .url
+description.customProperties[]           CustomProperty -> .property
 """
 
 import json
@@ -169,7 +190,8 @@ class ContractDiff:
                          unchanged.
 
         Natural keys are hardcoded from the ODCS JSON Schema required declarations.
-        See the NOTE in the docstring below for a future improvement path.
+        See NOTE in the module header for a future improvement path and the complete
+        list of hardcoded keys.
 
         # NOTE: Natural keys are hardcoded here because the open-data-contract-standard
         # Pydantic models don't yet expose them. The planned fix is to add a __natural_key__
@@ -177,31 +199,6 @@ class ContractDiff:
         # a single reflection-based loop. (LIST_CONTAINERS in report_helpers.py already uses
         # reflection to derive which fields are list containers; natural keys are the
         # remaining gap.)
-            schema[]                                SchemaObject   -> .name     (required: [name])
-            schema[].properties[]                   SchemaProperty -> .name     (required: [name], recursive)
-            schema[].quality[]                       DataQuality    -> .name     (inferred; positional fallback)
-            schema[].quality[].customProperties[]    CustomProperty -> .property
-            schema[].quality[].authoritativeDefinitions[] AuthoritativeDefinition -> .url
-            schema[].customProperties[]              CustomProperty -> .property
-            schema[].authoritativeDefinitions[]      AuthoritativeDefinition -> .url
-            schema[].relationships[]                 Relationship   -> from:to  (schema-level)
-            schema[].properties[].quality[]          DataQuality    -> .name     (inferred; positional fallback)
-            schema[].properties[].quality[].customProperties[] CustomProperty -> .property
-            schema[].properties[].quality[].authoritativeDefinitions[] AuthoritativeDefinition -> .url
-            schema[].properties[].customProperties[] CustomProperty -> .property
-            schema[].properties[].authoritativeDefinitions[] AuthoritativeDefinition -> .url
-            schema[].properties[].relationships[]    Relationship   -> .to       (property-level)
-            slaProperties[]                          SLAProperty    -> .property
-            servers[]                                Server         -> .server
-            servers[].roles[]                        Role           -> .role
-            servers[].customProperties[]             CustomProperty -> .property
-            support[]                                SupportItem    -> .channel
-            roles[]                                  Role           -> .role
-            customProperties[]                       CustomProperty -> .property
-            authoritativeDefinitions[]               AuthoritativeDefinition -> .url
-            description.authoritativeDefinitions[]   AuthoritativeDefinition -> .url
-            description.customProperties[]           CustomProperty -> .property
-            team.members[]                           TeamMember     -> .username
         """
         out = dict(contract)
 
