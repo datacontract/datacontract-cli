@@ -26,7 +26,7 @@ from datacontract.reports.diff.diff import ContractDiff
 from datacontract.reports.diff.html_contract_diff_renderer import HtmlContractDiffRenderer
 from datacontract.reports.diff.text_contract_diff_renderer import TextContractDiffRenderer
 
-FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "diff", "integration")
+FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "..")
 V1 = os.path.join(FIXTURE_DIR, "report_renderer_integration_v1.yaml")
 V2 = os.path.join(FIXTURE_DIR, "report_renderer_integration_v2.yaml")
 
