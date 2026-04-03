@@ -23,6 +23,10 @@ def _added(path: str, payload) -> dict:
     return {"dictionary_item_added": {f"root['{path}']": payload}}
 
 
+def _added_double_quotes(path: str, payload) -> dict:
+    return {"dictionary_item_added": {f'root["{path}"]': payload}}
+
+
 def _removed(path: str, payload) -> dict:
     return {"dictionary_item_removed": {f"root['{path}']": payload}}
 
@@ -109,6 +113,12 @@ class TestBuildReportDataAdded:
         rd = REPORT.build_report_data(_added("schema']['orders']['physicalName", "v"))
         paths = [c["path"] for c in rd["summary"]["changes"]]
         assert any("orders" in p for p in paths)
+
+    def test_added_double_quotes_path_parsing(self):
+        """Test that double-quoted paths are parsed correctly"""
+        rd = REPORT.build_report_data(_added_double_quotes('schema"]["orders"]["physicalName', "v"))
+        paths = [c["path"] for c in rd["detail"]["changes"]]
+        assert "schema.orders.physicalName" in paths
 
 
 class TestBuildReportDataRemoved:

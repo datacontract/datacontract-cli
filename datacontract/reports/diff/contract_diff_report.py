@@ -77,7 +77,10 @@ class ContractDiffReport:
             if not change_type:
                 continue
             for raw_path, payload in items.items():
-                segs = re.findall(r"\['([^']+)'\]", raw_path)
+                # match ['key'] or ["key"]
+                segs = re.findall(r"""(?:\['([^']+)'\]|\["([^"]+)"\])""", raw_path)
+                # Flatten tuples to strings (re.findall returns list of tuples with multiple capture groups)
+                segs = [group[0] if group[0] else group[1] for group in segs]
                 is_iterable = deepdiff_key in ("iterable_item_added", "iterable_item_removed")
                 if isinstance(payload, dict) and "old_value" in payload:
                     entry = {
