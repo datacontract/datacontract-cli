@@ -44,3 +44,21 @@ def test_diff():
     assert response.status_code == 200
     assert "CHANGE SUMMARY" in response.text
     assert "CHANGE DETAILS" in response.text
+
+
+def test_diff_invalid_yaml():
+    invalid_yaml = "invalid: yaml: content: ["
+    response = client.post(url="/diff", json={"v1": invalid_yaml, "v2": "valid: yaml"})
+    assert response.status_code == 422
+    assert "Invalid YAML" in response.json()["detail"]
+
+
+def test_diff_invalid_data_contract():
+    invalid_contract = """
+    apiVersion: '1.0'
+    servers:
+      - type: invalid_type
+    """
+    response = client.post(url="/diff", json={"v1": invalid_contract, "v2": "valid: yaml"})
+    assert response.status_code == 422
+    assert "Invalid data contract" in response.json()["detail"]

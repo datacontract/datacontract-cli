@@ -3,7 +3,9 @@ import os
 import tempfile
 from typing import Annotated, Literal, Optional
 
+import pydantic
 import typer
+import yaml
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, PlainTextResponse
@@ -412,6 +414,10 @@ async def diff(
         else:
             content = TextContractDiffRenderer(report_data=report_data).render()
             return PlainTextResponse(content=content)
+    except yaml.YAMLError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
+    except pydantic.ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
     finally:
         os.unlink(v1_path)
         os.unlink(v2_path)
