@@ -162,7 +162,7 @@ def _e(s: Any) -> str:
     return _html.escape(str(s))
 
 
-def _format_value(val: Any, max_len: int = None) -> str:
+def _format_value(val: Any) -> str:
     """Format a cell value for display in the diff table.
 
     dict   → key summary span:  { key1, key2, ... }
