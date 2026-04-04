@@ -117,6 +117,9 @@ $ datacontract init odcs.yaml
 # lint the odcs.yaml
 $ datacontract lint odcs.yaml
 
+# show a changelog between two data contracts
+$ datacontract changelog v1.odcs.yaml v2.odcs.yaml
+
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
 
@@ -260,6 +263,7 @@ Commands
 
 - [init](#init)
 - [lint](#lint)
+- [changelog](#changelog)
 - [test](#test)
 - [ci](#ci)
 - [export](#export)
@@ -318,10 +322,32 @@ Commands
 
 ```
 
+### changelog
+```
+                                                                                                    
+ Usage: datacontract changelog [OPTIONS] V1 V2                                                      
+                                                                                                    
+ Show a changelog between two data contracts.                                                       
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    v1      TEXT  The location (path) of the source (before) data contract YAML. [required]     │
+│ *    v2      TEXT  The location (path) of the target (after) data contract YAML. [required]      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --debug     --no-debug                 Enable debug logging                                      │
+│ --help                                 Show this message and exit.                               │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+```
+
+```bash
+$ datacontract changelog v1.odcs.yaml v2.odcs.yaml
+```
+
 ### test
 ```
                                                                                                     
- Usage: datacontract test [OPTIONS] [LOCATION]                                                      
+ Usage: datacontract test [OPTIONS] [LOCATION]
                                                                                                     
  Run schema and quality tests on configured servers.                                                
                                                                                                     

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output
+- Added `changelog` command and API endpoint (#1118)
 
 ### Fixed
 - Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)

@@ -33,3 +33,40 @@ def test_export_jsonschema_dcs():
         expected_json_schema = file.read()
     print(expected_json_schema)
     assert response.text == expected_json_schema
+
+
+def test_changelog():
+    with open("fixtures/changelog/integration/changelog_integration_v1.yaml", "r") as f:
+        v1 = f.read()
+    with open("fixtures/changelog/integration/changelog_integration_v2.yaml", "r") as f:
+        v2 = f.read()
+    response = client.post(url="/changelog", json={"v1": v1, "v2": v2})
+    assert response.status_code == 200
+    data = response.json()
+    assert "summary" in data
+    assert "entries" in data
+    assert len(data["entries"]) > 0
+    assert len(data["summary"]) > 0
+    entry = data["entries"][0]
+    assert "path" in entry
+    assert entry["type"] in ("added", "removed", "changed")
+    assert "old_value" in entry
+    assert "new_value" in entry
+
+
+def test_changelog_invalid_yaml():
+    invalid_yaml = "invalid: yaml: content: ["
+    response = client.post(url="/changelog", json={"v1": invalid_yaml, "v2": "valid: yaml"})
+    assert response.status_code == 422
+    assert "Invalid YAML" in response.json()["detail"]
+
+
+def test_changelog_invalid_data_contract():
+    invalid_contract = """
+    apiVersion: '1.0'
+    servers:
+      - type: invalid_type
+    """
+    response = client.post(url="/changelog", json={"v1": invalid_contract, "v2": "valid: yaml"})
+    assert response.status_code == 422
+    assert "Invalid data contract" in response.json()["detail"]

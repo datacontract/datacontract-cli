@@ -1,6 +1,7 @@
 import logging
 import typing
 
+import yaml
 from open_data_contract_standard.model import OpenDataContractStandard, Team
 
 if typing.TYPE_CHECKING:
@@ -14,6 +15,7 @@ from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
 from datacontract.lint import resolve
+from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -186,6 +188,50 @@ class DataContract:
                 sql_server_type=sql_server_type,
                 export_args=kwargs,
             )
+
+    def _to_odcs_dict(self) -> dict:
+        """Resolve this data contract to an OpenDataContractStandard dict."""
+        if self._data_contract is not None:
+            contract = self._data_contract
+        elif self._data_contract_file is not None:
+            with open(self._data_contract_file, encoding="utf-8") as f:
+                contract = OpenDataContractStandard.model_validate(yaml.safe_load(f))
+        elif self._data_contract_str is not None:
+            contract = OpenDataContractStandard.model_validate(yaml.safe_load(self._data_contract_str))
+        else:
+            raise DataContractException(
+                type="changelog",
+                result=ResultEnum.error,
+                name="Resolve Data Contract",
+                reason="No data contract source provided",
+                engine="datacontract",
+            )
+        return contract.model_dump(exclude_none=True, by_alias=True)
+
+    def changelog(self, other: "DataContract") -> ChangelogResult:
+        """Generate a changelog between this data contract and another, returning a ChangelogResult."""
+        from datacontract.changelog.changelog import build_changelog, diff
+
+        v1_label = self._data_contract_file or ""
+        v2_label = other._data_contract_file or ""
+
+        raw_diff = diff(self._to_odcs_dict(), other._to_odcs_dict())
+        changelog = build_changelog(raw_diff, source_label=v1_label, target_label=v2_label)
+
+        result = ChangelogResult(v1=v1_label, v2=v2_label)
+        for change in changelog["summary"]["changes"]:
+            result.summary.append(ChangelogEntry(
+                path=change["path"],
+                type=ChangelogType(change["changeType"].lower()),
+            ))
+        for change in changelog["detail"]["changes"]:
+            result.entries.append(ChangelogEntry(
+                path=change["path"],
+                type=ChangelogType(change["changeType"].lower()),
+                old_value=str(change["old_value"]) if change.get("old_value") is not None else None,
+                new_value=str(change["new_value"]) if change.get("new_value") is not None else None,
+            ))
+        return result
 
     @classmethod
     def import_from_source(

@@ -32,6 +32,7 @@ dependencies = [
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
   "open-data-contract-standard>=3.1.2,<4.0.0",
+  "deepdiff>=6.0.0,<9.0.0",
 ]
 
 [project.optional-dependencies]
