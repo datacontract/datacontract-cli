@@ -1,0 +1,25 @@
+dataContractSpecification: 1.2.1
+id: sql-view-export
+info:
+  title: SQL View Export
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  production:
+    type: postgres
+    host: localhost
+    port: 4567
+    database: test
+    schema: public
+models:
+  my_view:
+    type: view
+    description: A sample view definition
+    fields:
+      col_a:
+        type: varchar
+        description: First column
+        required: true
+      col_b:
+        type: integer
+        description: Second column

@@ -144,3 +144,19 @@ CREATE OR REPLACE TABLE datacontract_staging.orders_latest.line_items (
 ) COMMENT "A single article that is part of an order.";
 """.strip()
     assert actual == expected
+
+
+def test_to_sql_ddl_postgres_view():
+    """Model with type=view should emit CREATE VIEW, not CREATE TABLE."""
+    actual = DataContract(data_contract_file="fixtures/sql-view-export/datacontract.yaml").export("sql")
+    expected = """
+-- Data Contract: sql-view-export
+-- SQL Dialect: postgres
+CREATE VIEW my_view (
+  col_a text not null,
+  col_b integer
+);
+""".strip()
+    assert actual == expected
+    assert "CREATE VIEW" in actual
+    assert "CREATE TABLE" not in actual

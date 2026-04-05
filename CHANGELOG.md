@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
 - Preserve parametrized physicalTypes for SQL export (#1086)
+- Emit `CREATE VIEW` DDL when model `type` is `view` in SQL export (#1031)
 - Fix incorrect SQL type mappings: SQL Server `double`/`jsonb`, MySQL bare `varchar`, missing Trino types (#1110)
 
 ## [0.11.7] - 2026-03-24

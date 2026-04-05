@@ -104,7 +104,13 @@ def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snow
 
 
 def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snowflake") -> str:
-    if server_type == "databricks":
+    is_view = model.physicalType is not None and model.physicalType.lower() == "view"
+    if is_view:
+        if server_type == "databricks":
+            result = f"CREATE OR REPLACE VIEW {model_name} (\n"
+        else:
+            result = f"CREATE VIEW {model_name} (\n"
+    elif server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
         result = f"CREATE OR REPLACE TABLE {model_name} (\n"
