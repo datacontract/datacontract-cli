@@ -44,9 +44,21 @@ class TestBadges:
         assert "3 Changed" in result
         assert "2 Added" in result
 
-    def test_ordering_removed_changed_added(self):
+    def test_ordering_added_changed_removed(self):
         result = _badges(_make_entries(added=1, removed=1, changed=1))
-        assert result.index("Removed") < result.index("Changed") < result.index("Added")
+        assert result.index("Added") < result.index("Changed") < result.index("Removed")
+
+    def test_added_badge_green(self):
+        result = _badges(_make_entries(added=1))
+        assert "[ [green]1 Added[/green] ]" == result
+
+    def test_changed_badge_yellow(self):
+        result = _badges(_make_entries(changed=1))
+        assert "[ [yellow]1 Changed[/yellow] ]" == result
+
+    def test_removed_badge_red(self):
+        result = _badges(_make_entries(removed=1))
+        assert "[ [red]1 Removed[/red] ]" == result
 
     def test_zero_count_omitted(self):
         result = _badges(_make_entries(added=3))

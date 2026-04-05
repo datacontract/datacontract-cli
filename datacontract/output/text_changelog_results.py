@@ -1,12 +1,21 @@
 import io
+from collections import Counter
 
 from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from datacontract.model.changelog import ChangelogResult, ChangelogType
+from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 
 _VAL_W = 30
+
+_CHANGE_COLOR = {
+    ChangelogType.added: "green",
+    ChangelogType.changed: "yellow",
+    ChangelogType.removed: "red",
+}
+
+_BADGE_ORDER = [ChangelogType.added, ChangelogType.changed, ChangelogType.removed]
 
 
 def write_text_changelog_results(result: ChangelogResult, console: Console):
@@ -14,17 +23,14 @@ def write_text_changelog_results(result: ChangelogResult, console: Console):
     _print_table(result, console)
 
 
-def _badges(entries: list) -> str:
-    removed = sum(1 for e in entries if e.type == ChangelogType.removed)
-    changed = sum(1 for e in entries if e.type == ChangelogType.changed)
-    added = sum(1 for e in entries if e.type == ChangelogType.added)
+def _badges(entries: list[ChangelogEntry]) -> str:
+    counts = Counter(e.type for e in entries)
     parts = []
-    if removed:
-        parts.append(f"[ {removed} Removed ]")
-    if changed:
-        parts.append(f"[ {changed} Changed ]")
-    if added:
-        parts.append(f"[ {added} Added ]")
+    for ct in _BADGE_ORDER:
+        n = counts[ct]
+        if n:
+            color = _CHANGE_COLOR[ct]
+            parts.append(f"[ [{color}]{n} {ct.value.capitalize()}[/{color}] ]")
     return "  ".join(parts)
 
 
@@ -66,12 +72,9 @@ def _print_table(result: ChangelogResult, console: Console):
 
 
 def _with_markup(changelog_type: ChangelogType) -> str:
-    if changelog_type == ChangelogType.added:
-        return "[green]added[/green]"
-    if changelog_type == ChangelogType.removed:
-        return "[red]removed[/red]"
-    if changelog_type == ChangelogType.changed:
-        return "[yellow]changed[/yellow]"
+    color = _CHANGE_COLOR.get(changelog_type)
+    if color:
+        return f"[{color}]{changelog_type.value}[/{color}]"
     return changelog_type.value
 
 
