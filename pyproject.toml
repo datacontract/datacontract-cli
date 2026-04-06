@@ -131,7 +131,7 @@ rdf = [
 
 api = [
   "fastapi==0.135.3",
-  "uvicorn==0.42.0",
+  "uvicorn==0.44.0",
 ]
 
 protobuf = [
