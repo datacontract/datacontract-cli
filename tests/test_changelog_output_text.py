@@ -100,13 +100,13 @@ class TestWrap:
 
 class TestWithMarkup:
     def test_added_green(self):
-        assert _with_markup(ChangelogType.added) == "[green]added[/green]"
+        assert _with_markup(ChangelogType.added) == "[green]Added[/green]"
 
     def test_removed_red(self):
-        assert _with_markup(ChangelogType.removed) == "[red]removed[/red]"
+        assert _with_markup(ChangelogType.removed) == "[red]Removed[/red]"
 
     def test_changed_yellow(self):
-        assert _with_markup(ChangelogType.changed) == "[yellow]changed[/yellow]"
+        assert _with_markup(ChangelogType.changed) == "[yellow]Changed[/yellow]"
 
 
 class TestTerminalStateInheritance:
@@ -155,9 +155,9 @@ class TestWriteTextChangelogResults:
     def test_all_change_types_present(self):
         result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2))
         output = _render(result)
-        assert "added" in output
-        assert "removed" in output
-        assert "changed" in output
+        assert "Added" in output
+        assert "Removed" in output
+        assert "Changed" in output
 
     def test_no_changes_suppresses_summary(self):
         result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V1))

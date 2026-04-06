@@ -74,8 +74,8 @@ def _print_table(result: ChangelogResult, console: Console):
 def _with_markup(changelog_type: ChangelogType) -> str:
     color = _CHANGE_COLOR.get(changelog_type)
     if color:
-        return f"[{color}]{changelog_type.value}[/{color}]"
-    return changelog_type.value
+        return f"[{color}]{changelog_type.value.capitalize()}[/{color}]"
+    return changelog_type.value.capitalize()
 
 
 def _wrap(text: str, max_width: int) -> str:
