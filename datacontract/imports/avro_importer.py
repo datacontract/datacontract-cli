@@ -1,4 +1,3 @@
-import logging
 from typing import List
 
 import avro.schema
@@ -11,8 +10,6 @@ from datacontract.imports.odcs_helper import (
     create_schema_object,
 )
 from datacontract.model.exceptions import DataContractException
-
-logger = logging.getLogger(__name__)
 
 # Avro logical type to ODCS logical type mapping
 LOGICAL_TYPE_MAPPING = {
