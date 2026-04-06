@@ -30,8 +30,8 @@ def diff(v1: dict, v2: dict) -> dict:
 _CHANGE_TYPE_MAP = {
     "dictionary_item_added": "Added",
     "dictionary_item_removed": "Removed",
-    "values_changed": "Changed",
-    "type_changes": "Changed",
+    "values_changed": "Updated",
+    "type_changes": "Updated",
     "iterable_item_added": "Added",
     "iterable_item_removed": "Removed",
 }
@@ -44,7 +44,7 @@ def build_changelog(diff_result: dict, source_label: str = "v1", target_label: s
     Both summary.changes and detail.changes share the same shape:
       {
         "path":       str,   # dot-separated field path
-        "changeType": str,   # Added | Removed | Changed
+        "changeType": str,   # Added | Removed | Updated
         "old_value":  any,   # present for Changed/Removed; absent otherwise
         "new_value":  any,   # present for Changed/Added; absent otherwise
       }
@@ -52,7 +52,7 @@ def build_changelog(diff_result: dict, source_label: str = "v1", target_label: s
     Summary rollup rules (detail always shows full leaf paths):
       - Scalar Changed leaf      → rolled up to parent (logicalType → field)
       - Scalar Added/Removed leaf → rolled up to parent (businessName Added → field Added)
-      - Mixed Add+Remove on same parent → single entry with changeType Changed
+      - Mixed Add+Remove on same parent → single entry with changeType Updated
       - Dict Added/Removed (whole object) → stays at its own path, not rolled up
       - List string item (tag)   → rolled up to the tags parent in summary;
         in detail the tag value is the final path segment (tags.pii Removed)
@@ -112,7 +112,7 @@ def build_changelog(diff_result: dict, source_label: str = "v1", target_label: s
     detail_counts = {
         "added": sum(1 for c in detail_changes if c["changeType"] == "Added"),
         "removed": sum(1 for c in detail_changes if c["changeType"] == "Removed"),
-        "changed": sum(1 for c in detail_changes if c["changeType"] == "Changed"),
+        "updated": sum(1 for c in detail_changes if c["changeType"] == "Updated"),
     }
 
     summary_groups: dict[tuple, dict] = {}
@@ -125,7 +125,7 @@ def build_changelog(diff_result: dict, source_label: str = "v1", target_label: s
             segs = [group[0] if group[0] else group[1] for group in segs]
             is_iterable = deepdiff_key in ("iterable_item_added", "iterable_item_removed")
             is_scalar_change = (
-                change_type == "Changed"
+                change_type == "Updated"
                 and isinstance(payload, dict)
                 and "old_value" in payload
                 and not isinstance(payload.get("old_value"), dict)
@@ -144,7 +144,7 @@ def build_changelog(diff_result: dict, source_label: str = "v1", target_label: s
                 summary_groups[display_segs] = {"changeType": change_type}
             else:
                 if summary_groups[display_segs]["changeType"] != change_type:
-                    summary_groups[display_segs]["changeType"] = "Changed"
+                    summary_groups[display_segs]["changeType"] = "Updated"
 
     summary_changes = []
     for segs, data in sorted(summary_groups.items(), key=lambda x: ".".join(x[0])):
@@ -153,7 +153,7 @@ def build_changelog(diff_result: dict, source_label: str = "v1", target_label: s
     summary_counts = {
         "added": sum(1 for c in summary_changes if c["changeType"] == "Added"),
         "removed": sum(1 for c in summary_changes if c["changeType"] == "Removed"),
-        "changed": sum(1 for c in summary_changes if c["changeType"] == "Changed"),
+        "updated": sum(1 for c in summary_changes if c["changeType"] == "Updated"),
     }
 
     return {

@@ -27,7 +27,7 @@ def test_changelog_entry_types():
     types = {e.type for e in result.entries}
     assert ChangelogType.added in types
     assert ChangelogType.removed in types
-    assert ChangelogType.changed in types
+    assert ChangelogType.updated in types
 
 
 def test_changelog_summary_is_rolled_up():
@@ -47,7 +47,7 @@ def test_changelog_entry_values():
     result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2))
     changed = [e for e in result.entries if e.path == "schema.orders.properties.order_date.logicalType"]
     assert len(changed) == 1
-    assert changed[0].type == ChangelogType.changed
+    assert changed[0].type == ChangelogType.updated
     assert changed[0].old_value == "string"
     assert changed[0].new_value == "date"
 

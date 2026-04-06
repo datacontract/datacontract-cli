@@ -49,7 +49,7 @@ def test_changelog():
     assert len(data["summary"]) > 0
     entry = data["entries"][0]
     assert "path" in entry
-    assert entry["type"] in ("added", "removed", "changed")
+    assert entry["type"] in ("added", "removed", "updated")
     assert "old_value" in entry
     assert "new_value" in entry
 

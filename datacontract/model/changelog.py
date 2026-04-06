@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class ChangelogType(str, Enum):
     added = "added"
     removed = "removed"
-    changed = "changed"
+    updated = "updated"
 
 
 class ChangelogEntry(BaseModel):

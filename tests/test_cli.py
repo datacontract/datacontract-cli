@@ -32,6 +32,6 @@ def test_changelog_with_changes():
     assert result.exit_code == 0
     assert "Summary" in result.output
     assert "Details" in result.output
-    assert "removed" in result.output
-    assert "changed" in result.output
-    assert "added" in result.output
+    assert "Removed" in result.output
+    assert "Updated" in result.output
+    assert "Added" in result.output

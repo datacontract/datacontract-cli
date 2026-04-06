@@ -11,11 +11,11 @@ _VAL_W = 30
 
 _CHANGE_COLOR = {
     ChangelogType.added: "green",
-    ChangelogType.changed: "yellow",
+    ChangelogType.updated: "yellow",
     ChangelogType.removed: "red",
 }
 
-_BADGE_ORDER = [ChangelogType.added, ChangelogType.changed, ChangelogType.removed]
+_BADGE_ORDER = [ChangelogType.added, ChangelogType.updated, ChangelogType.removed]
 
 
 def write_text_changelog_results(result: ChangelogResult, console: Console):

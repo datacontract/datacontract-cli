@@ -68,8 +68,8 @@ class TestBuildReportDataStructure:
 
     def test_empty_diff_produces_zero_counts(self):
         rd = build_changelog({})
-        assert rd["summary"]["counts"] == {"added": 0, "removed": 0, "changed": 0}
-        assert rd["detail"]["counts"] == {"added": 0, "removed": 0, "changed": 0}
+        assert rd["summary"]["counts"] == {"added": 0, "removed": 0, "updated": 0}
+        assert rd["detail"]["counts"] == {"added": 0, "removed": 0, "updated": 0}
 
     def test_empty_diff_produces_empty_changes(self):
         rd = build_changelog({})
@@ -158,13 +158,13 @@ class TestBuildReportDataChanged:
         )
         match = next((c for c in rd["detail"]["changes"] if "logicalType" in c["path"]), None)
         assert match is not None
-        assert match["changeType"] == "Changed"
+        assert match["changeType"] == "Updated"
         assert match["old_value"] == "string"
         assert match["new_value"] == "date"
 
     def test_changed_count_incremented(self):
         rd = build_changelog(_changed("slaProperties']['availability']['value", "99.9%", "99.5%"))
-        assert rd["detail"]["counts"]["changed"] == 1
+        assert rd["detail"]["counts"]["updated"] == 1
 
     def test_changed_scalar_rolled_up_to_parent_in_summary(self):
         rd = build_changelog(
@@ -194,7 +194,7 @@ class TestBuildReportDataSummaryRollup:
         )
         rd = build_changelog(diff)
         match = next(c for c in rd["summary"]["changes"] if c["path"] == "schema.orders.properties.order_id")
-        assert match["changeType"] == "Changed"
+        assert match["changeType"] == "Updated"
 
     def test_summary_counts_match_summary_changes(self):
         diff = _merge(
@@ -207,7 +207,7 @@ class TestBuildReportDataSummaryRollup:
         changes = rd["summary"]["changes"]
         assert counts["added"] == sum(1 for c in changes if c["changeType"] == "Added")
         assert counts["removed"] == sum(1 for c in changes if c["changeType"] == "Removed")
-        assert counts["changed"] == sum(1 for c in changes if c["changeType"] == "Changed")
+        assert counts["updated"] == sum(1 for c in changes if c["changeType"] == "Updated")
 
     def test_detail_counts_match_detail_changes(self):
         diff = _merge(
@@ -218,7 +218,7 @@ class TestBuildReportDataSummaryRollup:
         counts = rd["summary"]["counts"]
         changes = rd["summary"]["changes"]
         assert counts["added"] == sum(1 for c in changes if c["changeType"] == "Added")
-        assert counts["changed"] == sum(1 for c in changes if c["changeType"] == "Changed")
+        assert counts["updated"] == sum(1 for c in changes if c["changeType"] == "Updated")
 
     def test_detail_changes_sorted_by_path(self):
         diff = _merge(
@@ -363,24 +363,24 @@ class TestSummaryRollupScalarLeaves:
         match = next(c for c in rd["summary"]["changes"] if c["path"] == "schema.orders")
         assert match["changeType"] == "Removed"
 
-    def test_mixed_add_remove_same_parent_collapses_to_changed(self):
+    def test_mixed_add_remove_same_parent_collapses_to_updated(self):
         rd = self._rd(
             _added("schema']['orders']['businessName", "Orders"),
             _removed("schema']['orders']['description", "old desc"),
         )
         match = next(c for c in rd["summary"]["changes"] if c["path"] == "schema.orders")
-        assert match["changeType"] == "Changed"
+        assert match["changeType"] == "Updated"
         paths = [c["path"] for c in rd["summary"]["changes"]]
         assert "schema.orders.businessName" not in paths
         assert "schema.orders.description" not in paths
 
-    def test_mixed_add_scalar_changed_same_parent_collapses_to_changed(self):
+    def test_mixed_add_scalar_changed_same_parent_collapses_to_updated(self):
         rd = self._rd(
             _added("schema']['orders']['businessName", "Orders"),
             _changed("schema']['orders']['logicalType", "string", "integer"),
         )
         match = next(c for c in rd["summary"]["changes"] if c["path"] == "schema.orders")
-        assert match["changeType"] == "Changed"
+        assert match["changeType"] == "Updated"
 
     def test_dict_added_does_not_roll_up(self):
         """A whole dict payload (e.g. a new schema object) should not roll up —
@@ -405,7 +405,7 @@ class TestSummaryRollupScalarLeaves:
         changes = rd["summary"]["changes"]
         assert counts["added"] == sum(1 for c in changes if c["changeType"] == "Added")
         assert counts["removed"] == sum(1 for c in changes if c["changeType"] == "Removed")
-        assert counts["changed"] == sum(1 for c in changes if c["changeType"] == "Changed")
+        assert counts["updated"] == sum(1 for c in changes if c["changeType"] == "Updated")
 
     def test_detail_still_shows_full_leaf_paths(self):
         """Rollup only affects summary — detail must still show the full leaf paths."""

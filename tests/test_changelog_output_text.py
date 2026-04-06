@@ -21,7 +21,7 @@ def _make_entries(added=0, removed=0, changed=0):
     for _ in range(removed):
         entries.append(ChangelogEntry(path="a.b", type=ChangelogType.removed))
     for _ in range(changed):
-        entries.append(ChangelogEntry(path="a.b", type=ChangelogType.changed))
+        entries.append(ChangelogEntry(path="a.b", type=ChangelogType.updated))
     return entries
 
 
@@ -41,20 +41,20 @@ class TestBadges:
     def test_all_types(self):
         result = _badges(_make_entries(added=2, removed=1, changed=3))
         assert "1 Removed" in result
-        assert "3 Changed" in result
+        assert "3 Updated" in result
         assert "2 Added" in result
 
-    def test_ordering_added_changed_removed(self):
+    def test_ordering_added_updated_removed(self):
         result = _badges(_make_entries(added=1, removed=1, changed=1))
-        assert result.index("Added") < result.index("Changed") < result.index("Removed")
+        assert result.index("Added") < result.index("Updated") < result.index("Removed")
 
     def test_added_badge_green(self):
         result = _badges(_make_entries(added=1))
         assert "[ [green]1 Added[/green] ]" == result
 
-    def test_changed_badge_yellow(self):
+    def test_updated_badge_yellow(self):
         result = _badges(_make_entries(changed=1))
-        assert "[ [yellow]1 Changed[/yellow] ]" == result
+        assert "[ [yellow]1 Updated[/yellow] ]" == result
 
     def test_removed_badge_red(self):
         result = _badges(_make_entries(removed=1))
@@ -63,7 +63,7 @@ class TestBadges:
     def test_zero_count_omitted(self):
         result = _badges(_make_entries(added=3))
         assert "Removed" not in result
-        assert "Changed" not in result
+        assert "Updated" not in result
         assert "3 Added" in result
 
     def test_empty_list_returns_empty_string(self):
@@ -105,8 +105,8 @@ class TestWithMarkup:
     def test_removed_red(self):
         assert _with_markup(ChangelogType.removed) == "[red]Removed[/red]"
 
-    def test_changed_yellow(self):
-        assert _with_markup(ChangelogType.changed) == "[yellow]Changed[/yellow]"
+    def test_updated_yellow(self):
+        assert _with_markup(ChangelogType.updated) == "[yellow]Updated[/yellow]"
 
 
 class TestTerminalStateInheritance:
@@ -150,14 +150,14 @@ class TestWriteTextChangelogResults:
     def test_badges_present(self):
         result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2))
         output = _render(result)
-        assert "Removed" in output or "Changed" in output or "Added" in output
+        assert "Removed" in output or "Updated" in output or "Added" in output
 
     def test_all_change_types_present(self):
         result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2))
         output = _render(result)
         assert "Added" in output
         assert "Removed" in output
-        assert "Changed" in output
+        assert "Updated" in output
 
     def test_no_changes_suppresses_summary(self):
         result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V1))
