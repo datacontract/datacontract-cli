@@ -1,6 +1,8 @@
 apiVersion: v3.0.2
 kind: DataContract
 id: orders-contract-001
+status: active
+version: 1.0.0
 schema:
   - name: orders
     physicalName: orders_tbl
@@ -21,7 +23,9 @@ schema:
 servers:
   - server: production
     type: snowflake
+    account: example-account
     database: PROD_DB
+    schema: PUBLIC
 slaProperties:
   - property: availability
     value: "99.9%"
