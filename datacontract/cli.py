@@ -109,6 +109,13 @@ def lint(
         ),
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    all_errors: Annotated[
+        bool,
+        typer.Option(
+            "--all-errors",
+            help="Report all JSON Schema validation errors instead of stopping after the first one.",
+        ),
+    ] = False,
     debug: debug_option = None,
 ):
     """
@@ -116,7 +123,7 @@ def lint(
     """
     enable_debug_logging(debug)
 
-    run = DataContract(data_contract_file=location, schema_location=schema).lint()
+    run = DataContract(data_contract_file=location, schema_location=schema, all_errors=all_errors).lint()
     write_test_result(run, console, output_format, output)
 
 

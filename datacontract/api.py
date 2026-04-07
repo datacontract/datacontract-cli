@@ -352,8 +352,12 @@ async def lint(
             description="The schema to use for validation. This must be a URL.",
         ),
     ] = None,
+    all_errors: Annotated[
+        bool,
+        Query(description="Report all JSON Schema validation errors instead of only the first one."),
+    ] = False,
 ):
-    data_contract = DataContract(data_contract_str=body, schema_location=schema)
+    data_contract = DataContract(data_contract_str=body, schema_location=schema, all_errors=all_errors)
     lint_result = data_contract.lint()
     return {"result": lint_result.result, "checks": lint_result.checks}
 

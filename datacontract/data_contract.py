@@ -14,7 +14,7 @@ from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
 from datacontract.lint import resolve
-from datacontract.model.exceptions import DataContractException
+from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.run import Check, ResultEnum, Run
 
 
@@ -32,6 +32,7 @@ class DataContract:
         inline_definitions: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
+        all_errors: bool = False,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -44,6 +45,7 @@ class DataContract:
         self._duckdb_connection = duckdb_connection
         self._inline_definitions = inline_definitions
         self._ssl_verification = ssl_verification
+        self._all_errors = all_errors
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -61,6 +63,7 @@ class DataContract:
                 self._data_contract,
                 self._schema_location,
                 inline_definitions=self._inline_definitions,
+                all_errors=self._all_errors,
             )
             run.checks.append(
                 Check(
@@ -72,6 +75,19 @@ class DataContract:
             )
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.version
+        except DataContractValidationErrors as e:
+            for error in e.errors:
+                run.checks.append(
+                    Check(
+                        type=error.type,
+                        result=error.result,
+                        name=error.name,
+                        reason=error.reason,
+                        engine=error.engine,
+                        details="",
+                    )
+                )
+                run.log_error(str(error))
         except DataContractException as e:
             run.checks.append(
                 Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")

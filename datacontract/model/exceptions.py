@@ -36,3 +36,19 @@ class DataContractException(Exception):
         super().__init__(
             f"{self.message}: [{self.type}] {self.name} - {self.model} - {self.result} - {self.reason} - {self.engine}"
         )
+
+
+class DataContractValidationErrors(DataContractException):
+    def __init__(self, errors: list[DataContractException]):
+        self.errors = errors
+        first_error = errors[0]
+        super().__init__(
+            type=first_error.type,
+            name=first_error.name,
+            reason=first_error.reason,
+            engine=first_error.engine,
+            model=first_error.model,
+            original_exception=first_error.original_exception,
+            result=first_error.result,
+            message="Run operation failed with multiple validation errors",
+        )
