@@ -1,0 +1,38 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: mysql
+name: mysql
+version: 0.0.1
+domain: my-domain-team
+status: active
+schema:
+- name: my_table
+  physicalName: my_table
+  logicalType: object
+  physicalType: table
+  properties:
+  - name: field_one
+    logicalType: string
+    physicalType: varchar
+    isNullable: false
+    isUnique: true
+    logicalTypeOptions:
+      pattern: '[A-Za-z]{2}-\d{3}-[A-Za-z]{2}$'
+  - name: field_two
+    logicalType: integer
+    physicalType: int
+    isNullable: true
+    isUnique: false
+    logicalTypeOptions:
+      minimum: 10
+  - name: field_three
+    logicalType: timestamp
+    physicalType: timestamp
+    isNullable: true
+    isUnique: false
+servers:
+- server: mysql
+  type: mysql
+  database: test
+  host: localhost
+  port: 3306

@@ -44,9 +44,7 @@ def to_impala_soda_configuration(server):
 
     use_ssl = _get_bool_env("DATACONTRACT_IMPALA_USE_SSL", True)
     auth_mechanism = os.getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "LDAP")
-    use_http_transport = _get_bool_env(
-        "DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", True
-    )
+    use_http_transport = _get_bool_env("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", True)
     http_path = os.getenv("DATACONTRACT_IMPALA_HTTP_PATH", "cliservice")
 
     connection = {

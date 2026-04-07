@@ -1,5 +1,6 @@
 import yaml
 
+from datacontract.engines.data_contract_checks import _retention_value_to_seconds
 from datacontract.export.sodacl_exporter import SodaExporter
 from datacontract.lint.resolve import resolve_data_contract_from_location
 
@@ -75,3 +76,54 @@ checks for orders:
     result = exporter.export(data_contract, "all", None, "auto", None)
 
     assert yaml.safe_load(expected) == yaml.safe_load(result)
+
+
+def test_export_sodacl_numeric_retention():
+    """Test that numeric retention values with unit (ODCS style) are handled correctly.
+
+    Regression test for https://github.com/datacontract/datacontract-cli/issues/1033
+    """
+    data_contract = resolve_data_contract_from_location("./fixtures/sodacl/datacontract_numeric_retention.odcs.yaml")
+
+    exporter = SodaExporter(export_format="sodacl")
+    result = exporter.export(data_contract, "all", None, "auto", None)
+    parsed = yaml.safe_load(result)
+
+    # 3 years in seconds = 3 * 365 * 24 * 60 * 60 = 94608000
+    checks = parsed["checks for orders"]
+    retention_check = None
+    for check in checks:
+        for key in check:
+            if "servicelevel_retention" in key:
+                retention_check = check
+                break
+
+    assert retention_check is not None, "Retention check should be generated for numeric value + unit"
+    assert any("< 94608000" in str(k) for k in retention_check.keys()), (
+        f"Expected retention of 94608000 seconds (3 years), got: {retention_check}"
+    )
+
+
+def test_retention_value_to_seconds_numeric():
+    """Test _retention_value_to_seconds with numeric values and various units."""
+    assert _retention_value_to_seconds(3, "y") == 3 * 365 * 24 * 60 * 60
+    assert _retention_value_to_seconds(3, "years") == 3 * 365 * 24 * 60 * 60
+    assert _retention_value_to_seconds(6, "months") == 6 * 30 * 24 * 60 * 60
+    assert _retention_value_to_seconds(90, "days") == 90 * 24 * 60 * 60
+    assert _retention_value_to_seconds(90, "d") == 90 * 24 * 60 * 60
+    assert _retention_value_to_seconds(24, "h") == 24 * 60 * 60
+    assert _retention_value_to_seconds(30, "minutes") == 30 * 60
+    assert _retention_value_to_seconds(3600, "s") == 3600
+
+
+def test_retention_value_to_seconds_iso8601():
+    """Test _retention_value_to_seconds with ISO 8601 duration strings."""
+    assert _retention_value_to_seconds("P1Y", None) == 365 * 24 * 60 * 60
+    assert _retention_value_to_seconds("P30D", None) == 30 * 24 * 60 * 60
+    assert _retention_value_to_seconds("P6M", None) == 6 * 30 * 24 * 60 * 60
+    assert _retention_value_to_seconds("PT24H", None) == 24 * 60 * 60
+
+
+def test_retention_value_to_seconds_none():
+    """Test _retention_value_to_seconds with None value."""
+    assert _retention_value_to_seconds(None, None) is None

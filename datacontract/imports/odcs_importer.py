@@ -7,9 +7,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 class OdcsImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_odcs(source)
 
 

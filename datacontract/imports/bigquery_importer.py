@@ -14,9 +14,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 class BigQueryImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         if source is not None:
             return import_bigquery_from_json(source)
         else:

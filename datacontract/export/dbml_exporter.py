@@ -36,7 +36,7 @@ def _get_references(prop: SchemaProperty) -> Optional[str]:
     """Get references from a property's relationships."""
     if prop.relationships:
         for rel in prop.relationships:
-            if hasattr(rel, 'to') and rel.to:
+            if hasattr(rel, "to") and rel.to:
                 return rel.to
     return None
 
@@ -65,9 +65,7 @@ def add_generated_info(contract: OpenDataContractStandard, server: Optional[Serv
 Generated at {0} by datacontract-cli version {1}
 for datacontract {2} ({3}) version {4}
 Using {5} Types for the field types
-*/""".format(
-        formatted_date, datacontract_cli_version, contract.name, contract.id, contract.version, dialect
-    )
+*/""".format(formatted_date, datacontract_cli_version, contract.name, contract.id, contract.version, dialect)
 
 
 def get_version() -> str:
@@ -80,7 +78,7 @@ def get_version() -> str:
 def generate_project_info(contract: OpenDataContractStandard) -> str:
     description = ""
     if contract.description:
-        if hasattr(contract.description, 'purpose') and contract.description.purpose:
+        if hasattr(contract.description, "purpose") and contract.description.purpose:
             description = contract.description.purpose
         elif isinstance(contract.description, str):
             description = contract.description
@@ -155,7 +153,7 @@ def generate_field(field_name: str, prop: SchemaProperty, model_name: str, serve
     prop_type = _get_type(prop)
     field_type = prop_type if server is None else convert_to_sql_type(prop, server.type)
 
-    field_str = '    {0} {1} [{2}]'.format(field_name, field_type, ", ".join(field_attrs))
+    field_str = "    {0} {1} [{2}]".format(field_name, field_type, ", ".join(field_attrs))
     ref_str = None
     references = _get_references(prop)
     if references is not None:

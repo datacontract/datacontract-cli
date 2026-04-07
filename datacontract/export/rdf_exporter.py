@@ -100,7 +100,7 @@ def add_basic_info(contract, data_contract: OpenDataContractStandard, graph, odc
         graph.add((bnode_info, odcs.name, Literal(data_contract.name)))
     if data_contract.description:
         desc = data_contract.description
-        if hasattr(desc, 'purpose') and desc.purpose:
+        if hasattr(desc, "purpose") and desc.purpose:
             graph.add((bnode_info, odcs.description, Literal(desc.purpose)))
         elif isinstance(desc, str):
             graph.add((bnode_info, odcs.description, Literal(desc)))

@@ -16,6 +16,7 @@ from datacontract.engines.soda.connections.databricks import to_databricks_soda_
 from datacontract.engines.soda.connections.duckdb_connection import get_duckdb_connection
 from datacontract.engines.soda.connections.impala import to_impala_soda_configuration
 from datacontract.engines.soda.connections.kafka import create_spark_session, read_kafka_topic
+from datacontract.engines.soda.connections.mysql import to_mysql_soda_configuration
 from datacontract.engines.soda.connections.postgres import to_postgres_soda_configuration
 from datacontract.engines.soda.connections.snowflake import to_snowflake_soda_configuration
 from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_configuration
@@ -73,6 +74,10 @@ def check_soda_execute(
         soda_configuration_str = to_postgres_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
+    elif server.type == "mysql":
+        soda_configuration_str = to_mysql_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        scan.set_data_source_name(server.type)
     elif server.type == "databricks":
         if spark is not None:
             run.log_info("Connecting to databricks via spark")
@@ -96,7 +101,7 @@ def check_soda_execute(
             logging.info("Use Spark to connect to data source")
             scan.add_spark_session(spark, data_source_name="datacontract-cli")
             scan.set_data_source_name("datacontract-cli")
-    
+
     # ------------------------------------------------------------------
     # NEW: native Impala server type
     # ------------------------------------------------------------------
@@ -107,7 +112,6 @@ def check_soda_execute(
         # data source name must match what we configure in to_impala_soda_configuration
         scan.set_data_source_name("impala")
 
-    
     elif server.type == "kafka":
         if spark is None:
             spark = create_spark_session()

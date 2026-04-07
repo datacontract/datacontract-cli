@@ -20,8 +20,32 @@ from datacontract.model.run import Check
 @dataclass
 class QuotingConfig:
     quote_field_name: bool = False
+    quote_field_name_with_backticks: bool = False
     quote_model_name: bool = False
     quote_model_name_with_backticks: bool = False
+
+
+def _escape_sql_string_values(values):
+    """Escape single quotes in string values for use in SodaCL checks.
+
+    SodaCL renders valid/invalid values directly into SQL IN clauses, so single
+    quotes inside string values (e.g. "peter's") must be escaped as two single
+    quotes (e.g. "peter''s") to produce valid SQL.
+    """
+    if values is None:
+        return None
+    return [v.replace("'", "''") if isinstance(v, str) else v for v in values]
+
+
+def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
+    """Quote a field name according to the quoting configuration."""
+    if field_name is None:
+        return field_name
+    if quoting_config.quote_field_name:
+        return f'"{field_name}"'
+    elif quoting_config.quote_field_name_with_backticks:
+        return f"`{field_name}`"
+    return field_name
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -72,9 +96,10 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     type1 = server.type if server and server.type else None
     config = QuotingConfig(
-        quote_field_name=type1 in ["postgres", "sqlserver", "azure"],
-        quote_model_name=type1 in ["postgres", "sqlserver"],
-        quote_model_name_with_backticks=type1 == "bigquery",
+        quote_field_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
+        quote_field_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
+        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
+        quote_model_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
     )
     quoting_config = config
 
@@ -165,7 +190,6 @@ def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
     return schema_object.name
 
 
-
 def check_property_is_present(model_name, field_name, quoting_config: QuotingConfig = QuotingConfig()) -> Check:
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -229,10 +253,7 @@ def check_property_type(
 
 
 def check_property_required(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_required"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -260,10 +281,7 @@ def check_property_required(model_name: str, field_name: str, quoting_config: Qu
 
 
 def check_property_unique(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_unique"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -293,10 +311,7 @@ def check_property_unique(model_name: str, field_name: str, quoting_config: Quot
 def check_property_min_length(
     model_name: str, field_name: str, min_length: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_min_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -327,10 +342,7 @@ def check_property_min_length(
 def check_property_max_length(
     model_name: str, field_name: str, max_length: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_max_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -361,10 +373,7 @@ def check_property_max_length(
 def check_property_minimum(
     model_name: str, field_name: str, minimum: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_minimum"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -395,10 +404,7 @@ def check_property_minimum(
 def check_property_maximum(
     model_name: str, field_name: str, maximum: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_maximum"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -429,10 +435,7 @@ def check_property_maximum(
 def check_property_not_equal(
     model_name: str, field_name: str, value: int, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_not_equal"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -441,7 +444,7 @@ def check_property_not_equal(
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
-                    "invalid values": [value],
+                    "invalid values": _escape_sql_string_values([value]),
                 },
             }
         ],
@@ -461,10 +464,7 @@ def check_property_not_equal(
 
 
 def check_property_enum(model_name: str, field_name: str, enum: list, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_enum"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -473,7 +473,7 @@ def check_property_enum(model_name: str, field_name: str, enum: list, quoting_co
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
-                    "valid values": enum,
+                    "valid values": _escape_sql_string_values(enum),
                 },
             }
         ],
@@ -492,11 +492,10 @@ def check_property_enum(model_name: str, field_name: str, enum: list, quoting_co
     )
 
 
-def check_property_regex(model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+def check_property_regex(
+    model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()
+):
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_regex"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -553,7 +552,7 @@ def check_model_duplicate_values(
 ):
     check_type = "model_duplicate_values"
     check_key = f"{model_name}__{check_type}"
-    col_joined = ", ".join(cols)
+    col_joined = ", ".join(_quote_field_name(col, quoting_config) for col in cols)
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
             {
@@ -578,10 +577,7 @@ def check_model_duplicate_values(
 def check_property_duplicate_values(
     model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_duplicate_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -611,10 +607,7 @@ def check_property_duplicate_values(
 def check_property_null_values(
     model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_null_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -648,10 +641,7 @@ def check_property_invalid_values(
     valid_values: list = None,
     quoting_config: QuotingConfig = QuotingConfig(),
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_invalid_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -661,7 +651,7 @@ def check_property_invalid_values(
     }
 
     if valid_values is not None:
-        sodacl_check_config["valid values"] = valid_values
+        sodacl_check_config["valid values"] = _escape_sql_string_values(valid_values)
 
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
@@ -691,10 +681,7 @@ def check_property_missing_values(
     missing_values: list = None,
     quoting_config: QuotingConfig = QuotingConfig(),
 ):
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     check_type = "field_missing_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -706,7 +693,7 @@ def check_property_missing_values(
     if missing_values is not None:
         filtered_missing_values = [v for v in missing_values if v is not None]
         if filtered_missing_values:
-            sodacl_check_config["missing values"] = filtered_missing_values
+            sodacl_check_config["missing values"] = _escape_sql_string_values(filtered_missing_values)
 
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
@@ -819,7 +806,9 @@ def check_quality_list(
                         )
                     )
                 else:
-                    checks.append(check_property_duplicate_values(schema_name, property_name, threshold, quoting_config))
+                    checks.append(
+                        check_property_duplicate_values(schema_name, property_name, threshold, quoting_config)
+                    )
             elif quality.metric == "nullValues":
                 if property_name is not None:
                     checks.append(check_property_null_values(schema_name, property_name, threshold, quoting_config))
@@ -829,7 +818,9 @@ def check_quality_list(
                 if property_name is not None:
                     valid_values = quality.arguments.get("validValues") if quality.arguments else None
                     checks.append(
-                        check_property_invalid_values(schema_name, property_name, threshold, valid_values, quoting_config)
+                        check_property_invalid_values(
+                            schema_name, property_name, threshold, valid_values, quoting_config
+                        )
                     )
                 else:
                     logger.warning("Quality check invalidValues is only supported at field level")
@@ -837,7 +828,9 @@ def check_quality_list(
                 if property_name is not None:
                     missing_values = quality.arguments.get("missingValues") if quality.arguments else None
                     checks.append(
-                        check_property_missing_values(schema_name, property_name, threshold, missing_values, quoting_config)
+                        check_property_missing_values(
+                            schema_name, property_name, threshold, missing_values, quoting_config
+                        )
                     )
                 else:
                     logger.warning("Quality check missingValues is only supported at field level")
@@ -863,10 +856,7 @@ def prepare_query(
 
     query = quality.query
 
-    if quoting_config.quote_field_name:
-        field_name_for_soda = f'"{field_name}"'
-    else:
-        field_name_for_soda = field_name
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
     if quoting_config.quote_model_name:
         model_name_for_soda = f'"{model_name}"'
@@ -1050,11 +1040,12 @@ def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla
         logger.info(f"Model {model_name} not found in schema, skipping retention check")
         return None
 
-    # Parse ISO 8601 duration to seconds
-    retention_period = sla.value
-    seconds = _parse_iso8601_to_seconds(retention_period)
+    # Convert retention value to seconds
+    # Supports both numeric value + unit (ODCS style: value=3, unit=y)
+    # and ISO 8601 duration strings (e.g., "P1Y")
+    seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
-        logger.info(f"Could not parse retention period {retention_period}, skipping retention check")
+        logger.info(f"Could not parse retention period (value={sla.value}, unit={sla.unit}), skipping retention check")
         return None
 
     check_type = "servicelevel_retention"
@@ -1081,6 +1072,43 @@ def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla
         language="sodacl",
         implementation=yaml.dump(sodacl_check_dict),
     )
+
+
+def _retention_value_to_seconds(value, unit: str | None) -> int | None:
+    """Convert a retention value to seconds.
+
+    Supports:
+    - Numeric value with unit (ODCS style): value=3, unit="y"
+    - ISO 8601 duration string: value="P1Y"
+    """
+    if value is None:
+        return None
+
+    # If value is numeric, use the unit to convert to seconds
+    if isinstance(value, (int, float)):
+        numeric_value = int(value)
+        unit_lower = unit.lower() if unit else "d"
+        if unit_lower in ("y", "yr", "year", "years"):
+            return numeric_value * 365 * 24 * 60 * 60
+        elif unit_lower in ("m", "mo", "month", "months"):
+            return numeric_value * 30 * 24 * 60 * 60
+        elif unit_lower in ("d", "day", "days"):
+            return numeric_value * 24 * 60 * 60
+        elif unit_lower in ("h", "hr", "hour", "hours"):
+            return numeric_value * 60 * 60
+        elif unit_lower in ("min", "minute", "minutes"):
+            return numeric_value * 60
+        elif unit_lower in ("s", "sec", "second", "seconds"):
+            return numeric_value
+        else:
+            logger.info(f"Unsupported retention unit: {unit}")
+            return None
+
+    # If value is a string, try ISO 8601 parsing
+    if isinstance(value, str):
+        return _parse_iso8601_to_seconds(value)
+
+    return None
 
 
 def _parse_iso8601_to_seconds(duration: str) -> int | None:
@@ -1125,4 +1153,3 @@ def _parse_iso8601_to_seconds(duration: str) -> int | None:
         return int(match.group(1))
 
     return None
-

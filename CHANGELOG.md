@@ -7,10 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output
+
+### Fixed
+- Avro importer now raises an error for union fields with multiple non-null types, which are not supported by ODCS
+- Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
+- Preserve parametrized physicalTypes for SQL export (#1086)
+- Fix incorrect SQL type mappings: SQL Server `double`/`jsonb`, MySQL bare `varchar`, missing Trino types (#1110)
+- Fix markdown export breaking table structure when extra field values contain pipe characters (#832)
+
+## [0.11.7] - 2026-03-24
+
+### Fixed
+- Escape single quotes in string values for SodaCL checks (#1090)
+- Escape BigQuery field and model names with backticks for SodaCL checks (#736)
+- Escape Databricks model names with backticks for SodaCL checks
+- Fixed catalog export SpecView not having a tags property for the index.html template (#1059)
+- Fix SQL importer type mappings: binary types, datetime/time, uuid now map to correct ODCS logicalType and format (#790)
+
+### Added
+- Added support for MySQL for data contract tests (#1101)
+- Support additional PyArrow types in Parquet importer (#1091)
+- Populate `logicalTypeOptions.format` for SQL import from binary and uuid types (#790)
+- Snowflake DDL import with tags, descriptions, and template variable handling (#790)
+
+## [0.11.6] - 2026-03-17
+
+### Fixed
+- Fix parser error for CSV / Parquet table names containing special characters (#1066)
+- Fix BigQuery export failing with "Unsupported type" for parameterized physicalType like `NUMERIC(18, 4)` (#1083)
+
+### Added
+- Added JSON output format for test results (`--output-format json`)
+- Added Azure AD / Entra ID authentication support for SQL Server and Microsoft Fabric
+
+## [0.11.5] - 2026-02-19
+
 ### Fixed
 
-- Fix BigQuery import for repeated fields 
+- Fix BigQuery import for repeated fields (#1017)
 - Make Markdown export compatible with XHTML by replacing `<br>` with `<br />` (#1030)
+- Add ADC/WIF and impersonation support for BigQuery (#1064)
+- Fix Snowflake quoted identifiers by enabling double-quote quoting (#1053)
+- Fix retention duration crash for numeric ODCS values (#1051)
+- Fix physicalType bypass for precision and scale conversion (#1043)
+- Fix mkdir TOCTOU race causing silent JUnit write failure (#1050)
+- Fix validation failure for field names with special chars on Databricks (#1049)
+- Add Azure support for field name quoting in schema checks (#1025)
 
 ## [0.11.4] - 2026-01-19
 

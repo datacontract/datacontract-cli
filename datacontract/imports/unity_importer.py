@@ -152,7 +152,7 @@ def import_table_fields(columns: List[ColumnInfo]) -> List[SchemaProperty]:
 def _to_property(column: ColumnInfo) -> SchemaProperty:
     """Convert a Unity ColumnInfo to an ODCS SchemaProperty."""
     sql_type = str(column.type_text) if column.type_text else "string"
-    logical_type = map_type_from_sql(sql_type)
+    logical_type, format = map_type_from_sql(sql_type)
     required = column.nullable is None or not column.nullable
 
     return create_property(
@@ -160,6 +160,7 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
         logical_type=logical_type if logical_type else "string",
         physical_type=sql_type,
         description=column.comment,
+        format=format,
         required=required if required else None,
         custom_properties={"databricksType": sql_type} if sql_type else None,
     )
