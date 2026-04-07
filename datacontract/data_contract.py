@@ -148,6 +148,9 @@ class DataContract:
             inline_definitions=self._inline_definitions,
         )
 
+    def get_data_contract_file(self) -> str | None:
+        return self._data_contract_file
+
     def export(
         self, export_format: ExportFormat, schema_name: str = "all", sql_server_type: str = "auto", **kwargs
     ) -> str | bytes:
@@ -190,17 +193,15 @@ class DataContract:
 
     def changelog(self, other: "DataContract") -> ChangelogResult:
         """Generate a changelog between this data contract and another, returning a ChangelogResult."""
-        from datacontract.changelog.changelog import build_changelog, diff
+        from datacontract.changelog.changelog import build_changelog
 
-        v1_label = self._data_contract_file or ""
-        v2_label = other._data_contract_file or ""
-
-        raw_diff = diff(
-            self.get_data_contract().model_dump(exclude_none=True, by_alias=True),
-            other.get_data_contract().model_dump(exclude_none=True, by_alias=True),
+        changelog = build_changelog(
+            self.get_data_contract(), self.get_data_contract_file(),
+            other.get_data_contract(), other.get_data_contract_file(),
         )
-        changelog = build_changelog(raw_diff, source_label=v1_label, target_label=v2_label)
 
+        v1_label = changelog["source_label"]
+        v2_label = changelog["target_label"]
         result = ChangelogResult(v1=v1_label, v2=v2_label)
         for change in changelog["summary"]["changes"]:
             result.summary.append(ChangelogEntry(

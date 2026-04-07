@@ -12,6 +12,7 @@ import re
 from datetime import datetime, timezone
 
 from deepdiff import DeepDiff
+from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.changelog.normalize import normalize
 
@@ -37,7 +38,23 @@ _CHANGE_TYPE_MAP = {
 }
 
 
-def build_changelog(diff_result: dict, source_label: str = "v1", target_label: str = "v2") -> dict:
+def build_changelog(
+    source: OpenDataContractStandard,
+    source_file: str | None,
+    other: OpenDataContractStandard,
+    other_file: str | None,
+) -> dict:
+    """Produce a JSON-serialisable changelog dict by diffing two ODCS contracts."""
+    source_label = source_file or "v1"
+    target_label = other_file or "v2"
+    diff_result = diff(
+        source.model_dump(exclude_none=True, by_alias=True),
+        other.model_dump(exclude_none=True, by_alias=True),
+    )
+    return _build_changelog_from_diff(diff_result, source_label=source_label, target_label=target_label)
+
+
+def _build_changelog_from_diff(diff_result: dict, source_label: str = "v1", target_label: str = "v2") -> dict:
     """Produce a JSON-serialisable dict with all data needed to render
     the full changelog.
 

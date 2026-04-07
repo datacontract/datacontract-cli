@@ -2,7 +2,7 @@
 test_changelog_engine — Unit tests for changelog.py
 -------------------------------------------------------------------
 Test classes:
-    TestBuildReportDataStructure          — build_changelog() output shape and empty-diff
+    TestBuildReportDataStructure          — _build_changelog_from_diff() output shape and empty-diff
     TestBuildReportDataAdded              — Added change entries (scalar and dict payloads)
     TestBuildReportDataRemoved            — Removed change entries
     TestBuildReportDataChanged            — Changed entries and scalar rollup to parent
@@ -12,6 +12,7 @@ Test classes:
     TestDiff                              — diff(): semantic correctness (added/removed/changed/mid-list)
     TestDiffFixtures                      — diff(): end-to-end using fixtures/changelog/unit/
     TestDiffFixturesPriceDescriptionScalars — diff(): price, description, and top-level scalar fields
+    TestBuildChangelog                    — build_changelog() with OpenDataContractStandard objects
 """
 
 import os
@@ -20,9 +21,9 @@ import tempfile
 import yaml
 from open_data_contract_standard.model import OpenDataContractStandard
 
-from datacontract.changelog.changelog import build_changelog, diff
+from datacontract.changelog.changelog import _build_changelog_from_diff, build_changelog, diff
 
-REPORT = build_changelog
+REPORT = _build_changelog_from_diff
 
 
 def _added(path: str, payload) -> dict:
@@ -52,77 +53,77 @@ def _merge(*diffs: dict) -> dict:
 
 class TestBuildReportDataStructure:
     def test_returns_expected_top_level_keys(self):
-        rd = build_changelog({})
+        rd = _build_changelog_from_diff({})
         assert set(rd.keys()) == {"source_label", "target_label", "header", "summary", "detail"}
 
     def test_header_contains_title_and_subtitle(self):
-        rd = build_changelog({}, source_label="v1.yaml", target_label="v2.yaml")
+        rd = _build_changelog_from_diff({}, source_label="v1.yaml", target_label="v2.yaml")
         assert rd["header"]["title"] == "ODCS Data Contract Changelog"
         assert "v1.yaml" in rd["header"]["subtitle"]
         assert "v2.yaml" in rd["header"]["subtitle"]
 
     def test_source_and_target_labels_stored(self):
-        rd = build_changelog({}, source_label="before.yaml", target_label="after.yaml")
+        rd = _build_changelog_from_diff({}, source_label="before.yaml", target_label="after.yaml")
         assert rd["source_label"] == "before.yaml"
         assert rd["target_label"] == "after.yaml"
 
     def test_empty_diff_produces_zero_counts(self):
-        rd = build_changelog({})
+        rd = _build_changelog_from_diff({})
         assert rd["summary"]["counts"] == {"added": 0, "removed": 0, "updated": 0}
         assert rd["detail"]["counts"] == {"added": 0, "removed": 0, "updated": 0}
 
     def test_empty_diff_produces_empty_changes(self):
-        rd = build_changelog({})
+        rd = _build_changelog_from_diff({})
         assert rd["summary"]["changes"] == []
         assert rd["detail"]["changes"] == []
 
     def test_unknown_deepdiff_keys_ignored(self):
-        rd = build_changelog({"unknown_key": {"root['x']": 1}})
+        rd = _build_changelog_from_diff({"unknown_key": {"root['x']": 1}})
         assert rd["summary"]["changes"] == []
 
 
 class TestBuildReportDataAdded:
     def test_added_scalar_appears_in_detail(self):
-        rd = build_changelog(_added("schema']['orders", "v"))
+        rd = _build_changelog_from_diff(_added("schema']['orders", "v"))
         paths = [c["path"] for c in rd["detail"]["changes"]]
         assert any("orders" in p for p in paths)
 
     def test_added_scalar_change_type(self):
-        rd = build_changelog(_added("schema']['orders", "val"))
+        rd = _build_changelog_from_diff(_added("schema']['orders", "val"))
         match = next(c for c in rd["detail"]["changes"] if "orders" in c["path"])
         assert match["changeType"] == "Added"
 
     def test_added_scalar_has_new_value(self):
-        rd = build_changelog(_added("schema']['orders", "val"))
+        rd = _build_changelog_from_diff(_added("schema']['orders", "val"))
         match = next(c for c in rd["detail"]["changes"] if c["path"] == "schema.orders")
         assert match.get("new_value") == "val"
 
     def test_added_dict_expands_to_leaf_entries(self):
         payload = {"physicalName": "orders_tbl", "description": "Orders"}
-        rd = build_changelog(_added("schema']['orders", payload))
+        rd = _build_changelog_from_diff(_added("schema']['orders", payload))
         paths = [c["path"] for c in rd["detail"]["changes"]]
         assert "schema.orders.physicalName" in paths
         assert "schema.orders.description" in paths
 
     def test_added_dict_parent_entry_included(self):
         payload = {"physicalName": "orders_tbl"}
-        rd = build_changelog(_added("schema']['orders", payload))
+        rd = _build_changelog_from_diff(_added("schema']['orders", payload))
         paths = [c["path"] for c in rd["detail"]["changes"]]
         assert "schema.orders" in paths
 
     def test_added_count_incremented(self):
-        rd = build_changelog(_added("schema']['orders", "v"))
+        rd = _build_changelog_from_diff(_added("schema']['orders", "v"))
         assert rd["detail"]["counts"]["added"] >= 1
 
     def test_added_appears_in_summary(self):
         # Scalar Added rolls up to parent — use a 2-level path so it lands at schema.orders
-        rd = build_changelog(_added("schema']['orders']['physicalName", "v"))
+        rd = _build_changelog_from_diff(_added("schema']['orders']['physicalName", "v"))
         paths = [c["path"] for c in rd["summary"]["changes"]]
         assert any("orders" in p for p in paths)
 
     def test_added_double_quotes_path_parsing(self):
         """Test that double-quoted paths are parsed correctly in both detail and summary"""
-        rd = build_changelog(_added_double_quotes('schema"]["orders"]["physicalName', "v"))
+        rd = _build_changelog_from_diff(_added_double_quotes('schema"]["orders"]["physicalName', "v"))
         detail_paths = [c["path"] for c in rd["detail"]["changes"]]
         assert "schema.orders.physicalName" in detail_paths
         summary_paths = [c["path"] for c in rd["summary"]["changes"]]
@@ -131,29 +132,29 @@ class TestBuildReportDataAdded:
 
 class TestBuildReportDataRemoved:
     def test_removed_scalar_appears_in_detail(self):
-        rd = build_changelog(_removed("schema']['orders", "v"))
+        rd = _build_changelog_from_diff(_removed("schema']['orders", "v"))
         paths = [c["path"] for c in rd["detail"]["changes"]]
         assert any("orders" in p for p in paths)
 
     def test_removed_scalar_has_old_value(self):
-        rd = build_changelog(_removed("schema']['orders", "val"))
+        rd = _build_changelog_from_diff(_removed("schema']['orders", "val"))
         match = next(c for c in rd["detail"]["changes"] if c["path"] == "schema.orders")
         assert match.get("old_value") == "val"
 
     def test_removed_dict_expands_to_leaf_entries(self):
         payload = {"logicalType": "string", "required": True}
-        rd = build_changelog(_removed("schema']['orders']['properties']['amount", payload))
+        rd = _build_changelog_from_diff(_removed("schema']['orders']['properties']['amount", payload))
         paths = [c["path"] for c in rd["detail"]["changes"]]
         assert "schema.orders.properties.amount.logicalType" in paths
 
     def test_removed_count_incremented(self):
-        rd = build_changelog(_removed("schema']['orders", "v"))
+        rd = _build_changelog_from_diff(_removed("schema']['orders", "v"))
         assert rd["detail"]["counts"]["removed"] >= 1
 
 
 class TestBuildReportDataChanged:
     def test_changed_scalar_in_detail(self):
-        rd = build_changelog(
+        rd = _build_changelog_from_diff(
             _changed("schema']['orders']['properties']['order_date']['logicalType", "string", "date")
         )
         match = next((c for c in rd["detail"]["changes"] if "logicalType" in c["path"]), None)
@@ -163,11 +164,11 @@ class TestBuildReportDataChanged:
         assert match["new_value"] == "date"
 
     def test_changed_count_incremented(self):
-        rd = build_changelog(_changed("slaProperties']['availability']['value", "99.9%", "99.5%"))
+        rd = _build_changelog_from_diff(_changed("slaProperties']['availability']['value", "99.9%", "99.5%"))
         assert rd["detail"]["counts"]["updated"] == 1
 
     def test_changed_scalar_rolled_up_to_parent_in_summary(self):
-        rd = build_changelog(
+        rd = _build_changelog_from_diff(
             _changed("schema']['orders']['properties']['order_date']['logicalType", "string", "date")
         )
         summary_paths = [c["path"] for c in rd["summary"]["changes"]]
@@ -181,7 +182,7 @@ class TestBuildReportDataSummaryRollup:
             _changed("schema']['orders']['properties']['order_date']['logicalType", "string", "date"),
             _changed("schema']['orders']['properties']['order_date']['description", "old desc", "new desc"),
         )
-        rd = build_changelog(diff)
+        rd = _build_changelog_from_diff(diff)
         order_date_entries = [c for c in rd["summary"]["changes"] if c["path"] == "schema.orders.properties.order_date"]
         assert len(order_date_entries) == 1
 
@@ -192,7 +193,7 @@ class TestBuildReportDataSummaryRollup:
             _added("schema']['orders']['properties']['order_id']['businessName", "Order ID"),
             _removed("schema']['orders']['properties']['order_id']['description", "Old desc"),
         )
-        rd = build_changelog(diff)
+        rd = _build_changelog_from_diff(diff)
         match = next(c for c in rd["summary"]["changes"] if c["path"] == "schema.orders.properties.order_id")
         assert match["changeType"] == "Updated"
 
@@ -202,7 +203,7 @@ class TestBuildReportDataSummaryRollup:
             _removed("schema']['orders']['properties']['customer_id", {"logicalType": "string"}),
             _changed("slaProperties']['availability']['value", "99.9%", "99.5%"),
         )
-        rd = build_changelog(diff)
+        rd = _build_changelog_from_diff(diff)
         counts = rd["summary"]["counts"]
         changes = rd["summary"]["changes"]
         assert counts["added"] == sum(1 for c in changes if c["changeType"] == "Added")
@@ -214,7 +215,7 @@ class TestBuildReportDataSummaryRollup:
             _added("schema']['customers", {"physicalName": "c"}),
             _changed("slaProperties']['availability']['value", "99.9%", "99.5%"),
         )
-        rd = build_changelog(diff)
+        rd = _build_changelog_from_diff(diff)
         counts = rd["summary"]["counts"]
         changes = rd["summary"]["changes"]
         assert counts["added"] == sum(1 for c in changes if c["changeType"] == "Added")
@@ -225,7 +226,7 @@ class TestBuildReportDataSummaryRollup:
             _added("schema']['orders", "v"),
             _added("schema']['customers", "v"),
         )
-        rd = build_changelog(diff)
+        rd = _build_changelog_from_diff(diff)
         paths = [c["path"] for c in rd["detail"]["changes"]]
         assert paths == sorted(paths)
 
@@ -280,7 +281,7 @@ class TestBuildReportDataTags:
         from datacontract.changelog.changelog import diff
 
         raw = diff(v1, v2)
-        return build_changelog(raw)
+        return _build_changelog_from_diff(raw)
 
     def test_added_tag_path_includes_tag_value(self):
         rd = self._tag_diff(["analytics"], ["analytics", "pii"])
@@ -339,7 +340,7 @@ class TestSummaryRollupScalarLeaves:
     consistent with how scalar Changed fields behave."""
 
     def _rd(self, *diffs):
-        return build_changelog(_merge(*diffs))
+        return _build_changelog_from_diff(_merge(*diffs))
 
     def test_scalar_added_rolls_up_to_parent(self):
         rd = self._rd(_added("schema']['orders']['businessName", "Orders"))
@@ -784,3 +785,45 @@ class TestDiffFixturesPriceDescriptionScalars(TestDiffFixtures):
     def test_top_level_domain_changed(self):
         changed = self._generate().get("values_changed", {})
         assert any("'domain'" in k for k in changed)
+
+
+V1_YAML = "fixtures/changelog/integration/changelog_integration_v1.yaml"
+V2_YAML = "fixtures/changelog/integration/changelog_integration_v2.yaml"
+
+
+class TestBuildChangelog:
+    def _load(self, path: str) -> OpenDataContractStandard:
+        import yaml
+        from open_data_contract_standard.model import OpenDataContractStandard
+        with open(os.path.join(os.path.dirname(__file__), path)) as f:
+            return OpenDataContractStandard.model_validate(yaml.safe_load(f))
+
+    def test_returns_expected_top_level_keys(self):
+        v1 = self._load(V1_YAML)
+        v2 = self._load(V2_YAML)
+        result = build_changelog(v1, V1_YAML, v2, V2_YAML)
+        assert set(result.keys()) == {"source_label", "target_label", "header", "summary", "detail"}
+
+    def test_source_and_target_labels_from_files(self):
+        v1 = self._load(V1_YAML)
+        v2 = self._load(V2_YAML)
+        result = build_changelog(v1, V1_YAML, v2, V2_YAML)
+        assert result["source_label"] == V1_YAML
+        assert result["target_label"] == V2_YAML
+
+    def test_fallback_labels_when_file_is_none(self):
+        v1 = self._load(V1_YAML)
+        result = build_changelog(v1, None, v1, None)
+        assert result["source_label"] == "v1"
+        assert result["target_label"] == "v2"
+
+    def test_no_changes_on_identical_contracts(self):
+        v1 = self._load(V1_YAML)
+        result = build_changelog(v1, V1_YAML, v1, V1_YAML)
+        assert result["detail"]["changes"] == []
+
+    def test_detects_changes_between_versions(self):
+        v1 = self._load(V1_YAML)
+        v2 = self._load(V2_YAML)
+        result = build_changelog(v1, V1_YAML, v2, V2_YAML)
+        assert result["detail"]["counts"]["added"] + result["detail"]["counts"]["removed"] + result["detail"]["counts"]["updated"] > 0
