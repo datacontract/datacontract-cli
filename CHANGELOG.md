@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output
+- Added `changelog` command and API endpoint (#1118)
 
 ### Fixed
 - Avro importer now raises an error for union fields with multiple non-null types, which are not supported by ODCS

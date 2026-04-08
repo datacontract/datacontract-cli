@@ -89,6 +89,10 @@ datacontract export --format html datacontract.yaml --output datacontract.html
 
 # Import from a different format
 datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
+
+# Show a changelog between two data contracts
+datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
+
 ```
 
 ## Project Architecture
@@ -110,6 +114,8 @@ The Data Contract CLI is an open-source command-line tool for working with data 
    - `datacontract/imports/`: Importers from formats like SQL, Avro, JSON Schema, etc.
 
 5. **Linting (`datacontract/lint/`)**: Tools for validating data contract files against schema and best practices.
+
+6. **Changelog (`datacontract/changelog/`)**: Semantic comparison of ODCS data contracts.
 
 ### Extension Pattern
 
