@@ -3,6 +3,8 @@
 <p>
   <a href="https://github.com/datacontract/datacontract-cli/actions/workflows/ci.yaml?query=branch%3Amain">
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/datacontract-cli/ci.yaml?branch=main"></a>
+  <a href="https://pypi.org/project/datacontract-cli/">
+    <img alt="PyPI Version" src="https://img.shields.io/pypi/v/datacontract-cli" /></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
@@ -15,6 +17,7 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
 
+> **Quick navigation:** [Documentation](#documentation) · [Best Practices](#best-practices) · [Custom Export and Import](#customizing-exporters-and-importers) · [Development Setup](#development-setup)
 
 ## Getting started
 
@@ -403,45 +406,18 @@ $ datacontract test --server production datacontract.yaml
 
 For CI/CD pipelines, see [`ci`](#ci).
 
-To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection.
-In addition, credentials, such as username and passwords, may be defined with environment variables.
-
 The application uses different engines, based on the server `type`.
 Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_.
 
-Credentials are provided with environment variables.
+#### Supported Data Sources
 
-Supported server types:
+The `server` block in the datacontract.yaml is used to set up the connection.
+In addition, credentials, such as username and passwords, are provided with environment variables.
 
-- [s3](#S3)
-- [athena](#athena)
-- [bigquery](#bigquery)
-- [azure](#azure)
-- [sqlserver](#sqlserver)
-- [oracle](#oracle)
-- [databricks](#databricks)
-- [databricks (programmatic)](#databricks-programmatic)
-- [dataframe (programmatic)](#dataframe-programmatic)
-- [snowflake](#snowflake)
-- [kafka](#kafka)
-- [postgres](#postgres)
-- [mysql](#mysql)
-- [trino](#trino)
-- [impala](#impala)
-- [api](#api)
-- [local](#local)
+Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for additional types and formats.
 
-Supported formats:
-
-- parquet
-- json
-- csv
-- delta
-- iceberg (coming soon)
-
-Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for an additional type and formats.
-
-#### S3
+<details>
+<summary><strong>S3</strong></summary>
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
@@ -487,8 +463,10 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+</details>
 
-#### Athena
+<details>
+<summary><strong>Athena</strong></summary>
 
 Data Contract CLI can test data in AWS Athena stored in S3.
 Supports different file formats, such as Iceberg, Parquet, JSON, CSV...
@@ -523,8 +501,10 @@ models:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+</details>
 
-#### Google Cloud Storage (GCS)
+<details>
+<summary><strong>Google Cloud Storage (GCS)</strong></summary>
 
 The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
 Use `https://storage.googleapis.com` as the endpoint URL.
@@ -549,8 +529,10 @@ servers:
 | `DATACONTRACT_S3_ACCESS_KEY_ID`     | `GOOG1EZZZ...` | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Key ID |
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...`    | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Secret |
 
+</details>
 
-#### BigQuery
+<details>
+<summary><strong>BigQuery</strong></summary>
 
 We support authentication to BigQuery using Service Account Key or Application Default Credentials (ADC). ADC supports Workload Identity Federation (WIF), GCE metadata server, and `gcloud auth application-default login`. The used Service Account should include the roles:
 * BigQuery Job User
@@ -580,8 +562,10 @@ models:
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
 
+</details>
 
-#### Azure
+<details>
+<summary><strong>Azure</strong></summary>
 
 Data Contract CLI can test data that is stored in Azure Blob storage or Azure Data Lake Storage (Gen2) (ADLS) in various formats.
 
@@ -606,9 +590,10 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 | `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622` | The ApplicationID / ClientID of the app registration |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX`            | The Client Secret value                              |
 
+</details>
 
-
-#### Sqlserver
+<details>
+<summary><strong>SQL Server</strong></summary>
 
 Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric).
 
@@ -646,10 +631,10 @@ models:
 | `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name                                                                                                                  |
 | `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True`                          | Deprecated. Equivalent to `AUTHENTICATION=windows`                                                                                |
 
+</details>
 
-
-
-#### Oracle
+<details>
+<summary><strong>Oracle</strong></summary>
 
 Data Contract CLI can test data in Oracle Database.
 
@@ -695,10 +680,10 @@ installed on the system and specify the path to the installation within the envi
 | `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53`         | Password                                   |
 | `DATACONTRACT_ORACLE_CLIENT_DIR`                 | `C:\oracle\client` | Path to Oracle Instant Client installation |
 
+</details>
 
-
-
-#### Databricks
+<details>
+<summary><strong>Databricks</strong></summary>
 
 Works with Unity Catalog and Hive metastore.
 
@@ -727,8 +712,10 @@ models:
 | `DATACONTRACT_DATABRICKS_HTTP_PATH`       | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster     |
 | `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | The host name of the SQL warehouse or compute cluster |
 
+</details>
 
-#### Databricks (programmatic)
+<details>
+<summary><strong>Databricks (programmatic)</strong></summary>
 
 Works with Unity Catalog and Hive metastore.
 When running in a notebook or pipeline, the provided `spark` session can be used.
@@ -784,7 +771,10 @@ models:
 
 Databricks' library management properly resolves dependencies during cluster initialization, rather than at runtime in the notebook.
 
-#### Dataframe (programmatic)
+</details>
+
+<details>
+<summary><strong>Dataframe (programmatic)</strong></summary>
 
 Works with Spark DataFrames.
 DataFrames need to be created as named temporary views.
@@ -819,8 +809,10 @@ run = data_contract.test()
 assert run.result == "passed"
 ```
 
+</details>
 
-#### Snowflake
+<details>
+<summary><strong>Snowflake</strong></summary>
 
 Data Contract CLI can test data in Snowflake.
 
@@ -870,8 +862,10 @@ servers:
     schema: ORDERS_PII_V2
 ```
 
+</details>
 
-#### Kafka
+<details>
+<summary><strong>Kafka</strong></summary>
 
 Kafka support is currently considered experimental.
 
@@ -895,8 +889,10 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_PASSWORD`  | `xxx`   | The SASL password (secret).                                                      |
 | `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`. Other supported mechanisms: `SCRAM-SHA-256` and `SCRAM-SHA-512` |
 
+</details>
 
-#### Postgres
+<details>
+<summary><strong>Postgres</strong></summary>
 
 Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
 
@@ -926,8 +922,10 @@ models:
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
 
+</details>
 
-#### MySQL
+<details>
+<summary><strong>MySQL</strong></summary>
 
 Data Contract CLI can test data in MySQL or MySQL-compliant databases (e.g., MariaDB).
 
@@ -956,8 +954,10 @@ models:
 | `DATACONTRACT_MYSQL_USERNAME` | `root`             | Username    |
 | `DATACONTRACT_MYSQL_PASSWORD` | `mysecretpassword` | Password    |
 
+</details>
 
-#### Trino
+<details>
+<summary><strong>Trino</strong></summary>
 
 Data Contract CLI can test data in Trino.
 
@@ -991,8 +991,10 @@ models:
 | `DATACONTRACT_TRINO_USERNAME` | `trino`            | Username    |
 | `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
 
+</details>
 
-#### Impala
+<details>
+<summary><strong>Impala</strong></summary>
 
 Data Contract CLI can run Soda checks against an Apache Impala cluster.
 
@@ -1039,7 +1041,10 @@ If `physicalType` is not specified in the schema, we recommend the following map
 
 This keeps the Impala schema compatible with the expectations of the Soda checks generated by datacontract-cli.
 
-#### API
+</details>
+
+<details>
+<summary><strong>API</strong></summary>
 
 Data Contract CLI can test APIs that return data in JSON format. 
 Currently, only GET requests are supported.
@@ -1070,8 +1075,10 @@ models:
 |-----------------------------------------|------------------|---------------------------------------------------|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `Bearer <token>` | The value for the `authorization` header. Optional. |
 
+</details>
 
-#### Local
+<details>
+<summary><strong>Local</strong></summary>
 
 Data Contract CLI can test local files in parquet, json, csv, or delta format.
 
@@ -1094,6 +1101,7 @@ models:
         type: string
 ```
 
+</details>
 
 ### ci
 ```
@@ -2267,11 +2275,20 @@ uv run ruff check
 uv run pytest
 ```
 
+## Contribution
+
+We are happy to receive your contributions. Propose your change in an issue or directly create a
+pull request with your improvements.
+
+Before creating a pull request, please make sure that all tests are passing (`uv run pytest`) and
+your code is properly formatted (`ruff format`). Create a changelog entry and reference fixed
+issues (if any).
+
 ### Troubleshooting
 
 #### Windows: Some tests fail
 
-Run in wsl. (We need to fix the paths in the tests so that normal Windows will work, contributions are appreciated)
+Run in WSL. (We need to fix the paths in the tests so that normal Windows will work, contributions are appreciated)
 
 #### PyCharm does not pick up the `.venv` 
 
@@ -2332,10 +2349,6 @@ This command runs the container momentarily to check the version of the `datacon
 4. Execute `./release`
 5. Wait until GitHub Release is created
 6. Add the release notes to the GitHub Release
-
-## Contribution
-
-We are happy to receive your contributions. Propose your change in an issue or directly create a pull request with your improvements.
 
 ## Companies using this tool
 
