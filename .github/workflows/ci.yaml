@@ -33,8 +33,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install the project
         run: uv sync --all-extras --dev
-      - name: Check formatting
+      - name: Check linting
         run: uv run ruff check
+      - name: Check formatting
+        run: |
+          uv run ruff format --check || (echo "Formatting issues found. Fix with: uv run ruff format ." && exit 1)
       - name: Run tests
         run: uv run pytest -n0
 
