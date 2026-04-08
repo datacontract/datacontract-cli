@@ -13,6 +13,7 @@ from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 
 from datacontract.data_contract import DataContract, ExportFormat
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
 DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.1.0
@@ -396,6 +397,8 @@ async def changelog_endpoint(
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     except pydantic.ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DataContractException as e:
+        raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
     finally:
         os.unlink(v1_path)
         os.unlink(v2_path)
