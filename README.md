@@ -1175,7 +1175,7 @@ The `ci` command wraps [`test`](#test) with CI/CD-specific features:
 - **`--json`**: Print test results as JSON to stdout for machine-readable output
 - **`--fail-on`**: Control the minimum severity that causes a non-zero exit code. Default is `error`; set to `warning` to also fail on warnings, or `never` to always exit 0.
 
-See the [test command](#test) for supported server types and their configuration.
+The [supported server types](#supported-data-sources) and their configuration are equivalent to the `test` command.
 
 ```bash
 # Single contract
