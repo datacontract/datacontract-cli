@@ -5,8 +5,6 @@
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/datacontract-cli/ci.yaml?branch=main"></a>
   <a href="https://pypi.org/project/datacontract-cli/">
     <img alt="PyPI Version" src="https://img.shields.io/pypi/v/datacontract-cli" /></a>
-  <a href="https://github.com/datacontract/datacontract-cli/blob/main/LICENSE">
-    <img alt="License" src="https://img.shields.io/pypi/l/datacontract-cli" /></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
@@ -408,15 +406,15 @@ $ datacontract test --server production datacontract.yaml
 
 For CI/CD pipelines, see [`ci`](#ci).
 
-To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection.
-In addition, credentials, such as username and passwords, may be defined with environment variables.
-
 The application uses different engines, based on the server `type`.
 Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_.
 
-Credentials are provided with environment variables.
+#### Supported Data Sources
 
-Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for an additional type and formats.
+The `server` block in the datacontract.yaml is used to set up the connection.
+In addition, credentials, such as username and passwords, are provided with environment variables.
+
+Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for additional types and formats.
 
 <details>
 <summary><strong>S3</strong></summary>
