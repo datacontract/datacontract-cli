@@ -106,6 +106,17 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
         )
     elif field.type.type == "union":
         # Union types indicate optional fields (null + type)
+        non_null_types = [s for s in field.type.schemas if s.type != "null"]
+        if len(non_null_types) > 1:
+            non_null_type_names = [s.type for s in non_null_types]
+            raise DataContractException(
+                type="schema",
+                name="Map avro type to data contract type",
+                reason=f"Field '{field.name}' has a union type with multiple non-null types "
+                f"{non_null_type_names}, which is not supported by ODCS. "
+                f"Only unions with a single non-null type (optional fields) are supported.",
+                engine="datacontract",
+            )
         enum_schema = get_enum_from_union_field(field)
         if enum_schema:
             prop = create_property(

@@ -122,6 +122,9 @@ $ datacontract init odcs.yaml
 # lint the odcs.yaml
 $ datacontract lint odcs.yaml
 
+# show a changelog between two data contracts
+$ datacontract changelog v1.odcs.yaml v2.odcs.yaml
+
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
 
@@ -244,6 +247,7 @@ A list of available extras:
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |
+| MySQL Integration       | `pip install datacontract-cli[mysql]`      |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
 | S3 Integration          | `pip install datacontract-cli[s3]`         |
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
@@ -264,7 +268,9 @@ Commands
 
 - [init](#init)
 - [lint](#lint)
+- [changelog](#changelog)
 - [test](#test)
+- [ci](#ci)
 - [export](#export)
 - [import](#import)
 - [catalog](#catalog)
@@ -321,10 +327,32 @@ Commands
 
 ```
 
+### changelog
+```
+                                                                                                    
+ Usage: datacontract changelog [OPTIONS] V1 V2                                                      
+                                                                                                    
+ Show a changelog between two data contracts.                                                       
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    v1      TEXT  The location (path) of the source (before) data contract YAML. [required]     │
+│ *    v2      TEXT  The location (path) of the target (after) data contract YAML. [required]      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --debug     --no-debug                 Enable debug logging                                      │
+│ --help                                 Show this message and exit.                               │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+```
+
+```bash
+$ datacontract changelog v1.odcs.yaml v2.odcs.yaml
+```
+
 ### test
 ```
                                                                                                     
- Usage: datacontract test [OPTIONS] [LOCATION]                                                      
+ Usage: datacontract test [OPTIONS] [LOCATION]
                                                                                                     
  Run schema and quality tests on configured servers.                                                
                                                                                                     
@@ -377,6 +405,8 @@ Data Contract CLI connects to a data source and runs schema and quality tests to
 ```bash
 $ datacontract test --server production datacontract.yaml
 ```
+
+For CI/CD pipelines, see [`ci`](#ci).
 
 To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection.
 In addition, credentials, such as username and passwords, may be defined with environment variables.
@@ -897,6 +927,38 @@ models:
 </details>
 
 <details>
+<summary><strong>MySQL</strong></summary>
+
+Data Contract CLI can test data in MySQL or MySQL-compliant databases (e.g., MariaDB).
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  mysql:
+    type: mysql
+    host: localhost
+    port: 3306
+    database: mydb
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+##### Environment Variables
+
+| Environment Variable          | Example            | Description |
+|-------------------------------|--------------------|-------------|
+| `DATACONTRACT_MYSQL_USERNAME` | `root`             | Username    |
+| `DATACONTRACT_MYSQL_PASSWORD` | `mysecretpassword` | Password    |
+
+</details>
+
+<details>
 <summary><strong>Trino</strong></summary>
 
 Data Contract CLI can test data in Trino.
@@ -1042,6 +1104,148 @@ models:
 ```
 
 </details>
+
+### ci
+```
+                                                                                
+ Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                
+                                                                                
+ Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step       
+ summary.                                                                       
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   locations      [LOCATIONS]...  The location(s) (url or path) of the data   │
+│                                  contract yaml file(s).                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --schema                                   TEXT          The location (url   │
+│                                                          or path) of the     │
+│                                                          ODCS JSON Schema    │
+│ --server                                   TEXT          The server          │
+│                                                          configuration to    │
+│                                                          run the schema and  │
+│                                                          quality tests. Use  │
+│                                                          the key of the      │
+│                                                          server object in    │
+│                                                          the data contract   │
+│                                                          yaml file to refer  │
+│                                                          to a server, e.g.,  │
+│                                                          `production`, or    │
+│                                                          `all` for all       │
+│                                                          servers (default).  │
+│                                                          [default: all]      │
+│ --publish                                  TEXT          The url to publish  │
+│                                                          the results after   │
+│                                                          the test.           │
+│ --output                                   PATH          Specify the file    │
+│                                                          path where the test │
+│                                                          results should be   │
+│                                                          written to (e.g.,   │
+│                                                          './test-results/TE… │
+│ --output-format                            [json|junit]  The target format   │
+│                                                          for the test        │
+│                                                          results.            │
+│ --logs                --no-logs                          Print logs          │
+│                                                          [default: no-logs]  │
+│ --json                --no-json                          Print test results  │
+│                                                          as JSON to stdout.  │
+│                                                          [default: no-json]  │
+│ --fail-on                                  TEXT          Minimum severity    │
+│                                                          that causes a       │
+│                                                          non-zero exit code: │
+│                                                          'warning', 'error', │
+│                                                          or 'never'.         │
+│                                                          [default: error]    │
+│ --ssl-verification    --no-ssl-verific…                  SSL verification    │
+│                                                          when publishing the │
+│                                                          data contract.      │
+│                                                          [default:           │
+│                                                          ssl-verification]   │
+│ --debug               --no-debug                         Enable debug        │
+│                                                          logging             │
+│ --help                                                   Show this message   │
+│                                                          and exit.           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+```
+
+The `ci` command wraps [`test`](#test) with CI/CD-specific features:
+
+- **Multiple contracts**: `datacontract ci contracts/*.yaml`
+- **CI annotations:** Inline annotations for failed checks (GitHub Actions and Azure DevOps)
+- **Markdown summary** of the test results (GitHub Actions)
+- **`--json`**: Print test results as JSON to stdout for machine-readable output
+- **`--fail-on`**: Control the minimum severity that causes a non-zero exit code. Default is `error`; set to `warning` to also fail on warnings, or `never` to always exit 0.
+
+See the [test command](#test) for supported server types and their configuration.
+
+```bash
+# Single contract
+$ datacontract ci datacontract.yaml
+
+# Multiple contracts
+$ datacontract ci contracts/*.yaml
+
+# Fail on warnings too
+$ datacontract ci --fail-on warning datacontract.yaml
+
+# JSON output for scripting
+$ datacontract ci --json datacontract.yaml
+```
+
+<details>
+<summary>GitHub Actions workflow example</summary>
+
+```yaml
+# .github/workflows/datacontract.yml
+name: Data Contract CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  datacontract-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install datacontract-cli
+      # Test one or more data contracts (supports globs, e.g. contracts/*.yaml)
+      - run: datacontract ci datacontract.yaml
+```
+
+</details>
+
+<details>
+<summary>Azure DevOps pipeline example</summary>
+
+```yaml
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.11"
+  - script: pip install datacontract-cli
+    displayName: "Install datacontract-cli"
+  # Test one or more data contracts (supports globs, e.g. contracts/*.yaml)
+  - script: datacontract ci datacontract.yaml
+    displayName: "Run data contract tests"
+```
+
+</details>
+
 
 ### export
 ```
@@ -1858,10 +2062,11 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract lint
    ```
 
-4. Set up a CI pipeline that executes daily for continuous quality checks. You can also report the
-   test results to tools like [Data Mesh Manager](https://datamesh-manager.com)
+4. Set up a CI pipeline that executes daily for continuous quality checks. Use the [`ci`](#ci) command for
+   CI-optimized output (GitHub Actions annotations and step summary, Azure DevOps annotations).
+   You can also report the test results to tools like [Data Mesh Manager](https://datamesh-manager.com).
    ```bash
-   $ datacontract test --publish https://api.datamesh-manager.com/api/test-results
+   $ datacontract ci --publish https://api.datamesh-manager.com/api/test-results
    ```
 
 ### Contract-First
