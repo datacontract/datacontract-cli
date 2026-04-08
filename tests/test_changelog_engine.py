@@ -418,6 +418,7 @@ class TestSummaryRollupScalarLeaves:
         assert "schema.orders.businessName" in detail_paths
         assert "schema.orders.description" in detail_paths
 
+
 # ---------------------------------------------------------------------------
 # Helpers for diff() tests
 # ---------------------------------------------------------------------------
@@ -442,6 +443,8 @@ def _write_yaml(data: dict, path: str) -> None:
 
 def _contract(**kwargs) -> dict:
     return {**MINIMAL_CONTRACT, **kwargs}
+
+
 class TestDiff:
     def _base(self) -> dict:
         return _contract(
@@ -746,7 +749,6 @@ class TestDiffFixtures:
         assert any("carol" in k for k in added)
 
 
-
 class TestDiffFixturesPriceDescriptionScalars(TestDiffFixtures):
     """Extends the end-to-end fixture tests to cover price, description, and
     top-level scalar fields that were previously absent from the unit fixtures."""
@@ -795,6 +797,7 @@ class TestBuildChangelog:
     def _load(self, path: str) -> OpenDataContractStandard:
         import yaml
         from open_data_contract_standard.model import OpenDataContractStandard
+
         with open(os.path.join(os.path.dirname(__file__), path)) as f:
             return OpenDataContractStandard.model_validate(yaml.safe_load(f))
 
@@ -826,4 +829,9 @@ class TestBuildChangelog:
         v1 = self._load(V1_YAML)
         v2 = self._load(V2_YAML)
         result = build_changelog(v1, V1_YAML, v2, V2_YAML)
-        assert result["detail"]["counts"]["added"] + result["detail"]["counts"]["removed"] + result["detail"]["counts"]["updated"] > 0
+        assert (
+            result["detail"]["counts"]["added"]
+            + result["detail"]["counts"]["removed"]
+            + result["detail"]["counts"]["updated"]
+            > 0
+        )

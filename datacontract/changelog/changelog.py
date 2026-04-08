@@ -28,6 +28,7 @@ def diff(v1: dict, v2: dict) -> dict:
     result = DeepDiff(n1, n2, ignore_order=True, verbose_level=2)
     return json.loads(result.to_json())
 
+
 _CHANGE_TYPE_MAP = {
     "dictionary_item_added": "Added",
     "dictionary_item_removed": "Removed",
@@ -148,9 +149,7 @@ def _build_changelog_from_diff(diff_result: dict, source_label: str = "v1", targ
                 and not isinstance(payload.get("old_value"), dict)
                 and not isinstance(payload.get("new_value"), dict)
             )
-            is_scalar_leaf = (
-                change_type in ("Added", "Removed") and not isinstance(payload, dict) and not is_iterable
-            )
+            is_scalar_leaf = change_type in ("Added", "Removed") and not isinstance(payload, dict) and not is_iterable
             if is_iterable and isinstance(payload, str):
                 display_segs = tuple(segs)
             elif (is_scalar_change or is_scalar_leaf) and len(segs) > 1:

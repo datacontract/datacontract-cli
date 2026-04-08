@@ -27,4 +27,3 @@ class ChangelogResult(BaseModel):
 
     def pretty(self) -> str:
         return self.model_dump_json(indent=2)
-

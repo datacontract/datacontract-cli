@@ -9,5 +9,7 @@ def test_get_data_contract_file_returns_path():
 
 
 def test_get_data_contract_file_returns_none_when_not_set():
-    dc = DataContract(data_contract_str="dataContractSpecification: 1.1.0\nid: test\ninfo:\n  title: t\n  version: 1.0.0\n")
+    dc = DataContract(
+        data_contract_str="dataContractSpecification: 1.1.0\nid: test\ninfo:\n  title: t\n  version: 1.0.0\n"
+    )
     assert dc.get_data_contract_file() is None

@@ -24,11 +24,14 @@ def test_changelog_help():
 
 
 def test_changelog_with_changes():
-    result = runner.invoke(app, [
-        "changelog",
-        "fixtures/changelog/integration/changelog_integration_v1.yaml",
-        "fixtures/changelog/integration/changelog_integration_v2.yaml",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "fixtures/changelog/integration/changelog_integration_v1.yaml",
+            "fixtures/changelog/integration/changelog_integration_v2.yaml",
+        ],
+    )
     assert result.exit_code == 0
     assert "Summary" in result.output
     assert "Details" in result.output

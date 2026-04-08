@@ -13,7 +13,6 @@ Test classes:
     TestGeneratePriceDescriptionScalars — end-to-end normalize via diff() for price/desc fields
 """
 
-
 import yaml
 
 from datacontract.changelog.changelog import diff
@@ -1053,5 +1052,3 @@ class TestNormalizeQualityNested:
             ]
         )
         assert diff(v1, v2) == {}
-
-

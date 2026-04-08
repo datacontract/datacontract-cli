@@ -55,6 +55,7 @@ description.authoritativeDefinitions[]   AuthoritativeDefinition -> .url
 description.customProperties[]           CustomProperty -> .property
 """
 
+
 def _normalize_by(items: list[dict], key_field: str) -> dict:
     """Key a list of dicts by a named field, omitting the key field from the value.
 
