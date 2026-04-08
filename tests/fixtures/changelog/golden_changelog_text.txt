@@ -1,5 +1,5 @@
 Summary
-[ 2 Added ]  [ 4 Updated ]  [ 1 Removed ]
+[ 2 Added ]  [ 5 Updated ]  [ 1 Removed ]
 ╭─────────┬───────────────────────────────────────╮
 │ Change  │ Field                                 │
 ├─────────┼───────────────────────────────────────┤
@@ -10,6 +10,7 @@ Summary
 │ Added   │ schema.orders.properties.region       │
 │ Updated │ schema.orders.properties.total_amount │
 │ Updated │ slaProperties.availability            │
+│ Updated │ version                               │
 ╰─────────┴───────────────────────────────────────╯
 
 Details
@@ -59,4 +60,5 @@ Details
 │ Added   │ schema.orders.properties.region.required                 │                                │ False                         │
 │ Updated │ schema.orders.properties.total_amount.required           │ False                          │ True                          │
 │ Updated │ slaProperties.availability.value                         │ 99.9%                          │ 99.5%                         │
+│ Updated │ version                                                  │ 1.0.0                          │ 2.0.0                         │
 ╰─────────┴──────────────────────────────────────────────────────────┴────────────────────────────────┴───────────────────────────────╯
