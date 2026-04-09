@@ -421,7 +421,7 @@ In addition, credentials, such as username and passwords, are provided with envi
 
 Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for additional types and formats.
 
-<details>
+<details markdown="1">
 <summary><strong>S3</strong></summary>
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
@@ -470,7 +470,7 @@ servers:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Athena</strong></summary>
 
 Data Contract CLI can test data in AWS Athena stored in S3.
@@ -508,7 +508,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Google Cloud Storage (GCS)</strong></summary>
 
 The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
@@ -536,7 +536,7 @@ servers:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>BigQuery</strong></summary>
 
 We support authentication to BigQuery using Service Account Key or Application Default Credentials (ADC). ADC supports Workload Identity Federation (WIF), GCE metadata server, and `gcloud auth application-default login`. The used Service Account should include the roles:
@@ -569,7 +569,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Azure</strong></summary>
 
 Data Contract CLI can test data that is stored in Azure Blob storage or Azure Data Lake Storage (Gen2) (ADLS) in various formats.
@@ -597,7 +597,7 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>SQL Server</strong></summary>
 
 Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric).
@@ -638,7 +638,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Oracle</strong></summary>
 
 Data Contract CLI can test data in Oracle Database.
@@ -687,7 +687,7 @@ installed on the system and specify the path to the installation within the envi
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Databricks</strong></summary>
 
 Works with Unity Catalog and Hive metastore.
@@ -719,7 +719,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Databricks (programmatic)</strong></summary>
 
 Works with Unity Catalog and Hive metastore.
@@ -778,7 +778,7 @@ Databricks' library management properly resolves dependencies during cluster ini
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Dataframe (programmatic)</strong></summary>
 
 Works with Spark DataFrames.
@@ -816,7 +816,7 @@ assert run.result == "passed"
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Snowflake</strong></summary>
 
 Data Contract CLI can test data in Snowflake.
@@ -869,7 +869,7 @@ servers:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Kafka</strong></summary>
 
 Kafka support is currently considered experimental.
@@ -896,7 +896,7 @@ servers:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Postgres</strong></summary>
 
 Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
@@ -929,7 +929,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>MySQL</strong></summary>
 
 Data Contract CLI can test data in MySQL or MySQL-compliant databases (e.g., MariaDB).
@@ -961,7 +961,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Trino</strong></summary>
 
 Data Contract CLI can test data in Trino.
@@ -998,7 +998,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Impala</strong></summary>
 
 Data Contract CLI can run Soda checks against an Apache Impala cluster.
@@ -1048,7 +1048,7 @@ This keeps the Impala schema compatible with the expectations of the Soda checks
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>API</strong></summary>
 
 Data Contract CLI can test APIs that return data in JSON format. 
@@ -1082,7 +1082,7 @@ models:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><strong>Local</strong></summary>
 
 Data Contract CLI can test local files in parquet, json, csv, or delta format.
@@ -1196,7 +1196,7 @@ $ datacontract ci --fail-on warning datacontract.yaml
 $ datacontract ci --json datacontract.yaml
 ```
 
-<details>
+<details markdown="1">
 <summary>GitHub Actions workflow example</summary>
 
 ```yaml
@@ -1223,7 +1223,7 @@ jobs:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary>Azure DevOps pipeline example</summary>
 
 ```yaml
