@@ -1,0 +1,33 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-contract-001
+status: active
+version: 1.0.0
+schema:
+  - name: orders
+    physicalName: orders_tbl
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        description: Unique order ID and a rather lenghty description that should be wrapped in the table
+      - name: customer_id
+        logicalType: string
+        required: true
+      - name: order_date
+        logicalType: string
+        required: true
+      - name: total_amount
+        logicalType: number
+        required: false
+servers:
+  - server: production
+    type: snowflake
+    account: example-account
+    database: PROD_DB
+    schema: PUBLIC
+slaProperties:
+  - property: availability
+    value: "99.9%"
+  - property: latency
+    value: "500ms"

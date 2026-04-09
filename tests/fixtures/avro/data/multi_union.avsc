@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "TestRecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "multi_type_field",
+      "type": ["null", "string", "int"]
+    }
+  ]
+}

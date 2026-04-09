@@ -23,3 +23,25 @@ def test_test_schema_name_option_in_help():
     result = runner.invoke(app, ["test", "--help"], env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "--schema-name" in result.stdout
+    
+    
+def test_changelog_help():
+    result = runner.invoke(app, ["changelog", "--help"])
+    assert result.exit_code == 0
+
+
+def test_changelog_with_changes():
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "fixtures/changelog/integration/changelog_integration_v1.yaml",
+            "fixtures/changelog/integration/changelog_integration_v2.yaml",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Summary" in result.output
+    assert "Details" in result.output
+    assert "Removed" in result.output
+    assert "Updated" in result.output
+    assert "Added" in result.output
