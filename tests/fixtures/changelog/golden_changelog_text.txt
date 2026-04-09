@@ -1,0 +1,64 @@
+Summary
+[ 2 Added ]  [ 5 Updated ]  [ 1 Removed ]
+╭─────────┬───────────────────────────────────────╮
+│ Change  │ Field                                 │
+├─────────┼───────────────────────────────────────┤
+│ Added   │ schema.customers                      │
+│ Removed │ schema.orders.properties.customer_id  │
+│ Updated │ schema.orders.properties.order_date   │
+│ Updated │ schema.orders.properties.order_id     │
+│ Added   │ schema.orders.properties.region       │
+│ Updated │ schema.orders.properties.total_amount │
+│ Updated │ slaProperties.availability            │
+│ Updated │ version                               │
+╰─────────┴───────────────────────────────────────╯
+
+Details
+╭─────────┬──────────────────────────────────────────────────────────┬────────────────────────────────┬───────────────────────────────╮
+│ Change  │ Path                                                     │ Old Value                      │ New Value                     │
+├─────────┼──────────────────────────────────────────────────────────┼────────────────────────────────┼───────────────────────────────┤
+│ Added   │ schema.customers                                         │                                │                               │
+│ Added   │ schema.customers.physicalName                            │                                │ customers_tbl                 │
+│ Added   │ schema.customers.properties                              │                                │                               │
+│ Added   │ schema.customers.properties.country                      │                                │                               │
+│ Added   │ schema.customers.properties.country.logicalType          │                                │ string                        │
+│ Added   │ schema.customers.properties.country.partitionKeyPosition │                                │ 1                             │
+│ Added   │ schema.customers.properties.country.partitioned          │                                │ True                          │
+│ Added   │ schema.customers.properties.country.required             │                                │ False                         │
+│ Added   │ schema.customers.properties.created_at                   │                                │                               │
+│ Added   │ schema.customers.properties.created_at.description       │                                │ Record creation timestamp     │
+│ Added   │ schema.customers.properties.created_at.logicalType       │                                │ timestamp                     │
+│ Added   │ schema.customers.properties.created_at.required          │                                │ True                          │
+│ Added   │ schema.customers.properties.customer_id                  │                                │                               │
+│ Added   │ schema.customers.properties.customer_id.description      │                                │ Unique order ID               │
+│ Added   │ schema.customers.properties.customer_id.logicalType      │                                │ string                        │
+│ Added   │ schema.customers.properties.customer_id.primaryKey       │                                │ True                          │
+│ Added   │ schema.customers.properties.customer_id.required         │                                │ True                          │
+│ Added   │ schema.customers.properties.date_of_birth                │                                │                               │
+│ Added   │ schema.customers.properties.date_of_birth.classification │                                │ restricted                    │
+│ Added   │ schema.customers.properties.date_of_birth.logicalType    │                                │ date                          │
+│ Added   │ schema.customers.properties.date_of_birth.required       │                                │ False                         │
+│ Added   │ schema.customers.properties.email                        │                                │                               │
+│ Added   │ schema.customers.properties.email.classification         │                                │ confidential                  │
+│ Added   │ schema.customers.properties.email.encryptedName          │                                │ email_encrypt                 │
+│ Added   │ schema.customers.properties.email.logicalType            │                                │ string                        │
+│ Added   │ schema.customers.properties.email.required               │                                │ True                          │
+│ Added   │ schema.customers.properties.full_name                    │                                │                               │
+│ Added   │ schema.customers.properties.full_name.businessName       │                                │ Customer Full Name            │
+│ Added   │ schema.customers.properties.full_name.logicalType        │                                │ string                        │
+│ Added   │ schema.customers.properties.full_name.required           │                                │ True                          │
+│ Removed │ schema.orders.properties.customer_id                     │                                │                               │
+│ Removed │ schema.orders.properties.customer_id.logicalType         │ string                         │                               │
+│ Removed │ schema.orders.properties.customer_id.required            │ True                           │                               │
+│ Updated │ schema.orders.properties.order_date.logicalType          │ string                         │ date                          │
+│ Updated │ schema.orders.properties.order_id.description            │ Unique order ID and a rather   │ Unique order ID and another   │
+│         │                                                          │ lenghty description that       │ rather lenghty description    │
+│         │                                                          │ should be wrapped in the table │ that should be wrapped in the │
+│         │                                                          │                                │ table                         │
+│ Added   │ schema.orders.properties.region                          │                                │                               │
+│ Added   │ schema.orders.properties.region.logicalType              │                                │ string                        │
+│ Added   │ schema.orders.properties.region.required                 │                                │ False                         │
+│ Updated │ schema.orders.properties.total_amount.required           │ False                          │ True                          │
+│ Updated │ slaProperties.availability.value                         │ 99.9%                          │ 99.5%                         │
+│ Updated │ version                                                  │ 1.0.0                          │ 2.0.0                         │
+╰─────────┴──────────────────────────────────────────────────────────┴────────────────────────────────┴───────────────────────────────╯
