@@ -61,7 +61,6 @@ databricks = [
   "databricks-sql-connector>=3.7.0,<4.3.0",
   "databricks-sdk<0.103.0",
   "pyspark>=3.5.0,<5.0.0",
-  "numpy>=1.26.4,<2.0.0",  # pyspark incompatible with numpy 2.0
 ]
 
 iceberg = [
@@ -72,7 +71,6 @@ kafka = [
   "datacontract-cli[avro]",
   "soda-core-spark-df>=3.3.20,<3.6.0",
   "pyspark>=3.5.0,<5.0.0",
-  "numpy>=1.26.4,<2.0.0",  # pyspark incompatible with numpy 2.0
 ]
 
 mysql = [
