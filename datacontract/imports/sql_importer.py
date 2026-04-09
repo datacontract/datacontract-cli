@@ -45,7 +45,11 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     if server_type is not None:
         odcs.servers = [create_server(name=server_type, server_type=server_type)]
 
-    tables = parsed.find_all(sqlglot.expressions.Table)
+    tables = [
+        t
+        for t in parsed.find_all(sqlglot.expressions.Table)
+        if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
+    ]
 
     for table in tables:
         table_name = table.this.name
