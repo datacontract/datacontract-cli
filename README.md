@@ -117,7 +117,7 @@ $ datacontract export --format html --output orders-v1.odcs.html https://datacon
 # create a new data contract from example and write it to odcs.yaml
 $ datacontract init odcs.yaml
 
-# lint the odcs.yaml
+# lint the odcs.yaml and stop after the first validation error (default).
 $ datacontract lint odcs.yaml
 
 # show a changelog between two data contracts
@@ -299,29 +299,34 @@ Commands
 
 ### lint
 ```
-                                                                                                    
- Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
-                                                                                                    
- Validate that the datacontract.yaml is correctly formatted.                                        
-                                                                                                    
-                                                                                                    
-╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
-│                             [default: datacontract.yaml]                                         │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --schema                         TEXT     The location (url or path) of the ODCS JSON Schema     │
-│                                           [default: None]                                        │
-│ --output                         PATH     Specify the file path where the test results should be │
-│                                           written to (e.g.,                                      │
-│                                           './test-results/TEST-datacontract.xml'). If no path is │
-│                                           provided, the output will be printed to stdout.        │
-│                                           [default: None]                                        │
-│ --output-format                  [junit]  The target format for the test results.                │
-│                                           [default: None]                                        │
-│ --debug            --no-debug             Enable debug logging [default: no-debug]               │
-│ --help                                    Show this message and exit.                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+ Usage: datacontract lint [OPTIONS] [LOCATION]                                  
+                                                                                
+ Validate that the datacontract.yaml is correctly formatted.                    
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract  │
+│                             yaml.                                            │
+│                             [default: datacontract.yaml]                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --schema                         TEXT          The location (url or path) of │
+│                                                the ODCS JSON Schema          │
+│ --output                         PATH          Specify the file path where   │
+│                                                the test results should be    │
+│                                                written to (e.g.,             │
+│                                                './test-results/TEST-datacon… │
+│                                                If no path is provided, the   │
+│                                                output will be printed to     │
+│                                                stdout.                       │
+│ --output-format                  [json|junit]  The target format for the     │
+│                                                test results.                 │
+│ --all-errors                                   Report all JSON Schema        │
+│                                                validation errors instead of  │
+│                                                stopping after the first one. │
+│ --debug            --no-debug                  Enable debug logging          │
+│ --help                                         Show this message and exit.   │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
