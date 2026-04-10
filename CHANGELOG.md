@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output
 - Added `changelog` command and API endpoint (#1118)
 - Added opt-in `--all-errors` mode for `datacontract lint` to report all JSON Schema validation errors, with matching `all_errors` support in the Python library and API
+- Added `--schema-name` option to custom model export (#978)
 
 ### Fixed
 - Avro importer now raises an error for union fields with multiple non-null types, which are not supported by ODCS
