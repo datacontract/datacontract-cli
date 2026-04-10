@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output
+- Added `changelog` command and API endpoint (#1118)
+- Added opt-in `--all-errors` mode for `datacontract lint` to report all JSON Schema validation errors, with matching `all_errors` support in the Python library and API
+
+### Fixed
+- Avro importer now raises an error for union fields with multiple non-null types, which are not supported by ODCS
+- Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
+- Preserve parametrized physicalTypes for SQL export (#1086)
+- Fix incorrect SQL type mappings: SQL Server `double`/`jsonb`, MySQL bare `varchar`, missing Trino types (#1110)
+- Fix markdown export breaking table structure when extra field values contain pipe characters (#832)
+
+## [0.11.7] - 2026-03-24
+
+### Fixed
+- Escape single quotes in string values for SodaCL checks (#1090)
+- Escape BigQuery field and model names with backticks for SodaCL checks (#736)
+- Escape Databricks model names with backticks for SodaCL checks
+- Fixed catalog export SpecView not having a tags property for the index.html template (#1059)
+- Fix SQL importer type mappings: binary types, datetime/time, uuid now map to correct ODCS logicalType and format (#790)
+
+### Added
+- Added support for MySQL for data contract tests (#1101)
+- Support additional PyArrow types in Parquet importer (#1091)
+- Populate `logicalTypeOptions.format` for SQL import from binary and uuid types (#790)
+- Snowflake DDL import with tags, descriptions, and template variable handling (#790)
+
 ## [0.11.6] - 2026-03-17
 
 ### Fixed

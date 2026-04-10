@@ -5,6 +5,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Iterable, List, Optional
 
+import click
 import typer
 from click import Context
 from rich.console import Console
@@ -20,8 +21,10 @@ from datacontract.integration.entropy_data import (
 )
 from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
 from datacontract.model.exceptions import DataContractException
+from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
+from datacontract.output.text_changelog_results import write_text_changelog_results
 
 console = Console()
 
@@ -62,7 +65,7 @@ def common(
 
     It uses data contract YAML files to lint the data contract,
     connect to data sources and execute schema and quality tests,
-    detect breaking changes, and export to different formats.
+    and export to different formats.
     """
     pass
 
@@ -107,6 +110,13 @@ def lint(
         ),
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    all_errors: Annotated[
+        bool,
+        typer.Option(
+            "--all-errors",
+            help="Report all JSON Schema validation errors instead of stopping after the first one.",
+        ),
+    ] = False,
     debug: debug_option = None,
 ):
     """
@@ -114,7 +124,7 @@ def lint(
     """
     enable_debug_logging(debug)
 
-    run = DataContract(data_contract_file=location, schema_location=schema).lint()
+    run = DataContract(data_contract_file=location, schema_location=schema, all_errors=all_errors).lint()
     write_test_result(run, console, output_format, output)
 
 
@@ -123,6 +133,18 @@ def enable_debug_logging(debug: bool):
         logging.basicConfig(
             level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
         )
+
+
+@app.command(name="changelog")
+def changelog(
+    v1: Annotated[str, typer.Argument(help="The location (path) of the source (before) data contract YAML.")],
+    v2: Annotated[str, typer.Argument(help="The location (path) of the target (after) data contract YAML.")],
+    debug: debug_option = None,
+):
+    """Show a changelog between two data contracts."""
+    enable_debug_logging(debug)
+    result = DataContract(data_contract_file=v1).changelog(DataContract(data_contract_file=v2))
+    write_text_changelog_results(result, console)
 
 
 @app.command(name="test")
@@ -185,6 +207,102 @@ def test(
     except Exception:
         data_contract = None
     write_test_result(run, console, output_format, output, data_contract)
+
+
+@app.command(name="ci")
+def ci(
+    locations: Annotated[
+        Optional[list[str]],
+        typer.Argument(help="The location(s) (url or path) of the data contract yaml file(s)."),
+    ] = None,
+    schema: Annotated[
+        str,
+        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    server: Annotated[
+        str,
+        typer.Option(
+            help="The server configuration to run the schema and quality tests. "
+            "Use the key of the server object in the data contract yaml file "
+            "to refer to a server, e.g., `production`, or `all` for all "
+            "servers (default)."
+        ),
+    ] = "all",
+    publish: Annotated[str, typer.Option(help="The url to publish the results after the test.")] = None,
+    output: Annotated[
+        Path,
+        typer.Option(
+            help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
+        ),
+    ] = None,
+    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    logs: Annotated[bool, typer.Option(help="Print logs")] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
+    fail_on: Annotated[
+        str,
+        typer.Option(
+            click_type=click.Choice(["warning", "error", "never"], case_sensitive=False),
+            help="Minimum severity that causes a non-zero exit code.",
+        ),
+    ] = "error",
+    ssl_verification: Annotated[
+        bool,
+        typer.Option(help="SSL verification when publishing the data contract."),
+    ] = True,
+    debug: debug_option = None,
+):
+    """
+    Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
+    """
+    enable_debug_logging(debug)
+
+    if not locations:
+        locations = ["datacontract.yaml"]
+
+    if output and len(locations) > 1:
+        console.print("Error: --output cannot be used with multiple contracts (results would overwrite each other).")
+        raise typer.Exit(code=1)
+
+    if server == "all":
+        server = None
+
+    # Plain text output for CI logs; --json sends human output to stderr.
+    out = Console(stderr=True, no_color=True) if json_output else Console(no_color=True)
+
+    results = []
+    fail_results = {
+        "warning": {"warning", "failed", "error"},
+        "error": {"failed", "error"},
+        "never": set(),
+    }
+    should_fail = False
+
+    for location in locations:
+        out.print(f"Testing {location}")
+        run = DataContract(
+            data_contract_file=location,
+            schema_location=schema,
+            publish_url=publish,
+            server=server,
+            ssl_verification=ssl_verification,
+        ).test()
+        if logs:
+            _print_logs(run, out)
+        results.append((location, run))
+        write_ci_output(run, location, json_mode=json_output)
+        try:
+            write_test_result(run, out, output_format, output)
+        except typer.Exit:
+            pass
+        if run.result in fail_results[fail_on]:
+            should_fail = True
+
+    write_ci_summary(results)
+    if json_output:
+        write_json_results(results)
+
+    if should_fail:
+        raise typer.Exit(code=1)
 
 
 @app.command(name="export")
@@ -508,10 +626,12 @@ def api(
     uvicorn.run(**uvicorn_args)
 
 
-def _print_logs(run):
-    console.print("\nLogs:")
+def _print_logs(run, out=None):
+    if out is None:
+        out = console
+    out.print("\nLogs:")
     for log in run.logs:
-        console.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
+        out.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
 
 
 if __name__ == "__main__":

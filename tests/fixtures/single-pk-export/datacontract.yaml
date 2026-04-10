@@ -1,0 +1,30 @@
+version: 0.0.1
+kind: DataContract
+apiVersion: v3.1.0
+id: single-pk-test
+name: Single Primary Key Test
+status: draft
+servers:
+- server: production
+  type: postgres
+  database: test
+  host: localhost
+  port: 5432
+  schema: public
+schema:
+- name: users
+  physicalType: table
+  properties:
+  - name: user_id
+    physicalType: integer
+    primaryKey: true
+    logicalType: integer
+    required: true
+  - name: username
+    physicalType: text
+    logicalType: string
+    required: true
+  - name: email
+    physicalType: text
+    logicalType: string
+

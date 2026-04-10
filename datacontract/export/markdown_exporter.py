@@ -366,11 +366,20 @@ def extra_to_markdown(obj: BaseModel, is_in_table_cell: bool = False) -> str:
 
         if isinstance(value_extra, list) and len(value_extra):
             if isinstance(value_extra[0], dict):
-                parts.append(array_of_dict_to_markdown(value_extra))
+                raw = array_of_dict_to_markdown(value_extra)
+                if is_in_table_cell:
+                    raw = raw.replace("|", "&#124;").replace("\n", "<br />")
+                parts.append(raw)
             elif isinstance(value_extra[0], str):
-                parts.append(array_to_markdown(value_extra))
+                raw = array_to_markdown(value_extra)
+                if is_in_table_cell:
+                    raw = raw.replace("|", "&#124;").replace("\n", "<br />")
+                parts.append(raw)
         elif isinstance(value_extra, dict):
-            parts.append(dict_to_markdown(value_extra))
+            raw = dict_to_markdown(value_extra)
+            if is_in_table_cell:
+                raw = raw.replace("|", "&#124;").replace("\n", "<br />")
+            parts.append(raw)
         else:
             parts.append(f"{str(value_extra)}{value_line_ending}")
 

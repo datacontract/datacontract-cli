@@ -115,6 +115,8 @@ def _determine_sql_server_type(
             return "snowflake"
         elif "postgres" in server_types:
             return "postgres"
+        elif "mysql" in server_types:
+            return "mysql"
         elif "databricks" in server_types:
             return "databricks"
         else:
