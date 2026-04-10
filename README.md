@@ -1561,6 +1561,7 @@ datacontract export --format custom --template template.txt datacontract.yaml
 
 You can directly use the Data Contract Specification as template variables.
 
+{% raw %}
 ```shell
 $ cat template.txt
 title: {{ data_contract.info.title }}
@@ -1572,6 +1573,7 @@ models:
 $ datacontract export --format custom --template template.txt datacontract.yaml
 title: Orders Latest
 ```
+{% endraw %}
 
 ##### Example Jinja Templates for a customized dbt model
 
@@ -1584,6 +1586,7 @@ It adds jinja variable passed to your template.file:
 Below is an example of a dbt staging layer that converts a field of `type: timestamp` to a `DATETIME` type with time zone conversion.
 
 - `template.sql`
+  {% raw %}
   ```sql
   SELECT
   {%- for field in schema.properties %}
@@ -1595,11 +1598,13 @@ Below is an example of a dbt staging layer that converts a field of `type: times
   {%- endfor %}
   FROM {{ "{{" }} ref('{{ schema_name }}') {{ "}}" }}
   ```
+  {% endraw %}
 - export command
   ```shell
   datacontract export datacontract.odcs.yaml --format custom --template template.sql --schema-name orders
   ```
 - `output.sql`
+  {% raw %}
   ```sql
   SELECT
     order_id AS order_id,
@@ -1610,6 +1615,7 @@ Below is an example of a dbt staging layer that converts a field of `type: times
     DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
   FROM {{ ref('orders') }}
   ```
+  {% endraw %}
 
 #### ODCS Excel Template
 
