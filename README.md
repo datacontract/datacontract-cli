@@ -1557,67 +1557,59 @@ The export function converts the data contract specification into the custom for
 datacontract export --format custom --template template.txt datacontract.yaml
 ```
 
-##### Jinja variables
+##### Jinja templates & variables
 
 You can directly use the Data Contract Specification as template variables.
 
 ```shell
 $ cat template.txt
 title: {{ data_contract.info.title }}
+models:
+{%- for model_name, model in data_contract.models.items() %}
+  - name: {{ model.name }}
+{%- endfor %}
 
 $ datacontract export --format custom --template template.txt datacontract.yaml
 title: Orders Latest
 ```
 
-##### Example Jinja Templates
+##### Example Jinja Templates for a customized dbt model
 
-###### Customized dbt model
+You can export a given dbt model containing any logic by adding the `schema-name` filter/parameter (in ODCS, "schemas" are the equivalent of "models" in dbt).
 
-You can export the dbt models containing any logic.
+It adds jinja variable passed to your template.file:
+- `schema_name`: str
+- `schema`: SchemaObject from ODCS
 
 Below is an example of a dbt staging layer that converts a field of `type: timestamp` to a `DATETIME` type with time zone conversion.
 
-template.sql
-
-{% raw %}
-```sql
-{%- for model_name, model in data_contract.models.items() %}
-{#- Export only the first model #}
-{%- if loop.first -%}
-SELECT
-{%- for field_name, field in model.fields.items() %}
-  {%- if field.type == "timestamp" %}
-  DATETIME({{ field_name }}, "Asia/Tokyo") AS {{ field_name }},
-  {%- else %}
-  {{ field_name }} AS {{ field_name }},
-  {%- endif %}
-{%- endfor %}
-FROM
-  {{ "{{" }} ref('{{ model_name }}') {{ "}}" }} 
-{%- endif %}
-{%- endfor %}
-```
-{% endraw %}
-
-command
-
-```shell
-datacontract export --format custom --template template.sql --output output.sql datacontract.yaml
-```
-
-output.sql
-
-```sql
-SELECT
-  order_id AS order_id,
-  DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
-  order_total AS order_total,
-  customer_id AS customer_id,
-  customer_email_address AS customer_email_address,
-  DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
-FROM
-  {{ ref('orders') }}
-```
+- `template.sql`
+  ```sql
+  SELECT
+  {%- for field in schema.properties %}
+    {%- if field.physicalType == "timestamp" %}
+    DATETIME({{ field.name }}, "Asia/Tokyo") AS {{ field.name }},
+    {%- else %}
+    {{ field.name }} AS {{ field.name }},
+    {%- endif %}
+  {%- endfor %}
+  FROM {{ "{{" }} ref('{{ schema_name }}') {{ "}}" }}
+  ```
+- export command
+  ```shell
+  datacontract export datacontract.odcs.yaml --format custom --template template.sql --schema-name orders
+  ```
+- `output.sql`
+  ```sql
+  SELECT
+    order_id AS order_id,
+    DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
+    order_total AS order_total,
+    customer_id AS customer_id,
+    customer_email_address AS customer_email_address,
+    DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
+  FROM {{ ref('orders') }}
+  ```
 
 #### ODCS Excel Template
 
