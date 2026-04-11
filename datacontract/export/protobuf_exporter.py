@@ -150,25 +150,11 @@ def _get_type_name(prop: SchemaProperty) -> str:
             return _snake_to_upper_camel(prop.items.name)
         
         # Otherwise generate from field name
-        return _get_singular_type_name(prop.name)
+        return _snake_to_upper_camel(prop.name)
     
     return _snake_to_upper_camel(prop.name)
 
-
-def _get_singular_type_name(field_name: str) -> str:
-    """
-    Convert field name to singular type name in UpperCamelCase.
     
-    Example: "fsa_rooms" -> "FsaRoom"
-    """
-    # First convert to UpperCamelCase
-    field_name_upper = _snake_to_upper_camel(field_name)
-    
-    # Then make singular (remove trailing 's')
-    if field_name_upper.endswith('s'):
-        return field_name_upper[:-1]  # Remove 's' for plural forms
-    return field_name_upper
-
 
 def _should_create_nested_message(prop: SchemaProperty) -> bool:
     """
