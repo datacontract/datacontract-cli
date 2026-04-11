@@ -346,9 +346,12 @@ def _get_field_declaration(prop: SchemaProperty) -> str:
     Returns field declaration with optional keyword if needed.
     """
     field_type = _get_field_type(prop)  # includes "repeated" if needed
-    
-    # Add 'optional' for non-required fields that are not arrays
-    if (hasattr(prop, 'required') and prop.required is False and
-        not (prop.logicalType and prop.logicalType.lower() == "array")):
+
+    logical_type = (prop.logicalType or "").lower()
+    is_array = logical_type == "array"
+    is_message_type = logical_type in ["object", "record", "struct"]
+
+    # Add 'optional' only for non-required, non-array, non-message fields (scalars/enums)
+    if hasattr(prop, "required") and prop.required is False and not is_array and not is_message_type:
         return f"optional {field_type}"
     return field_type
