@@ -146,8 +146,8 @@ def _get_type_name(prop: SchemaProperty) -> str:
         
         # If explicit name is provided in items.name
         if hasattr(prop.items, 'name') and prop.items.name:
-            # Use as-is (might already be in UpperCamelCase)
-            return prop.items.name
+            # Normalize items.name the same way as message declarations
+            return _snake_to_upper_camel(prop.items.name)
         
         # Otherwise generate from field name
         return _get_singular_type_name(prop.name)
