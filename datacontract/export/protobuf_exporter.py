@@ -5,6 +5,9 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 from datacontract.export.exporter import Exporter
 
 
+OBJECT_TYPES: set = {"object", "record", "struct"}
+
+
 class ProtoBufExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         """Exports data contract to Protobuf format."""
@@ -136,13 +139,13 @@ def _get_type_name(prop: SchemaProperty) -> str:
         return _get_enum_name(prop)
     
     # For regular objects
-    if prop.logicalType and prop.logicalType.lower() in ["object", "record", "struct"]:
+    if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return _snake_to_upper_camel(prop.name)
     
     # For objects inside arrays
     if (prop.logicalType and prop.logicalType.lower() == "array" and 
         prop.items and prop.items.logicalType and 
-        prop.items.logicalType.lower() in ["object", "record", "struct"]):
+        prop.items.logicalType.lower() in OBJECT_TYPES):
         
         # If explicit name is provided in items.name
         if hasattr(prop.items, 'name') and prop.items.name:
@@ -167,13 +170,13 @@ def _should_create_nested_message(prop: SchemaProperty) -> bool:
     lower_type = prop.logicalType.lower()
     
     # Regular object
-    if lower_type in ["object", "record", "struct"]:
+    if lower_type in OBJECT_TYPES:
         return True
     
     # Array of objects
     if lower_type == "array" and prop.items:
         items_lower_type = prop.items.logicalType.lower() if prop.items.logicalType else ""
-        return items_lower_type in ["object", "record", "struct"]
+        return items_lower_type in OBJECT_TYPES
     
     return False
 
@@ -183,12 +186,12 @@ def _get_nested_properties(prop: SchemaProperty) -> Optional[List[SchemaProperty
     Get properties for nested message.
     Returns None if no nested properties.
     """
-    if prop.logicalType and prop.logicalType.lower() in ["object", "record", "struct"]:
+    if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.properties or []
     
     if (prop.logicalType and prop.logicalType.lower() == "array" and 
         prop.items and prop.items.logicalType and 
-        prop.items.logicalType.lower() in ["object", "record", "struct"]):
+        prop.items.logicalType.lower() in OBJECT_TYPES):
         return prop.items.properties or []
     
     return None
@@ -198,12 +201,12 @@ def _get_nested_description(prop: SchemaProperty) -> str:
     """
     Get description for nested message.
     """
-    if prop.logicalType and prop.logicalType.lower() in ["object", "record", "struct"]:
+    if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.description or ""
     
     if (prop.logicalType and prop.logicalType.lower() == "array" and 
         prop.items and prop.items.logicalType and 
-        prop.items.logicalType.lower() in ["object", "record", "struct"]):
+        prop.items.logicalType.lower() in OBJECT_TYPES):
         return prop.items.description or ""
     
     return ""
@@ -256,7 +259,7 @@ def _get_field_type(prop: SchemaProperty) -> str:
             items_lower_type = items_type.lower()
             
             # If array contains objects
-            if items_lower_type in ["object", "record", "struct"]:
+            if items_lower_type in OBJECT_TYPES:
                 type_name = _get_type_name(prop)  # e.g., FsaRoom
                 return f"repeated {type_name}"
             else:
@@ -267,7 +270,7 @@ def _get_field_type(prop: SchemaProperty) -> str:
             return "repeated string"  # Default array type
     
     # Handle regular objects
-    if lower_type in ["object", "record", "struct"]:
+    if lower_type in OBJECT_TYPES:
         type_name = _get_type_name(prop)  # e.g., SimpleObj
         return type_name
     
@@ -334,7 +337,7 @@ def _get_field_declaration(prop: SchemaProperty) -> str:
 
     logical_type = (prop.logicalType or "").lower()
     is_array = logical_type == "array"
-    is_message_type = logical_type in ["object", "record", "struct"]
+    is_message_type = logical_type in OBJECT_TYPES
 
     # Add 'optional' only for non-required, non-array, non-message fields (scalars/enums)
     if hasattr(prop, "required") and prop.required is False and not is_array and not is_message_type:
