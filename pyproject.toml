@@ -23,7 +23,7 @@ dependencies = [
   "jsonschema>=4.23.0,<5.0.0",
   "pytz>=2024.1",
   "python-multipart>=0.0.20,<1.0.0",
-  "rich>=13.7,<15.0",
+  "rich>=13.7,<16.0",
   "sqlglot>=26.6.0,<31.0.0",
   # remove setuptools when https://github.com/sodadata/soda-core/issues/2091 is resolved
   "setuptools>=60",
