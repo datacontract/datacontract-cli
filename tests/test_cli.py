@@ -1,3 +1,5 @@
+import re
+
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -22,9 +24,10 @@ def test_test_schema_name_option_in_help():
     """Test that --schema-name option is available in test command help."""
     result = runner.invoke(app, ["test", "--help"], env={"COLUMNS": "200"})
     assert result.exit_code == 0
-    assert "--schema-name" in result.stdout
-    
-    
+    plain_output = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    assert "--schema-name" in plain_output
+
+
 def test_changelog_help():
     result = runner.invoke(app, ["changelog", "--help"])
     assert result.exit_code == 0
