@@ -9,7 +9,7 @@ runner = CliRunner()
 def test_checks_schema_only():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract.yaml",
-        check_categories=["schema"],
+        check_categories={"schema"},
     )
     run = data_contract.test()
     print(run.pretty())
@@ -21,7 +21,7 @@ def test_checks_schema_only():
 def test_checks_quality_only_no_quality_checks_defined():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract.yaml",
-        check_categories=["quality"],
+        check_categories={"quality"},
     )
     run = data_contract.test()
     print(run.pretty())
@@ -36,7 +36,7 @@ def test_checks_all_categories_same_as_default():
 
     run_explicit = DataContract(
         data_contract_file="fixtures/parquet/datacontract.yaml",
-        check_categories=["schema", "quality", "servicelevel", "custom"],
+        check_categories={"schema", "quality", "servicelevel", "custom"},
     ).test()
 
     assert len(run_all.checks) == len(run_explicit.checks)

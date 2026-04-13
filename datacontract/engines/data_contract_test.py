@@ -72,8 +72,7 @@ def execute_data_contract_test(
     if server.format == "json" and server.type != "kafka":
         if check_categories is None or "schema" in check_categories:
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
-    if check_categories is None or any(c in check_categories for c in ("schema", "quality", "servicelevel", "custom")):
-        check_soda_execute(run, data_contract, server, spark, duckdb_connection, schema_name=schema_name)
+    check_soda_execute(run, data_contract, server, spark, duckdb_connection, schema_name=schema_name)
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:
