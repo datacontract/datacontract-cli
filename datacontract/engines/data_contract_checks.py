@@ -75,11 +75,13 @@ def _get_schema_custom_property_value(schema: SchemaObject, key: str) -> Optiona
     return None
 
 
-def create_checks(data_contract: OpenDataContractStandard, server: Server) -> List[Check]:
+def create_checks(data_contract: OpenDataContractStandard, server: Server, schema_name: str = "all") -> List[Check]:
     checks: List[Check] = []
     if data_contract.schema_ is None:
         return checks
     for schema_obj in data_contract.schema_:
+        if schema_name != "all" and schema_obj.name != schema_name:
+            continue
         schema_checks = to_schema_checks(schema_obj, server)
         checks.extend(schema_checks)
     checks.extend(to_servicelevel_checks(data_contract))

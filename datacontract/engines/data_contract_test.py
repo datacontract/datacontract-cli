@@ -27,6 +27,7 @@ def execute_data_contract_test(
     server_name: str = None,
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
+    schema_name: str = "all",
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -46,16 +47,27 @@ def execute_data_contract_test(
     run.outputPortId = None  # ODCS doesn't have outputPortId
     run.server = server_name
 
+    if schema_name != "all":
+        schema_names = {s.name for s in data_contract.schema_} if data_contract.schema_ else set()
+        if schema_name not in schema_names:
+            raise DataContractException(
+                type="lint",
+                name="Check that schema name exists",
+                result=ResultEnum.failed,
+                reason=f"Schema '{schema_name}' not found in data contract. Available schemas: {sorted(schema_names)}",
+                engine="datacontract",
+            )
+
     if server.type == "api":
         server = process_api_response(run, server)
 
-    run.checks.extend(create_checks(data_contract, server))
+    run.checks.extend(create_checks(data_contract, server, schema_name=schema_name))
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
-        check_jsonschema(run, data_contract, server)
-    check_soda_execute(run, data_contract, server, spark, duckdb_connection)
+        check_jsonschema(run, data_contract, server, schema_name=schema_name)
+    check_soda_execute(run, data_contract, server, spark, duckdb_connection, schema_name=schema_name)
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:

@@ -166,6 +166,10 @@ def test(
             "servers (default)."
         ),
     ] = "all",
+    schema_name: Annotated[
+        str,
+        typer.Option(help="The name of the schema to test, e.g., `orders`, or `all` for all schemas (default)."),
+    ] = "all",
     publish_test_results: Annotated[
         bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
     ] = False,
@@ -198,6 +202,7 @@ def test(
         publish_test_results=publish_test_results,
         publish_url=publish,
         server=server,
+        schema_name=schema_name,
         ssl_verification=ssl_verification,
     ).test()
     if logs:

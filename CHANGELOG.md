@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079 @kelsoufi-sanofi)
+
 ### Fixed
 - Fix Protobuf export for arrays of objects and improve message/enum naming to UpperCamelCase (#1012 @Schokuroff)
 
