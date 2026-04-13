@@ -181,6 +181,14 @@ def test(
         ),
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    checks: Annotated[
+        str,
+        typer.Option(
+            help="Comma-separated list of check categories to run. "
+            "Available categories: schema, quality, servicelevel, custom. "
+            "Omit to enable all."
+        ),
+    ] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
         bool,
@@ -193,6 +201,20 @@ def test(
     """
     enable_debug_logging(debug)
 
+    valid_categories = {"schema", "quality", "servicelevel", "custom"}
+    check_categories = None
+    if checks is not None:
+        check_categories = {c.strip() for c in checks.split(",") if c.strip()}
+        if not check_categories:
+            console.print("[red]Empty --checks specified.[/red]")
+            console.print(f"Available categories: {', '.join(sorted(valid_categories))}")
+            raise typer.Exit(code=1)
+        invalid = check_categories - valid_categories
+        if invalid:
+            console.print(f"[red]Invalid --checks specified: {', '.join(sorted(invalid))}[/red]")
+            console.print(f"Available categories: {', '.join(sorted(valid_categories))}")
+            raise typer.Exit(code=1)
+
     console.print(f"Testing {location}")
     if server == "all":
         server = None
@@ -204,6 +226,7 @@ def test(
         server=server,
         schema_name=schema_name,
         ssl_verification=ssl_verification,
+        check_categories=check_categories,
     ).test()
     if logs:
         _print_logs(run)
