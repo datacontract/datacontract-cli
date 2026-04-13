@@ -413,7 +413,9 @@ def import_(
     ] = None,
     dialect: Annotated[
         Optional[str],
-        typer.Option(help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."),
+        typer.Option(
+            help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."
+        ),
     ] = None,
     glue_table: Annotated[
         Optional[List[str]],
