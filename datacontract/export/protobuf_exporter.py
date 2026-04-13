@@ -4,7 +4,6 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.export.exporter import Exporter
 
-
 OBJECT_TYPES: set = {"object", "record", "struct"}
 
 
