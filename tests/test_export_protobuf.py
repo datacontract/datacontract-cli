@@ -95,7 +95,7 @@ enum Category {
 
 // Details of Product.
 message Product {
-message User {
+  message User {
     string id = 1;
   }
 

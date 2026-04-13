@@ -121,12 +121,12 @@ def _snake_to_upper_camel(name: str) -> str:
         return name
 
     # If already UpperCamelCase (first letter uppercase, no underscores after first word)
-    if name and name[0].isupper() and '_' not in name:
+    if name and name[0].isupper() and "_" not in name:
         return name
 
-    parts = name.split('_')
+    parts = name.split("_")
     # Capitalize each part while preserving internal capitalization
-    return ''.join(part[0].upper() + part[1:] if part else '' for part in parts)
+    return "".join(part[0].upper() + part[1:] if part else "" for part in parts)
 
 
 def _get_type_name(prop: SchemaProperty) -> str:
@@ -143,12 +143,15 @@ def _get_type_name(prop: SchemaProperty) -> str:
         return _snake_to_upper_camel(prop.name)
 
     # For objects inside arrays
-    if (prop.logicalType and prop.logicalType.lower() == "array" and
-        prop.items and prop.items.logicalType and
-        prop.items.logicalType.lower() in OBJECT_TYPES):
-
+    if (
+        prop.logicalType
+        and prop.logicalType.lower() == "array"
+        and prop.items
+        and prop.items.logicalType
+        and prop.items.logicalType.lower() in OBJECT_TYPES
+    ):
         # If explicit name is provided in items.name
-        if hasattr(prop.items, 'name') and prop.items.name:
+        if hasattr(prop.items, "name") and prop.items.name:
             # Normalize items.name the same way as message declarations
             return _snake_to_upper_camel(prop.items.name)
 
@@ -156,7 +159,6 @@ def _get_type_name(prop: SchemaProperty) -> str:
         return _snake_to_upper_camel(prop.name)
 
     return _snake_to_upper_camel(prop.name)
-
 
 
 def _should_create_nested_message(prop: SchemaProperty) -> bool:
@@ -189,9 +191,13 @@ def _get_nested_properties(prop: SchemaProperty) -> Optional[List[SchemaProperty
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.properties or []
 
-    if (prop.logicalType and prop.logicalType.lower() == "array" and
-        prop.items and prop.items.logicalType and
-        prop.items.logicalType.lower() in OBJECT_TYPES):
+    if (
+        prop.logicalType
+        and prop.logicalType.lower() == "array"
+        and prop.items
+        and prop.items.logicalType
+        and prop.items.logicalType.lower() in OBJECT_TYPES
+    ):
         return prop.items.properties or []
 
     return None
@@ -204,9 +210,13 @@ def _get_nested_description(prop: SchemaProperty) -> str:
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.description or ""
 
-    if (prop.logicalType and prop.logicalType.lower() == "array" and
-        prop.items and prop.items.logicalType and
-        prop.items.logicalType.lower() in OBJECT_TYPES):
+    if (
+        prop.logicalType
+        and prop.logicalType.lower() == "array"
+        and prop.items
+        and prop.items.logicalType
+        and prop.items.logicalType.lower() in OBJECT_TYPES
+    ):
         return prop.items.description or ""
 
     return ""
@@ -282,7 +292,9 @@ def _get_field_type(prop: SchemaProperty) -> str:
     return _get_primitive_type(prop)
 
 
-def to_protobuf_message(model_name: str, properties: List[SchemaProperty], description: str, indent_level: int = 0) -> str:
+def to_protobuf_message(
+    model_name: str, properties: List[SchemaProperty], description: str, indent_level: int = 0
+) -> str:
     """
     Generates a Protobuf message definition from the model's fields.
     Handles nested messages for complex types recursively.
@@ -293,7 +305,7 @@ def to_protobuf_message(model_name: str, properties: List[SchemaProperty], descr
 
     # Message name always in UpperCamelCase
     message_name = _snake_to_upper_camel(model_name)
-    result += f"message {message_name} {{\n"
+    result += f"{indent(indent_level)}message {message_name} {{\n"
 
     # Phase 1: Create all nested messages
     for prop in properties:
