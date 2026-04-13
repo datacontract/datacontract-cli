@@ -26,6 +26,7 @@ def get_duckdb_connection(
     server: Server,
     run: Run,
     duckdb_connection: "duckdb.DuckDBPyConnection | None" = None,
+    schema_name: str = "all",
 ) -> "duckdb.DuckDBPyConnection":
     duckdb = _import_duckdb()
     if duckdb_connection is None:
@@ -49,6 +50,8 @@ def get_duckdb_connection(
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
             model_name = schema_obj.name
+            if schema_name != "all" and model_name != schema_name:
+                continue
             model_path = path
             if "{model}" in model_path:
                 model_path = model_path.format(model=model_name)
