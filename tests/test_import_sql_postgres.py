@@ -14,13 +14,7 @@ def test_cli():
     runner = CliRunner()
     result = runner.invoke(
         app,
-        [
-            "import",
-            "--format",
-            "sql",
-            "--source",
-            sql_file_path,
-        ],
+        ["import", "--format", "sql", "--source", sql_file_path, "--dialect", "postgres"],
     )
     assert result.exit_code == 0
 
@@ -56,7 +50,7 @@ schema:
         physicalType: INT
         required: true
       - name: field_three
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMPTZ
     """
     print("Result", result.to_yaml())
@@ -93,7 +87,7 @@ schema:
         physicalType: VARCHAR(30)
         required: true
       - name: create_date
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
         required: true
       - name: changed_by
@@ -102,7 +96,7 @@ schema:
           maxLength: 30
         physicalType: VARCHAR(30)
       - name: change_date
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
       - name: name
         logicalType: string

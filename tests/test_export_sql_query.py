@@ -27,7 +27,9 @@ from my_table
 
 
 def test_to_sql_query_snowflake():
-    actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export("sql-query", schema_name="orders")
+    actual = DataContract(data_contract_file="fixtures/snowflake/datacontract.yaml").export(
+        "sql-query", schema_name="orders"
+    )
     expected = """
 -- Data Contract: urn:datacontract:checkout:snowflake_orders_pii_v2
 -- SQL Dialect: snowflake
@@ -39,5 +41,21 @@ select
     CUSTOMER_EMAIL_ADDRESS,
     PROCESSING_TIMESTAMP
 from orders
+"""
+    assert actual.strip() == expected.strip()
+
+
+def test_to_sql_query_physical_name():
+    actual = DataContract(data_contract_file="fixtures/postgres-export-physical-name/datacontract.yaml").export(
+        "sql-query"
+    )
+    expected = """
+-- Data Contract: postgres-physical-name
+-- SQL Dialect: postgres
+select
+    FIELD_ONE,
+    FIELD_TWO,
+    field_three
+from my_table
 """
     assert actual.strip() == expected.strip()

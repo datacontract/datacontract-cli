@@ -1,0 +1,6 @@
+[allowlist]
+  description = "Documentation example/placeholder values"
+  paths = [
+    "README.md",
+    "API.md"
+  ]

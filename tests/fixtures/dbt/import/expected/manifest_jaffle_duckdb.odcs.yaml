@@ -80,7 +80,7 @@ schema:
     logicalType: number
     required: true
 - name: stg_customers
-  physicalType: table
+  physicalType: view
   logicalType: object
   physicalName: stg_customers
   properties:
@@ -98,7 +98,7 @@ schema:
     physicalType: varchar
     logicalType: string
 - name: stg_orders
-  physicalType: table
+  physicalType: view
   logicalType: object
   physicalName: stg_orders
   properties:
@@ -119,7 +119,7 @@ schema:
     physicalType: varchar
     logicalType: string
 - name: stg_payments
-  physicalType: table
+  physicalType: view
   logicalType: object
   physicalName: stg_payments
   properties:

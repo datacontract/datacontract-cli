@@ -74,7 +74,7 @@ def to_protobuf(data_contract: OpenDataContractStandard) -> str:
         else:
             header += f"  // Warning: Enum values for {enum_name} are not a dictionary\n"
         header += "}\n\n"
-    
+
     return header + messages
 
 
@@ -111,7 +111,7 @@ def _snake_to_upper_camel(name: str) -> str:
     """
     Convert snake_case to UpperCamelCase.
     Preserves existing capitalization in parts.
-    
+
     Examples:
       "fsa_room" -> "FsaRoom"
       "FsaRegister" -> "FsaRegister" (already in UpperCamelCase)
@@ -119,11 +119,11 @@ def _snake_to_upper_camel(name: str) -> str:
     """
     if not name:
         return name
-    
+
     # If already UpperCamelCase (first letter uppercase, no underscores after first word)
     if name and name[0].isupper() and '_' not in name:
         return name
-    
+
     parts = name.split('_')
     # Capitalize each part while preserving internal capitalization
     return ''.join(part[0].upper() + part[1:] if part else '' for part in parts)
@@ -137,27 +137,27 @@ def _get_type_name(prop: SchemaProperty) -> str:
     # For enums
     if _is_enum_field(prop):
         return _get_enum_name(prop)
-    
+
     # For regular objects
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return _snake_to_upper_camel(prop.name)
-    
+
     # For objects inside arrays
-    if (prop.logicalType and prop.logicalType.lower() == "array" and 
-        prop.items and prop.items.logicalType and 
+    if (prop.logicalType and prop.logicalType.lower() == "array" and
+        prop.items and prop.items.logicalType and
         prop.items.logicalType.lower() in OBJECT_TYPES):
-        
+
         # If explicit name is provided in items.name
         if hasattr(prop.items, 'name') and prop.items.name:
             # Normalize items.name the same way as message declarations
             return _snake_to_upper_camel(prop.items.name)
-        
+
         # Otherwise generate from field name
         return _snake_to_upper_camel(prop.name)
-    
+
     return _snake_to_upper_camel(prop.name)
 
-    
+
 
 def _should_create_nested_message(prop: SchemaProperty) -> bool:
     """
@@ -166,18 +166,18 @@ def _should_create_nested_message(prop: SchemaProperty) -> bool:
     """
     if not prop.logicalType:
         return False
-    
+
     lower_type = prop.logicalType.lower()
-    
+
     # Regular object
     if lower_type in OBJECT_TYPES:
         return True
-    
+
     # Array of objects
     if lower_type == "array" and prop.items:
         items_lower_type = prop.items.logicalType.lower() if prop.items.logicalType else ""
         return items_lower_type in OBJECT_TYPES
-    
+
     return False
 
 
@@ -188,12 +188,12 @@ def _get_nested_properties(prop: SchemaProperty) -> Optional[List[SchemaProperty
     """
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.properties or []
-    
-    if (prop.logicalType and prop.logicalType.lower() == "array" and 
-        prop.items and prop.items.logicalType and 
+
+    if (prop.logicalType and prop.logicalType.lower() == "array" and
+        prop.items and prop.items.logicalType and
         prop.items.logicalType.lower() in OBJECT_TYPES):
         return prop.items.properties or []
-    
+
     return None
 
 
@@ -203,12 +203,12 @@ def _get_nested_description(prop: SchemaProperty) -> str:
     """
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.description or ""
-    
-    if (prop.logicalType and prop.logicalType.lower() == "array" and 
-        prop.items and prop.items.logicalType and 
+
+    if (prop.logicalType and prop.logicalType.lower() == "array" and
+        prop.items and prop.items.logicalType and
         prop.items.logicalType.lower() in OBJECT_TYPES):
         return prop.items.description or ""
-    
+
     return ""
 
 
@@ -236,11 +236,11 @@ def _get_primitive_type(prop: SchemaProperty) -> str:
         return "bool"
     if lower_type in ["bytes"]:
         return "bytes"
-    
+
     # Recursive handling for arrays of primitives
     if lower_type == "array" and prop.items:
         return _get_primitive_type(prop.items)
-    
+
     return "string"  # Fallback for unrecognized types
 
 
@@ -251,13 +251,13 @@ def _get_field_type(prop: SchemaProperty) -> str:
     """
     field_type = prop.logicalType or ""
     lower_type = field_type.lower()
-    
+
     # Handle arrays
     if lower_type == "array":
         if prop.items:
             items_type = prop.items.logicalType or ""
             items_lower_type = items_type.lower()
-            
+
             # If array contains objects
             if items_lower_type in OBJECT_TYPES:
                 type_name = _get_type_name(prop)  # e.g., FsaRoom
@@ -268,16 +268,16 @@ def _get_field_type(prop: SchemaProperty) -> str:
                 return f"repeated {primitive_type}"
         else:
             return "repeated string"  # Default array type
-    
+
     # Handle regular objects
     if lower_type in OBJECT_TYPES:
         type_name = _get_type_name(prop)  # e.g., SimpleObj
         return type_name
-    
+
     # Handle enums
     if _is_enum_field(prop):
         return _get_enum_name(prop)
-    
+
     # Handle primitive types
     return _get_primitive_type(prop)
 
@@ -294,29 +294,29 @@ def to_protobuf_message(model_name: str, properties: List[SchemaProperty], descr
     # Message name always in UpperCamelCase
     message_name = _snake_to_upper_camel(model_name)
     result += f"message {message_name} {{\n"
-    
+
     # Phase 1: Create all nested messages
     for prop in properties:
         if _should_create_nested_message(prop):
             type_name = _get_type_name(prop)  # UpperCamelCase
             nested_props = _get_nested_properties(prop)
             nested_desc = _get_nested_description(prop)
-            
+
             if nested_props is not None:
                 nested_message = to_protobuf_message(type_name, nested_props, nested_desc, indent_level + 1)
                 result += nested_message + "\n"
-    
+
     # Phase 2: Create all fields
     number = 1
     for prop in properties:
         field_name = prop.name  # snake_case (preserve as in YAML)
         field_decl = _get_field_declaration(prop)
         field_desc = prop.description or ""
-        
+
         result += f"{indent(indent_level + 1)}"
         if field_desc:
             result += f"// {field_desc}\n{indent(indent_level + 1)}"
-        
+
         result += f"{field_decl} {field_name} = {number};\n"
         number += 1
 

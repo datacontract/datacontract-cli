@@ -1,0 +1,6 @@
+apiVersion: "v3.0.2"
+kind: "DataContract"
+id: "invalid_odcs_multiple"
+name: "This is invalid ODCS, because status and version are missing"
+# version: "1.0.0"
+# status: "draft"

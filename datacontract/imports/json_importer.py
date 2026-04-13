@@ -15,9 +15,7 @@ from datacontract.imports.odcs_helper import (
 
 
 class JsonImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_json(source)
 
 

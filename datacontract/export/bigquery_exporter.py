@@ -1,11 +1,10 @@
 import json
-import logging
 from typing import Dict, List
 
 from open_data_contract_standard.model import SchemaObject, SchemaProperty, Server
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
-from datacontract.model.exceptions import DataContractException
+from datacontract.export.sql_type_converter import map_type_to_bigquery
 
 
 class BigQueryExporter(Exporter):
@@ -37,7 +36,11 @@ def to_bigquery_json(schema_name: str, schema_object: SchemaObject, server: Serv
 def to_bigquery_schema(schema_object: SchemaObject, server: Server) -> dict:
     return {
         "kind": "bigquery#table",
-        "tableReference": {"datasetId": server.dataset, "projectId": server.project, "tableId": schema_object.physicalName or schema_object.name},
+        "tableReference": {
+            "datasetId": server.dataset,
+            "projectId": server.project,
+            "tableId": schema_object.physicalName or schema_object.name,
+        },
         "description": schema_object.description,
         "schema": {"fields": to_bigquery_fields_array(schema_object.properties or [])},
     }
@@ -102,79 +105,3 @@ def _get_custom_property(prop: SchemaProperty, key: str):
         if cp.property == key:
             return cp.value
     return None
-
-
-def map_type_to_bigquery(prop: SchemaProperty) -> str:
-    """Map a schema property type to BigQuery type.
-
-    Maps both physicalType and logicalType to their BigQuery equivalents.
-    PhysicalType is preferred if set.
-    """
-    # If physicalType is already a BigQuery type, return it directly
-    if prop.physicalType:
-        bq_types = {
-            "STRING", "BYTES", "INT64", "INTEGER", "FLOAT64", "NUMERIC",
-            "BIGNUMERIC", "BOOL", "TIMESTAMP", "DATE", "TIME", "DATETIME",
-            "GEOGRAPHY", "JSON", "RECORD", "STRUCT", "ARRAY"
-        }
-        if prop.physicalType.upper() in bq_types or prop.physicalType.upper().startswith(("STRUCT<", "ARRAY<", "RANGE<")):
-            return prop.physicalType
-
-    # Determine which type to map (prefer physicalType)
-    type_to_map = prop.physicalType or prop.logicalType
-
-    # Map the type to BigQuery type
-    return _map_logical_type_to_bigquery(type_to_map, prop.properties)
-
-
-def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
-    """Map a logical type to the corresponding BigQuery type."""
-    logger = logging.getLogger(__name__)
-
-    if not logical_type:
-        return None
-
-    if logical_type.lower() in ["string", "varchar", "text"]:
-        return "STRING"
-    elif logical_type.lower() == "json":
-        return "JSON"
-    elif logical_type.lower() == "bytes":
-        return "BYTES"
-    elif logical_type.lower() in ["int", "integer"]:
-        return "INTEGER"
-    elif logical_type.lower() in ["long", "bigint"]:
-        return "INT64"
-    elif logical_type.lower() == "float":
-        return "FLOAT64"
-    elif logical_type.lower() == "boolean":
-        return "BOOL"
-    elif logical_type.lower() in ["timestamp", "timestamp_tz"]:
-        return "TIMESTAMP"
-    elif logical_type.lower() == "date":
-        return "DATE"
-    elif logical_type.lower() == "timestamp_ntz":
-        return "DATETIME"
-    elif logical_type.lower() in ["number", "decimal", "numeric"]:
-        return "NUMERIC"
-    elif logical_type.lower() == "double":
-        return "BIGNUMERIC"
-    elif logical_type.lower() in ["object", "record"] and not nested_fields:
-        return "JSON"
-    elif logical_type.lower() in ["object", "record", "array"]:
-        return "RECORD"
-    elif logical_type.lower() == "struct":
-        return "STRUCT"
-    elif logical_type.lower() == "null":
-        logger.info(
-            "Can't properly map field to bigquery Schema, as 'null' "
-            "is not supported as a type. Mapping it to STRING."
-        )
-        return "STRING"
-    else:
-        raise DataContractException(
-            type="schema",
-            result="failed",
-            name="Map datacontract type to bigquery data type",
-            reason=f"Unsupported type {logical_type} in data contract definition.",
-            engine="datacontract",
-        )

@@ -14,9 +14,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 class BigQueryImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         if source is not None:
             return import_bigquery_from_json(source)
         else:
@@ -143,27 +141,58 @@ def import_table_fields(table_fields) -> List[SchemaProperty]:
         required = field.get("mode") == "REQUIRED"
         description = field.get("description")
         field_type = field.get("type")
+        repeated = field.get("mode") == "REPEATED"
 
         if field_type == "RECORD":
             nested_properties = import_table_fields(field.get("fields", []))
-            prop = create_property(
-                name=field_name,
-                logical_type="object",
-                physical_type="RECORD",
-                description=description,
-                required=required if required else None,
-                properties=nested_properties,
-            )
+            if repeated:
+                items_prop = create_property(
+                    name="items",
+                    logical_type="object",
+                    physical_type="RECORD",
+                    properties=nested_properties,
+                )
+                prop = create_property(
+                    name=field_name,
+                    logical_type="array",
+                    description=description,
+                    required=None,
+                    items=items_prop,
+                )
+            else:
+                prop = create_property(
+                    name=field_name,
+                    logical_type="object",
+                    physical_type="RECORD",
+                    description=description,
+                    required=required if required else None,
+                    properties=nested_properties,
+                )
         elif field_type == "STRUCT":
             nested_properties = import_table_fields(field.get("fields", []))
-            prop = create_property(
-                name=field_name,
-                logical_type="object",
-                physical_type="STRUCT",
-                description=description,
-                required=required if required else None,
-                properties=nested_properties,
-            )
+            if repeated:
+                items_prop = create_property(
+                    name="items",
+                    logical_type="object",
+                    physical_type="STRUCT",
+                    properties=nested_properties,
+                )
+                prop = create_property(
+                    name=field_name,
+                    logical_type="array",
+                    description=description,
+                    required=None,
+                    items=items_prop,
+                )
+            else:
+                prop = create_property(
+                    name=field_name,
+                    logical_type="object",
+                    physical_type="STRUCT",
+                    description=description,
+                    required=required if required else None,
+                    properties=nested_properties,
+                )
         elif field_type == "RANGE":
             # Range of date/datetime/timestamp - multiple values, map to array
             items_prop = create_property(
@@ -194,17 +223,33 @@ def import_table_fields(table_fields) -> List[SchemaProperty]:
                 if field.get("scale") is not None:
                     scale = int(field.get("scale"))
 
-            prop = create_property(
-                name=field_name,
-                logical_type=logical_type,
-                physical_type=field_type,
-                description=description,
-                required=required if required else None,
-                max_length=max_length,
-                precision=precision,
-                scale=scale,
-            )
-
+            if repeated:
+                items_prop = create_property(
+                    name="items",
+                    logical_type=logical_type,
+                    physical_type=field_type,
+                    max_length=max_length,
+                    precision=precision,
+                    scale=scale,
+                )
+                prop = create_property(
+                    name=field_name,
+                    logical_type="array",
+                    description=description,
+                    required=None,
+                    items=items_prop,
+                )
+            else:
+                prop = create_property(
+                    name=field_name,
+                    logical_type=logical_type,
+                    physical_type=field_type,
+                    description=description,
+                    required=required if required else None,
+                    max_length=max_length,
+                    precision=precision,
+                    scale=scale,
+                )
         properties.append(prop)
 
     return properties

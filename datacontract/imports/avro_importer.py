@@ -29,9 +29,7 @@ LOGICAL_TYPE_MAPPING = {
 class AvroImporter(Importer):
     """Class to import Avro Schema file"""
 
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_avro(source)
 
 
@@ -64,9 +62,8 @@ def import_avro(source: str) -> OpenDataContractStandard:
     # Add namespace as custom property if present
     if avro_schema.get_prop("namespace") is not None:
         from open_data_contract_standard.model import CustomProperty
-        schema_obj.customProperties = [
-            CustomProperty(property="namespace", value=avro_schema.get_prop("namespace"))
-        ]
+
+        schema_obj.customProperties = [CustomProperty(property="namespace", value=avro_schema.get_prop("namespace"))]
 
     odcs.schema_.append(schema_obj)
 
@@ -109,6 +106,17 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
         )
     elif field.type.type == "union":
         # Union types indicate optional fields (null + type)
+        non_null_types = [s for s in field.type.schemas if s.type != "null"]
+        if len(non_null_types) > 1:
+            non_null_type_names = [s.type for s in non_null_types]
+            raise DataContractException(
+                type="schema",
+                name="Map avro type to data contract type",
+                reason=f"Field '{field.name}' has a union type with multiple non-null types "
+                f"{non_null_type_names}, which is not supported by ODCS. "
+                f"Only unions with a single non-null type (optional fields) are supported.",
+                engine="datacontract",
+            )
         enum_schema = get_enum_from_union_field(field)
         if enum_schema:
             prop = create_property(
@@ -181,15 +189,17 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
             physical_type="enum",
             description=field.doc,
             required=True,
-            custom_properties={**custom_props, "avroType": "enum", "avroSymbols": field.type.symbols} if custom_props else {"avroType": "enum", "avroSymbols": field.type.symbols},
+            custom_properties={**custom_props, "avroType": "enum", "avroSymbols": field.type.symbols}
+            if custom_props
+            else {"avroType": "enum", "avroSymbols": field.type.symbols},
         )
     else:
         # Primitive types
         avro_logical_type = field.type.get_prop("logicalType")
         if avro_logical_type in LOGICAL_TYPE_MAPPING:
             logical_type = LOGICAL_TYPE_MAPPING[avro_logical_type]
-            precision = getattr(field.type, 'precision', None)
-            scale = getattr(field.type, 'scale', None)
+            precision = getattr(field.type, "precision", None)
+            scale = getattr(field.type, "scale", None)
             prop = create_property(
                 name=field.name,
                 logical_type=logical_type,

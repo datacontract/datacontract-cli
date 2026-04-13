@@ -15,9 +15,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 class DBMLImporter(Importer):
-    def import_source(
-        self, source: str, import_args: dict
-    ) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_dbml_from_source(
             source,
             import_args.get("dbml_schema"),
@@ -80,6 +78,7 @@ def convert_dbml(
         # Store namespace as custom property
         if schema_name:
             from open_data_contract_standard.model import CustomProperty
+
             schema_obj.customProperties = [CustomProperty(property="namespace", value=schema_name)]
 
         odcs.schema_.append(schema_obj)
@@ -98,7 +97,7 @@ def import_table_fields(table, references) -> List[SchemaProperty]:
         description = field.note.text if field.note else None
         is_primary_key = field.pk
         is_unique = field.unique
-        logical_type = map_type_from_sql(field.type)
+        logical_type, format = map_type_from_sql(field.type)
 
         ref = get_reference(field, references)
 
@@ -110,6 +109,7 @@ def import_table_fields(table, references) -> List[SchemaProperty]:
             name=field_name,
             logical_type=logical_type if logical_type else "string",
             physical_type=field.type,
+            format=format,
             description=description,
             required=required if required else None,
             primary_key=is_primary_key if is_primary_key else None,

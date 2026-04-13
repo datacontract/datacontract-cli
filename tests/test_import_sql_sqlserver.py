@@ -114,31 +114,37 @@ schema:
         physicalType: DATE
         description: Date only (YYYY-MM-DD)
       - name: field_time
-        logicalType: string
+        logicalType: time
         physicalType: TIME
         description: Time only (HH:MM:SS)
       - name: field_datetime2
-        logicalType: date
+        logicalType: timestamp
         physicalType: DATETIME2
         description: More precise datetime
       - name: field_smalldatetime
-        logicalType: date
+        logicalType: timestamp
         physicalType: SMALLDATETIME
         description: Less precise datetime
       - name: field_datetimeoffset
-        logicalType: date
+        logicalType: timestamp
         physicalType: DATETIMEOFFSET
         description: Datetime with time zone
       - name: field_binary
-        logicalType: array
+        logicalType: string
+        logicalTypeOptions:
+          format: binary
         physicalType: BINARY(16)
         description: Fixed-length binary
       - name: field_varbinary
-        logicalType: array
+        logicalType: string
+        logicalTypeOptions:
+          format: binary
         physicalType: VARBINARY(100)
         description: Variable-length binary
       - name: field_uniqueidentifier
         logicalType: string
+        logicalTypeOptions:
+          format: uuid
         physicalType: UNIQUEIDENTIFIER
         description: GUID
       - name: field_xml
