@@ -318,6 +318,8 @@ def test_create_checks_schema_name_nonexistent():
     models_in_checks = {c.model for c in checks if c.model is not None}
     assert "orders" not in models_in_checks
     assert "line_items" not in models_in_checks
+
+
 def test_field_and_model_names_have_backticks_in_quality_bigquery():
     """Test that field and model names are encapsulated with backticks for BigQuery servers in quality checks"""
     data_contract = DataContract(data_contract_file="fixtures/bigquery/datacontract_with_quality_rules.odcs.yaml")
