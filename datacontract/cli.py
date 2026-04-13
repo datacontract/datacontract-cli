@@ -336,7 +336,7 @@ def export(
     sql_server_type: Annotated[
         Optional[str],
         typer.Option(
-            help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract.",
+            help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle.",
             rich_help_panel="SQL Options",
         ),
     ] = "auto",
@@ -413,7 +413,9 @@ def import_(
     ] = None,
     dialect: Annotated[
         Optional[str],
-        typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
+        typer.Option(
+            help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."
+        ),
     ] = None,
     glue_table: Annotated[
         Optional[List[str]],
