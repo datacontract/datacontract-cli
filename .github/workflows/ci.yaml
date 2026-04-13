@@ -11,7 +11,7 @@ permissions:
 name: CI
 jobs:
   lint:
-    name: "Linting & Formatting (fix with: uv run ruff format)"
+    name: "Linting & Formatting (fix with: uv run ruff check --fix && uv run ruff format)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
