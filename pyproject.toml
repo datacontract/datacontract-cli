@@ -84,7 +84,7 @@ postgres = [
 
 s3 = [
   "s3fs>=2025.2.0,<2027.0.0",
-  "aiobotocore>=2.17.0,<3.4.0",
+  "aiobotocore>=2.17.0,<3.5.0",
 ]
 
 snowflake = [
