@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079 @kelsoufi-sanofi)
 
 ### Fixed
+- Emit placeholder server values in SQL importer so generated contracts pass lint (#1146)
 - Fix Protobuf export for arrays of objects and improve message/enum naming to UpperCamelCase (#1012 @Schokuroff)
 
 ## [0.11.8] - 2026-04-10
