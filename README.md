@@ -376,6 +376,16 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 │                                                                 `production`, or `all` for all   │
 │                                                                 servers (default).               │
 │                                                                 [default: all]                   │
+│ --schema-name                                          TEXT     The name of the schema to test,  │
+│                                                                 e.g., `orders`, or `all` for     │
+│                                                                 all schemas (default).           │
+│                                                                 [default: all]                   │
+│ --checks                                               TEXT     Comma-separated list of check    │
+│                                                                 categories to run. Available     │
+│                                                                 categories: schema, quality,     │
+│                                                                 servicelevel, custom. Omit to    │
+│                                                                 enable all.                      │
+│                                                                 [default: None]                  │
 │ --publish-test-results    --no-publish-test-results             Deprecated. Use publish          │
 │                                                                 parameter. Publish the results   │
 │                                                                 after the test                   │
