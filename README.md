@@ -1317,8 +1317,9 @@ steps:
 ╭─ SQL Options ────────────────────────────────────────────────────────────────────────────────────╮
 │ --sql-server-type        TEXT  [sql] The server type to determine the sql dialect. By default,   │
 │                                it uses 'auto' to automatically detect the sql dialect via the    │
-│                                specified servers in the data contract.                           │
-│                                [default: auto]                                                   │
+│                                specified servers in the data contract. Accepted values: auto,    │
+│                                snowflake, postgres, mysql, databricks, sqlserver, bigquery,      │
+│                                trino, oracle. [default: auto]                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
@@ -1667,10 +1668,10 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │    --source                                 TEXT                      The path to the file that  │
 │                                                                       should be imported.        │
 │                                                                       [default: None]            │
-│    --dialect                                TEXT                      The SQL dialect to use     │
-│                                                                       when importing SQL files,  │
-│                                                                       e.g., postgres, tsql,      │
-│                                                                       bigquery.                  │
+│    --dialect                                TEXT                      The SQL dialect.           │
+│                                                                       Accepted values: postgres, │
+│                                                                       tsql, bigquery, snowflake, │
+│                                                                       databricks, spark, duckdb. │
 │                                                                       [default: None]            │
 │    --glue-table                             TEXT                      List of table ids to       │
 │                                                                       import from the Glue       │
