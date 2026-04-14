@@ -32,6 +32,7 @@ def check_soda_execute(
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
     schema_name: str = "all",
+    check_categories: set[str] | None = None,
 ):
     from soda.common.config_helper import ConfigHelper
 
@@ -165,6 +166,8 @@ def check_soda_execute(
         name = scan_result.get("name")
         check = get_check(run, scan_result)
         if check is None:
+            if check_categories is not None and "custom" not in check_categories:
+                continue
             check = Check(
                 id=str(uuid.uuid4()),
                 category="custom",
