@@ -37,6 +37,10 @@ status: draft
 servers:
   - server: oracle
     type: oracle
+    host: localhost
+    port: 1521
+    database: database
+    schema: public
 schema:
   - name: field_showcase
     physicalType: table
@@ -165,6 +169,10 @@ status: draft
 servers:
   - server: postgres
     type: postgres
+    host: localhost
+    port: 5432
+    database: database
+    schema: public
 schema:
   - name: customer_location
     physicalType: table
