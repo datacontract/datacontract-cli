@@ -28,6 +28,7 @@ def execute_data_contract_test(
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
     schema_name: str = "all",
+    check_categories: set[str] | None = None,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -61,13 +62,21 @@ def execute_data_contract_test(
     if server.type == "api":
         server = process_api_response(run, server)
 
-    run.checks.extend(create_checks(data_contract, server, schema_name=schema_name))
+    checks = create_checks(data_contract, server, schema_name=schema_name)
+    if check_categories is not None:
+        checks = [c for c in checks if c.category in check_categories]
+        if not checks:
+            run.log_warn(f"No checks found for categories: {', '.join(sorted(check_categories))}")
+    run.checks.extend(checks)
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
-        check_jsonschema(run, data_contract, server, schema_name=schema_name)
-    check_soda_execute(run, data_contract, server, spark, duckdb_connection, schema_name=schema_name)
+        if check_categories is None or "schema" in check_categories:
+            check_jsonschema(run, data_contract, server, schema_name=schema_name)
+    check_soda_execute(
+        run, data_contract, server, spark, duckdb_connection, schema_name=schema_name, check_categories=check_categories
+    )
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:
