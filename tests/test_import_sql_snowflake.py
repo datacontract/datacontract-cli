@@ -17,6 +17,10 @@ status: draft
 servers:
 - server: snowflake
   type: snowflake
+  host: my_host
+  port: 443
+  database: my_database
+  schema: my_schema
 schema:
 - name: my_table
   physicalType: table
