@@ -1,5 +1,5 @@
 import yaml
-from open_data_contract_standard.model import DataQuality, Server
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, Server
 
 from datacontract.data_contract import DataContract
 from datacontract.engines.data_contract_checks import (
@@ -13,6 +13,7 @@ from datacontract.engines.data_contract_checks import (
     check_property_required,
     check_property_type,
     check_property_unique,
+    create_checks,
     prepare_query,
     to_schema_checks,
 )
@@ -227,6 +228,96 @@ def test_check_property_is_present_duckdb_hyphenated_model_name():
     checks = impl['checks for "test-1"']
     schema_check = checks[0]["schema"]
     assert schema_check["fail"]["when required column missing"] == ["name"]
+
+
+def _make_multi_schema_contract() -> OpenDataContractStandard:
+    """Create a data contract with two schemas for testing schema_name filtering."""
+    return OpenDataContractStandard(
+        **{
+            "apiVersion": "v3.1.0",
+            "kind": "DataContract",
+            "id": "test-schema-filter",
+            "name": "Test Schema Filter",
+            "version": "1.0.0",
+            "status": "active",
+            "schema": [
+                {
+                    "name": "orders",
+                    "properties": [
+                        {"name": "order_id", "logicalType": "string", "physicalType": "string", "required": True},
+                        {"name": "amount", "logicalType": "integer", "physicalType": "integer"},
+                    ],
+                },
+                {
+                    "name": "line_items",
+                    "properties": [
+                        {"name": "line_item_id", "logicalType": "string", "physicalType": "string", "required": True},
+                        {"name": "order_id", "logicalType": "string", "physicalType": "string"},
+                    ],
+                },
+            ],
+        }
+    )
+
+
+def test_create_checks_schema_name_all():
+    """Test that schema_name='all' returns checks for all schemas."""
+    contract = _make_multi_schema_contract()
+    server = Server(type="postgres")
+
+    checks = create_checks(contract, server, schema_name="all")
+
+    models_in_checks = {c.model for c in checks if c.model is not None}
+    assert "orders" in models_in_checks
+    assert "line_items" in models_in_checks
+
+
+def test_create_checks_schema_name_default():
+    """Test that omitting schema_name returns checks for all schemas (default is 'all')."""
+    contract = _make_multi_schema_contract()
+    server = Server(type="postgres")
+
+    checks = create_checks(contract, server)
+
+    models_in_checks = {c.model for c in checks if c.model is not None}
+    assert "orders" in models_in_checks
+    assert "line_items" in models_in_checks
+
+
+def test_create_checks_schema_name_filter_orders():
+    """Test that schema_name='orders' returns only checks for the orders schema."""
+    contract = _make_multi_schema_contract()
+    server = Server(type="postgres")
+
+    checks = create_checks(contract, server, schema_name="orders")
+
+    models_in_checks = {c.model for c in checks if c.model is not None}
+    assert "orders" in models_in_checks
+    assert "line_items" not in models_in_checks
+
+
+def test_create_checks_schema_name_filter_line_items():
+    """Test that schema_name='line_items' returns only checks for the line_items schema."""
+    contract = _make_multi_schema_contract()
+    server = Server(type="postgres")
+
+    checks = create_checks(contract, server, schema_name="line_items")
+
+    models_in_checks = {c.model for c in checks if c.model is not None}
+    assert "line_items" in models_in_checks
+    assert "orders" not in models_in_checks
+
+
+def test_create_checks_schema_name_nonexistent():
+    """Test that a non-existent schema_name returns no schema checks (only servicelevel)."""
+    contract = _make_multi_schema_contract()
+    server = Server(type="postgres")
+
+    checks = create_checks(contract, server, schema_name="nonexistent")
+
+    models_in_checks = {c.model for c in checks if c.model is not None}
+    assert "orders" not in models_in_checks
+    assert "line_items" not in models_in_checks
 
 
 def test_field_and_model_names_have_backticks_in_quality_bigquery():

@@ -31,6 +31,7 @@ def check_soda_execute(
     server: Server,
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
+    schema_name: str = "all",
 ):
     from soda.common.config_helper import ConfigHelper
 
@@ -47,7 +48,7 @@ def check_soda_execute(
     if server.type in ["s3", "gcs", "azure", "local"]:
         if server.format in ["json", "parquet", "csv", "delta"]:
             run.log_info(f"Configuring engine soda-core to connect to {server.type} {server.format} with duckdb")
-            con = get_duckdb_connection(data_contract, server, run, duckdb_connection)
+            con = get_duckdb_connection(data_contract, server, run, duckdb_connection, schema_name=schema_name)
             scan.add_duckdb_connection(duckdb_connection=con, data_source_name=server.type)
             scan.set_data_source_name(server.type)
         else:

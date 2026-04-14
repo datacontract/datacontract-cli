@@ -1,0 +1,106 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-contract-001
+name: Orders Contract v2          # changed: Orders Contract → Orders Contract v2
+version: 2.0.0                    # changed: 1.0.0 → 2.0.0
+status: deprecated                # changed: active → deprecated
+tenant: acme
+domain: commerce                  # changed: sales → commerce
+
+description:
+  purpose: Provides order and line item data  # changed
+  usage: Used by the analytics team
+  limitations: Last 2 years only
+  customProperties:
+    - property: data-owner        # reordered (tests stability)
+      value: data-platform-team
+    - property: sensitivity
+      value: confidential         # changed: internal → confidential
+
+price:
+  priceAmount: 100                # changed: 0 → 100
+  priceCurrency: USD
+  priceUnit: monthly
+
+schema:
+  - name: orders
+    physicalName: orders_tbl
+    customProperties:
+      - property: domain
+        value: finance               # changed: sales → finance
+    quality:
+      - name: row_count
+        type: sql
+        mustBeGreaterThan: 100       # changed: 0 → 100
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        description: Unique order identifier   # changed
+      - name: order_date
+        logicalType: date            # changed: string → date
+        required: true
+      - name: total_amount
+        logicalType: number
+        required: true               # changed: false → true
+        quality:
+          - name: positive
+            type: sql
+            mustBeGreaterThan: 1     # changed: 0 → 1
+        customProperties:
+          - property: pii
+            value: "true"            # changed: false → true
+      - name: region
+        logicalType: string          # added field
+        required: false
+  - name: customers                  # added schema object
+    physicalName: customers_tbl
+    properties:
+      - name: customer_id
+        logicalType: string
+        required: true
+
+servers:
+  - server: production
+    type: snowflake
+    database: PROD_DB
+    roles:
+      - role: reader
+        access: read
+                                     # writer role removed from server
+
+slaProperties:
+  - property: availability
+    value: "99.5%"                   # changed: 99.9% → 99.5%
+  - property: latency
+    value: "500ms"
+
+roles:
+  - role: admin
+    access: write
+  - role: analyst
+    access: read
+  - role: viewer                     # added top-level role
+    access: read
+
+support:
+  - channel: slack
+    url: https://slack.example.com/data-contracts
+  - channel: email                   # added support channel
+    url: mailto:data-contracts@example.com
+
+customProperties:
+  - property: owner
+    value: data-platform-team
+  - property: classification
+    value: confidential              # changed: internal → confidential
+
+team:
+  name: Data Platform
+  members:
+    - username: alice
+      role: lead
+    - username: bob
+      role: senior-engineer          # changed: engineer → senior-engineer
+    - username: carol                # added team member
+      role: engineer

@@ -10,6 +10,22 @@ permissions:
 
 name: CI
 jobs:
+  lint:
+    name: "Linting & Formatting (fix with: uv run ruff check --fix && uv run ruff format)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.11'
+      - name: Install the project
+        run: uv sync --all-extras --dev
+      - name: Check linting
+        run: uv run ruff check
+      - name: Check formatting
+        run: uv run ruff format --check
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -33,8 +49,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install the project
         run: uv sync --all-extras --dev
-      - name: Check formatting
-        run: uv run ruff check
       - name: Run tests
         run: uv run pytest -n0
 

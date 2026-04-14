@@ -24,6 +24,7 @@ from datacontract.model.exceptions import DataContractException
 from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
+from datacontract.output.text_changelog_results import write_text_changelog_results
 
 console = Console()
 
@@ -109,6 +110,13 @@ def lint(
         ),
     ] = None,
     output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    all_errors: Annotated[
+        bool,
+        typer.Option(
+            "--all-errors",
+            help="Report all JSON Schema validation errors instead of stopping after the first one.",
+        ),
+    ] = False,
     debug: debug_option = None,
 ):
     """
@@ -116,7 +124,7 @@ def lint(
     """
     enable_debug_logging(debug)
 
-    run = DataContract(data_contract_file=location, schema_location=schema).lint()
+    run = DataContract(data_contract_file=location, schema_location=schema, all_errors=all_errors).lint()
     write_test_result(run, console, output_format, output)
 
 
@@ -125,6 +133,18 @@ def enable_debug_logging(debug: bool):
         logging.basicConfig(
             level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
         )
+
+
+@app.command(name="changelog")
+def changelog(
+    v1: Annotated[str, typer.Argument(help="The location (path) of the source (before) data contract YAML.")],
+    v2: Annotated[str, typer.Argument(help="The location (path) of the target (after) data contract YAML.")],
+    debug: debug_option = None,
+):
+    """Show a changelog between two data contracts."""
+    enable_debug_logging(debug)
+    result = DataContract(data_contract_file=v1).changelog(DataContract(data_contract_file=v2))
+    write_text_changelog_results(result, console)
 
 
 @app.command(name="test")
@@ -145,6 +165,10 @@ def test(
             "to refer to a server, e.g., `production`, or `all` for all "
             "servers (default)."
         ),
+    ] = "all",
+    schema_name: Annotated[
+        str,
+        typer.Option(help="The name of the schema to test, e.g., `orders`, or `all` for all schemas (default)."),
     ] = "all",
     publish_test_results: Annotated[
         bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
@@ -178,6 +202,7 @@ def test(
         publish_test_results=publish_test_results,
         publish_url=publish,
         server=server,
+        schema_name=schema_name,
         ssl_verification=ssl_verification,
     ).test()
     if logs:
@@ -311,7 +336,7 @@ def export(
     sql_server_type: Annotated[
         Optional[str],
         typer.Option(
-            help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract.",
+            help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle.",
             rich_help_panel="SQL Options",
         ),
     ] = "auto",
@@ -388,7 +413,9 @@ def import_(
     ] = None,
     dialect: Annotated[
         Optional[str],
-        typer.Option(help="The SQL dialect to use when importing SQL files, e.g., postgres, tsql, bigquery."),
+        typer.Option(
+            help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."
+        ),
     ] = None,
     glue_table: Annotated[
         Optional[List[str]],

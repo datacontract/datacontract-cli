@@ -54,6 +54,4 @@ schema:
     assert lines, "order_id table row not found"
     row = lines[0]
     # The row must have exactly 4 pipe chars as table delimiters (| col1 | col2 | col3 |)
-    assert row.count("|") == 4, (
-        f"Expected 4 pipe delimiters in row, got {row.count('|')}: {row!r}"
-    )
+    assert row.count("|") == 4, f"Expected 4 pipe delimiters in row, got {row.count('|')}: {row!r}"

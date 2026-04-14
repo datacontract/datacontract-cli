@@ -1,0 +1,63 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-contract-001
+status: active
+version: 2.0.0
+schema:
+  - name: orders
+    physicalName: orders_tbl
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        description: Unique order ID and another rather lenghty description that should be wrapped in the table
+      - name: order_date
+        logicalType: date
+        required: true
+      - name: total_amount
+        logicalType: number
+        required: true
+      - name: region
+        logicalType: string
+        required: false
+  - name: customers
+    physicalName: customers_tbl
+    properties:
+      - name: customer_id
+        logicalType: string
+        required: true
+        primaryKey: true
+        description: Unique order ID 
+      - name: email
+        logicalType: string
+        required: true
+        classification: confidential
+        encryptedName: email_encrypt
+      - name: full_name
+        logicalType: string
+        required: true
+        businessName: Customer Full Name
+      - name: date_of_birth
+        logicalType: date
+        required: false
+        classification: restricted
+      - name: country
+        logicalType: string
+        required: false
+        partitioned: true
+        partitionKeyPosition: 1
+      - name: created_at
+        logicalType: timestamp
+        required: true
+        description: Record creation timestamp
+servers:
+  - server: production
+    type: snowflake
+    account: example-account
+    database: PROD_DB
+    schema: PUBLIC
+slaProperties:
+  - property: availability
+    value: "99.5%"
+  - property: latency
+    value: "500ms"
