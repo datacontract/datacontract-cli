@@ -1,0 +1,95 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-contract-001
+name: Orders Contract
+version: 1.0.0
+status: active
+tenant: acme
+domain: sales
+
+description:
+  purpose: Provides order data for analytics
+  usage: Used by the analytics team
+  limitations: Last 2 years only
+  customProperties:
+    - property: sensitivity
+      value: internal
+    - property: data-owner
+      value: data-platform-team
+
+price:
+  priceAmount: 0
+  priceCurrency: USD
+  priceUnit: monthly
+
+schema:
+  - name: orders
+    physicalName: orders_tbl
+    customProperties:
+      - property: domain
+        value: sales
+    quality:
+      - name: row_count
+        type: sql
+        mustBeGreaterThan: 0
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        description: Unique order ID
+      - name: customer_id
+        logicalType: string
+        required: true
+      - name: order_date
+        logicalType: string
+        required: true
+      - name: total_amount
+        logicalType: number
+        required: false
+        quality:
+          - name: positive
+            type: sql
+            mustBeGreaterThan: 0
+        customProperties:
+          - property: pii
+            value: "false"
+
+servers:
+  - server: production
+    type: snowflake
+    database: PROD_DB
+    roles:
+      - role: reader
+        access: read
+      - role: writer
+        access: write
+
+slaProperties:
+  - property: availability
+    value: "99.9%"
+  - property: latency
+    value: "500ms"
+
+roles:
+  - role: admin
+    access: write
+  - role: analyst
+    access: read
+
+support:
+  - channel: slack
+    url: https://slack.example.com/data-contracts
+
+customProperties:
+  - property: owner
+    value: data-platform-team
+  - property: classification
+    value: internal
+
+team:
+  name: Data Platform
+  members:
+    - username: alice
+      role: lead
+    - username: bob
+      role: engineer

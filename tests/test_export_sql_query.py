@@ -46,9 +46,9 @@ from orders
 
 
 def test_to_sql_query_physical_name():
-    actual = DataContract(
-        data_contract_file="fixtures/postgres-export-physical-name/datacontract.yaml"
-    ).export("sql-query")
+    actual = DataContract(data_contract_file="fixtures/postgres-export-physical-name/datacontract.yaml").export(
+        "sql-query"
+    )
     expected = """
 -- Data Contract: postgres-physical-name
 -- SQL Dialect: postgres

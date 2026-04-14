@@ -1,0 +1,25 @@
+# nonk8s
+# $schema: http://github.com/bitol-io/open-data-contract-standard/blob/main/schema/odcs-json-schema-latest.json
+---
+kind: DataContract
+apiVersion: v3.1.0
+id: bigquery_table_with_quality_rules
+version: 0.0.1
+status: draft
+servers:
+- server: my-dataproduct/bigquery
+  type: bigquery
+  dataset: datacontract_cli
+  project: datameshexample-product
+schema:
+- name: test_table
+  physicalType: TABLE
+  logicalType: object
+  properties:
+  - name: field_with_quality_rules
+    physicalType: STRING
+    logicalType: string
+    quality:
+      - type: library
+        metric: duplicateValues
+        mustBe: 0

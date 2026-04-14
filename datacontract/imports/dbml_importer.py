@@ -97,7 +97,7 @@ def import_table_fields(table, references) -> List[SchemaProperty]:
         description = field.note.text if field.note else None
         is_primary_key = field.pk
         is_unique = field.unique
-        logical_type = map_type_from_sql(field.type)
+        logical_type, format = map_type_from_sql(field.type)
 
         ref = get_reference(field, references)
 
@@ -109,6 +109,7 @@ def import_table_fields(table, references) -> List[SchemaProperty]:
             name=field_name,
             logical_type=logical_type if logical_type else "string",
             physical_type=field.type,
+            format=format,
             description=description,
             required=required if required else None,
             primary_key=is_primary_key if is_primary_key else None,

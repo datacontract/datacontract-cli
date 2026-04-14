@@ -85,6 +85,26 @@ def map_pyarrow_field_to_property(pyarrow_field: pyarrow.Field, field_name: str)
         return create_property(name=field_name, logical_type="object", physical_type="STRUCT")
     if pyarrow.types.is_list(pyarrow_field.type):
         return create_property(name=field_name, logical_type="array", physical_type="LIST")
+    if pyarrow.types.is_large_string(pyarrow_field.type):
+        return create_property(name=field_name, logical_type="string", physical_type="LARGE_STRING")
+    if pyarrow.types.is_large_binary(pyarrow_field.type):
+        return create_property(name=field_name, logical_type="bytes", physical_type="LARGE_BINARY")
+    if pyarrow.types.is_large_list(pyarrow_field.type):
+        return create_property(name=field_name, logical_type="array", physical_type="LARGE_LIST")
+    if pyarrow.types.is_float16(pyarrow_field.type):
+        return create_property(name=field_name, logical_type="number", physical_type="HALF_FLOAT")
+    if pyarrow.types.is_time(pyarrow_field.type):
+        return create_property(name=field_name, logical_type="time", physical_type="TIME")
+    if pyarrow.types.is_duration(pyarrow_field.type):
+        return create_property(name=field_name, logical_type="string", physical_type="DURATION")
+    if pyarrow.types.is_fixed_size_binary(pyarrow_field.type):
+        return create_property(
+            name=field_name,
+            logical_type="bytes",
+            physical_type=f"FIXED_SIZE_BINARY({pyarrow_field.type.byte_width})",
+        )
+    if pyarrow.types.is_fixed_size_list(pyarrow_field.type):
+        return create_property(name=field_name, logical_type="array", physical_type="FIXED_SIZE_LIST")
 
     raise DataContractException(
         type="schema",

@@ -14,13 +14,7 @@ def test_cli():
     runner = CliRunner()
     result = runner.invoke(
         app,
-        [
-            "import",
-            "--format",
-            "sql",
-            "--source",
-            sql_file_path,
-        ],
+        ["import", "--format", "sql", "--source", sql_file_path, "--dialect", "postgres"],
     )
     assert result.exit_code == 0
 
@@ -38,6 +32,10 @@ status: draft
 servers:
   - server: postgres
     type: postgres
+    host: my_host
+    port: 5432
+    database: my_database
+    schema: public
 schema:
   - name: my_table
     physicalType: table
@@ -56,7 +54,7 @@ schema:
         physicalType: INT
         required: true
       - name: field_three
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMPTZ
     """
     print("Result", result.to_yaml())
@@ -76,6 +74,10 @@ status: draft
 servers:
   - server: postgres
     type: postgres
+    host: my_host
+    port: 5432
+    database: my_database
+    schema: public
 schema:
   - name: customer_location
     physicalType: table
@@ -93,7 +95,7 @@ schema:
         physicalType: VARCHAR(30)
         required: true
       - name: create_date
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
         required: true
       - name: changed_by
@@ -102,7 +104,7 @@ schema:
           maxLength: 30
         physicalType: VARCHAR(30)
       - name: change_date
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
       - name: name
         logicalType: string

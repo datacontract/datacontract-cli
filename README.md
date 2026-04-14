@@ -3,6 +3,8 @@
 <p>
   <a href="https://github.com/datacontract/datacontract-cli/actions/workflows/ci.yaml?query=branch%3Amain">
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/datacontract-cli/ci.yaml?branch=main"></a>
+  <a href="https://pypi.org/project/datacontract-cli/">
+    <img alt="PyPI Version" src="https://img.shields.io/pypi/v/datacontract-cli" /></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
@@ -15,6 +17,7 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
 
+> **Quick navigation:** [Documentation](#documentation) · [Best Practices](#best-practices) · [Custom Export and Import](#customizing-exporters-and-importers) · [Development Setup](#development-setup)
 
 ## Getting started
 
@@ -114,8 +117,11 @@ $ datacontract export --format html --output orders-v1.odcs.html https://datacon
 # create a new data contract from example and write it to odcs.yaml
 $ datacontract init odcs.yaml
 
-# lint the odcs.yaml
+# lint the odcs.yaml and stop after the first validation error (default).
 $ datacontract lint odcs.yaml
+
+# show a changelog between two data contracts
+$ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
@@ -239,6 +245,7 @@ A list of available extras:
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |
+| MySQL Integration       | `pip install datacontract-cli[mysql]`      |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
 | S3 Integration          | `pip install datacontract-cli[s3]`         |
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
@@ -259,7 +266,9 @@ Commands
 
 - [init](#init)
 - [lint](#lint)
+- [changelog](#changelog)
 - [test](#test)
+- [ci](#ci)
 - [export](#export)
 - [import](#import)
 - [catalog](#catalog)
@@ -290,36 +299,63 @@ Commands
 
 ### lint
 ```
+                                                                                
+ Usage: datacontract lint [OPTIONS] [LOCATION]                                  
+                                                                                
+ Validate that the datacontract.yaml is correctly formatted.                    
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract  │
+│                             yaml.                                            │
+│                             [default: datacontract.yaml]                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --schema                         TEXT          The location (url or path) of │
+│                                                the ODCS JSON Schema          │
+│ --output                         PATH          Specify the file path where   │
+│                                                the test results should be    │
+│                                                written to (e.g.,             │
+│                                                './test-results/TEST-datacon… │
+│                                                If no path is provided, the   │
+│                                                output will be printed to     │
+│                                                stdout.                       │
+│ --output-format                  [json|junit]  The target format for the     │
+│                                                test results.                 │
+│ --all-errors                                   Report all JSON Schema        │
+│                                                validation errors instead of  │
+│                                                stopping after the first one. │
+│ --debug            --no-debug                  Enable debug logging          │
+│ --help                                         Show this message and exit.   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+```
+
+### changelog
+```
                                                                                                     
- Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
+ Usage: datacontract changelog [OPTIONS] V1 V2                                                      
                                                                                                     
- Validate that the datacontract.yaml is correctly formatted.                                        
-                                                                                                    
+ Show a changelog between two data contracts.                                                       
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
-│                             [default: datacontract.yaml]                                         │
+│ *    v1      TEXT  The location (path) of the source (before) data contract YAML. [required]     │
+│ *    v2      TEXT  The location (path) of the target (after) data contract YAML. [required]      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --schema                         TEXT     The location (url or path) of the ODCS JSON Schema     │
-│                                           [default: None]                                        │
-│ --output                         PATH     Specify the file path where the test results should be │
-│                                           written to (e.g.,                                      │
-│                                           './test-results/TEST-datacontract.xml'). If no path is │
-│                                           provided, the output will be printed to stdout.        │
-│                                           [default: None]                                        │
-│ --output-format                  [junit]  The target format for the test results.                │
-│                                           [default: None]                                        │
-│ --debug            --no-debug             Enable debug logging [default: no-debug]               │
-│ --help                                    Show this message and exit.                            │
+│ --debug     --no-debug                 Enable debug logging                                      │
+│ --help                                 Show this message and exit.                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+```
+
+```bash
+$ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 ```
 
 ### test
 ```
                                                                                                     
- Usage: datacontract test [OPTIONS] [LOCATION]                                                      
+ Usage: datacontract test [OPTIONS] [LOCATION]
                                                                                                     
  Run schema and quality tests on configured servers.                                                
                                                                                                     
@@ -340,6 +376,16 @@ Commands
 │                                                                 `production`, or `all` for all   │
 │                                                                 servers (default).               │
 │                                                                 [default: all]                   │
+│ --schema-name                                          TEXT     The name of the schema to test,  │
+│                                                                 e.g., `orders`, or `all` for     │
+│                                                                 all schemas (default).           │
+│                                                                 [default: all]                   │
+│ --checks                                               TEXT     Comma-separated list of check    │
+│                                                                 categories to run. Available     │
+│                                                                 categories: schema, quality,     │
+│                                                                 servicelevel, custom. Omit to    │
+│                                                                 enable all.                      │
+│                                                                 [default: None]                  │
 │ --publish-test-results    --no-publish-test-results             Deprecated. Use publish          │
 │                                                                 parameter. Publish the results   │
 │                                                                 after the test                   │
@@ -373,44 +419,20 @@ Data Contract CLI connects to a data source and runs schema and quality tests to
 $ datacontract test --server production datacontract.yaml
 ```
 
-To connect to the databases the `server` block in the datacontract.yaml is used to set up the connection.
-In addition, credentials, such as username and passwords, may be defined with environment variables.
+For CI/CD pipelines, see [`ci`](#ci).
 
 The application uses different engines, based on the server `type`.
 Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_.
 
-Credentials are provided with environment variables.
+#### Supported Data Sources
 
-Supported server types:
+The `server` block in the datacontract.yaml is used to set up the connection.
+In addition, credentials, such as username and passwords, are provided with environment variables.
 
-- [s3](#S3)
-- [athena](#athena)
-- [bigquery](#bigquery)
-- [azure](#azure)
-- [sqlserver](#sqlserver)
-- [oracle](#oracle)
-- [databricks](#databricks)
-- [databricks (programmatic)](#databricks-programmatic)
-- [dataframe (programmatic)](#dataframe-programmatic)
-- [snowflake](#snowflake)
-- [kafka](#kafka)
-- [postgres](#postgres)
-- [trino](#trino)
-- [impala](#impala)
-- [api](#api)
-- [local](#local)
+Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for additional types and formats.
 
-Supported formats:
-
-- parquet
-- json
-- csv
-- delta
-- iceberg (coming soon)
-
-Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for an additional type and formats.
-
-#### S3
+<details markdown="1">
+<summary><strong>S3</strong></summary>
 
 Data Contract CLI can test data that is stored in S3 buckets or any S3-compliant endpoints in various formats.
 
@@ -456,8 +478,10 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+</details>
 
-#### Athena
+<details markdown="1">
+<summary><strong>Athena</strong></summary>
 
 Data Contract CLI can test data in AWS Athena stored in S3.
 Supports different file formats, such as Iceberg, Parquet, JSON, CSV...
@@ -492,8 +516,10 @@ models:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJcqLaaaa/XXXXXXXXXXXXX` | AWS Secret Access Key                  |
 | `DATACONTRACT_S3_SESSION_TOKEN`     | `AQoDYXdzEJr...`                | AWS temporary session token (optional) |
 
+</details>
 
-#### Google Cloud Storage (GCS)
+<details markdown="1">
+<summary><strong>Google Cloud Storage (GCS)</strong></summary>
 
 The [S3](#S3) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability).
 Use `https://storage.googleapis.com` as the endpoint URL.
@@ -518,8 +544,10 @@ servers:
 | `DATACONTRACT_S3_ACCESS_KEY_ID`     | `GOOG1EZZZ...` | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Key ID |
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...`    | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) Secret |
 
+</details>
 
-#### BigQuery
+<details markdown="1">
+<summary><strong>BigQuery</strong></summary>
 
 We support authentication to BigQuery using Service Account Key or Application Default Credentials (ADC). ADC supports Workload Identity Federation (WIF), GCE metadata server, and `gcloud auth application-default login`. The used Service Account should include the roles:
 * BigQuery Job User
@@ -549,8 +577,10 @@ models:
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
 
+</details>
 
-#### Azure
+<details markdown="1">
+<summary><strong>Azure</strong></summary>
 
 Data Contract CLI can test data that is stored in Azure Blob storage or Azure Data Lake Storage (Gen2) (ADLS) in various formats.
 
@@ -575,9 +605,10 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 | `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622` | The ApplicationID / ClientID of the app registration |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX`            | The Client Secret value                              |
 
+</details>
 
-
-#### Sqlserver
+<details markdown="1">
+<summary><strong>SQL Server</strong></summary>
 
 Data Contract CLI can test data in MS SQL Server (including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric).
 
@@ -615,10 +646,10 @@ models:
 | `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name                                                                                                                  |
 | `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True`                          | Deprecated. Equivalent to `AUTHENTICATION=windows`                                                                                |
 
+</details>
 
-
-
-#### Oracle
+<details markdown="1">
+<summary><strong>Oracle</strong></summary>
 
 Data Contract CLI can test data in Oracle Database.
 
@@ -664,10 +695,10 @@ installed on the system and specify the path to the installation within the envi
 | `DATACONTRACT_ORACLE_PASSWORD`                   | `0x162e53`         | Password                                   |
 | `DATACONTRACT_ORACLE_CLIENT_DIR`                 | `C:\oracle\client` | Path to Oracle Instant Client installation |
 
+</details>
 
-
-
-#### Databricks
+<details markdown="1">
+<summary><strong>Databricks</strong></summary>
 
 Works with Unity Catalog and Hive metastore.
 
@@ -696,8 +727,10 @@ models:
 | `DATACONTRACT_DATABRICKS_HTTP_PATH`       | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster     |
 | `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | The host name of the SQL warehouse or compute cluster |
 
+</details>
 
-#### Databricks (programmatic)
+<details markdown="1">
+<summary><strong>Databricks (programmatic)</strong></summary>
 
 Works with Unity Catalog and Hive metastore.
 When running in a notebook or pipeline, the provided `spark` session can be used.
@@ -753,7 +786,10 @@ models:
 
 Databricks' library management properly resolves dependencies during cluster initialization, rather than at runtime in the notebook.
 
-#### Dataframe (programmatic)
+</details>
+
+<details markdown="1">
+<summary><strong>Dataframe (programmatic)</strong></summary>
 
 Works with Spark DataFrames.
 DataFrames need to be created as named temporary views.
@@ -788,8 +824,10 @@ run = data_contract.test()
 assert run.result == "passed"
 ```
 
+</details>
 
-#### Snowflake
+<details markdown="1">
+<summary><strong>Snowflake</strong></summary>
 
 Data Contract CLI can test data in Snowflake.
 
@@ -839,8 +877,10 @@ servers:
     schema: ORDERS_PII_V2
 ```
 
+</details>
 
-#### Kafka
+<details markdown="1">
+<summary><strong>Kafka</strong></summary>
 
 Kafka support is currently considered experimental.
 
@@ -864,8 +904,10 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_PASSWORD`  | `xxx`   | The SASL password (secret).                                                      |
 | `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`. Other supported mechanisms: `SCRAM-SHA-256` and `SCRAM-SHA-512` |
 
+</details>
 
-#### Postgres
+<details markdown="1">
+<summary><strong>Postgres</strong></summary>
 
 Data Contract CLI can test data in Postgres or Postgres-compliant databases (e.g., RisingWave).
 
@@ -899,8 +941,42 @@ models:
 | `DATACONTRACT_POSTGRES_DATABASE` | `dbname`           | Database    |
 | `DATACONTRACT_POSTGRES_SCHEMA`   | `public`           | Schema      |
 
+</details>
 
-#### Trino
+<details markdown="1">
+<summary><strong>MySQL</strong></summary>
+
+Data Contract CLI can test data in MySQL or MySQL-compliant databases (e.g., MariaDB).
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  mysql:
+    type: mysql
+    host: localhost
+    port: 3306
+    database: mydb
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+##### Environment Variables
+
+| Environment Variable          | Example            | Description |
+|-------------------------------|--------------------|-------------|
+| `DATACONTRACT_MYSQL_USERNAME` | `root`             | Username    |
+| `DATACONTRACT_MYSQL_PASSWORD` | `mysecretpassword` | Password    |
+
+</details>
+
+<details markdown="1">
+<summary><strong>Trino</strong></summary>
 
 Data Contract CLI can test data in Trino.
 
@@ -934,8 +1010,10 @@ models:
 | `DATACONTRACT_TRINO_USERNAME` | `trino`            | Username    |
 | `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
 
+</details>
 
-#### Impala
+<details markdown="1">
+<summary><strong>Impala</strong></summary>
 
 Data Contract CLI can run Soda checks against an Apache Impala cluster.
 
@@ -982,7 +1060,10 @@ If `physicalType` is not specified in the schema, we recommend the following map
 
 This keeps the Impala schema compatible with the expectations of the Soda checks generated by datacontract-cli.
 
-#### API
+</details>
+
+<details markdown="1">
+<summary><strong>API</strong></summary>
 
 Data Contract CLI can test APIs that return data in JSON format. 
 Currently, only GET requests are supported.
@@ -1013,8 +1094,10 @@ models:
 |-----------------------------------------|------------------|---------------------------------------------------|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `Bearer <token>` | The value for the `authorization` header. Optional. |
 
+</details>
 
-#### Local
+<details markdown="1">
+<summary><strong>Local</strong></summary>
 
 Data Contract CLI can test local files in parquet, json, csv, or delta format.
 
@@ -1036,6 +1119,149 @@ models:
       my_column_2: # corresponds to a column
         type: string
 ```
+
+</details>
+
+### ci
+```
+                                                                                
+ Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                
+                                                                                
+ Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step       
+ summary.                                                                       
+                                                                                
+╭─ Arguments ──────────────────────────────────────────────────────────────────╮
+│   locations      [LOCATIONS]...  The location(s) (url or path) of the data   │
+│                                  contract yaml file(s).                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --schema                                   TEXT          The location (url   │
+│                                                          or path) of the     │
+│                                                          ODCS JSON Schema    │
+│ --server                                   TEXT          The server          │
+│                                                          configuration to    │
+│                                                          run the schema and  │
+│                                                          quality tests. Use  │
+│                                                          the key of the      │
+│                                                          server object in    │
+│                                                          the data contract   │
+│                                                          yaml file to refer  │
+│                                                          to a server, e.g.,  │
+│                                                          `production`, or    │
+│                                                          `all` for all       │
+│                                                          servers (default).  │
+│                                                          [default: all]      │
+│ --publish                                  TEXT          The url to publish  │
+│                                                          the results after   │
+│                                                          the test.           │
+│ --output                                   PATH          Specify the file    │
+│                                                          path where the test │
+│                                                          results should be   │
+│                                                          written to (e.g.,   │
+│                                                          './test-results/TE… │
+│ --output-format                            [json|junit]  The target format   │
+│                                                          for the test        │
+│                                                          results.            │
+│ --logs                --no-logs                          Print logs          │
+│                                                          [default: no-logs]  │
+│ --json                --no-json                          Print test results  │
+│                                                          as JSON to stdout.  │
+│                                                          [default: no-json]  │
+│ --fail-on                                  TEXT          Minimum severity    │
+│                                                          that causes a       │
+│                                                          non-zero exit code: │
+│                                                          'warning', 'error', │
+│                                                          or 'never'.         │
+│                                                          [default: error]    │
+│ --ssl-verification    --no-ssl-verific…                  SSL verification    │
+│                                                          when publishing the │
+│                                                          data contract.      │
+│                                                          [default:           │
+│                                                          ssl-verification]   │
+│ --debug               --no-debug                         Enable debug        │
+│                                                          logging             │
+│ --help                                                   Show this message   │
+│                                                          and exit.           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+```
+
+The `ci` command wraps [`test`](#test) with CI/CD-specific features:
+
+- **Multiple contracts**: `datacontract ci contracts/*.yaml`
+- **CI annotations:** Inline annotations for failed checks (GitHub Actions and Azure DevOps)
+- **Markdown summary** of the test results (GitHub Actions)
+- **`--json`**: Print test results as JSON to stdout for machine-readable output
+- **`--fail-on`**: Control the minimum severity that causes a non-zero exit code. Default is `error`; set to `warning` to also fail on warnings, or `never` to always exit 0.
+
+The [supported server types](#supported-data-sources) and their configuration are equivalent to the `test` command.
+
+```bash
+# Single contract
+$ datacontract ci datacontract.yaml
+
+# Multiple contracts
+$ datacontract ci contracts/*.yaml
+
+# Fail on warnings too
+$ datacontract ci --fail-on warning datacontract.yaml
+
+# JSON output for scripting
+$ datacontract ci --json datacontract.yaml
+```
+
+<details markdown="1">
+<summary>GitHub Actions workflow example</summary>
+
+```yaml
+# .github/workflows/datacontract.yml
+name: Data Contract CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  datacontract-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install datacontract-cli
+      # Test one or more data contracts (supports globs, e.g. contracts/*.yaml)
+      - run: datacontract ci datacontract.yaml
+```
+
+</details>
+
+<details markdown="1">
+<summary>Azure DevOps pipeline example</summary>
+
+```yaml
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.11"
+  - script: pip install datacontract-cli
+    displayName: "Install datacontract-cli"
+  # Test one or more data contracts (supports globs, e.g. contracts/*.yaml)
+  - script: datacontract ci datacontract.yaml
+    displayName: "Run data contract tests"
+```
+
+</details>
 
 
 ### export
@@ -1095,8 +1321,9 @@ models:
 ╭─ SQL Options ────────────────────────────────────────────────────────────────────────────────────╮
 │ --sql-server-type        TEXT  [sql] The server type to determine the sql dialect. By default,   │
 │                                it uses 'auto' to automatically detect the sql dialect via the    │
-│                                specified servers in the data contract.                           │
-│                                [default: auto]                                                   │
+│                                specified servers in the data contract. Accepted values: auto,    │
+│                                snowflake, postgres, mysql, databricks, sqlserver, bigquery,      │
+│                                trino, oracle. [default: auto]                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
@@ -1345,67 +1572,65 @@ The export function converts the data contract specification into the custom for
 datacontract export --format custom --template template.txt datacontract.yaml
 ```
 
-##### Jinja variables
+##### Jinja templates & variables
 
 You can directly use the Data Contract Specification as template variables.
 
+{% raw %}
 ```shell
 $ cat template.txt
 title: {{ data_contract.info.title }}
+models:
+{%- for model_name, model in data_contract.models.items() %}
+  - name: {{ model.name }}
+{%- endfor %}
 
 $ datacontract export --format custom --template template.txt datacontract.yaml
 title: Orders Latest
 ```
+{% endraw %}
 
-##### Example Jinja Templates
+##### Example Jinja Templates for a customized dbt model
 
-###### Customized dbt model
+You can export a given dbt model containing any logic by adding the `schema-name` filter/parameter (in ODCS, "schemas" are the equivalent of "models" in dbt).
 
-You can export the dbt models containing any logic.
+It adds jinja variable passed to your template.file:
+- `schema_name`: str
+- `schema`: SchemaObject from ODCS
 
 Below is an example of a dbt staging layer that converts a field of `type: timestamp` to a `DATETIME` type with time zone conversion.
 
-template.sql
-
-{% raw %}
-```sql
-{%- for model_name, model in data_contract.models.items() %}
-{#- Export only the first model #}
-{%- if loop.first -%}
-SELECT
-{%- for field_name, field in model.fields.items() %}
-  {%- if field.type == "timestamp" %}
-  DATETIME({{ field_name }}, "Asia/Tokyo") AS {{ field_name }},
-  {%- else %}
-  {{ field_name }} AS {{ field_name }},
-  {%- endif %}
-{%- endfor %}
-FROM
-  {{ "{{" }} ref('{{ model_name }}') {{ "}}" }} 
-{%- endif %}
-{%- endfor %}
-```
-{% endraw %}
-
-command
-
-```shell
-datacontract export --format custom --template template.sql --output output.sql datacontract.yaml
-```
-
-output.sql
-
-```sql
-SELECT
-  order_id AS order_id,
-  DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
-  order_total AS order_total,
-  customer_id AS customer_id,
-  customer_email_address AS customer_email_address,
-  DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
-FROM
-  {{ ref('orders') }}
-```
+- `template.sql`
+  {% raw %}
+  ```sql
+  SELECT
+  {%- for field in schema.properties %}
+    {%- if field.physicalType == "timestamp" %}
+    DATETIME({{ field.name }}, "Asia/Tokyo") AS {{ field.name }},
+    {%- else %}
+    {{ field.name }} AS {{ field.name }},
+    {%- endif %}
+  {%- endfor %}
+  FROM {{ "{{" }} ref('{{ schema_name }}') {{ "}}" }}
+  ```
+  {% endraw %}
+- export command
+  ```shell
+  datacontract export datacontract.odcs.yaml --format custom --template template.sql --schema-name orders
+  ```
+- `output.sql`
+  {% raw %}
+  ```sql
+  SELECT
+    order_id AS order_id,
+    DATETIME(order_timestamp, "Asia/Tokyo") AS order_timestamp,
+    order_total AS order_total,
+    customer_id AS customer_id,
+    customer_email_address AS customer_email_address,
+    DATETIME(processed_timestamp, "Asia/Tokyo") AS processed_timestamp,
+  FROM {{ ref('orders') }}
+  ```
+  {% endraw %}
 
 #### ODCS Excel Template
 
@@ -1447,10 +1672,10 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │    --source                                 TEXT                      The path to the file that  │
 │                                                                       should be imported.        │
 │                                                                       [default: None]            │
-│    --dialect                                TEXT                      The SQL dialect to use     │
-│                                                                       when importing SQL files,  │
-│                                                                       e.g., postgres, tsql,      │
-│                                                                       bigquery.                  │
+│    --dialect                                TEXT                      The SQL dialect.           │
+│                                                                       Accepted values: postgres, │
+│                                                                       tsql, bigquery, snowflake, │
+│                                                                       databricks, spark, duckdb. │
 │                                                                       [default: None]            │
 │    --glue-table                             TEXT                      List of table ids to       │
 │                                                                       import from the Glue       │
@@ -1853,10 +2078,11 @@ Create a data contract based on the actual data. This is the fastest way to get 
    $ datacontract lint
    ```
 
-4. Set up a CI pipeline that executes daily for continuous quality checks. You can also report the
-   test results to tools like [Data Mesh Manager](https://datamesh-manager.com)
+4. Set up a CI pipeline that executes daily for continuous quality checks. Use the [`ci`](#ci) command for
+   CI-optimized output (GitHub Actions annotations and step summary, Azure DevOps annotations).
+   You can also report the test results to tools like [Data Mesh Manager](https://datamesh-manager.com).
    ```bash
-   $ datacontract test --publish https://api.datamesh-manager.com/api/test-results
+   $ datacontract ci --publish https://api.datamesh-manager.com/api/test-results
    ```
 
 ### Contract-First
@@ -2067,11 +2293,20 @@ uv run ruff check
 uv run pytest
 ```
 
+## Contribution
+
+We are happy to receive your contributions. Propose your change in an issue or directly create a
+pull request with your improvements.
+
+Before creating a pull request, please make sure that all tests are passing (`uv run pytest`) and
+your code is properly formatted (`ruff format`). Create a changelog entry and reference fixed
+issues (if any).
+
 ### Troubleshooting
 
 #### Windows: Some tests fail
 
-Run in wsl. (We need to fix the paths in the tests so that normal Windows will work, contributions are appreciated)
+Run in WSL. (We need to fix the paths in the tests so that normal Windows will work, contributions are appreciated)
 
 #### PyCharm does not pick up the `.venv` 
 
@@ -2132,10 +2367,6 @@ This command runs the container momentarily to check the version of the `datacon
 4. Execute `./release`
 5. Wait until GitHub Release is created
 6. Add the release notes to the GitHub Release
-
-## Contribution
-
-We are happy to receive your contributions. Propose your change in an issue or directly create a pull request with your improvements.
 
 ## Companies using this tool
 

@@ -65,6 +65,7 @@ class _SpecView:
 
     info: _InfoView
     models: dict
+    tags: list[str] | None = None
 
 
 @dataclass
@@ -109,6 +110,7 @@ class DataContractView:
                 description=description,
             ),
             models=models,
+            tags=self.odcs.tags,
         )
 
 

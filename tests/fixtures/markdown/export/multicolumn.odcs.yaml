@@ -1,0 +1,23 @@
+id: test-multicolumn-export
+name: Multicolumn Test Contract
+version: 1.0.0
+schema:
+  - name: orders
+    description: Order records
+    properties:
+      - name: order_id
+        physicalType: string
+        quality:
+          - type: sql
+            description: Row count must be positive
+            query: SELECT count(*) FROM orders
+            mustBeGreaterThan: 0
+          - type: text
+            description: Non-null check
+      - name: amount
+        physicalType: double
+        quality:
+          - type: sql
+            description: Amount must be positive
+            query: SELECT count(*) FROM orders WHERE amount <= 0
+            mustBe: 0
