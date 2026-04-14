@@ -32,9 +32,9 @@ status: draft
 servers:
   - server: postgres
     type: postgres
-    host: localhost
+    host: my_host
     port: 5432
-    database: database
+    database: my_database
     schema: public
 schema:
   - name: my_table
@@ -74,9 +74,9 @@ status: draft
 servers:
   - server: postgres
     type: postgres
-    host: localhost
+    host: my_host
     port: 5432
-    database: database
+    database: my_database
     schema: public
 schema:
   - name: customer_location

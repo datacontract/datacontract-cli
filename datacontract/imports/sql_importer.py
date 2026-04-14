@@ -158,10 +158,14 @@ def get_server_defaults(server_type: str) -> dict:
         "snowflake": 443,
         "databricks": 443,
     }
+    schema_map = {
+        "postgres": "public",
+        "redshift": "public",
+    }
     defaults = {
-        "host": "localhost",
-        "database": "database",
-        "schema": "public",
+        "host": "my_host",
+        "database": "my_database",
+        "schema": schema_map.get(server_type, "my_schema"),
     }
     port = port_map.get(server_type)
     if port is not None:
