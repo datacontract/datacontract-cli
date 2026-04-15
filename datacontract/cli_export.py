@@ -32,7 +32,7 @@ schema_name_option = Annotated[
 ]
 schema_option = Annotated[
     Optional[str],
-    typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+    typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
 ]
 
 

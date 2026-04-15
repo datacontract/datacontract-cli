@@ -24,7 +24,7 @@ output_option = Annotated[
 ]
 schema_option = Annotated[
     Optional[str],
-    typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+    typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
 ]
 template_option = Annotated[Optional[str], typer.Option(help="The location (url or path) of the ODCS template")]
 owner_option = Annotated[
