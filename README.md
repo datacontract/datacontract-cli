@@ -299,34 +299,29 @@ Commands
 
 ### lint
 ```
-                                                                                
- Usage: datacontract lint [OPTIONS] [LOCATION]                                  
-                                                                                
- Validate that the datacontract.yaml is correctly formatted.                    
-                                                                                
-╭─ Arguments ──────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The location (url or path) of the data contract  │
-│                             yaml.                                            │
-│                             [default: datacontract.yaml]                     │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --json-schema                    TEXT          The location (url or path) of │
-│                                                the ODCS JSON Schema          │
-│ --output                         PATH          Specify the file path where   │
-│                                                the test results should be    │
-│                                                written to (e.g.,             │
-│                                                './test-results/TEST-datacon… │
-│                                                If no path is provided, the   │
-│                                                output will be printed to     │
-│                                                stdout.                       │
-│ --output-format                  [json|junit]  The target format for the     │
-│                                                test results.                 │
-│ --all-errors                                   Report all JSON Schema        │
-│                                                validation errors instead of  │
-│                                                stopping after the first one. │
-│ --debug            --no-debug                  Enable debug logging          │
-│ --help                                         Show this message and exit.   │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
+                                                                                                    
+ Validate that the datacontract.yaml is correctly formatted.                                        
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
+│                             [default: datacontract.yaml]                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --json-schema                    TEXT          The location (url or path) of the ODCS JSON       │
+│                                                Schema                                            │
+│ --output                         PATH          Specify the file path where the test results      │
+│                                                should be written to (e.g.,                       │
+│                                                './test-results/TEST-datacontract.xml'). If no    │
+│                                                path is provided, the output will be printed to   │
+│                                                stdout.                                           │
+│ --output-format                  [json|junit]  The target format for the test results.           │
+│ --all-errors                                   Report all JSON Schema validation errors instead  │
+│                                                of stopping after the first one.                  │
+│ --debug            --no-debug                  Enable debug logging                              │
+│ --help                                         Show this message and exit.                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -355,79 +350,61 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 ### test
 ```
                                                                                                     
- Usage: datacontract test [OPTIONS] [LOCATION]
+ Usage: datacontract test [OPTIONS] [LOCATION]                                                      
                                                                                                     
  Run schema and quality tests on configured servers.                                                
-                                                                                                    
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --json-schema                              TEXT          The location (url   │
-│                                                          or path) of the     │
-│                                                          ODCS JSON Schema    │
-│ --server                                   TEXT          The server          │
-│                                                          configuration to    │
-│                                                          run the schema and  │
-│                                                          quality tests. Use  │
-│                                                          the key of the      │
-│                                                          server object in    │
-│                                                          the data contract   │
-│                                                          yaml file to refer  │
-│                                                          to a server, e.g.,  │
-│                                                          `production`, or    │
-│                                                          `all` for all       │
-│                                                          servers (default).  │
-│                                                          [default: all]      │
-│ --schema-name                              TEXT          Which model to      │
-│                                                          test, e.g.,         │
-│                                                          `orders`, or `all`  │
-│                                                          for all models      │
-│                                                          (default). Distinct │
-│                                                          from --json-schema, │
-│                                                          which is the ODCS   │
-│                                                          validation schema.  │
-│                                                          [default: all]      │
-│ --publish-test-re…    --no-publish-tes…                  Deprecated. Use     │
-│                                                          publish parameter.  │
-│                                                          Publish the results │
-│                                                          after the test      │
-│                                                          [default:           │
-│                                                          no-publish-test-re… │
-│ --publish                                  TEXT          The url to publish  │
-│                                                          the results after   │
-│                                                          the test.           │
-│ --output                                   PATH          Specify the file    │
-│                                                          path where the test │
-│                                                          results should be   │
-│                                                          written to (e.g.,   │
-│                                                          './test-results/TE… │
-│ --output-format                            [json|junit]  The target format   │
-│                                                          for the test        │
-│                                                          results.            │
-│ --checks                                   TEXT          Comma-separated     │
-│                                                          list of check       │
-│                                                          categories to run.  │
-│                                                          Available           │
-│                                                          categories: schema, │
-│                                                          quality,            │
-│                                                          servicelevel,       │
-│                                                          custom. Omit to     │
-│                                                          enable all.         │
-│ --logs                --no-logs                          Print logs          │
-│                                                          [default: no-logs]  │
-│ --ssl-verification    --no-ssl-verific…                  SSL verification    │
-│                                                          when publishing the │
-│                                                          data contract.      │
-│                                                          [default:           │
-│                                                          ssl-verification]   │
-│ --debug               --no-debug                         Enable debug        │
-│                                                          logging             │
-│ --help                                                   Show this message   │
-│                                                          and exit.           │
-╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --json-schema                                          TEXT          The location (url or path)  │
+│                                                                      of the ODCS JSON Schema     │
+│ --server                                               TEXT          The server configuration to │
+│                                                                      run the schema and quality  │
+│                                                                      tests. Use the key of the   │
+│                                                                      server object in the data   │
+│                                                                      contract yaml file to refer │
+│                                                                      to a server, e.g.,          │
+│                                                                      `production`, or `all` for  │
+│                                                                      all servers (default).      │
+│                                                                      [default: all]              │
+│ --schema-name                                          TEXT          Which model to test, e.g.,  │
+│                                                                      `orders`, or `all` for all  │
+│                                                                      models (default). Distinct  │
+│                                                                      from --json-schema, which   │
+│                                                                      is the ODCS validation      │
+│                                                                      schema.                     │
+│                                                                      [default: all]              │
+│ --publish-test-results    --no-publish-test-results                  Deprecated. Use publish     │
+│                                                                      parameter. Publish the      │
+│                                                                      results after the test      │
+│                                                                      [default:                   │
+│                                                                      no-publish-test-results]    │
+│ --publish                                              TEXT          The url to publish the      │
+│                                                                      results after the test.     │
+│ --output                                               PATH          Specify the file path where │
+│                                                                      the test results should be  │
+│                                                                      written to (e.g.,           │
+│                                                                      './test-results/TEST-datac… │
+│ --output-format                                        [json|junit]  The target format for the   │
+│                                                                      test results.               │
+│ --checks                                               TEXT          Comma-separated list of     │
+│                                                                      check categories to run.    │
+│                                                                      Available categories:       │
+│                                                                      schema, quality,            │
+│                                                                      servicelevel, custom. Omit  │
+│                                                                      to enable all.              │
+│ --logs                    --no-logs                                  Print logs                  │
+│                                                                      [default: no-logs]          │
+│ --ssl-verification        --no-ssl-verification                      SSL verification when       │
+│                                                                      publishing the data         │
+│                                                                      contract.                   │
+│                                                                      [default: ssl-verification] │
+│ --debug                   --no-debug                                 Enable debug logging        │
+│ --help                                                               Show this message and exit. │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -1138,71 +1115,54 @@ models:
 
 ### ci
 ```
-                                                                                
- Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                
-                                                                                
- Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step       
- summary.                                                                       
-                                                                                
-╭─ Arguments ──────────────────────────────────────────────────────────────────╮
-│   locations      [LOCATIONS]...  The location(s) (url or path) of the data   │
-│                                  contract yaml file(s).                      │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --json-schema                            TEXT              The location (url │
-│                                                            or path) of the   │
-│                                                            ODCS JSON Schema  │
-│ --server                                 TEXT              The server        │
-│                                                            configuration to  │
-│                                                            run the schema    │
-│                                                            and quality       │
-│                                                            tests. Use the    │
-│                                                            key of the server │
-│                                                            object in the     │
-│                                                            data contract     │
-│                                                            yaml file to      │
-│                                                            refer to a        │
-│                                                            server, e.g.,     │
-│                                                            `production`, or  │
-│                                                            `all` for all     │
-│                                                            servers           │
-│                                                            (default).        │
-│                                                            [default: all]    │
-│ --publish                                TEXT              The url to        │
-│                                                            publish the       │
-│                                                            results after the │
-│                                                            test.             │
-│ --output                                 PATH              Specify the file  │
-│                                                            path where the    │
-│                                                            test results      │
-│                                                            should be written │
-│                                                            to (e.g.,         │
-│                                                            './test-results/… │
-│ --output-format                          [json|junit]      The target format │
-│                                                            for the test      │
-│                                                            results.          │
-│ --logs               --no-logs                             Print logs        │
-│                                                            [default:         │
-│                                                            no-logs]          │
-│ --json                                                     Print test        │
-│                                                            results as JSON   │
-│                                                            to stdout.        │
-│ --fail-on                                [warning|error|n  Minimum severity  │
-│                                          ever]             that causes a     │
-│                                                            non-zero exit     │
-│                                                            code.             │
-│                                                            [default: error]  │
-│ --ssl-verificati…    --no-ssl-verifi…                      SSL verification  │
-│                                                            when publishing   │
-│                                                            the data          │
-│                                                            contract.         │
-│                                                            [default:         │
-│                                                            ssl-verification] │
-│ --debug              --no-debug                            Enable debug      │
-│                                                            logging           │
-│ --help                                                     Show this message │
-│                                                            and exit.         │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                                    
+                                                                                                    
+ Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.                  
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   locations      [LOCATIONS]...  The location(s) (url or path) of the data contract yaml         │
+│                                  file(s).                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --json-schema                                  TEXT                   The location (url or path) │
+│                                                                       of the ODCS JSON Schema    │
+│ --server                                       TEXT                   The server configuration   │
+│                                                                       to run the schema and      │
+│                                                                       quality tests. Use the key │
+│                                                                       of the server object in    │
+│                                                                       the data contract yaml     │
+│                                                                       file to refer to a server, │
+│                                                                       e.g., `production`, or     │
+│                                                                       `all` for all servers      │
+│                                                                       (default).                 │
+│                                                                       [default: all]             │
+│ --publish                                      TEXT                   The url to publish the     │
+│                                                                       results after the test.    │
+│ --output                                       PATH                   Specify the file path      │
+│                                                                       where the test results     │
+│                                                                       should be written to       │
+│                                                                       (e.g.,                     │
+│                                                                       './test-results/TEST-data… │
+│ --output-format                                [json|junit]           The target format for the  │
+│                                                                       test results.              │
+│ --logs                --no-logs                                       Print logs                 │
+│                                                                       [default: no-logs]         │
+│ --json                                                                Print test results as JSON │
+│                                                                       to stdout.                 │
+│ --fail-on                                      [warning|error|never]  Minimum severity that      │
+│                                                                       causes a non-zero exit     │
+│                                                                       code.                      │
+│                                                                       [default: error]           │
+│ --ssl-verification    --no-ssl-verification                           SSL verification when      │
+│                                                                       publishing the data        │
+│                                                                       contract.                  │
+│                                                                       [default:                  │
+│                                                                       ssl-verification]          │
+│ --debug               --no-debug                                      Enable debug logging       │
+│ --help                                                                Show this message and      │
+│                                                                       exit.                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -1286,43 +1246,44 @@ steps:
 
 ### export
 ```
- Usage: datacontract export [OPTIONS] COMMAND [ARGS]...                         
-                                                                                
- Convert a data contract to a target format.                                    
-                                                                                
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                  │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ sql                 Export a data contract to SQL DDL.                       │
-│ sql-query           Export a data contract to a SQL query.                   │
-│ dbt-models          Export a data contract to dbt model schema YAML.         │
-│ dbt-sources         Export a data contract to dbt sources YAML.              │
-│ dbt-staging-sql     Export a data contract to a dbt staging SQL file.        │
-│ avro                Export a data contract to Avro schema.                   │
-│ avro-idl            Export a data contract to Avro IDL.                      │
-│ jsonschema          Export a data contract to JSON Schema.                   │
-│ pydantic-model      Export a data contract to a Pydantic model.              │
-│ protobuf            Export a data contract to Protobuf schema.               │
-│ odcs                Export a data contract to ODCS format.                   │
-│ rdf                 Export a data contract to RDF.                           │
-│ html                Export a data contract to HTML.                          │
-│ markdown            Export a data contract to Markdown.                      │
-│ mermaid             Export a data contract to Mermaid diagram.               │
-│ bigquery            Export a data contract to BigQuery schema.               │
-│ dbml                Export a data contract to DBML.                          │
-│ go                  Export a data contract to Go structs.                    │
-│ spark               Export a data contract to Spark schema.                  │
-│ sqlalchemy          Export a data contract to SQLAlchemy models.             │
-│ iceberg             Export a data contract to Iceberg schema.                │
-│ sodacl              Export a data contract to SodaCL checks.                 │
-│ great-expectations  Export a data contract to Great Expectations suite.      │
-│ data-caterer        Export a data contract to Data Caterer format.           │
-│ dcs                 Export a data contract to DCS format.                    │
-│ dqx                 Export a data contract to DQX format.                    │
-│ excel               Export a data contract to Excel.                         │
-│ custom              Export a data contract using a custom Jinja template.    │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: datacontract export [OPTIONS] COMMAND [ARGS]...                                             
+                                                                                                    
+ Convert a data contract to a target format.                                                        
+                                                                                                    
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
+│ sql                 Export a data contract to SQL DDL.                                           │
+│ sql-query           Export a data contract to a SQL query.                                       │
+│ dbt-models          Export a data contract to dbt model schema YAML.                             │
+│ dbt-sources         Export a data contract to dbt sources YAML.                                  │
+│ dbt-staging-sql     Export a data contract to a dbt staging SQL file.                            │
+│ avro                Export a data contract to Avro schema.                                       │
+│ avro-idl            Export a data contract to Avro IDL.                                          │
+│ jsonschema          Export a data contract to JSON Schema.                                       │
+│ pydantic-model      Export a data contract to a Pydantic model.                                  │
+│ protobuf            Export a data contract to Protobuf schema.                                   │
+│ odcs                Export a data contract to ODCS format.                                       │
+│ rdf                 Export a data contract to RDF.                                               │
+│ html                Export a data contract to HTML.                                              │
+│ markdown            Export a data contract to Markdown.                                          │
+│ mermaid             Export a data contract to Mermaid diagram.                                   │
+│ bigquery            Export a data contract to BigQuery schema.                                   │
+│ dbml                Export a data contract to DBML.                                              │
+│ go                  Export a data contract to Go structs.                                        │
+│ spark               Export a data contract to Spark schema.                                      │
+│ sqlalchemy          Export a data contract to SQLAlchemy models.                                 │
+│ iceberg             Export a data contract to Iceberg schema.                                    │
+│ sodacl              Export a data contract to SodaCL checks.                                     │
+│ great-expectations  Export a data contract to Great Expectations suite.                          │
+│ data-caterer        Export a data contract to Data Caterer format.                               │
+│ dcs                 Export a data contract to DCS format.                                        │
+│ dqx                 Export a data contract to DQX format.                                        │
+│ excel               Export a data contract to Excel.                                             │
+│ custom              Export a data contract using a custom Jinja template.                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -1650,31 +1611,32 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 
 ### import
 ```
- Usage: datacontract import [OPTIONS] COMMAND [ARGS]...                         
-                                                                                
- Create a data contract from a source format.                                   
-                                                                                
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                  │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ sql         Import a data contract from a SQL DDL file.                      │
-│ avro        Import a data contract from an Avro schema file.                 │
-│ dbt         Import a data contract from a dbt manifest file.                 │
-│ dbml        Import a data contract from a DBML file.                         │
-│ glue        Import a data contract from AWS Glue.                            │
-│ bigquery    Import a data contract from BigQuery.                            │
-│ unity       Import a data contract from Databricks Unity Catalog.            │
-│ jsonschema  Import a data contract from a JSON Schema file.                  │
-│ json        Import a data contract from a JSON file.                         │
-│ odcs        Import a data contract from an ODCS file.                        │
-│ parquet     Import a data contract from a Parquet file.                      │
-│ csv         Import a data contract from a CSV file.                          │
-│ protobuf    Import a data contract from a Protobuf schema file.              │
-│ spark       Import a data contract from a Spark schema.                      │
-│ iceberg     Import a data contract from an Iceberg schema.                   │
-│ excel       Import a data contract from an Excel file.                       │
-╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: datacontract import [OPTIONS] COMMAND [ARGS]...                                             
+                                                                                                    
+ Create a data contract from a source format.                                                       
+                                                                                                    
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
+│ sql         Import a data contract from a SQL DDL file.                                          │
+│ avro        Import a data contract from an Avro schema file.                                     │
+│ dbt         Import a data contract from a dbt manifest file.                                     │
+│ dbml        Import a data contract from a DBML file.                                             │
+│ glue        Import a data contract from AWS Glue.                                                │
+│ bigquery    Import a data contract from BigQuery.                                                │
+│ unity       Import a data contract from Databricks Unity Catalog.                                │
+│ jsonschema  Import a data contract from a JSON Schema file.                                      │
+│ json        Import a data contract from a JSON file.                                             │
+│ odcs        Import a data contract from an ODCS file.                                            │
+│ parquet     Import a data contract from a Parquet file.                                          │
+│ csv         Import a data contract from a CSV file.                                              │
+│ protobuf    Import a data contract from a Protobuf schema file.                                  │
+│ spark       Import a data contract from a Spark schema.                                          │
+│ iceberg     Import a data contract from an Iceberg schema.                                       │
+│ excel       Import a data contract from an Excel file.                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -1896,14 +1858,14 @@ datacontract import protobuf --source "test.proto"
                                                                                                     
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --files                   TEXT  Glob pattern for the data contract files to include in the       │
-│                                 catalog. Applies recursively to any subfolders.                  │
-│                                 [default: *.yaml]                                                │
-│ --output                  TEXT  Output directory for the catalog html files. [default: catalog/] │
-│ --json-schema             TEXT  The location (url or path) of the ODCS JSON Schema               │
-│                                 [default: None]                                                  │
-│ --debug     --no-debug          Enable debug logging [default: no-debug]                         │
-│ --help                          Show this message and exit.                                      │
+│ --files                        TEXT  Glob pattern for the data contract files to include in the  │
+│                                      catalog. Applies recursively to any subfolders.             │
+│                                      [default: *.yaml]                                           │
+│ --output                       TEXT  Output directory for the catalog html files.                │
+│                                      [default: catalog/]                                         │
+│ --json-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
+│ --debug          --no-debug          Enable debug logging                                        │
+│ --help                               Show this message and exit.                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
@@ -1933,11 +1895,10 @@ datacontract catalog --files "*.odcs.yaml"
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --json-schema                                  TEXT  The location (url or path) of the ODCS JSON │
 │                                                      Schema                                      │
-│                                                      [default: None]                             │
 │ --ssl-verification    --no-ssl-verification          SSL verification when publishing the data   │
 │                                                      contract.                                   │
 │                                                      [default: ssl-verification]                 │
-│ --debug               --no-debug                     Enable debug logging [default: no-debug]    │
+│ --debug               --no-debug                     Enable debug logging                        │
 │ --help                                               Show this message and exit.                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
