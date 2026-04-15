@@ -22,7 +22,10 @@ output_option = Annotated[
         help="Specify the file path where the Data Contract will be saved. If no path is provided, the output will be printed to stdout."
     ),
 ]
-schema_option = Annotated[Optional[str], typer.Option(help="The location (url or path) of the ODCS JSON Schema")]
+schema_option = Annotated[
+    Optional[str],
+    typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+]
 template_option = Annotated[Optional[str], typer.Option(help="The location (url or path) of the ODCS template")]
 owner_option = Annotated[
     Optional[str], typer.Option(help="The owner or team responsible for managing the data contract.")
@@ -91,7 +94,9 @@ def import_dbt(
     source: source_option = None,
     model: Annotated[
         Optional[List[str]],
-        typer.Option(help="List of model names to import (repeat for multiple, omit for all)."),
+        typer.Option(
+            help="List of models names to import from the dbt manifest file (repeat for multiple models names, leave empty for all models in the dataset)."
+        ),
     ] = None,
     output: output_option = None,
     schema: schema_option = None,
@@ -113,11 +118,15 @@ def import_dbml(
     source: source_option = None,
     schema: Annotated[
         Optional[List[str]],
-        typer.Option("--schema", help="List of schema names to import (repeat for multiple, omit for all)."),
+        typer.Option(
+            help="List of schema names to import from the DBML file (repeat for multiple schema names, leave empty for all tables in the file)."
+        ),
     ] = None,
     table: Annotated[
         Optional[List[str]],
-        typer.Option(help="List of table names to import (repeat for multiple, omit for all)."),
+        typer.Option(
+            help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
+        ),
     ] = None,
     output: output_option = None,
     json_schema: Annotated[
@@ -145,13 +154,12 @@ def import_dbml(
 
 @import_app.command(name="glue")
 def import_glue(
-    source: Annotated[
-        Optional[str],
-        typer.Option(help="The Glue database name to import from."),
-    ] = None,
+    source: source_option = None,
     table: Annotated[
         Optional[List[str]],
-        typer.Option(help="List of table ids to import (repeat for multiple, omit for all)."),
+        typer.Option(
+            help="List of table ids to import from the Glue Database (repeat for multiple table ids, leave empty for all tables in the dataset)."
+        ),
     ] = None,
     output: output_option = None,
     schema: schema_option = None,
@@ -175,7 +183,9 @@ def import_bigquery(
     dataset: Annotated[Optional[str], typer.Option(help="The BigQuery dataset id.")] = None,
     table: Annotated[
         Optional[List[str]],
-        typer.Option(help="List of table ids to import (repeat for multiple, omit for all)."),
+        typer.Option(
+            help="List of table ids to import from the BigQuery API (repeat for multiple table ids, leave empty for all tables in the dataset)."
+        ),
     ] = None,
     output: output_option = None,
     schema: schema_option = None,
@@ -203,7 +213,7 @@ def import_bigquery(
 @import_app.command(name="unity")
 def import_unity(
     source: source_option = None,
-    table: Annotated[Optional[List[str]], typer.Option(help="Full name of a table in the Unity Catalog.")] = None,
+    table: Annotated[Optional[List[str]], typer.Option(help="Full name of a table in the Unity Catalog")] = None,
     output: output_option = None,
     schema: schema_option = None,
     template: template_option = None,

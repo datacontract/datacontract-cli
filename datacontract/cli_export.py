@@ -25,9 +25,15 @@ output_option = Annotated[
 ]
 server_option = Annotated[Optional[str], typer.Option(help="The server name to export.")]
 schema_name_option = Annotated[
-    str, typer.Option(help="The name of the schema to export, e.g., `orders`, or `all` for all schemas (default).")
+    str,
+    typer.Option(
+        help="Which model to export, e.g., `orders`, or `all` for all models (default). Distinct from --json-schema, which is the ODCS validation schema."
+    ),
 ]
-schema_option = Annotated[Optional[str], typer.Option(help="The location (url or path) of the ODCS JSON Schema")]
+schema_option = Annotated[
+    Optional[str],
+    typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+]
 
 
 def _export(
@@ -74,7 +80,7 @@ def export_sql(
     server_type: Annotated[
         Optional[str],
         typer.Option(
-            help="The server type to determine the SQL dialect. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
+            help="The server type to determine the SQL dialect. By default, it uses 'auto' to automatically detect the SQL dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
         ),
     ] = "auto",
     output: output_option = None,
@@ -94,7 +100,7 @@ def export_sql_query(
     server_type: Annotated[
         Optional[str],
         typer.Option(
-            help="The server type to determine the SQL dialect. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
+            help="The server type to determine the SQL dialect. By default, it uses 'auto' to automatically detect the SQL dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
         ),
     ] = "auto",
     output: output_option = None,
@@ -397,7 +403,7 @@ def export_great_expectations(
     location: location_arg = "datacontract.yaml",
     engine: Annotated[
         Optional[str],
-        typer.Option(help="The engine used for the Great Expectations run."),
+        typer.Option(help="The engine used for Great Expectations run."),
     ] = None,
     server_type: Annotated[
         Optional[str],
@@ -472,7 +478,7 @@ def export_excel(
     location: location_arg = "datacontract.yaml",
     template: Annotated[
         Optional[Path],
-        typer.Option(help="Path or URL to a custom Excel template."),
+        typer.Option(help="Path/URL to custom Excel template."),
     ] = None,
     output: output_option = None,
     server: server_option = None,
@@ -483,7 +489,9 @@ def export_excel(
     """Export a data contract to Excel."""
     enable_debug_logging(debug)
     if output is None:
-        console.print("Error: Excel export requires --output.")
+        console.print("❌ Error: Excel export requires an output file path.")
+        console.print("💡 Hint: Use --output to specify where to save the Excel file, e.g.:")
+        console.print("   datacontract export excel --output datacontract.xlsx")
         raise typer.Exit(code=1)
     _export(ExportFormat.excel, location, output, server, schema_name, schema, template=template)
 
@@ -493,7 +501,7 @@ def export_custom(
     location: location_arg = "datacontract.yaml",
     template: Annotated[
         Optional[Path],
-        typer.Option(help="Path to a Jinja template for custom export."),
+        typer.Option(help="Path to Jinja template."),
     ] = None,
     output: output_option = None,
     server: server_option = None,
