@@ -8,17 +8,20 @@ servers:
 - server: snowflake
   type: snowflake
 schema:
-- name: mytable
+- name: my_table
   physicalType: table
+  description: My Comment
   logicalType: object
-  physicalName: mytable
+  physicalName: my_table
   properties:
   - name: field_primary_key
-    physicalType: INT
+    physicalType: DECIMAL(38, 0)
     description: Primary key
-    primaryKey: true
-    primaryKeyPosition: 1
-    logicalType: integer
+    logicalType: number
+    logicalTypeOptions:
+      precision: 38
+      scale: 0
+    required: true
   - name: field_not_null
     physicalType: INT
     description: Not null
@@ -30,39 +33,32 @@ schema:
     logicalType: string
     logicalTypeOptions:
       maxLength: 10
+  - name: field_character
+    physicalType: CHAR(10)
+    description: Fixed-length string
+    logicalType: string
+    logicalTypeOptions:
+      maxLength: 10
   - name: field_varchar
     physicalType: VARCHAR(100)
     description: Variable-length string
+    tags:
+    - SNOWFLAKE.CORE.PRIVACY_CATEGORY='IDENTIFIER'
+    - SNOWFLAKE.CORE.SEMANTIC_CATEGORY='NAME'
     logicalType: string
     logicalTypeOptions:
       maxLength: 100
   - name: field_text
     physicalType: VARCHAR
-    description: Large variable-length string (alias for VARCHAR(16777216))
+    description: Large variable-length string
     logicalType: string
   - name: field_string
     physicalType: VARCHAR
-    description: Alias for VARCHAR(16777216)
-    logicalType: string
-  - name: field_nchar
-    physicalType: CHAR(10)
-    description: Fixed-length string (no separate NCHAR)
-    logicalType: string
-    logicalTypeOptions:
-      maxLength: 10
-  - name: field_nvarchar
-    physicalType: VARCHAR(100)
-    description: Variable-length string (no separate NVARCHAR)
-    logicalType: string
-    logicalTypeOptions:
-      maxLength: 100
-  - name: field_ntext
-    physicalType: VARCHAR
-    description: Large variable-length string
+    description: Large variable-length Unicode string
     logicalType: string
   - name: field_tinyint
-    physicalType: SMALLINT
-    description: Snowflake doesn't have TINYINT, use SMALLINT
+    physicalType: TINYINT
+    description: Integer (0-255)
     logicalType: integer
   - name: field_smallint
     physicalType: SMALLINT
@@ -72,9 +68,13 @@ schema:
     physicalType: INT
     description: Integer (-2.1B to 2.1B)
     logicalType: integer
+  - name: field_integer
+    physicalType: INT
+    description: Integer full name(-2.1B to 2.1B)
+    logicalType: integer
   - name: field_bigint
     physicalType: BIGINT
-    description: Large integer
+    description: Large integer (-9 quintillion to 9 quintillion)
     logicalType: integer
   - name: field_decimal
     physicalType: DECIMAL(10, 2)
@@ -90,28 +90,25 @@ schema:
     logicalTypeOptions:
       precision: 10
       scale: 2
-  - name: field_number
-    physicalType: DECIMAL(38, 0)
-    description: Default numeric type (more flexible than DECIMAL)
-    logicalType: number
-    logicalTypeOptions:
-      precision: 38
-      scale: 0
-  - name: field_double
-    physicalType: DOUBLE
-    description: Double precision floating-point (synonym for FLOAT)
-    logicalType: number
   - name: field_float
     physicalType: DOUBLE
     description: Approximate floating-point
     logicalType: number
-  - name: field_real
-    physicalType: DOUBLE
-    description: Snowflake doesn't have REAL, use DOUBLE as synonym of FLOAT
+  - name: field_float4
+    physicalType: FLOAT
+    description: Approximate floating-point 4
     logicalType: number
-  - name: field_bit
+  - name: field_float8
+    physicalType: DOUBLE
+    description: Approximate floating-point 8
+    logicalType: number
+  - name: field_real
+    physicalType: FLOAT
+    description: Smaller floating-point
+    logicalType: number
+  - name: field_boulean
     physicalType: BOOLEAN
-    description: Boolean (TRUE/FALSE)
+    description: Boolean-like (0 or 1)
     logicalType: boolean
   - name: field_date
     physicalType: DATE
@@ -120,62 +117,42 @@ schema:
   - name: field_time
     physicalType: TIME
     description: Time only (HH:MM:SS)
-    logicalType: string
-  - name: field_datetime2
-    physicalType: TIMESTAMPNTZ
-    description: Timestamp without timezone
-    logicalType: date
-  - name: field_smalldatetime
-    physicalType: TIMESTAMPNTZ
-    description: Timestamp without timezone
-    logicalType: date
-  - name: field_datetimeoffset
-    physicalType: TIMESTAMPTZ
-    description: Timestamp with timezone
-    logicalType: date
+    logicalType: time
+  - name: field_timestamp
+    physicalType: TIMESTAMP
+    description: More precise datetime
+    logicalType: timestamp
   - name: field_timestamp_ltz
     physicalType: TIMESTAMPLTZ
-    description: Timestamp with local timezone
-    logicalType: date
+    description: More precise datetime with local time zone; time zone, if provided,
+      isn`t stored.
+    logicalType: timestamp
+  - name: field_timestamp_ntz
+    physicalType: TIMESTAMPNTZ
+    description: More precise datetime with no time zone; time zone, if provided,
+      isn`t stored.
+    logicalType: timestamp
+  - name: field_timestamp_tz
+    physicalType: TIMESTAMPTZ
+    description: More precise datetime with time zone.
+    logicalType: timestamp
   - name: field_binary
     physicalType: BINARY(16)
     description: Fixed-length binary
-    logicalType: array
-  - name: field_varbinary
-    physicalType: BINARY(100)
-    description: Variable-length binary
-    logicalType: array
-  - name: field_uniqueidentifier
-    physicalType: VARCHAR(36)
-    description: GUID stored as string
     logicalType: string
     logicalTypeOptions:
-      maxLength: 36
-  - name: field_xml
+      format: binary
+  - name: field_varbinary
+    physicalType: VARBINARY(100)
+    description: Variable-length binary
+    logicalType: string
+    logicalTypeOptions:
+      format: binary
+  - name: field_variant
     physicalType: VARIANT
-    description: Semi-structured data (XML as VARIANT)
+    description: VARIANT data
     logicalType: object
   - name: field_json
-    physicalType: VARIANT
-    description: Semi-structured data (native JSON support)
-    logicalType: object
-  - name: field_object
     physicalType: OBJECT
-    description: Semi-structured object (key-value pairs)
-    logicalType: object
-  - name: field_array
-    physicalType: ARRAY
-    description: Semi-structured array
-    logicalType: object
-  - name: field_geography
-    physicalType: GEOGRAPHY
-    description: Geospatial data (points, lines, polygons)
-    logicalType: object
-  - name: field_geometry
-    physicalType: GEOMETRY
-    description: Geospatial data (planar coordinates)
-    logicalType: object
-  - name: field_vector
-    physicalType: VECTOR(FLOAT, 16)
-    description: Vector data for ML/AI (16-dimensional float vector)
+    description: JSON (Stored as text)
     logicalType: object
