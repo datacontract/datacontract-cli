@@ -1335,6 +1335,12 @@ The `export` function converts a given data contract into a SQL data definition 
 datacontract export sql datacontract.yaml --output output.sql
 ```
 
+The SQL dialect is determined from the `servers` block in the data contract (e.g. `type: postgres`, `type: snowflake`). Alternatively, pass it explicitly:
+
+```shell
+datacontract export sql datacontract.yaml --server-type postgres --output output.sql
+```
+
 If using Databricks, and an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following properties.
 
 ```shell
@@ -1347,7 +1353,7 @@ The `export` function transforms a specified data contract into a comprehensive 
 If the contract includes multiple models, you need to specify the names of the schema/models you wish to export.
 
 ```shell
-datacontract export great-expectations datacontract.yaml --model orders
+datacontract export great-expectations datacontract.yaml --schema-name orders
 ```
 
 The export creates a list of expectations by utilizing:
@@ -1460,7 +1466,7 @@ ingested by [Data Caterer](https://github.com/data-catering/data-caterer). This 
 ability to generate production-like data in any environment based off your data contract.
 
 ```shell
-datacontract export data-caterer datacontract.yaml --model orders
+datacontract export data-caterer datacontract.yaml --schema-name orders
 ```
 
 You can further customise the way data is generated via adding
@@ -1471,11 +1477,11 @@ to suit your needs.
 
 Exports to an [Iceberg Table Json Schema Definition](https://iceberg.apache.org/spec/#appendix-c-json-serialization).
 
-This export only supports a single model export at a time because Iceberg's schema definition is for a single table and the exporter maps 1 model to 1 table, use the `--model` flag
+This export only supports a single model export at a time because Iceberg's schema definition is for a single table and the exporter maps 1 model to 1 table, use the `--schema-name` flag
 to limit your contract export to a single model.
 
 ```bash
- $ datacontract export iceberg --model orders https://datacontract.com/examples/orders-latest/datacontract.yaml --output /tmp/orders_iceberg.json
+ $ datacontract export iceberg --schema-name orders https://datacontract.com/examples/orders-latest/datacontract.yaml --output /tmp/orders_iceberg.json
  
  $ cat /tmp/orders_iceberg.json | jq '.'
 {
@@ -1535,19 +1541,21 @@ datacontract export custom --template template.txt datacontract.yaml
 
 ##### Jinja templates & variables
 
-You can directly use the Data Contract Specification as template variables.
+You can directly use the ODCS (Open Data Contract Standard) object as a template variable. `data_contract` is an `OpenDataContractStandard` instance; top-level fields include `name`, `id`, `version`, `schema_` (the list of schemas), `servers`, `team`, etc.
 
 {% raw %}
 ```shell
 $ cat template.txt
-title: {{ data_contract.info.title }}
-models:
-{%- for model_name, model in data_contract.models.items() %}
-  - name: {{ model.name }}
+title: {{ data_contract.name }}
+schemas:
+{%- for schema in data_contract.schema_ %}
+  - name: {{ schema.name }}
 {%- endfor %}
 
 $ datacontract export custom --template template.txt datacontract.yaml
 title: Orders Latest
+schemas:
+  - name: orders
 ```
 {% endraw %}
 
