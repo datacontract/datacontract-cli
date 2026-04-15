@@ -32,9 +32,6 @@ schema:
     physicalType: DECIMAL(38, 0)
     description: Primary key
     logicalType: number
-    logicalTypeOptions:
-      precision: 38
-      scale: 0
     required: true
   - name: field_not_null
     physicalType: INT
@@ -94,16 +91,10 @@ schema:
     physicalType: DECIMAL(10, 2)
     description: Fixed precision decimal
     logicalType: number
-    logicalTypeOptions:
-      precision: 10
-      scale: 2
   - name: field_numeric
     physicalType: DECIMAL(10, 2)
     description: Same as DECIMAL
     logicalType: number
-    logicalTypeOptions:
-      precision: 10
-      scale: 2
   - name: field_float
     physicalType: DOUBLE
     description: Approximate floating-point

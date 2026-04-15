@@ -372,9 +372,6 @@ schema:
   - name: some_bytes_decimal
     physicalType: bytes
     logicalType: number
-    logicalTypeOptions:
-      precision: 25
-      scale: 2
     required: true
 """
     print("Result:\n", result.to_yaml())

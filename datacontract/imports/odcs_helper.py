@@ -122,10 +122,6 @@ def create_property(
         logical_type_options["exclusiveMinimum"] = exclusive_minimum
     if exclusive_maximum is not None:
         logical_type_options["exclusiveMaximum"] = exclusive_maximum
-    if precision is not None:
-        logical_type_options["precision"] = precision
-    if scale is not None:
-        logical_type_options["scale"] = scale
     if format:
         logical_type_options["format"] = format
     if logical_type_options:

@@ -54,9 +54,6 @@ schema:
   - name: decimal_field
     physicalType: DECIMAL
     logicalType: number
-    logicalTypeOptions:
-      precision: 10
-      scale: 2
   - name: float_field
     physicalType: FLOAT
     logicalType: number

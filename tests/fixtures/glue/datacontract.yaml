@@ -29,9 +29,6 @@ schema:
   - name: field_four
     physicalType: decimal
     logicalType: number
-    logicalTypeOptions:
-      precision: 6
-      scale: 2
   - name: field_five
     physicalType: struct
     logicalType: object

@@ -68,16 +68,10 @@ schema:
     physicalType: NUMERIC
     description: A Numeric field with precision 5 and scale 3
     logicalType: number
-    logicalTypeOptions:
-      precision: 5
-      scale: 3
   - name: Bignumeric_field
     physicalType: BIGNUMERIC
     description: A bignumeric field with precision 8 and sclae 4
     logicalType: number
-    logicalTypeOptions:
-      precision: 8
-      scale: 4
   - name: Record_field
     physicalType: RECORD
     description: A record field with two subfields
