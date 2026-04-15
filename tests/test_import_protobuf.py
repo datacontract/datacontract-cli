@@ -17,7 +17,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "protobuf",
             "--source",
             protobuf_file_path,

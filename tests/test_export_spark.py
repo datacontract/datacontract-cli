@@ -13,7 +13,7 @@ def test_cli():
     runner = CliRunner()
     result = runner.invoke(
         app,
-        ["export", "./fixtures/spark/export/datacontract.yaml", "--format", "spark"],
+        ["export", "spark", "./fixtures/spark/export/datacontract.yaml"],
     )
     assert result.exit_code == 0
     assert result.output == expected_str

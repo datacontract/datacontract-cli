@@ -126,6 +126,10 @@ def import_dbml(
 
 @import_app.command(name="glue")
 def import_glue(
+    source: Annotated[
+        Optional[str],
+        typer.Option(help="The Glue database name to import from."),
+    ] = None,
     table: Annotated[
         Optional[List[str]],
         typer.Option(help="List of table ids to import (repeat for multiple, omit for all)."),
@@ -139,12 +143,13 @@ def import_glue(
 ):
     """Import a data contract from AWS Glue."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="glue", template=template, schema=schema, glue_table=table, owner=owner, id=id)
+    result = DataContract.import_from_source(format="glue", source=source, template=template, schema=schema, glue_table=table, owner=owner, id=id)
     _write_result(result, output)
 
 
 @import_app.command(name="bigquery")
 def import_bigquery(
+    source: source_option = None,
     project: Annotated[Optional[str], typer.Option(help="The BigQuery project id.")] = None,
     dataset: Annotated[Optional[str], typer.Option(help="The BigQuery dataset id.")] = None,
     table: Annotated[
@@ -161,13 +166,14 @@ def import_bigquery(
     """Import a data contract from BigQuery."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="bigquery", template=template, schema=schema, bigquery_project=project, bigquery_dataset=dataset, bigquery_table=table, owner=owner, id=id
+        format="bigquery", source=source, template=template, schema=schema, bigquery_project=project, bigquery_dataset=dataset, bigquery_table=table, owner=owner, id=id
     )
     _write_result(result, output)
 
 
 @import_app.command(name="unity")
 def import_unity(
+    source: source_option = None,
     table: Annotated[
         Optional[List[str]], typer.Option(help="Full name of a table in the Unity Catalog.")
     ] = None,
@@ -180,7 +186,7 @@ def import_unity(
 ):
     """Import a data contract from Databricks Unity Catalog."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="unity", template=template, schema=schema, unity_table_full_name=table, owner=owner, id=id)
+    result = DataContract.import_from_source(format="unity", source=source, template=template, schema=schema, unity_table_full_name=table, owner=owner, id=id)
     _write_result(result, output)
 
 

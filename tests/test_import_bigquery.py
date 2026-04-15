@@ -14,7 +14,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "bigquery",
             "--source",
             "fixtures/bigquery/import/complete_table_schema.json",

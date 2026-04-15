@@ -8,7 +8,7 @@ from datacontract.data_contract import DataContract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/postgres-export/datacontract.yaml", "--format", "sql-query"])
+    result = runner.invoke(app, ["export", "sql-query", "./fixtures/postgres-export/datacontract.yaml"])
     assert result.exit_code == 0
 
 

@@ -399,6 +399,12 @@ def export_great_expectations(
         Optional[str],
         typer.Option(help="The engine used for the Great Expectations run."),
     ] = None,
+    server_type: Annotated[
+        Optional[str],
+        typer.Option(
+            help="The server type to determine the SQL dialect (when using --engine sql). Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
+        ),
+    ] = "auto",
     output: output_option = None,
     server: server_option = None,
     schema_name: schema_name_option = "all",
@@ -407,7 +413,7 @@ def export_great_expectations(
 ):
     """Export a data contract to Great Expectations suite."""
     enable_debug_logging(debug)
-    _export(ExportFormat.great_expectations, location, output, server, schema_name, schema, engine=engine)
+    _export(ExportFormat.great_expectations, location, output, server, schema_name, schema, engine=engine, sql_server_type=server_type)
 
 
 @export_app.command(name="data-caterer")

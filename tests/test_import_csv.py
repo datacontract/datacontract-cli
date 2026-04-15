@@ -15,7 +15,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "csv",
             "--source",
             csv_file_path,

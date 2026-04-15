@@ -8,7 +8,7 @@ from datacontract.cli import app
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "mermaid"])
+    result = runner.invoke(app, ["export", "mermaid", "./fixtures/export/datacontract.odcs.yaml"])
     assert result.exit_code == 0
 
 
@@ -18,9 +18,8 @@ def test_cli_with_output(tmp_path: Path):
         app,
         [
             "export",
-            "./fixtures/export/datacontract.odcs.yaml",
-            "--format",
             "mermaid",
+            "./fixtures/export/datacontract.odcs.yaml",
             "--output",
             tmp_path / "datacontract.mermaid",
         ],
@@ -36,9 +35,8 @@ def test_mermaid_structure(tmp_path: Path):
         app,
         [
             "export",
-            datacontract_file,
-            "--format",
             "mermaid",
+            datacontract_file,
             "--output",
             tmp_path / "datacontract.mermaid",
         ],

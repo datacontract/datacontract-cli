@@ -32,7 +32,7 @@ schema:
         with tempfile.NamedTemporaryFile(delete=True) as tmp_output_file:
             runner = CliRunner()
             result = runner.invoke(
-                app, ["export", tmp_input_file.name, "--format", "iceberg", "--output", tmp_output_file.name]
+                app, ["export", "iceberg", tmp_input_file.name, "--output", tmp_output_file.name]
             )
             assert result.exit_code == 0
 
@@ -194,11 +194,10 @@ def test_round_trip():
         app,
         [
             "import",
-            "--format",
             "iceberg",
             "--source",
             "fixtures/iceberg/nested_schema.json",
-            "--iceberg-table",
+            "--table",
             "test-table",
         ],
     )
@@ -214,7 +213,7 @@ def test_round_trip():
         with tempfile.NamedTemporaryFile(delete=True) as tmp_output_file:
             runner = CliRunner()
             result = runner.invoke(
-                app, ["export", tmp_input_file.name, "--format", "iceberg", "--output", tmp_output_file.name]
+                app, ["export", "iceberg", tmp_input_file.name, "--output", tmp_output_file.name]
             )
             assert result.exit_code == 0
 

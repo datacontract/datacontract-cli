@@ -16,7 +16,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "excel",
             "--source",
             "./fixtures/excel/shipments-odcs.xlsx",

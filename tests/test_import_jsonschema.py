@@ -16,7 +16,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "jsonschema",
             "--source",
             "fixtures/import/orders.json",
@@ -31,7 +30,6 @@ def test_cli_with_output(tmp_path: Path):
         app,
         [
             "import",
-            "--format",
             "jsonschema",
             "--source",
             "fixtures/import/orders_union-types.json",

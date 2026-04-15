@@ -15,7 +15,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "avro",
             "--source",
             "fixtures/avro/data/orders.avsc",

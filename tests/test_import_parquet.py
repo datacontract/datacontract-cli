@@ -18,7 +18,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "parquet",
             "--source",
             parquet_file_path,

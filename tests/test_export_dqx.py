@@ -9,7 +9,7 @@ from datacontract.data_contract import DataContract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/dqx/datacontract.odcs.yaml", "--format", "dqx"])
+    result = runner.invoke(app, ["export", "dqx", "./fixtures/dqx/datacontract.odcs.yaml"])
     assert result.exit_code == 0
 
 

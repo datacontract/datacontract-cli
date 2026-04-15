@@ -63,7 +63,7 @@ def test_avro_idl_str():
 
 def test_avro_idl_cli_export():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/lint/valid_datacontract_ref.yaml", "--format", "avro-idl"])
+    result = runner.invoke(app, ["export", "avro-idl", "./fixtures/lint/valid_datacontract_ref.yaml"])
     if result.exit_code:
         print(result.output)
     assert result.exit_code == 0

@@ -118,7 +118,6 @@ def test_cli(spark: SparkSession, df_user, user_datacontract_no_desc):
         app,
         [
             "import",
-            "--format",
             "spark",
             "--source",
             "users",
@@ -136,7 +135,6 @@ def test_table_not_exists():
         app,
         [
             "import",
-            "--format",
             "spark",
             "--source",
             "table_not_exists",
