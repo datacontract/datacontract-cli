@@ -24,7 +24,9 @@ output_option = Annotated[
 ]
 schema_option = Annotated[Optional[str], typer.Option(help="The location (url or path) of the ODCS JSON Schema")]
 template_option = Annotated[Optional[str], typer.Option(help="The location (url or path) of the ODCS template")]
-owner_option = Annotated[Optional[str], typer.Option(help="The owner or team responsible for managing the data contract.")]
+owner_option = Annotated[
+    Optional[str], typer.Option(help="The owner or team responsible for managing the data contract.")
+]
 id_option = Annotated[Optional[str], typer.Option(help="The identifier for the data contract.")]
 
 
@@ -47,7 +49,9 @@ def import_sql(
     source: source_option = None,
     dialect: Annotated[
         Optional[str],
-        typer.Option(help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."),
+        typer.Option(
+            help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."
+        ),
     ] = None,
     output: output_option = None,
     schema: schema_option = None,
@@ -58,7 +62,9 @@ def import_sql(
 ):
     """Import a data contract from a SQL DDL file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="sql", source=source, template=template, schema=schema, dialect=dialect, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="sql", source=source, template=template, schema=schema, dialect=dialect, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -74,7 +80,9 @@ def import_avro(
 ):
     """Import a data contract from an Avro schema file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="avro", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="avro", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -94,7 +102,9 @@ def import_dbt(
 ):
     """Import a data contract from a dbt manifest file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="dbt", source=source, template=template, schema=schema, dbt_model=model, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="dbt", source=source, template=template, schema=schema, dbt_model=model, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -110,7 +120,9 @@ def import_dbml(
         typer.Option(help="List of table names to import (repeat for multiple, omit for all)."),
     ] = None,
     output: output_option = None,
-    json_schema: Annotated[Optional[str], typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema")] = None,
+    json_schema: Annotated[
+        Optional[str], typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema")
+    ] = None,
     template: template_option = None,
     owner: owner_option = None,
     id: id_option = None,
@@ -119,7 +131,14 @@ def import_dbml(
     """Import a data contract from a DBML file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="dbml", source=source, template=template, schema=json_schema, dbml_schema=schema, dbml_table=table, owner=owner, id=id
+        format="dbml",
+        source=source,
+        template=template,
+        schema=json_schema,
+        dbml_schema=schema,
+        dbml_table=table,
+        owner=owner,
+        id=id,
     )
     _write_result(result, output)
 
@@ -143,7 +162,9 @@ def import_glue(
 ):
     """Import a data contract from AWS Glue."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="glue", source=source, template=template, schema=schema, glue_table=table, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="glue", source=source, template=template, schema=schema, glue_table=table, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -166,7 +187,15 @@ def import_bigquery(
     """Import a data contract from BigQuery."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="bigquery", source=source, template=template, schema=schema, bigquery_project=project, bigquery_dataset=dataset, bigquery_table=table, owner=owner, id=id
+        format="bigquery",
+        source=source,
+        template=template,
+        schema=schema,
+        bigquery_project=project,
+        bigquery_dataset=dataset,
+        bigquery_table=table,
+        owner=owner,
+        id=id,
     )
     _write_result(result, output)
 
@@ -174,9 +203,7 @@ def import_bigquery(
 @import_app.command(name="unity")
 def import_unity(
     source: source_option = None,
-    table: Annotated[
-        Optional[List[str]], typer.Option(help="Full name of a table in the Unity Catalog.")
-    ] = None,
+    table: Annotated[Optional[List[str]], typer.Option(help="Full name of a table in the Unity Catalog.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     template: template_option = None,
@@ -186,7 +213,9 @@ def import_unity(
 ):
     """Import a data contract from Databricks Unity Catalog."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="unity", source=source, template=template, schema=schema, unity_table_full_name=table, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="unity", source=source, template=template, schema=schema, unity_table_full_name=table, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -202,7 +231,9 @@ def import_jsonschema(
 ):
     """Import a data contract from a JSON Schema file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="jsonschema", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="jsonschema", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -218,7 +249,9 @@ def import_json(
 ):
     """Import a data contract from a JSON file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="json", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="json", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -234,7 +267,9 @@ def import_odcs(
 ):
     """Import a data contract from an ODCS file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="odcs", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="odcs", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -250,7 +285,9 @@ def import_parquet(
 ):
     """Import a data contract from a Parquet file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="parquet", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="parquet", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -266,7 +303,9 @@ def import_csv(
 ):
     """Import a data contract from a CSV file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="csv", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="csv", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -282,7 +321,9 @@ def import_protobuf(
 ):
     """Import a data contract from a Protobuf schema file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="protobuf", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="protobuf", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -298,7 +339,9 @@ def import_spark(
 ):
     """Import a data contract from a Spark schema."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="spark", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="spark", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -318,7 +361,9 @@ def import_iceberg(
 ):
     """Import a data contract from an Iceberg schema."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="iceberg", source=source, template=template, schema=schema, iceberg_table=table, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="iceberg", source=source, template=template, schema=schema, iceberg_table=table, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -334,5 +379,7 @@ def import_excel(
 ):
     """Import a data contract from an Excel file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="excel", source=source, template=template, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="excel", source=source, template=template, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)

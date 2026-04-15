@@ -332,8 +332,6 @@ def ci(
         raise typer.Exit(code=1)
 
 
-
-
 @app.command(name="publish")
 def publish(
     location: Annotated[

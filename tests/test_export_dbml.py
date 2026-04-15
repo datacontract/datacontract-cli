@@ -18,9 +18,7 @@ def test_cli():
 
 def test_cli_with_server():
     runner = CliRunner()
-    result = runner.invoke(
-        app, ["export", "dbml", "./fixtures/dbml/datacontract.odcs.yaml", "--server", "production"]
-    )
+    result = runner.invoke(app, ["export", "dbml", "./fixtures/dbml/datacontract.odcs.yaml", "--server", "production"])
     assert result.exit_code == 0
 
 

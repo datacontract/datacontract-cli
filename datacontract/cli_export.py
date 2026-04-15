@@ -413,7 +413,16 @@ def export_great_expectations(
 ):
     """Export a data contract to Great Expectations suite."""
     enable_debug_logging(debug)
-    _export(ExportFormat.great_expectations, location, output, server, schema_name, schema, engine=engine, sql_server_type=server_type)
+    _export(
+        ExportFormat.great_expectations,
+        location,
+        output,
+        server,
+        schema_name,
+        schema,
+        engine=engine,
+        sql_server_type=server_type,
+    )
 
 
 @export_app.command(name="data-caterer")

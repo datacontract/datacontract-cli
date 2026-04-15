@@ -14,9 +14,7 @@ from datacontract.lint.resolve import resolve_data_contract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(
-        app, ["export", "rdf", "./fixtures/export/rdf/datacontract.yaml", "--base", "urn:acme:"]
-    )
+    result = runner.invoke(app, ["export", "rdf", "./fixtures/export/rdf/datacontract.yaml", "--base", "urn:acme:"])
     assert result.exit_code == 0
 
 
