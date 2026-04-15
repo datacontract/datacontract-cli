@@ -109,7 +109,10 @@ def lint(
             help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml'). If no path is provided, the output will be printed to stdout."
         ),
     ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+    ] = None,
     all_errors: Annotated[
         bool,
         typer.Option(
@@ -124,6 +127,7 @@ def lint(
     """
     enable_debug_logging(debug)
 
+    output_format = resolve_output_format(output_format, output)
     run = DataContract(data_contract_file=location, schema_location=schema, all_errors=all_errors).lint()
     write_test_result(run, console, output_format, output)
 
@@ -133,6 +137,21 @@ def enable_debug_logging(debug: bool):
         logging.basicConfig(
             level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
         )
+
+
+def resolve_output_format(output_format: Optional[OutputFormat], output: Optional[Path]) -> Optional[OutputFormat]:
+    if output_format is not None or output is None:
+        return output_format
+
+    inferred = OutputFormat.infer_from_output_path(output)
+    if inferred is None:
+        extension = output.suffix or "no extension"
+        console.print(
+            f"Error: Cannot infer output format from extension '{extension}'. Please specify --output-format (json or junit)."
+        )
+        raise typer.Exit(code=1)
+
+    return inferred
 
 
 @app.command(name="changelog")
@@ -180,7 +199,10 @@ def test(
             help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
         ),
     ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+    ] = None,
     checks: Annotated[
         str,
         typer.Option(
@@ -214,6 +236,8 @@ def test(
             console.print(f"[red]Invalid --checks specified: {', '.join(sorted(invalid))}[/red]")
             console.print(f"Available categories: {', '.join(sorted(valid_categories))}")
             raise typer.Exit(code=1)
+
+    output_format = resolve_output_format(output_format, output)
 
     console.print(f"Testing {location}")
     if server == "all":
@@ -293,6 +317,8 @@ def ci(
 
     if server == "all":
         server = None
+
+    output_format = resolve_output_format(output_format, output)
 
     # Plain text output for CI logs; --json sends human output to stderr.
     out = Console(stderr=True, no_color=True) if json_output else Console(no_color=True)

@@ -18,8 +18,6 @@ def test_output_junit_test_result(tmp_path):
             "test",
             "--output",
             tmp_path / "TEST-datacontract.xml",
-            "--output-format",
-            "junit",
             "./fixtures/junit/datacontract.yaml",
         ],
     )

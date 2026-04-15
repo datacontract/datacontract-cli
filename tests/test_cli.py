@@ -20,6 +20,15 @@ def test_file_does_not_exist():
     assert "The file 'unknown.yaml' does not \nexist." in result.stdout
 
 
+def test_test_output_rejects_unknown_extension(tmp_path):
+    result = runner.invoke(
+        app,
+        ["test", "--output", str(tmp_path / "test-results.txt"), "./fixtures/junit/datacontract.yaml"],
+    )
+    assert result.exit_code == 1
+    assert "Cannot infer output format from extension '.txt'" in result.stdout
+
+
 def test_test_schema_name_option_in_help():
     """Test that --schema-name option is available in test command help."""
     result = runner.invoke(app, ["test", "--help"], env={"COLUMNS": "200"})
