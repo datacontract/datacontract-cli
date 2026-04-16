@@ -24,7 +24,7 @@ output_option = Annotated[
 ]
 schema_option = Annotated[
     Optional[str],
-    typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
 ]
 template_option = Annotated[Optional[str], typer.Option(help="The location (url or path) of the ODCS template")]
 owner_option = Annotated[
@@ -129,8 +129,8 @@ def import_dbml(
         ),
     ] = None,
     output: output_option = None,
-    json_schema: Annotated[
-        Optional[str], typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema")
+    odcs_schema: Annotated[
+        Optional[str], typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema")
     ] = None,
     template: template_option = None,
     owner: owner_option = None,
@@ -143,7 +143,7 @@ def import_dbml(
         format="dbml",
         source=source,
         template=template,
-        schema=json_schema,
+        schema=odcs_schema,
         dbml_schema=schema,
         dbml_table=table,
         owner=owner,

@@ -307,7 +307,7 @@ Commands
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                    TEXT          The location (url or path) of the ODCS JSON       │
+│ --odcs-schema                    TEXT          The location (url or path) of the ODCS JSON       │
 │                                                Schema                                            │
 │ --output                         PATH          Specify the file path where the test results      │
 │                                                should be written to (e.g.,                       │
@@ -356,7 +356,7 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                                          TEXT          The location (url or path)  │
+│ --odcs-schema                                          TEXT          The location (url or path)  │
 │                                                                      of the ODCS JSON Schema     │
 │ --server                                               TEXT          The server configuration to │
 │                                                                      run the schema and quality  │
@@ -1119,7 +1119,7 @@ models:
 │                                  file(s).                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                                  TEXT                   The location (url or path) │
+│ --odcs-schema                                  TEXT                   The location (url or path) │
 │                                                                       of the ODCS JSON Schema    │
 │ --server                                       TEXT                   The server configuration   │
 │                                                                       to run the schema and      │
@@ -1285,7 +1285,7 @@ steps:
 │ --schema-name                  TEXT  Which schema to export, e.g., `orders`, or `all` for all    │
 │                                      schemas (default).                                          │
 │                                      [default: all]                                              │
-│ --json-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
+│ --odcs-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
 │ --debug          --no-debug          Enable debug logging                                        │
 │ --help                               Show a command-specific help message and exit.              │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -1679,7 +1679,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │ --output                       PATH  Specify the file path where the Data Contract will be       │
 │                                      saved. If no path is provided, the output will be printed   │
 │                                      to stdout.                                                  │
-│ --json-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
+│ --odcs-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
 │ --template                     TEXT  The location (url or path) of the ODCS template             │
 │ --owner                        TEXT  The owner or team responsible for managing the data         │
 │                                      contract.                                                   │
@@ -1956,7 +1956,7 @@ datacontract import protobuf --source "test.proto"
 │                                      [default: *.yaml]                                           │
 │ --output                       TEXT  Output directory for the catalog html files.                │
 │                                      [default: catalog/]                                         │
-│ --json-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
+│ --odcs-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
 │ --debug          --no-debug          Enable debug logging                                        │
 │ --help                               Show this message and exit.                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -1985,7 +1985,7 @@ datacontract catalog --files "*.odcs.yaml"
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                                  TEXT  The location (url or path) of the ODCS JSON │
+│ --odcs-schema                                  TEXT  The location (url or path) of the ODCS JSON │
 │                                                      Schema                                      │
 │ --ssl-verification    --no-ssl-verification          SSL verification when publishing the data   │
 │                                                      contract.                                   │

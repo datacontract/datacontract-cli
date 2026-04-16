@@ -100,7 +100,7 @@ def lint(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     output: Annotated[
         Path,
@@ -154,7 +154,7 @@ def test(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -244,7 +244,7 @@ def ci(
     ] = None,
     schema: Annotated[
         str,
-        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -340,7 +340,7 @@ def publish(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     ssl_verification: Annotated[
         bool,
@@ -370,7 +370,7 @@ def catalog(
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
         str,
-        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     debug: debug_option = None,
 ):
