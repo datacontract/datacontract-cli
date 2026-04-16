@@ -20,7 +20,7 @@ location_arg = Annotated[str, typer.Argument(help="The location (url or path) of
 output_option = Annotated[
     Optional[Path],
     typer.Option(
-        help="Specify the file path where the exported data will be saved. If no path is provided, the output will be printed to stdout."
+        help="File path where the exported data will be saved. If not provided, it will be printed to stdout."
     ),
 ]
 server_option = Annotated[Optional[str], typer.Option(help="The server name to export.")]
@@ -30,7 +30,7 @@ schema_name_option = Annotated[
 ]
 schema_option = Annotated[
     Optional[str],
-    typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema."),
 ]
 
 
@@ -78,7 +78,7 @@ def export_sql(
     server_type: Annotated[
         Optional[str],
         typer.Option(
-            help="The server type to determine the SQL dialect. By default, it uses 'auto' to automatically detect the SQL dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
+            help="The server type to determine the SQL dialect. By default, detect the SQL dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
         ),
     ] = "auto",
     output: output_option = None,
@@ -98,7 +98,7 @@ def export_sql_query(
     server_type: Annotated[
         Optional[str],
         typer.Option(
-            help="The server type to determine the SQL dialect. By default, it uses 'auto' to automatically detect the SQL dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
+            help="The server type to determine the SQL dialect. By default, detect the SQL dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
         ),
     ] = "auto",
     output: output_option = None,
@@ -406,7 +406,7 @@ def export_great_expectations(
     server_type: Annotated[
         Optional[str],
         typer.Option(
-            help="The server type to determine the SQL dialect (when using --engine sql). Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
+            help="The server type to determine the SQL dialect (when using --engine sql). By default, automatically detect it via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle."
         ),
     ] = "auto",
     output: output_option = None,
@@ -475,8 +475,8 @@ def export_dqx(
 def export_excel(
     location: location_arg = "datacontract.yaml",
     template: Annotated[
-        Optional[Path],
-        typer.Option(help="Path/URL to custom Excel template."),
+        Optional[str],
+        typer.Option(help="Path or URL to a custom Excel template."),
     ] = None,
     output: output_option = None,
     server: server_option = None,

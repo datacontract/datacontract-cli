@@ -256,7 +256,6 @@ class DataContract:
         cls,
         format: str,
         source: typing.Optional[str] = None,
-        template: typing.Optional[str] = None,
         **kwargs,
     ) -> OpenDataContractStandard:
         """Import a data contract from a source in a given format.

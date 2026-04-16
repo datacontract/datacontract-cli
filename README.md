@@ -1338,7 +1338,7 @@ The SQL dialect is determined from the `servers` block in the data contract (e.g
 datacontract export sql datacontract.yaml --server-type postgres --output output.sql
 ```
 
-If using Databricks, and an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following properties.
+If using Databricks, an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following properties.
 
 ```shell
 spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
@@ -1680,7 +1680,6 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │                                      saved. If no path is provided, the output will be printed   │
 │                                      to stdout.                                                  │
 │ --odcs-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
-│ --template                     TEXT  The location (url or path) of the ODCS template             │
 │ --owner                        TEXT  The owner or team responsible for managing the data         │
 │                                      contract.                                                   │
 │ --id                           TEXT  The identifier for the data contract.                       │
