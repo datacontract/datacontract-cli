@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.model.run import ResultEnum
 
 runner = CliRunner()
 
@@ -12,7 +13,7 @@ def test_test_nonexistent_server_exits_with_error():
         server="nonexistent",
     )
     run = data_contract.test()
-    assert run.result == "failed"
+    assert run.result == ResultEnum.error  # DataContractException caught by exception handler → error
     assert any("nonexistent" in check.reason for check in run.checks)
 
 
