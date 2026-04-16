@@ -1338,7 +1338,7 @@ The SQL dialect is determined from the `servers` block in the data contract (e.g
 datacontract export sql datacontract.yaml --server-type postgres --output output.sql
 ```
 
-If using Databricks, an error is thrown when trying to deploy the SQL DDLs with `variant` columns set the following properties.
+If using Databricks and an error is thrown when deploying SQL DDLs with `variant` columns, set the following property.
 
 ```shell
 spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
