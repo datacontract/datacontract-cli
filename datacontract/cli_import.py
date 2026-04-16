@@ -5,17 +5,16 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from datacontract.cli import OrderedCommands, debug_option, enable_debug_logging
+from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
 from datacontract.data_contract import DataContract
 
 console = Console()
 
-import_app = typer.Typer(cls=OrderedCommands, no_args_is_help=True)
+import_app = typer.Typer(cls=OrderedCommandsWithMigrationHints, no_args_is_help=True)
 
 # ---------------------------------------------------------------------------
 # Shared option type aliases
 # ---------------------------------------------------------------------------
-source_option = Annotated[Optional[str], typer.Option(help="Path to the file that should be imported.")]
 output_option = Annotated[
     Optional[Path],
     typer.Option(
@@ -48,7 +47,7 @@ def _write_result(result, output: Optional[Path]):
 
 @import_app.command(name="sql")
 def import_sql(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the SQL DDL file.")] = None,
     dialect: Annotated[
         Optional[str],
         typer.Option(
@@ -71,7 +70,7 @@ def import_sql(
 
 @import_app.command(name="avro")
 def import_avro(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the Avro schema file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -86,7 +85,7 @@ def import_avro(
 
 @import_app.command(name="dbt")
 def import_dbt(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the dbt manifest.json file.")] = None,
     model: Annotated[
         Optional[List[str]],
         typer.Option(
@@ -109,7 +108,7 @@ def import_dbt(
 
 @import_app.command(name="dbml")
 def import_dbml(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the DBML file.")] = None,
     schema: Annotated[
         Optional[List[str]],
         typer.Option(
@@ -146,7 +145,7 @@ def import_dbml(
 
 @import_app.command(name="glue")
 def import_glue(
-    source: source_option = None,
+    database: Annotated[Optional[str], typer.Option(help="Name of the AWS Glue database.")] = None,
     table: Annotated[
         Optional[List[str]],
         typer.Option(
@@ -162,14 +161,19 @@ def import_glue(
     """Import a data contract from AWS Glue."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="glue", source=source, schema=schema, glue_table=table, owner=owner, id=id
+        format="glue", source=database, schema=schema, glue_table=table, owner=owner, id=id
     )
     _write_result(result, output)
 
 
 @import_app.command(name="bigquery")
 def import_bigquery(
-    source: source_option = None,
+    source: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Path to a BigQuery schema JSON file. If omitted, imports from the BigQuery API using --project/--dataset/--table."
+        ),
+    ] = None,
     project: Annotated[Optional[str], typer.Option(help="The BigQuery project id.")] = None,
     dataset: Annotated[Optional[str], typer.Option(help="The BigQuery dataset id.")] = None,
     table: Annotated[
@@ -201,7 +205,12 @@ def import_bigquery(
 
 @import_app.command(name="unity")
 def import_unity(
-    source: source_option = None,
+    source: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Path to a Unity Catalog TableInfo JSON file. If omitted, imports from the Unity API using --table."
+        ),
+    ] = None,
     table: Annotated[
         Optional[List[str]],
         typer.Option(help="Full name of a table in the Unity Catalog (repeat for multiple tables)."),
@@ -222,7 +231,7 @@ def import_unity(
 
 @import_app.command(name="jsonschema")
 def import_jsonschema(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the JSON Schema file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -237,7 +246,7 @@ def import_jsonschema(
 
 @import_app.command(name="json")
 def import_json(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the JSON data file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -252,7 +261,7 @@ def import_json(
 
 @import_app.command(name="odcs")
 def import_odcs(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the ODCS data contract file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -267,7 +276,7 @@ def import_odcs(
 
 @import_app.command(name="parquet")
 def import_parquet(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the Parquet file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -282,7 +291,7 @@ def import_parquet(
 
 @import_app.command(name="csv")
 def import_csv(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the CSV file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -297,7 +306,7 @@ def import_csv(
 
 @import_app.command(name="protobuf")
 def import_protobuf(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the Protobuf .proto file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -312,7 +321,10 @@ def import_protobuf(
 
 @import_app.command(name="spark")
 def import_spark(
-    source: source_option = None,
+    tables: Annotated[
+        Optional[str],
+        typer.Option(help="Comma-separated list of Spark table names to import from the current Spark session."),
+    ] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -321,13 +333,13 @@ def import_spark(
 ):
     """Import a data contract from a Spark schema."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="spark", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(format="spark", source=tables, schema=schema, owner=owner, id=id)
     _write_result(result, output)
 
 
 @import_app.command(name="iceberg")
 def import_iceberg(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the Iceberg schema JSON file.")] = None,
     table: Annotated[
         Optional[str],
         typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
@@ -348,7 +360,7 @@ def import_iceberg(
 
 @import_app.command(name="excel")
 def import_excel(
-    source: source_option = None,
+    source: Annotated[Optional[str], typer.Option(help="Path to the Excel file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,

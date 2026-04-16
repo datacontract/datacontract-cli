@@ -1704,6 +1704,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │                                      file).                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options for glue ───────────────────────────────────────────────────────────────────────────────╮
+│ --database                     TEXT  Name of the AWS Glue database.                              │
 │ --table                        TEXT  List of table ids to import from the Glue Database (repeat  │
 │                                      for multiple table ids, leave empty for all tables in the   │
 │                                      dataset).                                                   │
@@ -1718,13 +1719,17 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 ╭─ Options for unity ──────────────────────────────────────────────────────────────────────────────╮
 │ --table                        TEXT  Full name of a table in the Unity Catalog                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for spark ──────────────────────────────────────────────────────────────────────────────╮
+│ --tables                       TEXT  Comma-separated list of Spark table names to import from    │
+│                                      the current Spark session.                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options for iceberg ────────────────────────────────────────────────────────────────────────────╮
 │ --table                        TEXT  Table name to assign to the model created from the Iceberg  │
 │                                      schema.                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
+Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
 #### Examples
 ```bash
@@ -1828,12 +1833,12 @@ Examples:
 
 ```bash
 # Example import from AWS Glue with specifying the tables to import
-datacontract import glue --source <database_name> --table <table_name_1> --table <table_name_2> --table <table_name_3>
+datacontract import glue --database <database_name> --table <table_name_1> --table <table_name_2> --table <table_name_3>
 ```
 
 ```bash
 # Example import from AWS Glue importing all tables in the database
-datacontract import glue --source <database_name>
+datacontract import glue --database <database_name>
 ```
 
 </details>
@@ -1841,11 +1846,11 @@ datacontract import glue --source <database_name>
 <details markdown="1">
 <summary><strong>Spark</strong></summary>
 
-Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.  If the `source` tables are registered as tables in Databricks, and they have a table-level descriptions they will also be added to the Data Contract Specification.
+Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in the `--tables` option. If the tables are registered in Databricks and have a table-level description, it will also be added to the Data Contract Specification.
 
 ```bash
 # Example: Import Spark table(s) from Spark context
-datacontract import spark --source "users,orders"
+datacontract import spark --tables "users,orders"
 ```
 
 ```bash

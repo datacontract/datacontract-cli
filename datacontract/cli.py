@@ -35,6 +35,43 @@ class OrderedCommands(TyperGroup):
         return self.commands.keys()
 
 
+class OrderedCommandsWithMigrationHints(OrderedCommands):
+    """Intercepts removed or renamed options on import/export and points the user to the v0.12.0 migration notes."""
+
+    RENAMED_FLAGS = frozenset(
+        {
+            "--format",
+            "--rdf-base",
+            "--sql-server-type",
+            "--bigquery-project",
+            "--bigquery-dataset",
+            "--bigquery-table",
+            "--unity-table-full-name",
+            "--dbt-model",
+            "--dbml-schema",
+            "--dbml-table",
+            "--glue-table",
+            "--iceberg-table",
+        }
+    )
+
+    def parse_args(self, ctx: Context, args):
+        first_positional_arg = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
+        for arg in args:
+            if isinstance(arg, str) and arg.startswith("--"):
+                flag = arg.split("=", 1)[0]
+                is_renamed = (
+                    flag in self.RENAMED_FLAGS
+                    or (flag == "--schema" and first_positional_arg != "dbml")
+                    or (flag == "--source" and first_positional_arg in ("glue", "spark"))
+                )
+                if is_renamed:
+                    ctx.fail(
+                        f"{flag} was removed in v0.12.0 of datacontract-cli. See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
+                    )
+        return super().parse_args(ctx, args)
+
+
 app = typer.Typer(
     cls=OrderedCommands,
     no_args_is_help=True,

@@ -128,7 +128,7 @@ def test_cli(setup_mock_glue):
         [
             "import",
             "glue",
-            "--source",
+            "--database",
             "test_database",
         ],
     )
@@ -143,7 +143,7 @@ def test_cli_with_table_filters(setup_mock_glue):
         [
             "import",
             "glue",
-            "--source",
+            "--database",
             "test_database",
             "--table",
             "table_1",

@@ -5,13 +5,13 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from datacontract.cli import OrderedCommands, debug_option, enable_debug_logging
+from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat
 
 console = Console()
 
-export_app = typer.Typer(cls=OrderedCommands, no_args_is_help=True)
+export_app = typer.Typer(cls=OrderedCommandsWithMigrationHints, no_args_is_help=True)
 
 # ---------------------------------------------------------------------------
 # Shared option type aliases
@@ -44,7 +44,7 @@ def _export(
     sql_server_type: str = "auto",
     rdf_base: Optional[str] = None,
     engine: Optional[str] = None,
-    template: Optional[Path] = None,
+    template: Optional[Path | str] = None,
 ):
     result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
         export_format=export_format,
