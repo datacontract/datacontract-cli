@@ -26,9 +26,7 @@ output_option = Annotated[
 server_option = Annotated[Optional[str], typer.Option(help="The server name to export.")]
 schema_name_option = Annotated[
     str,
-    typer.Option(
-        help="Which schema to export, e.g., `orders`, or `all` for all schemas (default)."
-    ),
+    typer.Option(help="Which schema to export, e.g., `orders`, or `all` for all schemas (default)."),
 ]
 schema_option = Annotated[
     Optional[str],

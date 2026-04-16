@@ -1239,8 +1239,7 @@ steps:
 
 
 ### export
-```
-                                                                                                    
+```                                                                                              
  Usage: datacontract export [OPTIONS] COMMAND [ARGS]...                                             
                                                                                                     
  Convert a data contract to a target format.                                                        
@@ -1316,47 +1315,16 @@ steps:
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-Each format is a subcommand with its own options. Run `datacontract export <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`).
+Run `datacontract export <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
+#### Examples
 ```bash
 # Example export data contract as HTML
 datacontract export html --output datacontract.html
 ```
 
-Available export options:
-
-| Type                 | Description                                             | Status  |
-|----------------------|---------------------------------------------------------|---------|
-| `html`               | Export to HTML                                          | ✅       |
-| `jsonschema`         | Export to JSON Schema                                   | ✅       |
-| `odcs`               | Export to Open Data Contract Standard (ODCS) V3         | ✅       |
-| `sodacl`             | Export to SodaCL quality checks in YAML format          | ✅       |
-| `dbt-models`         | Export to dbt models in YAML format                     | ✅       |
-| `dbt-sources`        | Export to dbt sources in YAML format                    | ✅       |
-| `dbt-staging-sql`    | Export to dbt staging SQL models                        | ✅       |
-| `rdf`                | Export data contract to RDF representation in N3 format | ✅       |
-| `avro`               | Export to AVRO models                                   | ✅       |
-| `protobuf`           | Export to Protobuf                                      | ✅       |
-| `terraform`          | Export to terraform resources                           | ✅       |
-| `sql`                | Export to SQL DDL                                       | ✅       |
-| `sql-query`          | Export to SQL Query                                     | ✅       |
-| `great-expectations` | Export to Great Expectations Suites in JSON Format      | ✅       |
-| `bigquery`           | Export to BigQuery Schemas                              | ✅       |
-| `go`                 | Export to Go types                                      | ✅       |
-| `pydantic-model`     | Export to pydantic models                               | ✅       |
-| `DBML`               | Export to a DBML Diagram description                    | ✅       |
-| `spark`              | Export to a Spark StructType                            | ✅       |
-| `sqlalchemy`         | Export to SQLAlchemy Models                             | ✅       |
-| `data-caterer`       | Export to Data Caterer in YAML format                   | ✅       |
-| `dcs`                | Export to Data Contract Specification in YAML format    | ✅       |
-| `markdown`           | Export to Markdown                                      | ✅       |
-| `iceberg`            | Export to an Iceberg JSON Schema Definition             | partial |
-| `excel`              | Export to ODCS Excel Template                           | ✅       |
-| `custom`             | Export to Custom format with Jinja                      | ✅       |
-| `dqx`                | Export to DQX in YAML format                            | ✅       |
-| Missing something?   | Please create an issue on GitHub                        | TBD     |
-
-#### SQL
+<details markdown="1">
+<summary><strong>SQL</strong></summary>
 
 The `export` function converts a given data contract into a SQL data definition language (DDL).
 
@@ -1376,7 +1344,10 @@ If using Databricks, and an error is thrown when trying to deploy the SQL DDLs w
 spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
 ```
 
-#### Great Expectations
+</details>
+
+<details markdown="1">
+<summary><strong>Great Expectations</strong></summary>
 
 The `export` function transforms a specified data contract into a comprehensive Great Expectations JSON suite.
 If the contract includes multiple models, you need to specify the names of the schema/models you wish to export.
@@ -1405,7 +1376,10 @@ To further customize the export, the following optional arguments are available:
 
   Providing `sql_server_type` ensures that the appropriate SQL dialect and connection settings are applied during the expectation validation.
 
-#### RDF
+</details>
+
+<details markdown="1">
+<summary><strong>RDF</strong></summary>
 
 The `export` function converts a given data contract into a RDF representation. You have the option to
 add a base_url which will be used as the default prefix to resolve relative IRIs inside the document.
@@ -1429,24 +1403,36 @@ Having the data contract inside an RDF Graph gives us access the following use c
 - Apply graph algorithms on multiple data contracts (Find similar data contracts, find "gatekeeper"
 data products, find the true domain owner of a field attribute)
 
-#### DBML
+</details>
+
+<details markdown="1">
+<summary><strong>DBML</strong></summary>
 
 The export function converts the logical data types of the datacontract into the specific ones of a concrete Database
 if a server is selected via the `--server` option (based on the `type` of that server). If no server is selected, the
 logical data types are exported.
 
-#### DBT & DBT-SOURCES
+</details>
+
+<details markdown="1">
+<summary><strong>DBT & DBT-SOURCES</strong></summary>
 
 The export function converts the datacontract to dbt models in YAML format, with support for SQL dialects.
 If a server is selected via the `--server` option (based on the `type` of that server) then the DBT column `data_types` match the expected data types of the server.
 If no server is selected, then it defaults to `snowflake`.
 
-#### Spark
+</details>
+
+<details markdown="1">
+<summary><strong>Spark</strong></summary>
 
 The export function converts the data contract specification into a StructType Spark schema. The returned value is a Python code picture of the model schemas.
 Spark DataFrame schema is defined as StructType. For more details about Spark Data Types please see [the spark documentation](https://spark.apache.org/docs/latest/sql-ref-datatypes.html)
 
-#### Avro
+</details>
+
+<details markdown="1">
+<summary><strong>Avro</strong></summary>
 
 The export function converts the data contract specification into an avro schema. It supports specifying custom avro properties for logicalTypes and default values.
 
@@ -1458,7 +1444,7 @@ To specify custom Avro properties in your data contract, you can define them wit
 
 >NOTE: At this moment, we just support [logicalType](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and [default](https://avro.apache.org/docs/1.11.0/spec.htm)
 
-#### Example Configuration
+##### Example Configuration
 
 ```yaml
 models:
@@ -1474,7 +1460,7 @@ models:
           avroDefault: 1672534861000000
 ```
 
-#### Explanation
+##### Explanation
 
 - **models**: The top-level key that contains different models (tables or objects) in your data contract.
 - **orders**: A specific model name. Replace this with the name of your model.
@@ -1488,7 +1474,10 @@ models:
     - **avroLogicalType**: Specifies the logical type of the field in Avro. In this example, it is `local-timestamp-micros`.
     - **avroDefault**: Specifies the default value for the field in Avro. In this example, it is 1672534861000000 which corresponds to ` 2023-01-01 01:01:01 UTC`.
 
-#### Data Caterer
+</details>
+
+<details markdown="1">
+<summary><strong>Data Caterer</strong></summary>
 
 The export function converts the data contract to a data generation task in YAML format that can be
 ingested by [Data Caterer](https://github.com/data-catering/data-caterer). This gives you the
@@ -1502,7 +1491,10 @@ You can further customise the way data is generated via adding
 [additional metadata in the YAML](https://data.catering/setup/generator/data-generator/)
 to suit your needs.
 
-#### Iceberg
+</details>
+
+<details markdown="1">
+<summary><strong>Iceberg</strong></summary>
 
 Exports to an [Iceberg Table Json Schema Definition](https://iceberg.apache.org/spec/#appendix-c-json-serialization).
 
@@ -1560,7 +1552,10 @@ to limit your contract export to a single model.
 }
 ```
 
-#### Custom
+</details>
+
+<details markdown="1">
+<summary><strong>Custom</strong></summary>
 
 The export function converts the data contract specification into the custom format with Jinja. You can specify the path to a Jinja template with the `--template` argument, allowing you to output files in any format.
 
@@ -1630,7 +1625,10 @@ Below is an example of a dbt staging layer that converts a field of `type: times
   ```
   {% endraw %}
 
-#### ODCS Excel Template
+</details>
+
+<details markdown="1">
+<summary><strong>ODCS Excel Template</strong></summary>
 
 The `export` function converts a data contract into an ODCS (Open Data Contract Standard) Excel template. This creates a user-friendly Excel spreadsheet that can be used for authoring, sharing, and managing data contracts using the familiar Excel interface.
 
@@ -1645,6 +1643,8 @@ The Excel format enables:
 - **Round-trip conversion**: Import Excel templates back to YAML data contracts
 
 For more information about the Excel template structure, visit the [ODCS Excel Template repository](https://github.com/datacontract/open-data-contract-standard-excel-template).
+
+</details>
 
 ### import
 ```
@@ -1723,41 +1723,19 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │ --table                        TEXT  Table name to assign to the model created from the Iceberg  │
 │                                      schema.                                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 ```
 
-Each format is a subcommand with its own options. Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`).
+Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
-Example:
+#### Examples
 ```bash
 # Example import from SQL DDL
 datacontract import sql --source my_ddl.sql --dialect postgres
 # To save to file
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
-
-Available import options:
-
-| Type               | Description                                   | Status  |
-|--------------------|-----------------------------------------------|---------|
-| `avro`             | Import from AVRO schemas                      | ✅       |
-| `bigquery`         | Import from BigQuery Schemas                  | ✅       |
-| `csv`              | Import from CSV File                          | ✅       |
-| `dbml`             | Import from DBML models                       | ✅       |
-| `dbt`              | Import from dbt models                        | ✅       |
-| `excel`            | Import from ODCS Excel Template               | ✅       |
-| `glue`             | Import from AWS Glue DataCatalog              | ✅       |
-| `iceberg`          | Import from an Iceberg JSON Schema Definition | partial |
-| `jsonschema`       | Import from JSON Schemas                      | ✅       |
-| `parquet`          | Import from Parquet File Metadata             | ✅       |
-| `protobuf`         | Import from Protobuf schemas                  | ✅       |
-| `spark`            | Import from Spark StructTypes, Variant        | ✅       |
-| `sql`              | Import from SQL DDL                           | ✅       |
-| `unity`            | Import from Databricks Unity Catalog          | partial |
-| Missing something? | Please create an issue on GitHub              | TBD     |
-
-
-#### BigQuery
+<details markdown="1">
+<summary><strong>BigQuery</strong></summary>
 
 BigQuery data can either be imported off of JSON Files generated from the table descriptions or directly from the Bigquery API. In case you want to use JSON Files, specify the `source` parameter with a path to the JSON File.
 
@@ -1782,7 +1760,11 @@ datacontract import bigquery --project <project_id> --dataset <dataset_id> --tab
 datacontract import bigquery --project <project_id> --dataset <dataset_id>
 ```
 
-#### Unity Catalog
+</details>
+
+<details markdown="1">
+<summary><strong>Unity Catalog</strong></summary>
+
 ```bash
 # Example import from a Unity Catalog JSON file
 datacontract import unity --source my_unity_table.json
@@ -1801,7 +1783,10 @@ export DATACONTRACT_DATABRICKS_PROFILE="my-profile"
 datacontract import unity --table <table_full_name>
 ```
 
-#### dbt
+</details>
+
+<details markdown="1">
+<summary><strong>dbt</strong></summary>
 
 Importing from dbt manifest file.
 You may give the `--model` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
@@ -1818,7 +1803,10 @@ datacontract import dbt --source <manifest_path> --model <model_name_1> --model 
 datacontract import dbt --source <manifest_path>
 ```
 
-#### Excel
+</details>
+
+<details markdown="1">
+<summary><strong>Excel</strong></summary>
 
 Importing from [ODCS Excel Template](https://github.com/datacontract/open-data-contract-standard-excel-template).
 
@@ -1829,7 +1817,10 @@ Examples:
 datacontract import excel --source odcs.xlsx
 ```
 
-#### Glue
+</details>
+
+<details markdown="1">
+<summary><strong>Glue</strong></summary>
 
 Importing from Glue reads the necessary Data directly off of the AWS API.
 You may give the `--table` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
@@ -1846,7 +1837,10 @@ datacontract import glue --source <database_name> --table <table_name_1> --table
 datacontract import glue --source <database_name>
 ```
 
-#### Spark
+</details>
+
+<details markdown="1">
+<summary><strong>Spark</strong></summary>
 
 Importing from Spark table or view these must be created or accessible in the Spark context. Specify tables list in `source` parameter.  If the `source` tables are registered as tables in Databricks, and they have a table-level descriptions they will also be added to the Data Contract Specification.
 
@@ -1873,7 +1867,10 @@ DataContract.import_from_source("spark", "users", dataframe = df_user, descripti
 DataContract.import_from_source(format = "spark", source = "users", dataframe = df_user, description = "description")
 ```
 
-#### DBML
+</details>
+
+<details markdown="1">
+<summary><strong>DBML</strong></summary>
 
 Importing from DBML Documents.
 **NOTE:** Since DBML does _not_ have strict requirements on the types of columns, this import _may_ create non-valid datacontracts, as not all types of fields can be properly mapped. In this case you will have to adapt the generated document manually.
@@ -1904,7 +1901,10 @@ datacontract import dbml --source <file_path> --table <table_name_1> --table <ta
 datacontract import dbml --source <file_path> --table <table_name_1> --schema <schema_1>
 ```
 
-#### Iceberg
+</details>
+
+<details markdown="1">
+<summary><strong>Iceberg</strong></summary>
 
 Importing from an [Iceberg Table Json Schema Definition](https://iceberg.apache.org/spec/#appendix-c-json-serialization). Specify location of json files using the `source` parameter.
 
@@ -1914,7 +1914,10 @@ Examples:
 datacontract import iceberg --source ./tests/fixtures/iceberg/simple_schema.json --table test-table
 ```
 
-#### CSV
+</details>
+
+<details markdown="1">
+<summary><strong>CSV</strong></summary>
 
 Importing from CSV File. Specify file in `source` parameter. It does autodetection for encoding and csv dialect
 
@@ -1924,7 +1927,10 @@ Example:
 datacontract import csv --source "test.csv"
 ```
 
-#### protobuf
+</details>
+
+<details markdown="1">
+<summary><strong>protobuf</strong></summary>
 
 Importing from protobuf File. Specify file in `source` parameter. 
 
@@ -1933,6 +1939,8 @@ Example:
 ```bash
 datacontract import protobuf --source "test.proto"
 ```
+
+</details>
 
 
 ### catalog
