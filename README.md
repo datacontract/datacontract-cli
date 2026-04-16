@@ -282,19 +282,17 @@ Commands
                                                                                                     
  Create an empty data contract.                                                                     
                                                                                                     
-                                                                                                    
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location of the data contract file to create.                    │
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --template                       TEXT  URL of a template or data contract [default: None]        │
+│ --template                       TEXT  URL of a template or data contract                        │
 │ --overwrite    --no-overwrite          Replace the existing datacontract.yaml                    │
 │                                        [default: no-overwrite]                                   │
-│ --debug        --no-debug              Enable debug logging [default: no-debug]                  │
+│ --debug        --no-debug              Enable debug logging                                      │
 │ --help                                 Show this message and exit.                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 ```
 
 ### lint
@@ -337,10 +335,9 @@ Commands
 │ *    v2      TEXT  The location (path) of the target (after) data contract YAML. [required]      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --debug     --no-debug                 Enable debug logging                                      │
-│ --help                                 Show this message and exit.                               │
+│ --debug    --no-debug      Enable debug logging                                                  │
+│ --help                     Show this message and exit.                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 ```
 
 ```bash
@@ -372,10 +369,7 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 │                                                                      [default: all]              │
 │ --schema-name                                          TEXT          Which model to test, e.g.,  │
 │                                                                      `orders`, or `all` for all  │
-│                                                                      models (default). Distinct  │
-│                                                                      from --json-schema, which   │
-│                                                                      is the ODCS validation      │
-│                                                                      schema.                     │
+│                                                                      models (default).           │
 │                                                                      [default: all]              │
 │ --publish-test-results    --no-publish-test-results                  Deprecated. Use publish     │
 │                                                                      parameter. Publish the      │
@@ -1284,7 +1278,42 @@ steps:
 │ excel               Export a data contract to Excel.                                             │
 │ custom              Export a data contract using a custom Jinja template.                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
+╭─ Options for each command ───────────────────────────────────────────────────────────────────────╮
+│ --output                       PATH  Specify the file path where the exported data will be       │
+│                                      saved. If no path is provided, the output will be printed   │
+│                                      to stdout.                                                  │
+│ --server                       TEXT  The server name to export.                                  │
+│ --schema-name                  TEXT  Which schema to export, e.g., `orders`, or `all` for all    │
+│                                      schemas (default).                                          │
+│                                      [default: all]                                              │
+│ --json-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
+│ --debug          --no-debug          Enable debug logging                                        │
+│ --help                               Show a command-specific help message and exit.              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for sql, sql-query ─────────────────────────────────────────────────────────────────────╮
+│ --server-type                  TEXT  The server type to determine the SQL dialect. By default,   │
+│                                      it uses 'auto' to automatically detect the SQL dialect via  │
+│                                      the specified servers in the data contract. Accepted        │
+│                                      values: auto, snowflake, postgres, mysql, databricks,       │
+│                                      sqlserver, bigquery, trino, oracle.                         │
+│                                      [default: auto]                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for rdf ────────────────────────────────────────────────────────────────────────────────╮
+│ --base                         TEXT  The base URI used to generate the RDF graph.                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for great-expectations ─────────────────────────────────────────────────────────────────╮
+│ --engine                       TEXT  The engine used for Great Expectations run.                 │
+│ --server-type                  TEXT  The server type to determine the SQL dialect (when using    │
+│                                      --engine sql). Accepted values: auto, snowflake, postgres,  │
+│                                      mysql, databricks, sqlserver, bigquery, trino, oracle.      │
+│                                      [default: auto]                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for excel ──────────────────────────────────────────────────────────────────────────────╮
+│ --template                     PATH  Path/URL to custom Excel template.                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for custom ─────────────────────────────────────────────────────────────────────────────╮
+│ --template                     PATH  Path to Jinja template.                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Each format is a subcommand with its own options. Run `datacontract export <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`).
@@ -1645,6 +1674,55 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for each command ───────────────────────────────────────────────────────────────────────╮
+│ --source                       TEXT  The path to the file that should be imported.               │
+│ --output                       PATH  Specify the file path where the Data Contract will be       │
+│                                      saved. If no path is provided, the output will be printed   │
+│                                      to stdout.                                                  │
+│ --json-schema                  TEXT  The location (url or path) of the ODCS JSON Schema          │
+│ --template                     TEXT  The location (url or path) of the ODCS template             │
+│ --owner                        TEXT  The owner or team responsible for managing the data         │
+│                                      contract.                                                   │
+│ --id                           TEXT  The identifier for the data contract.                       │
+│ --debug          --no-debug          Enable debug logging                                        │
+│ --help                               Show a command-specific help message and exit.              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for sql ────────────────────────────────────────────────────────────────────────────────╮
+│ --dialect                      TEXT  The SQL dialect. Accepted values: postgres, tsql, bigquery, │
+│                                      snowflake, databricks, spark, duckdb.                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for dbt ────────────────────────────────────────────────────────────────────────────────╮
+│ --model                        TEXT  List of models names to import from the dbt manifest file   │
+│                                      (repeat for multiple models names, leave empty for all      │
+│                                      models in the dataset).                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for dbml ───────────────────────────────────────────────────────────────────────────────╮
+│ --schema                       TEXT  List of schema names to import from the DBML file (repeat   │
+│                                      for multiple schema names, leave empty for all tables in    │
+│                                      the file).                                                  │
+│ --table                        TEXT  List of table names to import from the DBML file (repeat    │
+│                                      for multiple table names, leave empty for all tables in the │
+│                                      file).                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for glue ───────────────────────────────────────────────────────────────────────────────╮
+│ --table                        TEXT  List of table ids to import from the Glue Database (repeat  │
+│                                      for multiple table ids, leave empty for all tables in the   │
+│                                      dataset).                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for bigquery ───────────────────────────────────────────────────────────────────────────╮
+│ --project                      TEXT  The BigQuery project id.                                    │
+│ --dataset                      TEXT  The BigQuery dataset id.                                    │
+│ --table                        TEXT  List of table ids to import from the BigQuery API (repeat   │
+│                                      for multiple table ids, leave empty for all tables in the   │
+│                                      dataset).                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for unity ──────────────────────────────────────────────────────────────────────────────╮
+│ --table                        TEXT  Full name of a table in the Unity Catalog                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options for iceberg ────────────────────────────────────────────────────────────────────────────╮
+│ --table                        TEXT  Table name to assign to the model created from the Iceberg  │
+│                                      schema.                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
@@ -1864,7 +1942,6 @@ datacontract import protobuf --source "test.proto"
                                                                                                     
  Create a html catalog of data contracts.                                                           
                                                                                                     
-                                                                                                    
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --files                        TEXT  Glob pattern for the data contract files to include in the  │
 │                                      catalog. Applies recursively to any subfolders.             │
@@ -1894,7 +1971,6 @@ datacontract catalog --files "*.odcs.yaml"
  Usage: datacontract publish [OPTIONS] [LOCATION]                                                   
                                                                                                     
  Publish the data contract to the Entropy Data.                                                     
-                                                                                                    
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The location (url or path) of the data contract yaml.                │
@@ -1935,7 +2011,7 @@ datacontract catalog --files "*.odcs.yaml"
 │ --host                   TEXT     Bind socket to this host. Hint: For running in docker, set it  │
 │                                   to 0.0.0.0                                                     │
 │                                   [default: 127.0.0.1]                                           │
-│ --debug    --no-debug             Enable debug logging [default: no-debug]                       │
+│ --debug    --no-debug             Enable debug logging                                           │
 │ --help                            Show this message and exit.                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 

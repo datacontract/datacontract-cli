@@ -27,7 +27,7 @@ server_option = Annotated[Optional[str], typer.Option(help="The server name to e
 schema_name_option = Annotated[
     str,
     typer.Option(
-        help="Which model to export, e.g., `orders`, or `all` for all models (default). Distinct from --json-schema, which is the ODCS validation schema."
+        help="Which schema to export, e.g., `orders`, or `all` for all schemas (default)."
     ),
 ]
 schema_option = Annotated[

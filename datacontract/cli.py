@@ -167,7 +167,7 @@ def test(
     ] = "all",
     schema_name: Annotated[
         str,
-        typer.Option(help="Which model to test, e.g., `orders`, or `all` for all models (default). Distinct from --json-schema, which is the ODCS validation schema."),
+        typer.Option(help="Which schema to test, e.g., `orders`, or `all` for all schemas (default)."),
     ] = "all",
     publish_test_results: Annotated[
         bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
