@@ -31,6 +31,11 @@ schema:
   - name: field_primary_key
     physicalType: DECIMAL(38, 0)
     description: Primary key
+    customProperties:
+    - property: precision
+      value: 38
+    - property: scale
+      value: 0
     logicalType: number
     required: true
   - name: field_not_null
@@ -90,10 +95,20 @@ schema:
   - name: field_decimal
     physicalType: DECIMAL(10, 2)
     description: Fixed precision decimal
+    customProperties:
+    - property: precision
+      value: 10
+    - property: scale
+      value: 2
     logicalType: number
   - name: field_numeric
     physicalType: DECIMAL(10, 2)
     description: Same as DECIMAL
+    customProperties:
+    - property: precision
+      value: 10
+    - property: scale
+      value: 2
     logicalType: number
   - name: field_float
     physicalType: DOUBLE

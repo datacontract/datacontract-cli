@@ -371,6 +371,11 @@ schema:
     required: true
   - name: some_bytes_decimal
     physicalType: bytes
+    customProperties:
+    - property: precision
+      value: 25
+    - property: scale
+      value: 2
     logicalType: number
     required: true
 """

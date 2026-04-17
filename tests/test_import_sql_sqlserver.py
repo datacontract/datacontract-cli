@@ -91,10 +91,20 @@ schema:
         logicalType: number
         physicalType: NUMERIC(10, 2)
         description: Fixed precision decimal
+        customProperties:
+        - property: precision
+          value: 10
+        - property: scale
+          value: 2
       - name: field_numeric
         logicalType: number
         physicalType: NUMERIC(10, 2)
         description: Same as DECIMAL
+        customProperties:
+        - property: precision
+          value: 10
+        - property: scale
+          value: 2
       - name: field_float
         logicalType: number
         physicalType: FLOAT

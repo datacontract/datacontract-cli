@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079 @kelsoufi-sanofi)
 
 ### Fixed
-- Drop `precision`/`scale` from `logicalTypeOptions` for `number` types in SQL importer — these fields are forbidden by the ODCS v3.1.0 schema (#1145)
+- Move `precision`/`scale` from `logicalTypeOptions` to `customProperties` for `number` types — these fields are forbidden under `logicalTypeOptions` by the ODCS v3.1.0 schema (#1145)
 - Emit placeholder server values in SQL importer so generated contracts pass lint (#1146)
 - Fix Protobuf export for arrays of objects and improve message/enum naming to UpperCamelCase (#1012 @Schokuroff)
 

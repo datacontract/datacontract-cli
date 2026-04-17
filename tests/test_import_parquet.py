@@ -53,6 +53,11 @@ schema:
     logicalType: boolean
   - name: decimal_field
     physicalType: DECIMAL
+    customProperties:
+    - property: precision
+      value: 10
+    - property: scale
+      value: 2
     logicalType: number
   - name: float_field
     physicalType: FLOAT
