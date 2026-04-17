@@ -29,8 +29,8 @@ def check_that_datacontract_contains_valid_server_configuration(
             raise DataContractException(
                 type="lint",
                 name="Check that data contract contains valid servers configuration",
-                result="warning",
-                reason=f"Cannot find server '{server_name}' in the data contract servers configuration. Skip executing tests.",
+                result="failed",
+                reason=f"Server '{server_name}' not found in data contract. Available servers: {', '.join(sorted(server_names))}",
                 engine="datacontract",
             )
 
