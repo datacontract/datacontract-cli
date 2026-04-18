@@ -93,13 +93,19 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
         create_empty_table = f"""CREATE TABLE "{model_name}" ({", ".join(columns_def)});"""
         con.sql(create_empty_table)
 
-        # Build explicit SELECT using contract schema columns.
-        # Missing columns in the data file will be NULL — this allows the
-        # "required column missing" field_is_present check to catch them.
-        selected_columns = ", ".join(f'"{col_name}"' for col_name in converted_types.keys())
-        insert_data_sql = f"""INSERT INTO "{model_name}" BY NAME
-            (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
-        con.sql(insert_data_sql)
+        # Find columns that exist in BOTH the data file AND the contract schema.
+        # This avoids BinderException when data is missing optional columns.
+        intersecting_columns = con.sql(f"""SELECT column_name
+            FROM (DESCRIBE SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1))
+            INTERSECT SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '{model_name}'""").fetchall()
+
+        if intersecting_columns:
+            selected_columns = ", ".join(f'"{column[0]}"' for column in intersecting_columns)
+            insert_data_sql = f"""INSERT INTO "{model_name}" BY NAME
+                (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
+            con.sql(insert_data_sql)
     else:
         # Fallback
         con.sql(
