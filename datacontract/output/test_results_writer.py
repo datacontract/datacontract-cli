@@ -22,6 +22,11 @@ def write_test_result(
 ):
     if output_format is not None and not output_path:
         console.print(f"No output path specified for {output_format.value} test results. Skip writing test results.")
+    elif output_path is not None and output_format is None:
+        console.print(
+            "[yellow]Warning:[/yellow] Output path specified but --output-format is missing. "
+            "No test results file will be written. Supported formats: json, junit."
+        )
     elif output_format == OutputFormat.json:
         write_json_test_results(run, output_path)
         console.print(f"Written {output_format.value} test results to {output_path}")
