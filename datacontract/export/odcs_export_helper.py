@@ -75,7 +75,6 @@ def get_property_config(prop: SchemaProperty, key: str) -> Optional[Any]:
 def get_logical_type_option(prop: SchemaProperty, key: str) -> Optional[Any]:
     """Get a logical type option from a SchemaProperty.
 
-
     Checks logicalTypeOptions first, then customProperties as fallback.
     This is needed because precision and scale are stored in customProperties
     rather than logicalTypeOptions (which does not allow them for number type per ODCS schema).
