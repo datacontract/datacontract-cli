@@ -99,8 +99,12 @@ def lint(
         typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     json_schema: Annotated[
-        str,
-        typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+        Optional[str],
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    schema_deprecated: Annotated[
+        Optional[str],
+        typer.Option("--schema", help="[deprecated] Use --json-schema instead"),
     ] = None,
     output: Annotated[
         Path,
@@ -116,8 +120,9 @@ def lint(
     """
     enable_debug_logging(debug)
 
-    if json_schema is not None:
-        console.print("[yellow]Warning: --schema is deprecated, use --json-schema instead.[/yellow]")
+    if schema_deprecated is not None:
+        console.print("[yellow]Warning: --schema is deprecated. Use --json-schema instead.[/yellow]")
+        json_schema = schema_deprecated
     run = DataContract(data_contract_file=location, schema_location=json_schema).lint()
     write_test_result(run, console, output_format, output)
 
@@ -136,8 +141,12 @@ def test(
         typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     json_schema: Annotated[
-        str,
-        typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+        Optional[str],
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    schema_deprecated: Annotated[
+        Optional[str],
+        typer.Option("--schema", help="[deprecated] Use --json-schema instead"),
     ] = None,
     server: Annotated[
         str,
@@ -174,8 +183,9 @@ def test(
     console.print(f"Testing {location}")
     if server == "all":
         server = None
-    if json_schema is not None:
-        console.print("[yellow]Warning: --schema is deprecated, use --json-schema instead.[/yellow]")
+    if schema_deprecated is not None:
+        console.print("[yellow]Warning: --schema is deprecated. Use --json-schema instead.[/yellow]")
+        json_schema = schema_deprecated
     run = DataContract(
         data_contract_file=location,
         schema_location=json_schema,
@@ -200,8 +210,12 @@ def ci(
         typer.Argument(help="The location(s) (url or path) of the data contract yaml file(s)."),
     ] = None,
     json_schema: Annotated[
-        str,
-        typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+        Optional[str],
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    schema_deprecated: Annotated[
+        Optional[str],
+        typer.Option("--schema", help="[deprecated] Use --json-schema instead"),
     ] = None,
     server: Annotated[
         str,
@@ -240,8 +254,9 @@ def ci(
     """
     enable_debug_logging(debug)
 
-    if json_schema is not None:
-        console.print("[yellow]Warning: --schema is deprecated, use --json-schema instead.[/yellow]")
+    if schema_deprecated is not None:
+        console.print("[yellow]Warning: --schema is deprecated. Use --json-schema instead.[/yellow]")
+        json_schema = schema_deprecated
 
     if not locations:
         locations = ["datacontract.yaml"]
@@ -327,8 +342,12 @@ def export(
         typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     json_schema: Annotated[
-        str,
-        typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+        Optional[str],
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    schema_deprecated: Annotated[
+        Optional[str],
+        typer.Option("--schema", help="[deprecated] Use --json-schema instead"),
     ] = None,
     # TODO: this should be a subcommand
     engine: Annotated[
@@ -356,8 +375,9 @@ def export(
         console.print("   datacontract export --format excel --output datacontract.xlsx")
         raise typer.Exit(code=1)
 
-    if json_schema is not None:
-        console.print("[yellow]Warning: --schema is deprecated, use --json-schema instead.[/yellow]")
+    if schema_deprecated is not None:
+        console.print("[yellow]Warning: --schema is deprecated. Use --json-schema instead.[/yellow]")
+        json_schema = schema_deprecated
 
     # TODO exception handling
     result = DataContract(data_contract_file=location, schema_location=json_schema, server=server).export(
@@ -444,8 +464,12 @@ def import_(
         typer.Option(help="The location (url or path) of the ODCS template"),
     ] = None,
     json_schema: Annotated[
-        str,
-        typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+        Optional[str],
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    schema_deprecated: Annotated[
+        Optional[str],
+        typer.Option("--schema", help="[deprecated] Use --json-schema instead"),
     ] = None,
     owner: Annotated[
         Optional[str],
@@ -462,8 +486,9 @@ def import_(
     """
     enable_debug_logging(debug)
 
-    if json_schema is not None:
-        console.print("[yellow]Warning: --schema is deprecated, use --json-schema instead.[/yellow]")
+    if schema_deprecated is not None:
+        console.print("[yellow]Warning: --schema is deprecated. Use --json-schema instead.[/yellow]")
+        json_schema = schema_deprecated
 
     result = DataContract.import_from_source(
         format=format,
@@ -498,8 +523,12 @@ def publish(
         typer.Argument(help="The location (url or path) of the data contract yaml."),
     ] = "datacontract.yaml",
     json_schema: Annotated[
-        str,
-        typer.Option("--json-schema", "--schema", help="The location (url or path) of the ODCS JSON Schema"),
+        Optional[str],
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
+    ] = None,
+    schema_deprecated: Annotated[
+        Optional[str],
+        typer.Option("--schema", help="[deprecated] Use --json-schema instead"),
     ] = None,
     ssl_verification: Annotated[
         bool,
@@ -512,8 +541,9 @@ def publish(
     """
     enable_debug_logging(debug)
 
-    if json_schema is not None:
-        console.print("[yellow]Warning: --schema is deprecated, use --json-schema instead.[/yellow]")
+    if schema_deprecated is not None:
+        console.print("[yellow]Warning: --schema is deprecated. Use --json-schema instead.[/yellow]")
+        json_schema = schema_deprecated
 
     publish_data_contract_to_entropy_data(
         data_contract_dict=resolve_data_contract_dict(location),
