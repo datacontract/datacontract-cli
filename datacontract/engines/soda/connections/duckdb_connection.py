@@ -96,14 +96,14 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
         create_empty_table = f"""CREATE TABLE "{model_name}" ({", ".join(columns_def)});"""
         con.sql(create_empty_table)
 
-        # Read columns existing in both current data contract and data
+        # Find columns that exist in BOTH the data file AND the contract schema.
+        # This avoids BinderException when data is missing optional columns.
         intersecting_columns = con.sql(f"""SELECT column_name
             FROM (DESCRIBE SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1))
             INTERSECT SELECT column_name
             FROM information_schema.columns
             WHERE table_name = '{model_name}'""").fetchall()
 
-        # Insert data into table by name, but only columns existing in contract and data
         if intersecting_columns:
             selected_columns = ", ".join(f'"{column[0]}"' for column in intersecting_columns)
             insert_data_sql = f"""INSERT INTO "{model_name}" BY NAME
