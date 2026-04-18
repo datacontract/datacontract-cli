@@ -85,16 +85,20 @@ schema:
         description: Large integer (-9 quintillion to 9 quintillion)
       - name: field_decimal
         logicalType: number
-        logicalTypeOptions:
-          precision: 10
-          scale: 2
+        customProperties:
+        - property: precision
+          value: 10
+        - property: scale
+          value: 2
         physicalType: NUMERIC(10, 2)
         description: Fixed precision decimal
       - name: field_numeric
         logicalType: number
-        logicalTypeOptions:
-          precision: 10
-          scale: 2
+        customProperties:
+        - property: precision
+          value: 10
+        - property: scale
+          value: 2
         physicalType: NUMERIC(10, 2)
         description: Same as DECIMAL
       - name: field_float
