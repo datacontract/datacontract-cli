@@ -593,7 +593,6 @@ def publish(
 
     if schema_deprecated is not None:
         console.print("[yellow]Warning: --schema is deprecated. Use --json-schema instead.[/yellow]")
-        json_schema = schema_deprecated
 
     publish_data_contract_to_entropy_data(
         data_contract_dict=resolve_data_contract_dict(location),
