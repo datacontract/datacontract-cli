@@ -8,13 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output
+- Added `--checks` option to `test` command to selectively run check categories: `schema`, `quality`, `servicelevel` (#678)
+- Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079 @kelsoufi-sanofi)
 
 ### Fixed
-- Avro importer now raises an error for union fields with multiple non-null types, which are not supported by ODCS
-- Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026)
-- Preserve parametrized physicalTypes for SQL export (#1086)
+- Emit placeholder server values in SQL importer so generated contracts pass lint (#1146)
+- Fix Protobuf export for arrays of objects and improve message/enum naming to UpperCamelCase (#1012 @Schokuroff)
+
+## [0.11.8] - 2026-04-10
+
+### Added
+- Added `ci` command for CI/CD-optimized test runs: multi-file support, GitHub Actions annotations and step summary, Azure DevOps annotations, `--fail-on` flag, `--json` output (#1114)
+- Added `changelog` command and API endpoint (#1118 @davidb-tada)
+- Added opt-in `--all-errors` mode for `datacontract lint` to report all JSON Schema validation errors, with matching `all_errors` support in the Python library and API (#1125 @jmbenedetto)
+- Added `--schema-name` option to custom model export (#978 @AntoineGiraud)
+
+### Fixed
+- Avro importer now raises an error for union fields with multiple non-null types, which are not supported by ODCS (#1124)
+- Fix SQL export generating multiple PRIMARY KEY constraints for composite keys (#1026,#1092 @barry0451 @dwestheide)
+- Preserve parametrized physicalTypes for SQL export (#1086,#1093 @barry0451 @alexander-griesbeck)
 - Fix incorrect SQL type mappings: SQL Server `double`/`jsonb`, MySQL bare `varchar`, missing Trino types (#1110)
+- Fix markdown export breaking table structure when extra field values contain pipe characters (#832,#1117 @barry0451 @grepwood)
+- Fix dbt import using incorrect physicalType instead of actual materialization type (#1136)
+- Remove unnecessary numpy dependency from databricks and kafka extras (#1135 @kayhendriksen)
+
+Special thanks to @davidb-tada for the outstanding contribution of the new `changelog` command and API endpoint! Also thanks to @barry0451 for multiple quality fixes across the SQL exporter and markdown export, and to @AntoineGiraud and @jmbenedetto for their feature contributions.
 
 ## [0.11.7] - 2026-03-24
 

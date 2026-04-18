@@ -32,6 +32,10 @@ status: draft
 servers:
   - server: postgres
     type: postgres
+    host: my_host
+    port: 5432
+    database: my_database
+    schema: public
 schema:
   - name: my_table
     physicalType: table
@@ -70,6 +74,10 @@ status: draft
 servers:
   - server: postgres
     type: postgres
+    host: my_host
+    port: 5432
+    database: my_database
+    schema: public
 schema:
   - name: customer_location
     physicalType: table

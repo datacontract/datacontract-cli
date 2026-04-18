@@ -18,6 +18,10 @@ status: draft
 servers:
   - server: sqlserver
     type: sqlserver
+    host: my_host
+    port: 1433
+    database: my_database
+    schema: my_schema
 schema:
   - name: my_table
     physicalType: table

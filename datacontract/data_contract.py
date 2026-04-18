@@ -14,7 +14,8 @@ from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
 from datacontract.lint import resolve
-from datacontract.model.exceptions import DataContractException
+from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
+from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.run import Check, ResultEnum, Run
 
 
@@ -26,24 +27,30 @@ class DataContract:
         data_contract: OpenDataContractStandard = None,
         schema_location: str = None,
         server: str = None,
+        schema_name: str = "all",
         publish_url: str = None,
         spark: "SparkSession" = None,
         duckdb_connection: "DuckDBPyConnection" = None,
         inline_definitions: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
+        all_errors: bool = False,
+        check_categories: set[str] | None = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
         self._schema_location = schema_location
         self._server = server
+        self._schema_name = schema_name
         self._publish_url = publish_url
         self._publish_test_results = publish_test_results
         self._spark = spark
         self._duckdb_connection = duckdb_connection
         self._inline_definitions = inline_definitions
         self._ssl_verification = ssl_verification
+        self._all_errors = all_errors
+        self._check_categories = check_categories
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -61,6 +68,7 @@ class DataContract:
                 self._data_contract,
                 self._schema_location,
                 inline_definitions=self._inline_definitions,
+                all_errors=self._all_errors,
             )
             run.checks.append(
                 Check(
@@ -72,6 +80,19 @@ class DataContract:
             )
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.version
+        except DataContractValidationErrors as e:
+            for error in e.errors:
+                run.checks.append(
+                    Check(
+                        type=error.type,
+                        result=error.result,
+                        name=error.name,
+                        reason=error.reason,
+                        engine=error.engine,
+                        details="",
+                    )
+                )
+                run.log_error(str(error))
         except DataContractException as e:
             run.checks.append(
                 Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
@@ -103,7 +124,15 @@ class DataContract:
                 inline_definitions=self._inline_definitions,
             )
 
-            execute_data_contract_test(data_contract, run, self._server, self._spark, self._duckdb_connection)
+            execute_data_contract_test(
+                data_contract,
+                run,
+                self._server,
+                self._spark,
+                self._duckdb_connection,
+                schema_name=self._schema_name,
+                check_categories=self._check_categories,
+            )
 
         except DataContractException as e:
             run.checks.append(
@@ -147,6 +176,9 @@ class DataContract:
             inline_definitions=self._inline_definitions,
         )
 
+    def get_data_contract_file(self) -> str | None:
+        return self._data_contract_file
+
     def export(
         self, export_format: ExportFormat, schema_name: str = "all", sql_server_type: str = "auto", **kwargs
     ) -> str | bytes:
@@ -186,6 +218,38 @@ class DataContract:
                 sql_server_type=sql_server_type,
                 export_args=kwargs,
             )
+
+    def changelog(self, other: "DataContract") -> ChangelogResult:
+        """Generate a changelog between this data contract and another, returning a ChangelogResult."""
+        from datacontract.changelog.changelog import build_changelog
+
+        changelog = build_changelog(
+            self.get_data_contract(),
+            self.get_data_contract_file(),
+            other.get_data_contract(),
+            other.get_data_contract_file(),
+        )
+
+        v1_label = changelog["source_label"]
+        v2_label = changelog["target_label"]
+        result = ChangelogResult(v1=v1_label, v2=v2_label)
+        for change in changelog["summary"]["changes"]:
+            result.summary.append(
+                ChangelogEntry(
+                    path=change["path"],
+                    type=ChangelogType(change["changeType"].lower()),
+                )
+            )
+        for change in changelog["detail"]["changes"]:
+            result.entries.append(
+                ChangelogEntry(
+                    path=change["path"],
+                    type=ChangelogType(change["changeType"].lower()),
+                    old_value=str(change["old_value"]) if change.get("old_value") is not None else None,
+                    new_value=str(change["new_value"]) if change.get("new_value") is not None else None,
+                )
+            )
+        return result
 
     @classmethod
     def import_from_source(

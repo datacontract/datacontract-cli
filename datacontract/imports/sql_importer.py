@@ -43,9 +43,18 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
     server_type = to_server_type(source, dialect)
     if server_type is not None:
-        odcs.servers = [create_server(name=server_type, server_type=server_type)]
+        server_defaults = get_server_defaults(server_type)
+        odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
+        logging.warning(
+            "SQL import generated a server block with placeholder connection values. "
+            "Update host, port, database, and schema in the output before use."
+        )
 
-    tables = parsed.find_all(sqlglot.expressions.Table)
+    tables = [
+        t
+        for t in parsed.find_all(sqlglot.expressions.Table)
+        if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
+    ]
 
     for table in tables:
         table_name = table.this.name
@@ -132,6 +141,36 @@ def to_dialect(import_args: dict) -> Dialects | None:
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
     return None
+
+
+def get_server_defaults(server_type: str) -> dict:
+    """Return placeholder connection fields for a given server type.
+
+    These placeholders make it obvious to users which fields require values,
+    since an empty server stub immediately fails `datacontract lint`.
+    """
+    port_map = {
+        "postgres": 5432,
+        "redshift": 5439,
+        "mysql": 3306,
+        "sqlserver": 1433,
+        "oracle": 1521,
+        "snowflake": 443,
+        "databricks": 443,
+    }
+    schema_map = {
+        "postgres": "public",
+        "redshift": "public",
+    }
+    defaults = {
+        "host": "my_host",
+        "database": "my_database",
+        "schema": schema_map.get(server_type, "my_schema"),
+    }
+    port = port_map.get(server_type)
+    if port is not None:
+        defaults["port"] = port
+    return defaults
 
 
 def to_server_type(source, dialect: Dialects | None) -> str | None:

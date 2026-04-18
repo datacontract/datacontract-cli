@@ -127,7 +127,7 @@ def import_dbt_manifest(
 
         schema_obj = create_schema_object(
             name=node.name,
-            physical_type="table",
+            physical_type=node.config.materialized,
             description=node.description,
             properties=properties,
         )

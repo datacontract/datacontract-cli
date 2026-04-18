@@ -5,11 +5,12 @@ from pathlib import Path
 import fastjsonschema
 import yaml
 from fastjsonschema import JsonSchemaValueException
+from jsonschema import validators
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
-from datacontract.model.exceptions import DataContractException
+from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
 
@@ -55,12 +56,15 @@ def resolve_data_contract(
     data_contract: OpenDataContractStandard = None,
     schema_location: str = None,
     inline_definitions: bool = False,
+    all_errors: bool = False,
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
     if data_contract_location is not None:
-        return resolve_data_contract_from_location(data_contract_location, schema_location, inline_definitions)
+        return resolve_data_contract_from_location(
+            data_contract_location, schema_location, inline_definitions, all_errors
+        )
     elif data_contract_str is not None:
-        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
+        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, all_errors)
     elif data_contract is not None:
         return data_contract
     else:
@@ -74,10 +78,10 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_definitions: bool = False
+    location, schema_location: str = None, inline_definitions: bool = False, all_errors: bool = False
 ) -> OpenDataContractStandard:
     data_contract_str = read_resource(location)
-    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions)
+    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, all_errors)
 
 
 def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
@@ -107,7 +111,7 @@ def inline_definition_into_property(prop: SchemaProperty, data_contract: OpenDat
 
 
 def _resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False
+    data_contract_str, schema_location: str = None, inline_definitions: bool = False, all_errors: bool = False
 ) -> OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 
@@ -126,7 +130,7 @@ def _resolve_data_contract_from_str(
         # Validate the ODCS schema
         if schema_location is None:
             schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
-        _validate_json_schema(yaml_dict, schema_location)
+        _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors)
 
         # Parse ODCS directly
         odcs = _parse_odcs_from_dict(yaml_dict)
@@ -173,27 +177,38 @@ def _to_yaml(data_contract_str) -> dict:
         )
 
 
-def _validate_json_schema(yaml_str, schema_location: str | Path = None):
+def _validation_error_to_exception(error_message: str, original_exception=None) -> DataContractException:
+    return DataContractException(
+        type="lint",
+        result=ResultEnum.failed,
+        name="Check that data contract YAML is valid",
+        reason=error_message,
+        engine="datacontract",
+        original_exception=original_exception,
+    )
+
+
+def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_errors: bool = False):
     logging.debug(f"Linting data contract with schema at {schema_location}")
     schema = fetch_schema(schema_location)
+    if all_errors:
+        validator_cls = validators.validator_for(schema)
+        validator_cls.check_schema(schema)
+        validator = validator_cls(schema=schema)
+        errors = sorted(validator.iter_errors(yaml_str), key=lambda error: list(error.path))
+        if errors:
+            logging.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
+            raise DataContractValidationErrors(
+                [_validation_error_to_exception(error.message, original_exception=error) for error in errors]
+            )
+        logging.debug("YAML data is valid.")
+        return
     try:
         fastjsonschema.validate(schema, yaml_str, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {e.message}")
-        raise DataContractException(
-            type="lint",
-            result=ResultEnum.failed,
-            name="Check that data contract YAML is valid",
-            reason=e.message,
-            engine="datacontract",
-        )
+        raise _validation_error_to_exception(e.message, original_exception=e)
     except Exception as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
-        raise DataContractException(
-            type="lint",
-            result=ResultEnum.failed,
-            name="Check that data contract YAML is valid",
-            reason=str(e),
-            engine="datacontract",
-        )
+        raise _validation_error_to_exception(str(e), original_exception=e)

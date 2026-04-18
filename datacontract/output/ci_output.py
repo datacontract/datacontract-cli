@@ -93,7 +93,9 @@ def _write_github_step_summary(results: List[Tuple[str, Run]], summary_path: str
 
     # Per-contract detail sections
     for data_contract_file, run in results:
-        result_display = RESULT_EMOJI.get(run.result, run.result.value if hasattr(run.result, "value") else str(run.result))
+        result_display = RESULT_EMOJI.get(
+            run.result, run.result.value if hasattr(run.result, "value") else str(run.result)
+        )
 
         n_total = len(run.checks) if run.checks else 0
         n_passed = sum(1 for c in run.checks if c.result == "passed") if run.checks else 0
