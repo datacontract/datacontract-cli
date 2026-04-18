@@ -90,6 +90,28 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 tags=tags,
             )
 
+            # SQL Server and Snowflake store precision/scale in customProperties
+            # (not logicalTypeOptions) per ODCS schema restrictions.
+            # Apply the same treatment to other SQL dialects for consistency.
+            if precision is not None or scale is not None:
+                from open_data_contract_standard.model import CustomProperty
+
+                custom_props = []
+                if prop.customProperties:
+                    custom_props = list(prop.customProperties)
+                if precision is not None:
+                    custom_props.append(CustomProperty(property="precision", value=precision))
+                if scale is not None:
+                    custom_props.append(CustomProperty(property="scale", value=scale))
+                prop.customProperties = custom_props
+                # Remove from logicalTypeOptions if they were placed there
+                if prop.logicalTypeOptions and "precision" in prop.logicalTypeOptions:
+                    del prop.logicalTypeOptions["precision"]
+                if prop.logicalTypeOptions and "scale" in prop.logicalTypeOptions:
+                    del prop.logicalTypeOptions["scale"]
+                if prop.logicalTypeOptions is not None and len(prop.logicalTypeOptions) == 0:
+                    prop.logicalTypeOptions = None
+
             if is_primary_key:
                 primary_key_position += 1
 
