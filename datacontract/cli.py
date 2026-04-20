@@ -126,5 +126,18 @@ from datacontract import (  # noqa: E402, F401
 app.add_typer(command_import.import_app, name="import", help="Create a data contract from a source format.")
 app.add_typer(command_export.export_app, name="export", help="Convert a data contract to a target format.")
 
+
+def main():
+    try:
+        app()
+    except Exception as e:
+        # If an uncaught exception occurs, only print its name (except when debug mode is enabled)
+        if "--debug" in sys.argv or os.environ.get("DATACONTRACT_CLI_DEBUG") == "1":
+            raise
+        console.print(f"[red]Error:[/red] {e}")
+        console.print("[dim]Pass --debug (or set DATACONTRACT_CLI_DEBUG=1) for the full traceback.[/dim]")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    app()
+    main()
