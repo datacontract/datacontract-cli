@@ -9,7 +9,10 @@ from datacontract.cli import app, console, debug_option, enable_debug_logging
 from datacontract.model.exceptions import DataContractException
 
 
-@app.command(name="catalog")
+@app.command(
+    name="catalog",
+    epilog='Example: datacontract catalog --files "**/*.yaml" --output catalog/',
+)
 def catalog(
     files: Annotated[
         Optional[str],

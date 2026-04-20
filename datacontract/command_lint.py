@@ -9,7 +9,10 @@ from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
 
 
-@app.command(name="lint")
+@app.command(
+    name="lint",
+    epilog="Example: datacontract lint datacontract.yaml",
+)
 def lint(
     location: Annotated[
         str,

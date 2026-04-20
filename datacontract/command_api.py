@@ -22,7 +22,11 @@ def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict
     return default_args | dict(zip(trimmed_keys, context.args[1::2]))
 
 
-@app.command(name="api", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@app.command(
+    name="api",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    epilog="Example: datacontract api --port 4242 --host 0.0.0.0",
+)
 def api(
     ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,

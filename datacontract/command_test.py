@@ -10,7 +10,10 @@ from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
 
 
-@app.command(name="test")
+@app.command(
+    name="test",
+    epilog="Example: datacontract test datacontract.yaml --server production",
+)
 def test(
     location: Annotated[
         str,

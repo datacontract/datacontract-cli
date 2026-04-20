@@ -7,7 +7,10 @@ from datacontract.cli import app, console, debug_option, enable_debug_logging
 from datacontract.init.init_template import get_init_template
 
 
-@app.command(name="init")
+@app.command(
+    name="init",
+    epilog="Example: datacontract init datacontract.yaml",
+)
 def init(
     location: Annotated[
         str, typer.Argument(help="The location of the data contract file to create.")

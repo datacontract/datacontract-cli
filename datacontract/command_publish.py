@@ -8,7 +8,10 @@ from datacontract.integration.entropy_data import (
 from datacontract.lint.resolve import resolve_data_contract_dict
 
 
-@app.command(name="publish")
+@app.command(
+    name="publish",
+    epilog="Example: datacontract publish datacontract.yaml",
+)
 def publish(
     location: Annotated[
         str,

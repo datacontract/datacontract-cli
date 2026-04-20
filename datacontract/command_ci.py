@@ -13,7 +13,10 @@ from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
 
 
-@app.command(name="ci")
+@app.command(
+    name="ci",
+    epilog="Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit",
+)
 def ci(
     locations: Annotated[
         Optional[list[str]],
