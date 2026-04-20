@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
+
 - **Breaking**: the `dbt` export format was renamed to `dbt-models` (to differentiate from other dbt export formats)
 - **Breaking**: Several changes in the CLI syntax (#1134, #1155):
 
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   | `import iceberg`                                | `--iceberg-table <NAME>`         | `--table <NAME>`                       |
   | `import spark`                                  | `--source <NAMES>`               | `--tables <NAMES>`                     |
   | `import`                                        | `--template`                     | dropped (was a no-op)                  |
+- Error messages are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1148)
 
 
 ## [0.11.9] - 2026-04-20

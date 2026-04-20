@@ -164,7 +164,7 @@ Homepage = "https://cli.datacontract.com"
 Issues = "https://github.com/datacontract/datacontract-cli/issues"
 
 [project.scripts]
-datacontract = "datacontract.cli:app"
+datacontract = "datacontract.cli:main"
 
 [build-system]
 requires = ["setuptools", "wheel"]
