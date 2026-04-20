@@ -1,6 +1,6 @@
-import os
-
 import yaml
+
+from datacontract.model.exceptions import require_env
 
 
 def to_mysql_soda_configuration(server):
@@ -9,8 +9,8 @@ def to_mysql_soda_configuration(server):
             "type": "mysql",
             "host": server.host,
             "port": str(server.port),
-            "username": os.getenv("DATACONTRACT_MYSQL_USERNAME"),
-            "password": os.getenv("DATACONTRACT_MYSQL_PASSWORD"),
+            "username": require_env("DATACONTRACT_MYSQL_USERNAME", server_type="mysql"),
+            "password": require_env("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql"),
             "database": server.database,
         }
     }
