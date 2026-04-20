@@ -7,14 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.11.9] - 2026-04-20
+
 ### Added
 - Added `--checks` option to `test` command to selectively run check categories: `schema`, `quality`, `servicelevel` (#678)
-- Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079 @kelsoufi-sanofi)
+- Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079,#1085 @kelsoufi-sanofi)
 
 ### Fixed
-- Move `precision`/`scale` from `logicalTypeOptions` to `customProperties` for `number` types — these fields are forbidden under `logicalTypeOptions` by the ODCS v3.1.0 schema (#1145)
-- Emit placeholder server values in SQL importer so generated contracts pass lint (#1146)
+- Move `precision`/`scale` for `number` types from `logicalTypeOptions` to `customProperties` (#1145,#1160 @davidb-tada)
+- Emit placeholder server values in SQL importer so generated contracts pass lint (#1146,#1152 @Ai-chan-0411)
 - Fix Protobuf export for arrays of objects and improve message/enum naming to UpperCamelCase (#1012 @Schokuroff)
+- Exit with code 1 when `--server` name is not found (#1153,#1161 @Ai-chan-0411)
+
+Thanks to @kelsoufi-sanofi for the new `--schema-name` option on `test`, and to @Schokuroff, @Ai-chan-0411, and @davidb-tada for their contributions.
 
 ## [0.11.8] - 2026-04-10
 
