@@ -67,17 +67,21 @@ schema:
   - name: Numeric_Field
     physicalType: NUMERIC
     description: A Numeric field with precision 5 and scale 3
+    customProperties:
+    - property: precision
+      value: 5
+    - property: scale
+      value: 3
     logicalType: number
-    logicalTypeOptions:
-      precision: 5
-      scale: 3
   - name: Bignumeric_field
     physicalType: BIGNUMERIC
     description: A bignumeric field with precision 8 and sclae 4
+    customProperties:
+    - property: precision
+      value: 8
+    - property: scale
+      value: 4
     logicalType: number
-    logicalTypeOptions:
-      precision: 8
-      scale: 4
   - name: Record_field
     physicalType: RECORD
     description: A record field with two subfields
