@@ -23,37 +23,43 @@ class OrderedCommands(TyperGroup):
 class OrderedCommandsWithMigrationHints(OrderedCommands):
     """Intercepts removed or renamed options on import/export and points the user to the v0.12.0 migration notes."""
 
-    RENAMED_FLAGS = frozenset(
-        {
-            "--format",
-            "--rdf-base",
-            "--sql-server-type",
-            "--bigquery-project",
-            "--bigquery-dataset",
-            "--bigquery-table",
-            "--unity-table-full-name",
-            "--dbt-model",
-            "--dbml-schema",
-            "--dbml-table",
-            "--glue-table",
-            "--iceberg-table",
-        }
-    )
+    RENAMED_FLAGS = {
+        "--format": None,
+        "--rdf-base": "--base",
+        "--sql-server-type": "--server-type",
+        "--bigquery-project": "--project",
+        "--bigquery-dataset": "--dataset",
+        "--bigquery-table": "--table",
+        "--unity-table-full-name": "--table",
+        "--dbt-model": "--model",
+        "--dbml-schema": "--schema",
+        "--dbml-table": "--table",
+        "--glue-table": "--table",
+        "--iceberg-table": "--table",
+    }
 
     def parse_args(self, ctx: Context, args):
-        first_positional_arg = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
+        # First positional argument starting with "-"
+        subcommand = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
+
         for arg in args:
             if isinstance(arg, str) and arg.startswith("--"):
                 flag = arg.split("=", 1)[0]
-                is_renamed = (
-                    flag in self.RENAMED_FLAGS
-                    or (flag == "--schema" and first_positional_arg != "dbml")
-                    or (flag == "--source" and first_positional_arg in ("glue", "spark"))
+                if flag in self.RENAMED_FLAGS:
+                    new_flag = self.RENAMED_FLAGS[flag]
+                elif flag == "--schema" and subcommand != "dbml":
+                    new_flag = "--odcs-schema"
+                elif flag == "--source" and subcommand == "glue":
+                    new_flag = "--database"
+                elif flag == "--source" and subcommand == "spark":
+                    new_flag = "--tables"
+                else:
+                    continue
+                change = "needs to omitted since" if new_flag is None else f"was replaced with {new_flag} in"
+                ctx.fail(
+                    f"{flag} {change} v0.12.0 of datacontract-cli. "
+                    f"See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
                 )
-                if is_renamed:
-                    ctx.fail(
-                        f"{flag} was removed in v0.12.0 of datacontract-cli. See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
-                    )
         return super().parse_args(ctx, args)
 
 

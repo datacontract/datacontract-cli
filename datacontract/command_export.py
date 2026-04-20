@@ -136,6 +136,18 @@ def export_dbt_models(
 
 
 @export_app.command(
+    name="dbt",
+    hidden=True,
+    context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
+)
+def export_dbt_removed(ctx: typer.Context):
+    """Removed: use `datacontract export dbt-models` instead."""
+    ctx.fail(
+        "`export dbt` was renamed to `export dbt-models` in v0.12.0. See See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
+    )
+
+
+@export_app.command(
     name="dbt-sources",
     epilog="Example: datacontract export dbt-sources datacontract.yaml --output sources.yml",
 )
