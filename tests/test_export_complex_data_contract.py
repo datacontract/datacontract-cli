@@ -86,7 +86,7 @@ models:
     data_contract.test()
     data_contract.export(export_format="avro", schema_name="orders")
     data_contract.export(export_format="odcs")
-    data_contract.export(export_format="dbt")
+    data_contract.export(export_format="dbt-models")
     data_contract.export(export_format="dbt-sources")
     data_contract.export(export_format="dbt-staging-sql", schema_name="orders")
     data_contract.export(export_format="jsonschema", schema_name="orders")

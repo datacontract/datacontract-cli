@@ -85,10 +85,10 @@ datacontract lint datacontract.yaml
 datacontract test datacontract.yaml
 
 # Export a data contract to a different format
-datacontract export --format html datacontract.yaml --output datacontract.html
+datacontract export html datacontract.yaml --output datacontract.html
 
 # Import from a different format
-datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
+datacontract import sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
 
 # Show a changelog between two data contracts
 datacontract changelog datacontract-v1.yaml datacontract-v2.yaml

@@ -36,7 +36,7 @@ class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     pydantic_model = "pydantic-model"
     sodacl = "sodacl"
-    dbt = "dbt"
+    dbt_models = "dbt-models"
     dbt_sources = "dbt-sources"
     dbt_staging_sql = "dbt-staging-sql"
     odcs = "odcs"

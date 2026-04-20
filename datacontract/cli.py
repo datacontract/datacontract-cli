@@ -3,7 +3,7 @@ import os
 import sys
 from importlib import metadata
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 import click
 import typer
@@ -13,8 +13,7 @@ from typer.core import TyperGroup
 from typing_extensions import Annotated
 
 from datacontract.catalog.catalog import create_data_contract_html, create_index_html
-from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat
+from datacontract.data_contract import DataContract
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import (
     publish_data_contract_to_entropy_data,
@@ -34,6 +33,43 @@ debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
 class OrderedCommands(TyperGroup):
     def list_commands(self, ctx: Context) -> Iterable[str]:
         return self.commands.keys()
+
+
+class OrderedCommandsWithMigrationHints(OrderedCommands):
+    """Intercepts removed or renamed options on import/export and points the user to the v0.12.0 migration notes."""
+
+    RENAMED_FLAGS = frozenset(
+        {
+            "--format",
+            "--rdf-base",
+            "--sql-server-type",
+            "--bigquery-project",
+            "--bigquery-dataset",
+            "--bigquery-table",
+            "--unity-table-full-name",
+            "--dbt-model",
+            "--dbml-schema",
+            "--dbml-table",
+            "--glue-table",
+            "--iceberg-table",
+        }
+    )
+
+    def parse_args(self, ctx: Context, args):
+        first_positional_arg = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
+        for arg in args:
+            if isinstance(arg, str) and arg.startswith("--"):
+                flag = arg.split("=", 1)[0]
+                is_renamed = (
+                    flag in self.RENAMED_FLAGS
+                    or (flag == "--schema" and first_positional_arg != "dbml")
+                    or (flag == "--source" and first_positional_arg in ("glue", "spark"))
+                )
+                if is_renamed:
+                    ctx.fail(
+                        f"{flag} was removed in v0.12.0 of datacontract-cli. See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
+                    )
+        return super().parse_args(ctx, args)
 
 
 app = typer.Typer(
@@ -101,7 +137,7 @@ def lint(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     output: Annotated[
         Path,
@@ -155,7 +191,7 @@ def test(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -168,7 +204,7 @@ def test(
     ] = "all",
     schema_name: Annotated[
         str,
-        typer.Option(help="The name of the schema to test, e.g., `orders`, or `all` for all schemas (default)."),
+        typer.Option(help="Which schema to test, e.g., `orders`, or `all` for all schemas (default)."),
     ] = "all",
     publish_test_results: Annotated[
         bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
@@ -245,7 +281,7 @@ def ci(
     ] = None,
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -333,201 +369,6 @@ def ci(
         raise typer.Exit(code=1)
 
 
-@app.command(name="export")
-def export(
-    format: Annotated[ExportFormat, typer.Option(help="The export format.")],
-    output: Annotated[
-        Path,
-        typer.Option(
-            help="Specify the file path where the exported data will be saved. If no path is provided, the output will be printed to stdout."
-        ),
-    ] = None,
-    server: Annotated[str, typer.Option(help="The server name to export.")] = None,
-    schema_name: Annotated[
-        str,
-        typer.Option(help="The name of the schema to export, e.g., `orders`, or `all` for all schemas (default)."),
-    ] = "all",
-    # TODO: this should be a subcommand
-    rdf_base: Annotated[
-        Optional[str],
-        typer.Option(
-            help="[rdf] The base URI used to generate the RDF graph.",
-            rich_help_panel="RDF Options",
-        ),
-    ] = None,
-    # TODO: this should be a subcommand
-    sql_server_type: Annotated[
-        Optional[str],
-        typer.Option(
-            help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle.",
-            rich_help_panel="SQL Options",
-        ),
-    ] = "auto",
-    location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
-    ] = "datacontract.yaml",
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    # TODO: this should be a subcommand
-    engine: Annotated[
-        Optional[str],
-        typer.Option(help="[engine] The engine used for great expection run."),
-    ] = None,
-    # TODO: this should be a subcommand
-    template: Annotated[
-        Optional[Path],
-        typer.Option(
-            help="The file path or URL of a template. For Excel format: path/URL to custom Excel template. For custom format: path to Jinja template."
-        ),
-    ] = None,
-    debug: debug_option = None,
-):
-    """
-    Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
-    """
-    enable_debug_logging(debug)
-
-    # Validate that Excel format requires an output file path
-    if format == ExportFormat.excel and output is None:
-        console.print("❌ Error: Excel export requires an output file path.")
-        console.print("💡 Hint: Use --output to specify where to save the Excel file, e.g.:")
-        console.print("   datacontract export --format excel --output datacontract.xlsx")
-        raise typer.Exit(code=1)
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
-        export_format=format,
-        schema_name=schema_name,
-        server=server,
-        rdf_base=rdf_base,
-        sql_server_type=sql_server_type,
-        engine=engine,
-        template=template,
-    )
-    # Don't interpret console markup in output.
-    if output is None:
-        console.print(result, markup=False, soft_wrap=True)
-    else:
-        if isinstance(result, bytes):
-            # If the result is bytes, we assume it's a binary file (e.g., Excel, PDF)
-            with output.open(mode="wb") as f:
-                f.write(result)
-        else:
-            with output.open(mode="w", encoding="utf-8") as f:
-                f.write(result)
-        console.print(f"Written result to {output}")
-
-
-@app.command(name="import")
-def import_(
-    format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
-    output: Annotated[
-        Path,
-        typer.Option(
-            help="Specify the file path where the Data Contract will be saved. If no path is provided, the output will be printed to stdout."
-        ),
-    ] = None,
-    source: Annotated[
-        Optional[str],
-        typer.Option(help="The path to the file that should be imported."),
-    ] = None,
-    dialect: Annotated[
-        Optional[str],
-        typer.Option(
-            help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."
-        ),
-    ] = None,
-    glue_table: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of table ids to import from the Glue Database (repeat for multiple table ids, leave empty for all tables in the dataset)."
-        ),
-    ] = None,
-    bigquery_project: Annotated[Optional[str], typer.Option(help="The bigquery project id.")] = None,
-    bigquery_dataset: Annotated[Optional[str], typer.Option(help="The bigquery dataset id.")] = None,
-    bigquery_table: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of table ids to import from the bigquery API (repeat for multiple table ids, leave empty for all tables in the dataset)."
-        ),
-    ] = None,
-    unity_table_full_name: Annotated[
-        Optional[List[str]], typer.Option(help="Full name of a table in the unity catalog")
-    ] = None,
-    dbt_model: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of models names to import from the dbt manifest file (repeat for multiple models names, leave empty for all models in the dataset)."
-        ),
-    ] = None,
-    dbml_schema: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of schema names to import from the DBML file (repeat for multiple schema names, leave empty for all tables in the file)."
-        ),
-    ] = None,
-    dbml_table: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
-        ),
-    ] = None,
-    iceberg_table: Annotated[
-        Optional[str],
-        typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
-    ] = None,
-    template: Annotated[
-        Optional[str],
-        typer.Option(help="The location (url or path) of the ODCS template"),
-    ] = None,
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    owner: Annotated[
-        Optional[str],
-        typer.Option(help="The owner or team responsible for managing the data contract."),
-    ] = None,
-    id: Annotated[
-        Optional[str],
-        typer.Option(help="The identifier for the the data contract."),
-    ] = None,
-    debug: debug_option = None,
-):
-    """
-    Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
-    """
-    enable_debug_logging(debug)
-
-    result = DataContract.import_from_source(
-        format=format,
-        source=source,
-        template=template,
-        schema=schema,
-        dialect=dialect,
-        glue_table=glue_table,
-        bigquery_table=bigquery_table,
-        bigquery_project=bigquery_project,
-        bigquery_dataset=bigquery_dataset,
-        unity_table_full_name=unity_table_full_name,
-        dbt_model=dbt_model,
-        dbml_schema=dbml_schema,
-        dbml_table=dbml_table,
-        iceberg_table=iceberg_table,
-        owner=owner,
-        id=id,
-    )
-    if output is None:
-        console.print(result.to_yaml(), markup=False, soft_wrap=True)
-    else:
-        with output.open(mode="w", encoding="utf-8") as f:
-            f.write(result.to_yaml())
-        console.print(f"Written result to {output}")
-
-
 @app.command(name="publish")
 def publish(
     location: Annotated[
@@ -536,7 +377,7 @@ def publish(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     ssl_verification: Annotated[
         bool,
@@ -566,7 +407,7 @@ def catalog(
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
         str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     debug: debug_option = None,
 ):
@@ -663,6 +504,16 @@ def _print_logs(run, out=None):
     for log in run.logs:
         out.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
 
+
+# ---------------------------------------------------------------------------
+# Register import/export sub-apps (must be after app is fully defined to
+# avoid circular imports, since cli_import/cli_export import from this module)
+# ---------------------------------------------------------------------------
+from datacontract.cli_export import export_app  # noqa: E402
+from datacontract.cli_import import import_app  # noqa: E402
+
+app.add_typer(import_app, name="import", help="Create a data contract from a source format.")
+app.add_typer(export_app, name="export", help="Convert a data contract to a target format.")
 
 if __name__ == "__main__":
     app()

@@ -14,7 +14,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "unity",
             "--source",
             "fixtures/databricks-unity/import/unity_table_schema.json",
@@ -68,7 +67,6 @@ def test_cli_with_owner_and_id():
         app,
         [
             "import",
-            "--format",
             "unity",
             "--source",
             "fixtures/databricks-unity/import/unity_table_schema.json",

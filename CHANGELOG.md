@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- **Breaking**: the `dbt` export format was renamed to `dbt-models` (to differentiate from other dbt export formats)
+- **Breaking**: Several changes in the CLI syntax (#1134, #1155):
+
+  | Commands affected                               | Old syntax                       | New syntax                             |
+  |-------------------------------------------------|----------------------------------|----------------------------------------|
+  | `export`, `import`                              | `--format <FORMAT> <OPTIONS>`    | `<FORMAT> <OPTIONS>` (drop `--format`) |
+  | `lint`, `test`, `ci`, `publish`, `catalog`      | `--schema <PATH>`                | `--odcs-schema <PATH>`                 |
+  | `export rdf`                                    | `--rdf-base <URI>`               | `--base <URI>`                         |
+  | `export sql`, `sql-query`, `great-expectations` | `--sql-server-type <TYPE>`       | `--server-type <TYPE>`                 |
+  | `import dbt`                                    | `--dbt-model <NAME>`             | `--model <NAME>`                       |
+  | `import dbml`                                   | `--dbml-schema <NAME>`           | `--schema <NAME>`                      |
+  | `import dbml`                                   | `--dbml-table <NAME>`            | `--table <NAME>`                       |
+  | `import glue`                                   | `--source <NAME>`                | `--database <NAME>`                    |
+  | `import glue`                                   | `--glue-table <NAME>`            | `--table <NAME>`                       |
+  | `import bigquery`                               | `--bigquery-project <NAME>`      | `--project <NAME>`                     |
+  | `import bigquery`                               | `--bigquery-dataset <NAME>`      | `--dataset <NAME>`                     |
+  | `import bigquery`                               | `--bigquery-table <NAME>`        | `--table <NAME>`                       |
+  | `import unity`                                  | `--unity-table-full-name <NAME>` | `--table <NAME>`                       |
+  | `import iceberg`                                | `--iceberg-table <NAME>`         | `--table <NAME>`                       |
+  | `import spark`                                  | `--source <NAMES>`               | `--tables <NAMES>`                     |
+  | `import`                                        | `--template`                     | dropped (was a no-op)                  |
+
 
 ## [0.11.9] - 2026-04-20
 

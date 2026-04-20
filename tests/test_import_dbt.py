@@ -23,7 +23,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "dbt",
             "--source",
             dbt_manifest,
@@ -38,7 +37,6 @@ def test_cli_bigquery():
         app,
         [
             "import",
-            "--format",
             "dbt",
             "--source",
             dbt_manifest_bigquery,
@@ -53,13 +51,12 @@ def test_cli_with_filter():
         app,
         [
             "import",
-            "--format",
             "dbt",
             "--source",
             dbt_manifest,
-            "--dbt-model",
+            "--model",
             "customers",
-            "--dbt-model",
+            "--model",
             "orders",
         ],
     )

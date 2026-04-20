@@ -12,15 +12,13 @@ from datacontract.data_contract import DataContract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/dbml/datacontract.odcs.yaml", "--format", "dbml"])
+    result = runner.invoke(app, ["export", "dbml", "./fixtures/dbml/datacontract.odcs.yaml"])
     assert result.exit_code == 0
 
 
 def test_cli_with_server():
     runner = CliRunner()
-    result = runner.invoke(
-        app, ["export", "./fixtures/dbml/datacontract.odcs.yaml", "--format", "dbml", "--server", "production"]
-    )
+    result = runner.invoke(app, ["export", "dbml", "./fixtures/dbml/datacontract.odcs.yaml", "--server", "production"])
     assert result.exit_code == 0
 
 

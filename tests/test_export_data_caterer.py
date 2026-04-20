@@ -11,7 +11,7 @@ from datacontract.lint.resolve import resolve_data_contract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "data-caterer"])
+    result = runner.invoke(app, ["export", "data-caterer", "./fixtures/export/datacontract.odcs.yaml"])
     assert result.exit_code == 0
 
 

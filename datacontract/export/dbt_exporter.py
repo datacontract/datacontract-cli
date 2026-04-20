@@ -19,7 +19,7 @@ def _get_description_str(description: Union[str, Description, None]) -> Optional
     return None
 
 
-class DbtExporter(Exporter):
+class DbtModelsExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
         return to_dbt_models_yaml(data_contract, server)
 

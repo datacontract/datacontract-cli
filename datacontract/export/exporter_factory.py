@@ -84,9 +84,9 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
-    name=ExportFormat.dbt,
+    name=ExportFormat.dbt_models,
     module_path="datacontract.export.dbt_exporter",
-    class_name="DbtExporter",
+    class_name="DbtModelsExporter",
 )
 
 exporter_factory.register_lazy_exporter(
