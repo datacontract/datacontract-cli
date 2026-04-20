@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
 
- **Breaking**: Several changes in the CLI syntax (#1157):
+- **Breaking**: Several changes in the CLI syntax (#1157):
 
   | Command                                    | Old option                                    | New option                             |
   |--------------------------------------------|-----------------------------------------------|----------------------------------------|
