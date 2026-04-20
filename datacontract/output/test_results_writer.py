@@ -13,6 +13,13 @@ from datacontract.output.junit_test_results import write_junit_test_results
 from datacontract.output.output_format import OutputFormat
 
 
+def _infer_output_format(output_path: Path) -> Optional[OutputFormat]:
+    """Infer output format from file extension."""
+    ext = output_path.suffix.lower()
+    mapping = {".json": OutputFormat.json, ".xml": OutputFormat.junit}
+    return mapping.get(ext)
+
+
 def write_test_result(
     run: Run,
     console: Console,
@@ -20,6 +27,15 @@ def write_test_result(
     output_path: Path,
     data_contract: Optional[OpenDataContractStandard] = None,
 ):
+    if output_format is None and output_path:
+        output_format = _infer_output_format(output_path)
+        if output_format is None:
+            console.print(
+                f"Error: Cannot infer output format from extension '{output_path.suffix}'. "
+                f"Please specify --output-format ({', '.join(OutputFormat.get_supported_formats())})."
+            )
+            raise typer.Exit(code=1)
+
     if output_format is not None and not output_path:
         console.print(f"No output path specified for {output_format.value} test results. Skip writing test results.")
     elif output_format == OutputFormat.json:
