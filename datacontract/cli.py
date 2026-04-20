@@ -140,7 +140,11 @@ app.add_typer(
     command_export.export_app,
     name="export",
     help="Convert a data contract to a target format.",
-    epilog="Example: datacontract export html datacontract.yaml --output datacontract.html",
+    epilog=(
+        "Example: datacontract export html datacontract.yaml --output datacontract.html\n\n"
+        "For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), "
+        "use `datacontract export sql --server-type <dialect>`."
+    ),
 )
 
 

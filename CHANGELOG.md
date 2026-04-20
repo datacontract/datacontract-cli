@@ -32,6 +32,7 @@ This release introduces several changes to improve the usability of `datacontrac
 - Error messages for uncaught exceptions are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1175)
 - Add example calls to `--help` outputs (#1176)
 - Add explicit errors when required env vars for soda connections are missing (#1177)
+- Validate CLI options against their allowed values instead of accepting any string (#1178)
 
 
 ## [0.11.9] - 2026-04-20

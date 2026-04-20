@@ -7,6 +7,7 @@ from typing_extensions import Annotated
 
 from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
 from datacontract.data_contract import DataContract
+from datacontract.imports.sql_importer import SqlDialect
 
 console = Console()
 
@@ -52,10 +53,8 @@ def _write_result(result, output: Optional[Path]):
 def import_sql(
     source: Annotated[Optional[str], typer.Option(help="Path to the SQL DDL file.")] = None,
     dialect: Annotated[
-        Optional[str],
-        typer.Option(
-            help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."
-        ),
+        Optional[SqlDialect],
+        typer.Option(help="The SQL dialect."),
     ] = None,
     output: output_option = None,
     schema: schema_option = None,
@@ -66,7 +65,12 @@ def import_sql(
     """Import a data contract from a SQL DDL file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="sql", source=source, schema=schema, dialect=dialect, owner=owner, id=id
+        format="sql",
+        source=source,
+        schema=schema,
+        dialect=dialect.value if dialect is not None else None,
+        owner=owner,
+        id=id,
     )
     _write_result(result, output)
 
