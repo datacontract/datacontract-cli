@@ -45,7 +45,10 @@ def _write_result(result, output: Optional[Path]):
 # ---------------------------------------------------------------------------
 
 
-@import_app.command(name="sql")
+@import_app.command(
+    name="sql",
+    epilog="Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml",
+)
 def import_sql(
     source: Annotated[Optional[str], typer.Option(help="Path to the SQL DDL file.")] = None,
     dialect: Annotated[
@@ -68,7 +71,10 @@ def import_sql(
     _write_result(result, output)
 
 
-@import_app.command(name="avro")
+@import_app.command(
+    name="avro",
+    epilog="Example: datacontract import avro --source schema.avsc --output datacontract.yaml",
+)
 def import_avro(
     source: Annotated[Optional[str], typer.Option(help="Path to the Avro schema file.")] = None,
     output: output_option = None,
@@ -83,7 +89,10 @@ def import_avro(
     _write_result(result, output)
 
 
-@import_app.command(name="dbt")
+@import_app.command(
+    name="dbt",
+    epilog="Example: datacontract import dbt --source manifest.json --output datacontract.yaml",
+)
 def import_dbt(
     source: Annotated[Optional[str], typer.Option(help="Path to the dbt manifest.json file.")] = None,
     model: Annotated[
@@ -106,7 +115,10 @@ def import_dbt(
     _write_result(result, output)
 
 
-@import_app.command(name="dbml")
+@import_app.command(
+    name="dbml",
+    epilog="Example: datacontract import dbml --source schema.dbml --output datacontract.yaml",
+)
 def import_dbml(
     source: Annotated[Optional[str], typer.Option(help="Path to the DBML file.")] = None,
     schema: Annotated[
@@ -143,7 +155,10 @@ def import_dbml(
     _write_result(result, output)
 
 
-@import_app.command(name="glue")
+@import_app.command(
+    name="glue",
+    epilog="Example: datacontract import glue --database my_database --output datacontract.yaml",
+)
 def import_glue(
     database: Annotated[Optional[str], typer.Option(help="Name of the AWS Glue database.")] = None,
     table: Annotated[
@@ -166,7 +181,10 @@ def import_glue(
     _write_result(result, output)
 
 
-@import_app.command(name="bigquery")
+@import_app.command(
+    name="bigquery",
+    epilog="Example: datacontract import bigquery --project my-project --dataset my_dataset --output datacontract.yaml",
+)
 def import_bigquery(
     source: Annotated[
         Optional[str],
@@ -203,7 +221,10 @@ def import_bigquery(
     _write_result(result, output)
 
 
-@import_app.command(name="unity")
+@import_app.command(
+    name="unity",
+    epilog="Example: datacontract import unity --table catalog.schema.my_table --output datacontract.yaml",
+)
 def import_unity(
     source: Annotated[
         Optional[str],
@@ -229,7 +250,10 @@ def import_unity(
     _write_result(result, output)
 
 
-@import_app.command(name="jsonschema")
+@import_app.command(
+    name="jsonschema",
+    epilog="Example: datacontract import jsonschema --source schema.json --output datacontract.yaml",
+)
 def import_jsonschema(
     source: Annotated[Optional[str], typer.Option(help="Path to the JSON Schema file.")] = None,
     output: output_option = None,
@@ -244,7 +268,10 @@ def import_jsonschema(
     _write_result(result, output)
 
 
-@import_app.command(name="json")
+@import_app.command(
+    name="json",
+    epilog="Example: datacontract import json --source data.json --output datacontract.yaml",
+)
 def import_json(
     source: Annotated[Optional[str], typer.Option(help="Path to the JSON data file.")] = None,
     output: output_option = None,
@@ -259,7 +286,10 @@ def import_json(
     _write_result(result, output)
 
 
-@import_app.command(name="odcs")
+@import_app.command(
+    name="odcs",
+    epilog="Example: datacontract import odcs --source odcs-contract.yaml --output datacontract.yaml",
+)
 def import_odcs(
     source: Annotated[Optional[str], typer.Option(help="Path to the ODCS data contract file.")] = None,
     output: output_option = None,
@@ -274,7 +304,10 @@ def import_odcs(
     _write_result(result, output)
 
 
-@import_app.command(name="parquet")
+@import_app.command(
+    name="parquet",
+    epilog="Example: datacontract import parquet --source data.parquet --output datacontract.yaml",
+)
 def import_parquet(
     source: Annotated[Optional[str], typer.Option(help="Path to the Parquet file.")] = None,
     output: output_option = None,
@@ -289,7 +322,10 @@ def import_parquet(
     _write_result(result, output)
 
 
-@import_app.command(name="csv")
+@import_app.command(
+    name="csv",
+    epilog="Example: datacontract import csv --source data.csv --output datacontract.yaml",
+)
 def import_csv(
     source: Annotated[Optional[str], typer.Option(help="Path to the CSV file.")] = None,
     output: output_option = None,
@@ -304,7 +340,10 @@ def import_csv(
     _write_result(result, output)
 
 
-@import_app.command(name="protobuf")
+@import_app.command(
+    name="protobuf",
+    epilog="Example: datacontract import protobuf --source schema.proto --output datacontract.yaml",
+)
 def import_protobuf(
     source: Annotated[Optional[str], typer.Option(help="Path to the Protobuf .proto file.")] = None,
     output: output_option = None,
@@ -319,7 +358,10 @@ def import_protobuf(
     _write_result(result, output)
 
 
-@import_app.command(name="spark")
+@import_app.command(
+    name="spark",
+    epilog="Example: datacontract import spark --tables orders,customers --output datacontract.yaml",
+)
 def import_spark(
     tables: Annotated[
         Optional[str],
@@ -337,7 +379,10 @@ def import_spark(
     _write_result(result, output)
 
 
-@import_app.command(name="iceberg")
+@import_app.command(
+    name="iceberg",
+    epilog="Example: datacontract import iceberg --source schema.json --table orders --output datacontract.yaml",
+)
 def import_iceberg(
     source: Annotated[Optional[str], typer.Option(help="Path to the Iceberg schema JSON file.")] = None,
     table: Annotated[
@@ -358,7 +403,10 @@ def import_iceberg(
     _write_result(result, output)
 
 
-@import_app.command(name="excel")
+@import_app.command(
+    name="excel",
+    epilog="Example: datacontract import excel --source datacontract.xlsx --output datacontract.yaml",
+)
 def import_excel(
     source: Annotated[Optional[str], typer.Option(help="Path to the Excel file.")] = None,
     output: output_option = None,

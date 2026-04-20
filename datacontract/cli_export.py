@@ -72,7 +72,10 @@ def _export(
 # ---------------------------------------------------------------------------
 
 
-@export_app.command(name="sql")
+@export_app.command(
+    name="sql",
+    epilog="Example: datacontract export sql datacontract.yaml --server-type postgres --output ddl.sql",
+)
 def export_sql(
     location: location_arg = "datacontract.yaml",
     server_type: Annotated[
@@ -92,7 +95,10 @@ def export_sql(
     _export(ExportFormat.sql, location, output, server, schema_name, schema, sql_server_type=server_type)
 
 
-@export_app.command(name="sql-query")
+@export_app.command(
+    name="sql-query",
+    epilog="Example: datacontract export sql-query datacontract.yaml --output query.sql",
+)
 def export_sql_query(
     location: location_arg = "datacontract.yaml",
     server_type: Annotated[
@@ -112,7 +118,10 @@ def export_sql_query(
     _export(ExportFormat.sql_query, location, output, server, schema_name, schema, sql_server_type=server_type)
 
 
-@export_app.command(name="dbt-models")
+@export_app.command(
+    name="dbt-models",
+    epilog="Example: datacontract export dbt-models datacontract.yaml --output schema.yml",
+)
 def export_dbt_models(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -126,7 +135,10 @@ def export_dbt_models(
     _export(ExportFormat.dbt_models, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="dbt-sources")
+@export_app.command(
+    name="dbt-sources",
+    epilog="Example: datacontract export dbt-sources datacontract.yaml --output sources.yml",
+)
 def export_dbt_sources(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -140,7 +152,10 @@ def export_dbt_sources(
     _export(ExportFormat.dbt_sources, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="dbt-staging-sql")
+@export_app.command(
+    name="dbt-staging-sql",
+    epilog="Example: datacontract export dbt-staging-sql datacontract.yaml --output stg.sql",
+)
 def export_dbt_staging_sql(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -154,7 +169,10 @@ def export_dbt_staging_sql(
     _export(ExportFormat.dbt_staging_sql, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="avro")
+@export_app.command(
+    name="avro",
+    epilog="Example: datacontract export avro datacontract.yaml --output schema.avsc",
+)
 def export_avro(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -168,7 +186,10 @@ def export_avro(
     _export(ExportFormat.avro, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="avro-idl")
+@export_app.command(
+    name="avro-idl",
+    epilog="Example: datacontract export avro-idl datacontract.yaml --output schema.avdl",
+)
 def export_avro_idl(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -182,7 +203,10 @@ def export_avro_idl(
     _export(ExportFormat.avro_idl, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="jsonschema")
+@export_app.command(
+    name="jsonschema",
+    epilog="Example: datacontract export jsonschema datacontract.yaml --output schema.json",
+)
 def export_jsonschema(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -196,7 +220,10 @@ def export_jsonschema(
     _export(ExportFormat.jsonschema, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="pydantic-model")
+@export_app.command(
+    name="pydantic-model",
+    epilog="Example: datacontract export pydantic-model datacontract.yaml --output models.py",
+)
 def export_pydantic_model(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -210,7 +237,10 @@ def export_pydantic_model(
     _export(ExportFormat.pydantic_model, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="protobuf")
+@export_app.command(
+    name="protobuf",
+    epilog="Example: datacontract export protobuf datacontract.yaml --output schema.proto",
+)
 def export_protobuf(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -224,7 +254,10 @@ def export_protobuf(
     _export(ExportFormat.protobuf, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="odcs")
+@export_app.command(
+    name="odcs",
+    epilog="Example: datacontract export odcs datacontract.yaml --output odcs-contract.yaml",
+)
 def export_odcs(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -238,7 +271,10 @@ def export_odcs(
     _export(ExportFormat.odcs, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="rdf")
+@export_app.command(
+    name="rdf",
+    epilog="Example: datacontract export rdf datacontract.yaml --base https://example.com/ --output contract.ttl",
+)
 def export_rdf(
     location: location_arg = "datacontract.yaml",
     base: Annotated[
@@ -256,7 +292,10 @@ def export_rdf(
     _export(ExportFormat.rdf, location, output, server, schema_name, schema, rdf_base=base)
 
 
-@export_app.command(name="html")
+@export_app.command(
+    name="html",
+    epilog="Example: datacontract export html datacontract.yaml --output datacontract.html",
+)
 def export_html(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -270,7 +309,10 @@ def export_html(
     _export(ExportFormat.html, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="markdown")
+@export_app.command(
+    name="markdown",
+    epilog="Example: datacontract export markdown datacontract.yaml --output datacontract.md",
+)
 def export_markdown(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -284,7 +326,10 @@ def export_markdown(
     _export(ExportFormat.markdown, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="mermaid")
+@export_app.command(
+    name="mermaid",
+    epilog="Example: datacontract export mermaid datacontract.yaml --output diagram.mmd",
+)
 def export_mermaid(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -298,7 +343,10 @@ def export_mermaid(
     _export(ExportFormat.mermaid, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="bigquery")
+@export_app.command(
+    name="bigquery",
+    epilog="Example: datacontract export bigquery datacontract.yaml --output schema.json",
+)
 def export_bigquery(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -312,7 +360,10 @@ def export_bigquery(
     _export(ExportFormat.bigquery, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="dbml")
+@export_app.command(
+    name="dbml",
+    epilog="Example: datacontract export dbml datacontract.yaml --output schema.dbml",
+)
 def export_dbml(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -326,7 +377,10 @@ def export_dbml(
     _export(ExportFormat.dbml, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="go")
+@export_app.command(
+    name="go",
+    epilog="Example: datacontract export go datacontract.yaml --output models.go",
+)
 def export_go(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -340,7 +394,10 @@ def export_go(
     _export(ExportFormat.go, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="spark")
+@export_app.command(
+    name="spark",
+    epilog="Example: datacontract export spark datacontract.yaml --output schema.py",
+)
 def export_spark(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -354,7 +411,10 @@ def export_spark(
     _export(ExportFormat.spark, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="sqlalchemy")
+@export_app.command(
+    name="sqlalchemy",
+    epilog="Example: datacontract export sqlalchemy datacontract.yaml --output models.py",
+)
 def export_sqlalchemy(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -368,7 +428,10 @@ def export_sqlalchemy(
     _export(ExportFormat.sqlalchemy, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="iceberg")
+@export_app.command(
+    name="iceberg",
+    epilog="Example: datacontract export iceberg datacontract.yaml --output schema.json",
+)
 def export_iceberg(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -382,7 +445,10 @@ def export_iceberg(
     _export(ExportFormat.iceberg, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="sodacl")
+@export_app.command(
+    name="sodacl",
+    epilog="Example: datacontract export sodacl datacontract.yaml --output checks.yml",
+)
 def export_sodacl(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -396,7 +462,10 @@ def export_sodacl(
     _export(ExportFormat.sodacl, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="great-expectations")
+@export_app.command(
+    name="great-expectations",
+    epilog="Example: datacontract export great-expectations datacontract.yaml --output expectations.json",
+)
 def export_great_expectations(
     location: location_arg = "datacontract.yaml",
     engine: Annotated[
@@ -429,7 +498,10 @@ def export_great_expectations(
     )
 
 
-@export_app.command(name="data-caterer")
+@export_app.command(
+    name="data-caterer",
+    epilog="Example: datacontract export data-caterer datacontract.yaml --output plan.yaml",
+)
 def export_data_caterer(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -443,7 +515,10 @@ def export_data_caterer(
     _export(ExportFormat.data_caterer, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="dcs")
+@export_app.command(
+    name="dcs",
+    epilog="Example: datacontract export dcs datacontract.yaml --output contract.dcs.yaml",
+)
 def export_dcs(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -457,7 +532,10 @@ def export_dcs(
     _export(ExportFormat.dcs, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="dqx")
+@export_app.command(
+    name="dqx",
+    epilog="Example: datacontract export dqx datacontract.yaml --output checks.yaml",
+)
 def export_dqx(
     location: location_arg = "datacontract.yaml",
     output: output_option = None,
@@ -471,7 +549,10 @@ def export_dqx(
     _export(ExportFormat.dqx, location, output, server, schema_name, schema)
 
 
-@export_app.command(name="excel")
+@export_app.command(
+    name="excel",
+    epilog="Example: datacontract export excel datacontract.yaml --output datacontract.xlsx",
+)
 def export_excel(
     location: location_arg = "datacontract.yaml",
     template: Annotated[
@@ -494,7 +575,10 @@ def export_excel(
     _export(ExportFormat.excel, location, output, server, schema_name, schema, template=template)
 
 
-@export_app.command(name="custom")
+@export_app.command(
+    name="custom",
+    epilog="Example: datacontract export custom datacontract.yaml --template template.j2 --output output.txt",
+)
 def export_custom(
     location: location_arg = "datacontract.yaml",
     template: Annotated[
