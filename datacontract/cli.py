@@ -48,7 +48,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
                 if flag in self.RENAMED_FLAGS:
                     new_flag = self.RENAMED_FLAGS[flag]
                 elif flag == "--schema" and subcommand != "dbml":
-                    new_flag = "--odcs-schema"
+                    new_flag = "--json-schema"
                 elif flag == "--source" and subcommand == "glue":
                     new_flag = "--database"
                 elif flag == "--source" and subcommand == "spark":

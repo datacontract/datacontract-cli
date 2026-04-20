@@ -23,7 +23,7 @@ def catalog(
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
     schema: Annotated[
         str,
-        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     debug: debug_option = None,
 ):
