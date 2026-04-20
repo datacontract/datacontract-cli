@@ -19,7 +19,7 @@ def publish(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     ssl_verification: Annotated[
         bool,

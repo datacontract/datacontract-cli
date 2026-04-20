@@ -32,6 +32,18 @@ class Exporter(ABC):
         pass
 
 
+class SqlServerType(str, Enum):
+    auto = "auto"
+    snowflake = "snowflake"
+    postgres = "postgres"
+    mysql = "mysql"
+    databricks = "databricks"
+    sqlserver = "sqlserver"
+    bigquery = "bigquery"
+    trino = "trino"
+    oracle = "oracle"
+
+
 class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     pydantic_model = "pydantic-model"

@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 
 import typer
@@ -8,6 +9,13 @@ from datacontract.data_contract import DataContract
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
+
+
+class CheckCategory(str, Enum):
+    schema = "schema"
+    quality = "quality"
+    servicelevel = "servicelevel"
+    custom = "custom"
 
 
 @app.command(
@@ -21,7 +29,7 @@ def test(
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
-        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -50,9 +58,8 @@ def test(
     checks: Annotated[
         str,
         typer.Option(
-            help="Comma-separated list of check categories to run. "
-            "Available categories: schema, quality, servicelevel, custom. "
-            "Omit to enable all."
+            help="Comma-separated list of check categories to run "
+            f"(available: {', '.join(c.value for c in CheckCategory)}). Omit to enable all."
         ),
     ] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
@@ -67,18 +74,19 @@ def test(
     """
     enable_debug_logging(debug)
 
-    valid_categories = {"schema", "quality", "servicelevel", "custom"}
     check_categories = None
     if checks is not None:
-        check_categories = {c.strip() for c in checks.split(",") if c.strip()}
-        if not check_categories:
+        raw = [c.strip() for c in checks.split(",") if c.strip()]
+        if not raw:
             console.print("[red]Empty --checks specified.[/red]")
-            console.print(f"Available categories: {', '.join(sorted(valid_categories))}")
+            console.print(f"Available categories: {', '.join(c.value for c in CheckCategory)}")
             raise typer.Exit(code=1)
-        invalid = check_categories - valid_categories
-        if invalid:
-            console.print(f"[red]Invalid --checks specified: {', '.join(sorted(invalid))}[/red]")
-            console.print(f"Available categories: {', '.join(sorted(valid_categories))}")
+        try:
+            check_categories = {CheckCategory(c).value for c in raw}
+        except ValueError:
+            invalid = sorted(set(raw) - {c.value for c in CheckCategory})
+            console.print(f"[red]Invalid --checks specified: {', '.join(invalid)}[/red]")
+            console.print(f"Available categories: {', '.join(c.value for c in CheckCategory)}")
             raise typer.Exit(code=1)
 
     console.print(f"Testing {location}")

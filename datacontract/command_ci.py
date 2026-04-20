@@ -1,7 +1,7 @@
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-import click
 import typer
 from rich.console import Console
 from typing_extensions import Annotated
@@ -11,6 +11,12 @@ from datacontract.data_contract import DataContract
 from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
+
+
+class FailOn(str, Enum):
+    warning = "warning"
+    error = "error"
+    never = "never"
 
 
 @app.command(
@@ -24,7 +30,7 @@ def ci(
     ] = None,
     schema: Annotated[
         str,
-        typer.Option("--odcs-schema", help="The location (url or path) of the ODCS JSON Schema"),
+        typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
     ] = None,
     server: Annotated[
         str,
@@ -46,12 +52,9 @@ def ci(
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
     fail_on: Annotated[
-        str,
-        typer.Option(
-            click_type=click.Choice(["warning", "error", "never"], case_sensitive=False),
-            help="Minimum severity that causes a non-zero exit code.",
-        ),
-    ] = "error",
+        FailOn,
+        typer.Option(help="Minimum severity that causes a non-zero exit code."),
+    ] = FailOn.error,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),

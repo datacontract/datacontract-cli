@@ -8,30 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
 
-- **Breaking**: the `dbt` export format was renamed to `dbt-models` (to differentiate from other dbt export formats)
-- **Breaking**: Several changes in the CLI syntax (#1134, #1155):
+- **Breaking**: Several changes in the CLI syntax (#1157):
 
-  | Commands affected                               | Old syntax                       | New syntax                             |
-  |-------------------------------------------------|----------------------------------|----------------------------------------|
-  | `export`, `import`                              | `--format <FORMAT> <OPTIONS>`    | `<FORMAT> <OPTIONS>` (drop `--format`) |
-  | `lint`, `test`, `ci`, `publish`, `catalog`      | `--schema <PATH>`                | `--odcs-schema <PATH>`                 |
-  | `export rdf`                                    | `--rdf-base <URI>`               | `--base <URI>`                         |
-  | `export sql`, `sql-query`, `great-expectations` | `--sql-server-type <TYPE>`       | `--server-type <TYPE>`                 |
-  | `import dbt`                                    | `--dbt-model <NAME>`             | `--model <NAME>`                       |
-  | `import dbml`                                   | `--dbml-schema <NAME>`           | `--schema <NAME>`                      |
-  | `import dbml`                                   | `--dbml-table <NAME>`            | `--table <NAME>`                       |
-  | `import glue`                                   | `--source <NAME>`                | `--database <NAME>`                    |
-  | `import glue`                                   | `--glue-table <NAME>`            | `--table <NAME>`                       |
-  | `import bigquery`                               | `--bigquery-project <NAME>`      | `--project <NAME>`                     |
-  | `import bigquery`                               | `--bigquery-dataset <NAME>`      | `--dataset <NAME>`                     |
-  | `import bigquery`                               | `--bigquery-table <NAME>`        | `--table <NAME>`                       |
-  | `import unity`                                  | `--unity-table-full-name <NAME>` | `--table <NAME>`                       |
-  | `import iceberg`                                | `--iceberg-table <NAME>`         | `--table <NAME>`                       |
-  | `import spark`                                  | `--source <NAMES>`               | `--tables <NAMES>`                     |
-  | `import`                                        | `--template`                     | dropped (was a no-op)                  |
-- Error messages are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1148)
-- Add examples to `--help` outputs (#1149)
-- Add explicit errors when required env vars for soda connections are missing (#1154, #1177)
+  | Command                                    | Old option                                    | New option                             |
+  |--------------------------------------------|-----------------------------------------------|----------------------------------------|
+  | `lint`, `test`, `ci`, `publish`, `catalog` | `--schema <PATH>`                             | `--json-schema <PATH>`                 |
+  | `export`, `import`                         | `--format <FORMAT> <OPTIONS>`                 | `<FORMAT> <OPTIONS>` (drop `--format`) |
+  | **Export options:**                        |                                               |                                        |
+  | `export --format dbt`                      | `--format dbt`                                | `dbt-models` (format renamed)          |
+  | `export --format great-expectations`       | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
+  | `export --format rdf`                      | `--rdf-base <URI>`                            | `--base <URI>`                         |
+  | `export --format sql`                      | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
+  | `export --format sql-query`                | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
+  | **Import options:**                        |                                               |                                        |
+  | `import --format bigquery`                 | `--bigquery-[project\|dataset\|table] <NAME>` | `--[project\|dataset\|table] <NAME>`   |
+  | `import --format dbml`                     | `--dbml-[schema\|table] <NAME>`               | `--[schema\|table] <NAME>`             |
+  | `import --format dbt`                      | `--dbt-model <NAME>`                          | `--model <NAME>`                       |
+  | `import --format glue`                     | `--source <NAME>`, `--glue-table <NAME>`      | `--database <NAME>`, `--table <NAME>`  |
+  | `import --format iceberg`                  | `--iceberg-table <NAME>`                      | `--table <NAME>`                       |
+  | `import --format unity`                    | `--unity-table-full-name <NAME>`              | `--table <NAME>`                       |
+  | `import --format spark`                    | `--source <NAMES>`                            | `--tables <NAMES>`                     |
+  | `import`                                   | `--template`                                  | dropped (was a no-op)                  |
+- Error messages for uncaught exceptions are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1175)
+- Add example calls to `--help` outputs (#1176)
+- Add explicit errors when required env vars for soda connections are missing (#1177)
+- Validate some of the CLI options against their allowed values instead of accepting any string (#1178)
 
 
 ## [0.11.9] - 2026-04-20
