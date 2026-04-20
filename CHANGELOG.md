@@ -5,12 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.12.0]
+## Unreleased
 - **Breaking**: the `dbt` export format was renamed to `dbt-models` (to differentiate from other dbt export formats)
 - **Breaking**: Several changes in the CLI syntax (#1134, #1155):
 
-  | Commands                                        | Old syntax                       | New syntax                             |
-    |-------------------------------------------------|----------------------------------|----------------------------------------|
+  | Commands affected                               | Old syntax                       | New syntax                             |
+  |-------------------------------------------------|----------------------------------|----------------------------------------|
   | `export`, `import`                              | `--format <FORMAT> <OPTIONS>`    | `<FORMAT> <OPTIONS>` (drop `--format`) |
   | `lint`, `test`, `ci`, `publish`, `catalog`      | `--schema <PATH>`                | `--odcs-schema <PATH>`                 |
   | `export rdf`                                    | `--rdf-base <URI>`               | `--base <URI>`                         |
@@ -28,7 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   | `import spark`                                  | `--source <NAMES>`               | `--tables <NAMES>`                     |
   | `import`                                        | `--template`                     | dropped (was a no-op)                  |
 
-## Unreleased
 
 ### Added
 - Added `--checks` option to `test` command to selectively run check categories: `schema`, `quality`, `servicelevel` (#678)
