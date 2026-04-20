@@ -97,7 +97,7 @@ def export_sql(
 
 @export_app.command(
     name="sql-query",
-    epilog="Example: datacontract export sql-query datacontract.yaml --output query.sql",
+    epilog="Example: datacontract export sql-query datacontract.yaml --server-type snowflake --output query.sql",
 )
 def export_sql_query(
     location: location_arg = "datacontract.yaml",
@@ -464,7 +464,7 @@ def export_sodacl(
 
 @export_app.command(
     name="great-expectations",
-    epilog="Example: datacontract export great-expectations datacontract.yaml --output expectations.json",
+    epilog="Example: datacontract export great-expectations datacontract.yaml --engine sql --server-type postgres --output expectations.json",
 )
 def export_great_expectations(
     location: location_arg = "datacontract.yaml",

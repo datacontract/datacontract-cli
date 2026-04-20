@@ -157,7 +157,7 @@ def import_dbml(
 
 @import_app.command(
     name="glue",
-    epilog="Example: datacontract import glue --database my_database --output datacontract.yaml",
+    epilog="Example: datacontract import glue --database my_database --table orders --output datacontract.yaml",
 )
 def import_glue(
     database: Annotated[Optional[str], typer.Option(help="Name of the AWS Glue database.")] = None,
