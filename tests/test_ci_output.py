@@ -25,6 +25,20 @@ def _make_run(checks):
     return run
 
 
+def test_ci_output_infers_format_from_filename(tmp_path):
+    run = _make_run([Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)])
+
+    with patch("datacontract.cli.DataContract") as mock_datacontract:
+        mock_datacontract.return_value.test.return_value = run
+        result = runner.invoke(
+            app,
+            ["ci", "--output", str(tmp_path / "ci-results.xml"), "./fixtures/junit/datacontract.yaml"],
+        )
+
+    assert result.exit_code == 0
+    assert (tmp_path / "ci-results.xml").exists(), "Should write a JUnit test result file"
+
+
 # --- Annotation tests ---
 
 
