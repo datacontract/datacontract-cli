@@ -106,7 +106,10 @@ def common(
     pass
 
 
-@app.command(name="init")
+@app.command(
+    name="init",
+    epilog="Example: datacontract init datacontract.yaml",
+)
 def init(
     location: Annotated[
         str, typer.Argument(help="The location of the data contract file to create.")
@@ -129,7 +132,10 @@ def init(
     console.print("📄 data contract written to " + location)
 
 
-@app.command(name="lint")
+@app.command(
+    name="lint",
+    epilog="Example: datacontract lint datacontract.yaml",
+)
 def lint(
     location: Annotated[
         str,
@@ -171,7 +177,10 @@ def enable_debug_logging(debug: bool):
         )
 
 
-@app.command(name="changelog")
+@app.command(
+    name="changelog",
+    epilog="Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml",
+)
 def changelog(
     v1: Annotated[str, typer.Argument(help="The location (path) of the source (before) data contract YAML.")],
     v2: Annotated[str, typer.Argument(help="The location (path) of the target (after) data contract YAML.")],
@@ -183,7 +192,10 @@ def changelog(
     write_text_changelog_results(result, console)
 
 
-@app.command(name="test")
+@app.command(
+    name="test",
+    epilog="Example: datacontract test datacontract.yaml --server production",
+)
 def test(
     location: Annotated[
         str,
@@ -273,7 +285,10 @@ def test(
     write_test_result(run, console, output_format, output, data_contract)
 
 
-@app.command(name="ci")
+@app.command(
+    name="ci",
+    epilog="Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit",
+)
 def ci(
     locations: Annotated[
         Optional[list[str]],
@@ -369,7 +384,10 @@ def ci(
         raise typer.Exit(code=1)
 
 
-@app.command(name="publish")
+@app.command(
+    name="publish",
+    epilog="Example: datacontract publish datacontract.yaml",
+)
 def publish(
     location: Annotated[
         str,
@@ -396,7 +414,10 @@ def publish(
     )
 
 
-@app.command(name="catalog")
+@app.command(
+    name="catalog",
+    epilog='Example: datacontract catalog --files "**/*.yaml" --output catalog/',
+)
 def catalog(
     files: Annotated[
         Optional[str],
@@ -457,7 +478,11 @@ def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict
     return default_args | dict(zip(trimmed_keys, context.args[1::2]))
 
 
-@app.command(name="api", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@app.command(
+    name="api",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    epilog="Example: datacontract api --port 4242 --host 0.0.0.0",
+)
 def api(
     ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
