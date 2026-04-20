@@ -31,6 +31,7 @@ This release introduces several changes to improve the usability of `datacontrac
   | `import`                                        | `--template`                     | dropped (was a no-op)                  |
 - Error messages are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1148)
 - Add examples to `--help` outputs (#1149)
+- Add explicit errors when required env vars for soda connections are missing (#1154, #1177)
 
 
 ## [0.11.9] - 2026-04-20
