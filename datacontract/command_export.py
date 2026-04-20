@@ -33,10 +33,10 @@ schema_option = Annotated[
     Optional[str],
     typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema."),
 ]
-server_type_option = Annotated[
+dialect_option = Annotated[
     SqlServerType,
     typer.Option(
-        help="The server type to determine the SQL dialect. Use `auto` (default) to detect the SQL dialect via the specified servers in the data contract."
+        help="The SQL dialect. Use `auto` (default) to detect the SQL dialect via the specified servers in the data contract."
     ),
 ]
 
@@ -81,11 +81,11 @@ def _export(
 
 @export_app.command(
     name="sql",
-    epilog="Example: datacontract export sql datacontract.yaml --server-type postgres --output ddl.sql",
+    epilog="Example: datacontract export sql datacontract.yaml --dialect postgres --output ddl.sql",
 )
 def export_sql(
     location: location_arg = "datacontract.yaml",
-    server_type: server_type_option = SqlServerType.auto,
+    dialect: dialect_option = SqlServerType.auto,
     output: output_option = None,
     server: server_option = None,
     schema_name: schema_name_option = "all",
@@ -94,16 +94,16 @@ def export_sql(
 ):
     """Export a data contract to SQL DDL."""
     enable_debug_logging(debug)
-    _export(ExportFormat.sql, location, output, server, schema_name, schema, sql_server_type=server_type.value)
+    _export(ExportFormat.sql, location, output, server, schema_name, schema, sql_server_type=dialect.value)
 
 
 @export_app.command(
     name="sql-query",
-    epilog="Example: datacontract export sql-query datacontract.yaml --server-type snowflake --output query.sql",
+    epilog="Example: datacontract export sql-query datacontract.yaml --dialect snowflake --output query.sql",
 )
 def export_sql_query(
     location: location_arg = "datacontract.yaml",
-    server_type: server_type_option = SqlServerType.auto,
+    dialect: dialect_option = SqlServerType.auto,
     output: output_option = None,
     server: server_option = None,
     schema_name: schema_name_option = "all",
@@ -112,7 +112,7 @@ def export_sql_query(
 ):
     """Export a data contract to a SQL query."""
     enable_debug_logging(debug)
-    _export(ExportFormat.sql_query, location, output, server, schema_name, schema, sql_server_type=server_type.value)
+    _export(ExportFormat.sql_query, location, output, server, schema_name, schema, sql_server_type=dialect.value)
 
 
 @export_app.command(
@@ -140,7 +140,7 @@ def export_dbt_models(
 def export_dbt_removed(ctx: typer.Context):
     """Removed: use `datacontract export dbt-models` instead."""
     ctx.fail(
-        "`export dbt` was renamed to `export dbt-models` in v0.12.0. See See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
+        "`export dbt` was renamed to `export dbt-models` in v0.12.0. See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
     )
 
 
@@ -473,7 +473,7 @@ def export_sodacl(
 
 @export_app.command(
     name="great-expectations",
-    epilog="Example: datacontract export great-expectations datacontract.yaml --engine sql --server-type postgres --output expectations.json",
+    epilog="Example: datacontract export great-expectations datacontract.yaml --engine sql --dialect postgres --output expectations.json",
 )
 def export_great_expectations(
     location: location_arg = "datacontract.yaml",
@@ -481,7 +481,7 @@ def export_great_expectations(
         Optional[GreatExpectationsEngine],
         typer.Option(help="The engine used for Great Expectations run."),
     ] = None,
-    server_type: server_type_option = SqlServerType.auto,
+    dialect: dialect_option = SqlServerType.auto,
     output: output_option = None,
     server: server_option = None,
     schema_name: schema_name_option = "all",
@@ -498,7 +498,7 @@ def export_great_expectations(
         schema_name,
         schema,
         engine=engine.value if engine is not None else None,
-        sql_server_type=server_type.value,
+        sql_server_type=dialect.value,
     )
 
 

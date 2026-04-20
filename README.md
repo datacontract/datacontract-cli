@@ -1291,7 +1291,7 @@ steps:
                                                                                                     
  Example: datacontract export html datacontract.yaml --output datacontract.html                     
  For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), use           
- `datacontract export sql --server-type <dialect>`.                                                 
+ `datacontract export sql --dialect <dialect>`.                                                 
                                                                                                     
 
 ```
@@ -1316,7 +1316,7 @@ datacontract export sql datacontract.yaml --output output.sql
 The SQL dialect is determined from the `servers` block in the data contract (e.g. `type: postgres`, `type: snowflake`). Alternatively, pass it explicitly:
 
 ```shell
-datacontract export sql datacontract.yaml --server-type postgres --output output.sql
+datacontract export sql datacontract.yaml --dialect postgres --output output.sql
 ```
 
 If using Databricks and an error is thrown when deploying SQL DDLs with `variant` columns, set the following property.

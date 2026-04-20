@@ -16,10 +16,10 @@ This release introduces several changes to improve the usability of `datacontrac
   | `export`, `import`                         | `--format <FORMAT> <OPTIONS>`                 | `<FORMAT> <OPTIONS>` (drop `--format`) |
   | **Export options:**                        |                                               |                                        |
   | `export --format dbt`                      | `--format dbt`                                | `dbt-models` (format renamed)          |
-  | `export --format great-expectations`       | `--sql-server-type <TYPE>`                    | `--server-type <TYPE>`                 |
+  | `export --format great-expectations`       | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
   | `export --format rdf`                      | `--rdf-base <URI>`                            | `--base <URI>`                         |
-  | `export --format sql`                      | `--sql-server-type <TYPE>`                    | `--server-type <TYPE>`                 |
-  | `export --format sql-query`                | `--sql-server-type <TYPE>`                    | `--server-type <TYPE>`                 |
+  | `export --format sql`                      | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
+  | `export --format sql-query`                | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
   | **Import options:**                        |                                               |                                        |
   | `import --format bigquery`                 | `--bigquery-[project\|dataset\|table] <NAME>` | `--[project\|dataset\|table] <NAME>`   |
   | `import --format dbml`                     | `--dbml-[schema\|table] <NAME>`               | `--[schema\|table] <NAME>`             |
@@ -32,7 +32,7 @@ This release introduces several changes to improve the usability of `datacontrac
 - Error messages for uncaught exceptions are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1175)
 - Add example calls to `--help` outputs (#1176)
 - Add explicit errors when required env vars for soda connections are missing (#1177)
-- Validate CLI options against their allowed values instead of accepting any string (#1178)
+- Validate some of the CLI options against their allowed values instead of accepting any string (#1178)
 
 
 ## [0.11.9] - 2026-04-20

@@ -26,7 +26,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
     RENAMED_FLAGS = {
         "--format": None,
         "--rdf-base": "--base",
-        "--sql-server-type": "--server-type",
+        "--sql-server-type": "--dialect",
         "--bigquery-project": "--project",
         "--bigquery-dataset": "--dataset",
         "--bigquery-table": "--table",
@@ -39,7 +39,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
     }
 
     def parse_args(self, ctx: Context, args):
-        # First positional argument starting with "-"
+        # First positional argument
         subcommand = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
 
         for arg in args:
@@ -55,7 +55,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
                     new_flag = "--tables"
                 else:
                     continue
-                change = "needs to omitted since" if new_flag is None else f"was replaced with {new_flag} in"
+                change = "needs to be omitted since" if new_flag is None else f"was replaced with {new_flag} in"
                 ctx.fail(
                     f"{flag} {change} v0.12.0 of datacontract-cli. "
                     f"See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
@@ -143,7 +143,7 @@ app.add_typer(
     epilog=(
         "Example: datacontract export html datacontract.yaml --output datacontract.html\n\n"
         "For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), "
-        "use `datacontract export sql --server-type <dialect>`."
+        "use `datacontract export sql --dialect <dialect>`."
     ),
 )
 

@@ -592,7 +592,7 @@ def test_cli_with_sql_trino_engine(expected_sql_trino_engine: Dict[str, Any]):
             "./fixtures/great-expectations/odcs.yaml",
             "--engine",
             "sql",
-            "--server-type",
+            "--dialect",
             "trino",
         ],
     )
