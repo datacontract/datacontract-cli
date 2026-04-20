@@ -136,5 +136,18 @@ app.add_typer(
     epilog="Example: datacontract export html datacontract.yaml --output datacontract.html",
 )
 
+
+def main():
+    try:
+        app()
+    except Exception as e:
+        # If an uncaught exception occurs, only print its name (except when debug mode is enabled)
+        if "--debug" in sys.argv or os.environ.get("DATACONTRACT_CLI_DEBUG") == "1":
+            raise
+        console.print(f"[red]Error:[/red] {e}")
+        console.print("[dim]Pass --debug (or set DATACONTRACT_CLI_DEBUG=1) for the full traceback.[/dim]")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    app()
+    main()
