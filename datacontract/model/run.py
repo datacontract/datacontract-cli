@@ -33,6 +33,7 @@ class Check(BaseModel):
     reason: str | None = None
     details: str | None = None
     diagnostics: dict | None = None
+    failed_rows_samples: list[dict] | None = None
 
 
 class Log(BaseModel):

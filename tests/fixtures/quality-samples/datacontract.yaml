@@ -1,0 +1,25 @@
+dataContractSpecification: 1.2.1
+id: quality-samples
+info:
+  title: Quality Samples
+  version: 0.0.1
+  owner: test
+servers:
+  s:
+    type: postgres
+    host: localhost
+    port: 5432
+    database: test
+    schema: public
+models:
+  orders:
+    type: table
+    fields:
+      order_id:
+        type: varchar
+        required: true
+        unique: true
+      order_total:
+        type: decimal
+        required: true
+        minimum: 0
