@@ -29,8 +29,8 @@ This release introduces several changes to improve the usability of `datacontrac
   | `import iceberg`                                | `--iceberg-table <NAME>`         | `--table <NAME>`                       |
   | `import spark`                                  | `--source <NAMES>`               | `--tables <NAMES>`                     |
   | `import`                                        | `--template`                     | dropped (was a no-op)                  |
-- Error messages are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1175)
-- Add examples to `--help` outputs (#1176)
+- Error messages for uncaught exceptions are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1175)
+- Add example calls to `--help` outputs (#1176)
 - Add explicit errors when required env vars for soda connections are missing (#1177)
 
 
