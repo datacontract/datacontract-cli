@@ -123,8 +123,18 @@ from datacontract import (  # noqa: E402, F401
 )
 
 # Commands with subcommands
-app.add_typer(command_import.import_app, name="import", help="Create a data contract from a source format.")
-app.add_typer(command_export.export_app, name="export", help="Convert a data contract to a target format.")
+app.add_typer(
+    command_import.import_app,
+    name="import",
+    help="Create a data contract from a source format.",
+    epilog="Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml",
+)
+app.add_typer(
+    command_export.export_app,
+    name="export",
+    help="Convert a data contract to a target format.",
+    epilog="Example: datacontract export html datacontract.yaml --output datacontract.html",
+)
 
 if __name__ == "__main__":
     app()
