@@ -8,8 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
 
-- **Breaking**: the `dbt` export format was renamed to `dbt-models` (to differentiate from other dbt export formats)
- **Breaking**: Several changes in the CLI syntax (#1157):
+- **Breaking**: Several changes in the CLI syntax (#1157):
 
   | Commands affected                               | Old syntax                       | New syntax                             |
   |-------------------------------------------------|----------------------------------|----------------------------------------|
