@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
 
 - **Breaking**: the `dbt` export format was renamed to `dbt-models` (to differentiate from other dbt export formats)
-- **Breaking**: Several changes in the CLI syntax (#1157):
+ **Breaking**: Several changes in the CLI syntax (#1157):
 
   | Commands affected                               | Old syntax                       | New syntax                             |
   |-------------------------------------------------|----------------------------------|----------------------------------------|
   | `export`, `import`                              | `--format <FORMAT> <OPTIONS>`    | `<FORMAT> <OPTIONS>` (drop `--format`) |
-- | `export`                                        | `dbt <OPTIONS>`                  | `dbt-models <OPTIONS>`                 |
+  | `export`                                        | `dbt <OPTIONS>`                  | `dbt-models <OPTIONS>`                 |
   | `lint`, `test`, `ci`, `publish`, `catalog`      | `--schema <PATH>`                | `--odcs-schema <PATH>`                 |
   | `export rdf`                                    | `--rdf-base <URI>`               | `--base <URI>`                         |
   | `export sql`, `sql-query`, `great-expectations` | `--sql-server-type <TYPE>`       | `--server-type <TYPE>`                 |
