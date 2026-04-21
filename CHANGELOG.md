@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- make `--schema` a deprecated alias for `--json-schema` to (will be removed in v0.13.0)
+
 ## [0.12.0] - 2026-04-20
 
 This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
@@ -15,7 +17,7 @@ This release introduces several changes to improve the usability of `datacontrac
 
   | Command                                    | Old option                                    | New option                             |
   |--------------------------------------------|-----------------------------------------------|----------------------------------------|
-  | `lint`, `test`, `ci`, `publish`, `catalog` | `--schema <PATH>`                             | `--json-schema <PATH>`                 |
+  | `lint`, `test`, `ci`, `publish`, `catalog` | `--schema <PATH>` (will work until v0.13.0)   | `--json-schema <PATH>`                 |
   | `export`, `import`                         | `--format <FORMAT> <OPTIONS>`                 | `<FORMAT> <OPTIONS>` (drop `--format`) |
   | **Export options:**                        |                                               |                                        |
   | `export --format dbt`                      | `--format dbt`                                | `dbt-models` (format renamed)          |
@@ -25,13 +27,15 @@ This release introduces several changes to improve the usability of `datacontrac
   | `export --format sql-query`                | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
   | **Import options:**                        |                                               |                                        |
   | `import --format bigquery`                 | `--bigquery-[project\|dataset\|table] <NAME>` | `--[project\|dataset\|table] <NAME>`   |
-  | `import --format dbml`                     | `--dbml-[schema\|table] <NAME>`               | `--[schema\|table] <NAME>`             |
   | `import --format dbt`                      | `--dbt-model <NAME>`                          | `--model <NAME>`                       |
   | `import --format glue`                     | `--source <NAME>`, `--glue-table <NAME>`      | `--database <NAME>`, `--table <NAME>`  |
   | `import --format iceberg`                  | `--iceberg-table <NAME>`                      | `--table <NAME>`                       |
   | `import --format unity`                    | `--unity-table-full-name <NAME>`              | `--table <NAME>`                       |
   | `import --format spark`                    | `--source <NAMES>`                            | `--tables <NAMES>`                     |
   | `import`                                   | `--template`                                  | dropped (was a no-op)                  |
+
+The `--schema` option (referring to the ODCS JSON schema) was renamed to `--json-schema` to avoid confusion with `--schema-name`, which refers to the schema within the data contract to test for.
+
 - Error messages for uncaught exceptions are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1175)
 - Add example calls to `--help` outputs (#1176)
 - Add explicit errors when required env vars for soda connections are missing (#1177)

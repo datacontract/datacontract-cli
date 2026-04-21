@@ -128,13 +128,15 @@ def import_dbml(
     schema: Annotated[
         Optional[List[str]],
         typer.Option(
-            help="List of schema names to import from the DBML file (repeat for multiple schema names, leave empty for all tables in the file)."
+            "--dbml-schema",
+            help="List of schema names to import from the DBML file (repeat for multiple schema names, leave empty for all tables in the file).",
         ),
     ] = None,
     table: Annotated[
         Optional[List[str]],
         typer.Option(
-            help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
+            "--dbml-table",
+            help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file).",
         ),
     ] = None,
     output: output_option = None,
