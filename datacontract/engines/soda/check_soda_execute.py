@@ -163,18 +163,23 @@ def check_soda_execute(
                 if schema_name != "all" and model_name != schema_name:
                     continue
                 try:
-                    cols = con.sql(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{model_name}'").fetchall()
+                    cols = con.sql(
+                        f"SELECT column_name FROM information_schema.columns WHERE table_name = '{model_name}'"
+                    ).fetchall()
                     table_columns[model_name] = {row[0] for row in cols}
                 except Exception:
                     pass
             if table_columns:
                 filtered_checks = []
                 for check in run.checks:
-                    if (check.engine == "soda" and check.language == "sodacl"
-                            and check.model in table_columns
-                            and check.field
-                            and check.field not in table_columns[check.model]
-                            and check.type != "field_is_present"):
+                    if (
+                        check.engine == "soda"
+                        and check.language == "sodacl"
+                        and check.model in table_columns
+                        and check.field
+                        and check.field not in table_columns[check.model]
+                        and check.type != "field_is_present"
+                    ):
                         # Constraint/quality check for missing column — record as failed,
                         # exclude from SodaCL to avoid SQL errors
                         check.result = ResultEnum.failed
