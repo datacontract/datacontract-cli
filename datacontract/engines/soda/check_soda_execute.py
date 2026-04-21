@@ -196,7 +196,7 @@ def check_soda_execute(
             Check(
                 type="general",
                 name="Data Contract Tests",
-                result=ResultEnum.warning,
+                result=ResultEnum.error,
                 reason="Engine soda-core has errors. See the logs for details.",
                 engine="soda-core",
             )
