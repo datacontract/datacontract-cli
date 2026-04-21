@@ -110,6 +110,15 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
             insert_data_sql = f"""INSERT INTO "{model_name}" BY NAME
                 (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
             con.sql(insert_data_sql)
+
+        # Drop columns that don't exist in the data file so field_is_present
+        # correctly detects missing columns (schema-only columns would be all-NULL,
+        # causing the check to incorrectly pass)
+        schema_column_names = set(converted_types.keys())
+        data_column_names = {col[0] for col in intersecting_columns}
+        missing_from_data = schema_column_names - data_column_names
+        for col_name in missing_from_data:
+            con.sql(f'ALTER TABLE "{model_name}" DROP COLUMN "{col_name}";')
     else:
         # Fallback
         con.sql(

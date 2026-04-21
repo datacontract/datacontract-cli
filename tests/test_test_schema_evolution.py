@@ -2,15 +2,16 @@ from datacontract.data_contract import DataContract
 
 
 def test_csv_optional_field_missing_from_old_data():
-    """Optional field not present in historical CSV data should pass validation"""
+    """Optional field not present in historical CSV data should fail field_is_present check"""
     data_contract = DataContract(
         data_contract_file="fixtures/schema-evolution/odcs-datacontract-cities-version-2.yaml", server="historical-csv"
     )
 
     run = data_contract.test()
 
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    # field_is_present should detect that 'population' is missing from the CSV
+    assert run.result == "failed"
+    assert any(check.result == "failed" and check.type == "field_is_present" for check in run.checks)
 
 
 def test_csv_optional_field_present_in_new_data():
@@ -67,7 +68,7 @@ def test_csv_required_field_missing_fails():
 
 
 def test_parquet_optional_field_missing_from_old_data():
-    """Optional field not present in historical Parquet data should pass validation"""
+    """Optional field not present in historical Parquet data should fail field_is_present check"""
     data_contract = DataContract(
         data_contract_file="fixtures/schema-evolution/odcs-datacontract-cities-version-2.yaml",
         server="historical-parquet",
@@ -75,8 +76,9 @@ def test_parquet_optional_field_missing_from_old_data():
 
     run = data_contract.test()
 
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    # field_is_present should detect that 'population' is missing from the Parquet file
+    assert run.result == "failed"
+    assert any(check.result == "failed" and check.type == "field_is_present" for check in run.checks)
 
 
 def test_parquet_optional_field_present_in_new_data():

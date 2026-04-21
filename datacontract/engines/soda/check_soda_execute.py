@@ -150,6 +150,39 @@ def check_soda_execute(
         run.log_warn(f"Server type {server.type} not yet supported by datacontract CLI")
         return
 
+    # For local/csv/parquet servers using DuckDB, filter out constraint/quality
+    # checks that reference columns not present in the actual data file. These
+    # columns were dropped during table setup (see create_view_with_schema_union).
+    # field_is_present checks are intentionally left in — Soda will correctly
+    # detect the missing column and report them as failed.
+    if server.type in ["s3", "gcs", "azure", "local"] and server.format in ["csv", "parquet"]:
+        if data_contract.schema_:
+            table_columns = {}
+            for schema_obj in data_contract.schema_:
+                model_name = schema_obj.name
+                if schema_name != "all" and model_name != schema_name:
+                    continue
+                try:
+                    cols = con.sql(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{model_name}'").fetchall()
+                    table_columns[model_name] = {row[0] for row in cols}
+                except Exception:
+                    pass
+            if table_columns:
+                filtered_checks = []
+                for check in run.checks:
+                    if (check.engine == "soda" and check.language == "sodacl"
+                            and check.model in table_columns
+                            and check.field
+                            and check.field not in table_columns[check.model]
+                            and check.type != "field_is_present"):
+                        # Constraint/quality check for missing column — record as failed,
+                        # exclude from SodaCL to avoid SQL errors
+                        check.result = ResultEnum.failed
+                        check.reason = f"Column '{check.field}' not found in data file"
+                        continue
+                    filtered_checks.append(check)
+                run.checks = filtered_checks
+
     sodacl_yaml_str = to_sodacl_yaml(run)
     # print("sodacl_yaml_str:\n" + sodacl_yaml_str)
     scan.add_sodacl_yaml_str(sodacl_yaml_str)
