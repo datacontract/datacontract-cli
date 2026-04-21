@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.12.1] - 2026-04-21
+
+### Fixed
 - make `--schema` a deprecated alias for `--json-schema` to (will be removed in v0.13.0)
 
 ## [0.12.0] - 2026-04-20
@@ -14,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
 
 - **Breaking**: Several changes in the CLI syntax (#1157):
+> Fix in v0.12.1: re-added `--schema` as alias for the new `--json-schema` (will be removed in v0.13.0)
 
-  | Command                                    | Old option                                    | New option                             |
+| Command                                    | Old option                                    | New option                             |
   |--------------------------------------------|-----------------------------------------------|----------------------------------------|
   | `lint`, `test`, `ci`, `publish`, `catalog` | `--schema <PATH>` (will work until v0.13.0)   | `--json-schema <PATH>`                 |
   | `export`, `import`                         | `--format <FORMAT> <OPTIONS>`                 | `<FORMAT> <OPTIONS>` (drop `--format`) |
