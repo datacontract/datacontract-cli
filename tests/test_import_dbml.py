@@ -30,9 +30,9 @@ def test_cli_with_filters():
             "dbml",
             "--source",
             "fixtures/dbml/import/dbml.txt",
-            "--schema",
+            "--dbml-schema",
             "test",
-            "--table",
+            "--dbml-table",
             "foo",
         ],
     )
