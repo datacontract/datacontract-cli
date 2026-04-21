@@ -750,10 +750,10 @@ def check_quality_list(
         elif quality.type == "sql":
             if property_name is None:
                 check_key = f"{schema_name}__quality_sql_{count}"
-                check_type = "field_quality_sql"
+                check_type = "model_quality_sql"
             else:
                 check_key = f"{schema_name}__{property_name}__quality_sql_{count}"
-                check_type = "model_quality_sql"
+                check_type = "field_quality_sql"
             threshold = to_sodacl_threshold(quality)
             query = prepare_query(quality, schema_name, property_name, quoting_config, server)
             if query is None:
