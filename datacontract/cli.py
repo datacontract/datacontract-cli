@@ -32,8 +32,6 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
         "--bigquery-table": "--table",
         "--unity-table-full-name": "--table",
         "--dbt-model": "--model",
-        "--dbml-schema": "--schema",
-        "--dbml-table": "--table",
         "--glue-table": "--table",
         "--iceberg-table": "--table",
     }
@@ -42,29 +40,38 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
         # First positional argument
         subcommand = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
 
+        rewritten_args = []
         for arg in args:
             if isinstance(arg, str) and arg.startswith("--"):
-                flag = arg.split("=", 1)[0]
+                flag, _, value = arg.partition("=")
+                if flag == "--schema":
+                    typer.secho(
+                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
+                        err=True,
+                        fg=typer.colors.YELLOW,
+                    )
+                    rewritten_args.append(f"--json-schema={value}" if value else "--json-schema")
+                    continue
                 if flag in self.RENAMED_FLAGS:
                     new_flag = self.RENAMED_FLAGS[flag]
-                elif flag == "--schema" and subcommand != "dbml":
-                    new_flag = "--json-schema"
                 elif flag == "--source" and subcommand == "glue":
                     new_flag = "--database"
                 elif flag == "--source" and subcommand == "spark":
                     new_flag = "--tables"
                 else:
+                    rewritten_args.append(arg)
                     continue
                 change = "needs to be omitted since" if new_flag is None else f"was replaced with {new_flag} in"
                 ctx.fail(
                     f"{flag} {change} v0.12.0 of datacontract-cli. "
                     f"See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
                 )
-        return super().parse_args(ctx, args)
+            rewritten_args.append(arg)
+        return super().parse_args(ctx, rewritten_args)
 
 
 app = typer.Typer(
-    cls=OrderedCommands,
+    cls=OrderedCommandsWithMigrationHints,
     no_args_is_help=True,
     add_completion=False,
 )
