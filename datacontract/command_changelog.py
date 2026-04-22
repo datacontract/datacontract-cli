@@ -11,8 +11,8 @@ from datacontract.output.text_changelog_results import write_text_changelog_resu
     epilog="Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml",
 )
 def changelog(
-    v1: Annotated[str, typer.Argument(help="The location (path) of the source (before) data contract YAML.")],
-    v2: Annotated[str, typer.Argument(help="The location (path) of the target (after) data contract YAML.")],
+    v1: Annotated[str, typer.Argument(help="The location (url or path) of the source (before) data contract YAML.")],
+    v2: Annotated[str, typer.Argument(help="The location (url or path) of the target (after) data contract YAML.")],
     debug: debug_option = None,
 ):
     """Show a changelog between two data contracts."""
