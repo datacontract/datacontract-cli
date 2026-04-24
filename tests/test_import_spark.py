@@ -206,6 +206,9 @@ def test_legacy_spark_repr_physical_types_still_map(caplog):
         SchemaProperty(name="s", physicalType="StringType()", logicalType="string"),
         SchemaProperty(name="i", physicalType="IntegerType()", logicalType="integer"),
         SchemaProperty(name="l", physicalType="LongType()", logicalType="integer"),
+        SchemaProperty(name="sh", physicalType="ShortType()", logicalType="integer"),
+        SchemaProperty(name="by", physicalType="ByteType()", logicalType="integer"),
+        SchemaProperty(name="bin", physicalType="BinaryType()", logicalType="string"),
         SchemaProperty(name="b", physicalType="BooleanType()", logicalType="boolean"),
         SchemaProperty(name="d", physicalType="DateType()", logicalType="date"),
         SchemaProperty(name="ts", physicalType="TimestampType()", logicalType="date"),
@@ -216,6 +219,9 @@ def test_legacy_spark_repr_physical_types_still_map(caplog):
         "s": "STRING",
         "i": "INT",
         "l": "BIGINT",
+        "sh": "SMALLINT",
+        "by": "TINYINT",
+        "bin": "BINARY",
         "b": "BOOLEAN",
         "d": "DATE",
         "ts": "TIMESTAMP",
@@ -228,6 +234,32 @@ def test_legacy_spark_repr_physical_types_still_map(caplog):
                 f"{prop.name}: expected {expected[prop.name]!r}, got {convert_to_databricks(prop)!r}"
             )
     assert caplog.records == [], f"compat shim should not warn on legacy Spark-repr types: {caplog.records}"
+
+
+def test_fresh_spark_native_types_map_to_databricks():
+    """Native simpleString() output from the fixed Spark importer must route to the
+    correct Databricks SQL type — including types not exercised by the `df_user` fixture
+    (ByteType -> tinyint, ShortType -> smallint, BinaryType -> binary)."""
+    cases = {
+        "tinyint": "TINYINT",
+        "smallint": "SMALLINT",
+        "binary": "BINARY",
+        "int": "INT",
+        "bigint": "BIGINT",
+        "float": "FLOAT",
+        "double": "DOUBLE",
+        "boolean": "BOOLEAN",
+        "date": "DATE",
+        "timestamp": "TIMESTAMP",
+        "timestamp_ntz": "TIMESTAMP_NTZ",
+        "string": "STRING",
+        "decimal(10,2)": "DECIMAL(10,2)",
+    }
+    for physical, expected in cases.items():
+        prop = SchemaProperty(name="f", physicalType=physical, logicalType="string")
+        assert convert_to_databricks(prop) == expected, (
+            f"{physical!r} -> {convert_to_databricks(prop)!r}, want {expected!r}"
+        )
 
 
 def test_check_property_type_refuses_none_expected_type(caplog):

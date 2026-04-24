@@ -47,8 +47,8 @@ _SPARK_REPR_TO_SQL = {
     "varchartype": "varchar",
     "chartype": "char",
     "integertype": "int",
-    "shorttype": "int",
-    "bytetype": "int",
+    "shorttype": "smallint",
+    "bytetype": "tinyint",
     "longtype": "bigint",
     "floattype": "float",
     "doubletype": "double",
@@ -57,7 +57,7 @@ _SPARK_REPR_TO_SQL = {
     "timestamptype": "timestamp",
     "timestampntztype": "timestamp_ntz",
     "decimaltype": "decimal",
-    "binarytype": "bytes",
+    "binarytype": "binary",
     "arraytype": "array",
     "structtype": "object",
     "maptype": "object",
@@ -84,7 +84,12 @@ def _normalize_spark_repr(field_type: Optional[str]) -> Optional[str]:
 
 
 def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
-    """Get the type string from a field. Prefers physicalType over logicalType."""
+    """Get the type string from a field. Prefers physicalType over logicalType.
+
+    The Spark-repr compat shim (#1048) is applied unconditionally to every field read,
+    not just Spark-imported contracts; it is a no-op unless the type starts with a known
+    Spark DataType class name (e.g. 'StringType', 'DecimalType'), so real ODCS/DCS types
+    pass through untouched."""
     if isinstance(field, SchemaProperty):
         if field.physicalType:
             return _normalize_spark_repr(field.physicalType)
@@ -283,13 +288,13 @@ def convert_to_snowflake(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return _attach_params_if_present("NUMBER", field)
     if base_type in ["float", "double"]:
         return "FLOAT"
-    if base_type in ["integer", "int", "long", "bigint"]:
+    if base_type in ["integer", "int", "long", "bigint", "tinyint", "smallint"]:
         return "NUMBER"
     if base_type in ["boolean"]:
         return "BOOLEAN"
     if base_type in ["object", "record", "struct"]:
         return "OBJECT"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return _attach_params_if_present("BINARY", field)
     if base_type in ["array"]:
         return "ARRAY"
@@ -336,11 +341,13 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return "bigint"
     if base_type in ["long"]:
         return "bigint"
+    if base_type in ["tinyint", "smallint"]:
+        return "smallint"
     if base_type in ["boolean"]:
         return "boolean"
     if base_type in ["object", "record", "struct"]:
         return "jsonb"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "bytea"
     if base_type in ["array"]:
         items = _get_items(field)
@@ -391,11 +398,15 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "int"
     if base_type in ["long", "bigint"]:
         return "bigint"
+    if base_type in ["tinyint"]:
+        return "tinyint"
+    if base_type in ["smallint"]:
+        return "smallint"
     if base_type in ["boolean"]:
         return "boolean"
     if base_type in ["object", "record", "struct"]:
         return "json"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "blob"
     if base_type in ["array"]:
         return "json"
@@ -439,6 +450,10 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "INT"
     if base_type in ["long", "bigint"]:
         return "BIGINT"
+    if base_type in ["tinyint"]:
+        return "TINYINT"
+    if base_type in ["smallint"]:
+        return "SMALLINT"
     if base_type in ["boolean"]:
         return "BOOLEAN"
     if base_type in ["object", "record", "struct"]:
@@ -447,7 +462,7 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
             nested_field_type = convert_to_dataframe(nested_field)
             nested_fields.append(f"{nested_field_name}:{nested_field_type}")
         return f"STRUCT<{','.join(nested_fields)}>"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "BINARY"
     if base_type in ["array"]:
         items = _get_items(field)
@@ -494,6 +509,10 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "INT"
     if base_type in ["long", "bigint"]:
         return "BIGINT"
+    if base_type in ["tinyint"]:
+        return "TINYINT"
+    if base_type in ["smallint"]:
+        return "SMALLINT"
     if base_type in ["boolean"]:
         return "BOOLEAN"
     if base_type in ["object", "record", "struct"]:
@@ -502,7 +521,7 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
             nested_field_type = convert_to_databricks(nested_field)
             nested_fields.append(f"{nested_field_name}:{nested_field_type}")
         return f"STRUCT<{','.join(nested_fields)}>"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "BINARY"
     if base_type in ["array"]:
         items = _get_items(field)
