@@ -5,6 +5,26 @@ from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.model.exceptions import DataContractException
 
+logger = logging.getLogger(__name__)
+
+
+def _warn_unmapped(field: Union[SchemaProperty, "FieldLike"], server_type: str) -> None:
+    """Log a warning when a field's type cannot be mapped to the target dialect.
+    Returns None so callers can `return _warn_unmapped(...)` at the fallthrough."""
+    if isinstance(field, SchemaProperty):
+        raw_type = field.physicalType
+        logical = field.logicalType
+        name = field.name
+    else:
+        raw_type = getattr(field, "type", None)
+        logical = None
+        name = getattr(field, "name", None)
+    name_part = f" for field {name!r}" if name else ""
+    logger.warning(
+        f"Cannot map type to {server_type} SQL type{name_part} (physicalType={raw_type!r}, logicalType={logical!r})."
+    )
+    return None
+
 
 class FieldLike(Protocol):
     """Protocol for field-like objects (DCS Field or PropertyAdapter)."""
@@ -18,23 +38,69 @@ class FieldLike(Protocol):
     fields: Dict[str, "FieldLike"]
 
 
+# Compat shim: map Python repr of Spark DataType (e.g. 'StringType()', 'DecimalType(10,2)',
+# 'ArrayType(StringType(), True)') to native Spark SQL names. The Spark importer emitted
+# str(dataType) instead of simpleString() in v0.11.0-v0.12.1, so existing contracts have
+# these Spark-repr physicalTypes (#1048). Remove in a future major version.
+_SPARK_REPR_TO_SQL = {
+    "stringtype": "string",
+    "varchartype": "varchar",
+    "chartype": "char",
+    "integertype": "int",
+    "shorttype": "int",
+    "bytetype": "int",
+    "longtype": "bigint",
+    "floattype": "float",
+    "doubletype": "double",
+    "booleantype": "boolean",
+    "datetype": "date",
+    "timestamptype": "timestamp",
+    "timestampntztype": "timestamp_ntz",
+    "decimaltype": "decimal",
+    "binarytype": "bytes",
+    "arraytype": "array",
+    "structtype": "object",
+    "maptype": "object",
+    "varianttype": "variant",
+    "nulltype": "string",
+}
+
+
+def _normalize_spark_repr(field_type: Optional[str]) -> Optional[str]:
+    """Compat shim for #1048: normalise a Spark DataType repr to its native SQL name."""
+    if field_type is None:
+        return None
+    base = field_type.split("(", 1)[0].strip().lower()
+    native = _SPARK_REPR_TO_SQL.get(base)
+    if native is None:
+        return field_type
+    # Preserve numeric params for parameterised types (DecimalType(10,2) -> decimal(10,2)).
+    # Complex types (ArrayType, StructType, MapType) use field.items / field.properties
+    # for nested content, so dropping their gibberish params is correct.
+    if base in ("decimaltype", "varchartype", "chartype") and "(" in field_type and field_type.endswith(")"):
+        params = field_type[field_type.index("(") + 1 : -1]
+        return f"{native}({params})"
+    return native
+
+
 def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
     """Get the type string from a field. Prefers physicalType over logicalType."""
     if isinstance(field, SchemaProperty):
         if field.physicalType:
-            return field.physicalType
+            return _normalize_spark_repr(field.physicalType)
         return field.logicalType
-    return field.type
+    return _normalize_spark_repr(field.type)
 
 
 def _get_base_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
     """Get the lowercase base type from a field, stripping any parameters.
-    E.g. a physicalType of 'VARCHAR(255)' returns 'varchar'."""
+    E.g. 'VARCHAR(255)' -> 'varchar', 'array<string>' -> 'array', 'struct<a:int>' -> 'struct'."""
     field_type = _get_type(field)
     if field_type is None:
         return None
-    if "(" in field_type:
-        return field_type[: field_type.index("(")].strip().lower()
+    for sep in ("(", "<"):
+        if sep in field_type:
+            return field_type[: field_type.index(sep)].strip().lower()
     return field_type.lower()
 
 
@@ -63,6 +129,22 @@ def _get_config_value(field: Union[SchemaProperty, FieldLike], key: str) -> Opti
     return config.get(key)
 
 
+def _parse_decimal_params(field: Union[SchemaProperty, FieldLike]) -> tuple[Optional[int], Optional[int]]:
+    """Parse precision and scale from a decimal-style type string like 'decimal(10,2)'."""
+    params = _get_params(field)
+    if not params:
+        return None, None
+    parts = [p.strip() for p in params.split(",")]
+    try:
+        if len(parts) == 2:
+            return int(parts[0]), int(parts[1])
+        if len(parts) == 1 and parts[0]:
+            return int(parts[0]), None
+    except ValueError:
+        return None, None
+    return None, None
+
+
 def _get_precision(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
     """Get precision from a field."""
     if isinstance(field, SchemaProperty):
@@ -72,7 +154,9 @@ def _get_precision(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
         val = _get_config_value(field, "precision")
         if val:
             return int(val)
-        return None
+        # Fall back to parsing decimal(precision,scale) from the type string itself
+        precision_from_params, _ = _parse_decimal_params(field)
+        return precision_from_params
     return field.precision
 
 
@@ -85,7 +169,9 @@ def _get_scale(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
         val = _get_config_value(field, "scale")
         if val:
             return int(val)
-        return None
+        # Fall back to parsing decimal(precision,scale) from the type string itself
+        _, scale_from_params = _parse_decimal_params(field)
+        return scale_from_params
     return field.scale
 
 
@@ -209,7 +295,7 @@ def convert_to_snowflake(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "ARRAY"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_unmapped(field, "snowflake")
 
 
 # https://www.postgresql.org/docs/current/datatype.html
@@ -263,7 +349,7 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return "text[]"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_unmapped(field, "postgres")
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/data-types.html
@@ -315,7 +401,7 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "json"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_unmapped(field, "mysql")
 
 
 # dataframe data types:
@@ -371,7 +457,7 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "ARRAY<STRING>"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_unmapped(field, "dataframe")
 
 
 # databricks data types:
@@ -428,7 +514,7 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "VARIANT"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_unmapped(field, "databricks")
 
 
 def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
@@ -491,7 +577,7 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         structure_field += ")"
         return structure_field
 
-    return None
+    return _warn_unmapped(field, "duckdb")
 
 
 def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None | str:
@@ -537,7 +623,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
         raise NotImplementedError("SQLServer does not support array types.")
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_unmapped(field, "sqlserver")
 
 
 _BQ_TYPES = {
@@ -716,7 +802,7 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "json"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_unmapped(field, "trino")
 
 
 def convert_type_to_impala(field: Union[SchemaProperty, FieldLike]) -> None | str:

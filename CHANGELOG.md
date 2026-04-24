@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)
 - **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
 - correct swapped `check_type` labels  `model_qualty_sql` and `field_quality_sql` (#1187)
+- `import spark` now emits native Spark SQL type names (`string`, `int`, `decimal(10,2)`, `array<string>`, …) as `physicalType` instead of Python repr (`StringType()`, `IntegerType()`, …); type checks in `test` no longer silently pass with `has type None` (#1048)
 
 ## [0.12.1] - 2026-04-21
 

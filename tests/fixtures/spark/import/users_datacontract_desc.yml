@@ -15,35 +15,32 @@ schema:
   physicalName: users
   properties:
   - name: id
-    physicalType: StringType()
+    physicalType: string
     logicalType: string
   - name: name
-    physicalType: StringType()
+    physicalType: string
     description: First and last name of the customer
     logicalType: string
   - name: address
-    physicalType: StructType([StructField('number', IntegerType(), True), StructField('street',
-      StringType(), True), StructField('city', StringType(), True)])
+    physicalType: struct<number:int,street:string,city:string>
     logicalType: object
     properties:
     - name: number
-      physicalType: IntegerType()
+      physicalType: int
       logicalType: integer
     - name: street
-      physicalType: StringType()
+      physicalType: string
       logicalType: string
     - name: city
-      physicalType: StringType()
+      physicalType: string
       logicalType: string
   - name: tags
-    physicalType: ArrayType(StringType(), True)
+    physicalType: array<string>
     logicalType: array
     items:
       name: items
-      physicalType: StringType()
+      physicalType: string
       logicalType: string
   - name: metadata
-    physicalType: MapType(StringType(), StructType([StructField('value', StringType(),
-      True), StructField('type', StringType(), True), StructField('timestamp', LongType(),
-      True), StructField('source', StringType(), True)]), True)
+    physicalType: map<string,struct<value:string,type:string,timestamp:bigint,source:string>>
     logicalType: object

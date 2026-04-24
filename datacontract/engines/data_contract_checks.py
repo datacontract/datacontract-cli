@@ -1,8 +1,8 @@
+import logging
 import re
 import uuid
 from dataclasses import dataclass
 from typing import List, Optional
-from venv import logger
 
 import yaml
 from open_data_contract_standard.model import (
@@ -15,6 +15,8 @@ from open_data_contract_standard.model import (
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.run import Check
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -112,7 +114,10 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
         checks.append(check_property_is_present(schema_name, property_name, quoting_config))
         if check_types and logical_type is not None:
             sql_type: str = convert_to_sql_type(prop, server_type)
-            checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
+            if sql_type is not None:
+                checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
+            # When sql_type is None, convert_to_sql_type has already logged a warning
+            # and we skip emitting a check that would silently pass in SodaCL.
         if prop.required:
             checks.append(check_property_required(schema_name, property_name, quoting_config))
         if prop.unique:
@@ -224,6 +229,12 @@ def check_property_is_present(model_name, field_name, quoting_config: QuotingCon
 def check_property_type(
     model_name: str, field_name: str, expected_type: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
+    if expected_type is None:
+        logger.warning(
+            f"Refusing to build type check for {model_name}.{field_name}: expected_type is None. "
+            "SodaCL would silently pass this check without validating."
+        )
+        return None
     check_type = "field_type"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
