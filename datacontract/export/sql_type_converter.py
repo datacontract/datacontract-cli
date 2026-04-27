@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any, Dict, Optional, Protocol, Union
 
 from open_data_contract_standard.model import SchemaProperty
@@ -6,6 +7,10 @@ from open_data_contract_standard.model import SchemaProperty
 from datacontract.model.exceptions import DataContractException
 
 logger = logging.getLogger(__name__)
+
+# invalid physicalType from `import spark` in v0.11.0–v0.12.1 (#1048) (e.g. StringType() instead of string)
+# remove after July 2026
+_LEGACY_SPARK_REPR_RE = re.compile(r"^(?:[A-Z][a-zA-Z]*)?Type\(.*\)$")
 
 
 def _warn_cannot_map_type(field: Union[SchemaProperty, "FieldLike"], dialect: str) -> None:
@@ -18,10 +23,16 @@ def _warn_cannot_map_type(field: Union[SchemaProperty, "FieldLike"], dialect: st
         raw_type = getattr(field, "type", None)
         logical = None
         name = getattr(field, "name", None)
-    logger.warning(
-        f"Cannot map type to {dialect} SQL type{f' for field {name!r}' if name else ''} "
-        f"(physicalType={raw_type!r}, logicalType={logical!r})."
+    field_part = f" for field {name!r}" if name else ""
+    warning_message = (
+        f"Cannot map type to {dialect} SQL type{field_part} (physicalType={raw_type!r}, logicalType={logical!r})."
     )
+    if isinstance(raw_type, str) and _LEGACY_SPARK_REPR_RE.match(raw_type):
+        warning_message += (
+            "\nNote: `datacontract import spark` emitted invalid physicalType values in v0.11.0–v0.12.1 (December 2025 until June 2026). "
+            "Re-import datacontracts from these versions to fix."
+        )
+    logger.warning(warning_message)
     return None
 
 
