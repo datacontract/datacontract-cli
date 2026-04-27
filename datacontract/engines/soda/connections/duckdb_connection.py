@@ -97,6 +97,15 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
         create_empty_table = f"""CREATE TABLE "{model_name}" ({", ".join(columns_def)});"""
         con.sql(create_empty_table)
 
+        # Also create a raw view for field_is_present checks, so missing columns
+        # are actually absent (not filled with NULLs from the unioned table).
+        # See https://github.com/datacontract/datacontract-cli/issues/1065
+        raw_view_name = f"{model_name}_raw"
+        con.sql(
+            f"""CREATE VIEW "{raw_view_name}" AS
+                SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+        )
+
         # Read columns existing in both current data contract and data
         intersecting_columns = con.sql(f"""SELECT column_name
             FROM (DESCRIBE SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1))
