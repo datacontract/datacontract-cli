@@ -8,9 +8,8 @@ from datacontract.model.exceptions import DataContractException
 logger = logging.getLogger(__name__)
 
 
-def _warn_unmapped(field: Union[SchemaProperty, "FieldLike"], server_type: str) -> None:
-    """Log a warning when a field's type cannot be mapped to the target dialect.
-    Returns None so callers can `return _warn_unmapped(...)` at the fallthrough."""
+def _warn_cannot_map_type(field: Union[SchemaProperty, "FieldLike"], dialect: str) -> None:
+    """Warn that a field's type cannot be mapped to the target dialect."""
     if isinstance(field, SchemaProperty):
         raw_type = field.physicalType
         logical = field.logicalType
@@ -19,9 +18,9 @@ def _warn_unmapped(field: Union[SchemaProperty, "FieldLike"], server_type: str) 
         raw_type = getattr(field, "type", None)
         logical = None
         name = getattr(field, "name", None)
-    name_part = f" for field {name!r}" if name else ""
     logger.warning(
-        f"Cannot map type to {server_type} SQL type{name_part} (physicalType={raw_type!r}, logicalType={logical!r})."
+        f"Cannot map type to {dialect} SQL type{f' for field {name!r}' if name else ''} "
+        f"(physicalType={raw_type!r}, logicalType={logical!r})."
     )
     return None
 
@@ -84,34 +83,22 @@ def _get_config_value(field: Union[SchemaProperty, FieldLike], key: str) -> Opti
     return config.get(key)
 
 
-def _parse_decimal_params(field: Union[SchemaProperty, FieldLike]) -> tuple[Optional[int], Optional[int]]:
-    """Parse precision and scale from a decimal-style type string like 'decimal(10,2)'."""
-    params = _get_params(field)
-    if not params:
-        return None, None
-    parts = [p.strip() for p in params.split(",")]
-    try:
-        if len(parts) == 2:
-            return int(parts[0]), int(parts[1])
-        if len(parts) == 1 and parts[0]:
-            return int(parts[0]), None
-    except ValueError:
-        return None, None
-    return None, None
-
-
 def _get_precision(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
     """Get precision from a field."""
     if isinstance(field, SchemaProperty):
         if field.logicalTypeOptions and field.logicalTypeOptions.get("precision"):
             return field.logicalTypeOptions.get("precision")
-        # Also check customProperties
         val = _get_config_value(field, "precision")
         if val:
             return int(val)
         # Fall back to parsing decimal(precision,scale) from the type string itself
-        precision_from_params, _ = _parse_decimal_params(field)
-        return precision_from_params
+        params = _get_params(field)
+        if params:
+            try:
+                return int(params.split(",")[0].strip())
+            except ValueError:
+                return None
+        return None
     return field.precision
 
 
@@ -120,13 +107,17 @@ def _get_scale(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
     if isinstance(field, SchemaProperty):
         if field.logicalTypeOptions and field.logicalTypeOptions.get("scale"):
             return field.logicalTypeOptions.get("scale")
-        # Also check customProperties
         val = _get_config_value(field, "scale")
         if val:
             return int(val)
         # Fall back to parsing decimal(precision,scale) from the type string itself
-        _, scale_from_params = _parse_decimal_params(field)
-        return scale_from_params
+        params = _get_params(field)
+        if params and "," in params:
+            try:
+                return int(params.split(",")[1].strip())
+            except ValueError:
+                return None
+        return None
     return field.scale
 
 
@@ -250,7 +241,7 @@ def convert_to_snowflake(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "ARRAY"
     if _get_params(field):
         return _get_type(field)
-    return _warn_unmapped(field, "snowflake")
+    return _warn_cannot_map_type(field, "snowflake")
 
 
 # https://www.postgresql.org/docs/current/datatype.html
@@ -306,7 +297,7 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return "text[]"
     if _get_params(field):
         return _get_type(field)
-    return _warn_unmapped(field, "postgres")
+    return _warn_cannot_map_type(field, "postgres")
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/data-types.html
@@ -362,7 +353,7 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "json"
     if _get_params(field):
         return _get_type(field)
-    return _warn_unmapped(field, "mysql")
+    return _warn_cannot_map_type(field, "mysql")
 
 
 # dataframe data types:
@@ -422,7 +413,7 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "ARRAY<STRING>"
     if _get_params(field):
         return _get_type(field)
-    return _warn_unmapped(field, "dataframe")
+    return _warn_cannot_map_type(field, "dataframe")
 
 
 # databricks data types:
@@ -483,7 +474,7 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "VARIANT"
     if _get_params(field):
         return _get_type(field)
-    return _warn_unmapped(field, "databricks")
+    return _warn_cannot_map_type(field, "databricks")
 
 
 def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
@@ -546,7 +537,7 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         structure_field += ")"
         return structure_field
 
-    return _warn_unmapped(field, "duckdb")
+    return _warn_cannot_map_type(field, "duckdb")
 
 
 def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None | str:
@@ -592,7 +583,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
         raise NotImplementedError("SQLServer does not support array types.")
     if _get_params(field):
         return _get_type(field)
-    return _warn_unmapped(field, "sqlserver")
+    return _warn_cannot_map_type(field, "sqlserver")
 
 
 _BQ_TYPES = {
@@ -771,7 +762,7 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "json"
     if _get_params(field):
         return _get_type(field)
-    return _warn_unmapped(field, "trino")
+    return _warn_cannot_map_type(field, "trino")
 
 
 def convert_type_to_impala(field: Union[SchemaProperty, FieldLike]) -> None | str:

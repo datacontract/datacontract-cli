@@ -116,8 +116,6 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
             sql_type: str = convert_to_sql_type(prop, server_type)
             if sql_type is not None:
                 checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
-            # When sql_type is None, convert_to_sql_type has already logged a warning
-            # and we skip emitting a check that would silently pass in SodaCL.
         if prop.required:
             checks.append(check_property_required(schema_name, property_name, quoting_config))
         if prop.unique:
@@ -230,10 +228,7 @@ def check_property_type(
     model_name: str, field_name: str, expected_type: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
     if expected_type is None:
-        logger.warning(
-            f"Refusing to build type check for {model_name}.{field_name}: expected_type is None. "
-            "SodaCL would silently pass this check without validating."
-        )
+        logger.warning(f"Cannot build type check for {model_name}.{field_name}: expected_type is None.")
         return None
     check_type = "field_type"
     check_key = f"{model_name}__{field_name}__{check_type}"
