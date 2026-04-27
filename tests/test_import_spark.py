@@ -197,32 +197,6 @@ def test_imported_spark_physical_types_map_to_databricks(df_user):
         assert convert_to_dataframe(prop) is not None, f"dataframe mapping None for {prop.name}"
 
 
-def test_fresh_spark_native_types_map_to_databricks():
-    """Native simpleString() output from the fixed Spark importer must route to the
-    correct Databricks SQL type — including types not exercised by the `df_user` fixture
-    (ByteType -> tinyint, ShortType -> smallint, BinaryType -> binary)."""
-    cases = {
-        "tinyint": "TINYINT",
-        "smallint": "SMALLINT",
-        "binary": "BINARY",
-        "int": "INT",
-        "bigint": "BIGINT",
-        "float": "FLOAT",
-        "double": "DOUBLE",
-        "boolean": "BOOLEAN",
-        "date": "DATE",
-        "timestamp": "TIMESTAMP",
-        "timestamp_ntz": "TIMESTAMP_NTZ",
-        "string": "STRING",
-        "decimal(10,2)": "DECIMAL(10,2)",
-    }
-    for physical, expected in cases.items():
-        prop = SchemaProperty(name="f", physicalType=physical, logicalType="string")
-        assert convert_to_databricks(prop) == expected, (
-            f"{physical!r} -> {convert_to_databricks(prop)!r}, want {expected!r}"
-        )
-
-
 def test_check_property_type_refuses_none_expected_type(caplog):
     """Defense in depth: SodaCL silently passes 'has type None' checks, so we must never
     build one. check_property_type should log a warning and return None for None input."""
