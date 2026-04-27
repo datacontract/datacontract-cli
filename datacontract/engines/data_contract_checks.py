@@ -109,10 +109,9 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     for prop in properties:
         property_name = prop.name
-        logical_type = prop.logicalType
 
         checks.append(check_property_is_present(schema_name, property_name, quoting_config))
-        if check_types and logical_type is not None:
+        if check_types and (prop.physicalType is not None or prop.logicalType is not None):
             sql_type: str = convert_to_sql_type(prop, server_type)
             if sql_type is not None:
                 checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))

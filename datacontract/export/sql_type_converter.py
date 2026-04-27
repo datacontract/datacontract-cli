@@ -175,11 +175,12 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
     if physical_type:
         return physical_type
 
-    # Compound physicalTypes like "TIMESTAMP(6) WITH TIME ZONE" should pass through verbatim.
     if isinstance(field, SchemaProperty) and field.physicalType:
-        pt = field.physicalType
-        if "(" in pt and not pt.endswith(")"):
-            return pt
+        # Compound physicalTypes like "TIMESTAMP(6) WITH TIME ZONE" pass through verbatim.
+        if "(" in field.physicalType and not field.physicalType.endswith(")"):
+            return field.physicalType
+        # Otherwise try the dialect mapping; fall back to the user's physicalType verbatim if unmappable
+        return _convert_base_to_sql_type(field, server_type) or field.physicalType
 
     return _convert_base_to_sql_type(field, server_type)
 
