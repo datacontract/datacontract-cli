@@ -497,6 +497,10 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "INTEGER"
     if base_type in ["int64", "long", "bigint"]:
         return "BIGINT"
+    if base_type in ["tinyint"]:
+        return "TINYINT"
+    if base_type in ["smallint"]:
+        return "SMALLINT"
     if base_type in ["date"]:
         return "DATE"
     if base_type in ["time"]:
@@ -667,7 +671,7 @@ def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
     elif logical_type.lower() in ["number", "decimal", "numeric"]:
         return "NUMERIC"
     elif logical_type.lower() == "double":
-        return "BIGNUMERIC"
+        return "FLOAT64"
     elif logical_type.lower() in ["object", "record"] and not nested_fields:
         return "JSON"
     elif logical_type.lower() in ["object", "record", "array"]:
@@ -754,7 +758,7 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return _attach_params_if_present("time", field)
     if base_type in ["boolean"]:
         return "boolean"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "varbinary"
     if base_type in ["object", "record", "struct"]:
         return "json"
@@ -850,7 +854,7 @@ def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
         "numeric": "NUMBER",
         "float": "BINARY_FLOAT",
         "double": "BINARY_DOUBLE",
-        "boolean": "CHAR",
+        "boolean": "CHAR(1)",
         "date": "DATE",
         "time": "DATE",
         "timestamp": "TIMESTAMP(6) WITH TIME ZONE",
