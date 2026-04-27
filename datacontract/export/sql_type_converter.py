@@ -38,63 +38,13 @@ class FieldLike(Protocol):
     fields: Dict[str, "FieldLike"]
 
 
-# Compat shim: map Python repr of Spark DataType (e.g. 'StringType()', 'DecimalType(10,2)',
-# 'ArrayType(StringType(), True)') to native Spark SQL names. The Spark importer emitted
-# str(dataType) instead of simpleString() in v0.11.0-v0.12.1, so existing contracts have
-# these Spark-repr physicalTypes (#1048). Remove in a future major version.
-_SPARK_REPR_TO_SQL = {
-    "stringtype": "string",
-    "varchartype": "varchar",
-    "chartype": "char",
-    "integertype": "int",
-    "shorttype": "smallint",
-    "bytetype": "tinyint",
-    "longtype": "bigint",
-    "floattype": "float",
-    "doubletype": "double",
-    "booleantype": "boolean",
-    "datetype": "date",
-    "timestamptype": "timestamp",
-    "timestampntztype": "timestamp_ntz",
-    "decimaltype": "decimal",
-    "binarytype": "binary",
-    "arraytype": "array",
-    "structtype": "object",
-    "maptype": "object",
-    "varianttype": "variant",
-    "nulltype": "string",
-}
-
-
-def _normalize_spark_repr(field_type: Optional[str]) -> Optional[str]:
-    """Compat shim for #1048: normalise a Spark DataType repr to its native SQL name."""
-    if field_type is None:
-        return None
-    base = field_type.split("(", 1)[0].strip().lower()
-    native = _SPARK_REPR_TO_SQL.get(base)
-    if native is None:
-        return field_type
-    # Preserve numeric params for parameterised types (DecimalType(10,2) -> decimal(10,2)).
-    # Complex types (ArrayType, StructType, MapType) use field.items / field.properties
-    # for nested content, so dropping their gibberish params is correct.
-    if base in ("decimaltype", "varchartype", "chartype") and "(" in field_type and field_type.endswith(")"):
-        params = field_type[field_type.index("(") + 1 : -1]
-        return f"{native}({params})"
-    return native
-
-
 def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
-    """Get the type string from a field. Prefers physicalType over logicalType.
-
-    The Spark-repr compat shim (#1048) is applied unconditionally to every field read,
-    not just Spark-imported contracts; it is a no-op unless the type starts with a known
-    Spark DataType class name (e.g. 'StringType', 'DecimalType'), so real ODCS/DCS types
-    pass through untouched."""
+    """Get the type string from a field. Prefers physicalType over logicalType."""
     if isinstance(field, SchemaProperty):
         if field.physicalType:
-            return _normalize_spark_repr(field.physicalType)
+            return field.physicalType
         return field.logicalType
-    return _normalize_spark_repr(field.type)
+    return field.type
 
 
 def _get_base_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:

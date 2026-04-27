@@ -197,45 +197,6 @@ def test_imported_spark_physical_types_map_to_databricks(df_user):
         assert convert_to_dataframe(prop) is not None, f"dataframe mapping None for {prop.name}"
 
 
-def test_legacy_spark_repr_physical_types_still_map(caplog):
-    """Contracts produced by v0.11.0–v0.12.1 (before #1048 fix) have Spark-repr physicalTypes
-    like 'StringType()' / 'DecimalType(10,2)' / 'ArrayType(StringType(), True)'. The converters
-    must recognise these as a compat shim so existing contracts still validate correctly."""
-    items = SchemaProperty(name="items", physicalType="StringType()", logicalType="string")
-    props = [
-        SchemaProperty(name="s", physicalType="StringType()", logicalType="string"),
-        SchemaProperty(name="i", physicalType="IntegerType()", logicalType="integer"),
-        SchemaProperty(name="l", physicalType="LongType()", logicalType="integer"),
-        SchemaProperty(name="sh", physicalType="ShortType()", logicalType="integer"),
-        SchemaProperty(name="by", physicalType="ByteType()", logicalType="integer"),
-        SchemaProperty(name="bin", physicalType="BinaryType()", logicalType="string"),
-        SchemaProperty(name="b", physicalType="BooleanType()", logicalType="boolean"),
-        SchemaProperty(name="d", physicalType="DateType()", logicalType="date"),
-        SchemaProperty(name="ts", physicalType="TimestampType()", logicalType="date"),
-        SchemaProperty(name="dec", physicalType="DecimalType(10,2)", logicalType="number"),
-        SchemaProperty(name="a", physicalType="ArrayType(StringType(), True)", logicalType="array", items=items),
-    ]
-    expected = {
-        "s": "STRING",
-        "i": "INT",
-        "l": "BIGINT",
-        "sh": "SMALLINT",
-        "by": "TINYINT",
-        "bin": "BINARY",
-        "b": "BOOLEAN",
-        "d": "DATE",
-        "ts": "TIMESTAMP",
-        "dec": "DECIMAL(10,2)",
-        "a": "ARRAY<STRING>",
-    }
-    with caplog.at_level(logging.WARNING, logger="datacontract.export.sql_type_converter"):
-        for prop in props:
-            assert convert_to_databricks(prop) == expected[prop.name], (
-                f"{prop.name}: expected {expected[prop.name]!r}, got {convert_to_databricks(prop)!r}"
-            )
-    assert caplog.records == [], f"compat shim should not warn on legacy Spark-repr types: {caplog.records}"
-
-
 def test_fresh_spark_native_types_map_to_databricks():
     """Native simpleString() output from the fixed Spark importer must route to the
     correct Databricks SQL type — including types not exercised by the `df_user` fixture
