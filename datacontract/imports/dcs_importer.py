@@ -174,6 +174,8 @@ def _convert_servers(dcs_servers: Dict[str, DCSServer]) -> List[ODCSServer]:
             odcs_server.port = dcs_server.port
         if dcs_server.catalog:
             odcs_server.catalog = dcs_server.catalog
+        if dcs_server.http_scheme:
+            odcs_server.http_scheme = dcs_server.http_scheme
         if dcs_server.description:
             odcs_server.description = dcs_server.description
         if dcs_server.roles:
