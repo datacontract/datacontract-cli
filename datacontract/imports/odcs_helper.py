@@ -57,7 +57,7 @@ def create_schema_object(
     if tags:
         schema.tags = tags
     if quality:
-        schema.quality = quality    
+        schema.quality = quality
     return schema
 
 

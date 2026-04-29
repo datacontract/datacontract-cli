@@ -249,21 +249,17 @@ def schema_properties_cleansing(
             continue  # Skip properties that don't have required fields
 
         logical_type, format = map_type_from_sql(prop.logicalType)
-        max_length = prop.logicalTypeOptions.get("maxLength", None)  if prop.logicalTypeOptions else None
+        max_length = prop.logicalTypeOptions.get("maxLength", None) if prop.logicalTypeOptions else None
 
         precision = [cp.value for cp in prop.customProperties if cp.property == "precision"]
-        scale = [cp.value for cp in prop.customProperties  if cp.property == "scale"]
+        scale = [cp.value for cp in prop.customProperties if cp.property == "scale"]
 
         tags = [
-            tag["TAGS"]
-            for tag in propertiesTags
-            if tag["COLUMN_NAME"] == prop.name and tag["COLUMN_NAME"] is not None
+            tag["TAGS"] for tag in propertiesTags if tag["COLUMN_NAME"] == prop.name and tag["COLUMN_NAME"] is not None
         ]
         quality = [
             q["QUALITY"] for q in propertiesQuality if q["COLUMN_NAME"] == prop.name and q["COLUMN_NAME"] is not None
         ]
-
-
 
         prop = create_property(
             name=prop.name,
@@ -284,6 +280,7 @@ def schema_properties_cleansing(
 
     return cleansed_properties
 
+
 def _get_ordinal_position_value(cpList: List[CustomProperty]) -> Any:
     """Extract customProperties value where property == 'ordinalPosition'."""
     for cp in cpList:
@@ -293,8 +290,8 @@ def _get_ordinal_position_value(cpList: List[CustomProperty]) -> Any:
 
 
 def property_customs_ordinalPosition_sort(col: SchemaProperty) -> Any:
-        ord_val = _get_ordinal_position_value(col.customProperties)
-        return (ord_val, f"{col.name.lower()}")
+    ord_val = _get_ordinal_position_value(col.customProperties)
+    return (ord_val, f"{col.name.lower()}")
 
 
 def import_Snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
@@ -333,9 +330,9 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         server = create_server(
             name="workspace",
             server_type="snowflake",
-            environment=row["TABLE_CATALOG"].split("_")[
-                0
-            ].lower(),  # we don't have environment info in snowflake metadata, so we default to first part of the database name before the first underscore which is usually the organization name in snowflake, e.g. PRD_, QA_, DEV_ etc. This is of course a heuristic and might not work for everyone but it's the best we can do with the available metadata, and it can be easily overridden by the user if needed.
+            environment=row["TABLE_CATALOG"]
+            .split("_")[0]
+            .lower(),  # we don't have environment info in snowflake metadata, so we default to first part of the database name before the first underscore which is usually the organization name in snowflake, e.g. PRD_, QA_, DEV_ etc. This is of course a heuristic and might not work for everyone but it's the best we can do with the available metadata, and it can be easily overridden by the user if needed.
             account=account,
             host=f"{account}.azure.snowflakecomputing.com",
             database=row["TABLE_CATALOG"],
@@ -394,7 +391,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         enhanced_schemas.append(schema)
 
     # ODCS building
-    enhanced_schemas.sort(key=lambda s: f'{s.physicalType.lower()}/{s.name.lower()}')
+    enhanced_schemas.sort(key=lambda s: f"{s.physicalType.lower()}/{s.name.lower()}")
     odcs.schema_ = enhanced_schemas
 
     return odcs
@@ -528,5 +525,3 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
             schema=schema_connect,
         )
     return conn
-
-

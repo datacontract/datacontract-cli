@@ -430,6 +430,7 @@ def import_excel(
     result = DataContract.import_from_source(format="excel", source=source, schema=schema, owner=owner, id=id)
     _write_result(result, output)
 
+
 @import_app.command(
     name="snowflake",
     epilog="Example: datacontract import snowflake --source account --database DEMO_DB --schema PUBLIC --output datacontract.yaml",
@@ -445,5 +446,7 @@ def import_snowflake(
 ):
     """Import a data contract from a Snowflake workspace."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
