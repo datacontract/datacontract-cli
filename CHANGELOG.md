@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
 - correct swapped `check_type` labels  `model_qualty_sql` and `field_quality_sql` (#1187)
 - `import spark` now emits a native Spark SQL physicalType (e.g. `string`) instead of Python repr (e.g. `StringType()`). Contracts imported using Spark in v0.11.0–v0.12.1 did not perform type checks and must be re-imported. (#1048)
+- Remove unnecessary `setuptools` dependency from `pyproject.toml` (temporary workaround for soda-core#2091 resolved) (#1199)
 
 ## [0.12.1] - 2026-04-21
 
