@@ -33,7 +33,6 @@ def create_odcs(
 def create_schema_object(
     name: str,
     physical_type: str = "table",
-    physical_name: str = None,
     description: str = None,
     business_name: str = None,
     properties: List[SchemaProperty] = None,
@@ -43,11 +42,10 @@ def create_schema_object(
     """Create a SchemaObject (equivalent to DCS Model)."""
     schema = SchemaObject(
         name=name,
+        physicalName=name,
         logicalType="object",
         physicalType=physical_type,
     )
-    if physical_name:
-        schema.physicalName = physical_name
     if description:
         schema.description = description
     if business_name:

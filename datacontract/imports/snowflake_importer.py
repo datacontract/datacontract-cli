@@ -57,7 +57,6 @@ def information_schema_tables_query() -> str:
         SELECT 
             TABLE_SCHEMA, 
             TABLE_NAME,
-            UPPER(TABLE_NAME) as physical_name,
             NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
             lower(REPLACE(TABLE_TYPE,'BASE ','')) as physical_Type
         FROM INFORMATION_SCHEMA.TABLES
@@ -324,15 +323,19 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
     resulsets = import_information_schema(conn)
 
     odcs = create_odcs()
+
     # server
+    server = None
     ListRoleAdapter = TypeAdapter(List[Role])
     for row in resulsets["server"]:
+        env_part = row["TABLE_CATALOG"].split("_")
+
         server = create_server(
             name="workspace",
             server_type="snowflake",
-            environment=row["TABLE_CATALOG"]
-            .split("_")[0]
-            .lower(),  # we don't have environment info in snowflake metadata, so we default to first part of the database name before the first underscore which is usually the organization name in snowflake, e.g. PRD_, QA_, DEV_ etc. This is of course a heuristic and might not work for everyone but it's the best we can do with the available metadata, and it can be easily overridden by the user if needed.
+            environment=env_part[0].lower()
+            if len(env_part) > 0
+            else None,  # we don't have environment info in snowflake metadata, so we default to first part of the database name before the first underscore which is usually the organization name in snowflake, e.g. PRD_, QA_, DEV_ etc. This is of course a heuristic and might not work for everyone but it's the best we can do with the available metadata, and it can be easily overridden by the user if needed.
             account=account,
             host=f"{account}.azure.snowflakecomputing.com",
             database=row["TABLE_CATALOG"],
@@ -365,7 +368,6 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
             create_schema_object(
                 name=schema["TABLE_NAME"],
                 description=schema["DESCRIPTION"],
-                physical_name=schema["PHYSICAL_NAME"],
                 physical_type=schema["PHYSICAL_TYPE"],  # table or view
                 properties=ListPropertiesAdapter.validate_json(listOfProperties[0])
                 if len(listOfProperties) > 0
