@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Add `http_scheme` support for Trino connections, allowing HTTP or HTTPS to be configured via server config or `model_extra`
+- Propagate `http_scheme` field when importing DCS servers to ODCS format
+
 ### Fixed
 - `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)
 - **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
