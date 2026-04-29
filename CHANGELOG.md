@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Added additional type conversions for mysql for BIGINT, TINYINT, SMALLINT, and handling of int(10) format
+- Add support for composite primary keys during SQL import
+
 ### Fixed
 - `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)
 - **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
 - correct swapped `check_type` labels  `model_qualty_sql` and `field_quality_sql` (#1187)
 - `import spark` now emits a native Spark SQL physicalType (e.g. `string`) instead of Python repr (e.g. `StringType()`). Contracts imported using Spark in v0.11.0–v0.12.1 did not perform type checks and must be re-imported. (#1048)
+- Fixed issue where `import sql` would only import a single table from a sql ddl file even if multiple were defined
+- Fixed issue where foreign key constraint in sql ddl was creating duplicate table entries during on `import sql` action
 
 ## [0.12.1] - 2026-04-21
 

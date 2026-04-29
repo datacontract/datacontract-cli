@@ -179,8 +179,10 @@ schema:
     physicalName: customer_location
     properties:
       - name: id
-        logicalType: number
         physicalType: DECIMAL
+        primaryKey: true
+        primaryKeyPosition: 1
+        logicalType: number
         required: true
       - name: created_by
         logicalType: string

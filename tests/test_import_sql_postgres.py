@@ -87,6 +87,8 @@ schema:
       - name: id
         logicalType: number
         physicalType: DECIMAL
+        primaryKey: true
+        primaryKeyPosition: 1
         required: true
       - name: created_by
         logicalType: string
