@@ -3,6 +3,8 @@ import os
 import yaml
 from open_data_contract_standard.model import Server
 
+from datacontract.model.exceptions import require_env
+
 
 def initialize_client_and_create_soda_configuration(server: Server) -> str:
     import oracledb
@@ -39,8 +41,8 @@ def to_oracle_soda_configuration(server: Server) -> str:
             "type": "oracle",
             "host": server.host,
             "port": str(server.port),
-            "username": os.getenv("DATACONTRACT_ORACLE_USERNAME", ""),
-            "password": os.getenv("DATACONTRACT_ORACLE_PASSWORD", ""),
+            "username": require_env("DATACONTRACT_ORACLE_USERNAME", server_type="oracle"),
+            "password": require_env("DATACONTRACT_ORACLE_PASSWORD", server_type="oracle"),
             "connectstring": f"{server.host}:{server.port}/{service_name}",
             "schema": server.schema_,
         }

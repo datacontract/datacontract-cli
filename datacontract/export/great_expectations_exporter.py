@@ -16,7 +16,7 @@ from datacontract.export.exporter import (
 )
 
 
-class GreatExpectationsEngine(Enum):
+class GreatExpectationsEngine(str, Enum):
     """Enum to represent the type of data engine for expectations.
 
     Attributes:

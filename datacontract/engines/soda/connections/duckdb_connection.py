@@ -6,6 +6,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
+from datacontract.model.exceptions import require_env
 from datacontract.model.run import Run
 
 if TYPE_CHECKING:
@@ -232,13 +233,8 @@ def setup_s3_connection(con, server: Server):
 
 
 def setup_gcs_connection(con, server: Server):
-    key_id = os.getenv("DATACONTRACT_GCS_KEY_ID")
-    secret = os.getenv("DATACONTRACT_GCS_SECRET")
-
-    if key_id is None:
-        raise ValueError("Error: Environment variable DATACONTRACT_GCS_KEY_ID is not set")
-    if secret is None:
-        raise ValueError("Error: Environment variable DATACONTRACT_GCS_SECRET is not set")
+    key_id = require_env("DATACONTRACT_GCS_KEY_ID", server_type="gcs")
+    secret = require_env("DATACONTRACT_GCS_SECRET", server_type="gcs")
 
     con.sql(f"""
     CREATE SECRET gcs_secret (
@@ -250,19 +246,12 @@ def setup_gcs_connection(con, server: Server):
 
 
 def setup_azure_connection(con, server: Server):
-    tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
-    client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
-    client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
+    tenant_id = require_env("DATACONTRACT_AZURE_TENANT_ID", server_type="azure")
+    client_id = require_env("DATACONTRACT_AZURE_CLIENT_ID", server_type="azure")
+    client_secret = require_env("DATACONTRACT_AZURE_CLIENT_SECRET", server_type="azure")
     storage_account = (
         to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
     )
-
-    if tenant_id is None:
-        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_TENANT_ID is not set")
-    if client_id is None:
-        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_CLIENT_ID is not set")
-    if client_secret is None:
-        raise ValueError("Error: Environment variable DATACONTRACT_AZURE_CLIENT_SECRET is not set")
 
     con.install_extension("azure")
     con.load_extension("azure")

@@ -1,7 +1,9 @@
+import pytest
 import yaml
 from open_data_contract_standard.model import Server
 
 from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_configuration
+from datacontract.model.exceptions import DataContractException
 
 
 def _make_server(**kwargs):
@@ -112,7 +114,31 @@ def test_all_env_vars(monkeypatch):
     assert ds["authentication"] == "sql"
 
 
+def test_trusted_connection_does_not_require_creds(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_USERNAME", raising=False)
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_PASSWORD", raising=False)
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", "true")
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", raising=False)
+
+    # Should not raise
+    to_sqlserver_soda_configuration(_make_server())
+
+
+def test_sql_auth_raises_when_credentials_missing(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_USERNAME", raising=False)
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_PASSWORD", raising=False)
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", raising=False)
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", raising=False)
+
+    with pytest.raises(DataContractException) as exc_info:
+        to_sqlserver_soda_configuration(_make_server())
+
+    assert "DATACONTRACT_SQLSERVER_USERNAME" in exc_info.value.reason
+
+
 def test_server_fields_from_contract(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_USERNAME", "user")
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_PASSWORD", "pass")
     monkeypatch.delenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", raising=False)
     monkeypatch.delenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", raising=False)
 

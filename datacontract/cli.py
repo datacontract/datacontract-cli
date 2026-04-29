@@ -2,29 +2,13 @@ import logging
 import os
 import sys
 from importlib import metadata
-from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Iterable
 
-import click
 import typer
 from click import Context
 from rich.console import Console
 from typer.core import TyperGroup
 from typing_extensions import Annotated
-
-from datacontract.catalog.catalog import create_data_contract_html, create_index_html
-from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.imports.importer import ImportFormat
-from datacontract.init.init_template import get_init_template
-from datacontract.integration.entropy_data import (
-    publish_data_contract_to_entropy_data,
-)
-from datacontract.lint.resolve import resolve_data_contract, resolve_data_contract_dict
-from datacontract.model.exceptions import DataContractException
-from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
-from datacontract.output.output_format import OutputFormat
-from datacontract.output.test_results_writer import write_test_result
-from datacontract.output.text_changelog_results import write_text_changelog_results
 
 console = Console()
 
@@ -36,8 +20,58 @@ class OrderedCommands(TyperGroup):
         return self.commands.keys()
 
 
+class OrderedCommandsWithMigrationHints(OrderedCommands):
+    """Intercepts removed or renamed options on import/export and points the user to the v0.12.0 migration notes."""
+
+    RENAMED_FLAGS = {
+        "--format": None,
+        "--rdf-base": "--base",
+        "--sql-server-type": "--dialect",
+        "--bigquery-project": "--project",
+        "--bigquery-dataset": "--dataset",
+        "--bigquery-table": "--table",
+        "--unity-table-full-name": "--table",
+        "--dbt-model": "--model",
+        "--glue-table": "--table",
+        "--iceberg-table": "--table",
+    }
+
+    def parse_args(self, ctx: Context, args):
+        # First positional argument
+        subcommand = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
+
+        rewritten_args = []
+        for arg in args:
+            if isinstance(arg, str) and arg.startswith("--"):
+                flag, _, value = arg.partition("=")
+                if flag == "--schema":
+                    typer.secho(
+                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
+                        err=True,
+                        fg=typer.colors.YELLOW,
+                    )
+                    rewritten_args.append(f"--json-schema={value}" if value else "--json-schema")
+                    continue
+                if flag in self.RENAMED_FLAGS:
+                    new_flag = self.RENAMED_FLAGS[flag]
+                elif flag == "--source" and subcommand == "glue":
+                    new_flag = "--database"
+                elif flag == "--source" and subcommand == "spark":
+                    new_flag = "--tables"
+                else:
+                    rewritten_args.append(arg)
+                    continue
+                change = "needs to be omitted since" if new_flag is None else f"was replaced with {new_flag} in"
+                ctx.fail(
+                    f"{flag} {change} v0.12.0 of datacontract-cli. "
+                    f"See https://github.com/datacontract/datacontract-cli/releases/tag/v0.12.0"
+                )
+            rewritten_args.append(arg)
+        return super().parse_args(ctx, rewritten_args)
+
+
 app = typer.Typer(
-    cls=OrderedCommands,
+    cls=OrderedCommandsWithMigrationHints,
     no_args_is_help=True,
     add_completion=False,
 )
@@ -70,572 +104,11 @@ def common(
     pass
 
 
-@app.command(name="init")
-def init(
-    location: Annotated[
-        str, typer.Argument(help="The location of the data contract file to create.")
-    ] = "datacontract.yaml",
-    template: Annotated[str, typer.Option(help="URL of a template or data contract")] = None,
-    overwrite: Annotated[bool, typer.Option(help="Replace the existing datacontract.yaml")] = False,
-    debug: debug_option = None,
-):
-    """
-    Create an empty data contract.
-    """
-    enable_debug_logging(debug)
-
-    if not overwrite and os.path.exists(location):
-        console.print("File already exists, use --overwrite to overwrite")
-        raise typer.Exit(code=1)
-    template_str = get_init_template(template)
-    with open(location, "w") as f:
-        f.write(template_str)
-    console.print("📄 data contract written to " + location)
-
-
-@app.command(name="lint")
-def lint(
-    location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
-    ] = "datacontract.yaml",
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    output: Annotated[
-        Path,
-        typer.Option(
-            help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml'). If no path is provided, the output will be printed to stdout."
-        ),
-    ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
-    all_errors: Annotated[
-        bool,
-        typer.Option(
-            "--all-errors",
-            help="Report all JSON Schema validation errors instead of stopping after the first one.",
-        ),
-    ] = False,
-    debug: debug_option = None,
-):
-    """
-    Validate that the datacontract.yaml is correctly formatted.
-    """
-    enable_debug_logging(debug)
-
-    run = DataContract(data_contract_file=location, schema_location=schema, all_errors=all_errors).lint()
-    write_test_result(run, console, output_format, output)
-
-
 def enable_debug_logging(debug: bool):
     if debug:
         logging.basicConfig(
             level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
         )
-
-
-@app.command(name="changelog")
-def changelog(
-    v1: Annotated[str, typer.Argument(help="The location (path) of the source (before) data contract YAML.")],
-    v2: Annotated[str, typer.Argument(help="The location (path) of the target (after) data contract YAML.")],
-    debug: debug_option = None,
-):
-    """Show a changelog between two data contracts."""
-    enable_debug_logging(debug)
-    result = DataContract(data_contract_file=v1).changelog(DataContract(data_contract_file=v2))
-    write_text_changelog_results(result, console)
-
-
-@app.command(name="test")
-def test(
-    location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
-    ] = "datacontract.yaml",
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    server: Annotated[
-        str,
-        typer.Option(
-            help="The server configuration to run the schema and quality tests. "
-            "Use the key of the server object in the data contract yaml file "
-            "to refer to a server, e.g., `production`, or `all` for all "
-            "servers (default)."
-        ),
-    ] = "all",
-    schema_name: Annotated[
-        str,
-        typer.Option(help="The name of the schema to test, e.g., `orders`, or `all` for all schemas (default)."),
-    ] = "all",
-    publish_test_results: Annotated[
-        bool, typer.Option(help="Deprecated. Use publish parameter. Publish the results after the test")
-    ] = False,
-    publish: Annotated[str, typer.Option(help="The url to publish the results after the test.")] = None,
-    output: Annotated[
-        Path,
-        typer.Option(
-            help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
-        ),
-    ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
-    logs: Annotated[bool, typer.Option(help="Print logs")] = False,
-    ssl_verification: Annotated[
-        bool,
-        typer.Option(help="SSL verification when publishing the data contract."),
-    ] = True,
-    debug: debug_option = None,
-):
-    """
-    Run schema and quality tests on configured servers.
-    """
-    enable_debug_logging(debug)
-
-    console.print(f"Testing {location}")
-    if server == "all":
-        server = None
-    run = DataContract(
-        data_contract_file=location,
-        schema_location=schema,
-        publish_test_results=publish_test_results,
-        publish_url=publish,
-        server=server,
-        schema_name=schema_name,
-        ssl_verification=ssl_verification,
-    ).test()
-    if logs:
-        _print_logs(run)
-    try:
-        data_contract = resolve_data_contract(location, schema_location=schema)
-    except Exception:
-        data_contract = None
-    write_test_result(run, console, output_format, output, data_contract)
-
-
-@app.command(name="ci")
-def ci(
-    locations: Annotated[
-        Optional[list[str]],
-        typer.Argument(help="The location(s) (url or path) of the data contract yaml file(s)."),
-    ] = None,
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    server: Annotated[
-        str,
-        typer.Option(
-            help="The server configuration to run the schema and quality tests. "
-            "Use the key of the server object in the data contract yaml file "
-            "to refer to a server, e.g., `production`, or `all` for all "
-            "servers (default)."
-        ),
-    ] = "all",
-    publish: Annotated[str, typer.Option(help="The url to publish the results after the test.")] = None,
-    output: Annotated[
-        Path,
-        typer.Option(
-            help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
-        ),
-    ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
-    logs: Annotated[bool, typer.Option(help="Print logs")] = False,
-    json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
-    fail_on: Annotated[
-        str,
-        typer.Option(
-            click_type=click.Choice(["warning", "error", "never"], case_sensitive=False),
-            help="Minimum severity that causes a non-zero exit code.",
-        ),
-    ] = "error",
-    ssl_verification: Annotated[
-        bool,
-        typer.Option(help="SSL verification when publishing the data contract."),
-    ] = True,
-    debug: debug_option = None,
-):
-    """
-    Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
-    """
-    enable_debug_logging(debug)
-
-    if not locations:
-        locations = ["datacontract.yaml"]
-
-    if output and len(locations) > 1:
-        console.print("Error: --output cannot be used with multiple contracts (results would overwrite each other).")
-        raise typer.Exit(code=1)
-
-    if server == "all":
-        server = None
-
-    # Plain text output for CI logs; --json sends human output to stderr.
-    out = Console(stderr=True, no_color=True) if json_output else Console(no_color=True)
-
-    results = []
-    fail_results = {
-        "warning": {"warning", "failed", "error"},
-        "error": {"failed", "error"},
-        "never": set(),
-    }
-    should_fail = False
-
-    for location in locations:
-        out.print(f"Testing {location}")
-        run = DataContract(
-            data_contract_file=location,
-            schema_location=schema,
-            publish_url=publish,
-            server=server,
-            ssl_verification=ssl_verification,
-        ).test()
-        if logs:
-            _print_logs(run, out)
-        results.append((location, run))
-        write_ci_output(run, location, json_mode=json_output)
-        try:
-            write_test_result(run, out, output_format, output)
-        except typer.Exit:
-            pass
-        if run.result in fail_results[fail_on]:
-            should_fail = True
-
-    write_ci_summary(results)
-    if json_output:
-        write_json_results(results)
-
-    if should_fail:
-        raise typer.Exit(code=1)
-
-
-@app.command(name="export")
-def export(
-    format: Annotated[ExportFormat, typer.Option(help="The export format.")],
-    output: Annotated[
-        Path,
-        typer.Option(
-            help="Specify the file path where the exported data will be saved. If no path is provided, the output will be printed to stdout."
-        ),
-    ] = None,
-    server: Annotated[str, typer.Option(help="The server name to export.")] = None,
-    schema_name: Annotated[
-        str,
-        typer.Option(help="The name of the schema to export, e.g., `orders`, or `all` for all schemas (default)."),
-    ] = "all",
-    # TODO: this should be a subcommand
-    rdf_base: Annotated[
-        Optional[str],
-        typer.Option(
-            help="[rdf] The base URI used to generate the RDF graph.",
-            rich_help_panel="RDF Options",
-        ),
-    ] = None,
-    # TODO: this should be a subcommand
-    sql_server_type: Annotated[
-        Optional[str],
-        typer.Option(
-            help="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract. Accepted values: auto, snowflake, postgres, mysql, databricks, sqlserver, bigquery, trino, oracle.",
-            rich_help_panel="SQL Options",
-        ),
-    ] = "auto",
-    location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
-    ] = "datacontract.yaml",
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    # TODO: this should be a subcommand
-    engine: Annotated[
-        Optional[str],
-        typer.Option(help="[engine] The engine used for great expection run."),
-    ] = None,
-    # TODO: this should be a subcommand
-    template: Annotated[
-        Optional[Path],
-        typer.Option(
-            help="The file path or URL of a template. For Excel format: path/URL to custom Excel template. For custom format: path to Jinja template."
-        ),
-    ] = None,
-    debug: debug_option = None,
-):
-    """
-    Convert data contract to a specific format. Saves to file specified by `output` option if present, otherwise prints to stdout.
-    """
-    enable_debug_logging(debug)
-
-    # Validate that Excel format requires an output file path
-    if format == ExportFormat.excel and output is None:
-        console.print("❌ Error: Excel export requires an output file path.")
-        console.print("💡 Hint: Use --output to specify where to save the Excel file, e.g.:")
-        console.print("   datacontract export --format excel --output datacontract.xlsx")
-        raise typer.Exit(code=1)
-
-    # TODO exception handling
-    result = DataContract(data_contract_file=location, schema_location=schema, server=server).export(
-        export_format=format,
-        schema_name=schema_name,
-        server=server,
-        rdf_base=rdf_base,
-        sql_server_type=sql_server_type,
-        engine=engine,
-        template=template,
-    )
-    # Don't interpret console markup in output.
-    if output is None:
-        console.print(result, markup=False, soft_wrap=True)
-    else:
-        if isinstance(result, bytes):
-            # If the result is bytes, we assume it's a binary file (e.g., Excel, PDF)
-            with output.open(mode="wb") as f:
-                f.write(result)
-        else:
-            with output.open(mode="w", encoding="utf-8") as f:
-                f.write(result)
-        console.print(f"Written result to {output}")
-
-
-@app.command(name="import")
-def import_(
-    format: Annotated[ImportFormat, typer.Option(help="The format of the source file.")],
-    output: Annotated[
-        Path,
-        typer.Option(
-            help="Specify the file path where the Data Contract will be saved. If no path is provided, the output will be printed to stdout."
-        ),
-    ] = None,
-    source: Annotated[
-        Optional[str],
-        typer.Option(help="The path to the file that should be imported."),
-    ] = None,
-    dialect: Annotated[
-        Optional[str],
-        typer.Option(
-            help="The SQL dialect. Accepted values: postgres, tsql, bigquery, snowflake, databricks, spark, duckdb."
-        ),
-    ] = None,
-    glue_table: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of table ids to import from the Glue Database (repeat for multiple table ids, leave empty for all tables in the dataset)."
-        ),
-    ] = None,
-    bigquery_project: Annotated[Optional[str], typer.Option(help="The bigquery project id.")] = None,
-    bigquery_dataset: Annotated[Optional[str], typer.Option(help="The bigquery dataset id.")] = None,
-    bigquery_table: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of table ids to import from the bigquery API (repeat for multiple table ids, leave empty for all tables in the dataset)."
-        ),
-    ] = None,
-    unity_table_full_name: Annotated[
-        Optional[List[str]], typer.Option(help="Full name of a table in the unity catalog")
-    ] = None,
-    dbt_model: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of models names to import from the dbt manifest file (repeat for multiple models names, leave empty for all models in the dataset)."
-        ),
-    ] = None,
-    dbml_schema: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of schema names to import from the DBML file (repeat for multiple schema names, leave empty for all tables in the file)."
-        ),
-    ] = None,
-    dbml_table: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of table names to import from the DBML file (repeat for multiple table names, leave empty for all tables in the file)."
-        ),
-    ] = None,
-    iceberg_table: Annotated[
-        Optional[str],
-        typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
-    ] = None,
-    template: Annotated[
-        Optional[str],
-        typer.Option(help="The location (url or path) of the ODCS template"),
-    ] = None,
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    owner: Annotated[
-        Optional[str],
-        typer.Option(help="The owner or team responsible for managing the data contract."),
-    ] = None,
-    id: Annotated[
-        Optional[str],
-        typer.Option(help="The identifier for the the data contract."),
-    ] = None,
-    database: Annotated[
-        Optional[str],
-        typer.Option(help="The snowflake database name."),
-    ] = None,
-    debug: debug_option = None,
-):
-    """
-    Create a data contract from the given source location. Saves to file specified by `output` option if present, otherwise prints to stdout.
-    """
-    enable_debug_logging(debug)
-
-    result = DataContract.import_from_source(
-        format=format,
-        source=source,
-        template=template,
-        schema=schema,
-        dialect=dialect,
-        glue_table=glue_table,
-        bigquery_table=bigquery_table,
-        bigquery_project=bigquery_project,
-        bigquery_dataset=bigquery_dataset,
-        unity_table_full_name=unity_table_full_name,
-        dbt_model=dbt_model,
-        dbml_schema=dbml_schema,
-        dbml_table=dbml_table,
-        iceberg_table=iceberg_table,
-        owner=owner,
-        id=id,
-        database=database,
-    )
-    if output is None:
-        console.print(result.to_yaml(), markup=False, soft_wrap=True)
-    else:
-        with output.open(mode="w", encoding="utf-8") as f:
-            f.write(result.to_yaml())
-        console.print(f"Written result to {output}")
-
-
-@app.command(name="publish")
-def publish(
-    location: Annotated[
-        str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
-    ] = "datacontract.yaml",
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    ssl_verification: Annotated[
-        bool,
-        typer.Option(help="SSL verification when publishing the data contract."),
-    ] = True,
-    debug: debug_option = None,
-):
-    """
-    Publish the data contract to the Entropy Data.
-    """
-    enable_debug_logging(debug)
-
-    publish_data_contract_to_entropy_data(
-        data_contract_dict=resolve_data_contract_dict(location),
-        ssl_verification=ssl_verification,
-    )
-
-
-@app.command(name="catalog")
-def catalog(
-    files: Annotated[
-        Optional[str],
-        typer.Option(
-            help="Glob pattern for the data contract files to include in the catalog. Applies recursively to any subfolders."
-        ),
-    ] = "*.yaml",
-    output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
-    schema: Annotated[
-        str,
-        typer.Option(help="The location (url or path) of the ODCS JSON Schema"),
-    ] = None,
-    debug: debug_option = None,
-):
-    """
-    Create a html catalog of data contracts.
-    """
-    enable_debug_logging(debug)
-
-    path = Path(output)
-    try:
-        path.mkdir(parents=True, exist_ok=True)
-    except FileExistsError:
-        if not path.is_dir():
-            raise
-    console.print(f"Created {output}")
-
-    contracts = []
-    for file in Path().rglob(files):
-        try:
-            create_data_contract_html(contracts, file, path, schema)
-        except DataContractException as e:
-            if e.reason == "Cannot parse ODPS product":
-                console.print(f"Skipped {file} due to error: {e.reason}")
-            else:
-                console.print(f"Skipped {file} due to error: {e}")
-        except Exception as e:
-            console.print(f"Skipped {file} due to error: {e}")
-
-    create_index_html(contracts, path)
-
-
-def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict:
-    """
-    Take the default datacontract uvicorn arguments and merge them with the
-    extra arguments passed to the command to start the API.
-    """
-    default_args = {
-        "app": "datacontract.api:app",
-        "port": port,
-        "host": host,
-        "reload": True,
-    }
-
-    # Create a list of the extra arguments, remove the leading -- from the cli arguments
-    trimmed_keys = list(map(lambda x: str(x).replace("--", ""), context.args[::2]))
-    # Merge the two dicts and return them as one dict
-    return default_args | dict(zip(trimmed_keys, context.args[1::2]))
-
-
-@app.command(name="api", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
-def api(
-    ctx: Annotated[typer.Context, typer.Option(help="Extra arguments to pass to uvicorn.run().")],
-    port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4242,
-    host: Annotated[
-        str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
-    ] = "127.0.0.1",
-    debug: debug_option = None,
-):
-    """
-    Start the datacontract CLI as server application with REST API.
-
-    The OpenAPI documentation as Swagger UI is available on http://localhost:4242.
-    You can execute the commands directly from the Swagger UI.
-
-    To protect the API, you can set the environment variable DATACONTRACT_CLI_API_KEY to a secret API key.
-    To authenticate, requests must include the header 'x-api-key' with the correct API key.
-    This is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive information.
-
-    To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in
-    https://cli.datacontract.com/#test
-
-    It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.:
-    `datacontract api --port 1234 --root_path /datacontract`.
-    """
-    enable_debug_logging(debug)
-
-    import uvicorn
-    from uvicorn.config import LOGGING_CONFIG
-
-    log_config = LOGGING_CONFIG
-    log_config["root"] = {"level": "INFO"}
-
-    uvicorn_args = _get_uvicorn_arguments(port, host, ctx)
-    # Add the log config
-    uvicorn_args["log_config"] = log_config
-    # Run uvicorn
-    uvicorn.run(**uvicorn_args)
 
 
 def _print_logs(run, out=None):
@@ -646,5 +119,53 @@ def _print_logs(run, out=None):
         out.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
 
 
+# ---------------------------------------------------------------------------
+# Register commands (must be after app and shared helpers are defined so the
+# command_* modules can import from this module without circular-import issues)
+# ---------------------------------------------------------------------------
+from datacontract import (  # noqa: E402, F401
+    command_api,
+    command_catalog,
+    command_changelog,
+    command_ci,
+    command_export,
+    command_import,
+    command_init,
+    command_lint,
+    command_publish,
+    command_test,
+)
+
+# Commands with subcommands
+app.add_typer(
+    command_import.import_app,
+    name="import",
+    help="Create a data contract from a source format.",
+    epilog="Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml",
+)
+app.add_typer(
+    command_export.export_app,
+    name="export",
+    help="Convert a data contract to a target format.",
+    epilog=(
+        "Example: datacontract export html datacontract.yaml --output datacontract.html\n\n"
+        "For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), "
+        "use `datacontract export sql --dialect <dialect>`."
+    ),
+)
+
+
+def main():
+    try:
+        app()
+    except Exception as e:
+        # If an uncaught exception occurs, only print its name (except when debug mode is enabled)
+        if "--debug" in sys.argv or os.environ.get("DATACONTRACT_CLI_DEBUG") == "1":
+            raise
+        console.print(f"[red]Error:[/red] {e}")
+        console.print("[dim]Pass --debug (or set DATACONTRACT_CLI_DEBUG=1) for the full traceback.[/dim]")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    app()
+    main()

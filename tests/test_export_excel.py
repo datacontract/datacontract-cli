@@ -23,9 +23,8 @@ def test_cli_export_excel():
             app,
             [
                 "export",
-                "./fixtures/excel/shipments-odcs.yaml",
-                "--format",
                 "excel",
+                "./fixtures/excel/shipments-odcs.yaml",
                 "--output",
                 tmp_path,
             ],

@@ -1,8 +1,8 @@
+import logging
 import re
 import uuid
 from dataclasses import dataclass
 from typing import List, Optional
-from venv import logger
 
 import yaml
 from open_data_contract_standard.model import (
@@ -15,6 +15,8 @@ from open_data_contract_standard.model import (
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.run import Check
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -107,12 +109,12 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     for prop in properties:
         property_name = prop.name
-        logical_type = prop.logicalType
 
         checks.append(check_property_is_present(schema_name, property_name, quoting_config))
-        if check_types and logical_type is not None:
+        if check_types and (prop.physicalType is not None or prop.logicalType is not None):
             sql_type: str = convert_to_sql_type(prop, server_type)
-            checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
+            if sql_type is not None:
+                checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
         if prop.required:
             checks.append(check_property_required(schema_name, property_name, quoting_config))
         if prop.unique:
@@ -224,6 +226,9 @@ def check_property_is_present(model_name, field_name, quoting_config: QuotingCon
 def check_property_type(
     model_name: str, field_name: str, expected_type: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
+    if expected_type is None:
+        logger.warning(f"Cannot build type check for {model_name}.{field_name}: expected_type is None.")
+        return None
     check_type = "field_type"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
@@ -750,10 +755,10 @@ def check_quality_list(
         elif quality.type == "sql":
             if property_name is None:
                 check_key = f"{schema_name}__quality_sql_{count}"
-                check_type = "field_quality_sql"
+                check_type = "model_quality_sql"
             else:
                 check_key = f"{schema_name}__{property_name}__quality_sql_{count}"
-                check_type = "model_quality_sql"
+                check_type = "field_quality_sql"
             threshold = to_sodacl_threshold(quality)
             query = prepare_query(quality, schema_name, property_name, quoting_config, server)
             if query is None:

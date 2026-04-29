@@ -32,6 +32,7 @@ def check_soda_execute(
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
     schema_name: str = "all",
+    check_categories: set[str] | None = None,
 ):
     from soda.common.config_helper import ConfigHelper
 
@@ -165,6 +166,8 @@ def check_soda_execute(
         name = scan_result.get("name")
         check = get_check(run, scan_result)
         if check is None:
+            if check_categories is not None and "custom" not in check_categories:
+                continue
             check = Check(
                 id=str(uuid.uuid4()),
                 category="custom",
@@ -188,13 +191,14 @@ def check_soda_execute(
         )
 
     if scan.has_error_logs():
-        run.log_warn("Engine soda-core has errors. See the logs for details.")
+        reason = _first_error_message(scan_results) or "Engine soda-core has errors. See the logs for details."
+        run.log_error(f"Engine soda-core has errors: {reason}")
         run.checks.append(
             Check(
                 type="general",
                 name="Data Contract Tests",
-                result=ResultEnum.warning,
-                reason="Engine soda-core has errors. See the logs for details.",
+                result=ResultEnum.failed,
+                reason=reason,
                 engine="soda-core",
             )
         )
@@ -206,6 +210,15 @@ def get_check(run, scan_result) -> Check | None:
     if check_by_name is not None:
         return check_by_name
 
+    return None
+
+
+def _first_error_message(scan_results: dict) -> str | None:
+    for log in scan_results.get("logs") or []:
+        if log.get("level") == "ERROR":
+            message = log.get("message")
+            if message:
+                return message.strip().splitlines()[0]
     return None
 
 

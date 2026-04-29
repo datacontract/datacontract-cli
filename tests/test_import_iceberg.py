@@ -129,11 +129,10 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "iceberg",
             "--source",
             "fixtures/iceberg/nested_schema.json",
-            "--iceberg-table",
+            "--table",
             "test-table",
         ],
     )

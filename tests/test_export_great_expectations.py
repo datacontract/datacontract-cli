@@ -20,9 +20,8 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/export/datacontract.odcs.yaml",
-            "--format",
             "great-expectations",
+            "./fixtures/export/datacontract.odcs.yaml",
         ],
     )
     assert result.exit_code == 0
@@ -544,9 +543,8 @@ def test_cli_with_spark_engine(expected_spark_engine: Dict[str, Any]):
         app,
         [
             "export",
-            "./fixtures/great-expectations/odcs.yaml",
-            "--format",
             "great-expectations",
+            "./fixtures/great-expectations/odcs.yaml",
             "--engine",
             "spark",
         ],
@@ -560,9 +558,8 @@ def test_cli_with_pandas_engine(expected_pandas_engine: Dict[str, Any]):
         app,
         [
             "export",
-            "./fixtures/great-expectations/odcs.yaml",
-            "--format",
             "great-expectations",
+            "./fixtures/great-expectations/odcs.yaml",
             "--engine",
             "pandas",
         ],
@@ -576,9 +573,8 @@ def test_cli_with_sql_engine(expected_sql_engine: Dict[str, Any]):
         app,
         [
             "export",
-            "./fixtures/great-expectations/odcs.yaml",
-            "--format",
             "great-expectations",
+            "./fixtures/great-expectations/odcs.yaml",
             "--engine",
             "sql",
         ],
@@ -592,12 +588,11 @@ def test_cli_with_sql_trino_engine(expected_sql_trino_engine: Dict[str, Any]):
         app,
         [
             "export",
-            "./fixtures/great-expectations/odcs.yaml",
-            "--format",
             "great-expectations",
+            "./fixtures/great-expectations/odcs.yaml",
             "--engine",
             "sql",
-            "--sql-server-type",
+            "--dialect",
             "trino",
         ],
     )

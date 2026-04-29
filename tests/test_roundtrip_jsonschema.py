@@ -15,7 +15,6 @@ def test_import_cli():
         app,
         [
             "import",
-            "--format",
             "jsonschema",
             "--source",
             "fixtures/import/orders.json",
@@ -26,7 +25,7 @@ def test_import_cli():
 
 def test_export_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/local-json/datacontract.yaml", "--format", "jsonschema"])
+    result = runner.invoke(app, ["export", "jsonschema", "./fixtures/local-json/datacontract.yaml"])
     assert result.exit_code == 0
 
 

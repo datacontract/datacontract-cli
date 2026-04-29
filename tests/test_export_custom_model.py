@@ -12,9 +12,8 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/custom/export_model/datacontract.odcs.yaml",
-            "--format",
             "custom",
+            "./fixtures/custom/export_model/datacontract.odcs.yaml",
             "--template",
             "./fixtures/custom/export_model/template.sql",
             "--schema-name",

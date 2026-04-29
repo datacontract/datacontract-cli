@@ -15,11 +15,10 @@ def test_cli():
         app,
         [
             "export",
-            "--format",
-            "bigquery",
-            "--server",
             "bigquery",
             "fixtures/bigquery/export/datacontract.odcs.yaml",
+            "--server",
+            "bigquery",
         ],
     )
     assert result.exit_code == 0

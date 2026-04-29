@@ -7,11 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
-- Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079 @kelsoufi-sanofi)
+### Fixed
+- `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)
+- **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
+- correct swapped `check_type` labels  `model_qualty_sql` and `field_quality_sql` (#1187)
+- `import spark` now emits a native Spark SQL physicalType (e.g. `string`) instead of Python repr (e.g. `StringType()`). Contracts imported using Spark in v0.11.0–v0.12.1 did not perform type checks and must be re-imported. (#1048)
+
+## [0.12.1] - 2026-04-21
 
 ### Fixed
+- make `--schema` a deprecated alias for `--json-schema` to (will be removed in v0.13.0)
+
+## [0.12.0] - 2026-04-20
+
+This release introduces several changes to improve the usability of `datacontract-cli` for AI Agents.
+
+- **Breaking**: Several changes in the CLI syntax (#1157):
+> Fix in v0.12.1: re-added `--schema` as alias for the new `--json-schema` (will be removed in v0.13.0)
+
+| Command                                    | Old option                                    | New option                             |
+  |--------------------------------------------|-----------------------------------------------|----------------------------------------|
+  | `lint`, `test`, `ci`, `publish`, `catalog` | `--schema <PATH>` (will work until v0.13.0)   | `--json-schema <PATH>`                 |
+  | `export`, `import`                         | `--format <FORMAT> <OPTIONS>`                 | `<FORMAT> <OPTIONS>` (drop `--format`) |
+  | **Export options:**                        |                                               |                                        |
+  | `export --format dbt`                      | `--format dbt`                                | `dbt-models` (format renamed)          |
+  | `export --format great-expectations`       | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
+  | `export --format rdf`                      | `--rdf-base <URI>`                            | `--base <URI>`                         |
+  | `export --format sql`                      | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
+  | `export --format sql-query`                | `--sql-server-type <TYPE>`                    | `--dialect <TYPE>`                     |
+  | **Import options:**                        |                                               |                                        |
+  | `import --format bigquery`                 | `--bigquery-[project\|dataset\|table] <NAME>` | `--[project\|dataset\|table] <NAME>`   |
+  | `import --format dbt`                      | `--dbt-model <NAME>`                          | `--model <NAME>`                       |
+  | `import --format glue`                     | `--source <NAME>`, `--glue-table <NAME>`      | `--database <NAME>`, `--table <NAME>`  |
+  | `import --format iceberg`                  | `--iceberg-table <NAME>`                      | `--table <NAME>`                       |
+  | `import --format unity`                    | `--unity-table-full-name <NAME>`              | `--table <NAME>`                       |
+  | `import --format spark`                    | `--source <NAMES>`                            | `--tables <NAMES>`                     |
+  | `import`                                   | `--template`                                  | dropped (was a no-op)                  |
+
+The `--schema` option (referring to the ODCS JSON schema) was renamed to `--json-schema` to avoid confusion with `--schema-name`, which refers to the schema within the data contract to test for.
+
+- Error messages for uncaught exceptions are shortened now. Pass `--debug` (or set `DATACONTRACT_CLI_DEBUG=1`) to see the full traceback. (#1175)
+- Add example calls to `--help` outputs (#1176)
+- Add explicit errors when required env vars for soda connections are missing (#1177)
+- Validate some of the CLI options against their allowed values instead of accepting any string (#1178)
+
+
+## [0.11.9] - 2026-04-20
+
+### Added
+- Added `--checks` option to `test` command to selectively run check categories: `schema`, `quality`, `servicelevel` (#678)
+- Added `--schema-name` option to `test` command to test a specific schema instead of all schemas (#1079,#1085 @kelsoufi-sanofi)
+
+### Fixed
+- Move `precision`/`scale` for `number` types from `logicalTypeOptions` to `customProperties` (#1145,#1160 @davidb-tada)
+- Emit placeholder server values in SQL importer so generated contracts pass lint (#1146,#1152 @Ai-chan-0411)
 - Fix Protobuf export for arrays of objects and improve message/enum naming to UpperCamelCase (#1012 @Schokuroff)
+- Exit with code 1 when `--server` name is not found (#1153,#1161 @Ai-chan-0411)
+
+Thanks to @kelsoufi-sanofi for the new `--schema-name` option on `test`, and to @Schokuroff, @Ai-chan-0411, and @davidb-tada for their contributions.
 
 ## [0.11.8] - 2026-04-10
 

@@ -17,6 +17,10 @@ status: draft
 servers:
 - server: snowflake
   type: snowflake
+  host: my_host
+  port: 443
+  database: my_database
+  schema: my_schema
 schema:
 - name: my_table
   physicalType: table
@@ -27,10 +31,12 @@ schema:
   - name: field_primary_key
     physicalType: DECIMAL(38, 0)
     description: Primary key
+    customProperties:
+    - property: precision
+      value: 38
+    - property: scale
+      value: 0
     logicalType: number
-    logicalTypeOptions:
-      precision: 38
-      scale: 0
     required: true
   - name: field_not_null
     physicalType: INT
@@ -89,17 +95,21 @@ schema:
   - name: field_decimal
     physicalType: DECIMAL(10, 2)
     description: Fixed precision decimal
+    customProperties:
+    - property: precision
+      value: 10
+    - property: scale
+      value: 2
     logicalType: number
-    logicalTypeOptions:
-      precision: 10
-      scale: 2
   - name: field_numeric
     physicalType: DECIMAL(10, 2)
     description: Same as DECIMAL
+    customProperties:
+    - property: precision
+      value: 10
+    - property: scale
+      value: 2
     logicalType: number
-    logicalTypeOptions:
-      precision: 10
-      scale: 2
   - name: field_float
     physicalType: DOUBLE
     description: Approximate floating-point

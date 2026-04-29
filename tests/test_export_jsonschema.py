@@ -14,7 +14,7 @@ from datacontract.lint.resolve import resolve_data_contract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/local-json/datacontract.yaml", "--format", "jsonschema"])
+    result = runner.invoke(app, ["export", "jsonschema", "./fixtures/local-json/datacontract.yaml"])
     assert result.exit_code == 0
 
 
