@@ -5,7 +5,13 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 
-from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, Role, SchemaProperty
+from open_data_contract_standard.model import (
+    CustomProperty,
+    DataQuality,
+    OpenDataContractStandard,
+    Role,
+    SchemaProperty,
+)
 from pydantic import TypeAdapter
 
 from datacontract.imports.importer import Importer
@@ -84,7 +90,7 @@ def information_schema_columns_query() -> str:
                             CONCAT(COALESCE(IS_C.DATA_TYPE_ALIAS,IS_C.DATA_TYPE),
                                 'AUTOINCREMENENT START ', IS_C.IDENTITY_START, ' INCREMENT ', IS_C.IDENTITY_INCREMENT, 
                                 IFF(IS_C.IDENTITY_ORDERED = 'YES', ' ORDER', ' NOORDER'))
-                            ELSE IS_C.DATA_TYPE_ALIAS END,
+                            ELSE COALESCE(IS_C.DATA_TYPE_ALIAS,IS_C.DATA_TYPE) END,
                 'customProperties',ARRAY_CONSTRUCT_COMPACT(
                     OBJECT_CONSTRUCT(
                         'property','ordinalPosition',    
@@ -278,6 +284,18 @@ def schema_properties_cleansing(
 
     return cleansed_properties
 
+def _get_ordinal_position_value(cpList: List[CustomProperty]) -> Any:
+    """Extract customProperties value where property == 'ordinalPosition'."""
+    for cp in cpList:
+        if cp.property == "ordinalPosition":
+            return int(cp.value)
+    return None
+
+
+def property_customs_ordinalPosition_sort(col: SchemaProperty) -> Any:
+        ord_val = _get_ordinal_position_value(col.customProperties)
+        return (ord_val, f"{col.name.lower()}")
+
 
 def import_Snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
     ## connect to snowflake and get cursor
@@ -333,6 +351,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
     ListPropertiesAdapter = TypeAdapter(List[SchemaProperty])
     DataQualityAdapter = TypeAdapter(List[DataQuality])
     schemas = []
+    enhanced_schemas = []
 
     for schema in resulsets["schemas"]:
         # for each schema we need to get the properties and quality information from the resultsets we fetched in parallel to optimize performance by avoiding nested loops and multiple iterations over the resultsets, we can filter the relevant information for each schema using list comprehensions which are optimized in python and will be much faster than nested loops especially when we have a large number of schemas and properties.
@@ -371,9 +390,12 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         ]
 
         schema.properties = schema_properties_cleansing(schema.properties, properties_tags, properties_quality)
+        schema.properties.sort(key=property_customs_ordinalPosition_sort)
+        enhanced_schemas.append(schema)
 
     # ODCS building
-    odcs.schema_ = schemas
+    enhanced_schemas.sort(key=lambda s: f'{s.physicalType.lower()}/{s.name.lower()}')
+    odcs.schema_ = enhanced_schemas
 
     return odcs
 
@@ -508,24 +530,3 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
     return conn
 
 
-def _get_ordinal_position_value(col: Dict[str, Any]) -> Any:
-    """Extract customProperties value where property == 'ordinalPosition'."""
-    for cp in col.get("customProperties") or []:
-        if isinstance(cp, dict) and cp.get("property") == "ordinalPosition":
-            return cp.get("value")
-    return None
-
-
-def sort_properties_by_ordinalPosition(properties: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    - Sorts 'properties' by property ordinalPosition value.
-    - Does NOT sort customProperties themselves.
-    """
-  
-    def col_key(col: Dict[str, Any]):
-        ord_val = _get_ordinal_position_value(col)
-        return (ord_val, f"{col.get('name').lower()}")
-
-    properties.sort(key=col_key)
-
-    return properties
