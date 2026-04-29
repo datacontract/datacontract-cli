@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, Role, SchemaProperty
 from pydantic import TypeAdapter
-from rich import table
 
 from build.lib.datacontract.imports.odcs_helper import create_property
 from datacontract.imports.importer import Importer
