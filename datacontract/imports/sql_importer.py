@@ -88,7 +88,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
             # table foreign keys were duplicating the referenced tables-- so only include tables with columns
             if columns:
-                primary_key_position = 1
+                column_primary_key_index = 1
                 for column in columns:
                     col_name = column.this.name
                     col_type = to_col_type(column, dialect)
@@ -99,6 +99,12 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                     is_primary_key = get_primary_key(column, primary_keys)
                     is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
                     tags = get_tags(column)
+
+                    # Primary key can be defined at the column level OR table level.  If defined at the table level
+                    # use the index rather than the position of the columns to define primary key position.
+                    primary_key_position = column_primary_key_index
+                    if is_primary_key and col_name in primary_keys:
+                        primary_key_position = primary_keys.index(col_name) + 1
 
                     prop = create_property(
                         name=col_name,
@@ -116,7 +122,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                     )
 
                     if is_primary_key:
-                        primary_key_position += 1
+                        column_primary_key_index += 1
 
                     properties.append(prop)
 
