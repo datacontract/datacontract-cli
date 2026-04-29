@@ -76,62 +76,65 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             table_name = table.this.name
             properties = []
 
-            primary_key_position = 1
-            for column in parsed.find_all(sqlglot.exp.ColumnDef):
-                if column.parent.this.name != table_name:
-                    continue
+            columns = [
+                column for column in parsed.find_all(sqlglot.exp.ColumnDef) if column.parent.this.name == table_name
+            ]
 
-                col_name = column.this.name
-                col_type = to_col_type(column, dialect)
-                logical_type, format = map_type_from_sql(col_type)
-                col_description = get_description(column)
-                max_length = get_max_length(column)
-                precision, scale = get_precision_scale(column)
-                is_primary_key = get_primary_key(column)
-                is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
-                tags = get_tags(column)
+            # table foreign keys were duplicating the referenced tables-- so only include tables with columns
+            if columns:
+                primary_key_position = 1
+                for column in columns:
+                    col_name = column.this.name
+                    col_type = to_col_type(column, dialect)
+                    logical_type, format = map_type_from_sql(col_type)
+                    col_description = get_description(column)
+                    max_length = get_max_length(column)
+                    precision, scale = get_precision_scale(column)
+                    is_primary_key = get_primary_key(column)
+                    is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+                    tags = get_tags(column)
 
-                prop = create_property(
-                    name=col_name,
-                    logical_type=logical_type,
-                    physical_type=col_type,
-                    description=col_description,
-                    max_length=max_length,
-                    precision=precision,
-                    scale=scale,
-                    format=format,
-                    primary_key=is_primary_key,
-                    primary_key_position=primary_key_position if is_primary_key else None,
-                    required=is_required if is_required else None,
-                    tags=tags,
+                    prop = create_property(
+                        name=col_name,
+                        logical_type=logical_type,
+                        physical_type=col_type,
+                        description=col_description,
+                        max_length=max_length,
+                        precision=precision,
+                        scale=scale,
+                        format=format,
+                        primary_key=is_primary_key,
+                        primary_key_position=primary_key_position if is_primary_key else None,
+                        required=is_required if is_required else None,
+                        tags=tags,
+                    )
+
+                    if is_primary_key:
+                        primary_key_position += 1
+
+                    properties.append(prop)
+
+                table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+
+                table_description = None
+                if table_comment_property:
+                    table_description = table_comment_property.this.this
+
+                table_tags = None
+                table_props = parsed.find(sqlglot.expressions.Properties)
+                if table_props:
+                    tags = table_props.find(sqlglot.expressions.Tags)
+                    if tags:
+                        table_tags = [str(t) for t in tags.expressions]
+
+                schema_obj = create_schema_object(
+                    name=table_name,
+                    physical_type="table",
+                    description=table_description,
+                    tags=table_tags,
+                    properties=properties,
                 )
-
-                if is_primary_key:
-                    primary_key_position += 1
-
-                properties.append(prop)
-
-            table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
-
-            table_description = None
-            if table_comment_property:
-                table_description = table_comment_property.this.this
-
-            table_tags = None
-            table_props = parsed.find(sqlglot.expressions.Properties)
-            if table_props:
-                tags = table_props.find(sqlglot.expressions.Tags)
-                if tags:
-                    table_tags = [str(t) for t in tags.expressions]
-
-            schema_obj = create_schema_object(
-                name=table_name,
-                physical_type="table",
-                description=table_description,
-                tags=table_tags,
-                properties=properties,
-            )
-            odcs.schema_.append(schema_obj)
+                odcs.schema_.append(schema_obj)
 
     return odcs
 
