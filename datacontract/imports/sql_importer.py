@@ -42,7 +42,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     dialect = to_dialect(import_args)
 
     try:
-        parsed = sqlglot.parse_one(sql=sql, read=dialect)
+        parsed_statements = sqlglot.parse(sql=sql, read=dialect)
     except Exception as e:
         logging.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
@@ -65,72 +65,73 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             "Update host, port, database, and schema in the output before use."
         )
 
-    tables = [
-        t
-        for t in parsed.find_all(sqlglot.expressions.Table)
-        if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
-    ]
+    for parsed in parsed_statements:
+        tables = [
+            t
+            for t in parsed.find_all(sqlglot.expressions.Table)
+            if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
+        ]
 
-    for table in tables:
-        table_name = table.this.name
-        properties = []
+        for table in tables:
+            table_name = table.this.name
+            properties = []
 
-        primary_key_position = 1
-        for column in parsed.find_all(sqlglot.exp.ColumnDef):
-            if column.parent.this.name != table_name:
-                continue
+            primary_key_position = 1
+            for column in parsed.find_all(sqlglot.exp.ColumnDef):
+                if column.parent.this.name != table_name:
+                    continue
 
-            col_name = column.this.name
-            col_type = to_col_type(column, dialect)
-            logical_type, format = map_type_from_sql(col_type)
-            col_description = get_description(column)
-            max_length = get_max_length(column)
-            precision, scale = get_precision_scale(column)
-            is_primary_key = get_primary_key(column)
-            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
-            tags = get_tags(column)
+                col_name = column.this.name
+                col_type = to_col_type(column, dialect)
+                logical_type, format = map_type_from_sql(col_type)
+                col_description = get_description(column)
+                max_length = get_max_length(column)
+                precision, scale = get_precision_scale(column)
+                is_primary_key = get_primary_key(column)
+                is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+                tags = get_tags(column)
 
-            prop = create_property(
-                name=col_name,
-                logical_type=logical_type,
-                physical_type=col_type,
-                description=col_description,
-                max_length=max_length,
-                precision=precision,
-                scale=scale,
-                format=format,
-                primary_key=is_primary_key,
-                primary_key_position=primary_key_position if is_primary_key else None,
-                required=is_required if is_required else None,
-                tags=tags,
+                prop = create_property(
+                    name=col_name,
+                    logical_type=logical_type,
+                    physical_type=col_type,
+                    description=col_description,
+                    max_length=max_length,
+                    precision=precision,
+                    scale=scale,
+                    format=format,
+                    primary_key=is_primary_key,
+                    primary_key_position=primary_key_position if is_primary_key else None,
+                    required=is_required if is_required else None,
+                    tags=tags,
+                )
+
+                if is_primary_key:
+                    primary_key_position += 1
+
+                properties.append(prop)
+
+            table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+
+            table_description = None
+            if table_comment_property:
+                table_description = table_comment_property.this.this
+
+            table_tags = None
+            table_props = parsed.find(sqlglot.expressions.Properties)
+            if table_props:
+                tags = table_props.find(sqlglot.expressions.Tags)
+                if tags:
+                    table_tags = [str(t) for t in tags.expressions]
+
+            schema_obj = create_schema_object(
+                name=table_name,
+                physical_type="table",
+                description=table_description,
+                tags=table_tags,
+                properties=properties,
             )
-
-            if is_primary_key:
-                primary_key_position += 1
-
-            properties.append(prop)
-
-        table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
-
-        table_description = None
-        if table_comment_property:
-            table_description = table_comment_property.this.this
-
-        table_tags = None
-        table_props = parsed.find(sqlglot.expressions.Properties)
-        if table_props:
-            tags = table_props.find(sqlglot.expressions.Tags)
-            if tags:
-                table_tags = [str(t) for t in tags.expressions]
-
-        schema_obj = create_schema_object(
-            name=table_name,
-            physical_type="table",
-            description=table_description,
-            tags=table_tags,
-            properties=properties,
-        )
-        odcs.schema_.append(schema_obj)
+            odcs.schema_.append(schema_obj)
 
     return odcs
 
@@ -308,6 +309,12 @@ def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
         return ("integer", None)
     elif sql_type_normed.endswith("integer"):
         return ("integer", None)
+    elif sql_type_normed.startswith("smallint"):
+        return ("integer", None)
+    elif re.search(r"^(small)?int(\(\d+\))?", sql_type_normed):         # Looking for format int(10)
+        return ("integer", None)
+    elif sql_type_normed.startswith("tinyint") and not sql_type_normed.startswith("tinyint(1)"):
+        return ("integer", None)
     elif sql_type_normed.startswith("float"):
         return ("number", None)
     elif sql_type_normed.startswith("double"):
@@ -322,9 +329,13 @@ def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
         return ("number", None)
     elif sql_type_normed.startswith("money"):
         return ("number", None)
+    elif re.search(r"^bigint(\(\d+\))?", sql_type_normed):         # Looking for format bigint(10)
+        return ("number", None)
     elif sql_type_normed.startswith("bool"):
         return ("boolean", None)
     elif sql_type_normed.startswith("bit"):
+        return ("boolean", None)
+    elif sql_type_normed.startswith("tinyint(1)"):
         return ("boolean", None)
     elif sql_type_normed.startswith("binary"):
         return ("string", "binary")
