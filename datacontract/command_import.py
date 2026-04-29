@@ -22,6 +22,10 @@ output_option = Annotated[
         help="File path where the Data Contract will be saved. If not provided, it will be printed to stdout."
     ),
 ]
+database_option = Annotated[
+    Optional[str],
+    typer.Option("--database", help="The database name."),
+]
 schema_option = Annotated[
     Optional[str],
     typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
@@ -424,4 +428,25 @@ def import_excel(
     """Import a data contract from an Excel file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(format="excel", source=source, schema=schema, owner=owner, id=id)
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="snowflake",
+    epilog="Example: datacontract import snowflake --source account --database DEMO_DB --schema PUBLIC --output datacontract.yaml",
+)
+def import_snowflake(
+    source: Annotated[Optional[str], typer.Option(help="Snowflake account name.")] = None,
+    output: output_option = None,
+    database: database_option = None,
+    schema: schema_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a Snowflake workspace."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)

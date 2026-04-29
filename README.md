@@ -861,6 +861,16 @@ For example:
 | `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
 | `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
 
+##### EV Authentication options
+
+| Soda optionnal parameter | Environment Variable                            |
+|--------------------------|-------------------------------------------------|
+| `authenticator`          | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR`          |
+| `private_key`            | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`            |
+| `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
+| `private_key_path`       | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`       |
+
+
 Beware, that parameters:
 * `account`
 * `database`
@@ -1635,25 +1645,89 @@ For more information about the Excel template structure, visit the [ODCS Excel T
  Create a data contract from a source format.                                                       
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                      │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ sql         Import a data contract from a SQL DDL file.                                          │
-│ avro        Import a data contract from an Avro schema file.                                     │
-│ dbt         Import a data contract from a dbt manifest file.                                     │
-│ dbml        Import a data contract from a DBML file.                                             │
-│ glue        Import a data contract from AWS Glue.                                                │
-│ bigquery    Import a data contract from BigQuery.                                                │
-│ unity       Import a data contract from Databricks Unity Catalog.                                │
-│ jsonschema  Import a data contract from a JSON Schema file.                                      │
-│ json        Import a data contract from a JSON file.                                             │
-│ odcs        Import a data contract from an ODCS file.                                            │
-│ parquet     Import a data contract from a Parquet file.                                          │
-│ csv         Import a data contract from a CSV file.                                              │
-│ protobuf    Import a data contract from a Protobuf schema file.                                  │
-│ spark       Import a data contract from a Spark schema.                                          │
-│ iceberg     Import a data contract from an Iceberg schema.                                       │
-│ excel       Import a data contract from an Excel file.                                           │
+│ *  --format                                 [sql|avro|dbt|dbml|glue|  The format of the source   │
+│                                             jsonschema|json|bigquery  file.                      │
+│                                             |odcs|unity|spark|iceber  [default: None]            │
+│                                             g|parquet|csv|protobuf|e  [required]                 │
+│                                             xcel|snowflake]                                      │
+│    --output                                 PATH                      Specify the file path      │
+│                                                                       where the Data Contract    │
+│                                                                       will be saved. If no path  │
+│                                                                       is provided, the output    │
+│                                                                       will be printed to stdout. │
+│                                                                       [default: None]            │
+│    --source                                 TEXT                      The path to the file that  │
+│                                                                       should be imported.        │
+│                                                                       also snowflake account     │
+│                                                                       [default: None]            │
+│    --dialect                                TEXT                      The SQL dialect.           │
+│                                                                       Accepted values: postgres, │
+│                                                                       tsql, bigquery, snowflake, │
+│                                                                       databricks, spark, duckdb. │
+│                                                                       [default: None]            │
+│    --glue-table                             TEXT                      List of table ids to       │
+│                                                                       import from the Glue       │
+│                                                                       Database (repeat for       │
+│                                                                       multiple table ids, leave  │
+│                                                                       empty for all tables in    │
+│                                                                       the dataset).              │
+│                                                                       [default: None]            │
+│    --bigquery-project                       TEXT                      The bigquery project id.   │
+│                                                                       [default: None]            │
+│    --bigquery-dataset                       TEXT                      The bigquery dataset id.   │
+│                                                                       [default: None]            │
+│    --bigquery-table                         TEXT                      List of table ids to       │
+│                                                                       import from the bigquery   │
+│                                                                       API (repeat for multiple   │
+│                                                                       table ids, leave empty for │
+│                                                                       all tables in the          │
+│                                                                       dataset).                  │
+│                                                                       [default: None]            │
+│    --unity-table-full-name                  TEXT                      Full name of a table in    │
+│                                                                       the unity catalog          │
+│                                                                       [default: None]            │
+│    --dbt-model                              TEXT                      List of models names to    │
+│                                                                       import from the dbt        │
+│                                                                       manifest file (repeat for  │
+│                                                                       multiple models names,     │
+│                                                                       leave empty for all models │
+│                                                                       in the dataset).           │
+│                                                                       [default: None]            │
+│    --dbml-schema                            TEXT                      List of schema names to    │
+│                                                                       import from the DBML file  │
+│                                                                       (repeat for multiple       │
+│                                                                       schema names, leave empty  │
+│                                                                       for all tables in the      │
+│                                                                       file).                     │
+│                                                                       [default: None]            │
+│    --dbml-table                             TEXT                      List of table names to     │
+│                                                                       import from the DBML file  │
+│                                                                       (repeat for multiple table │
+│                                                                       names, leave empty for all │
+│                                                                       tables in the file).       │
+│                                                                       [default: None]            │
+│    --iceberg-table                          TEXT                      Table name to assign to    │
+│                                                                       the model created from the │
+│                                                                       Iceberg schema.            │
+│                                                                       [default: None]            │
+│    --template                               TEXT                      The location (url or path) │
+│                                                                       of the ODCS template       │
+│                                                                       [default: None]            │
+│    --schema                                 TEXT                      The location (url or path) │
+│                                                                       of the ODCS JSON Schema    │
+│                                                                       [default: None]            │
+│    --owner                                  TEXT                      The owner or team          │
+│                                                                       responsible for managing   │
+│                                                                       the data contract.         │
+│                                                                       [default: None]            │
+│    --id                                     TEXT                      The identifier for the the │
+│                                                                       data contract.             │
+│    --database                               TEXT                      Snowflake target database  │
+│                                                                       [default: None]            │
+│    --debug                    --no-debug                              Enable debug logging       │
+│                                                                       [default: no-debug]        │
+│    --help                                                             Show this message and      │
+│                                                                       exit.                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml    
@@ -1876,7 +1950,19 @@ Example:
 datacontract import protobuf --source "test.proto"
 ```
 
-</details>
+#### snowflake
+
+Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
+Multiple authentification are supported, 
+login/password using the `DATACONTRACT_SNOWFLAKE_ ...` test environement variable are setup,
+MFA using external browser is selected when `DATACONTRACT_SNOWFLAKE_PASSWORD` is missing
+TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CONNECTION_NAME` environment variable is defined
+
+Example:
+
+```bash
+datacontract import --format snowflake --source account.canada-central.azure --database databaseName --schema schemaName
+```
 
 
 ### catalog
