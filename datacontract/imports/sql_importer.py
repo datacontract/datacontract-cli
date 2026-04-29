@@ -311,7 +311,7 @@ def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
         return ("integer", None)
     elif sql_type_normed.startswith("smallint"):
         return ("integer", None)
-    elif re.search(r"^(small)?int(\(\d+\))?", sql_type_normed):         # Looking for format int(10)
+    elif re.search(r"^(small)?int(\(\d+\))?(\sunsigned)?$", sql_type_normed):         # Looking for format int(10)
         return ("integer", None)
     elif sql_type_normed.startswith("tinyint") and not sql_type_normed.startswith("tinyint(1)"):
         return ("integer", None)
