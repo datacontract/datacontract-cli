@@ -33,6 +33,7 @@ def create_odcs(
 def create_schema_object(
     name: str,
     physical_type: str = "table",
+    physical_name: str = None,
     description: str = None,
     business_name: str = None,
     properties: List[SchemaProperty] = None,
@@ -42,10 +43,11 @@ def create_schema_object(
     """Create a SchemaObject (equivalent to DCS Model)."""
     schema = SchemaObject(
         name=name,
-        physicalName=name,
         logicalType="object",
         physicalType=physical_type,
     )
+    if physical_name:
+        schema.physicalName = physical_name
     if description:
         schema.description = description
     if business_name:
@@ -143,10 +145,6 @@ def create_property(
         custom_properties.setdefault("scale", scale)
     if custom_properties:
         prop.customProperties = [CustomProperty(property=k, value=v) for k, v in custom_properties.items()]
-    if precision is not None:
-        prop.customProperties.append(CustomProperty(property="precision", value=precision))    
-    if scale is not None:
-        prop.customProperties.append(CustomProperty(property="scale", value=scale))
 
     # Data quality
     if quality:
@@ -172,6 +170,7 @@ def create_server(
     topic: str = None,
     format: str = None,
     roles: List[Role] = None,
+    warehouse: str = None,
 ) -> Server:
     """Create a Server object."""
     server = Server(server=name, type=server_type)
@@ -203,6 +202,8 @@ def create_server(
         server.format = format
     if roles:
         server.roles = roles
+    if warehouse:
+        server.warehouse = warehouse
     return server
 
 

@@ -8,9 +8,8 @@ from typing import Any, Dict, List
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, Role, SchemaProperty
 from pydantic import TypeAdapter
 
-from build.lib.datacontract.imports.odcs_helper import create_property
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_schema_object, create_server
+from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
 
@@ -54,7 +53,7 @@ def information_schema_tables_query() -> str:
             TABLE_NAME,
             UPPER(TABLE_NAME) as physical_name,
             NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
-            lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType
+            lower(REPLACE(TABLE_TYPE,'BASE ','')) as physical_Type
         FROM INFORMATION_SCHEMA.TABLES
         WHERE CURRENT_SCHEMA() = TABLE_SCHEMA 
         AND CURRENT_DATABASE() = TABLE_CATALOG;
@@ -151,6 +150,8 @@ def local_data_quality_monitoring_results_query() -> str:
             ARRAY_AGG(quality) as QUALITY
         FROM (
             SELECT  
+                TABLE_DATABASE,
+                TABLE_SCHEMA,
                 TABLE_NAME, 
                 IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 
                         AND ARGUMENT_TYPES[0]::string = 'COLUMN', 
@@ -183,10 +184,10 @@ def local_data_quality_monitoring_results_query() -> str:
             WHERE TABLE_DATABASE = CURRENT_DATABASE() 
             AND TABLE_SCHEMA = CURRENT_SCHEMA()
             QUALIFY ROW_NUMBER() 
-                    OVER (PARTITION BY TABLE_NAME, ARGUMENT_TYPES, METRIC_NAME, ARGUMENT_NAMES 
+                    OVER (PARTITION BY TABLE_DATABASE,TABLE_SCHEMA, TABLE_NAME, ARGUMENT_TYPES, METRIC_NAME, ARGUMENT_NAMES 
                             ORDER BY MEASUREMENT_TIME DESC) = 1
             ) as DMF_METRICS_RESULT
-            GROUP BY TABLE_NAME, TYPES, COLUMN_NAME;
+            GROUP BY TABLE_DATABASE, TABLE_SCHEMA,TABLE_NAME, TYPES, COLUMN_NAME;
 """
 
 
@@ -228,7 +229,7 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
 
 
 def schema_properties_cleansing(
-    properties: List[Dict[str, Any]], propertiesTags: List[Dict[str, Any]], propertiesQuality: List[Dict[str, Any]]
+    properties: List[SchemaProperty], propertiesTags: List[Dict[str, Any]], propertiesQuality: List[Dict[str, Any]]
 ) -> List[SchemaProperty]:
     """
     Cleanses the properties list by removing None values and ensuring all required fields are present.
@@ -238,37 +239,39 @@ def schema_properties_cleansing(
     cleansed_properties = []
 
     for prop in properties:
-        if prop.get("name") is None or prop.get("logicalType") is None:
+        if prop.name is None or prop.logicalType is None:
             continue  # Skip properties that don't have required fields
 
-        logical_type, format = map_type_from_sql(prop.get("logicalType"))
-        max_length = prop.get("logicalTypeOptions", {}).get("maxLength", None)
+        logical_type, format = map_type_from_sql(prop.logicalType)
+        max_length = prop.logicalTypeOptions.get("maxLength", None)  if prop.logicalTypeOptions else None
 
-        precision = [cp.value for cp in prop.get("customProperties", []) if cp.property == "precision"]
-        scale = [cp.value for cp in prop.get("customProperties", []) if cp.property == "scale"]
+        precision = [cp.value for cp in prop.customProperties if cp.property == "precision"]
+        scale = [cp.value for cp in prop.customProperties  if cp.property == "scale"]
 
         tags = [
             tag["TAGS"]
             for tag in propertiesTags
-            if tag["COLUMN_NAME"] == prop["name"] and tag["COLUMN_NAME"] is not None
+            if tag["COLUMN_NAME"] == prop.name and tag["COLUMN_NAME"] is not None
         ]
         quality = [
-            q["QUALITY"] for q in propertiesQuality if q["COLUMN_NAME"] == prop["name"] and q["COLUMN_NAME"] is not None
+            q["QUALITY"] for q in propertiesQuality if q["COLUMN_NAME"] == prop.name and q["COLUMN_NAME"] is not None
         ]
 
+
+
         prop = create_property(
-            name=prop["name"],
+            name=prop.name,
             logical_type=logical_type,
-            physical_type=prop.get("physicalType"),
-            description=prop.get("description"),
+            physical_type=prop.physicalType,
+            description=prop.description,
             max_length=max_length,
             precision=precision[0] if len(precision) > 0 else None,
             scale=scale[0] if len(scale) > 0 else None,
             format=format,
-            required=prop.get("required", False),
+            required=prop.required,
             tags=tagsAdapter.validate_json(tags[0] if len(tags) > 0 else "[]"),
-            custom_properties=prop.get("customProperties", []),
-            id=prop.get("id", None),
+            custom_properties={cp.property: cp.value for cp in prop.customProperties},
+            id=prop.id,
             quality=qualityAdapter.validate_json(quality[0] if len(quality) > 0 else "[]"),
         )
         cleansed_properties.append(prop)
@@ -312,7 +315,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         server = create_server(
             name="workspace",
             server_type="snowflake",
-            environment=["TABLE_CATALOG"].split("_")[
+            environment=row["TABLE_CATALOG"].split("_")[
                 0
             ].lower(),  # we don't have environment info in snowflake metadata, so we default to first part of the database name before the first underscore which is usually the organization name in snowflake, e.g. PRD_, QA_, DEV_ etc. This is of course a heuristic and might not work for everyone but it's the best we can do with the available metadata, and it can be easily overridden by the user if needed.
             account=account,
@@ -324,14 +327,14 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
             roles=ListRoleAdapter.validate_json(row["ROLES"]),
         )
     # only one server in snowflake, we can safely assign it to the ODCS
-    odcs.servers_ = [server]
+    odcs.servers = [server]
 
-    # objects
+    # schemas
     ListPropertiesAdapter = TypeAdapter(List[SchemaProperty])
     DataQualityAdapter = TypeAdapter(List[DataQuality])
     schemas = []
 
-    for schema in resulsets["objects"]:
+    for schema in resulsets["schemas"]:
         # for each schema we need to get the properties and quality information from the resultsets we fetched in parallel to optimize performance by avoiding nested loops and multiple iterations over the resultsets, we can filter the relevant information for each schema using list comprehensions which are optimized in python and will be much faster than nested loops especially when we have a large number of schemas and properties.
         listOfProperties = [
             prop["PROPERTIES"] for prop in resulsets["properties"] if prop["TABLE_NAME"] == schema["TABLE_NAME"]
