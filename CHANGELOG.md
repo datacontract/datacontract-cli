@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added additional type conversions for mysql for BIGINT, TINYINT, SMALLINT, and handling of int(10) format
+- Add support for composite primary keys during SQL import
 
 ### Fixed
 - `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)

@@ -31,6 +31,8 @@ schema:
   - name: field_primary_key
     physicalType: DECIMAL(38, 0)
     description: Primary key
+    primaryKey: true
+    primaryKeyPosition: 1
     customProperties:
     - property: precision
       value: 38

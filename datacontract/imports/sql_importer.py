@@ -80,6 +80,12 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 column for column in parsed.find_all(sqlglot.exp.ColumnDef) if column.parent.this.name == table_name
             ]
 
+            primary_keys = [
+                expression.name
+                for key in parsed.find_all(sqlglot.expressions.PrimaryKey)
+                for expression in key.expressions
+            ]
+
             # table foreign keys were duplicating the referenced tables-- so only include tables with columns
             if columns:
                 primary_key_position = 1
@@ -90,7 +96,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                     col_description = get_description(column)
                     max_length = get_max_length(column)
                     precision, scale = get_precision_scale(column)
-                    is_primary_key = get_primary_key(column)
+                    is_primary_key = get_primary_key(column, primary_keys)
                     is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
                     tags = get_tags(column)
 
@@ -139,7 +145,12 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     return odcs
 
 
-def get_primary_key(column) -> bool | None:
+def get_primary_key(column, table_primary_keys=None) -> bool | None:
+    col_name = column.this.name
+    if table_primary_keys is None:
+        table_primary_keys = []
+    if col_name in table_primary_keys:
+        return True
     if column.find(sqlglot.exp.PrimaryKeyColumnConstraint) is not None:
         return True
     if column.find(sqlglot.exp.PrimaryKey) is not None:
