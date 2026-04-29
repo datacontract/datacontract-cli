@@ -4,7 +4,9 @@ from typing import Any, Dict, List
 
 from open_data_contract_standard.model import (
     CustomProperty,
+    DataQuality,
     OpenDataContractStandard,
+    Role,
     SchemaObject,
     SchemaProperty,
     Server,
@@ -35,6 +37,7 @@ def create_schema_object(
     business_name: str = None,
     properties: List[SchemaProperty] = None,
     tags: List[str] = None,
+    quality: List[DataQuality] = None,
 ) -> SchemaObject:
     """Create a SchemaObject (equivalent to DCS Model)."""
     schema = SchemaObject(
@@ -51,6 +54,8 @@ def create_schema_object(
         schema.properties = properties
     if tags:
         schema.tags = tags
+    if quality:
+        schema.quality = quality    
     return schema
 
 
@@ -79,9 +84,11 @@ def create_property(
     properties: List["SchemaProperty"] = None,
     items: "SchemaProperty" = None,
     custom_properties: Dict[str, Any] = None,
+    id: str = None,
+    quality: List[DataQuality] = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field)."""
-    prop = SchemaProperty(name=name)
+    prop = SchemaProperty(name=name, id=id)
     prop.logicalType = logical_type
 
     if physical_type:
@@ -122,10 +129,6 @@ def create_property(
         logical_type_options["exclusiveMinimum"] = exclusive_minimum
     if exclusive_maximum is not None:
         logical_type_options["exclusiveMaximum"] = exclusive_maximum
-    if precision is not None:
-        logical_type_options["precision"] = precision
-    if scale is not None:
-        logical_type_options["scale"] = scale
     if format:
         logical_type_options["format"] = format
     if logical_type_options:
@@ -134,6 +137,14 @@ def create_property(
     # Custom properties
     if custom_properties:
         prop.customProperties = [CustomProperty(property=k, value=v) for k, v in custom_properties.items()]
+    if precision is not None:
+        prop.customProperties.append(CustomProperty(property="precision", value=precision))    
+    if scale is not None:
+        prop.customProperties.append(CustomProperty(property="scale", value=scale))
+
+    # Data quality
+    if quality:
+        prop.quality = quality
 
     return prop
 
@@ -154,6 +165,7 @@ def create_server(
     catalog: str = None,
     topic: str = None,
     format: str = None,
+    roles: List[Role] = None,
 ) -> Server:
     """Create a Server object."""
     server = Server(server=name, type=server_type)
@@ -183,6 +195,8 @@ def create_server(
         server.topic = topic
     if format:
         server.format = format
+    if roles:
+        server.roles = roles
     return server
 
 

@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-import json
 import os
-from collections import OrderedDict
+import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-import yaml
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, Role, SchemaProperty
+from pydantic import TypeAdapter
+from rich import table
 
+from build.lib.datacontract.imports.odcs_helper import create_property
 from datacontract.imports.importer import Importer
+from datacontract.imports.odcs_helper import create_odcs, create_schema_object, create_server
+from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
 
 
@@ -23,11 +26,262 @@ class SnowflakeImporter(Importer):
             )
 
 
+def information_schema_table_privileges_query() -> str:
+    return """
+        SELECT 
+            TABLE_CATALOG,                
+            TABLE_SCHEMA, 
+            CURRENT_WAREHOUSE() as WAREHOUSE,
+            ARRAY_AGG(
+                OBJECT_CONSTRUCT(
+                    'role', GRANTEE,
+                    'access',LOWER(PRIVILEGE_TYPE),
+                    'firstLevelApprovers', GRANTOR
+                    )
+            )   as Roles
+        FROM information_schema.table_privileges
+        WHERE GRANTED_TO = 'ROLE' 
+        AND TABLE_CATALOG = CURRENT_DATABASE()
+        AND TABLE_SCHEMA = CURRENT_SCHEMA()  
+                
+        GROUP BY TABLE_CATALOG, TABLE_SCHEMA;
+    """
+
+
+def information_schema_tables_query() -> str:
+    return """
+        SELECT 
+            TABLE_SCHEMA, 
+            TABLE_NAME,
+            UPPER(TABLE_NAME) as physical_name,
+            NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
+            lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE CURRENT_SCHEMA() = TABLE_SCHEMA 
+        AND CURRENT_DATABASE() = TABLE_CATALOG;
+    """
+
+
+def information_schema_columns_query() -> str:
+    return """
+                SELECT 
+            IS_C.TABLE_CATALOG,
+            IS_C.TABLE_SCHEMA,
+            IS_C.TABLE_NAME, -- schema.name
+            ARRAY_AGG(
+                OBJECT_CONSTRUCT( 
+                'id', IS_C.COLUMN_NAME ||'_propId', 
+                'name', IS_C.COLUMN_NAME ,-- property.name
+                'description', COALESCE(
+                                GET_PATH(TRY_PARSE_JSON(IS_C.COMMENT),'description'), 
+                                IS_C.COMMENT) ,
+                'required', IFF(IS_C.IS_NULLABLE = 'YES', false, true), -- property.Required
+                'unique', IFF(IS_C.IS_IDENTITY = 'YES', true, false), -- property.unique
+                'logicalType', COALESCE(IS_C.DATA_TYPE,IS_C.DATA_TYPE_ALIAS),
+                'logicalTypeOptions', 
+                                        IFF(  IS_C.CHARACTER_MAXIMUM_LENGTH IS NOT NULL,
+                                            OBJECT_CONSTRUCT('maxLength',IS_C.CHARACTER_MAXIMUM_LENGTH)
+                                            , NULL), -- property.Logical Type Option . 
+                'physicalType', CASE WHEN IS_C.IS_IDENTITY = 'YES' THEN 
+                            CONCAT(COALESCE(IS_C.DATA_TYPE_ALIAS,IS_C.DATA_TYPE),
+                                'AUTOINCREMENENT START ', IS_C.IDENTITY_START, ' INCREMENT ', IS_C.IDENTITY_INCREMENT, 
+                                IFF(IS_C.IDENTITY_ORDERED = 'YES', ' ORDER', ' NOORDER'))
+                            ELSE IS_C.DATA_TYPE_ALIAS END,
+                'customProperties',ARRAY_CONSTRUCT_COMPACT(
+                    OBJECT_CONSTRUCT(
+                        'property','ordinalPosition',    
+                        'value', IS_C.ORDINAL_POSITION
+                    ),
+                    IFF (IS_C.COLUMN_DEFAULT IS NOT NULL,
+                        OBJECT_CONSTRUCT(
+                        'property','default',    
+                        'value', IS_C.COLUMN_DEFAULT
+                    ), NULL),
+                    IFF(IS_C.NUMERIC_PRECISION IS NOT NULL OR IS_C.DATETIME_PRECISION IS NOT NULL,
+                        OBJECT_CONSTRUCT(
+                        'property','precision',    
+                        'value', COALESCE(IS_C.NUMERIC_PRECISION, IS_C.DATETIME_PRECISION)
+                    ), NULL),
+                    IFF(IS_C.NUMERIC_SCALE IS NOT NULL,
+                        OBJECT_CONSTRUCT(
+                        'property','scale',    
+                        'value', IS_C.NUMERIC_SCALE
+                    ), NULL),
+                    IFF( IS_C.CHARACTER_SET_NAME IS NOT NULL,
+                        OBJECT_CONSTRUCT(
+                        'property','characterSet',    
+                        'value', IS_C.CHARACTER_SET_NAME
+                    ), NULL),
+                    IFF( IS_C.COLLATION_NAME IS NOT NULL,
+                        OBJECT_CONSTRUCT(
+                        'property','collation',    
+                        'value', IS_C.COLLATION_NAME
+                    ), NULL)
+                    )               
+                ) ) as properties
+        FROM INFORMATION_SCHEMA.COLUMNS as IS_C 
+        WHERE IS_C.TABLE_CATALOG = CURRENT_DATABASE()
+        AND IS_C.TABLE_SCHEMA = CURRENT_SCHEMA()
+        GROUP BY IS_C.TABLE_CATALOG, IS_C.TABLE_SCHEMA, IS_C.TABLE_NAME;
+    """
+
+
+def account_usage_tags_references_query() -> str:
+    return """
+        SELECT 
+            OBJECT_DATABASE,
+            OBJECT_SCHEMA, 
+            OBJECT_NAME, 
+            COLUMN_NAME, 
+            ARRAY_AGG(CONCAT(TAG_NAME,'=',TAG_VALUE)) as TAGS
+        FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+        WHERE OBJECT_SCHEMA = CURRENT_SCHEMA()
+        AND OBJECT_DATABASE = CURRENT_DATABASE()
+        GROUP BY OBJECT_DATABASE, OBJECT_SCHEMA, OBJECT_NAME, COLUMN_NAME;
+    """
+
+
+def local_data_quality_monitoring_results_query() -> str:
+    return """
+        SELECT 
+            TABLE_DATABASE,
+            TABLE_SCHEMA,
+            TABLE_NAME, 
+            TYPES, 
+            COLUMN_NAME, 
+            ARRAY_AGG(quality) as QUALITY
+        FROM (
+            SELECT  
+                TABLE_NAME, 
+                IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 
+                        AND ARGUMENT_TYPES[0]::string = 'COLUMN', 
+                            'COLUMN', 'RECORD') as TYPES , 
+                ARRAY_TO_STRING(ARGUMENT_NAMES, ',') as COLUMN_NAME,   
+                OBJECT_CONSTRUCT(
+                'id', CONCAT(LOWER(TABLE_NAME),'_',
+                                LOWER(
+                                    IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 
+                                            AND ARGUMENT_TYPES[0]::string = 'COLUMN', 
+                                                'COLUMN', 'RECORD')
+                                ),
+                            '_',
+                            LOWER(METRIC_NAME),
+                            '_',
+                            LOWER(ARRAY_TO_STRING(ARGUMENT_NAMES, ',')),
+                            '_id'),
+                'metric', COALESCE(ODCS_RULES.odcs_metric, METRIC_NAME),
+                COALESCE(odcs_operator,'mustBe'), VALUE
+                ) as quality,
+            FROM SNOWFLAKE.LOCAL.DATA_QUALITY_MONITORING_RESULTS
+            -- https://bitol-io.github.io/open-data-contract-standard/latest/data-quality/#metrics
+            LEFT JOIN (VALUES('NULL_COUNT', 'nullValues', 'mustBe'), 
+                            ('BLANK_COUNT','missingValues', 'mustBe'), 
+                            ('ROW_COUNT', 'rowCount','mustBeGreaterOrEqualTo'),
+                            ('ACCEPTED_VALUES', 'invalidValues','mustBeLessThan'),
+                            ('DUPLICATE_COUNT', 'duplicateValues','mustBeLessThan')                 
+                            ) as ODCS_RULES(snowflake_metricName, odcs_metric, odcs_operator) 
+                    ON METRIC_NAME = snowflake_metricName
+            WHERE TABLE_DATABASE = CURRENT_DATABASE() 
+            AND TABLE_SCHEMA = CURRENT_SCHEMA()
+            QUALIFY ROW_NUMBER() 
+                    OVER (PARTITION BY TABLE_NAME, ARGUMENT_TYPES, METRIC_NAME, ARGUMENT_NAMES 
+                            ORDER BY MEASUREMENT_TIME DESC) = 1
+            ) as DMF_METRICS_RESULT
+            GROUP BY TABLE_NAME, TYPES, COLUMN_NAME;
+"""
+
+
+def import_information_schema(conn) -> Dict[str, List[Dict]]:
+    from snowflake.connector import DictCursor
+    from snowflake.connector.constants import QueryStatus
+
+    query_pool = {}
+    with conn.cursor(DictCursor) as cur:
+        ##Run all queries in parallel to optimize performance
+        cur.execute_async(information_schema_table_privileges_query())
+        query_pool["server"] = str(cur.sfqid)
+
+        cur.execute_async(information_schema_tables_query())
+        query_pool["schemas"] = str(cur.sfqid)
+
+        cur.execute_async(information_schema_columns_query())
+        query_pool["properties"] = str(cur.sfqid)
+
+        cur.execute_async(account_usage_tags_references_query())
+        query_pool["tags"] = str(cur.sfqid)
+
+        cur.execute_async(local_data_quality_monitoring_results_query())
+        query_pool["quality"] = str(cur.sfqid)
+
+    # wait for all queries to finish before fetching results to optimize performance by running queries in parallel
+    for qid in query_pool.values():
+        while conn.get_query_status(qid) not in [QueryStatus.SUCCESS, QueryStatus.FAILED_WITH_ERROR]:
+            time.sleep(0.2)
+
+    # load resultsets into a dict of name to resultset to optimize performance by fetching results
+    resultsets = {}
+    for name, qid in query_pool.items():
+        with conn.cursor(DictCursor) as cur:
+            cur.get_results_from_sfqid(qid)
+            resultsets[name] = cur.fetchall()
+
+    return resultsets
+
+
+def schema_properties_cleansing(
+    properties: List[Dict[str, Any]], propertiesTags: List[Dict[str, Any]], propertiesQuality: List[Dict[str, Any]]
+) -> List[SchemaProperty]:
+    """
+    Cleanses the properties list by removing None values and ensuring all required fields are present.
+    """
+    tagsAdapter = TypeAdapter(list[str])
+    qualityAdapter = TypeAdapter(list[DataQuality])
+    cleansed_properties = []
+
+    for prop in properties:
+        if prop.get("name") is None or prop.get("logicalType") is None:
+            continue  # Skip properties that don't have required fields
+
+        logical_type, format = map_type_from_sql(prop.get("logicalType"))
+        max_length = prop.get("logicalTypeOptions", {}).get("maxLength", None)
+
+        precision = [cp.value for cp in prop.get("customProperties", []) if cp.property == "precision"]
+        scale = [cp.value for cp in prop.get("customProperties", []) if cp.property == "scale"]
+
+        tags = [
+            tag["TAGS"]
+            for tag in propertiesTags
+            if tag["COLUMN_NAME"] == prop["name"] and tag["COLUMN_NAME"] is not None
+        ]
+        quality = [
+            q["QUALITY"] for q in propertiesQuality if q["COLUMN_NAME"] == prop["name"] and q["COLUMN_NAME"] is not None
+        ]
+
+        prop = create_property(
+            name=prop["name"],
+            logical_type=logical_type,
+            physical_type=prop.get("physicalType"),
+            description=prop.get("description"),
+            max_length=max_length,
+            precision=precision[0] if len(precision) > 0 else None,
+            scale=scale[0] if len(scale) > 0 else None,
+            format=format,
+            required=prop.get("required", False),
+            tags=tagsAdapter.validate_json(tags[0] if len(tags) > 0 else "[]"),
+            custom_properties=prop.get("customProperties", []),
+            id=prop.get("id", None),
+            quality=qualityAdapter.validate_json(quality[0] if len(quality) > 0 else "[]"),
+        )
+        cleansed_properties.append(prop)
+
+    return cleansed_properties
+
+
 def import_Snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
     ## connect to snowflake and get cursor
     conn = snowflake_cursor(account, database, schema)
     try:
-        # To catch double_quoted identifier
+        # To catch incomplete installation of snowflake extra which will cause the connect import to succeed but fail later when trying to catch ProgrammingError for schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
         from snowflake.connector.errors import ProgrammingError
     except ImportError as e:
         raise DataContractException(
@@ -39,6 +293,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
             original_exception=e,
         )
 
+    # Define Database and Schema Context for the import, to avoid having to specify it in every query and to catch double_quoted identifier issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
     with conn.cursor() as cur:
         try:
             cur.execute(f"USE SCHEMA {database}.{schema}")
@@ -48,284 +303,77 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
             cur.execute(f'USE SCHEMA {database}."{schema}"')
             schema_identifier = f'"{schema}"'
 
-        cur.execute(f"SHOW COLUMNS IN SCHEMA {database}.{schema_identifier}")
-        schema_sfqid = str(cur.sfqid)
-        cur.execute(f"SHOW PRIMARY KEYS IN SCHEMA {database}.{schema_identifier}")
-        businessKey_sfqid = str(cur.sfqid)
-        # -- AS
-        # SET(col, pk) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));"
-        cur.execute_async(snowflake_query(account, schema, schema_sfqid, businessKey_sfqid))
-        cur.get_results_from_sfqid(cur.sfqid)
-        # extract and save ddl script into sql file
-        json_contract = cur.fetchall()
+    # get all information from information_schema in parallel to optimize performance
+    resulsets = import_information_schema(conn)
 
-        # Try to Preserve order when dumping to yaml properties as columns order matters
-        yaml.add_representer(dict, map_representer, Dumper=yaml.Dumper)
-        yaml.add_representer(OrderedDict, map_representer, Dumper=yaml.Dumper)
+    odcs = create_odcs()
+    # server
+    ListRoleAdapter = TypeAdapter(List[Role])
+    for row in resulsets["server"]:
+        server = create_server(
+            name="workspace",
+            server_type="snowflake",
+            environment=["TABLE_CATALOG"].split("_")[
+                0
+            ].lower(),  # we don't have environment info in snowflake metadata, so we default to first part of the database name before the first underscore which is usually the organization name in snowflake, e.g. PRD_, QA_, DEV_ etc. This is of course a heuristic and might not work for everyone but it's the best we can do with the available metadata, and it can be easily overridden by the user if needed.
+            account=account,
+            host=f"{account}.azure.snowflakecomputing.com",
+            database=row["TABLE_CATALOG"],
+            schema=schema_identifier,
+            warehouse=row["WAREHOUSE"],
+            port=443,
+            roles=ListRoleAdapter.validate_json(row["ROLES"]),
+        )
+    # only one server in snowflake, we can safely assign it to the ODCS
+    odcs.servers_ = [server]
 
-        if len(json_contract) == 0 or len(json_contract[0]) == 0:
-            raise DataContractException(
-                type="import",
-                result="failed",
-                name="snowflake import",
-                reason=f"No data contract returned from schema {schema} in database {database} please check connectivity and schema existence",
-                engine="datacontract",
+    # objects
+    ListPropertiesAdapter = TypeAdapter(List[SchemaProperty])
+    DataQualityAdapter = TypeAdapter(List[DataQuality])
+    schemas = []
+
+    for schema in resulsets["objects"]:
+        # for each schema we need to get the properties and quality information from the resultsets we fetched in parallel to optimize performance by avoiding nested loops and multiple iterations over the resultsets, we can filter the relevant information for each schema using list comprehensions which are optimized in python and will be much faster than nested loops especially when we have a large number of schemas and properties.
+        listOfProperties = [
+            prop["PROPERTIES"] for prop in resulsets["properties"] if prop["TABLE_NAME"] == schema["TABLE_NAME"]
+        ]
+        listOfDataQuality = [
+            quality["QUALITY"]
+            for quality in resulsets["quality"]
+            if quality["TABLE_NAME"] == schema["TABLE_NAME"] and quality["TYPES"] == "RECORD"
+        ]
+
+        schemas.append(
+            create_schema_object(
+                name=schema["TABLE_NAME"],
+                description=schema["DESCRIPTION"],
+                physical_name=schema["PHYSICAL_NAME"],
+                physical_type=schema["PHYSICAL_TYPE"],  # table or view
+                properties=ListPropertiesAdapter.validate_json(listOfProperties[0])
+                if len(listOfProperties) > 0
+                else None,
+                quality=DataQualityAdapter.validate_json(listOfDataQuality[0]) if len(listOfDataQuality) > 0 else None,
             )
-        result_set = json.loads(json_contract[0][0], object_pairs_hook=OrderedDict)
-        sorted_properties = sort_schema_by_name_properties_by_ordinalPosition(result_set)
+        )
 
-        toYaml = yaml.dump(sorted_properties, sort_keys=False)
+    # cleansing
+    for schema in schemas:
+        # tags
+        properties_tags = [tag for tag in resulsets["tags"] if tag["TABLE_NAME"] == schema.name]
 
-        return OpenDataContractStandard.from_string(toYaml)
+        # quality
+        properties_quality = [
+            quality
+            for quality in resulsets["quality"]
+            if quality["TABLE_NAME"] == schema.name and quality["TYPES"] == "COLUMN"
+        ]
 
+        schema.properties = schema_properties_cleansing(schema.properties, properties_tags, properties_quality)
 
-def map_representer(dumper, data):
-    return dumper.represent_dict(getattr(data, "items")())
+    # ODCS building
+    odcs.schema_ = schemas
 
-
-def snowflake_query(account: str, schema: str, schema_sfqid: str, businessKey_sfqid: str) -> str:
-    sqlStatement = """
-    --SHOW COLUMNS;
-    --SHOW PRIMARY KEYS;
-
-    --SET(schema_sfqid, businessKey_sfqid) = (SELECT LAST_QUERY_ID(-2), LAST_QUERY_ID(-1));
-
-WITH Quality_Metric AS (
-    SELECT 
-    TABLE_NAME, 
-    TYPES, 
-    COLUMN_NAME, 
-    ARRAY_AGG(quality) as qualities
-FROM (
-    SELECT  
-        TABLE_NAME, 
-        IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 AND ARGUMENT_TYPES[0]::string = 'COLUMN', 'COLUMN', 'RECORD') as TYPES , 
-        ARRAY_TO_STRING(ARGUMENT_NAMES, ',') as COLUMN_NAME,   
-        OBJECT_CONSTRUCT(
-        'id', CONCAT(LOWER(TABLE_NAME),'_',LOWER(
-                        IFF(ARRAY_SIZE(ARGUMENT_NAMES) = 1 AND ARGUMENT_TYPES[0]::string = 'COLUMN', 'COLUMN', 'RECORD')
-                        ),
-                    '_',
-                    LOWER(METRIC_NAME),
-                    '_',
-                    LOWER(ARRAY_TO_STRING(ARGUMENT_NAMES, ',')),
-                    '_id'),
-        'metric', COALESCE(ODCS_RULES.odcs_metric, METRIC_NAME),
-        COALESCE(odcs_operator,'mustBe'), VALUE
-        ) as quality,
-    FROM SNOWFLAKE.LOCAL.DATA_QUALITY_MONITORING_RESULTS
-    -- https://bitol-io.github.io/open-data-contract-standard/latest/data-quality/#metrics
-    LEFT JOIN (VALUES('NULL_COUNT', 'nullValues', 'mustBe'), 
-                     ('BLANK_COUNT','missingValues', 'mustBe'), 
-                     ('ROW_COUNT', 'rowCount','mustBeGreaterOrEqualTo'),
-                     ('ACCEPTED_VALUES', 'invalidValues','mustBeLessThan'),
-                     ('DUPLICATE_COUNT', 'duplicateValues','mustBeLessThan')                 
-                     ) as ODCS_RULES(snowflake_metricName, odcs_metric, odcs_operator) ON METRIC_NAME = snowflake_metricName
-    WHERE TABLE_DATABASE = CURRENT_DATABASE() AND TABLE_SCHEMA = CURRENT_SCHEMA()
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY TABLE_NAME, ARGUMENT_TYPES, METRIC_NAME, ARGUMENT_NAMES ORDER BY MEASUREMENT_TIME DESC) = 1
-    ) as DMF_METRICS_RESULT
-    GROUP BY TABLE_NAME, TYPES, COLUMN_NAME
-),
-Server_Roles AS (
-    SELECT P.TABLE_SCHEMA as table_schema, ARRAY_AGG(
-    OBJECT_CONSTRUCT(
-        'role', P.GRANTEE,
-        'access',LOWER(P.PRIVILEGE_TYPE),
-        'firstLevelApprovers', P.GRANTOR
-        ))   as Roles
-    FROM information_schema.table_privileges P
-    WHERE P.GRANTED_TO = 'ROLE' AND P.TABLE_SCHEMA = '{schema}' 
-    GROUP BY P.TABLE_CATALOG, P.TABLE_SCHEMA
-), 
-TagRef AS (
-    SELECT 
-        OBJECT_SCHEMA, 
-        OBJECT_NAME, 
-        COLUMN_NAME, 
-        ARRAY_AGG(CONCAT(TAG_NAME,'=',TAG_VALUE)) as Tags
-    FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
-    WHERE OBJECT_SCHEMA = CURRENT_SCHEMA()
-      AND OBJECT_DATABASE = CURRENT_DATABASE()
-    GROUP BY OBJECT_SCHEMA, OBJECT_NAME, COLUMN_NAME
-),
-INFO_SCHEMA_COLUMNS AS (
-    SELECT 
-    "schema_name" as schema_name,
-    "table_name" as table_name,
-    "column_name" as "name", 
-    "null?" = 'NOT_NULL' as required,
-    RIGHT("column_name",3) = '_SK' as "unique",
-    coalesce(GET_PATH(TRY_PARSE_JSON("comment"),'description'), "comment") as description,
-    CASE GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string
-    WHEN 'TEXT' THEN 'string'
-    WHEN 'STRING' THEN 'string'
-    WHEN 'CHAR' THEN 'string'
-    WHEN 'FIXED' THEN 'number'
-    WHEN 'REAL' THEN 'number'
-    WHEN 'BOOLEAN' THEN 'boolean'
-    WHEN 'VARIANT' THEN 'object'
-    WHEN 'TIMESTAMP_TZ' THEN 'timestamp'
-    WHEN 'TIMESTAMP_NTZ' THEN 'timestamp'
-    WHEN 'TIMESTAMP_LTZ' THEN 'timestamp'
-    WHEN 'DATE' THEN 'date'
-    ELSE 'object' END as LogicalType, -- FIXED NUMBER
-    CASE GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string
-    WHEN 'TEXT' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
-    WHEN 'STRING' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
-    WHEN 'CHAR' THEN CONCAT('VARCHAR','(',GET_PATH(TRY_PARSE_JSON("data_type"),'length'),')')
-    WHEN 'FIXED' THEN CONCAT('NUMBER','(',GET_PATH(TRY_PARSE_JSON("data_type"),'precision')::string,',',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')',' ',"autoincrement")
-    WHEN 'BOOLEAN' THEN 'BOOLEAN'
-    WHEN 'TIMESTAMP_NTZ' THEN CONCAT('TIMESTAMP_NTZ','(',GET_PATH(TRY_PARSE_JSON("data_type"),'scale'),')')
-    ELSE GET_PATH(TRY_PARSE_JSON("data_type"),'type') END as PhysicalType,
-    IFF (GET_PATH(TRY_PARSE_JSON("data_type"),'type')::string = 'TEXT', GET_PATH(TRY_PARSE_JSON("data_type"),'length')::string , NULL) as logicalTypeOptions_maxlength,
-    IFF ("column_name" IN ('APP_NAME','CREATE_TS','CREATE_AUDIT_ID','UPDATE_TS','UPDATE_AUDIT_ID','CURRENT_RECORD_IND','DELETED_RECORD_IND', 'FILE_BLOB_PATH', 'FILE_ROW_NUMBER', 'FILE_LAST_MODIFIED', 'IS_VALID_IND', 'INVALID_MESSAGE' ), ARRAY_CONSTRUCT('metadata'), TR.Tags ) as tags,
-    IS_C.ORDINAL_POSITION,
-    GET_PATH(TRY_PARSE_JSON("data_type"),'precision') as CP_precision,
-    GET_PATH(TRY_PARSE_JSON("data_type"),'scale') as CP_scale,
-    "autoincrement" as CP_autoIncrement,
-    "default" as CP_default,
-    Q.qualities
-    FROM TABLE(RESULT_SCAN('$schema_sfqid')) as T
-    JOIN INFORMATION_SCHEMA.COLUMNS as IS_C ON T."table_name"= IS_C.TABLE_NAME 
-                                            AND  T."schema_name" = IS_C.TABLE_SCHEMA 
-                                            AND T."column_name" = IS_C.COLUMN_NAME 
-                                            AND T."database_name" = IS_C.TABLE_CATALOG
-    LEFT JOIN TagRef TR ON T."table_name" = TR.OBJECT_NAME 
-                        AND T."schema_name" = TR.OBJECT_SCHEMA  
-                        AND T."column_name" = TR.COLUMN_NAME
-    LEFT JOIN Quality_Metric Q  ON( T."table_name" = Q.TABLE_NAME 
-                                AND T."column_name" = Q.COLUMN_NAME
-                                AND 'COLUMN' = Q.TYPES)
-),
-INFO_SCHEMA_CONSTRAINTS AS (
-SELECT 
-    "schema_name" as schema_name, 
-    "table_name" as table_name,
-    "column_name" as "name", 
-    IFF(RIGHT("column_name",3)='_SK', -1, "key_sequence") as primaryKeyPosition,
-        true as primaryKey, 
-FROM(TABLE(RESULT_SCAN('$businessKey_sfqid')))
-),
-INFO_SCHEMA_TABLES AS (
-SELECT 
-    T.TABLE_SCHEMA as table_schema, 
-    T.TABLE_NAME as "name",
-    UPPER(T.TABLE_NAME) as physical_name,
-    NULLIF(coalesce(GET_PATH(TRY_PARSE_JSON(COMMENT),'description'), COMMENT),'') as description,
-    'object' as logicalType,
-    lower(REPLACE(TABLE_TYPE,'BASE ','')) as physicalType,
-    'quality', Q.qualities
-FROM INFORMATION_SCHEMA.TABLES as T
-LEFT JOIN Quality_Metric Q ON (T.TABLE_NAME= Q.TABLE_NAME 
-                            AND 'RECORD' = Q.TYPES)
-),
-PROPERTIES AS (
-SELECT 
-C.schema_name,
-C.table_name,
-ARRAY_AGG(OBJECT_CONSTRUCT(
-    'id',           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(C."name", ' ', '_'), '(', ''), ')',''),'/','vs'),'.','_'),'&','and') ||'_propId',
-    'name',         C."name",
-    'required',     C.required,
-    'unique',       C."unique",
-    'description',  C.description,
-    'logicalType',  C.LogicalType,
-    IFF(logicalTypeOptions_maxlength::number IS NOT NULL,'logicalTypeOptions',NULL), IFF( logicalTypeOptions_maxlength::number IS NOT NULL , OBJECT_CONSTRUCT('maxLength',logicalTypeOptions_maxlength::number), NULL),  
-    'physicalType', TRIM(C.PhysicalType),
-    IFF(BK.primaryKey = true, 'primaryKey', NULL), IFF(BK.primaryKey = true,true, NULL),
-    IFF(BK.primaryKey = true, 'primaryKeyPosition', NULL), IFF(BK.primaryKey = true, BK.primaryKeyPosition, NULL),
-    IFF(C.tags IS NOT NULL,'tags',NULL) , IFF(C.tags IS NOT NULL, C.tags, NULL),
-    'customProperties', ARRAY_CONSTRUCT_COMPACT(
-            OBJECT_CONSTRUCT(
-            'property', 'ordinalPosition',
-            'value', C.ORDINAL_POSITION
-            ),
-            OBJECT_CONSTRUCT(
-            'property','scdType',    
-            'value', IFF( COALESCE(BK.primaryKey,false) ,0,1)
-            ),
-            IFF(BK.primaryKey = True AND Right(C."name",3) != '_SK', OBJECT_CONSTRUCT(
-            'property','businessKey',
-            'value', True), NULL),
-            IFF(C.CP_precision IS NOT NULL, OBJECT_CONSTRUCT(
-            'property','precision',
-            'value', C.CP_precision), NULL),
-            IFF(C.CP_scale IS NOT NULL, OBJECT_CONSTRUCT(
-            'property','scale',
-            'value', C.CP_scale), NULL),
-            IFF(NULLIF(C.CP_autoIncrement,'') IS NOT NULL, OBJECT_CONSTRUCT(
-            'property','autoIncrement',
-            'value', C.CP_autoIncrement), NULL),
-            IFF(NULLIF(C.CP_default,'') IS NOT NULL, OBJECT_CONSTRUCT(
-            'property','defaultValue',
-            'value', C.CP_default), NULL)                                     
-            ),
-    'quality', C.qualities
-                        )) as properties
-FROM INFO_SCHEMA_COLUMNS C
-LEFT JOIN INFO_SCHEMA_CONSTRAINTS BK ON (C.schema_name = BK.schema_name 
-                            AND C.table_name = BK.table_name 
-                            AND C."name" = BK."name")
-
-GROUP BY C.schema_name, C.table_name
-)
-, SCHEMA_DEF AS (
-SELECT
-T.table_schema,
-ARRAY_AGG( OBJECT_CONSTRUCT( 
-    'id', REPLACE(T."name", ' ', '_') ||'_schId',
-    'name',T."name",
-    'physicalName',T.physical_name,
-    'logicalType',T.logicalType,
-    'physicalType',T.physicalType,
-    'description',T.description,
-    'properties', P.properties,
-    'quality', T.qualities)
-    )
-    as "schema"
-FROM PROPERTIES P
-LEFT JOIN INFO_SCHEMA_TABLES T ON (P.schema_name = T.table_schema 
-                        AND P.table_name = T."name")
-WHERE T.table_schema = '{schema}' -- Ignore PUBLIC (default)
-GROUP BY T.table_schema
-)
-SELECT 
-OBJECT_CONSTRUCT('apiVersion', 'v3.1.0',
-'kind','DataContract',
-'id', UUID_STRING(),
-'name',SCHEMA_DEF.table_schema,
-'version','0.0.1',
-'domain','dataplatform',
-'status','development',
-'description', OBJECT_CONSTRUCT(
-    'purpose','This data can be used for analytical purposes', 
-    'limitations', 'not defined',
-    'usage', 'not defined'),
-'customProperties', ARRAY_CONSTRUCT( OBJECT_CONSTRUCT('property','owner', 'value','dataplatform')),
-'servers', ARRAY_CONSTRUCT( 
-    OBJECT_CONSTRUCT(
-        'server','snowflake_dev', 
-        'type','snowflake',
-        'account', '{account}',
-        'environment', 'dev',
-        'host', '{account}.snowflakecomputing.com',
-        'port', 443,
-        'database', CURRENT_DATABASE(),
-        'warehouse', CURRENT_WAREHOUSE(),
-        'schema', SCHEMA_DEF.table_schema,
-        'roles', Server_Roles.Roles
-                    )),                                    
-'schema', "schema") as "DataContract (ODCS)"
-FROM SCHEMA_DEF
-LEFT JOIN Server_Roles ON SCHEMA_DEF.table_schema = Server_Roles.table_schema
-WHERE SCHEMA_DEF.table_schema IS NOT NULL
-    """
-    return (
-        sqlStatement.replace("$schema_sfqid", schema_sfqid)
-        .replace("$businessKey_sfqid", businessKey_sfqid)
-        .replace("{schema}", schema)
-        .replace("{account}", account)
-    )
+    return odcs
 
 
 def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = "PUBLIC"):
@@ -466,30 +514,16 @@ def _get_ordinal_position_value(col: Dict[str, Any]) -> Any:
     return None
 
 
-def sort_schema_by_name_properties_by_ordinalPosition(payload: Dict[str, Any]) -> Dict[str, Any]:
+def sort_properties_by_ordinalPosition(properties: Dict[str, Any]) -> Dict[str, Any]:
     """
-    - Does NOT reorder payload['schema'].
-    - For each schema element (table), sorts table['properties'] by property ordinalPosition value.
+    - Sorts 'properties' by property ordinalPosition value.
     - Does NOT sort customProperties themselves.
     """
-    schema = payload.get("schema")
-    if not isinstance(schema, list):
-        return payload
-    new_schema = []
-    for table in schema:
-        props = table.get("properties")
-        if not isinstance(props, list):
-            continue
+  
+    def col_key(col: Dict[str, Any]):
+        ord_val = _get_ordinal_position_value(col)
+        return (ord_val, f"{col.get('name').lower()}")
 
-        def col_key(col: Dict[str, Any]):
-            ord_val = _get_ordinal_position_value(col)
-            return (ord_val, f"{table.get('name').lower()}.{col.get('name').lower()}")
+    properties.sort(key=col_key)
 
-        props.sort(key=col_key)
-        table["properties"] = props
-        new_schema.append(table)
-
-    new_schema.sort(key=lambda t: t.get("name").lower())
-
-    payload["schema"] = new_schema
-    return payload
+    return properties
