@@ -279,6 +279,7 @@ def schema_properties_cleansing(
             scale=scale[0] if len(scale) > 0 else None,
             format=format,
             required=prop.required,
+            unique=prop.unique,
             tags=tagsAdapter.validate_json(tags[0] if len(tags) > 0 else "[]"),
             custom_properties={cp.property: cp.value for cp in prop.customProperties},
             id=prop.id,
