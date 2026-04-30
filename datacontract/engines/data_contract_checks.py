@@ -18,6 +18,20 @@ from datacontract.model.run import Check
 
 logger = logging.getLogger(__name__)
 
+_DOUBLE_QUOTE_DIALECTS = {
+    "postgres",
+    "sqlserver",
+    "snowflake",
+    "azure",
+    "s3",
+    "gcs",
+    "local",
+    "athena",
+    "oracle",
+    "trino",
+}
+_BACKTICK_QUOTING_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe"}
+
 
 @dataclass
 class QuotingConfig:
@@ -25,6 +39,21 @@ class QuotingConfig:
     quote_field_name_with_backticks: bool = False
     quote_model_name: bool = False
     quote_model_name_with_backticks: bool = False
+
+    @classmethod
+    def for_server(cls, server: Optional[Server]) -> "QuotingConfig":
+        server_type = server.type if server and server.type else None
+        if server_type and server_type not in _DOUBLE_QUOTE_DIALECTS and server_type not in _BACKTICK_QUOTING_DIALECTS:
+            logger.info(
+                f"No quoting rules found for server type {server_type!r}. Special characters in column names will lead to failing checks. "
+                f"Please open an issue with this error message on GitHub: https://github.com/datacontract/datacontract-cli/issues"
+            )
+        return cls(
+            quote_field_name=server_type in _DOUBLE_QUOTE_DIALECTS,
+            quote_field_name_with_backticks=server_type in _BACKTICK_QUOTING_DIALECTS,
+            quote_model_name=server_type in _DOUBLE_QUOTE_DIALECTS,
+            quote_model_name_with_backticks=server_type in _BACKTICK_QUOTING_DIALECTS,
+        )
 
 
 def _escape_sql_string_values(values):
@@ -86,7 +115,7 @@ def create_checks(data_contract: OpenDataContractStandard, server: Server, schem
             continue
         schema_checks = to_schema_checks(schema_obj, server)
         checks.extend(schema_checks)
-    checks.extend(to_servicelevel_checks(data_contract))
+    checks.extend(to_servicelevel_checks(data_contract, server))
     return [check for check in checks if check is not None]
 
 
@@ -98,14 +127,7 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     check_types = is_check_types(server)
 
-    type1 = server.type if server and server.type else None
-    config = QuotingConfig(
-        quote_field_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_field_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
-        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_model_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
-    )
-    quoting_config = config
+    quoting_config = QuotingConfig.for_server(server)
 
     for prop in properties:
         property_name = prop.name
@@ -931,14 +953,14 @@ def _get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> O
     return next((s for s in data_contract.schema_ if s.name == name), None)
 
 
-def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Check]:
+def to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Optional[Server] = None) -> List[Check]:
     checks: List[Check] = []
     if data_contract.slaProperties is None:
         return checks
 
     for sla in data_contract.slaProperties:
         if sla.property == "freshness":
-            check = to_sla_freshness_check(data_contract, sla)
+            check = to_sla_freshness_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
@@ -949,7 +971,9 @@ def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Chec
     return checks
 
 
-def to_sla_freshness_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
+def to_sla_freshness_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Check | None:
     """Create a freshness check from an ODCS latency SLA property."""
     if sla.element is None:
         logger.info("slaProperties.latency.element is not defined, skipping freshness check")
@@ -995,10 +1019,11 @@ def to_sla_freshness_check(data_contract: OpenDataContractStandard, sla) -> Chec
 
     check_type = "servicelevel_freshness"
     check_key = "servicelevel_freshness"
+    sodacl_field_name = _quote_field_name(field_name, QuotingConfig.for_server(server))
     sodacl_check_dict = {
         f"checks for {model_name}": [
             {
-                f"freshness({field_name}) < {threshold}": {
+                f"freshness({sodacl_field_name}) < {threshold}": {
                     "name": check_key,
                 },
             }

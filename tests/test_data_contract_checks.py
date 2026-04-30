@@ -16,6 +16,7 @@ from datacontract.engines.data_contract_checks import (
     create_checks,
     prepare_query,
     to_schema_checks,
+    to_sla_freshness_check,
 )
 
 
@@ -228,6 +229,44 @@ def test_check_property_is_present_duckdb_hyphenated_model_name():
     checks = impl['checks for "test-1"']
     schema_check = checks[0]["schema"]
     assert schema_check["fail"]["when required column missing"] == ["name"]
+
+
+_FRESHNESS_CONTRACT = OpenDataContractStandard(
+    **{
+        "apiVersion": "v3.1.0",
+        "kind": "DataContract",
+        "id": "test-freshness",
+        "name": "Freshness Test",
+        "version": "1.0.0",
+        "status": "active",
+        "schema": [{"name": "events", "properties": [{"name": "id", "logicalType": "string"}]}],
+        "slaProperties": [{"property": "freshness", "value": 2, "unit": "d", "element": "events.$file_modified_time"}],
+    }
+)
+
+
+def test_freshness_check_quotes_dollar_column_for_athena():
+    """Regression: Athena pseudo-columns like $file_modified_time must be wrapped in double quotes."""
+    check = to_sla_freshness_check(
+        _FRESHNESS_CONTRACT, _FRESHNESS_CONTRACT.slaProperties[0], Server(server="s", type="athena")
+    )
+    assert 'freshness("$file_modified_time")' in check.implementation
+
+
+def test_freshness_check_unquoted_when_no_server():
+    """Without a server we can't pick a quote char, so identifiers stay bare (matching schema checks)."""
+    check = to_sla_freshness_check(_FRESHNESS_CONTRACT, _FRESHNESS_CONTRACT.slaProperties[0], None)
+    assert "freshness($file_modified_time)" in check.implementation
+
+
+def test_quoting_config_for_server_unrecognized_logs_info(caplog):
+    """A set-but-unrecognized server type logs an INFO so the missing dialect can be added."""
+    import logging
+
+    with caplog.at_level(logging.INFO, logger="datacontract.engines.data_contract_checks"):
+        config = QuotingConfig.for_server(Server(server="s", type="redshift"))
+    assert config == QuotingConfig()
+    assert any("redshift" in rec.message for rec in caplog.records)
 
 
 def _make_multi_schema_contract() -> OpenDataContractStandard:
