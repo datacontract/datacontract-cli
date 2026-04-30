@@ -256,7 +256,7 @@ def schema_properties_cleansing(
         if prop.name is None or prop.logicalType is None:
             continue  # Skip properties that don't have required fields
 
-        logical_type, format = map_type_from_sql(prop.logicalType)
+        logical_type, format = map_type_from_sql(prop.physicalType)
         max_length = prop.logicalTypeOptions.get("maxLength", None) if prop.logicalTypeOptions else None
 
         precision = [cp.value for cp in prop.customProperties if cp.property == "precision"]
