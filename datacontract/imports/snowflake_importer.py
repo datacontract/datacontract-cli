@@ -86,8 +86,12 @@ def information_schema_columns_query() -> str:
                                             OBJECT_CONSTRUCT('maxLength',IS_C.CHARACTER_MAXIMUM_LENGTH)
                                             , NULL), -- property.Logical Type Option . 
                 'physicalType', CASE WHEN IS_C.IS_IDENTITY = 'YES' THEN 
-                                        CONCAT(COALESCE(IS_C.DATA_TYPE_ALIAS, IS_C.DATA_TYPE),
-                                        'AUTOINCREMENENT START', IS_C.IDENTITY_START, ' INCREMENT ', IS_C.IDENTITY_INCREMENT, 
+                                        CONCAT(COALESCE(IS_C.DATA_TYPE_ALIAS, CONCAT(IS_C.DATA_TYPE, COALESCE( '('||IS_C.CHARACTER_MAXIMUM_LENGTH ||')',
+                                                    '('|| IS_C.NUMERIC_PRECISION || COALESCE( ', '|| NULLIF(COALESCE(IS_C.NUMERIC_SCALE,0), 0) || ')',')'),
+                                                    '(' || IS_C.DATETIME_PRECISION || ')' ,
+                                                    ''
+                                                ))),
+                                        ' AUTOINCREMENENT START ', IS_C.IDENTITY_START, ' INCREMENT ', IS_C.IDENTITY_INCREMENT, 
                                         IFF(IS_C.IDENTITY_ORDERED = 'YES', ' ORDER', ' NOORDER'))
                                      WHEN IS_C.DATA_TYPE_ALIAS IS NOT NULL THEN IS_C.DATA_TYPE_ALIAS
                                      ELSE CONCAT(IS_C.DATA_TYPE, COALESCE( '('||IS_C.CHARACTER_MAXIMUM_LENGTH ||')',
@@ -384,7 +388,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
     # cleansing
     for schema in schemas:
         # tags
-        properties_tags = [tag for tag in resulsets["tags"] if tag["TABLE_NAME"] == schema.name]
+        properties_tags = [tag for tag in resulsets["tags"] if tag["OBJECT_NAME"] == schema.name]
 
         # quality
         properties_quality = [
