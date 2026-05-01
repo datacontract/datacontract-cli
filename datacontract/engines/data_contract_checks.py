@@ -51,6 +51,7 @@ def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
 
 
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
+_ANSI_QUOTING_DIALECTS = {"postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"}
 
 _BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
@@ -121,10 +122,10 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     type1 = server.type if server and server.type else None
     config = QuotingConfig(
-        quote_field_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_field_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
-        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_model_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
+        quote_field_name=type1 in _ANSI_QUOTING_DIALECTS,
+        quote_field_name_with_backticks=type1 in _BACKTICK_DIALECTS,
+        quote_model_name=type1 in _ANSI_QUOTING_DIALECTS,
+        quote_model_name_with_backticks=type1 in _BACKTICK_DIALECTS,
     )
     quoting_config = config
 
