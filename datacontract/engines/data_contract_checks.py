@@ -1,7 +1,6 @@
 import logging
 import re
 import uuid
-from dataclasses import dataclass
 from typing import List, Optional
 
 import yaml
@@ -19,12 +18,26 @@ from datacontract.model.run import Check
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class QuotingConfig:
-    quote_field_name: bool = False
-    quote_field_name_with_backticks: bool = False
-    quote_model_name: bool = False
-    quote_model_name_with_backticks: bool = False
+# Single source of truth for dialects that quote identifiers with backticks.
+_BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
+# Dialects whose schema/quality checks have historically been emitted with ANSI-quoted
+# identifiers. Anything not in this or _BACKTICK_DIALECTS gets bare identifiers.
+_ANSI_QUOTING_DIALECTS = {"postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"}
+# Subset of dialects that case-fold unquoted identifiers AND accept `$` as a continuation
+# character in bare identifiers. Used by _quote_identifier_if_needed (the conservative
+# rule for SLA freshness checks) so we don't force avoidable case-sensitivity on `$`.
+_PERMISSIVE_BARE_DIALECTS = {"postgres", "snowflake", "oracle", "sqlserver"}
+
+_BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
+
+
+def _server_type(server: Optional[Server]) -> Optional[str]:
+    return server.type if server and server.type else None
+
+
+def _dialect_uses_backtick_quotation(server: Optional[Server]) -> bool:
+    return _server_type(server) in _BACKTICK_DIALECTS
 
 
 def _escape_sql_string_values(values):
@@ -39,22 +52,16 @@ def _escape_sql_string_values(values):
     return [v.replace("'", "''") if isinstance(v, str) else v for v in values]
 
 
-def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
-    """Quote a field name according to the quoting configuration."""
+def _quote_field_name(field_name: str, server: Optional[Server]) -> str:
+    """Quote a field/model name per dialect: backticks for backtick dialects,
+    ANSI for known ANSI-quoting dialects, bare otherwise."""
     if field_name is None:
         return field_name
-    if quoting_config.quote_field_name:
-        return f'"{field_name}"'
-    elif quoting_config.quote_field_name_with_backticks:
+    if _dialect_uses_backtick_quotation(server):
         return f"`{field_name}`"
+    if _server_type(server) in _ANSI_QUOTING_DIALECTS:
+        return f'"{field_name}"'
     return field_name
-
-
-_BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
-
-_BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
-_PERMISSIVE_BARE_DIALECTS = {"postgres", "snowflake", "oracle", "sqlserver"}
 
 
 def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> str:
@@ -64,11 +71,12 @@ def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> st
     """
     if identifier is None:
         return identifier
-    server_type = server.type if server and server.type else None
-    pattern = _BARE_IDENTIFIER_PERMISSIVE if server_type in _PERMISSIVE_BARE_DIALECTS else _BARE_IDENTIFIER_STRICT
+    pattern = (
+        _BARE_IDENTIFIER_PERMISSIVE if _server_type(server) in _PERMISSIVE_BARE_DIALECTS else _BARE_IDENTIFIER_STRICT
+    )
     if pattern.match(identifier):
         return identifier
-    return f"`{identifier}`" if server_type in _BACKTICK_DIALECTS else f'"{identifier}"'
+    return f"`{identifier}`" if _dialect_uses_backtick_quotation(server) else f'"{identifier}"'
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -119,80 +127,71 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     check_types = is_check_types(server)
 
-    type1 = server.type if server and server.type else None
-    config = QuotingConfig(
-        quote_field_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_field_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
-        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_model_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
-    )
-    quoting_config = config
-
     for prop in properties:
         property_name = prop.name
 
-        checks.append(check_property_is_present(schema_name, property_name, quoting_config))
+        checks.append(check_property_is_present(schema_name, property_name, server))
         if check_types and (prop.physicalType is not None or prop.logicalType is not None):
             sql_type: str = convert_to_sql_type(prop, server_type)
             if sql_type is not None:
-                checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
+                checks.append(check_property_type(schema_name, property_name, sql_type, server))
         if prop.required:
-            checks.append(check_property_required(schema_name, property_name, quoting_config))
+            checks.append(check_property_required(schema_name, property_name, server))
         if prop.unique:
-            checks.append(check_property_unique(schema_name, property_name, quoting_config))
+            checks.append(check_property_unique(schema_name, property_name, server))
 
         min_length = _get_logical_type_option(prop, "minLength")
         if min_length is not None:
-            checks.append(check_property_min_length(schema_name, property_name, min_length, quoting_config))
+            checks.append(check_property_min_length(schema_name, property_name, min_length, server))
 
         max_length = _get_logical_type_option(prop, "maxLength")
         if max_length is not None:
-            checks.append(check_property_max_length(schema_name, property_name, max_length, quoting_config))
+            checks.append(check_property_max_length(schema_name, property_name, max_length, server))
 
         minimum = _get_logical_type_option(prop, "minimum")
         if minimum is not None:
-            checks.append(check_property_minimum(schema_name, property_name, minimum, quoting_config))
+            checks.append(check_property_minimum(schema_name, property_name, minimum, server))
 
         maximum = _get_logical_type_option(prop, "maximum")
         if maximum is not None:
-            checks.append(check_property_maximum(schema_name, property_name, maximum, quoting_config))
+            checks.append(check_property_maximum(schema_name, property_name, maximum, server))
 
         exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
         if exclusive_minimum is not None:
-            checks.append(check_property_minimum(schema_name, property_name, exclusive_minimum, quoting_config))
-            checks.append(check_property_not_equal(schema_name, property_name, exclusive_minimum, quoting_config))
+            checks.append(check_property_minimum(schema_name, property_name, exclusive_minimum, server))
+            checks.append(check_property_not_equal(schema_name, property_name, exclusive_minimum, server))
 
         exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
         if exclusive_maximum is not None:
-            checks.append(check_property_maximum(schema_name, property_name, exclusive_maximum, quoting_config))
-            checks.append(check_property_not_equal(schema_name, property_name, exclusive_maximum, quoting_config))
+            checks.append(check_property_maximum(schema_name, property_name, exclusive_maximum, server))
+            checks.append(check_property_not_equal(schema_name, property_name, exclusive_maximum, server))
 
         pattern = _get_logical_type_option(prop, "pattern")
         if pattern is not None:
-            checks.append(check_property_regex(schema_name, property_name, pattern, quoting_config))
+            checks.append(check_property_regex(schema_name, property_name, pattern, server))
 
         enum_values = _get_logical_type_option(prop, "enum")
         if enum_values is not None and len(enum_values) > 0:
-            checks.append(check_property_enum(schema_name, property_name, enum_values, quoting_config))
+            checks.append(check_property_enum(schema_name, property_name, enum_values, server))
 
         if prop.quality is not None and len(prop.quality) > 0:
-            quality_list = check_quality_list(schema_name, property_name, prop.quality, quoting_config, server)
+            quality_list = check_quality_list(schema_name, property_name, prop.quality, server)
             if (quality_list is not None) and len(quality_list) > 0:
                 checks.extend(quality_list)
 
     if schema_object.quality is not None and len(schema_object.quality) > 0:
-        quality_list = check_quality_list(schema_name, None, schema_object.quality, quoting_config, server)
+        quality_list = check_quality_list(schema_name, None, schema_object.quality, server)
         if (quality_list is not None) and len(quality_list) > 0:
             checks.extend(quality_list)
 
     return checks
 
 
-def checks_for(model_name: str, quoting_config: QuotingConfig, check_type: str) -> str:
-    if quoting_config.quote_model_name:
-        return f'checks for "{model_name}"'
-    elif quoting_config.quote_model_name_with_backticks and check_type not in ["field_is_present", "field_type"]:
+def checks_for(model_name: str, server: Optional[Server], check_type: str) -> str:
+    if _dialect_uses_backtick_quotation(server) and check_type not in ["field_is_present", "field_type"]:
         return f"checks for `{model_name}`"
+    if _server_type(server) in _ANSI_QUOTING_DIALECTS:
+        return f'checks for "{model_name}"'
     return f"checks for {model_name}"
 
 
@@ -215,11 +214,11 @@ def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
     return schema_object.name
 
 
-def check_property_is_present(model_name, field_name, quoting_config: QuotingConfig = QuotingConfig()) -> Check:
+def check_property_is_present(model_name, field_name, server: Optional[Server] = None) -> Check:
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 "schema": {
                     "name": check_key,
@@ -244,16 +243,14 @@ def check_property_is_present(model_name, field_name, quoting_config: QuotingCon
     )
 
 
-def check_property_type(
-    model_name: str, field_name: str, expected_type: str, quoting_config: QuotingConfig = QuotingConfig()
-):
+def check_property_type(model_name: str, field_name: str, expected_type: str, server: Optional[Server] = None):
     if expected_type is None:
         logger.warning(f"Cannot build type check for {model_name}.{field_name}: expected_type is None.")
         return None
     check_type = "field_type"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 "schema": {
                     "name": check_key,
@@ -280,13 +277,13 @@ def check_property_type(
     )
 
 
-def check_property_required(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_required(model_name: str, field_name: str, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_required"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"missing_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -308,13 +305,13 @@ def check_property_required(model_name: str, field_name: str, quoting_config: Qu
     )
 
 
-def check_property_unique(model_name: str, field_name: str, quoting_config: QuotingConfig = QuotingConfig()):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_unique(model_name: str, field_name: str, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_unique"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"duplicate_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -336,15 +333,13 @@ def check_property_unique(model_name: str, field_name: str, quoting_config: Quot
     )
 
 
-def check_property_min_length(
-    model_name: str, field_name: str, min_length: int, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_min_length(model_name: str, field_name: str, min_length: int, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_min_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -367,15 +362,13 @@ def check_property_min_length(
     )
 
 
-def check_property_max_length(
-    model_name: str, field_name: str, max_length: int, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_max_length(model_name: str, field_name: str, max_length: int, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_max_length"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -398,15 +391,13 @@ def check_property_max_length(
     )
 
 
-def check_property_minimum(
-    model_name: str, field_name: str, minimum: int, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_minimum(model_name: str, field_name: str, minimum: int, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_minimum"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -429,15 +420,13 @@ def check_property_minimum(
     )
 
 
-def check_property_maximum(
-    model_name: str, field_name: str, maximum: int, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_maximum(model_name: str, field_name: str, maximum: int, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_maximum"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -460,15 +449,13 @@ def check_property_maximum(
     )
 
 
-def check_property_not_equal(
-    model_name: str, field_name: str, value: int, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_not_equal(model_name: str, field_name: str, value: int, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_not_equal"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -491,13 +478,13 @@ def check_property_not_equal(
     )
 
 
-def check_property_enum(model_name: str, field_name: str, enum: list, quoting_config: QuotingConfig = QuotingConfig()):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_enum(model_name: str, field_name: str, enum: list, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_enum"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -520,15 +507,13 @@ def check_property_enum(model_name: str, field_name: str, enum: list, quoting_co
     )
 
 
-def check_property_regex(
-    model_name: str, field_name: str, pattern: str, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_regex(model_name: str, field_name: str, pattern: str, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_regex"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) = 0": {
                     "name": check_key,
@@ -551,11 +536,11 @@ def check_property_regex(
     )
 
 
-def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()):
+def check_row_count(model_name: str, threshold: str, server: Optional[Server] = None):
     check_type = "row_count"
     check_key = f"{model_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"row_count {threshold}": {"name": check_key},
             }
@@ -575,14 +560,12 @@ def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConf
     )
 
 
-def check_model_duplicate_values(
-    model_name: str, cols: list[str], threshold: str, quoting_config: QuotingConfig = QuotingConfig()
-):
+def check_model_duplicate_values(model_name: str, cols: list[str], threshold: str, server: Optional[Server] = None):
     check_type = "model_duplicate_values"
     check_key = f"{model_name}__{check_type}"
-    col_joined = ", ".join(_quote_field_name(col, quoting_config) for col in cols)
+    col_joined = ", ".join(_quote_field_name(col, server) for col in cols)
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"duplicate_count({col_joined}) {threshold}": {"name": check_key},
             }
@@ -602,15 +585,13 @@ def check_model_duplicate_values(
     )
 
 
-def check_property_duplicate_values(
-    model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_duplicate_values(model_name: str, field_name: str, threshold: str, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_duplicate_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"duplicate_count({field_name_for_soda}) {threshold}": {
                     "name": check_key,
@@ -632,15 +613,13 @@ def check_property_duplicate_values(
     )
 
 
-def check_property_null_values(
-    model_name: str, field_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()
-):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+def check_property_null_values(model_name: str, field_name: str, threshold: str, server: Optional[Server] = None):
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_null_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"missing_count({field_name_for_soda}) {threshold}": {
                     "name": check_key,
@@ -667,9 +646,9 @@ def check_property_invalid_values(
     field_name: str,
     threshold: str,
     valid_values: list = None,
-    quoting_config: QuotingConfig = QuotingConfig(),
+    server: Optional[Server] = None,
 ):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_invalid_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -682,7 +661,7 @@ def check_property_invalid_values(
         sodacl_check_config["valid values"] = _escape_sql_string_values(valid_values)
 
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"invalid_count({field_name_for_soda}) {threshold}": sodacl_check_config,
             }
@@ -707,9 +686,9 @@ def check_property_missing_values(
     field_name: str,
     threshold: str,
     missing_values: list = None,
-    quoting_config: QuotingConfig = QuotingConfig(),
+    server: Optional[Server] = None,
 ):
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+    field_name_for_soda = _quote_field_name(field_name, server)
 
     check_type = "field_missing_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
@@ -724,7 +703,7 @@ def check_property_missing_values(
             sodacl_check_config["missing values"] = _escape_sql_string_values(filtered_missing_values)
 
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(model_name, server, check_type): [
             {
                 f"missing_count({field_name_for_soda}) {threshold}": sodacl_check_config,
             }
@@ -748,8 +727,7 @@ def check_quality_list(
     schema_name,
     property_name,
     quality_list: List[DataQuality],
-    quoting_config: QuotingConfig = QuotingConfig(),
-    server: Server = None,
+    server: Optional[Server] = None,
 ) -> List[Check]:
     checks: List[Check] = []
 
@@ -781,7 +759,7 @@ def check_quality_list(
                 check_key = f"{schema_name}__{property_name}__quality_sql_{count}"
                 check_type = "field_quality_sql"
             threshold = to_sodacl_threshold(quality)
-            query = prepare_query(quality, schema_name, property_name, quoting_config, server)
+            query = prepare_query(quality, schema_name, property_name, server)
             if query is None:
                 logger.warning(f"Quality check {check_key} has no query")
                 continue
@@ -789,7 +767,7 @@ def check_quality_list(
                 logger.warning(f"Quality check {check_key} has no valid threshold")
                 continue
 
-            if quoting_config.quote_model_name:
+            if _server_type(server) in _ANSI_QUOTING_DIALECTS:
                 model_name_for_soda = f'"{schema_name}"'
             else:
                 model_name_for_soda = schema_name
@@ -825,30 +803,26 @@ def check_quality_list(
                 continue
 
             if quality.metric == "rowCount":
-                checks.append(check_row_count(schema_name, threshold, quoting_config))
+                checks.append(check_row_count(schema_name, threshold, server))
             elif quality.metric == "duplicateValues":
                 if property_name is None:
                     checks.append(
                         check_model_duplicate_values(
-                            schema_name, quality.arguments.get("properties"), threshold, quoting_config
+                            schema_name, quality.arguments.get("properties"), threshold, server
                         )
                     )
                 else:
-                    checks.append(
-                        check_property_duplicate_values(schema_name, property_name, threshold, quoting_config)
-                    )
+                    checks.append(check_property_duplicate_values(schema_name, property_name, threshold, server))
             elif quality.metric == "nullValues":
                 if property_name is not None:
-                    checks.append(check_property_null_values(schema_name, property_name, threshold, quoting_config))
+                    checks.append(check_property_null_values(schema_name, property_name, threshold, server))
                 else:
                     logger.warning("Quality check nullValues is only supported at field level")
             elif quality.metric == "invalidValues":
                 if property_name is not None:
                     valid_values = quality.arguments.get("validValues") if quality.arguments else None
                     checks.append(
-                        check_property_invalid_values(
-                            schema_name, property_name, threshold, valid_values, quoting_config
-                        )
+                        check_property_invalid_values(schema_name, property_name, threshold, valid_values, server)
                     )
                 else:
                     logger.warning("Quality check invalidValues is only supported at field level")
@@ -856,9 +830,7 @@ def check_quality_list(
                 if property_name is not None:
                     missing_values = quality.arguments.get("missingValues") if quality.arguments else None
                     checks.append(
-                        check_property_missing_values(
-                            schema_name, property_name, threshold, missing_values, quoting_config
-                        )
+                        check_property_missing_values(schema_name, property_name, threshold, missing_values, server)
                     )
                 else:
                     logger.warning("Quality check missingValues is only supported at field level")
@@ -874,8 +846,7 @@ def prepare_query(
     quality: DataQuality,
     model_name: str,
     field_name: str = None,
-    quoting_config: QuotingConfig = QuotingConfig(),
-    server: Server = None,
+    server: Optional[Server] = None,
 ) -> str | None:
     if quality.query is None:
         return None
@@ -884,25 +855,14 @@ def prepare_query(
 
     query = quality.query
 
-    field_name_for_soda = _quote_field_name(field_name, quoting_config)
-
-    if quoting_config.quote_model_name:
-        model_name_for_soda = f'"{model_name}"'
-    elif quoting_config.quote_model_name_with_backticks:
-        model_name_for_soda = f"`{model_name}`"
-    else:
-        model_name_for_soda = model_name
+    field_name_for_soda = _quote_field_name(field_name, server)
+    model_name_for_soda = _quote_field_name(model_name, server)
 
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
 
     if server and server.schema_:
-        if quoting_config.quote_model_name:
-            schema_name_for_soda = f'"{server.schema_}"'
-        elif quoting_config.quote_model_name_with_backticks:
-            schema_name_for_soda = f"`{server.schema_}`"
-        else:
-            schema_name_for_soda = server.schema_
+        schema_name_for_soda = _quote_field_name(server.schema_, server)
         query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
     else:
         query = re.sub(r'["\']?\$?\{schema}["\']?', model_name_for_soda, query)
