@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `import spark` now emits a native Spark SQL physicalType (e.g. `string`) instead of Python repr (e.g. `StringType()`). Contracts imported using Spark in v0.11.0–v0.12.1 did not perform type checks and must be re-imported. (#1048)
 - Remove unnecessary `setuptools` dependency from `pyproject.toml` (temporary workaround for soda-core#2091 resolved) (#1199)
 - SLA freshness checks now quote column identifiers with special characters (#1202)
-- Schema and quality checks on Impala, dataframe, and Kafka servers now backtick-quote field and model names, matching the existing behavior for Databricks/BigQuery/MySQL (#1202)
+- update field / model quotation for Impala, dataframe, and Kafka (#1202)
 
 ## [0.12.1] - 2026-04-21
 
