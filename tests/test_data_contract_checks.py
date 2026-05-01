@@ -1,5 +1,12 @@
 import yaml
-from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, Server
+from open_data_contract_standard.model import (
+    DataQuality,
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
+    Server,
+    ServiceLevelAgreementProperty,
+)
 
 from datacontract.data_contract import DataContract
 from datacontract.engines.data_contract_checks import (
@@ -16,6 +23,7 @@ from datacontract.engines.data_contract_checks import (
     create_checks,
     prepare_query,
     to_schema_checks,
+    to_sla_freshness_check,
 )
 
 
@@ -442,3 +450,61 @@ def test_check_property_missing_values_escapes_single_quotes():
     check_config = checks[0]["missing_count(status) = 0"]
     assert "peter''s" in check_config["missing values"]
     assert "n/a" in check_config["missing values"]
+
+
+def _freshness_contract(model_name: str = "events"):
+    return OpenDataContractStandard(
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="freshness-test",
+        schema=[
+            SchemaObject(
+                name=model_name,
+                properties=[SchemaProperty(name="ts", logicalType="timestamp")],
+            )
+        ],
+    )
+
+
+def _freshness_sla(element: str):
+    return ServiceLevelAgreementProperty(property="freshness", element=element, value=24, unit="h")
+
+
+def test_freshness_check_quotes_dollar_field_on_athena():
+    """Athena pseudo-columns like $file_modified_time must be ANSI-quoted to parse."""
+    contract = _freshness_contract("events")
+    sla = _freshness_sla("events.$file_modified_time")
+    server = Server(type="athena")
+
+    check = to_sla_freshness_check(contract, sla, server)
+
+    impl = yaml.safe_load(check.implementation)
+    keys = list(impl["checks for events"][0].keys())
+    assert keys == ['freshness("$file_modified_time") < 24h']
+
+
+def test_freshness_check_leaves_dollar_field_bare_on_postgres():
+    """Postgres allows `$` as a continuation char in bare identifiers; quoting it would
+    force avoidable case-sensitivity on a case-folding dialect."""
+    contract = _freshness_contract("orders")
+    sla = _freshness_sla("orders.col$ext")
+    server = Server(type="postgres")
+
+    check = to_sla_freshness_check(contract, sla, server)
+
+    impl = yaml.safe_load(check.implementation)
+    keys = list(impl["checks for orders"][0].keys())
+    assert keys == ["freshness(col$ext) < 24h"]
+
+
+def test_freshness_check_backticks_special_field_on_databricks():
+    """Backtick dialects (Databricks/Spark) reject `$` bare and need backtick-quoting."""
+    contract = _freshness_contract("events")
+    sla = _freshness_sla("events.$file_modified_time")
+    server = Server(type="databricks")
+
+    check = to_sla_freshness_check(contract, sla, server)
+
+    impl = yaml.safe_load(check.implementation)
+    keys = list(impl["checks for events"][0].keys())
+    assert keys == ["freshness(`$file_modified_time`) < 24h"]
