@@ -54,24 +54,6 @@ jobs:
       - name: Run tests
         run: uv run pytest -n0
 
-  resolve-extras:
-    name: "Verify [all] extra resolves for end users"
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          python-version: '3.11'
-      - name: Build wheel
-        run: uv build --wheel
-      - name: Verify [all] resolves without local overrides
-        run: |
-          WHEEL=$(ls dist/datacontract_cli-*.whl)
-          uv venv
-          uv pip install --dry-run --no-config "${WHEEL}[all]"
-
   integration-tests:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
@@ -91,8 +73,13 @@ jobs:
           cache: 'pip' # caching pip dependencies
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip uv
           pip install -e '.' # do not install dev dependencies or other extras
+      - name: Build wheel and verify [all] extra resolves without local overrides
+        run: |
+          uv build --wheel
+          WHEEL=$(ls dist/datacontract_cli-*.whl)
+          uv pip install --dry-run --system --no-config "${WHEEL}[all]"
       - name: Test datacontract --help
         run: datacontract --help
       - name: Test datacontract --version
