@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- New `databricks-runtime` extra that excludes `pyspark` (provided by the Databricks Runtime environment). Install with `pip install "datacontract-cli[databricks-runtime]"` when running the CLI inside Databricks notebooks or jobs. The `databricks` extra remains unchanged for use outside Databricks.
+
 ### Fixed
 - `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)
 - **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
