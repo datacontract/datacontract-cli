@@ -69,7 +69,8 @@ jobs:
       - name: Verify [all] resolves without local overrides
         run: |
           WHEEL=$(ls dist/datacontract_cli-*.whl)
-          uv pip install --dry-run --system --no-config "${WHEEL}[all]"
+          uv venv
+          uv pip install --dry-run --no-config "${WHEEL}[all]"
 
   integration-tests:
     runs-on: ${{ matrix.os }}
