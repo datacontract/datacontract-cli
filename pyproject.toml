@@ -133,7 +133,9 @@ api = [
 ]
 
 protobuf = [
-  "grpcio-tools>=1.53",
+  # `protoc` (the compiler) must be installed separately on the system; see README.
+  # Wide range: only `descriptor_pb2.FileDescriptorSet` is used, stable since 3.x.
+  "protobuf>=3.20,<7.0",
 ]
 
 all = [

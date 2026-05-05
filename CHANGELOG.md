@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **breaking:** drop the `dbt` extra and the `dbt-core` dependency. `import dbt` now reads `manifest.json` directly with no third-party dependency, and works without installing any extra. Minimum supported manifest schema version is v9 (dbt 1.5+). Users who installed `datacontract-cli[dbt]` should switch to plain `datacontract-cli`.
+- **breaking:** the `protobuf` extra now requires the `protoc` compiler installed on the system. Replaces the bundled `grpcio-tools` (~50 MB of platform-specific protoc binaries) with the lighter `protobuf` runtime (`>=3.20,<7.0`). `import protobuf` raises a clear error with platform-specific install hints if `protoc` is not on `PATH`. Install with `brew install protobuf` (macOS), `sudo apt install protobuf-compiler` (Debian/Ubuntu), etc. — see README.
 
 ### Fixed
 - README install table: add missing `csv`, `excel`, and `oracle` extras. The matching `[project.optional-dependencies]` entries already existed but were undocumented.
