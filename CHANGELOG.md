@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `impala` extra (`pip install datacontract-cli[impala]`) — pulls in `soda-core-impala`. Impala engine support landed in #965 but the install extra was never added; users had to install `soda-core-impala` manually. Also included in `[all]`.
 
+### Changed
+- **breaking:** drop the `dbt` extra and the `dbt-core` dependency. `import dbt` now reads `manifest.json` directly with no third-party dependency, and works without installing any extra. Minimum supported manifest schema version is v9 (dbt 1.5+). Users who installed `datacontract-cli[dbt]` should switch to plain `datacontract-cli`.
+
 ### Fixed
 - README install table: add missing `csv`, `excel`, and `oracle` extras. The matching `[project.optional-dependencies]` entries already existed but were undocumented.
 - quality: support `{object}` and `${object}` placeholder in SQL quality queries as the ODCS-spec name for the current schema object (alias for `{model}`/`{table}`) (#676)
