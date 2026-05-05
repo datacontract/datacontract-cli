@@ -896,6 +896,7 @@ def prepare_query(
 
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
+    query = re.sub(r'["\']?\$?\{object}["\']?', model_name_for_soda, query)
 
     if server and server.schema_:
         if quoting_config.quote_model_name:
