@@ -106,6 +106,10 @@ trino = [
   "soda-core-trino>=3.3.20,<3.6.0"
 ]
 
+impala = [
+  "soda-core-impala>=3.3.20,<3.6.0"
+]
+
 dbt = [
   "dbt-core>=1.8.0"
 ]
@@ -137,7 +141,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,mysql,databricks,sqlserver,s3,athena,trino,dbt,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,mysql,databricks,sqlserver,s3,athena,trino,impala,dbt,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version

@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- `impala` extra (`pip install datacontract-cli[impala]`) — pulls in `soda-core-impala`. Impala engine support landed in #965 but the install extra was never added; users had to install `soda-core-impala` manually. Also included in `[all]`.
+
 ### Fixed
+- README install table: add missing `csv`, `excel`, and `oracle` extras. The matching `[project.optional-dependencies]` entries already existed but were undocumented.
 - `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)
 - **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
 - correct swapped `check_type` labels  `model_qualty_sql` and `field_quality_sql` (#1187)
