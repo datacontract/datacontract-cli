@@ -170,11 +170,6 @@ datacontract = "datacontract.cli:main"
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.uv]
-override-dependencies = [
-    "mysql-connector-python>=8.0.30,<9.7.0",
-]
-
 [tool.pytest.ini_options]
 #addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
 testpaths = ["tests"]
