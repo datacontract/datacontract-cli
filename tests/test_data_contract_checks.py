@@ -98,6 +98,24 @@ def test_prepare_query_all_placeholders_with_dollar():
     assert result == "SELECT my_field FROM my_schema.my_table"
 
 
+def test_prepare_query_object_placeholder():
+    """Test that {object} and ${object} placeholders are replaced with the model name (ODCS spec terminology)."""
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM {object} WHERE ${object} IS NOT NULL")
+
+    result = prepare_query(quality, "my_table", None, QuotingConfig(), None)
+
+    assert result == "SELECT COUNT(*) FROM my_table WHERE my_table IS NOT NULL"
+
+
+def test_prepare_query_object_and_property_placeholders():
+    """Test the canonical ODCS-spec example: SELECT COUNT(*) FROM {object} WHERE {property} IS NOT NULL."""
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM {object} WHERE {property} IS NOT NULL")
+
+    result = prepare_query(quality, "my_table", "my_field", QuotingConfig(), None)
+
+    assert result == "SELECT COUNT(*) FROM my_table WHERE my_field IS NOT NULL"
+
+
 def test_prepare_query_field_backtick_quoting():
     """Test that field placeholders use backticks for databricks."""
     quality = DataQuality(type="sql", query="SELECT {field} FROM {model}")

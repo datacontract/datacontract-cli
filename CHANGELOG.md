@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Fixed
+- quality: support `{object}` and `${object}` placeholder in SQL quality queries as the ODCS-spec name for the current schema object (alias for `{model}`/`{table}`) (#676)
 - `changelog` command help text now advertises `(url or path)` for V1/V2 arguments, clarifying that HTTP/HTTPS URLs are accepted (#1162)
 - **breaking:** `test` command now exits non-zero when a server is specified, but soda-core fails to connect or authenticate (#1181)
 - correct swapped `check_type` labels  `model_qualty_sql` and `field_quality_sql` (#1187)
