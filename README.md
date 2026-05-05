@@ -243,7 +243,6 @@ A list of available extras:
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
 | CSV                     | `pip install datacontract-cli[csv]`        |
 | Databricks Integration  | `pip install datacontract-cli[databricks]` |
-| dbt                     | `pip install datacontract-cli[dbt]`        |
 | DBML                    | `pip install datacontract-cli[dbml]`       |
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
 | Excel                   | `pip install datacontract-cli[excel]`      |

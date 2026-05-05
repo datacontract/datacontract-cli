@@ -110,10 +110,6 @@ impala = [
   "soda-core-impala>=3.3.20,<3.6.0"
 ]
 
-dbt = [
-  "dbt-core>=1.8.0"
-]
-
 dbml = [
   "pydbml>=1.1.1"
 ]
@@ -141,7 +137,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,mysql,databricks,sqlserver,s3,athena,trino,impala,dbt,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,mysql,databricks,sqlserver,s3,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version
@@ -173,9 +169,6 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
-# soda-core-mysql pins mysql-connector-python==8.0.30 (from 2022) which requires
-# protobuf<=3.20.1, conflicting with dbt-core. Newer mysql-connector-python (9.x)
-# works fine with soda and resolves the conflict. See: https://github.com/sodadata/soda-core/issues/2515
 override-dependencies = [
     "mysql-connector-python>=8.0.30,<9.7.0",
 ]
