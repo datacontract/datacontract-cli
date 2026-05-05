@@ -169,9 +169,6 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
-# soda-core-mysql pins mysql-connector-python==8.0.30 (from 2022). Newer
-# mysql-connector-python (9.x) works fine with soda. See:
-# https://github.com/sodadata/soda-core/issues/2515
 override-dependencies = [
     "mysql-connector-python>=8.0.30,<9.7.0",
 ]
