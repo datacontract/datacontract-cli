@@ -32,6 +32,13 @@ dependencies = [
   "datacontract-specification>=1.2.3,<2.0.0",
   "open-data-contract-standard>=3.1.2,<4.0.0",
   "deepdiff>=6.0.0,<10.0.0",
+  # setuptools provides the distutils shim that soda-core's env_helper.py
+  # imports (`from distutils.util import strtobool`). distutils was removed
+  # from stdlib in Python 3.12 (and stripped from python-build-standalone
+  # 3.11 builds), so without setuptools, soda-core blows up on import.
+  # See soda-core#2091. Was previously pulled in transitively via
+  # grpcio-tools; required explicitly now that we use external protoc.
+  "setuptools>=70",
 ]
 
 [project.optional-dependencies]
