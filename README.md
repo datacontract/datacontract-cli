@@ -1870,7 +1870,17 @@ datacontract import csv --source "test.csv"
 <details markdown="1">
 <summary><strong>protobuf</strong></summary>
 
-Importing from protobuf File. Specify file in `source` parameter. 
+Importing from protobuf File. Specify file in `source` parameter.
+
+Requires the `protoc` compiler installed on the system. Install with:
+
+| Platform       | Command                              |
+|----------------|--------------------------------------|
+| macOS          | `brew install protobuf`              |
+| Debian/Ubuntu  | `sudo apt install protobuf-compiler` |
+| Fedora/RHEL    | `sudo dnf install protobuf-compiler` |
+| Arch           | `sudo pacman -S protobuf`            |
+| Windows        | `choco install protoc` (or [download a release](https://github.com/protocolbuffers/protobuf/releases)) |
 
 Example:
 

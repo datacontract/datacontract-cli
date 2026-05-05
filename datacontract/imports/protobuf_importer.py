@@ -1,10 +1,11 @@
 import os
 import re
+import shutil
+import subprocess
 import tempfile
 from typing import List
 
 from google.protobuf import descriptor_pb2
-from grpc_tools import protoc
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
@@ -14,6 +15,19 @@ from datacontract.imports.odcs_helper import (
     create_schema_object,
 )
 from datacontract.model.exceptions import DataContractException
+
+_PROTOC_INSTALL_HINT = """\
+The 'protoc' compiler is required to import .proto files but was not found on your PATH.
+
+Install it with your platform's package manager:
+  macOS         : brew install protobuf
+  Debian/Ubuntu : sudo apt install protobuf-compiler
+  Fedora/RHEL   : sudo dnf install protobuf-compiler
+  Arch          : sudo pacman -S protobuf
+  Windows       : choco install protoc
+                  or download from https://github.com/protocolbuffers/protobuf/releases
+
+After installing, verify with: protoc --version"""
 
 
 def map_type_from_protobuf(field_type: int) -> str:
@@ -55,7 +69,17 @@ def parse_imports_raw(proto_file: str) -> list:
 
 
 def compile_proto_to_binary(proto_files: list, output_file: str, proto_root: str = None):
-    """Compile the provided proto files into a single descriptor set."""
+    """Compile the provided proto files into a single FileDescriptorSet using the system `protoc`."""
+    protoc_path = shutil.which("protoc")
+    if protoc_path is None:
+        raise DataContractException(
+            type="schema",
+            name="Compile proto files",
+            reason=_PROTOC_INSTALL_HINT,
+            engine="datacontract",
+            original_exception=None,
+        )
+
     if proto_root:
         proto_dirs = {proto_root}
     else:
@@ -63,17 +87,43 @@ def compile_proto_to_binary(proto_files: list, output_file: str, proto_root: str
     proto_paths = [f"--proto_path={d}" for d in proto_dirs]
 
     abs_proto_files = [os.path.abspath(proto) for proto in proto_files]
+    args = [protoc_path, *proto_paths, f"--descriptor_set_out={output_file}", *abs_proto_files]
 
-    args = [""] + proto_paths + [f"--descriptor_set_out={output_file}"] + abs_proto_files
-    ret = protoc.main(args)
-    if ret != 0:
+    try:
+        result = subprocess.run(args, capture_output=True, text=True, check=False)
+    except OSError as e:
         raise DataContractException(
             type="schema",
             name="Compile proto files",
-            reason=f"grpc_tools.protoc failed with exit code {ret}",
+            reason=f"Failed to invoke protoc at {protoc_path}: {e}",
+            engine="datacontract",
+            original_exception=e,
+        )
+
+    if result.returncode != 0:
+        version = _safe_protoc_version(protoc_path)
+        stderr = (result.stderr or "").strip()
+        details = stderr if stderr else f"protoc exited with code {result.returncode} and no error output"
+        raise DataContractException(
+            type="schema",
+            name="Compile proto files",
+            reason=(
+                f"protoc failed to compile the proto files (exit code {result.returncode}).\n"
+                f"protoc: {protoc_path} ({version})\n\n"
+                f"protoc output:\n{details}"
+            ),
             engine="datacontract",
             original_exception=None,
         )
+
+
+def _safe_protoc_version(protoc_path: str) -> str:
+    """Best-effort `protoc --version` for inclusion in error messages."""
+    try:
+        result = subprocess.run([protoc_path, "--version"], capture_output=True, text=True, check=False, timeout=5)
+        return (result.stdout or result.stderr or "").strip() or "unknown version"
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown version"
 
 
 def extract_enum_values_from_fds(fds: descriptor_pb2.FileDescriptorSet, enum_name: str) -> dict:

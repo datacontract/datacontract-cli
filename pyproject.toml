@@ -32,6 +32,13 @@ dependencies = [
   "datacontract-specification>=1.2.3,<2.0.0",
   "open-data-contract-standard>=3.1.2,<4.0.0",
   "deepdiff>=6.0.0,<10.0.0",
+  # setuptools provides the distutils shim that soda-core's env_helper.py
+  # imports (`from distutils.util import strtobool`). distutils was removed
+  # from stdlib in Python 3.12 (and stripped from python-build-standalone
+  # 3.11 builds), so without setuptools, soda-core blows up on import.
+  # See soda-core#2091. Was previously pulled in transitively via
+  # grpcio-tools; required explicitly now that we use external protoc.
+  "setuptools>=70",
 ]
 
 [project.optional-dependencies]
@@ -133,7 +140,9 @@ api = [
 ]
 
 protobuf = [
-  "grpcio-tools>=1.53",
+  # `protoc` (the compiler) must be installed separately on the system; see README.
+  # Wide range: only `descriptor_pb2.FileDescriptorSet` is used, stable since 3.x.
+  "protobuf>=3.20,<7.0",
 ]
 
 all = [
@@ -169,6 +178,12 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
+# soda-core-mysql exact-pins mysql-connector-python==8.0.30 (from 2022),
+# which doesn't recognize the charset IDs returned by modern MySQL server
+# images (used by our testcontainers-based MySQL tests) and raises
+# "Character set 'utf8' unsupported". Override to allow newer
+# mysql-connector-python releases that know about the current charsets.
+# See: https://github.com/sodadata/soda-core/issues/2515
 override-dependencies = [
     "mysql-connector-python>=8.0.30,<9.7.0",
 ]
