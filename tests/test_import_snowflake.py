@@ -34,7 +34,7 @@ def test_cli():
 
 
 def test_cli_connection():
-    with patch("datacontract.imports.snowflake_importer.import_Snowflake_from_connector") as mock_import:
+    with patch("datacontract.imports.snowflake_importer.import_snowflake_from_connector") as mock_import:
         mock_import.return_value = OpenDataContractStandard(id="test", kind="DataContract", apiVersion="v3.1.0")
         runner = CliRunner()
         result = runner.invoke(

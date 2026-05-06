@@ -91,7 +91,7 @@ def information_schema_columns_query() -> str:
                                                     '(' || IS_C.DATETIME_PRECISION || ')' ,
                                                     ''
                                                 ))),
-                                        ' AUTOINCREMENENT START ', IS_C.IDENTITY_START, ' INCREMENT ', IS_C.IDENTITY_INCREMENT, 
+                                        ' AUTOINCREMENT START ', IS_C.IDENTITY_START, ' INCREMENT ', IS_C.IDENTITY_INCREMENT, 
                                         IFF(IS_C.IDENTITY_ORDERED = 'YES', ' ORDER', ' NOORDER'))
                                      WHEN IS_C.DATA_TYPE_ALIAS IS NOT NULL THEN IS_C.DATA_TYPE_ALIAS
                                      ELSE CONCAT(IS_C.DATA_TYPE, COALESCE( '('||IS_C.CHARACTER_MAXIMUM_LENGTH ||')',
@@ -330,14 +330,14 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             schema_identifier = f'"{schema}"'
 
     # get all information from information_schema in parallel to optimize performance
-    resulsets = import_information_schema(conn)
+    result_sets = import_information_schema(conn)
 
     odcs = create_odcs()
 
     # server
     server = None
     list_role_adapter = TypeAdapter(List[Role])
-    for row in resulsets["server"]:
+    for row in result_sets["server"]:
         env_part = row["TABLE_CATALOG"].split("_")
 
         server = create_server(
@@ -363,14 +363,14 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
     schemas = []
     enhanced_schemas = []
 
-    for schema in resulsets["schemas"]:
+    for schema in result_sets["schemas"]:
         # for each schema we need to get the properties and quality information from the resultsets we fetched in parallel to optimize performance by avoiding nested loops and multiple iterations over the resultsets, we can filter the relevant information for each schema using list comprehensions which are optimized in python and will be much faster than nested loops especially when we have a large number of schemas and properties.
         list_of_properties = [
-            prop["PROPERTIES"] for prop in resulsets["properties"] if prop["TABLE_NAME"] == schema["TABLE_NAME"]
+            prop["PROPERTIES"] for prop in result_sets["properties"] if prop["TABLE_NAME"] == schema["TABLE_NAME"]
         ]
         list_of_data_quality = [
             quality["QUALITY"]
-            for quality in resulsets["quality"]
+            for quality in result_sets["quality"]
             if quality["TABLE_NAME"] == schema["TABLE_NAME"] and quality["TYPES"] == "RECORD"
         ]
 
@@ -382,19 +382,21 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
                 properties=list_properties_adapter.validate_json(list_of_properties[0])
                 if len(list_of_properties) > 0
                 else None,
-                quality=data_quality_adapter.validate_json(list_of_data_quality[0]) if len(list_of_data_quality) > 0 else None,
+                quality=data_quality_adapter.validate_json(list_of_data_quality[0])
+                if len(list_of_data_quality) > 0
+                else None,
             )
         )
 
     # cleansing
     for schema in schemas:
         # tags
-        properties_tags = [tag for tag in resulsets["tags"] if tag["OBJECT_NAME"] == schema.name]
+        properties_tags = [tag for tag in result_sets["tags"] if tag["OBJECT_NAME"] == schema.name]
 
         # quality
         properties_quality = [
             quality
-            for quality in resulsets["quality"]
+            for quality in result_sets["quality"]
             if quality["TABLE_NAME"] == schema.name and quality["TYPES"] == "COLUMN"
         ]
 
