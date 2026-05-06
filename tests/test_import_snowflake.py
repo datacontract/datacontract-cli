@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.imports.snowflake_importer import import_Snowflake_from_connector
+from datacontract.imports.snowflake_importer import import_snowflake_from_connector
 
 # logging.basicConfig(level=logging.INFO, force=True)
 load_dotenv(override=True)
@@ -136,7 +136,7 @@ def test_import_snowflake_from_connector_success():
             }
 
             # Run the function
-            result = import_Snowflake_from_connector(account, database, schema)
+            result = import_snowflake_from_connector(account, database, schema)
 
             # Verify the result
             assert result.apiVersion == "v3.1.0"

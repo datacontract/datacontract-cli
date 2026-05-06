@@ -23,7 +23,7 @@ from datacontract.model.exceptions import DataContractException
 class SnowflakeImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         if source is not None:
-            return import_Snowflake_from_connector(
+            return import_snowflake_from_connector(
                 account=source,
                 database=import_args.get("database"),
                 schema=import_args.get("schema"),
@@ -243,13 +243,13 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
 
 
 def schema_properties_cleansing(
-    properties: List[SchemaProperty], propertiesTags: List[Dict[str, Any]], propertiesQuality: List[Dict[str, Any]]
+    properties: List[SchemaProperty], properties_tags: List[Dict[str, Any]], properties_quality: List[Dict[str, Any]]
 ) -> List[SchemaProperty]:
     """
     Cleanses the properties list by removing None values and ensuring all required fields are present.
     """
-    tagsAdapter = TypeAdapter(list[str])
-    qualityAdapter = TypeAdapter(list[DataQuality])
+    tags_adapter = TypeAdapter(list[str])
+    quality_adapter = TypeAdapter(list[DataQuality])
     cleansed_properties = []
 
     for prop in properties:
@@ -263,10 +263,10 @@ def schema_properties_cleansing(
         scale = [cp.value for cp in prop.customProperties if cp.property == "scale"]
 
         tags = [
-            tag["TAGS"] for tag in propertiesTags if tag["COLUMN_NAME"] == prop.name and tag["COLUMN_NAME"] is not None
+            tag["TAGS"] for tag in properties_tags if tag["COLUMN_NAME"] == prop.name and tag["COLUMN_NAME"] is not None
         ]
         quality = [
-            q["QUALITY"] for q in propertiesQuality if q["COLUMN_NAME"] == prop.name and q["COLUMN_NAME"] is not None
+            q["QUALITY"] for q in properties_quality if q["COLUMN_NAME"] == prop.name and q["COLUMN_NAME"] is not None
         ]
 
         prop = create_property(
@@ -280,30 +280,30 @@ def schema_properties_cleansing(
             format=format,
             required=prop.required,
             unique=prop.unique,
-            tags=tagsAdapter.validate_json(tags[0] if len(tags) > 0 else "[]"),
+            tags=tags_adapter.validate_json(tags[0] if len(tags) > 0 else "[]"),
             custom_properties={cp.property: cp.value for cp in prop.customProperties},
             id=prop.id,
-            quality=qualityAdapter.validate_json(quality[0] if len(quality) > 0 else "[]"),
+            quality=quality_adapter.validate_json(quality[0] if len(quality) > 0 else "[]"),
         )
         cleansed_properties.append(prop)
 
     return cleansed_properties
 
 
-def _get_ordinal_position_value(cpList: List[CustomProperty]) -> Any:
+def _get_ordinal_position_value(cp_list: List[CustomProperty]) -> Any:
     """Extract customProperties value where property == 'ordinalPosition'."""
-    for cp in cpList:
+    for cp in cp_list:
         if cp.property == "ordinalPosition":
             return int(cp.value)
     return None
 
 
-def property_customs_ordinalPosition_sort(col: SchemaProperty) -> Any:
+def property_customs_ordinal_position_sort(col: SchemaProperty) -> Any:
     ord_val = _get_ordinal_position_value(col.customProperties)
-    return (ord_val, f"{col.name.lower()}")
+    return ord_val, f"{col.name.lower()}"
 
 
-def import_Snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
+def import_snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
     ## connect to snowflake and get cursor
     conn = snowflake_cursor(account, database, schema)
     try:
@@ -336,7 +336,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
 
     # server
     server = None
-    ListRoleAdapter = TypeAdapter(List[Role])
+    list_role_adapter = TypeAdapter(List[Role])
     for row in resulsets["server"]:
         env_part = row["TABLE_CATALOG"].split("_")
 
@@ -352,23 +352,23 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
             schema=schema_identifier,
             warehouse=row["WAREHOUSE"],
             port=443,
-            roles=ListRoleAdapter.validate_json(row["ROLES"]),
+            roles=list_role_adapter.validate_json(row["ROLES"]),
         )
     # only one server in snowflake, we can safely assign it to the ODCS
     odcs.servers = [server]
 
     # schemas
-    ListPropertiesAdapter = TypeAdapter(List[SchemaProperty])
-    DataQualityAdapter = TypeAdapter(List[DataQuality])
+    list_properties_adapter = TypeAdapter(List[SchemaProperty])
+    data_quality_adapter = TypeAdapter(List[DataQuality])
     schemas = []
     enhanced_schemas = []
 
     for schema in resulsets["schemas"]:
         # for each schema we need to get the properties and quality information from the resultsets we fetched in parallel to optimize performance by avoiding nested loops and multiple iterations over the resultsets, we can filter the relevant information for each schema using list comprehensions which are optimized in python and will be much faster than nested loops especially when we have a large number of schemas and properties.
-        listOfProperties = [
+        list_of_properties = [
             prop["PROPERTIES"] for prop in resulsets["properties"] if prop["TABLE_NAME"] == schema["TABLE_NAME"]
         ]
-        listOfDataQuality = [
+        list_of_data_quality = [
             quality["QUALITY"]
             for quality in resulsets["quality"]
             if quality["TABLE_NAME"] == schema["TABLE_NAME"] and quality["TYPES"] == "RECORD"
@@ -379,10 +379,10 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
                 name=schema["TABLE_NAME"],
                 description=schema["DESCRIPTION"],
                 physical_type=schema["PHYSICAL_TYPE"],  # table or view
-                properties=ListPropertiesAdapter.validate_json(listOfProperties[0])
-                if len(listOfProperties) > 0
+                properties=list_properties_adapter.validate_json(list_of_properties[0])
+                if len(list_of_properties) > 0
                 else None,
-                quality=DataQualityAdapter.validate_json(listOfDataQuality[0]) if len(listOfDataQuality) > 0 else None,
+                quality=data_quality_adapter.validate_json(list_of_data_quality[0]) if len(list_of_data_quality) > 0 else None,
             )
         )
 
@@ -399,7 +399,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
         ]
 
         schema.properties = schema_properties_cleansing(schema.properties, properties_tags, properties_quality)
-        schema.properties.sort(key=property_customs_ordinalPosition_sort)
+        schema.properties.sort(key=property_customs_ordinal_position_sort)
         enhanced_schemas.append(schema)
 
     # ODCS building
@@ -409,7 +409,7 @@ def import_Snowflake_from_connector(account: str, database: str, schema: str) ->
     return odcs
 
 
-def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = "PUBLIC"):
+def snowflake_cursor(account: str, database: str = "DEMO_DB", schema: str = "PUBLIC"):
     try:
         from snowflake.connector import connect
     except ImportError as e:
@@ -437,7 +437,7 @@ def snowflake_cursor(account: str, databasename: str = "DEMO_DB", schema: str = 
         else os.environ.get("DATACONTRACT_SNOWFLAKE_AUTHENTICATOR", "snowflake")
     )
     warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
-    database_connect = databasename or "DEMO_DB"
+    database_connect = database or "DEMO_DB"
     schema_connect = schema or "PUBLIC"
     snowflake_home = os.environ.get("DATACONTRACT_SNOWFLAKE_HOME") or os.environ.get("SNOWFLAKE_HOME")
     snowflake_connections_file = os.environ.get("DATACONTRACT_SNOWFLAKE_CONNECTIONS_FILE") or os.environ.get(
