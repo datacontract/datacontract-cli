@@ -439,7 +439,7 @@ def import_snowflake(
     source: Annotated[Optional[str], typer.Option(help="Snowflake account name.")] = None,
     output: output_option = None,
     database: database_option = None,
-    schema: schema_option = None,
+    schema: Annotated[Optional[str], typer.Option("--schema", help="Snowflake schema name.")] = None,
     owner: owner_option = None,
     id: id_option = None,
     debug: debug_option = None,
