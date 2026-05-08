@@ -851,20 +851,16 @@ models:
 
 ##### Environment Variables
 All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
+Depending on the `authenticator` mode required by your Snowflake workspace, please set your environment variables accordingly.
 For example:
 
-| Soda parameter       | Environment Variable                        |
-|----------------------|---------------------------------------------|
-| `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
-| `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
-| `warehouse`          | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`          |
-| `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
-| `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
-
-##### EV Authentication options
-
-| Soda optionnal parameter | Environment Variable                            |
+| Soda parameter           | Environment Variable                            |
 |--------------------------|-------------------------------------------------|
+| `username`               | `DATACONTRACT_SNOWFLAKE_USERNAME`               |
+| `password`               | `DATACONTRACT_SNOWFLAKE_PASSWORD`               |
+| `warehouse`              | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`              |
+| `role`                   | `DATACONTRACT_SNOWFLAKE_ROLE`                   |
+| `connection_timeout`     | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`     |
 | `authenticator`          | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR`          |
 | `private_key`            | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`            |
 | `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
