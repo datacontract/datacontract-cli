@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -586,12 +587,13 @@ def test_parse_run_results_missing_file(tmp_path: Path):
 
 
 def test_cli_help_renders():
-    runner = CliRunner(env={"COLUMNS": "200"})
-    result = runner.invoke(app, ["dbt", "sync", "--help"])
+    result = CliRunner().invoke(app, ["dbt", "sync", "--help"], terminal_width=200, color=False)
     assert result.exit_code == 0
-    assert "Generate dbt tests" in result.stdout
-    assert "--skip-tests" in result.stdout
-    assert "--schema-name" in result.stdout
+    # Collapse whitespace so the assertions survive line-wrapping in the rendered help.
+    plain = re.sub(r"\s+", "", result.stdout)
+    assert "Generatedbttests" in plain
+    assert "--skip-tests" in plain
+    assert "--schema-name" in plain
 
 
 def test_cli_skip_tests_invocation(tmp_path: Path):
