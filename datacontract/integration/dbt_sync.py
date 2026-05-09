@@ -523,7 +523,9 @@ def run_dbt_test(
     if target:
         args.extend(["--target", target])
     if profiles_dir:
-        args.extend(["--profiles-dir", str(profiles_dir)])
+        # Resolve to absolute — we cwd into project_dir below, so a relative
+        # `--profiles-dir` from the user's shell would otherwise miss.
+        args.extend(["--profiles-dir", str(Path(profiles_dir).resolve())])
 
     # Drop any prior run_results.json so we don't mistake a stale file for fresh output
     # if dbt fails before regenerating it.
