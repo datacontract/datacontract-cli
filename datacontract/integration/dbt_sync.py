@@ -222,7 +222,7 @@ def _row_count_test(quality: DataQuality, run: Run, schema_name: Optional[str]) 
     if quality.mustBe is not None:
         return {"dbt_expectations.expect_table_row_count_to_equal": {"value": quality.mustBe}}
 
-    # warm if we cannot do a precise conversion
+    # warn if we cannot do a precise conversion
     strict_lower = quality.mustBeGreaterThan is not None
     inclusive_lower = not strict_lower and (quality.mustBeGreaterOrEqualTo is not None or bool(quality.mustBeBetween))
     strict_higher = quality.mustBeLessThan is not None
@@ -605,8 +605,13 @@ def parse_run_results(project_dir: Path, odcs: OpenDataContractStandard) -> Run:
         run.finish()
         return run
 
-    with run_results_path.open("r", encoding="utf-8") as f:
-        run_results = json.load(f)
+    try:
+        with run_results_path.open("r", encoding="utf-8") as f:
+            run_results = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        run.log_warn(f"Could not read `{run_results_path}` — {e}")
+        run.finish()
+        return run
 
     manifest = _load_manifest(project_dir)
     nodes = manifest.get("nodes") or {}

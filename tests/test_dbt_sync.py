@@ -589,8 +589,10 @@ def test_parse_run_results_missing_file(tmp_path: Path):
 def test_cli_help_renders():
     result = CliRunner().invoke(app, ["dbt", "sync", "--help"], terminal_width=200, color=False)
     assert result.exit_code == 0
-    # Collapse whitespace so the assertions survive line-wrapping in the rendered help.
-    plain = re.sub(r"\s+", "", result.stdout)
+    # Strip ANSI + collapse whitespace. CI on Linux ignores `color=False` and emits escape
+    # codes inside flag names (e.g. `--\x1b[…m\x1b[…m-skip-tests`), so a literal substring
+    # match fails without this normalization.
+    plain = re.sub(r"\s+", "", re.sub(r"\x1b\[[0-9;]*[mGKHF]", "", result.stdout))
     assert "Generatedbttests" in plain
     assert "--skip-tests" in plain
     assert "--schema-name" in plain

@@ -36,7 +36,7 @@ def sync_command(
     model_resolution: Annotated[
         ModelResolution,
         typer.Option(help="How to map an ODCS schema to a dbt model name."),
-    ] = ModelResolution.name.value,
+    ] = ModelResolution.name,
     target: Annotated[Optional[str], typer.Option(help="Forwarded to `dbt test --target`.")] = None,
     profiles_dir: Annotated[
         Optional[Path],
