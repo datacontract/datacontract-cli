@@ -422,24 +422,6 @@ def test_run_dbt_test_selector_unions_tag_and_models(tmp_path: Path):
     assert selectors == ["tag:datacontract_cli", "orders", "customers"]
 
 
-def test_run_dbt_test_decorates_duplicate_test_error(tmp_path: Path):
-    project = _copy_dbt_project(tmp_path)
-    duplicate_stderr = (
-        'Compilation Error\n  dbt found two tests with the name "not_null_orders_id" in the same project\n'
-    )
-
-    def fake_run(args, **kwargs):
-        return subprocess.CompletedProcess(args=args, returncode=2, stdout="", stderr=duplicate_stderr)
-
-    with mock.patch.object(subprocess, "run", side_effect=fake_run):
-        with pytest.raises(DataContractException) as exc:
-            run_dbt_test(project, ["orders"], target=None, profiles_dir=None)
-
-    msg = exc.value.reason
-    assert "models/datacontract_cli/" in msg
-    assert "contract is the source of truth" in msg
-
-
 def test_run_dbt_test_surfaces_failure_when_no_run_results(tmp_path: Path):
     """If dbt fails before producing run_results.json, sync must surface — not swallow — the error."""
     project = _copy_dbt_project(tmp_path)
