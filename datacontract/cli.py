@@ -15,9 +15,28 @@ console = Console()
 debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
 
 
+# Order in which top-level commands appear in `datacontract --help`. Mirrors the
+# workflow ordering used in README.md so the docs and CLI tell the same story.
+COMMAND_ORDER = [
+    "init",
+    "lint",
+    "changelog",
+    "test",
+    "ci",
+    "export",
+    "dbt",
+    "import",
+    "catalog",
+    "publish",
+    "api",
+]
+
+
 class OrderedCommands(TyperGroup):
     def list_commands(self, ctx: Context) -> Iterable[str]:
-        return self.commands.keys()
+        known = set(COMMAND_ORDER)
+        # Trailing fallback keeps any future command visible even if COMMAND_ORDER forgets it.
+        return [c for c in COMMAND_ORDER if c in self.commands] + [c for c in self.commands if c not in known]
 
 
 class OrderedCommandsWithMigrationHints(OrderedCommands):
@@ -123,11 +142,13 @@ def _print_logs(run, out=None):
 # Register commands (must be after app and shared helpers are defined so the
 # command_* modules can import from this module without circular-import issues)
 # ---------------------------------------------------------------------------
+# Display order for `--help` is controlled by COMMAND_ORDER above, not by import order.
 from datacontract import (  # noqa: E402, F401
     command_api,
     command_catalog,
     command_changelog,
     command_ci,
+    command_dbt,
     command_export,
     command_import,
     command_init,
@@ -136,7 +157,6 @@ from datacontract import (  # noqa: E402, F401
     command_test,
 )
 
-# Commands with subcommands
 app.add_typer(
     command_import.import_app,
     name="import",
@@ -153,6 +173,12 @@ app.add_typer(
         "use `datacontract export sql --dialect <dialect>`."
     ),
 )
+app.add_typer(
+    command_dbt.dbt_app,
+    name="dbt",
+    help="Work with data contracts in your dbt project.",
+    epilog="Example: datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse",
+)
 
 
 def main():
@@ -162,7 +188,10 @@ def main():
         # If an uncaught exception occurs, only print its name (except when debug mode is enabled)
         if "--debug" in sys.argv or os.environ.get("DATACONTRACT_CLI_DEBUG") == "1":
             raise
-        console.print(f"[red]Error:[/red] {e}")
+        from datacontract.model.exceptions import DataContractException
+
+        message = e.reason if isinstance(e, DataContractException) else str(e)
+        console.print(f"[red]Error:[/red] {message}")
         console.print("[dim]Pass --debug (or set DATACONTRACT_CLI_DEBUG=1) for the full traceback.[/dim]")
         sys.exit(1)
 

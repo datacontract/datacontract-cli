@@ -1,0 +1,11 @@
+name: 'datacontract_sync_fixture'
+version: '1.0.0'
+config-version: 2
+profile: 'datacontract_sync_fixture'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+models:
+  datacontract_sync_fixture:
+    +materialized: view
