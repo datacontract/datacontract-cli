@@ -28,7 +28,13 @@ class SnowflakeImporter(Importer):
                 database=import_args.get("database"),
                 schema=import_args.get("schema"),
             )
-
+        else:
+            raise DataContractException(
+                type="source",
+                name="snowflake import source",
+                reason="Account is required for snowflake import and should be the account name",
+                engine="datacontract",
+            )
 
 def information_schema_table_privileges_query() -> str:
     return """
@@ -229,7 +235,7 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
 
     # wait for all queries to finish before fetching results to optimize performance by running queries in parallel
     for qid in query_pool.values():
-        while conn.get_query_status(qid) not in [QueryStatus.SUCCESS, QueryStatus.FAILED_WITH_ERROR]:
+        while conn.get_query_status(qid) in [QueryStatus.RUNNING, QueryStatus.QUEUED]:
             time.sleep(0.2)
 
     # load resultsets into a dict of name to resultset to optimize performance by fetching results
@@ -304,8 +310,7 @@ def property_customs_ordinal_position_sort(col: SchemaProperty) -> Any:
 
 
 def import_snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
-    ## connect to snowflake and get cursor
-    conn = snowflake_cursor(account, database, schema)
+
     try:
         # To catch incomplete installation of snowflake extra which will cause the connect import to succeed but fail later when trying to catch ProgrammingError for schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
         from snowflake.connector.errors import ProgrammingError
@@ -318,9 +323,10 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             engine="datacontract",
             original_exception=e,
         )
-
+    
     # Define Database and Schema Context for the import, to avoid having to specify it in every query and to catch double_quoted identifier issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
-    with conn.cursor() as cur:
+    cnx = snowflake_cursor(account, database, schema)
+    with cnx.cursor() as cur:
         try:
             cur.execute(f"USE SCHEMA {database}.{schema}")
             schema_identifier = schema
@@ -330,7 +336,9 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             schema_identifier = f'"{schema}"'
 
     # get all information from information_schema in parallel to optimize performance
-    result_sets = import_information_schema(conn)
+    result_sets = import_information_schema(cnx)
+    # connection can be closed after fetching all resultsets as they are stored in memory and we don't need to fetch anything else from snowflake
+    cnx.close()
 
     odcs = create_odcs()
 
@@ -338,16 +346,12 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
     server = None
     list_role_adapter = TypeAdapter(List[Role])
     for row in result_sets["server"]:
-        env_part = row["TABLE_CATALOG"].split("_")
 
         server = create_server(
             name="workspace",
             server_type="snowflake",
-            environment=env_part[0].lower()
-            if len(env_part) > 0
-            else None,  # we don't have environment info in snowflake metadata, so we default to first part of the database name before the first underscore which is usually the organization name in snowflake, e.g. PRD_, QA_, DEV_ etc. This is of course a heuristic and might not work for everyone but it's the best we can do with the available metadata, and it can be easily overridden by the user if needed.
             account=account,
-            host=f"{account}.azure.snowflakecomputing.com",
+            host=f"{account}.snowflakecomputing.com",
             database=row["TABLE_CATALOG"],
             schema=schema_identifier,
             warehouse=row["WAREHOUSE"],
@@ -411,7 +415,7 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
     return odcs
 
 
-def snowflake_cursor(account: str, database: str = "DEMO_DB", schema: str = "PUBLIC"):
+def snowflake_cursor(account: str, database: str, schema: str):
     try:
         from snowflake.connector import connect
     except ImportError as e:
@@ -474,11 +478,11 @@ def snowflake_cursor(account: str, database: str = "DEMO_DB", schema: str = "PUB
         if account_connect:
             connection_params["account"] = account_connect
         # don't override default connection with defaults set above
-        if database_connect and database_connect != "DEMO_DB":
+        if database_connect:
             connection_params["database"] = database_connect
-        if schema_connect and schema_connect != "PUBLIC":
+        if schema_connect:
             connection_params["schema"] = schema_connect
-        if warehouse_connect and warehouse_connect != "COMPUTE_WH":
+        if warehouse_connect:
             connection_params["warehouse"] = warehouse_connect
 
         conn = connect(
