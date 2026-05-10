@@ -241,23 +241,25 @@ A list of available extras:
 | Amazon Athena           | `pip install datacontract-cli[athena]`     |
 | Avro Support            | `pip install datacontract-cli[avro]`       |
 | Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
+| CSV                     | `pip install datacontract-cli[csv]`        |
 | Databricks Integration  | `pip install datacontract-cli[databricks]` |
+| DBML                    | `pip install datacontract-cli[dbml]`       |
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
+| Excel                   | `pip install datacontract-cli[excel]`      |
 | Iceberg                 | `pip install datacontract-cli[iceberg]`    |
+| Impala                  | `pip install datacontract-cli[impala]`     |
 | Kafka Integration       | `pip install datacontract-cli[kafka]`      |
 | MySQL Integration       | `pip install datacontract-cli[mysql]`      |
+| Oracle                  | `pip install datacontract-cli[oracle]`     |
+| Parquet                 | `pip install datacontract-cli[parquet]`    |
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
+| protobuf                | `pip install datacontract-cli[protobuf]`   |
+| RDF                     | `pip install datacontract-cli[rdf]`        |
 | S3 Integration          | `pip install datacontract-cli[s3]`         |
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
 | Trino                   | `pip install datacontract-cli[trino]`      |
-| Impala                  | `pip install datacontract-cli[impala]` 	   |
-| dbt                     | `pip install datacontract-cli[dbt]`        |
-| DBML                    | `pip install datacontract-cli[dbml]`       |
-| Parquet                 | `pip install datacontract-cli[parquet]`    |
-| RDF                     | `pip install datacontract-cli[rdf]`        |
 | API (run as web server) | `pip install datacontract-cli[api]`        |
-| protobuf                | `pip install datacontract-cli[protobuf]`   |
 
 
 ## Documentation
@@ -1938,7 +1940,17 @@ datacontract import csv --source "test.csv"
 <details markdown="1">
 <summary><strong>protobuf</strong></summary>
 
-Importing from protobuf File. Specify file in `source` parameter. 
+Importing from protobuf File. Specify file in `source` parameter.
+
+Requires the `protoc` compiler installed on the system. Install with:
+
+| Platform       | Command                              |
+|----------------|--------------------------------------|
+| macOS          | `brew install protobuf`              |
+| Debian/Ubuntu  | `sudo apt install protobuf-compiler` |
+| Fedora/RHEL    | `sudo dnf install protobuf-compiler` |
+| Arch           | `sudo pacman -S protobuf`            |
+| Windows        | `choco install protoc` (or [download a release](https://github.com/protocolbuffers/protobuf/releases)) |
 
 Example:
 

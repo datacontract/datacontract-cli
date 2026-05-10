@@ -12,6 +12,12 @@ ENV UV_COMPILE_BYTECODE=1
 # install uv
 COPY --from=ghcr.io/astral-sh/uv:0.6.9 /uv /uvx /bin/
 
+# install protoc — required by `datacontract import protobuf` (the CLI shells out
+# to the system protoc to compile .proto files into FileDescriptorSets)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
 # copy resources
 COPY pyproject.toml /app/.
 COPY MANIFEST.in /app/.
