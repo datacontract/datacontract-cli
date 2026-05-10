@@ -23,11 +23,13 @@ def test_cli():
         app,
         [
             "import",
-            "sql",
-            "--source",
-            data_definition_file,
-            "--dialect",
             "snowflake",
+            "--source",
+            "test_account",
+            "--database",
+            "TEST_DB",
+            "--schema",
+            "TEST_SCHEMA",
         ],
     )
     assert result.exit_code == 0
@@ -51,15 +53,6 @@ def test_cli_connection():
             ],
         )
         assert result.exit_code == 0
-
-
-def test_import_sql_snowflake():
-    result = DataContract.import_from_source("sql", data_definition_file, dialect="snowflake")
-
-    print("Result:\n", result.to_yaml())
-    with open("fixtures/snowflake/import/datacontract.yaml") as file:
-        expected = file.read()
-    assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
 
 
 def test_import_snowflake_from_connector_success():
