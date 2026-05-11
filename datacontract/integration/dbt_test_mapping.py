@@ -19,7 +19,7 @@ def _get_custom_property_value(prop: SchemaProperty, key: str) -> Optional[str]:
     return None
 
 
-def _get_logical_type_option(prop: SchemaProperty, key: str) -> Any:
+def get_logical_type_option(prop: SchemaProperty, key: str) -> Any:
     if prop.logicalTypeOptions is None:
         return None
     return prop.logicalTypeOptions.get(key)
@@ -29,7 +29,7 @@ def _get_enum_values(prop: SchemaProperty) -> Optional[list]:
     """Resolve enum values from logicalTypeOptions, customProperties, or quality.invalidValues."""
 
     # First check logicalTypeOptions
-    enum_values = _get_logical_type_option(prop, "enum")
+    enum_values = get_logical_type_option(prop, "enum")
     if enum_values:
         return enum_values
     # Then check customProperties

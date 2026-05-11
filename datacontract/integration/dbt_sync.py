@@ -22,7 +22,7 @@ from open_data_contract_standard.model import (
 )
 from rich.console import Console
 
-from datacontract.integration.dbt_test_mapping import _get_logical_type_option, field_to_data_tests
+from datacontract.integration.dbt_test_mapping import field_to_data_tests, get_logical_type_option
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -434,8 +434,8 @@ def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
     column = _quote_identifier(prop.name)
     pairs: List[Tuple[str, str]] = []
 
-    min_length = _get_logical_type_option(prop, "minLength")
-    max_length = _get_logical_type_option(prop, "maxLength")
+    min_length = get_logical_type_option(prop, "minLength")
+    max_length = get_logical_type_option(prop, "maxLength")
     if min_length is not None or max_length is not None:
         parts: List[str] = []
         if min_length is not None:
@@ -444,14 +444,14 @@ def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
             parts.append(f"LENGTH({column}) > {max_length}")
         pairs.append(("length", " OR ".join(parts)))
 
-    pattern = _get_logical_type_option(prop, "pattern")
+    pattern = get_logical_type_option(prop, "pattern")
     if pattern is not None:
         pairs.append(("pattern", _regex_violation_jinja(column, pattern)))
 
-    minimum = _get_logical_type_option(prop, "minimum")
-    maximum = _get_logical_type_option(prop, "maximum")
-    exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
-    exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
+    minimum = get_logical_type_option(prop, "minimum")
+    maximum = get_logical_type_option(prop, "maximum")
+    exclusive_minimum = get_logical_type_option(prop, "exclusiveMinimum")
+    exclusive_maximum = get_logical_type_option(prop, "exclusiveMaximum")
     range_parts: List[str] = []
     if minimum is not None:
         range_parts.append(f"{column} < {_sql_literal(minimum)}")
