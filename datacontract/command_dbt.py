@@ -5,7 +5,7 @@ import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import OrderedCommandsWithMigrationHints, console, debug_option, enable_debug_logging
-from datacontract.integration.dbt_sync import ModelResolution, _check_dbt_on_path, generate_dbt_tests, run_tests
+from datacontract.integration.dbt_sync import ModelResolution, check_dbt_on_path, generate_dbt_tests, run_tests
 from datacontract.model.run import ResultEnum
 from datacontract.output.test_results_writer import print_test_results_table, to_field
 
@@ -57,7 +57,7 @@ def sync_command(
     enable_debug_logging(debug)
 
     if not skip_tests:
-        _check_dbt_on_path()
+        check_dbt_on_path()
 
     gen = generate_dbt_tests(
         contract=contract,

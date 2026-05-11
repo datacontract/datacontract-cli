@@ -18,14 +18,13 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.integration.dbt_sync import (
-    GENERATED_MODELS_DIR,
-    GENERATED_TESTS_DIR,
     ModelResolution,
     _attach_test_config,
     _build_singular_sql,
-    _check_dbt_on_path,
+    _disambiguate_singular_filenames,
     _ensure_dbt_project,
     _rewrite_relationships_to_ref,
+    check_dbt_on_path,
     detect_user_model_collisions,
     find_contract,
     generate_dbt_tests,
@@ -43,6 +42,12 @@ from datacontract.model.run import Run
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "dbt_sync"
 CONTRACT_PATH = FIXTURE_DIR / "orders.odcs.yaml"
 DBT_PROJECT_TEMPLATE = FIXTURE_DIR / "dbt_project"
+
+# Default-config relative paths matching the fixture dbt project (models/, tests/).
+# Runtime resolution honors `model-paths` / `test-paths` from `dbt_project.yml`;
+# the fixture sticks to dbt's defaults, so tests can hard-code these.
+GENERATED_MODELS_DIR = Path("models") / "datacontract_cli"
+GENERATED_TESTS_DIR = Path("tests") / "datacontract_cli"
 
 
 def _copy_dbt_project(tmp_path: Path) -> Path:
@@ -73,7 +78,7 @@ def sync(
 ) -> _SyncResult:
     """End-to-end orchestration helper for tests — mirrors what the CLI does."""
     if not skip_tests:
-        _check_dbt_on_path()
+        check_dbt_on_path()
     gen = generate_dbt_tests(
         contract=contract,
         project_dir=project_dir,
@@ -142,12 +147,12 @@ def test_ensure_dbt_project_missing_raises(tmp_path: Path):
 def test_check_dbt_on_path_missing(monkeypatch):
     monkeypatch.setattr(shutil, "which", lambda _: None)
     with pytest.raises(DataContractException, match="dbt not found on PATH"):
-        _check_dbt_on_path()
+        check_dbt_on_path()
 
 
 def test_check_dbt_on_path_present(monkeypatch):
     monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
-    assert _check_dbt_on_path() == "/fake/dbt"
+    assert check_dbt_on_path() == "/fake/dbt"
 
 
 # ---------------------------------------------------------------------------
@@ -205,6 +210,50 @@ def test_detect_user_model_collisions_skips_unparseable_yaml(tmp_path: Path):
     bad = project / "models" / "broken.yml"
     bad.write_text(": this is : not : yaml")
     assert detect_user_model_collisions(project, {"orders"}) == {}
+
+
+def _custom_paths_project(tmp_path: Path, *, model_paths: list[str], test_paths: list[str]) -> Path:
+    """Materialize a dbt project with non-default `model-paths` / `test-paths`."""
+    project = tmp_path / "dbt_project"
+    project.mkdir()
+    (project / "dbt_project.yml").write_text(
+        "name: 'custom_paths_fixture'\n"
+        "version: '1.0.0'\n"
+        "config-version: 2\n"
+        "profile: 'custom_paths_fixture'\n"
+        f"model-paths: {model_paths!r}\n"
+        f"test-paths: {test_paths!r}\n"
+    )
+    for p in model_paths + test_paths:
+        (project / p).mkdir(parents=True, exist_ok=True)
+    return project
+
+
+def test_sync_writes_to_configured_model_and_test_paths(tmp_path: Path):
+    """Generated YAML/SQL must follow `model-paths` / `test-paths` from dbt_project.yml.
+
+    Otherwise dbt won't pick the files up and `--select tag:datacontract_cli` matches nothing.
+    """
+    project = _custom_paths_project(tmp_path, model_paths=["src/models"], test_paths=["src/tests"])
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    assert (project / "src" / "models" / "datacontract_cli" / "orders_sync_test__orders.yml").exists()
+    assert (project / "src" / "tests" / "datacontract_cli").is_dir()
+    assert any((project / "src" / "tests" / "datacontract_cli").iterdir())
+    # Default paths must stay empty.
+    assert not (project / "models" / "datacontract_cli").exists()
+    assert not (project / "tests" / "datacontract_cli").exists()
+
+
+def test_detect_user_model_collisions_walks_configured_model_paths(tmp_path: Path):
+    project = _custom_paths_project(tmp_path, model_paths=["src/models"], test_paths=["src/tests"])
+    schema = project / "src" / "models" / "schema.yml"
+    schema.write_text("version: 2\nmodels:\n  - name: orders\n")
+    # A YAML in the default `models/` dir must NOT be considered — dbt wouldn't scan it anyway.
+    (project / "models").mkdir()
+    (project / "models" / "decoy.yml").write_text("version: 2\nmodels:\n  - name: orders\n")
+
+    assert detect_user_model_collisions(project, {"orders"}) == {"orders": [schema]}
 
 
 def test_sync_preflight_blocks_on_collision(tmp_path: Path):
@@ -348,6 +397,25 @@ def test_build_singular_sql_header_and_config():
     assert "{{ config(severity='warn', tags=['datacontract_cli']) }}" in sql
 
 
+def test_disambiguate_singular_filenames_renames_duplicates():
+    from datacontract.integration.dbt_sync import SingularTest
+
+    tests = [
+        SingularTest(filename="c__m__lbl.sql", sql="-- a", description=None),
+        SingularTest(filename="c__m__lbl.sql", sql="-- b", description=None),
+        SingularTest(filename="c__m__lbl.sql", sql="-- c", description=None),
+        SingularTest(filename="c__m__other.sql", sql="-- d", description=None),
+    ]
+    _disambiguate_singular_filenames(tests)
+
+    assert [t.filename for t in tests] == [
+        "c__m__lbl.sql",
+        "c__m__lbl__2.sql",
+        "c__m__lbl__3.sql",
+        "c__m__other.sql",
+    ]
+
+
 # ---------------------------------------------------------------------------
 # End-to-end (no dbt invocation)
 # ---------------------------------------------------------------------------
@@ -380,6 +448,28 @@ def test_sync_skip_tests_writes_files(tmp_path: Path):
         assert "AUTO-GENERATED" in sql_path.read_text()
 
 
+def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: Path):
+    """A contract that resolves to zero models must still wipe prior generated artifacts —
+    otherwise old `tag:datacontract_cli` files from an earlier run keep getting executed."""
+    project = _copy_dbt_project(tmp_path)
+    stale_yml = project / GENERATED_MODELS_DIR / "stale.yml"
+    stale_sql = project / GENERATED_TESTS_DIR / "stale.sql"
+    stale_yml.parent.mkdir(parents=True, exist_ok=True)
+    stale_sql.parent.mkdir(parents=True, exist_ok=True)
+    stale_yml.write_text("# stale")
+    stale_sql.write_text("-- stale")
+
+    empty_contract = tmp_path / "empty.odcs.yaml"
+    empty_contract.write_text(
+        "kind: DataContract\napiVersion: v3.1.0\nid: empty-contract\nname: Empty\nversion: 1.0.0\nstatus: active\n"
+    )
+
+    sync(contract=str(empty_contract), project_dir=project, skip_tests=True)
+
+    assert not stale_yml.exists()
+    assert not stale_sql.exists()
+
+
 def test_sync_filter_to_unknown_schema_errors(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     with pytest.raises(DataContractException, match="not found"):
@@ -406,7 +496,7 @@ def test_sync_missing_contract_raises(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_run_dbt_test_selector_unions_tag_and_models(tmp_path: Path):
+def test_run_dbt_test_selects_only_tagged_tests(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     captured: dict[str, list[str]] = {}
 
@@ -415,12 +505,12 @@ def test_run_dbt_test_selector_unions_tag_and_models(tmp_path: Path):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout="ok", stderr="")
 
     with mock.patch.object(subprocess, "run", side_effect=fake_run):
-        run_dbt_test(project, ["orders", "customers"], target=None, profiles_dir=None)
+        run_dbt_test(project, target=None, profiles_dir=None)
 
     args = captured["args"]
     select_idx = args.index("--select")
     selectors = args[select_idx + 1 : args.index("--project-dir")]
-    assert selectors == ["tag:datacontract_cli", "orders", "customers"]
+    assert selectors == ["tag:datacontract_cli"]
 
 
 def test_run_dbt_test_surfaces_failure_when_no_run_results(tmp_path: Path):
@@ -433,7 +523,7 @@ def test_run_dbt_test_surfaces_failure_when_no_run_results(tmp_path: Path):
 
     with mock.patch.object(subprocess, "run", side_effect=fake_run):
         with pytest.raises(DataContractException) as exc:
-            run_dbt_test(project, ["orders"], target=None, profiles_dir=None)
+            run_dbt_test(project, target=None, profiles_dir=None)
 
     assert "exit code 2" in exc.value.reason
     assert "some unrelated parse failure" in exc.value.reason
@@ -453,7 +543,7 @@ def test_run_dbt_test_does_not_raise_when_run_results_present(tmp_path: Path):
         return subprocess.CompletedProcess(args=args, returncode=1, stdout="some tests failed", stderr="")
 
     with mock.patch.object(subprocess, "run", side_effect=fake_run):
-        result = run_dbt_test(project, ["orders"], target=None, profiles_dir=None)
+        result = run_dbt_test(project, target=None, profiles_dir=None)
         assert result.returncode == 1
 
 
@@ -471,7 +561,7 @@ def test_run_dbt_test_clears_stale_run_results(tmp_path: Path):
 
     with mock.patch.object(subprocess, "run", side_effect=fake_run):
         with pytest.raises(DataContractException, match="some parse error"):
-            run_dbt_test(project, ["orders"], target=None, profiles_dir=None)
+            run_dbt_test(project, target=None, profiles_dir=None)
     assert not stale.exists()
 
 
@@ -486,7 +576,6 @@ def test_run_dbt_test_target_and_profiles_forwarded(tmp_path: Path):
     with mock.patch.object(subprocess, "run", side_effect=fake_run):
         run_dbt_test(
             project,
-            ["orders"],
             target="dev",
             profiles_dir=tmp_path / "profiles",
         )
@@ -571,6 +660,22 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
 
     statuses = {c.result.value for c in parsed.checks}
     assert statuses == {"passed", "failed", "warning", "error", "info"}
+
+
+def test_parse_run_results_honors_custom_target_path(tmp_path: Path):
+    """When `target-path` is overridden, dbt writes artifacts to that dir — not `target/`."""
+    project = _custom_paths_project(tmp_path, model_paths=["models"], test_paths=["tests"])
+    (project / "dbt_project.yml").write_text((project / "dbt_project.yml").read_text() + "target-path: 'build'\n")
+    build_dir = project / "build"
+    build_dir.mkdir()
+    (build_dir / "run_results.json").write_text(
+        json.dumps({"results": [{"unique_id": "test.x.y", "status": "pass", "failures": 0, "message": None}]})
+    )
+
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    parsed = parse_run_results(project, odcs)
+    assert len(parsed.checks) == 1
+    assert parsed.checks[0].result.value == "passed"
 
 
 def test_parse_run_results_missing_file(tmp_path: Path):
