@@ -1,13 +1,11 @@
 from unittest.mock import MagicMock, patch
 
-import yaml
 from dotenv import load_dotenv
 from open_data_contract_standard.model import OpenDataContractStandard
 from snowflake.connector.constants import QueryStatus
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.data_contract import DataContract
 from datacontract.imports.snowflake_importer import import_snowflake_from_connector
 
 # logging.basicConfig(level=logging.INFO, force=True)

@@ -36,6 +36,7 @@ class SnowflakeImporter(Importer):
                 engine="datacontract",
             )
 
+
 def information_schema_table_privileges_query() -> str:
     return """
         SELECT 
@@ -323,7 +324,7 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             engine="datacontract",
             original_exception=e,
         )
-    
+
     # Define Database and Schema Context for the import, to avoid having to specify it in every query and to catch double_quoted identifier issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
     cnx = snowflake_cursor(account, database, schema)
     with cnx.cursor() as cur:
@@ -346,7 +347,6 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
     server = None
     list_role_adapter = TypeAdapter(List[Role])
     for row in result_sets["server"]:
-
         server = create_server(
             name="workspace",
             server_type="snowflake",
