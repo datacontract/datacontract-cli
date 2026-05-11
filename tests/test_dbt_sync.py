@@ -38,7 +38,6 @@ from datacontract.integration.dbt_sync import (
     resolve_model_names,
     run_dbt_test,
     run_tests,
-    wipe_output_dirs,
 )
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.model.exceptions import DataContractException
@@ -153,28 +152,6 @@ def test_check_dbt_on_path_missing(monkeypatch):
 def test_check_dbt_on_path_present(monkeypatch):
     monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
     assert check_dbt_on_path() == "/fake/dbt"
-
-
-# ---------------------------------------------------------------------------
-# Wipe-and-regen
-# ---------------------------------------------------------------------------
-
-
-def test_wipe_output_dirs_clears_existing(tmp_path: Path):
-    project = _copy_dbt_project(tmp_path)
-    leftover_yml = project / GENERATED_MODELS_DIR / "leftover.yml"
-    leftover_sql = project / GENERATED_TESTS_DIR / "leftover.sql"
-    leftover_yml.parent.mkdir(parents=True, exist_ok=True)
-    leftover_sql.parent.mkdir(parents=True, exist_ok=True)
-    leftover_yml.write_text("# stale")
-    leftover_sql.write_text("-- stale")
-
-    wipe_output_dirs(project)
-
-    assert not leftover_yml.exists()
-    assert not leftover_sql.exists()
-    assert (project / GENERATED_MODELS_DIR).is_dir()
-    assert (project / GENERATED_TESTS_DIR).is_dir()
 
 
 # ---------------------------------------------------------------------------
