@@ -48,11 +48,6 @@ sources:
             data_tests:
               - not_null
               - unique
-              - dbt_expectations.expect_column_value_lengths_to_be_between:
-                  min_value: 8
-                  max_value: 10
-              - dbt_expectations.expect_column_values_to_match_regex:
-                  regex: ^B[0-9]+$
             meta:
               classification: sensitive
             tags:
@@ -62,9 +57,6 @@ sources:
             data_type: NUMBER
             data_tests:
               - not_null
-              - dbt_expectations.expect_column_values_to_be_between:
-                   min_value: 0
-                   max_value: 1000000
           - name: order_status
             data_type: TEXT
             data_tests:
@@ -101,11 +93,6 @@ sources:
             data_tests:
               - not_null
               - unique
-              - dbt_expectations.expect_column_value_lengths_to_be_between:
-                  min_value: 8
-                  max_value: 10
-              - dbt_expectations.expect_column_values_to_match_regex:
-                  regex: ^B[0-9]+$
             meta:
               classification: sensitive
             tags:
@@ -115,9 +102,6 @@ sources:
             data_type: INT64
             data_tests:
               - not_null
-              - dbt_expectations.expect_column_values_to_be_between:
-                   min_value: 0
-                   max_value: 1000000
           - name: order_status
             data_type: STRING
             data_tests:
