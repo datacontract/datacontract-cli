@@ -26,6 +26,7 @@ from datacontract.integration.dbt_sync import (
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
     _rewrite_relationships_to_ref,
+    _row_count_singular_test,
     _singular_tests_for_qualities,
     _sql_literal,
     check_dbt_on_path,
@@ -353,11 +354,17 @@ def test_generate_outputs_wraps_tests_with_tag_and_emits_singulars():
     # Single-PK in this fixture → no model-level data_tests.
     assert "data_tests" not in model_dict
 
-    # Singular SQL: one column-level (95% rule), one model-level (row count).
-    assert len(singulars) == 2
+    # Singular SQL: three field-level bounds (length + regex on order_id, range on order_total)
+    # plus two quality.query rules (95% column rule, model-level row count).
+    assert len(singulars) == 5
     assert all(s.filename.startswith("orders_sync_test__orders__") for s in singulars)
     assert all(s.filename.endswith(".sql") for s in singulars)
     assert any(s.description and "95%" in s.description for s in singulars)
+    # Field-level bound tests have no description (the source is `logicalTypeOptions`).
+    field_bounds = {s.filename for s in singulars if s.description is None}
+    assert "orders_sync_test__orders__order_id__length.sql" in field_bounds
+    assert "orders_sync_test__orders__order_id__pattern.sql" in field_bounds
+    assert "orders_sync_test__orders__order_total__range.sql" in field_bounds
 
 
 def test_generate_outputs_composite_pk_emits_model_level_unique():
@@ -376,6 +383,42 @@ def test_generate_outputs_composite_pk_emits_model_level_unique():
     assert "dbt_utils.unique_combination_of_columns" in pk_test
     args = pk_test["dbt_utils.unique_combination_of_columns"]
     assert args["combination_of_columns"] == ["order_id", "order_status"]
+
+
+def test_field_singular_tests_emit_portable_violation_predicates():
+    """Length/range/regex bounds become singular SQL — no `dbt_expectations` dependency."""
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    schema_obj = odcs.schema_[0]
+    _, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", Run.create_run())
+
+    by_name = {s.filename: s for s in singulars}
+
+    length = by_name["orders_sync_test__orders__order_id__length.sql"]
+    assert 'LENGTH("order_id") < 8' in length.sql
+    assert 'LENGTH("order_id") > 10' in length.sql
+    assert '"order_id" IS NOT NULL' in length.sql
+    assert "dbt_expectations" not in length.sql
+
+    pattern = by_name["orders_sync_test__orders__order_id__pattern.sql"]
+    # Adapter-portable regex via Jinja dispatch on `target.type`.
+    assert "{% if target.type == 'bigquery' %}" in pattern.sql
+    assert "REGEXP_CONTAINS" in pattern.sql
+    assert "REGEXP_LIKE" in pattern.sql
+    assert "!~" in pattern.sql
+    assert "^B[0-9]+$" in pattern.sql
+
+    rng = by_name["orders_sync_test__orders__order_total__range.sql"]
+    assert '"order_total" < 0' in rng.sql
+    assert '"order_total" > 1000000' in rng.sql
+
+
+def test_row_count_singular_test_wraps_count_with_bound_predicate():
+    """Declarative `rowCount` bound → `SELECT COUNT(*)` wrapped with a bound-violation predicate."""
+    quality = DataQuality(metric="rowCount", mustBeGreaterThan=1000)
+    test = _row_count_singular_test(quality, contract_id="orders_sync_test", model="orders")
+    assert test is not None
+    assert "SELECT COUNT(*) FROM {{ ref('orders') }}" in test.sql
+    assert "metric_value <= 1000" in test.sql
 
 
 def test_generate_outputs_singular_sql_carries_severity_and_tag():
@@ -495,8 +538,9 @@ def test_sync_skip_tests_writes_files(tmp_path: Path):
     assert "data_tests" in parsed
     assert any(entry.get("description") for entry in parsed["data_tests"])
 
-    # Both singular SQL files materialize on disk.
-    assert len(result.written_sql) == 2
+    # All singular SQL files materialize on disk: three field-level bounds
+    # (length, regex, range) plus the two `quality.query` rules from the fixture.
+    assert len(result.written_sql) == 5
     for sql_path in result.written_sql:
         assert sql_path.exists()
         assert "AUTO-GENERATED" in sql_path.read_text()

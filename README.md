@@ -126,6 +126,9 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
 
+# generate dbt tests from a contract into your dbt project and run `dbt test`
+$ datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse
+
 # export data contract as html (other formats: avro, dbt-models, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
 $ datacontract export html datacontract.yaml --output odcs.html
 
@@ -340,13 +343,19 @@ Commands
  Show a changelog between two data contracts.                                                       
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
-│ *    v1      TEXT  The location (path) of the source (before) data contract YAML. [required]     │
-│ *    v2      TEXT  The location (path) of the target (after) data contract YAML. [required]      │
+│ *    v1      TEXT  The location (url or path) of the source (before) data contract YAML.         │
+│                    [required]                                                                    │
+│ *    v2      TEXT  The location (url or path) of the target (after) data contract YAML.          │
+│                    [required]                                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --debug    --no-debug      Enable debug logging                                                  │
 │ --help                     Show this message and exit.                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml                          
+                                                                                                    
+
 ```
 
 ```bash
@@ -1119,6 +1128,67 @@ models:
 
 </details>
 
+### dbt sync
+```
+                                                                                                    
+ Usage: datacontract dbt sync [OPTIONS] [CONTRACT]                                                  
+                                                                                                    
+ Generate dbt tests from an ODCS contract and run them.                                             
+                                                                                                    
+ Within the specified dbt project, this command wipes `<model-paths>/datacontract_cli/` and         
+ `<test-paths>/datacontract_cli/`, regenerates them from the contract, then runs `dbt test`.        
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   contract      [CONTRACT]  Path to the ODCS data contract. If omitted, searches for a single    │
+│                             `*.odcs.yaml` in the current directory and its subdirectories.       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --project-dir                        PATH                 Path to the dbt project root (must     │
+│                                                           contain `dbt_project.yml`). Defaults   │
+│                                                           to the current directory.              │
+│ --schema-name                        TEXT                 Which ODCS schema object to sync, by   │
+│                                                           name.                                  │
+│                                                           [default: all]                         │
+│ --model-resolution                   [name|physicalName]  How to map an ODCS schema to a dbt     │
+│                                                           model name.                            │
+│                                                           [default: name]                        │
+│ --target                             TEXT                 Forwarded to `dbt test --target`.      │
+│ --profiles-dir                       PATH                 Forwarded to `dbt test                 │
+│                                                           --profiles-dir`.                       │
+│ --skip-tests          --run-tests                         Generate tests but skip running `dbt   │
+│                                                           test`.                                 │
+│                                                           [default: run-tests]                   │
+│ --debug               --no-debug                          Enable debug logging                   │
+│ --help                                                    Show this message and exit.            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Example: datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse                          
+                                                                                                    
+
+```
+
+`datacontract dbt sync` generates dbt tests from an ODCS data contract directly into your dbt project and (by default) runs `dbt test` against them. The contract becomes the single source of truth for column-level constraints and quality checks. It is recommended to remove existing dbt tests to avoid duplication.
+
+On each run, the command:
+
+- **Wipes and regenerates** the `models/datacontract_cli/` and `tests/datacontract_cli/` directories under your dbt project. The paths honor `model-paths` and `test-paths` in `dbt_project.yml`.
+- **Emits one YAML model file per ODCS schema** that uses dbt's built-in tests and [`dbt_utils`](https://github.com/dbt-labs/dbt-utils).
+- **Emits singular SQL tests** for all ODCS `quality` that can't be expressed as native YAML tests.
+- **Runs `dbt test --select tag:datacontract_cli`** to run the generated tests; pre-existing dbt tests are untouched. Pass `--skip-tests` to regenerate without invoking dbt.
+
+Prerequisites: `dbt-core` plus an adapter (e.g. `dbt-duckdb`, `dbt-postgres`) on `PATH`, [`dbt_utils`](https://github.com/dbt-labs/dbt-utils) installed in your dbt project's `packages.yml` (used for composite primary keys).
+
+```bash
+# Auto-discover a contract named *.odcs.yaml in a dbt project
+$ datacontract dbt sync
+
+# Explicit contract, run against a specific dbt target
+$ datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse --target dev
+
+# Only generate tests, don't run them
+$ datacontract dbt sync orders.odcs.yaml --skip-tests
+```
+
 ### ci
 ```
                                                                                                     
@@ -1169,6 +1239,9 @@ models:
 │ --help                                                                Show this message and      │
 │                                                                       exit.                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit         
+                                                                                                    
 
 ```
 
@@ -1293,7 +1366,7 @@ steps:
                                                                                                     
  Example: datacontract export html datacontract.yaml --output datacontract.html                     
  For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), use           
- `datacontract export sql --dialect <dialect>`.                                                 
+ `datacontract export sql --dialect <dialect>`.                                                     
                                                                                                     
 
 ```
@@ -1640,9 +1713,9 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │ --help          Show this message and exit.                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
+│ dbt         Import a data contract from a dbt manifest file.                                     │
 │ sql         Import a data contract from a SQL DDL file.                                          │
 │ avro        Import a data contract from an Avro schema file.                                     │
-│ dbt         Import a data contract from a dbt manifest file.                                     │
 │ dbml        Import a data contract from a DBML file.                                             │
 │ glue        Import a data contract from AWS Glue.                                                │
 │ bigquery    Import a data contract from BigQuery.                                                │

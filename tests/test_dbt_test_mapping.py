@@ -93,51 +93,38 @@ def test_enum_from_quality_invalid_values():
     assert {"accepted_values": {"values": ["a", "b"]}} in tests
 
 
-def test_length_inclusive_range():
+def test_length_bounds_emit_no_yaml_test():
+    """Length bounds previously emitted a `dbt_expectations` macro; they're now
+    handled as singular SQL by `datacontract dbt sync`."""
     tests = field_to_data_tests(
         _prop(name="x", logicalTypeOptions={"minLength": 3, "maxLength": 10}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_value_lengths_to_be_between": {"min_value": 3, "max_value": 10}} in tests
+    assert tests == []
 
 
-def test_regex():
+def test_regex_emits_no_yaml_test():
     tests = field_to_data_tests(
         _prop(name="x", logicalTypeOptions={"pattern": "^[A-Z]+$"}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_values_to_match_regex": {"regex": "^[A-Z]+$"}} in tests
+    assert tests == []
 
 
-def test_inclusive_range():
+def test_numeric_range_emits_no_yaml_test():
     tests = field_to_data_tests(
-        _prop(name="x", logicalTypeOptions={"minimum": 0, "maximum": 100}),
+        _prop(
+            name="x",
+            logicalTypeOptions={
+                "minimum": 0,
+                "maximum": 100,
+                "exclusiveMinimum": 0,
+                "exclusiveMaximum": 100,
+            },
+        ),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"min_value": 0, "max_value": 100}} in tests
-
-
-def test_exclusive_range():
-    tests = field_to_data_tests(
-        _prop(name="x", logicalTypeOptions={"exclusiveMinimum": 0, "exclusiveMaximum": 100}),
-        supports_constraints=False,
-    )
-    assert {
-        "dbt_expectations.expect_column_values_to_be_between": {
-            "min_value": 0,
-            "max_value": 100,
-            "strictly": True,
-        }
-    } in tests
-
-
-def test_mixed_inclusive_and_exclusive_range():
-    tests = field_to_data_tests(
-        _prop(name="x", logicalTypeOptions={"minimum": 0, "exclusiveMaximum": 100}),
-        supports_constraints=False,
-    )
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"min_value": 0}} in tests
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"max_value": 100, "strictly": True}} in tests
+    assert tests == []
 
 
 def test_relationships_uses_source_name():

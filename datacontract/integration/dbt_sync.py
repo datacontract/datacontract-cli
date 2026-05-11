@@ -22,7 +22,7 @@ from open_data_contract_standard.model import (
 )
 from rich.console import Console
 
-from datacontract.integration.dbt_test_mapping import field_to_data_tests
+from datacontract.integration.dbt_test_mapping import _get_logical_type_option, field_to_data_tests
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -269,41 +269,6 @@ def _quality_label(quality: DataQuality, fallback_idx: int) -> str:
     return f"q{fallback_idx}"
 
 
-def _row_count_test(quality: DataQuality, run: Run, schema_name: Optional[str]) -> Optional[dict]:
-    """Map table-level rowCount quality to a YAML dbt_expectations test."""
-    if quality.mustBe is not None:
-        return {"dbt_expectations.expect_table_row_count_to_equal": {"value": quality.mustBe}}
-
-    # warn if we cannot do a precise conversion
-    strict_lower = quality.mustBeGreaterThan is not None
-    inclusive_lower = not strict_lower and (quality.mustBeGreaterOrEqualTo is not None or bool(quality.mustBeBetween))
-    strict_higher = quality.mustBeLessThan is not None
-    inclusive_higher = not strict_higher and (quality.mustBeLessOrEqualTo is not None or bool(quality.mustBeBetween))
-    if (strict_lower and inclusive_higher) or (strict_higher and inclusive_lower):
-        run.log_warn(
-            f"Row-count quality on `{schema_name}` mixes strict and inclusive bounds, which is not natively supported by dbt_expectations. "
-            "The `strictly` flag will be applied to both sides."
-        )
-
-    args: dict = {}
-    if quality.mustBeBetween:
-        args["min_value"] = quality.mustBeBetween[0]
-        args["max_value"] = quality.mustBeBetween[1]
-    if quality.mustBeGreaterThan is not None:
-        args["min_value"] = quality.mustBeGreaterThan
-        args["strictly"] = True
-    elif quality.mustBeGreaterOrEqualTo is not None:
-        args["min_value"] = quality.mustBeGreaterOrEqualTo
-    if quality.mustBeLessThan is not None:
-        args["max_value"] = quality.mustBeLessThan
-        args["strictly"] = True
-    elif quality.mustBeLessOrEqualTo is not None:
-        args["max_value"] = quality.mustBeLessOrEqualTo
-    if not args:
-        return None
-    return {"dbt_expectations.expect_table_row_count_to_be_between": args}
-
-
 # ---------------------------------------------------------------------------
 # Singular SQL test generation
 # ---------------------------------------------------------------------------
@@ -330,26 +295,34 @@ def _sql_literal(value: Any) -> str:
 
 
 def _bound_violation_predicate(quality: DataQuality) -> Optional[str]:
-    """Build a SQL predicate over `metric_value` that is TRUE iff the specified ODCS bound is violated."""
+    """Build a SQL predicate over `metric_value` that is TRUE iff any bound on `quality` is violated.
+
+    Bounds present on the quality are combined with `OR` (any violated bound fails the test).
+    Returns None if the quality has no bound (the contract author forgot to set `mustBe*`).
+    """
+    parts: List[str] = []
     if quality.mustBe is not None:
-        return f"metric_value IS NULL OR metric_value <> {_sql_literal(quality.mustBe)}"
+        parts.append(f"metric_value <> {_sql_literal(quality.mustBe)}")
     if quality.mustNotBe is not None:
-        return f"metric_value IS NULL OR metric_value = {_sql_literal(quality.mustNotBe)}"
+        parts.append(f"metric_value = {_sql_literal(quality.mustNotBe)}")
     if quality.mustBeGreaterThan is not None:
-        return f"metric_value IS NULL OR metric_value <= {_sql_literal(quality.mustBeGreaterThan)}"
+        parts.append(f"metric_value <= {_sql_literal(quality.mustBeGreaterThan)}")
     if quality.mustBeGreaterOrEqualTo is not None:
-        return f"metric_value IS NULL OR metric_value < {_sql_literal(quality.mustBeGreaterOrEqualTo)}"
+        parts.append(f"metric_value < {_sql_literal(quality.mustBeGreaterOrEqualTo)}")
     if quality.mustBeLessThan is not None:
-        return f"metric_value IS NULL OR metric_value >= {_sql_literal(quality.mustBeLessThan)}"
+        parts.append(f"metric_value >= {_sql_literal(quality.mustBeLessThan)}")
     if quality.mustBeLessOrEqualTo is not None:
-        return f"metric_value IS NULL OR metric_value > {_sql_literal(quality.mustBeLessOrEqualTo)}"
+        parts.append(f"metric_value > {_sql_literal(quality.mustBeLessOrEqualTo)}")
     if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
         lo, hi = quality.mustBeBetween
-        return f"metric_value IS NULL OR metric_value < {_sql_literal(lo)} OR metric_value > {_sql_literal(hi)}"
+        parts.append(f"metric_value < {_sql_literal(lo)}")
+        parts.append(f"metric_value > {_sql_literal(hi)}")
     if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
         lo, hi = quality.mustNotBeBetween
-        return f"metric_value IS NULL OR (metric_value >= {_sql_literal(lo)} AND metric_value <= {_sql_literal(hi)})"
-    return None  # the test author did not set a valid bound (invalid syntax)
+        parts.append(f"(metric_value >= {_sql_literal(lo)} AND metric_value <= {_sql_literal(hi)})")
+    if not parts:
+        return None
+    return "metric_value IS NULL OR " + " OR ".join(parts)
 
 
 def _singular_tests_for_qualities(
@@ -399,12 +372,154 @@ def _build_singular_sql(query: str, violation_predicate: str, severity: str, con
     )
 
 
-def _model_data_tests(schema_obj: SchemaObject, run: Run) -> list:
-    """Model-level tests: composite PK + table-level rowCount quality."""
-    out: list = []
+def _row_count_singular_test(quality: DataQuality, contract_id: str, model: str) -> Optional[SingularTest]:
+    """Singular SQL test for a table-level `rowCount` quality without an explicit `query`."""
+    predicate = _bound_violation_predicate(quality)
+    if predicate is None:
+        return None
+    severity = _normalize_severity(quality.severity)
+    label = _quality_label(quality, 1)
+    filename = f"{_slugify(contract_id)}__{_slugify(model)}__{_slugify(label)}.sql"
+    sql = _build_singular_sql(
+        f"SELECT COUNT(*) FROM {{{{ ref('{model}') }}}}",
+        predicate,
+        severity,
+        contract_id,
+        model,
+    )
+    return SingularTest(filename=filename, sql=sql, description=quality.description)
+
+
+# ---------------------------------------------------------------------------
+# Field-level bound singular SQL (length / regex / numeric range)
+#
+# We emit these as singular SQL so generated dbt projects don't need
+# `dbt_expectations` in their `packages.yml`. Each test returns rows that
+# violate the bound (dbt singular-test convention).
+# ---------------------------------------------------------------------------
+
+
+def _quote_identifier(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
+def _regex_violation_jinja(column: str, pattern: str) -> str:
+    """Adapter-portable 'col does NOT match pattern' fragment.
+
+    Dispatches on `target.type` because regex syntax is one of the least-portable
+    parts of SQL: BigQuery uses `REGEXP_CONTAINS`, Snowflake/Oracle use
+    `REGEXP_LIKE`, and Postgres / DuckDB / Redshift use the POSIX `~` operator.
+    """
+    escaped = pattern.replace("'", "''")
+    return (
+        "{% if target.type == 'bigquery' %}"
+        f"NOT REGEXP_CONTAINS(CAST({column} AS STRING), '{escaped}')"
+        "{% elif target.type == 'snowflake' %}"
+        f"NOT REGEXP_LIKE(CAST({column} AS VARCHAR), '{escaped}')"
+        "{% else %}"
+        f"CAST({column} AS VARCHAR) !~ '{escaped}'"
+        "{% endif %}"
+    )
+
+
+def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
+    """For `prop`, yield `(label_suffix, sql_predicate)` for each declared bound.
+
+    `sql_predicate` is TRUE only for rows that violate the bound. Length checks
+    fire when the value is non-null but its length is out of range; numeric
+    range checks fire when the value is non-null and outside the range; regex
+    fires when the value does not match. NULLs are filtered upstream with
+    `WHERE col IS NOT NULL`.
+    """
+    column = _quote_identifier(prop.name)
+    pairs: List[Tuple[str, str]] = []
+
+    min_length = _get_logical_type_option(prop, "minLength")
+    max_length = _get_logical_type_option(prop, "maxLength")
+    if min_length is not None or max_length is not None:
+        parts: List[str] = []
+        if min_length is not None:
+            parts.append(f"LENGTH({column}) < {min_length}")
+        if max_length is not None:
+            parts.append(f"LENGTH({column}) > {max_length}")
+        pairs.append(("length", " OR ".join(parts)))
+
+    pattern = _get_logical_type_option(prop, "pattern")
+    if pattern is not None:
+        pairs.append(("pattern", _regex_violation_jinja(column, pattern)))
+
+    minimum = _get_logical_type_option(prop, "minimum")
+    maximum = _get_logical_type_option(prop, "maximum")
+    exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
+    exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
+    range_parts: List[str] = []
+    if minimum is not None:
+        range_parts.append(f"{column} < {_sql_literal(minimum)}")
+    if maximum is not None:
+        range_parts.append(f"{column} > {_sql_literal(maximum)}")
+    if exclusive_minimum is not None:
+        range_parts.append(f"{column} <= {_sql_literal(exclusive_minimum)}")
+    if exclusive_maximum is not None:
+        range_parts.append(f"{column} >= {_sql_literal(exclusive_maximum)}")
+    if range_parts:
+        pairs.append(("range", " OR ".join(range_parts)))
+
+    return pairs
+
+
+def _build_row_violation_sql(
+    *,
+    model: str,
+    column_null_filter: str,
+    violation_predicate: str,
+    severity: str,
+    contract_id: str,
+    label: str,
+) -> str:
+    return (
+        f"-- AUTO-GENERATED by `datacontract dbt sync`. Do not edit.\n"
+        f"-- Source contract: {contract_id} (model: {model}, check: {label})\n"
+        f"{{{{ config(severity='{severity}', tags=['{OUTPUT_TAG}']) }}}}\n"
+        f"SELECT *\n"
+        f"FROM {{{{ ref('{model}') }}}}\n"
+        f"WHERE {column_null_filter} IS NOT NULL\n"
+        f"  AND ({violation_predicate})\n"
+    )
+
+
+def _field_singular_tests(prop: SchemaProperty, contract_id: str, model: str) -> List[SingularTest]:
+    """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
+    column = _quote_identifier(prop.name)
+    out: List[SingularTest] = []
+    for suffix, predicate in _field_bound_predicates(prop):
+        label = f"{prop.name}__{suffix}"
+        filename = f"{_slugify(contract_id)}__{_slugify(model)}__{_slugify(label)}.sql"
+        sql = _build_row_violation_sql(
+            model=model,
+            column_null_filter=column,
+            violation_predicate=predicate,
+            severity="warn",
+            contract_id=contract_id,
+            label=label,
+        )
+        out.append(SingularTest(filename=filename, sql=sql, description=None))
+    return out
+
+
+def _model_data_tests(
+    schema_obj: SchemaObject, run: Run, contract_id: str, model: str
+) -> Tuple[list, List[SingularTest]]:
+    """Model-level outputs: composite-PK YAML test + table-level rowCount as singular SQL.
+
+    Returns ``(yaml_tests, singular_tests)``. Row-count qualities without a
+    ``query`` field are emitted as singular SQL (rather than dbt_expectations
+    YAML) so generated projects stay free of external macro dependencies.
+    """
+    yaml_tests: list = []
+    singular_tests: List[SingularTest] = []
     pk_cols = [p.name for p in (schema_obj.properties or []) if p.primaryKey]
     if len(pk_cols) > 1:
-        out.append(
+        yaml_tests.append(
             _attach_test_config(
                 {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": pk_cols}},
                 severity="warn",
@@ -412,16 +527,16 @@ def _model_data_tests(schema_obj: SchemaObject, run: Run) -> list:
         )
     for q in schema_obj.quality or []:
         if q.query:
-            continue  # singular SQL handles it
+            continue  # singular SQL handles it via _singular_tests_for_qualities
         if q.metric and q.metric.lower() == "rowcount":
-            test = _row_count_test(q, run, schema_obj.name)
+            test = _row_count_singular_test(q, contract_id, model)
             if test is None:
                 run.log_warn(f"Skipping unsupported row-count quality on `{schema_obj.name}`")
                 continue
-            out.append(_attach_test_config(test, severity=_normalize_severity(q.severity)))
+            singular_tests.append(test)
         else:
             run.log_warn(f"Skipping unsupported quality on `{schema_obj.name}`: metric={q.metric!r}")
-    return out
+    return yaml_tests, singular_tests
 
 
 def _column_dict(prop: SchemaProperty, odcs: OpenDataContractStandard, single_pk_name: Optional[str], run: Run) -> dict:
@@ -467,9 +582,10 @@ def generate_dbt_tests_for_schema(
     if schema_obj.description:
         model_dict["description"] = schema_obj.description.strip().replace("\n", " ")
 
-    model_tests = _model_data_tests(schema_obj, run)
-    if model_tests:
-        model_dict["data_tests"] = model_tests
+    contract_id = odcs.id or "contract"
+    model_yaml_tests, model_singulars = _model_data_tests(schema_obj, run, contract_id, model_name)
+    if model_yaml_tests:
+        model_dict["data_tests"] = model_yaml_tests
 
     columns: list = []
     for prop in schema_obj.properties or []:
@@ -477,8 +593,11 @@ def generate_dbt_tests_for_schema(
     if columns:
         model_dict["columns"] = columns
 
-    contract_id = odcs.id or "contract"
-    singulars: List[SingularTest] = []
+    singulars: List[SingularTest] = list(model_singulars)
+    # Field-level bounds (length / regex / numeric range) → singular SQL
+    for prop in schema_obj.properties or []:
+        singulars.extend(_field_singular_tests(prop, contract_id, model_name))
+    # Existing `quality.query` singular tests (one CTE per scalar metric)
     for prop in schema_obj.properties or []:
         singulars.extend(
             _singular_tests_for_qualities(prop.quality, contract_id, model_name, run, label_prefix=f"{prop.name}__")
