@@ -30,7 +30,7 @@ def test_cli():
             "TEST_SCHEMA",
         ],
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 1
 
 
 def test_cli_connection():

@@ -326,20 +326,23 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
         )
 
     # Define Database and Schema Context for the import, to avoid having to specify it in every query and to catch double_quoted identifier issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
+    result_sets= {}
     cnx = snowflake_cursor(account, database, schema)
-    with cnx.cursor() as cur:
-        try:
-            cur.execute(f"USE SCHEMA {database}.{schema}")
-            schema_identifier = schema
-        except ProgrammingError:
-            # schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
-            cur.execute(f'USE SCHEMA {database}."{schema}"')
-            schema_identifier = f'"{schema}"'
+    try:
+        with cnx.cursor() as cur:
+            try:
+                cur.execute(f"USE SCHEMA {database}.{schema}")
+                schema_identifier = schema
+            except ProgrammingError:
+                # schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
+                cur.execute(f'USE SCHEMA {database}."{schema}"')
+                schema_identifier = f'"{schema}"'
 
-    # get all information from information_schema in parallel to optimize performance
-    result_sets = import_information_schema(cnx)
-    # connection can be closed after fetching all resultsets as they are stored in memory and we don't need to fetch anything else from snowflake
-    cnx.close()
+        # get all information from information_schema in parallel to optimize performance
+        result_sets = import_information_schema(cnx)
+        # connection can be closed after fetching all resultsets as they are stored in memory and we don't need to fetch anything else from snowflake
+    finally:
+        cnx.close()
 
     odcs = create_odcs()
 
@@ -443,8 +446,8 @@ def snowflake_cursor(account: str, database: str, schema: str):
         else os.environ.get("DATACONTRACT_SNOWFLAKE_AUTHENTICATOR", "snowflake")
     )
     warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
-    database_connect = database or "DEMO_DB"
-    schema_connect = schema or "PUBLIC"
+    database_connect = database
+    schema_connect = schema
     snowflake_home = os.environ.get("DATACONTRACT_SNOWFLAKE_HOME") or os.environ.get("SNOWFLAKE_HOME")
     snowflake_connections_file = os.environ.get("DATACONTRACT_SNOWFLAKE_CONNECTIONS_FILE") or os.environ.get(
         "SNOWFLAKE_CONNECTIONS_FILE"
