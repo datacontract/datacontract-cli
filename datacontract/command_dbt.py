@@ -51,8 +51,7 @@ def sync_command(
     """
     Generate dbt tests from an ODCS contract and run them.
 
-    Wipes `<project>/models/datacontract_cli/` and `<project>/tests/datacontract_cli/`,
-    regenerates them from the contract, then runs `dbt test`.
+    Within the specified dbt project, this command wipes `<model-paths>/datacontract_cli/` and `<test-paths>/datacontract_cli/`, regenerates them from the contract, then runs `dbt test`.
     """
     enable_debug_logging(debug)
 
@@ -67,9 +66,13 @@ def sync_command(
         console=console,
     )
 
-    line = f"Wrote {len(gen.written_yaml)} YAML file(s) under models/datacontract_cli/"
+    yaml_dir = gen.written_yaml[0].parent if gen.written_yaml else None
+    sql_dir = gen.written_sql[0].parent if gen.written_sql else None
+    line = f"Wrote {len(gen.written_yaml)} YAML file(s)"
+    if yaml_dir is not None:
+        line += f" under {yaml_dir}"
     if gen.written_sql:
-        line += f" and {len(gen.written_sql)} SQL file(s) under tests/datacontract_cli/"
+        line += f" and {len(gen.written_sql)} SQL file(s) under {sql_dir}"
     line += "."
     console.print(line)
 
