@@ -1,0 +1,57 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: orders-sync-test
+name: Orders Sync Test
+version: 1.0.0
+status: active
+description:
+  purpose: Fixture contract for `datacontract dbt sync` MVP tests.
+schema:
+  - name: orders
+    physicalType: table
+    description: Orders table
+    properties:
+      - name: order_id
+        physicalType: varchar
+        primaryKey: true
+        primaryKeyPosition: 1
+        logicalType: string
+        logicalTypeOptions:
+          minLength: 8
+          maxLength: 10
+          pattern: ^B[0-9]+$
+        required: true
+        unique: true
+      - name: order_status
+        physicalType: text
+        logicalType: string
+        customProperties:
+          - property: enum
+            value:
+              - pending
+              - shipped
+              - delivered
+        required: true
+      - name: order_total
+        physicalType: bigint
+        logicalType: integer
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 1000000
+        required: true
+        quality:
+          - description: 95% of all order totals are between 10 and 499 EUR.
+            type: sql
+            severity: warn
+            mustBeLessThan: 50000
+            query: |
+              SELECT MAX(order_total) AS max_total FROM orders
+    quality:
+      - description: Row count above 1000.
+        type: sql
+        mustBeGreaterThan: 1000
+        severity: error
+        query: |
+          SELECT COUNT(*) AS row_count FROM orders
+team:
+  name: checkout

@@ -42,12 +42,6 @@ models:
         constraints:
           - type: not_null
           - type: unique
-        data_tests:
-          - dbt_expectations.expect_column_value_lengths_to_be_between:
-              min_value: 8
-              max_value: 10
-          - dbt_expectations.expect_column_values_to_match_regex:
-              regex: ^B[0-9]+$
         meta:
           classification: sensitive
         tags:
@@ -57,10 +51,6 @@ models:
         constraints:
           - type: not_null
         description: The order_total field
-        data_tests:
-          - dbt_expectations.expect_column_values_to_be_between:
-               min_value: 0
-               max_value: 1000000
       - name: order_status
         data_type: TEXT
         constraints:
@@ -103,12 +93,6 @@ models:
         constraints:
           - type: not_null
           - type: unique
-        data_tests:
-          - dbt_expectations.expect_column_value_lengths_to_be_between:
-              min_value: 8
-              max_value: 10
-          - dbt_expectations.expect_column_values_to_match_regex:
-              regex: ^B[0-9]+$
         meta:
           classification: sensitive
         tags:
@@ -118,10 +102,6 @@ models:
         constraints:
           - type: not_null
         description: The order_total field
-        data_tests:
-          - dbt_expectations.expect_column_values_to_be_between:
-               min_value: 0
-               max_value: 1000000
       - name: order_status
         data_type: STRING
         constraints:

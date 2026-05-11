@@ -1,0 +1,4 @@
+models/datacontract_cli/
+tests/datacontract_cli/
+target/
+logs/
