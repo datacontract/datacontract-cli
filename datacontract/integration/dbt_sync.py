@@ -8,7 +8,6 @@ import re
 import shutil
 import subprocess
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
@@ -927,7 +926,6 @@ def generate_dbt_tests(
     run = Run.create_run()
     run.dataContractId = odcs.id
     run.dataContractVersion = odcs.version
-    run.timestampStart = datetime.now(timezone.utc)
 
     name_map = resolve_model_names(odcs, model_resolution, schema_name)
 
