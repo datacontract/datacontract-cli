@@ -15,8 +15,7 @@ console = Console()
 debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
 
 
-# Order in which top-level commands appear in `datacontract --help`. Mirrors the
-# workflow ordering used in README.md so the docs and CLI tell the same story.
+# Order in which top-level commands appear in `datacontract --help` (cf. README.md)
 COMMAND_ORDER = [
     "init",
     "lint",
