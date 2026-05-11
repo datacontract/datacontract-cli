@@ -273,6 +273,7 @@ Commands
 - [lint](#lint)
 - [changelog](#changelog)
 - [test](#test)
+- [dbt](#dbt-sync)
 - [ci](#ci)
 - [export](#export)
 - [import](#import)
