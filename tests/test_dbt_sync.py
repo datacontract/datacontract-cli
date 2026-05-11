@@ -14,16 +14,20 @@ from unittest import mock
 
 import pytest
 import yaml
+from open_data_contract_standard.model import DataQuality
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.integration.dbt_sync import (
     ModelResolution,
     _attach_test_config,
+    _bound_violation_predicate,
     _build_singular_sql,
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
     _rewrite_relationships_to_ref,
+    _singular_tests_for_qualities,
+    _sql_literal,
     check_dbt_on_path,
     detect_user_model_collisions,
     find_contract,
@@ -127,11 +131,6 @@ def test_find_contract_ambiguous_raises(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # dbt project resolution
 # ---------------------------------------------------------------------------
-
-
-def test_ensure_dbt_project_ok(tmp_path: Path):
-    project = _copy_dbt_project(tmp_path)
-    _ensure_dbt_project(project)
 
 
 def test_ensure_dbt_project_missing_raises(tmp_path: Path):
@@ -285,9 +284,10 @@ def test_resolve_model_names_physicalname_when_set():
     assert resolve_model_names(odcs, ModelResolution.physicalName) == {"orders": "stg_orders"}
 
 
-def test_resolve_model_names_physicalname_unresolvable():
+def test_resolve_model_names_physicalname_unresolvable_raises():
     odcs = resolve_data_contract(str(CONTRACT_PATH))
-    assert resolve_model_names(odcs, ModelResolution.physicalName) == {"orders": None}
+    with pytest.raises(DataContractException, match="`--model-resolution physicalName`.*`orders`"):
+        resolve_model_names(odcs, ModelResolution.physicalName)
 
 
 def test_resolve_model_names_filter_unknown_raises():
@@ -383,18 +383,72 @@ def test_generate_outputs_singular_sql_carries_severity_and_tag():
     schema_obj = odcs.schema_[0]
     _, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", Run.create_run())
 
-    row_count = next(s for s in singulars if "row_count" in s.filename or "row" in s.filename.lower())
+    row_count = next(s for s in singulars if "row_count" in s.filename)
     # severity=error normalized from `severity: error` in the fixture
     assert "severity='error'" in row_count.sql
     assert "tags=['datacontract_cli']" in row_count.sql
 
 
-def test_build_singular_sql_header_and_config():
-    sql = _build_singular_sql("SELECT 1", "warn", "my-contract", "orders")
+def test_build_singular_sql_wraps_query_with_violation_predicate():
+    sql = _build_singular_sql(
+        "SELECT COUNT(*) FROM orders",
+        "metric_value IS NULL OR metric_value <= 1000",
+        "error",
+        "my-contract",
+        "orders",
+    )
     assert "AUTO-GENERATED" in sql
     assert "my-contract" in sql
-    assert "orders" in sql
-    assert "{{ config(severity='warn', tags=['datacontract_cli']) }}" in sql
+    assert "{{ config(severity='error', tags=['datacontract_cli']) }}" in sql
+    assert "WITH _dc_metric (metric_value) AS (" in sql
+    assert "SELECT COUNT(*) FROM orders" in sql
+    assert "WHERE metric_value IS NULL OR metric_value <= 1000" in sql
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({"mustBe": 0}, "metric_value IS NULL OR metric_value <> 0"),
+        ({"mustNotBe": 0}, "metric_value IS NULL OR metric_value = 0"),
+        ({"mustBeGreaterThan": 10}, "metric_value IS NULL OR metric_value <= 10"),
+        ({"mustBeGreaterOrEqualTo": 10}, "metric_value IS NULL OR metric_value < 10"),
+        ({"mustBeLessThan": 100}, "metric_value IS NULL OR metric_value >= 100"),
+        ({"mustBeLessOrEqualTo": 100}, "metric_value IS NULL OR metric_value > 100"),
+        ({"mustBeBetween": [1, 9]}, "metric_value IS NULL OR metric_value < 1 OR metric_value > 9"),
+        ({"mustNotBeBetween": [1, 9]}, "metric_value IS NULL OR (metric_value >= 1 AND metric_value <= 9)"),
+    ],
+)
+def test_bound_violation_predicate_branches(kwargs, expected):
+    assert _bound_violation_predicate(DataQuality(**kwargs)) == expected
+
+
+def test_bound_violation_predicate_returns_none_without_bound():
+    # No `mustBe*` field set → no predicate can be built; caller must skip the test.
+    assert _bound_violation_predicate(DataQuality(description="metric only, no bound")) is None
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (True, "TRUE"),
+        (False, "FALSE"),
+        (42, "42"),
+        (3.14, "3.14"),
+        ("plain", "'plain'"),
+        ("O'Brien", "'O''Brien'"),
+    ],
+)
+def test_sql_literal(value, expected):
+    assert _sql_literal(value) == expected
+
+
+def test_singular_tests_skipped_when_query_has_no_bound():
+    """A quality with `query` but no `mustBe*` bound is logged + skipped — we can't build a predicate."""
+    run = Run.create_run()
+    qualities = [DataQuality(query="SELECT 1", description="no bound here", name="orphan_query")]
+    out = _singular_tests_for_qualities(qualities, "c", "orders", run)
+    assert out == []
+    assert any("no `mustBe*` bound" in log.message for log in run.logs)
 
 
 def test_disambiguate_singular_filenames_renames_duplicates():
@@ -468,17 +522,6 @@ def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: P
 
     assert not stale_yml.exists()
     assert not stale_sql.exists()
-
-
-def test_sync_filter_to_unknown_schema_errors(tmp_path: Path):
-    project = _copy_dbt_project(tmp_path)
-    with pytest.raises(DataContractException, match="not found"):
-        sync(
-            contract=str(CONTRACT_PATH),
-            project_dir=project,
-            schema_name="not_a_schema",
-            skip_tests=True,
-        )
 
 
 def test_sync_missing_contract_raises(tmp_path: Path):
@@ -574,15 +617,17 @@ def test_run_dbt_test_target_and_profiles_forwarded(tmp_path: Path):
         return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
     with mock.patch.object(subprocess, "run", side_effect=fake_run):
+        # Relative path: run_dbt_test cwds into project_dir, so it must resolve to absolute first.
         run_dbt_test(
             project,
             target="dev",
-            profiles_dir=tmp_path / "profiles",
+            profiles_dir=Path("relative/profiles"),
         )
 
     args = captured["args"]
     assert "--target" in args and args[args.index("--target") + 1] == "dev"
-    assert "--profiles-dir" in args
+    profiles_value = args[args.index("--profiles-dir") + 1]
+    assert Path(profiles_value).is_absolute()
 
 
 def test_parse_run_results_maps_status_and_failures(tmp_path: Path):

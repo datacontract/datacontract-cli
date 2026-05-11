@@ -154,9 +154,9 @@ def resolve_model_names(
     odcs: OpenDataContractStandard,
     strategy: ModelResolution,
     schema_filter: str = "all",
-) -> dict[str, Optional[str]]:
-    """Map `schema.name` → dbt model name (or ``None`` if unresolvable)."""
-    mapping: dict[str, Optional[str]] = {}
+) -> dict[str, str]:
+    """Map `schema.name` → dbt model name. Raise if any schema is unresolvable under the strategy."""
+    mapping: dict[str, str] = {}
     schemas = odcs.schema_ or []
     if schema_filter != "all":
         schemas = [s for s in schemas if s.name == schema_filter]
@@ -168,13 +168,29 @@ def resolve_model_names(
                 reason=f"Schema `{schema_filter}` not found in contract. Available: {available}.",
                 engine="dbt-sync",
             )
+    missing_physical: List[str] = []
     for schema_obj in schemas:
         if not schema_obj.name:
             continue
         if strategy == ModelResolution.name:
             mapping[schema_obj.name] = schema_obj.name
         elif strategy == ModelResolution.physicalName:
-            mapping[schema_obj.name] = schema_obj.physicalName or None
+            if schema_obj.physicalName:
+                mapping[schema_obj.name] = schema_obj.physicalName
+            else:
+                missing_physical.append(schema_obj.name)
+    if missing_physical:
+        listing = ", ".join(f"`{n}`" for n in missing_physical)
+        raise DataContractException(
+            type="dbt_sync",
+            name="resolve model",
+            reason=(
+                f"`--model-resolution physicalName` was requested but the following schema(s) "
+                f"have no `physicalName` set: {listing}. Either set `physicalName` in the contract, "
+                "or use `--model-resolution name`."
+            ),
+            engine="dbt-sync",
+        )
     return mapping
 
 
@@ -300,46 +316,86 @@ class SingularTest:
     description: Optional[str]
 
 
-def _singular_test_filename(contract_id: str, model: str, label: str) -> str:
-    return f"{_slugify(contract_id)}__{_slugify(model)}__{_slugify(label)}"
-
-
 # ---------------------------------------------------------------------------
 # Schema → outputs
 # ---------------------------------------------------------------------------
+
+
+def _sql_literal(value: Any) -> str:
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, str):
+        return "'" + value.replace("'", "''") + "'"
+    return str(value)
+
+
+def _bound_violation_predicate(quality: DataQuality) -> Optional[str]:
+    """Build a SQL predicate over `metric_value` that is TRUE iff the specified ODCS bound is violated."""
+    if quality.mustBe is not None:
+        return f"metric_value IS NULL OR metric_value <> {_sql_literal(quality.mustBe)}"
+    if quality.mustNotBe is not None:
+        return f"metric_value IS NULL OR metric_value = {_sql_literal(quality.mustNotBe)}"
+    if quality.mustBeGreaterThan is not None:
+        return f"metric_value IS NULL OR metric_value <= {_sql_literal(quality.mustBeGreaterThan)}"
+    if quality.mustBeGreaterOrEqualTo is not None:
+        return f"metric_value IS NULL OR metric_value < {_sql_literal(quality.mustBeGreaterOrEqualTo)}"
+    if quality.mustBeLessThan is not None:
+        return f"metric_value IS NULL OR metric_value >= {_sql_literal(quality.mustBeLessThan)}"
+    if quality.mustBeLessOrEqualTo is not None:
+        return f"metric_value IS NULL OR metric_value > {_sql_literal(quality.mustBeLessOrEqualTo)}"
+    if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
+        lo, hi = quality.mustBeBetween
+        return f"metric_value IS NULL OR metric_value < {_sql_literal(lo)} OR metric_value > {_sql_literal(hi)}"
+    if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
+        lo, hi = quality.mustNotBeBetween
+        return f"metric_value IS NULL OR (metric_value >= {_sql_literal(lo)} AND metric_value <= {_sql_literal(hi)})"
+    return None  # the test author did not set a valid bound (invalid syntax)
 
 
 def _singular_tests_for_qualities(
     qualities: Optional[list],
     contract_id: str,
     model: str,
+    run: Run,
     *,
     label_prefix: str = "",
 ) -> List[SingularTest]:
-    """Generate singular tests for ODCS quality entries that have an associated `query`."""
+    """Generate singular tests for ODCS quality entries that have an associated `query` and bound."""
     out: List[SingularTest] = []
     for idx, quality in enumerate(qualities or [], start=1):
         if not quality.query:
             continue
+        predicate = _bound_violation_predicate(quality)
+        test_label = f"{label_prefix}{_quality_label(quality, idx)}" if label_prefix else _quality_label(quality, idx)
+        if predicate is None:
+            run.log_warn(
+                f"Skipping singular SQL test `{test_label}` on `{model}`: quality has a `query` but no `mustBe*` bound."
+            )
+            continue
         severity = _normalize_severity(quality.severity)
-        label = f"{label_prefix}{_quality_label(quality, idx)}" if label_prefix else _quality_label(quality, idx)
-        filename = _singular_test_filename(contract_id, model, label)
+        filename = f"{_slugify(contract_id)}__{_slugify(model)}__{_slugify(test_label)}"
         out.append(
             SingularTest(
                 filename=f"{filename}.sql",
-                sql=_build_singular_sql(quality.query, severity, contract_id, model),
+                sql=_build_singular_sql(quality.query, predicate, severity, contract_id, model),
                 description=quality.description,
             )
         )
     return out
 
 
-def _build_singular_sql(query: str, severity: str, contract_id: str, model: str) -> str:
+def _build_singular_sql(query: str, violation_predicate: str, severity: str, contract_id: str, model: str) -> str:
+    # The ODCS query is expected to yield a single-column scalar metric. We alias that
+    # column to `metric_value` via the CTE column list, then return rows only when the
+    # bound is violated — dbt singular-test semantics (rows returned = test failed).
     return (
         f"-- AUTO-GENERATED by `datacontract dbt sync`. Do not edit.\n"
         f"-- Source contract: {contract_id} (model: {model})\n"
         f"{{{{ config(severity='{severity}', tags=['{OUTPUT_TAG}']) }}}}\n"
+        f"WITH _dc_metric (metric_value) AS (\n"
         f"{query.rstrip()}\n"
+        f")\n"
+        f"SELECT metric_value FROM _dc_metric WHERE {violation_predicate}\n"
     )
 
 
@@ -425,9 +481,9 @@ def generate_dbt_tests_for_schema(
     singulars: List[SingularTest] = []
     for prop in schema_obj.properties or []:
         singulars.extend(
-            _singular_tests_for_qualities(prop.quality, contract_id, model_name, label_prefix=f"{prop.name}__")
+            _singular_tests_for_qualities(prop.quality, contract_id, model_name, run, label_prefix=f"{prop.name}__")
         )
-    singulars.extend(_singular_tests_for_qualities(schema_obj.quality, contract_id, model_name))
+    singulars.extend(_singular_tests_for_qualities(schema_obj.quality, contract_id, model_name, run))
     _disambiguate_singular_filenames(singulars)
 
     return model_dict, singulars
@@ -503,13 +559,6 @@ def write_dbt_tests(
 # ---------------------------------------------------------------------------
 # Subprocess + result parsing
 # ---------------------------------------------------------------------------
-
-
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
-
-
-def _strip_ansi_characters(text: str) -> str:
-    return _ANSI_RE.sub("", text)
 
 
 def _format_collision_message(collisions: dict[str, list[Path]], project_dir: Path) -> str:
@@ -600,7 +649,8 @@ def run_dbt_test(
             original_exception=e,
         )
 
-    output = _strip_ansi_characters((result.stderr or "") + (result.stdout or ""))
+    ansi_control_chars = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
+    output = ansi_control_chars.sub("", (result.stderr or "") + (result.stdout or ""))
     if result.returncode != 0 and not run_results_path.is_file():
         raise DataContractException(
             type="dbt_sync",
@@ -762,7 +812,7 @@ def generate_dbt_tests(
 
     name_map = resolve_model_names(odcs, model_resolution, schema_name)
 
-    target_names = {m for m in name_map.values() if m}
+    target_names = set(name_map.values())
     collisions = detect_user_model_collisions(project_dir, target_names)
     if collisions:
         raise DataContractException(
@@ -786,10 +836,6 @@ def generate_dbt_tests(
     schemas_by_name = {s.name: s for s in (odcs.schema_ or []) if s.name}
     for schema_name_key, model_name in name_map.items():
         schema_obj = schemas_by_name[schema_name_key]
-        if not model_name:
-            run.log_error(f"Cannot resolve dbt model for schema `{schema_name_key}` — skipping.")
-            continue
-
         model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, model_name, run)
         yaml_path, sql_paths = write_dbt_tests(project_dir, contract_path, odcs, model_name, model_dict, singulars)
         yaml_test_paths.append(yaml_path)
