@@ -212,6 +212,11 @@ def local_data_quality_monitoring_results_query() -> str:
 """
 
 
+def _quote_identifier(identifier: str) -> str:
+    """Double-quote a Snowflake identifier, escaping any inner double-quotes."""
+    return '"' + identifier.replace('"', '""') + '"'
+
+
 def import_information_schema(conn) -> Dict[str, List[Dict]]:
     from snowflake.connector import DictCursor
     from snowflake.connector.constants import QueryStatus
@@ -234,14 +239,39 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
         cur.execute_async(local_data_quality_monitoring_results_query())
         query_pool["quality"] = str(cur.sfqid)
 
-    # wait for all queries to finish before fetching results to optimize performance by running queries in parallel
+    # optional queries that may fail due to insufficient privileges — return empty list instead of crashing
+    optional_queries = {"tags", "quality"}
+
+    # wait for all queries to finish; cap at 5 minutes to avoid hanging indefinitely
+    _QUERY_TIMEOUT_S = 300
+    deadline = time.time() + _QUERY_TIMEOUT_S
     for qid in query_pool.values():
         while conn.get_query_status(qid) in [QueryStatus.RUNNING, QueryStatus.QUEUED]:
+            if time.time() > deadline:
+                raise DataContractException(
+                    type="schema",
+                    result="failed",
+                    name="snowflake query timeout",
+                    reason=f"Snowflake queries did not complete within {_QUERY_TIMEOUT_S} seconds.",
+                    engine="datacontract",
+                )
             time.sleep(0.2)
 
     # load resultsets into a dict of name to resultset to optimize performance by fetching results
     resultsets = {}
     for name, qid in query_pool.items():
+        status = conn.get_query_status(qid)
+        if status in (QueryStatus.FAILED_WITH_ERROR, QueryStatus.FAILED_WITH_INCIDENT, QueryStatus.ABORTED):
+            if name in optional_queries:
+                resultsets[name] = []
+                continue
+            raise DataContractException(
+                type="schema",
+                result="failed",
+                name=f"snowflake query failed: {name}",
+                reason=f"Snowflake query '{name}' failed with status {status}. Check permissions and query syntax.",
+                engine="datacontract",
+            )
         with conn.cursor(DictCursor) as cur:
             cur.get_results_from_sfqid(qid)
             resultsets[name] = cur.fetchall()
@@ -263,11 +293,11 @@ def schema_properties_cleansing(
         if prop.name is None or prop.logicalType is None:
             continue  # Skip properties that don't have required fields
 
-        logical_type, format = map_type_from_sql(prop.physicalType)
+        logical_type, fmt = map_type_from_sql(prop.physicalType)
         max_length = prop.logicalTypeOptions.get("maxLength", None) if prop.logicalTypeOptions else None
 
-        precision = [cp.value for cp in prop.customProperties if cp.property == "precision"]
-        scale = [cp.value for cp in prop.customProperties if cp.property == "scale"]
+        precision = [cp.value for cp in (prop.customProperties or []) if cp.property == "precision"]
+        scale = [cp.value for cp in (prop.customProperties or []) if cp.property == "scale"]
 
         tags = [
             tag["TAGS"] for tag in properties_tags if tag["COLUMN_NAME"] == prop.name and tag["COLUMN_NAME"] is not None
@@ -284,11 +314,11 @@ def schema_properties_cleansing(
             max_length=max_length,
             precision=precision[0] if len(precision) > 0 else None,
             scale=scale[0] if len(scale) > 0 else None,
-            format=format,
+            format=fmt,
             required=prop.required,
             unique=prop.unique,
             tags=tags_adapter.validate_json(tags[0] if len(tags) > 0 else "[]"),
-            custom_properties={cp.property: cp.value for cp in prop.customProperties},
+            custom_properties={cp.property: cp.value for cp in (prop.customProperties or [])},
             id=prop.id,
             quality=quality_adapter.validate_json(quality[0] if len(quality) > 0 else "[]"),
         )
@@ -299,7 +329,7 @@ def schema_properties_cleansing(
 
 def _get_ordinal_position_value(cp_list: List[CustomProperty]) -> Any:
     """Extract customProperties value where property == 'ordinalPosition'."""
-    for cp in cp_list:
+    for cp in cp_list or []:
         if cp.property == "ordinalPosition":
             return int(cp.value)
     return None
@@ -307,14 +337,15 @@ def _get_ordinal_position_value(cp_list: List[CustomProperty]) -> Any:
 
 def property_customs_ordinal_position_sort(col: SchemaProperty) -> Any:
     ord_val = _get_ordinal_position_value(col.customProperties)
-    return ord_val, f"{col.name.lower()}"
+    # Push columns without ordinalPosition to the end; secondary sort by name for stability
+    return (ord_val is None, ord_val or 0, col.name.lower())
 
 
 def import_snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
 
     try:
-        # To catch incomplete installation of snowflake extra which will cause the connect import to succeed but fail later when trying to catch ProgrammingError for schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
-        from snowflake.connector.errors import ProgrammingError
+        # Verify the snowflake extra is fully installed
+        from snowflake.connector import connect as _  # noqa: F401
     except ImportError as e:
         raise DataContractException(
             type="schema",
@@ -325,18 +356,13 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             original_exception=e,
         )
 
-    # Define Database and Schema Context for the import, to avoid having to specify it in every query and to catch double_quoted identifier issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
-    result_sets= {}
+    result_sets = {}
     cnx = snowflake_cursor(account, database, schema)
     try:
         with cnx.cursor() as cur:
-            try:
-                cur.execute(f"USE SCHEMA {database}.{schema}")
-                schema_identifier = schema
-            except ProgrammingError:
-                # schema with double-quoted identifiers issue https://docs.snowflake.com/en/sql-reference/identifiers-syntax#double-quoted-identifiers
-                cur.execute(f'USE SCHEMA {database}."{schema}"')
-                schema_identifier = f'"{schema}"'
+            # Always use quoted identifiers to prevent SQL injection and handle case-sensitive names
+            schema_identifier = _quote_identifier(schema)
+            cur.execute(f"USE SCHEMA {_quote_identifier(database)}.{schema_identifier}")
 
         # get all information from information_schema in parallel to optimize performance
         result_sets = import_information_schema(cnx)
@@ -362,7 +388,7 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             roles=list_role_adapter.validate_json(row["ROLES"]),
         )
     # only one server in snowflake, we can safely assign it to the ODCS
-    odcs.servers = [server]
+    odcs.servers = [server] if server is not None else []
 
     # schemas
     list_properties_adapter = TypeAdapter(List[SchemaProperty])
@@ -370,22 +396,22 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
     schemas = []
     enhanced_schemas = []
 
-    for schema in result_sets["schemas"]:
+    for schema_item in result_sets["schemas"]:
         # for each schema we need to get the properties and quality information from the resultsets we fetched in parallel to optimize performance by avoiding nested loops and multiple iterations over the resultsets, we can filter the relevant information for each schema using list comprehensions which are optimized in python and will be much faster than nested loops especially when we have a large number of schemas and properties.
         list_of_properties = [
-            prop["PROPERTIES"] for prop in result_sets["properties"] if prop["TABLE_NAME"] == schema["TABLE_NAME"]
+            prop["PROPERTIES"] for prop in result_sets["properties"] if prop["TABLE_NAME"] == schema_item["TABLE_NAME"]
         ]
         list_of_data_quality = [
             quality["QUALITY"]
             for quality in result_sets["quality"]
-            if quality["TABLE_NAME"] == schema["TABLE_NAME"] and quality["TYPES"] == "RECORD"
+            if quality["TABLE_NAME"] == schema_item["TABLE_NAME"] and quality["TYPES"] == "RECORD"
         ]
 
         schemas.append(
             create_schema_object(
-                name=schema["TABLE_NAME"],
-                description=schema["DESCRIPTION"],
-                physical_type=schema["PHYSICAL_TYPE"],  # table or view
+                name=schema_item["TABLE_NAME"],
+                description=schema_item["DESCRIPTION"],
+                physical_type=schema_item["PHYSICAL_TYPE"],  # table or view
                 properties=list_properties_adapter.validate_json(list_of_properties[0])
                 if len(list_of_properties) > 0
                 else None,
@@ -396,20 +422,23 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
         )
 
     # cleansing
-    for schema in schemas:
+    for schema_item in schemas:
         # tags
-        properties_tags = [tag for tag in result_sets["tags"] if tag["OBJECT_NAME"] == schema.name]
+        properties_tags = [tag for tag in result_sets["tags"] if tag["OBJECT_NAME"] == schema_item.name]
 
         # quality
         properties_quality = [
             quality
             for quality in result_sets["quality"]
-            if quality["TABLE_NAME"] == schema.name and quality["TYPES"] == "COLUMN"
+            if quality["TABLE_NAME"] == schema_item.name and quality["TYPES"] == "COLUMN"
         ]
 
-        schema.properties = schema_properties_cleansing(schema.properties, properties_tags, properties_quality)
-        schema.properties.sort(key=property_customs_ordinal_position_sort)
-        enhanced_schemas.append(schema)
+        if schema_item.properties is not None:
+            schema_item.properties = schema_properties_cleansing(
+                schema_item.properties, properties_tags, properties_quality
+            )
+            schema_item.properties.sort(key=property_customs_ordinal_position_sort)
+        enhanced_schemas.append(schema_item)
 
     # ODCS building
     enhanced_schemas.sort(key=lambda s: f"{s.physicalType.lower()}/{s.name.lower()}")
@@ -445,7 +474,7 @@ def snowflake_cursor(account: str, database: str, schema: str):
         if password_connect is None
         else os.environ.get("DATACONTRACT_SNOWFLAKE_AUTHENTICATOR", "snowflake")
     )
-    warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
+    warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", None)
     database_connect = database
     schema_connect = schema
     snowflake_home = os.environ.get("DATACONTRACT_SNOWFLAKE_HOME") or os.environ.get("SNOWFLAKE_HOME")
@@ -472,8 +501,7 @@ def snowflake_cursor(account: str, database: str, schema: str):
 
         # optional connection params (will override the defaults if set)
         connection_params = {}
-        if default_connection:
-            connection_params["connection_name"] = default_connection
+        connection_params["connection_name"] = default_connection
         if snowflake_connections_file:
             connection_params["connections_file_path"] = Path(snowflake_connections_file)
         if role_connect:
