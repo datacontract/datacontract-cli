@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- new `datacontract import powerbi` command : import PowerBI Semantic Model into an ODCS contract
+
 ### Added
 - new `datacontract dbt sync` command: generate dbt tests from an ODCS contract, then run `dbt test` for them (#1222)
 
