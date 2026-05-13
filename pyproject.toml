@@ -18,7 +18,7 @@ dependencies = [
   "typer>=0.18.0,<0.26",
   "pydantic>=2.8.2,<2.14.0",
   "pyyaml~=6.0.1",
-  "requests>=2.31,<2.34",
+  "requests>=2.31,<2.35",
   "fastjsonschema>=2.19.1,<2.22.0",
   "jsonschema>=4.23.0,<5.0.0",
   "pytz>=2024.1",
@@ -64,7 +64,7 @@ databricks = [
   "soda-core-spark-df>=3.3.20,<3.6.0",
   "soda-core-spark[databricks]>=3.3.20,<3.6.0",
   "databricks-sql-connector>=3.7.0,<4.3.0",
-  "databricks-sdk<0.107.0",
+  "databricks-sdk<0.109.0",
   "pyspark>=3.5.0,<5.0.0",
 ]
 
@@ -89,11 +89,11 @@ postgres = [
 
 s3 = [
   "s3fs>=2025.2.0,<2027.0.0",
-  "aiobotocore>=2.17.0,<3.7.0",
+  "aiobotocore>=2.17.0,<3.8.0",
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.5",
+  "snowflake-connector-python[pandas]>=3.6,<4.6",
   "soda-core-snowflake>=3.3.20,<3.6.0"
 ]
 
@@ -142,7 +142,7 @@ api = [
 protobuf = [
   # `protoc` (the compiler) must be installed separately on the system; see README.
   # Wide range: only `descriptor_pb2.FileDescriptorSet` is used, stable since 3.x.
-  "protobuf>=3.20,<7.0",
+  "protobuf>=3.20,<8.0",
 ]
 
 all = [
@@ -155,7 +155,7 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.1.22",
+  "moto==5.2.1",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
   "pytest",

@@ -1136,6 +1136,7 @@ models:
 </details>
 
 ### dbt sync
+> The `dbt sync` command is still work in progress and will receive further functionality and documentation soon.
 ```
                                                                                                     
  Usage: datacontract dbt sync [OPTIONS] [CONTRACT]                                                  
