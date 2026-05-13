@@ -1731,6 +1731,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │ spark       Import a data contract from a Spark schema.                                          │
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
+│ powerbi     Import a data contract from an PowerBI template file.                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml    
