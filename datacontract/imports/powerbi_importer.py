@@ -1,10 +1,10 @@
-"""Power BI .pbix / .pbip / model.bim importer for the Data Contract CLI.
+"""Power BI .pbit / .pbip / model.bim importer for the Data Contract CLI.
 
 Extraction strategy (in priority order):
-  1. ``.pbix`` — read the embedded ``DataModelSchema`` entry (UTF-16 LE BIM JSON).
+  1. ``.pbit`` — read the embedded ``DataModelSchema`` entry (UTF-16 LE BIM JSON).
   2. ``.bim`` or ``.json`` — read directly as a BIM JSON file (e.g. from pbi-tools
      or a Power BI Project / .pbip folder).
-  3. If ``DataModelSchema`` is absent from the .pbix, a clear error is raised
+  3. If ``DataModelSchema`` is absent from the .pbit, a clear error is raised
      with instructions to re-save from an up-to-date Power BI Desktop or to
      extract the model using pbi-tools (https://pbi.tools).
 
@@ -75,7 +75,7 @@ class PowerBIImporter(Importer):
                 name="powerbi import source",
                 reason=(
                     "Source file path is required for Power BI import. "
-                    "Provide a path to a .pbix file, a .bim file, or a model.bim JSON file."
+                    "Provide a path to a .pbit file, a .bim file, or a model.bim JSON file."
                 ),
                 engine="datacontract",
             )
@@ -100,7 +100,7 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
 
     suffix = path.suffix.lower()
     if suffix == ".pbit":
-        bim = _load_bim_from_pbix(path)
+        bim = _load_bim_from_pbit(path)
     elif suffix in (".bim", ".json"):
         bim = _load_bim_from_json(path)
     else:
@@ -119,22 +119,22 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
 # ---------------------------------------------------------------------------
 
 
-def _load_bim_from_pbix(pbix_path: Path) -> Dict[str, Any]:
-    """Extract and parse the ``DataModelSchema`` JSON from a .pbix ZIP archive.
+def _load_bim_from_pbit(pbit_path: Path) -> Dict[str, Any]:
+    """Extract and parse the ``DataModelSchema`` JSON from a .pbit ZIP archive.
 
     Power BI Desktop embeds the tabular model as a UTF-16 LE JSON file called
-    ``DataModelSchema`` inside the .pbix ZIP archive.  This entry has been
+    ``DataModelSchema`` inside the .pbit ZIP archive.  This entry has been
     present since mid-2021; older files may not include it.
     """
     _ENTRY_NAME = "DataModelSchema"
     try:
-        with zipfile.ZipFile(pbix_path, "r") as zf:
+        with zipfile.ZipFile(pbit_path, "r") as zf:
             if _ENTRY_NAME not in zf.namelist():
                 raise DataContractException(
                     type="import",
                     name="powerbi import",
                     reason=(
-                        f"'DataModelSchema' was not found inside '{pbix_path.name}'. "
+                        f"'DataModelSchema' was not found inside '{pbit_path.name}'. "
                         "This entry is present in Power BI Desktop files saved since mid-2021. "
                         "Try re-saving the file from an up-to-date Power BI Desktop, or export "
                         "the model as a .bim file using pbi-tools (https://pbi.tools) and "
@@ -147,7 +147,7 @@ def _load_bim_from_pbix(pbix_path: Path) -> Dict[str, Any]:
         raise DataContractException(
             type="import",
             name="powerbi import",
-            reason=f"'{pbix_path.name}' is not a valid .pbix / ZIP file: {exc}",
+            reason=f"'{pbit_path.name}' is not a valid .pbit / ZIP file: {exc}",
             engine="datacontract",
             original_exception=exc,
         )

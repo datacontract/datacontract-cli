@@ -1,4 +1,4 @@
-"""Tests for the Power BI .pbix / .bim importer."""
+"""Tests for the Power BI .pbit / .bim importer."""
 
 import io
 import json
@@ -17,7 +17,7 @@ BIM_FIXTURE = "fixtures/powerbi/model.bim"
 # ---------------------------------------------------------------------------
 
 
-def _make_pbix(bim_dict: dict, encoding: str = "utf-16-le") -> bytes:
+def _make_pbit(bim_dict: dict, encoding: str = "utf-16-le") -> bytes:
     """Create an in-memory .pbit (ZIP) containing a DataModelSchema entry."""
     raw = json.dumps(bim_dict).encode(encoding)
     buf = io.BytesIO()
@@ -28,7 +28,7 @@ def _make_pbix(bim_dict: dict, encoding: str = "utf-16-le") -> bytes:
 
 def _write_pbit(tmp_path, bim_dict: dict) -> str:
     path = tmp_path / "model.pbit"
-    path.write_bytes(_make_pbix(bim_dict))
+    path.write_bytes(_make_pbit(bim_dict))
     return str(path)
 
 
