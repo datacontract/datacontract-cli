@@ -1,6 +1,11 @@
 """Unit tests for Azure Blob Storage / ADLS Gen2 metadata checks.
 
 All Azure SDK calls are mocked with unittest.mock so no real Azure account is required.
+
+Schema properties bind directly to BlobProperties attributes (azure.storage.blob):
+  name, size, lastModified, contentType, blobType, etag, …
+Each property's quality constraints are validated per-blob.
+Schema-level quality (rowCount / itemCount / fileCount) is validated as a file count.
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ from datacontract.engines.datacontract.check_azure_blob_file import (
 from datacontract.model.run import ResultEnum, Run
 
 # ---------------------------------------------------------------------------
-# Fixture path (relative to tests/ CWD or absolute)
+# Fixture path (relative to tests/ CWD)
 # ---------------------------------------------------------------------------
 
 FIXTURE_PATH = "fixtures/azure-blob-file/datacontract.yaml"
@@ -32,16 +37,28 @@ def _make_blob(
     size: int = 1024,
     last_modified: Optional[datetime] = None,
     content_type: Optional[str] = "application/json",
+    blob_type: str = "BlockBlob",
+    etag: str = '"abc123"',
 ) -> MagicMock:
-    """Create a mock BlobProperties object."""
+    """Create a mock BlobProperties object mirroring azure.storage.blob.BlobProperties."""
     if last_modified is None:
         last_modified = datetime.now(timezone.utc) - timedelta(hours=1)
+
     blob = MagicMock()
     blob.name = name
     blob.size = size
     blob.last_modified = last_modified
+    blob.etag = etag
+
+    # Simulate blob_type enum with .value
+    bt = MagicMock()
+    bt.value = blob_type
+    blob.blob_type = bt
+
     cs = MagicMock()
     cs.content_type = content_type
+    cs.content_encoding = None
+    cs.content_language = None
     blob.content_settings = cs
     return blob
 
@@ -50,17 +67,16 @@ def _make_run() -> Run:
     return Run.create_run()
 
 
-def _check_results(run: Run) -> dict[str, ResultEnum]:
-    """Return {check_type: result} mapping for all checks in the run."""
-    return {c.type: c.result for c in run.checks}
-
-
 def _checks_by_type(run: Run, check_type: str) -> list:
     return [c for c in run.checks if c.type == check_type]
 
 
+def _checks_by_field(run: Run, field: str) -> list:
+    return [c for c in run.checks if c.field == field]
+
+
 # ---------------------------------------------------------------------------
-# Unit tests for URL parsing helpers
+# Unit tests — URL parsing helpers
 # ---------------------------------------------------------------------------
 
 
@@ -94,7 +110,7 @@ class TestParseLocation:
         assert prefix == "raw/"
 
     def test_unknown_scheme_returns_none_container(self):
-        container, prefix = _parse_location("s3://bucket/key")
+        container, _ = _parse_location("s3://bucket/key")
         assert container is None
 
     def test_abfs_url(self):
@@ -126,18 +142,15 @@ class TestAccountUrlFromLocation:
 
 
 # ---------------------------------------------------------------------------
-# Integration-style tests using mocked BlobServiceClient
+# Integration-style tests — mocked BlobServiceClient
 # ---------------------------------------------------------------------------
 
 
 def _patched_client(blobs: List[MagicMock]):
-    """Return a MagicMock BlobServiceClient whose list_blobs returns *blobs*."""
     container_client = MagicMock()
     container_client.list_blobs.return_value = blobs
-
     service_client = MagicMock()
     service_client.get_container_client.return_value = container_client
-
     return service_client
 
 
@@ -149,11 +162,11 @@ def _load_contract():
 
 
 class TestCheckAzureBlobFile:
-    """Tests for check_azure_blob_file() with a mocked BlobServiceClient."""
+    """Property-driven per-blob checks with mocked BlobServiceClient."""
 
     def _run_with_blobs(self, blobs: List[MagicMock]) -> Run:
         data_contract = _load_contract()
-        server = data_contract.servers[0] if data_contract.servers else None
+        server = data_contract.servers[0]
         run = _make_run()
         with patch(
             "datacontract.engines.datacontract.check_azure_blob_file._build_blob_service_client",
@@ -167,106 +180,124 @@ class TestCheckAzureBlobFile:
     def test_empty_location_fails(self):
         run = self._run_with_blobs([])
         checks = _checks_by_type(run, "azure_file_location_not_empty")
-        assert checks, "Expected location-not-empty check"
-        assert checks[0].result == ResultEnum.failed
+        assert checks and checks[0].result == ResultEnum.failed
 
     def test_non_empty_location_passes(self):
-        run = self._run_with_blobs([_make_blob("raw/orders/orders_2024.json")])
+        run = self._run_with_blobs([_make_blob("raw/orders/a.json")])
         checks = _checks_by_type(run, "azure_file_location_not_empty")
-        assert checks[0].result == ResultEnum.passed
+        assert checks and checks[0].result == ResultEnum.passed
 
-    # ── lastModified not in the future ──────────────────────────────────────
+    # ── Property: size ──────────────────────────────────────────────────────
 
-    def test_future_last_modified_fails(self):
-        future = datetime.now(timezone.utc) + timedelta(days=1)
-        blobs = [_make_blob("raw/orders/future.json", last_modified=future)]
+    def test_oversized_blob_fails_size_quality(self):
+        blobs = [_make_blob("raw/orders/big.json", size=6 * 1024 * 1024)]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_last_modified_not_future")
-        assert checks[0].result == ResultEnum.failed
-        assert "future" in checks[0].reason.lower()
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "size"]
+        assert checks and checks[0].result == ResultEnum.failed
 
-    def test_past_last_modified_passes(self):
-        past = datetime.now(timezone.utc) - timedelta(days=1)
-        blobs = [_make_blob("raw/orders/old.json", last_modified=past)]
+    def test_exact_size_limit_passes(self):
+        blobs = [_make_blob("raw/orders/exact.json", size=5 * 1024 * 1024)]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_last_modified_not_future")
-        assert checks[0].result == ResultEnum.passed
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "size"]
+        assert checks and checks[0].result == ResultEnum.passed
 
-    def test_naive_datetime_treated_as_utc(self):
-        """A timezone-naive datetime slightly in the past should pass."""
-        past_naive = datetime.now() - timedelta(hours=2)
-        blobs = [_make_blob("raw/orders/naive.json", last_modified=past_naive)]
-        run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_last_modified_not_future")
-        assert checks[0].result == ResultEnum.passed
-
-    # ── Content length ──────────────────────────────────────────────────────
-
-    def test_oversized_blob_fails(self):
-        big = 6 * 1024 * 1024  # 6 MiB > 5 MiB default
-        blobs = [_make_blob("raw/orders/big.json", size=big)]
-        run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_length")
-        assert checks[0].result == ResultEnum.failed
-
-    def test_blob_exactly_at_limit_passes(self):
-        exact = 5 * 1024 * 1024  # exactly 5 MiB
-        blobs = [_make_blob("raw/orders/exact.json", size=exact)]
-        run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_length")
-        assert checks[0].result == ResultEnum.passed
-
-    def test_small_blob_passes_content_length(self):
+    def test_small_blob_passes_size(self):
         blobs = [_make_blob("raw/orders/small.json", size=512)]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_length")
-        assert checks[0].result == ResultEnum.passed
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "size"]
+        assert checks and checks[0].result == ResultEnum.passed
 
-    # ── Content type ────────────────────────────────────────────────────────
+    # ── Property: lastModified (with "now" sentinel) ────────────────────────
+
+    def test_future_last_modified_fails(self):
+        blobs = [_make_blob("raw/orders/future.json", last_modified=datetime.now(timezone.utc) + timedelta(days=1))]
+        run = self._run_with_blobs(blobs)
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "lastModified"]
+        assert checks and checks[0].result == ResultEnum.failed
+
+    def test_past_last_modified_passes(self):
+        blobs = [_make_blob("raw/orders/old.json", last_modified=datetime.now(timezone.utc) - timedelta(days=1))]
+        run = self._run_with_blobs(blobs)
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "lastModified"]
+        assert checks and checks[0].result == ResultEnum.passed
+
+    def test_naive_datetime_treated_as_utc_and_passes(self):
+        """A naive datetime in the past is interpreted as UTC and should pass."""
+        blobs = [_make_blob("raw/orders/naive.json", last_modified=datetime.now() - timedelta(hours=2))]
+        run = self._run_with_blobs(blobs)
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "lastModified"]
+        assert checks and checks[0].result == ResultEnum.passed
+
+    # ── Property: contentType (MIME normalisation) ──────────────────────────
 
     def test_wrong_content_type_fails(self):
         blobs = [_make_blob("raw/orders/file.csv", content_type="text/csv")]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_type")
-        assert checks[0].result == ResultEnum.failed
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "contentType"]
+        assert checks and checks[0].result == ResultEnum.failed
 
     def test_correct_content_type_passes(self):
         blobs = [_make_blob("raw/orders/file.json", content_type="application/json")]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_type")
-        assert checks[0].result == ResultEnum.passed
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "contentType"]
+        assert checks and checks[0].result == ResultEnum.passed
 
-    def test_content_type_with_params_passes(self):
-        """'application/json; charset=utf-8' should match 'application/json'."""
+    def test_content_type_with_mime_params_passes(self):
+        """'application/json; charset=utf-8' must match 'application/json'."""
         blobs = [_make_blob("raw/orders/file.json", content_type="application/json; charset=utf-8")]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_type")
-        assert checks[0].result == ResultEnum.passed
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "contentType"]
+        assert checks and checks[0].result == ResultEnum.passed
 
-    def test_none_content_type_fails(self):
+    def test_none_content_type_skipped_in_quality(self):
+        """None contentType is skipped in quality checks; use required: true to catch missing."""
         blobs = [_make_blob("raw/orders/file.json", content_type=None)]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_type")
-        assert checks[0].result == ResultEnum.failed
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "contentType"]
+        # All values None → no violations → passes
+        assert checks and checks[0].result == ResultEnum.passed
 
-    # ── Quality file-count thresholds ───────────────────────────────────────
+    # ── Property: required ──────────────────────────────────────────────────
 
-    def test_quality_rowcount_passes_when_at_least_one_file(self):
-        # Fixture specifies mustBeGreaterOrEqualTo: 1
-        blobs = [_make_blob("raw/orders/file1.json")]
+    def test_all_required_properties_present_passes(self):
+        blobs = [_make_blob("raw/orders/a.json")]
         run = self._run_with_blobs(blobs)
-        quality_checks = _checks_by_type(run, "azure_file_count_quality")
-        assert quality_checks, "Expected quality check"
-        assert quality_checks[0].result == ResultEnum.passed
+        failed = [c for c in _checks_by_type(run, "azure_file_property_required") if c.result == ResultEnum.failed]
+        assert not failed, f"Unexpected required failures: {[(c.field, c.reason) for c in failed]}"
 
-    def test_quality_rowcount_fails_on_empty(self):
+    def test_required_name_always_present(self):
+        blobs = [_make_blob("raw/orders/a.json")]
+        run = self._run_with_blobs(blobs)
+        checks = [c for c in _checks_by_type(run, "azure_file_property_required") if c.field == "name"]
+        assert checks and checks[0].result == ResultEnum.passed
+
+    # ── Property: blobType ──────────────────────────────────────────────────
+
+    def test_block_blob_type_passes(self):
+        blobs = [_make_blob("raw/orders/a.json", blob_type="BlockBlob")]
+        run = self._run_with_blobs(blobs)
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "blobType"]
+        assert checks and checks[0].result == ResultEnum.passed
+
+    def test_page_blob_type_fails(self):
+        blobs = [_make_blob("raw/orders/a.json", blob_type="PageBlob")]
+        run = self._run_with_blobs(blobs)
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "blobType"]
+        assert checks and checks[0].result == ResultEnum.failed
+
+    # ── Schema-level quality (file count) ──────────────────────────────────
+
+    def test_quality_rowcount_passes_with_one_file(self):
+        run = self._run_with_blobs([_make_blob("raw/orders/file1.json")])
+        checks = _checks_by_type(run, "azure_file_count_quality")
+        assert checks and checks[0].result == ResultEnum.passed
+
+    def test_quality_rowcount_not_checked_on_empty_folder(self):
+        """Quality count check is short-circuited when the folder is empty."""
         run = self._run_with_blobs([])
-        # Empty folder triggers location check + no further checks → no quality check
-        quality_checks = _checks_by_type(run, "azure_file_count_quality")
-        # Quality check is NOT run when folder is empty (short-circuit after location check)
-        assert not quality_checks
+        assert not _checks_by_type(run, "azure_file_count_quality")
 
-    # ── Multiple blobs with mixed issues ───────────────────────────────────
+    # ── Multiple blobs — all passing ────────────────────────────────────────
 
     def test_multiple_blobs_all_passing(self):
         blobs = [
@@ -274,24 +305,20 @@ class TestCheckAzureBlobFile:
             _make_blob("raw/orders/b.json", size=2048),
         ]
         run = self._run_with_blobs(blobs)
-        results = _check_results(run)
-        assert results.get("azure_file_location_not_empty") == ResultEnum.passed
-        assert results.get("azure_file_last_modified_not_future") == ResultEnum.passed
-        assert results.get("azure_file_content_length") == ResultEnum.passed
-        assert results.get("azure_file_content_type") == ResultEnum.passed
-        assert results.get("azure_file_count_quality") == ResultEnum.passed
+        failed = [c for c in run.checks if c.result in (ResultEnum.failed, ResultEnum.error)]
+        assert not failed, f"Unexpected failures: {[(c.type, c.field, c.reason) for c in failed]}"
 
-    def test_mixed_content_types_reports_only_mismatched(self):
+    def test_mixed_content_types_only_one_violation(self):
         blobs = [
             _make_blob("raw/orders/a.json", content_type="application/json"),
             _make_blob("raw/orders/b.csv", content_type="text/csv"),
         ]
         run = self._run_with_blobs(blobs)
-        checks = _checks_by_type(run, "azure_file_content_type")
-        assert checks[0].result == ResultEnum.failed
-        assert "1 blob" in checks[0].reason  # only 1 mismatch
+        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "contentType"]
+        assert checks and checks[0].result == ResultEnum.failed
+        assert "1 blob" in checks[0].reason
 
-    # ── No file schemas → no checks added ──────────────────────────────────
+    # ── No file schemas → no checks ─────────────────────────────────────────
 
     def test_no_file_schemas_produces_no_checks(self):
         from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, Server
@@ -307,7 +334,7 @@ class TestCheckAzureBlobFile:
             mock_build.assert_not_called()
         assert not run.checks
 
-    # ── Missing location → configuration check ──────────────────────────────
+    # ── Missing location ────────────────────────────────────────────────────
 
     def test_missing_location_adds_config_error(self):
         from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, Server
@@ -317,9 +344,8 @@ class TestCheckAzureBlobFile:
         dc.schema_ = [SchemaObject(name="files", physicalType="file")]
         run = _make_run()
         check_azure_blob_file(run, dc, dc.servers[0])
-        config_checks = _checks_by_type(run, "azure_file_configuration")
-        assert config_checks, "Expected configuration error check"
-        assert config_checks[0].result == ResultEnum.failed
+        checks = _checks_by_type(run, "azure_file_configuration")
+        assert checks and checks[0].result == ResultEnum.failed
 
     # ── Connection error ────────────────────────────────────────────────────
 
@@ -335,6 +361,5 @@ class TestCheckAzureBlobFile:
             side_effect=Exception("auth failed"),
         ):
             check_azure_blob_file(run, dc, dc.servers[0])
-        conn_checks = _checks_by_type(run, "azure_file_connection")
-        assert conn_checks
-        assert conn_checks[0].result == ResultEnum.error
+        checks = _checks_by_type(run, "azure_file_connection")
+        assert checks and checks[0].result == ResultEnum.error

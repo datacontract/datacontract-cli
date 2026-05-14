@@ -1,16 +1,50 @@
 """Azure Blob Storage / ADLS Gen2 metadata checks for schemas with physicalType='file'.
 
-This engine validates file-level metadata exposed by Azure Blob Storage (or ADLS Gen2)
-against the constraints declared in an ODCS v3.1 data contract:
+Each ODCS schema object with ``physicalType='file'`` represents a **unique folder/prefix**
+in Azure Blob Storage or ADLS Gen2. Its ``properties`` list maps directly to
+``BlobProperties`` attributes from the Azure SDK: for every declared property the engine
+extracts the corresponding attribute from each blob and validates it against the quality
+constraints declared on that property.
 
-  - ``lastModified`` is not in the future (no blob should have a future modification date).
-  - ``contentLength`` does not exceed the declared maximum (default 5 MiB = 5,242,880 bytes;
-    override with ``customProperties.maxContentLengthBytes`` on the schema object).
-  - ``contentType`` of each blob matches the value declared in
-    ``customProperties.contentType`` on the schema object.
-  - The resolved ``location`` path contains at least one blob (non-empty folder check).
-  - Quality constraints on the schema (``metric: rowCount`` or ``metric: itemCount``) are
-    evaluated as a *file count* threshold.
+BlobProperties binding (ODCS property name → BlobProperties attribute)::
+
+  ==================  =====================================================
+  Property name       BlobProperties attribute
+  ==================  =====================================================
+  name                blob.name
+  size                blob.size
+  lastModified        blob.last_modified          (UTC datetime)
+  creationTime        blob.creation_time          (UTC datetime)
+  lastAccessedOn      blob.last_accessed_on       (UTC datetime)
+  contentType         blob.content_settings.content_type
+  contentEncoding     blob.content_settings.content_encoding
+  contentLanguage     blob.content_settings.content_language
+  contentDisposition  blob.content_settings.content_disposition
+  cacheControl        blob.content_settings.cache_control
+  contentMd5          blob.content_settings.content_md5
+  etag                blob.etag
+  blobType            blob.blob_type.value        (e.g. "BlockBlob")
+  blobTier            blob.blob_tier.value        (e.g. "Hot")
+  archiveStatus       blob.archive_status
+  serverEncrypted     blob.server_encrypted
+  deleted             blob.deleted
+  snapshotId          blob.snapshot
+  versionId           blob.version_id
+  tagCount            blob.tag_count
+  ==================  =====================================================
+
+Schema-level quality checks (``schema.quality``):
+  Metrics ``rowCount``, ``itemCount``, ``fileCount`` are evaluated as *file-count*
+  thresholds against the total number of blobs found under the prefix.
+
+Datetime sentinel:
+  Quality constraints on datetime properties accept the special string ``"now"`` as a
+  comparand (``mustBeLessThan``, ``mustBeGreaterThan``, etc.) — it is resolved to the
+  current UTC datetime at evaluation time.
+
+ContentType normalisation:
+  MIME parameters are stripped before comparison
+  (``"application/json; charset=utf-8"`` matches ``"application/json"``).
 
 Supported ``location`` URL formats (on the server block):
   - ``https://<account>.blob.core.windows.net/<container>/<prefix>``
@@ -19,14 +53,11 @@ Supported ``location`` URL formats (on the server block):
   - ``wasbs://<container>@<account>.blob.core.windows.net/<prefix>``
 
 Authentication (environment variables, evaluated in priority order):
-  1. ``DATACONTRACT_AZURE_CONNECTION_STRING`` — full storage connection string.
-  2. ``DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY`` — storage-account key
-     (requires account name to be extractable from the URL).
-  3. Service-principal OAuth2 (requires all three):
-     ``DATACONTRACT_AZURE_TENANT_ID``, ``DATACONTRACT_AZURE_CLIENT_ID``,
-     ``DATACONTRACT_AZURE_CLIENT_SECRET``.
-  4. ``DefaultAzureCredential`` as a final fallback (picks up managed identity,
-     Azure CLI login, workload identity, etc.).
+  1. ``DATACONTRACT_AZURE_CONNECTION_STRING``
+  2. ``DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY``
+  3. Service principal: ``DATACONTRACT_AZURE_TENANT_ID`` + ``DATACONTRACT_AZURE_CLIENT_ID``
+     + ``DATACONTRACT_AZURE_CLIENT_SECRET``
+  4. ``DefaultAzureCredential`` (managed identity, Azure CLI, workload identity, …)
 """
 
 from __future__ import annotations
@@ -36,10 +67,16 @@ import os
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject, Server
+from open_data_contract_standard.model import (
+    DataQuality,
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
+    Server,
+)
 
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -48,15 +85,42 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Default maximum blob size in bytes (5 MiB)
-_DEFAULT_MAX_CONTENT_LENGTH_BYTES = 5 * 1024 * 1024  # 5,242,880
+# ---------------------------------------------------------------------------
+# BlobProperties extractor registry
+# Maps ODCS property name (camelCase) → callable(BlobProperties) → value
+# ---------------------------------------------------------------------------
 
-# Custom property keys (on SchemaObject.customProperties)
-_CP_CONTENT_TYPE = "contentType"
-_CP_MAX_BYTES = "maxContentLengthBytes"
+_BLOB_EXTRACTORS: Dict[str, Callable[["BlobProperties"], Any]] = {
+    "name": lambda b: b.name,
+    "size": lambda b: b.size,
+    "lastModified": lambda b: _as_utc(b.last_modified),
+    "creationTime": lambda b: _as_utc(b.creation_time),
+    "lastAccessedOn": lambda b: _as_utc(b.last_accessed_on),
+    "contentType": lambda b: _cs(b, "content_type"),
+    "contentEncoding": lambda b: _cs(b, "content_encoding"),
+    "contentLanguage": lambda b: _cs(b, "content_language"),
+    "contentDisposition": lambda b: _cs(b, "content_disposition"),
+    "cacheControl": lambda b: _cs(b, "cache_control"),
+    "contentMd5": lambda b: _cs(b, "content_md5"),
+    "etag": lambda b: b.etag,
+    "blobType": lambda b: _enum_value(b.blob_type),
+    "blobTier": lambda b: _enum_value(b.blob_tier),
+    "archiveStatus": lambda b: b.archive_status,
+    "serverEncrypted": lambda b: b.server_encrypted,
+    "deleted": lambda b: b.deleted,
+    "snapshotId": lambda b: b.snapshot,
+    "versionId": lambda b: b.version_id,
+    "tagCount": lambda b: b.tag_count,
+}
 
-# Quality metrics interpreted as file counts
+# Quality metrics on SchemaObject interpreted as file-count thresholds
 _FILE_COUNT_METRICS = {"rowCount", "itemCount", "fileCount"}
+
+# Properties whose values are datetimes — auto-checked "not in future" when declared
+_DATETIME_PROPS = {"lastModified", "creationTime", "lastAccessedOn"}
+
+# Property names where MIME parameter stripping is applied before comparison
+_MIMETYPE_PROPS = {"contentType"}
 
 
 # ---------------------------------------------------------------------------
@@ -147,11 +211,6 @@ def _check_schema(
 ) -> None:
     schema_name = schema.name or "unknown"
 
-    # Resolve check configuration from schema customProperties
-    expected_content_type = _get_custom_property(schema, _CP_CONTENT_TYPE)
-    max_bytes_raw = _get_custom_property(schema, _CP_MAX_BYTES)
-    max_bytes = int(max_bytes_raw) if max_bytes_raw is not None else _DEFAULT_MAX_CONTENT_LENGTH_BYTES
-
     # List all blobs under the resolved prefix for this schema
     try:
         container_client = blob_service_client.get_container_client(container_name)
@@ -168,33 +227,257 @@ def _check_schema(
         )
         return
 
-    # ── Check 1: location not empty ──────────────────────────────────────────
+    # ── Check: location not empty ─────────────────────────────────────────────
     _check_location_not_empty(run, schema_name, blobs, prefix)
 
     if not blobs:
-        # No further per-blob checks make sense when the folder is empty
         return
 
     file_count = len(blobs)
     run.log_info(f"[{schema_name}] Found {file_count} blob(s) under prefix '{prefix}'")
 
-    # ── Check 2: lastModified not in the future ───────────────────────────────
-    _check_last_modified_not_future(run, schema_name, blobs)
+    # ── Per-property checks (driven by schema.properties) ────────────────────
+    if schema.properties:
+        for prop in schema.properties:
+            _check_property(run, schema_name, prop, blobs)
 
-    # ── Check 3: contentLength ≤ max ─────────────────────────────────────────
-    _check_content_length(run, schema_name, blobs, max_bytes)
-
-    # ── Check 4: contentType matches ─────────────────────────────────────────
-    if expected_content_type:
-        _check_content_type(run, schema_name, blobs, expected_content_type)
-
-    # ── Check 5: quality file-count thresholds ───────────────────────────────
+    # ── Quality file-count thresholds on the schema object ───────────────────
     if schema.quality:
         _check_file_count_quality(run, schema_name, schema.quality, file_count)
 
 
 # ---------------------------------------------------------------------------
-# Individual check implementations
+# Per-property checks
+# ---------------------------------------------------------------------------
+
+
+def _check_property(
+    run: Run,
+    schema_name: str,
+    prop: SchemaProperty,
+    blobs: List["BlobProperties"],
+) -> None:
+    """Run required + quality checks for one declared schema property across all blobs."""
+    prop_name = prop.name
+    extractor = _BLOB_EXTRACTORS.get(prop_name)
+
+    if extractor is None:
+        logger.debug(
+            "[%s] No BlobProperties extractor for property '%s' — skipped",
+            schema_name,
+            prop_name,
+        )
+        return
+
+    # ── required check ────────────────────────────────────────────────────────
+    if prop.required:
+        missing = [b.name for b in blobs if extractor(b) is None]
+        if missing:
+            _append_check(
+                run,
+                check_type="azure_file_property_required",
+                category="schema",
+                name=f"[{schema_name}] Azure Blob File — {prop_name} is required",
+                model=schema_name,
+                field=prop_name,
+                result=ResultEnum.failed,
+                reason=f"{len(missing)} blob(s) have no value for '{prop_name}'.",
+                details="; ".join(missing[:5]) + (" …" if len(missing) > 5 else ""),
+            )
+        else:
+            _append_check(
+                run,
+                check_type="azure_file_property_required",
+                category="schema",
+                name=f"[{schema_name}] Azure Blob File — {prop_name} is required",
+                model=schema_name,
+                field=prop_name,
+                result=ResultEnum.passed,
+                reason=f"All {len(blobs)} blob(s) have a value for '{prop_name}'.",
+            )
+
+    # ── auto "not in future" for datetime BlobProperties attributes ───────────
+    if prop_name in _DATETIME_PROPS:
+        now = datetime.now(timezone.utc)
+        future_blobs = [
+            (b.name, str(extractor(b)))
+            for b in blobs
+            if extractor(b) is not None and extractor(b) > now
+        ]
+        if future_blobs:
+            details = "; ".join(f"{name} ({ts})" for name, ts in future_blobs[:5])
+            if len(future_blobs) > 5:
+                details += f" … and {len(future_blobs) - 5} more"
+            _append_check(
+                run,
+                check_type="azure_file_property_quality",
+                category="quality",
+                name=f"[{schema_name}] Azure Blob File — {prop_name} not in future",
+                model=schema_name,
+                field=prop_name,
+                result=ResultEnum.failed,
+                reason=f"{len(future_blobs)} blob(s) have a {prop_name} date in the future.",
+                details=details,
+            )
+        else:
+            _append_check(
+                run,
+                check_type="azure_file_property_quality",
+                category="quality",
+                name=f"[{schema_name}] Azure Blob File — {prop_name} not in future",
+                model=schema_name,
+                field=prop_name,
+                result=ResultEnum.passed,
+                reason=f"All {len(blobs)} blob(s) have {prop_name} in the past.",
+            )
+
+    # ── quality constraints ────────────────────────────────────────────────────
+    if not prop.quality:
+        return
+
+    for quality in prop.quality:
+        violations: List[Tuple[str, str]] = []  # (blob.name, human-readable reason)
+
+        for blob in blobs:
+            value = extractor(blob)
+            if value is None:
+                # Skip None values in quality checks; use required: true to catch missing.
+                continue
+            passed, reason = _evaluate_quality_constraint(quality, value, prop_name)
+            if not passed:
+                violations.append((blob.name, reason))
+
+        constraint_desc = _describe_quality_constraint(quality)
+        check_name = f"[{schema_name}] Azure Blob File — {prop_name} {constraint_desc}"
+
+        if violations:
+            details = "; ".join(f"{name}: {r}" for name, r in violations[:5])
+            if len(violations) > 5:
+                details += f" … and {len(violations) - 5} more"
+            _append_check(
+                run,
+                check_type="azure_file_property_quality",
+                category="quality",
+                name=check_name,
+                model=schema_name,
+                field=prop_name,
+                result=ResultEnum.failed,
+                reason=f"{len(violations)} blob(s) violate '{prop_name} {constraint_desc}'.",
+                details=details,
+            )
+        else:
+            _append_check(
+                run,
+                check_type="azure_file_property_quality",
+                category="quality",
+                name=check_name,
+                model=schema_name,
+                field=prop_name,
+                result=ResultEnum.passed,
+                reason=f"All {len(blobs)} blob(s) satisfy '{prop_name} {constraint_desc}'.",
+            )
+
+
+# ---------------------------------------------------------------------------
+# Quality constraint evaluation
+# ---------------------------------------------------------------------------
+
+
+def _evaluate_quality_constraint(
+    quality: DataQuality, value: Any, prop_name: str
+) -> Tuple[bool, str]:
+    """Evaluate a single quality constraint against *value* for one blob.
+
+    Returns ``(passed, human-readable reason)``.
+    """
+
+    def _resolve(v: Any) -> Any:
+        return v
+
+    def _normalize(v: Any) -> Any:
+        """Strip MIME parameters from content-type strings."""
+        if prop_name in _MIMETYPE_PROPS and isinstance(v, str):
+            return v.split(";")[0].strip().lower()
+        return v
+
+    norm_value = _normalize(value)
+
+    if quality.mustBe is not None:
+        expected = _normalize(_resolve(quality.mustBe))
+        return norm_value == expected, f"value is {value!r}; expected {quality.mustBe!r}"
+
+    if quality.mustNotBe is not None:
+        expected = _normalize(_resolve(quality.mustNotBe))
+        return norm_value != expected, f"value is {value!r}; must not be {quality.mustNotBe!r}"
+
+    if quality.mustBeGreaterThan is not None:
+        threshold = _resolve(quality.mustBeGreaterThan)
+        try:
+            return value > threshold, f"value is {value!r}; must be > {threshold!r}"
+        except TypeError:
+            return False, f"Cannot compare {value!r} > {threshold!r}"
+
+    if quality.mustBeGreaterOrEqualTo is not None:
+        threshold = _resolve(quality.mustBeGreaterOrEqualTo)
+        try:
+            return value >= threshold, f"value is {value!r}; must be >= {threshold!r}"
+        except TypeError:
+            return False, f"Cannot compare {value!r} >= {threshold!r}"
+
+    if quality.mustBeLessThan is not None:
+        threshold = _resolve(quality.mustBeLessThan)
+        try:
+            return value < threshold, f"value is {value!r}; must be < {threshold!r}"
+        except TypeError:
+            return False, f"Cannot compare {value!r} < {threshold!r}"
+
+    if quality.mustBeLessOrEqualTo is not None:
+        threshold = _resolve(quality.mustBeLessOrEqualTo)
+        try:
+            return value <= threshold, f"value is {value!r}; must be <= {threshold!r}"
+        except TypeError:
+            return False, f"Cannot compare {value!r} <= {threshold!r}"
+
+    if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
+        lo, hi = _resolve(quality.mustBeBetween[0]), _resolve(quality.mustBeBetween[1])
+        try:
+            return lo <= value <= hi, f"value is {value!r}; must be between {lo!r} and {hi!r}"
+        except TypeError:
+            return False, f"Cannot compare {lo!r} <= {value!r} <= {hi!r}"
+
+    if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
+        lo, hi = _resolve(quality.mustNotBeBetween[0]), _resolve(quality.mustNotBeBetween[1])
+        try:
+            return not (lo <= value <= hi), f"value is {value!r}; must not be between {lo!r} and {hi!r}"
+        except TypeError:
+            return False, f"Cannot compare {lo!r} <= {value!r} <= {hi!r}"
+
+    return True, f"value is {value!r}; no threshold specified"
+
+
+def _describe_quality_constraint(quality: DataQuality) -> str:
+    """Return a short human-readable description of a quality constraint."""
+    if quality.mustBe is not None:
+        return f"= {quality.mustBe!r}"
+    if quality.mustNotBe is not None:
+        return f"!= {quality.mustNotBe!r}"
+    if quality.mustBeGreaterThan is not None:
+        return f"> {quality.mustBeGreaterThan!r}"
+    if quality.mustBeGreaterOrEqualTo is not None:
+        return f">= {quality.mustBeGreaterOrEqualTo!r}"
+    if quality.mustBeLessThan is not None:
+        return f"< {quality.mustBeLessThan!r}"
+    if quality.mustBeLessOrEqualTo is not None:
+        return f"<= {quality.mustBeLessOrEqualTo!r}"
+    if quality.mustBeBetween is not None:
+        return f"between {quality.mustBeBetween[0]!r} and {quality.mustBeBetween[1]!r}"
+    if quality.mustNotBeBetween is not None:
+        return f"not between {quality.mustNotBeBetween[0]!r} and {quality.mustNotBeBetween[1]!r}"
+    return "(no constraint)"
+
+
+# ---------------------------------------------------------------------------
+# Location-not-empty check  (schema-level, not property-level)
 # ---------------------------------------------------------------------------
 
 
@@ -227,148 +510,31 @@ def _check_location_not_empty(
         )
 
 
-def _check_last_modified_not_future(
+def _check_location_not_empty(
     run: Run,
     schema_name: str,
     blobs: list,
+    prefix: str,
 ) -> None:
-    check_type = "azure_file_last_modified_not_future"
-    now = datetime.now(timezone.utc)
-    future_blobs = []
-
-    for blob in blobs:
-        last_modified: Optional[datetime] = getattr(blob, "last_modified", None)
-        if last_modified is None:
-            continue
-        # Ensure timezone-aware comparison
-        if last_modified.tzinfo is None:
-            last_modified = last_modified.replace(tzinfo=timezone.utc)
-        if last_modified > now:
-            future_blobs.append((blob.name, last_modified.isoformat()))
-
-    if future_blobs:
-        details = "; ".join(f"{name} ({ts})" for name, ts in future_blobs[:5])
-        if len(future_blobs) > 5:
-            details += f" … and {len(future_blobs) - 5} more"
+    if blobs:
         _append_check(
             run,
-            check_type=check_type,
+            check_type="azure_file_location_not_empty",
             category="schema",
-            name=f"[{schema_name}] Azure Blob File — lastModified not in future",
+            name=f"[{schema_name}] Azure Blob File — location not empty",
             model=schema_name,
-            result=ResultEnum.failed,
-            reason=f"{len(future_blobs)} blob(s) have a lastModified date in the future.",
-            details=details,
+            result=ResultEnum.passed,
+            reason=f"Found {len(blobs)} blob(s) under prefix '{prefix}'.",
         )
     else:
         _append_check(
             run,
-            check_type=check_type,
+            check_type="azure_file_location_not_empty",
             category="schema",
-            name=f"[{schema_name}] Azure Blob File — lastModified not in future",
-            model=schema_name,
-            result=ResultEnum.passed,
-            reason=f"All {len(blobs)} blob(s) have a lastModified date in the past.",
-        )
-
-
-def _check_content_length(
-    run: Run,
-    schema_name: str,
-    blobs: list,
-    max_bytes: int,
-) -> None:
-    check_type = "azure_file_content_length"
-    oversized = []
-
-    for blob in blobs:
-        size = getattr(blob, "size", None)
-        if size is None:
-            size = getattr(blob, "content_length", None)
-        if size is None:
-            continue
-        if size > max_bytes:
-            oversized.append((blob.name, size))
-
-    max_mb = max_bytes / (1024 * 1024)
-    if oversized:
-        details = "; ".join(f"{name} ({sz:,} bytes)" for name, sz in oversized[:5])
-        if len(oversized) > 5:
-            details += f" … and {len(oversized) - 5} more"
-        _append_check(
-            run,
-            check_type=check_type,
-            category="schema",
-            name=f"[{schema_name}] Azure Blob File — contentLength ≤ {max_mb:.1f} MiB",
+            name=f"[{schema_name}] Azure Blob File — location not empty",
             model=schema_name,
             result=ResultEnum.failed,
-            reason=f"{len(oversized)} blob(s) exceed the maximum size of {max_bytes:,} bytes ({max_mb:.1f} MiB).",
-            details=details,
-        )
-    else:
-        _append_check(
-            run,
-            check_type=check_type,
-            category="schema",
-            name=f"[{schema_name}] Azure Blob File — contentLength ≤ {max_mb:.1f} MiB",
-            model=schema_name,
-            result=ResultEnum.passed,
-            reason=f"All {len(blobs)} blob(s) are within the {max_bytes:,} bytes limit.",
-        )
-
-
-def _check_content_type(
-    run: Run,
-    schema_name: str,
-    blobs: list,
-    expected_content_type: str,
-) -> None:
-    check_type = "azure_file_content_type"
-    mismatched = []
-
-    for blob in blobs:
-        content_settings = getattr(blob, "content_settings", None)
-        actual_ct: Optional[str] = None
-        if content_settings is not None:
-            actual_ct = getattr(content_settings, "content_type", None)
-        if actual_ct is None:
-            # BlobProperties may expose content_type directly on newer SDK versions
-            actual_ct = getattr(blob, "content_type", None)
-
-        if actual_ct is None:
-            mismatched.append((blob.name, "<not set>"))
-            continue
-
-        # Normalise: strip parameters (e.g. "application/json; charset=utf-8" → "application/json")
-        actual_base = actual_ct.split(";")[0].strip().lower()
-        expected_base = expected_content_type.split(";")[0].strip().lower()
-
-        if actual_base != expected_base:
-            mismatched.append((blob.name, actual_ct))
-
-    if mismatched:
-        details = "; ".join(f"{name} (got '{ct}')" for name, ct in mismatched[:5])
-        if len(mismatched) > 5:
-            details += f" … and {len(mismatched) - 5} more"
-        _append_check(
-            run,
-            check_type=check_type,
-            category="schema",
-            name=f"[{schema_name}] Azure Blob File — contentType is '{expected_content_type}'",
-            model=schema_name,
-            result=ResultEnum.failed,
-            reason=f"{len(mismatched)} blob(s) have an unexpected content-type (expected '{expected_content_type}').",
-            details=details,
-        )
-    else:
-        _append_check(
-            run,
-            check_type=check_type,
-            category="schema",
-            name=f"[{schema_name}] Azure Blob File — contentType is '{expected_content_type}'",
-            model=schema_name,
-            result=ResultEnum.passed,
-            reason=f"All {len(blobs)} blob(s) have content-type '{expected_content_type}'.",
+            reason=f"No blobs found under prefix '{prefix}'. The location appears to be empty.",
         )
 
 
@@ -378,75 +544,21 @@ def _check_file_count_quality(
     quality_list: List[DataQuality],
     file_count: int,
 ) -> None:
-    """Evaluate ODCS quality thresholds that are interpreted as file-count constraints."""
+    """Evaluate schema-level quality thresholds interpreted as file-count constraints."""
     for quality in quality_list:
-        metric = getattr(quality, "metric", None)
-        if metric not in _FILE_COUNT_METRICS:
+        if getattr(quality, "metric", None) not in _FILE_COUNT_METRICS:
             continue
-
-        check_type = "azure_file_count_quality"
-        passed, reason = _evaluate_threshold(quality, file_count)
-        threshold_desc = _describe_threshold(quality)
-        name = f"[{schema_name}] Azure Blob File — {metric} {threshold_desc}"
-
+        passed, reason = _evaluate_quality_constraint(quality, file_count, "fileCount")
+        constraint_desc = _describe_quality_constraint(quality)
         _append_check(
             run,
-            check_type=check_type,
+            check_type="azure_file_count_quality",
             category="quality",
-            name=name,
+            name=f"[{schema_name}] Azure Blob File — {quality.metric} {constraint_desc}",
             model=schema_name,
             result=ResultEnum.passed if passed else ResultEnum.failed,
             reason=reason,
         )
-
-
-def _evaluate_threshold(quality: DataQuality, value: int) -> Tuple[bool, str]:
-    """Return (passed, reason) for a quality threshold applied to a numeric value."""
-    if quality.mustBe is not None:
-        ok = value == quality.mustBe
-        return ok, f"File count is {value}; expected exactly {quality.mustBe}."
-    if quality.mustNotBe is not None:
-        ok = value != quality.mustNotBe
-        return ok, f"File count is {value}; must not be {quality.mustNotBe}."
-    if quality.mustBeGreaterThan is not None:
-        ok = value > quality.mustBeGreaterThan
-        return ok, f"File count is {value}; must be > {quality.mustBeGreaterThan}."
-    if quality.mustBeGreaterOrEqualTo is not None:
-        ok = value >= quality.mustBeGreaterOrEqualTo
-        return ok, f"File count is {value}; must be >= {quality.mustBeGreaterOrEqualTo}."
-    if quality.mustBeLessThan is not None:
-        ok = value < quality.mustBeLessThan
-        return ok, f"File count is {value}; must be < {quality.mustBeLessThan}."
-    if quality.mustBeLessOrEqualTo is not None:
-        ok = value <= quality.mustBeLessOrEqualTo
-        return ok, f"File count is {value}; must be <= {quality.mustBeLessOrEqualTo}."
-    if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
-        lo, hi = quality.mustBeBetween
-        ok = lo <= value <= hi
-        return ok, f"File count is {value}; must be between {lo} and {hi}."
-    if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
-        lo, hi = quality.mustNotBeBetween
-        ok = not (lo <= value <= hi)
-        return ok, f"File count is {value}; must not be between {lo} and {hi}."
-    return True, f"File count is {value}; no threshold specified."
-
-
-def _describe_threshold(quality: DataQuality) -> str:
-    if quality.mustBe is not None:
-        return f"= {quality.mustBe}"
-    if quality.mustNotBe is not None:
-        return f"!= {quality.mustNotBe}"
-    if quality.mustBeGreaterThan is not None:
-        return f"> {quality.mustBeGreaterThan}"
-    if quality.mustBeGreaterOrEqualTo is not None:
-        return f">= {quality.mustBeGreaterOrEqualTo}"
-    if quality.mustBeLessThan is not None:
-        return f"< {quality.mustBeLessThan}"
-    if quality.mustBeLessOrEqualTo is not None:
-        return f"<= {quality.mustBeLessOrEqualTo}"
-    if quality.mustBeBetween is not None:
-        return f"between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]}"
-    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -569,13 +681,24 @@ def _parse_location(location: str) -> Tuple[Optional[str], str]:
 # ---------------------------------------------------------------------------
 
 
-def _get_custom_property(schema: SchemaObject, key: str) -> Optional[str]:
-    if schema.customProperties is None:
+def _as_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Return *dt* as a timezone-aware UTC datetime, or ``None``."""
+    if dt is None:
         return None
-    for cp in schema.customProperties:
-        if cp.property == key:
-            return str(cp.value) if cp.value is not None else None
-    return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
+def _cs(blob: "BlobProperties", attr: str) -> Optional[str]:
+    """Extract an attribute from ``blob.content_settings`` safely."""
+    cs = getattr(blob, "content_settings", None)
+    return getattr(cs, attr, None) if cs is not None else None
+
+
+def _enum_value(v: Any) -> Optional[str]:
+    """Return the ``.value`` of an enum, or ``str(v)``, or ``None``."""
+    if v is None:
+        return None
+    return v.value if hasattr(v, "value") else str(v)
 
 
 def _append_check(
@@ -587,6 +710,7 @@ def _append_check(
     model: Optional[str],
     result: ResultEnum,
     reason: str,
+    field: Optional[str] = None,
     details: Optional[str] = None,
 ) -> None:
     run.checks.append(
@@ -597,6 +721,7 @@ def _append_check(
             type=check_type,
             name=name,
             model=model,
+            field=field,
             engine="datacontract",
             language="python",
             result=result,

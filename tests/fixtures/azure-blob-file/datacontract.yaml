@@ -16,12 +16,46 @@ servers:
 schema:
   - name: orders_files
     physicalType: file
-    description: Nightly order exports in JSON format.
-    customProperties:
-      - property: contentType
-        value: application/json
-      - property: maxContentLengthBytes
-        value: "5242880"
+    description: Nightly order exports — one JSON file per batch run.
+    # Schema-level quality: expect at least 1 file in the prefix
     quality:
       - metric: rowCount
         mustBeGreaterOrEqualTo: 1
+    # Each property corresponds to a BlobProperties attribute (azure.storage.blob)
+    properties:
+      - name: name
+        logicalType: string
+        description: Blob path within the container.
+        required: true
+
+      - name: size
+        logicalType: integer
+        description: Blob size in bytes.
+        required: true
+        quality:
+          - name: max-size-5mib
+            mustBeLessOrEqualTo: 5242880   # 5 MiB
+
+      - name: lastModified
+        logicalType: timestamp
+        description: UTC timestamp of the last modification. Auto-checked not-in-future.
+        required: true
+
+      - name: contentType
+        logicalType: string
+        description: MIME type of the blob. Parameters are stripped before comparison.
+        required: true
+        quality:
+          - name: expected-mime-type
+            mustBe: "application/json"
+
+      - name: blobType
+        logicalType: string
+        description: Azure blob storage type.
+        quality:
+          - name: block-blob-only
+            mustBe: "BlockBlob"
+
+      - name: etag
+        logicalType: string
+        description: Entity tag for cache validation.
