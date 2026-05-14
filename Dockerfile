@@ -1,4 +1,4 @@
-FROM python:3.11-bullseye
+FROM python:3.11-slim-trixie
 
 # Setting PYTHONUNBUFFERED to a non-empty value different from 0 ensures that the python output i.e.
 # the stdout and stderr streams are sent straight to terminal (e.g. your container log) without
