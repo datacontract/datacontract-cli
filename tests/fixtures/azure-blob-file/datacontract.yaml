@@ -1,0 +1,27 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: azure-blob-file-orders
+name: Azure Blob Orders Files
+version: 1.0.0
+status: active
+description:
+  purpose: Data contract for order JSON files stored in Azure Blob Storage.
+
+servers:
+  - server: production
+    type: azure
+    format: json
+    location: https://myaccount.blob.core.windows.net/mycontainer/raw/orders/
+
+schema:
+  - name: orders_files
+    physicalType: file
+    description: Nightly order exports in JSON format.
+    customProperties:
+      - property: contentType
+        value: application/json
+      - property: maxContentLengthBytes
+        value: "5242880"
+    quality:
+      - metric: rowCount
+        mustBeGreaterOrEqualTo: 1
