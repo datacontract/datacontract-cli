@@ -82,30 +82,22 @@ def _checks_by_field(run: Run, field: str) -> list:
 
 class TestParseLocation:
     def test_https_blob_url_with_prefix(self):
-        container, prefix = _parse_location(
-            "https://myaccount.blob.core.windows.net/mycontainer/raw/orders/"
-        )
+        container, prefix = _parse_location("https://myaccount.blob.core.windows.net/mycontainer/raw/orders/")
         assert container == "mycontainer"
         assert prefix == "raw/orders/"
 
     def test_https_blob_url_no_prefix(self):
-        container, prefix = _parse_location(
-            "https://myaccount.blob.core.windows.net/mycontainer"
-        )
+        container, prefix = _parse_location("https://myaccount.blob.core.windows.net/mycontainer")
         assert container == "mycontainer"
         assert prefix == ""
 
     def test_abfss_url(self):
-        container, prefix = _parse_location(
-            "abfss://mycontainer@myaccount.dfs.core.windows.net/raw/orders/"
-        )
+        container, prefix = _parse_location("abfss://mycontainer@myaccount.dfs.core.windows.net/raw/orders/")
         assert container == "mycontainer"
         assert prefix == "raw/orders/"
 
     def test_wasbs_url(self):
-        container, prefix = _parse_location(
-            "wasbs://mycontainer@myaccount.blob.core.windows.net/raw/"
-        )
+        container, prefix = _parse_location("wasbs://mycontainer@myaccount.blob.core.windows.net/raw/")
         assert container == "mycontainer"
         assert prefix == "raw/"
 
@@ -114,30 +106,22 @@ class TestParseLocation:
         assert container is None
 
     def test_abfs_url(self):
-        container, prefix = _parse_location(
-            "abfs://mycontainer@myaccount.dfs.core.windows.net/path/to/data"
-        )
+        container, prefix = _parse_location("abfs://mycontainer@myaccount.dfs.core.windows.net/path/to/data")
         assert container == "mycontainer"
         assert prefix == "path/to/data"
 
 
 class TestAccountUrlFromLocation:
     def test_https_blob(self):
-        url = _account_url_from_location(
-            "https://myaccount.blob.core.windows.net/mycontainer/raw/"
-        )
+        url = _account_url_from_location("https://myaccount.blob.core.windows.net/mycontainer/raw/")
         assert url == "https://myaccount.blob.core.windows.net"
 
     def test_abfss(self):
-        url = _account_url_from_location(
-            "abfss://mycontainer@myaccount.dfs.core.windows.net/path/"
-        )
+        url = _account_url_from_location("abfss://mycontainer@myaccount.dfs.core.windows.net/path/")
         assert url == "https://myaccount.blob.core.windows.net"
 
     def test_wasbs(self):
-        url = _account_url_from_location(
-            "wasbs://mycontainer@myaccount.blob.core.windows.net/raw/"
-        )
+        url = _account_url_from_location("wasbs://mycontainer@myaccount.blob.core.windows.net/raw/")
         assert url == "https://myaccount.blob.core.windows.net"
 
 

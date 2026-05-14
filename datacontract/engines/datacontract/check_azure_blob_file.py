@@ -189,8 +189,7 @@ def check_azure_blob_file(
         return
 
     run.log_info(
-        f"Azure Blob File checks: container='{container_name}', prefix='{prefix}', "
-        f"{len(file_schemas)} file schema(s)"
+        f"Azure Blob File checks: container='{container_name}', prefix='{prefix}', {len(file_schemas)} file schema(s)"
     )
 
     for schema in file_schemas:
@@ -299,11 +298,7 @@ def _check_property(
     # ── auto "not in future" for datetime BlobProperties attributes ───────────
     if prop_name in _DATETIME_PROPS:
         now = datetime.now(timezone.utc)
-        future_blobs = [
-            (b.name, str(extractor(b)))
-            for b in blobs
-            if extractor(b) is not None and extractor(b) > now
-        ]
+        future_blobs = [(b.name, str(extractor(b))) for b in blobs if extractor(b) is not None and extractor(b) > now]
         if future_blobs:
             details = "; ".join(f"{name} ({ts})" for name, ts in future_blobs[:5])
             if len(future_blobs) > 5:
@@ -383,9 +378,7 @@ def _check_property(
 # ---------------------------------------------------------------------------
 
 
-def _evaluate_quality_constraint(
-    quality: DataQuality, value: Any, prop_name: str
-) -> Tuple[bool, str]:
+def _evaluate_quality_constraint(quality: DataQuality, value: Any, prop_name: str) -> Tuple[bool, str]:
     """Evaluate a single quality constraint against *value* for one blob.
 
     Returns ``(passed, human-readable reason)``.
