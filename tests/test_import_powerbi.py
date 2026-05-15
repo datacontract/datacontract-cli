@@ -282,17 +282,18 @@ def test_import_bim_hierarchy_description():
 def test_import_bim_relationship_on_sales_table():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
-    rel_cps = [cp for cp in (sales.customProperties or []) if cp.property.startswith("relationship_")]
-    assert len(rel_cps) == 1
-    assert "Date" in rel_cps[0].value
-    assert "many-to-one" in rel_cps[0].value
+    assert sales.relationships is not None
+    assert len(sales.relationships) == 1
+    rel = sales.relationships[0]
+    assert rel.type == "many-to-one"
+    assert "OrderDate" in rel.from_
+    assert "Date" in rel.to
 
 
 def test_import_bim_no_relationship_on_date_table():
     result = import_powerbi_from_file(BIM_FIXTURE)
     date_table = next(s for s in result.schema_ if s.name == "Date")
-    rel_cps = [cp for cp in (date_table.customProperties or []) if cp.property.startswith("relationship_")]
-    assert len(rel_cps) == 0
+    assert not date_table.relationships
 
 
 # ---------------------------------------------------------------------------

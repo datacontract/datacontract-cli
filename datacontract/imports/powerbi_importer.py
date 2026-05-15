@@ -14,7 +14,7 @@ What gets mapped to ODCS:
   - Calculated cols → SchemaProperty (physicalType: calculated column, DAX in customProperties)
   - Measures        → SchemaProperty (physicalType: measure, DAX in customProperties)
   - Hierarchies     → SchemaProperty (logicalType: object, levels as nested properties)
-  - Relationships   → customProperties on the source SchemaObject
+  - Relationships   → SchemaObject.relationships (ODCS Relationship, from_/to use schema/property IDs)
   - Hidden tables   → included but tagged with "hidden"
 """
 
@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional
 from open_data_contract_standard.model import (
     CustomProperty,
     OpenDataContractStandard,
+    Relationship,
     SchemaObject,
     SchemaProperty,
 )
@@ -203,12 +204,29 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
         )
     ]
 
+    tables = model.get("tables", [])
+    bim_relationships = model.get("relationships", [])
+
     schema_objects: List[SchemaObject] = []
-    relationships = model.get("relationships", [])
-    for table in model.get("tables", []):
-        schema_obj = _map_table(table, relationships)
+    # table name → SchemaObject (for relationship wiring)
+    table_name_to_obj: Dict[str, SchemaObject] = {}
+    # table name → {col name → SchemaProperty} (for from_/to ID resolution)
+    table_name_to_col_props: Dict[str, Dict[str, SchemaProperty]] = {}
+
+    for table in tables:
+        schema_obj = _map_table(table)
         if schema_obj is not None:
+            t_name = table.get("name", "")
             schema_objects.append(schema_obj)
+            table_name_to_obj[t_name] = schema_obj
+            col_props: Dict[str, SchemaProperty] = {}
+            if schema_obj.properties:
+                for prop in schema_obj.properties:
+                    if prop.name:
+                        col_props[prop.name] = prop
+            table_name_to_col_props[t_name] = col_props
+
+    _apply_bim_relationships(bim_relationships, table_name_to_obj, table_name_to_col_props)
 
     schema_objects.sort(key=lambda s: s.name.lower())
     odcs.schema_ = schema_objects
@@ -220,7 +238,7 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
 # ---------------------------------------------------------------------------
 
 
-def _map_table(table: Dict[str, Any], relationships: List[Dict[str, Any]]) -> Optional[SchemaObject]:
+def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
     name = table.get("name", "")
     if not name:
         return None
@@ -259,13 +277,8 @@ def _map_table(table: Dict[str, Any], relationships: List[Dict[str, Any]]) -> Op
         tags=tags,
         properties=properties if properties else None,
     )
-
-    # Relationships where this table is the "from" side go into customProperties
-    table_rels = _get_table_relationships(name, relationships)
-    if table_rels:
-        schema_obj.customProperties = [
-            CustomProperty(property=f"relationship_{i + 1}", value=rel) for i, rel in enumerate(table_rels)
-        ]
+    # lineageTag is a stable identifier added in newer Power BI versions; fall back to empty string
+    schema_obj.id = table.get("lineageTag", "")
 
     return schema_obj
 
@@ -289,20 +302,15 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
         return None
 
     data_type = col.get("dataType", "string")
+    column_type = col.get("columnType", "data")
+    is_calculated = column_type == "calculated"
+
     logical_type, fmt = _map_pbi_type(data_type)
+    physical_type = "calculated column" if is_calculated else data_type
     is_nullable = col.get("isNullable", True)
     description = col.get("description") or None
 
     custom_props: Dict[str, Any] = {}
-
-    column_type = col.get("columnType", "data")
-    if column_type == "calculated":
-        physical_type = "calculated column"
-        expression = col.get("expression", "")
-        if expression:
-            custom_props["daxExpression"] = expression.strip()
-    else:
-        physical_type = "data column"
 
     if col.get("formatString"):
         custom_props["formatString"] = col["formatString"]
@@ -313,7 +321,13 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
     if col.get("isHidden"):
         custom_props["isHidden"] = True
 
-    return create_property(
+    expression = col.get("expression")
+    if isinstance(expression, list):
+        expression = "".join(expression)
+    if expression:
+        custom_props["daxExpression"] = expression
+
+    property = create_property(
         name=name,
         logical_type=logical_type,
         physical_type=physical_type,
@@ -322,6 +336,10 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
         format=fmt,
         custom_properties=custom_props if custom_props else None,
     )
+
+    property.id = col.get("lineageTag", "")
+
+    return property
 
 
 # ---------------------------------------------------------------------------
@@ -341,24 +359,25 @@ def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
         expression = "\n".join(expression)
 
     custom_props: Dict[str, Any] = {}
-    if expression:
-        custom_props["daxExpression"] = expression.strip()
-    if measure.get("formatString"):
-        custom_props["formatString"] = measure["formatString"]
-    if measure.get("displayFolder"):
-        custom_props["displayFolder"] = measure["displayFolder"]
     if measure.get("isHidden"):
         custom_props["isHidden"] = True
+    if measure.get("displayFolder"):
+        custom_props["displayFolder"] = measure["displayFolder"]
+    if expression:
+        custom_props["daxExpression"] = expression.strip()
 
     logical_type = _infer_measure_type(measure.get("formatString", ""), expression)
 
-    return create_property(
+    property = create_property(
         name=name,
         logical_type=logical_type,
         physical_type="measure",
         description=description,
         custom_properties=custom_props if custom_props else None,
     )
+    property.id = measure.get("lineageTag", "")
+
+    return property
 
 
 def _infer_measure_type(format_string: str, expression: str) -> str:
@@ -410,21 +429,54 @@ def _map_hierarchy(hierarchy: Dict[str, Any]) -> Optional[SchemaProperty]:
 
 
 # ---------------------------------------------------------------------------
-# Relationships helper
+# Relationships
 # ---------------------------------------------------------------------------
 
 
-def _get_table_relationships(table_name: str, relationships: List[Dict[str, Any]]) -> List[str]:
-    """Return human-readable relationship strings where this table is the 'from' side."""
-    result = []
-    for rel in relationships:
-        if rel.get("fromTable") != table_name:
+def _apply_bim_relationships(
+    bim_relationships: List[Dict[str, Any]],
+    table_name_to_obj: Dict[str, SchemaObject],
+    table_name_to_col_props: Dict[str, Dict[str, SchemaProperty]],
+) -> None:
+    """Attach BIM relationships as ODCS Relationship objects on the 'from' SchemaObject.
+
+    ``from_`` and ``to`` are formatted as ``schemaId.propertyId``, using the
+    ``lineageTag``-based ID when available and falling back to the name otherwise.
+    The relationship is placed on the *from* side (many side) of the join.
+    """
+    for rel in bim_relationships:
+        from_table = rel.get("fromTable", "")
+        from_col_name = rel.get("fromColumn", "")
+        to_table = rel.get("toTable", "")
+        to_col_name = rel.get("toColumn", "")
+
+        from_obj = table_name_to_obj.get(from_table)
+        to_obj = table_name_to_obj.get(to_table)
+        if from_obj is None or to_obj is None:
             continue
-        from_col = rel.get("fromColumn", "?")
-        to_table = rel.get("toTable", "?")
-        to_col = rel.get("toColumn", "?")
+
+        from_schema_id = from_obj.id or from_table
+        to_schema_id = to_obj.id or to_table
+
+        from_prop = table_name_to_col_props.get(from_table, {}).get(from_col_name)
+        from_prop_id = (from_prop.id if from_prop and from_prop.id else None) or from_col_name
+
+        to_prop = table_name_to_col_props.get(to_table, {}).get(to_col_name)
+        to_prop_id = (to_prop.id if to_prop and to_prop.id else None) or to_col_name
+
         from_card = rel.get("fromCardinality", "many")
         to_card = rel.get("toCardinality", "one")
-        active = "" if rel.get("isActive", True) else " [inactive]"
-        result.append(f"{table_name}[{from_col}] → {to_table}[{to_col}] ({from_card}-to-{to_card}){active}")
-    return result
+        is_active = rel.get("isActive", True)
+
+        custom_props = None if is_active else [CustomProperty(property="isActive", value=False)]
+
+        odcs_rel = Relationship(
+            type=f"{from_card}-to-{to_card}",
+            **{"from": f"{from_schema_id}.{from_prop_id}"},
+            to=f"{to_schema_id}.{to_prop_id}",
+            customProperties=custom_props,
+        )
+
+        if from_obj.relationships is None:
+            from_obj.relationships = []
+        from_obj.relationships.append(odcs_rel)
