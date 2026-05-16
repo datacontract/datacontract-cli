@@ -63,6 +63,16 @@ def _map_pbi_type(data_type: Optional[str]) -> tuple[str, Optional[str]]:
     return _PBI_TYPE_MAP.get(data_type.lower(), ("string", None))
 
 
+def _make_id(name: str) -> str:
+    """Build a stable ID from a name by replacing spaces with underscores and appending ``_id``.
+
+    Examples:
+        "Sales"      → "Sales_id"
+        "Order Date" → "Order_Date_id"
+    """
+    return name.replace(" ", "_").replace("(", "_").replace(")", "_").replace("%", "percent") + "_id"
+
+
 # ---------------------------------------------------------------------------
 # Importer class
 # ---------------------------------------------------------------------------
@@ -199,7 +209,7 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
     odcs.servers = [
         create_server(
             name="powerbi",
-            server_type="powerbi",
+            server_type="custom",
             path=model_name,
         )
     ]
@@ -242,6 +252,10 @@ def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
     name = table.get("name", "")
     if not name:
         return None
+    if name.startswith("LocalDateTable_"):
+        return None
+    if name.startswith("DateTableTemplate_"):
+        return None
 
     description = table.get("description") or None
     is_hidden = table.get("isHidden", False)
@@ -277,8 +291,7 @@ def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
         tags=tags,
         properties=properties if properties else None,
     )
-    # lineageTag is a stable identifier added in newer Power BI versions; fall back to empty string
-    schema_obj.id = table.get("lineageTag", "")
+    schema_obj.id = _make_id(name)
 
     return schema_obj
 
@@ -324,8 +337,6 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
     expression = col.get("expression")
     if isinstance(expression, list):
         expression = "".join(expression)
-    if expression:
-        custom_props["daxExpression"] = expression
 
     property = create_property(
         name=name,
@@ -337,7 +348,8 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
         custom_properties=custom_props if custom_props else None,
     )
 
-    property.id = col.get("lineageTag", "")
+    property.id = _make_id(name)
+    property.transformLogic = expression.strip() if expression else None
 
     return property
 
@@ -363,8 +375,6 @@ def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
         custom_props["isHidden"] = True
     if measure.get("displayFolder"):
         custom_props["displayFolder"] = measure["displayFolder"]
-    if expression:
-        custom_props["daxExpression"] = expression.strip()
 
     logical_type = _infer_measure_type(measure.get("formatString", ""), expression)
 
@@ -375,7 +385,8 @@ def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
         description=description,
         custom_properties=custom_props if custom_props else None,
     )
-    property.id = measure.get("lineageTag", "")
+    property.id = _make_id(name)
+    property.transformLogic = expression.strip() if expression else None
 
     return property
 
@@ -441,7 +452,7 @@ def _apply_bim_relationships(
     """Attach BIM relationships as ODCS Relationship objects on the 'from' SchemaObject.
 
     ``from_`` and ``to`` are formatted as ``schemaId.propertyId``, using the
-    ``lineageTag``-based ID when available and falling back to the name otherwise.
+    name-based ID (``{Name}_id``) for both tables and columns.
     The relationship is placed on the *from* side (many side) of the join.
     """
     for rel in bim_relationships:
@@ -450,28 +461,33 @@ def _apply_bim_relationships(
         to_table = rel.get("toTable", "")
         to_col_name = rel.get("toColumn", "")
 
+        if from_table.startswith("LocalDateTable_") or to_table.startswith("DateTableTemplate_"):
+            continue
+
         from_obj = table_name_to_obj.get(from_table)
         to_obj = table_name_to_obj.get(to_table)
         if from_obj is None or to_obj is None:
             continue
 
-        from_schema_id = from_obj.id or from_table
-        to_schema_id = to_obj.id or to_table
+        from_schema_id = from_obj.name or from_table.name
+        to_schema_id = to_obj.name or to_table
 
         from_prop = table_name_to_col_props.get(from_table, {}).get(from_col_name)
-        from_prop_id = (from_prop.id if from_prop and from_prop.id else None) or from_col_name
+        from_prop_id = (from_prop.name if from_prop and from_prop.name else None) or from_col_name
 
         to_prop = table_name_to_col_props.get(to_table, {}).get(to_col_name)
-        to_prop_id = (to_prop.id if to_prop and to_prop.id else None) or to_col_name
+        to_prop_id = (to_prop.name if to_prop and to_prop.name else None) or to_col_name
 
         from_card = rel.get("fromCardinality", "many")
         to_card = rel.get("toCardinality", "one")
         is_active = rel.get("isActive", True)
 
-        custom_props = None if is_active else [CustomProperty(property="isActive", value=False)]
+        custom_props = [CustomProperty(property="cardinality", value=f"{from_card}-to-{to_card}")]
+        if not is_active:
+            custom_props.append(CustomProperty(property="active", value=False))
 
         odcs_rel = Relationship(
-            type=f"{from_card}-to-{to_card}",
+            type="foreignKey",
             **{"from": f"{from_schema_id}.{from_prop_id}"},
             to=f"{to_schema_id}.{to_prop_id}",
             customProperties=custom_props,

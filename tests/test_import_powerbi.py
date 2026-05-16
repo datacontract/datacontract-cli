@@ -54,7 +54,7 @@ def test_import_bim_server():
     result = import_powerbi_from_file(BIM_FIXTURE)
     assert len(result.servers) == 1
     server = result.servers[0]
-    assert server.type == "powerbi"
+    assert server.type == "custom"
     assert server.server == "powerbi"
 
 
@@ -84,6 +84,64 @@ def test_import_bim_hidden_table_tagged():
     hidden = next(s for s in result.schema_ if s.name == "DateTableTemplate")
     assert hidden.tags is not None
     assert "hidden" in hidden.tags
+
+
+def test_import_bim_local_data_table_excluded(tmp_path):
+    """Tables whose name starts with LocalDateTable_ must be skipped entirely."""
+    import json
+
+    with open(BIM_FIXTURE, encoding="utf-8-sig") as f:
+        bim_dict = json.load(f)
+
+    bim_dict["model"]["tables"].append(
+        {
+            "name": "LocalDateTable_abc123",
+            "columns": [{"name": "Col1", "dataType": "string", "columnType": "data"}],
+            "partitions": [{"name": "p", "source": {"type": "m", "expression": ""}}],
+        }
+    )
+
+    bim_path = tmp_path / "model.bim"
+    bim_path.write_text(json.dumps(bim_dict), encoding="utf-8")
+    result = import_powerbi_from_file(str(bim_path))
+
+    names = {s.name for s in result.schema_}
+    assert "LocalDateTable_abc123" not in names
+
+
+def test_import_bim_local_data_table_relationship_excluded(tmp_path):
+    """Relationships referencing a LocalDateTable_ table must be skipped."""
+    import json
+
+    with open(BIM_FIXTURE, encoding="utf-8-sig") as f:
+        bim_dict = json.load(f)
+
+    bim_dict["model"]["tables"].append(
+        {
+            "name": "LocalDateTable_xyz",
+            "columns": [{"name": "Key", "dataType": "int64", "columnType": "data"}],
+            "partitions": [{"name": "p", "source": {"type": "m", "expression": ""}}],
+        }
+    )
+    bim_dict["model"]["relationships"].append(
+        {
+            "name": "Sales_LocalDateTable",
+            "fromTable": "LocalDateTable_xyz",
+            "fromColumn": "Key",
+            "toTable": "Sales",
+            "toColumn": "OrderID",
+            "fromCardinality": "many",
+            "toCardinality": "one",
+        }
+    )
+
+    bim_path = tmp_path / "model.bim"
+    bim_path.write_text(json.dumps(bim_dict), encoding="utf-8")
+    result = import_powerbi_from_file(str(bim_path))
+
+    sales = next(s for s in result.schema_ if s.name == "Sales")
+    rel_sources = [r.from_ for r in (sales.relationships or [])]
+    assert not any("LocalDateTable_xyz" in s for s in rel_sources)
 
 
 # ---------------------------------------------------------------------------
@@ -154,9 +212,8 @@ def test_import_bim_calculated_column_dax_expression():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
     margin = next(p for p in sales.properties if p.name == "GrossMargin")
-    dax_cp = next((cp for cp in (margin.customProperties or []) if cp.property == "daxExpression"), None)
-    assert dax_cp is not None
-    assert "SalesAmount" in dax_cp.value
+    assert margin.transformLogic is not None
+    assert "SalesAmount" in margin.transformLogic
 
 
 # ---------------------------------------------------------------------------
@@ -184,9 +241,8 @@ def test_import_bim_measure_dax_expression():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
     total_sales = next(p for p in sales.properties if p.name == "Total Sales")
-    dax_cp = next((cp for cp in (total_sales.customProperties or []) if cp.property == "daxExpression"), None)
-    assert dax_cp is not None
-    assert dax_cp.value == "SUM(Sales[SalesAmount])"
+    assert total_sales.transformLogic is not None
+    assert total_sales.transformLogic == "SUM(Sales[SalesAmount])"
 
 
 def test_import_bim_measure_description():
@@ -209,9 +265,8 @@ def test_import_bim_measure_multiline_dax():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
     mom = next(p for p in sales.properties if p.name == "Sales MoM %")
-    dax_cp = next((cp for cp in (mom.customProperties or []) if cp.property == "daxExpression"), None)
-    assert dax_cp is not None
-    assert "DATEADD" in dax_cp.value
+    assert mom.transformLogic is not None
+    assert "DATEADD" in mom.transformLogic
 
 
 def test_import_bim_measure_inferred_number_type():
@@ -285,7 +340,7 @@ def test_import_bim_relationship_on_sales_table():
     assert sales.relationships is not None
     assert len(sales.relationships) == 1
     rel = sales.relationships[0]
-    assert rel.type == "many-to-one"
+    assert rel.type == "foreignKey"
     assert "OrderDate" in rel.from_
     assert "Date" in rel.to
 
@@ -294,6 +349,39 @@ def test_import_bim_no_relationship_on_date_table():
     result = import_powerbi_from_file(BIM_FIXTURE)
     date_table = next(s for s in result.schema_ if s.name == "Date")
     assert not date_table.relationships
+
+
+# ---------------------------------------------------------------------------
+# IDs
+# ---------------------------------------------------------------------------
+
+
+def test_import_bim_table_id():
+    result = import_powerbi_from_file(BIM_FIXTURE)
+    sales = next(s for s in result.schema_ if s.name == "Sales")
+    assert sales.id == "Sales_id"
+
+
+def test_import_bim_column_id():
+    result = import_powerbi_from_file(BIM_FIXTURE)
+    sales = next(s for s in result.schema_ if s.name == "Sales")
+    order_id = next(p for p in sales.properties if p.name == "OrderID")
+    assert order_id.id == "OrderID_id"
+
+
+def test_import_bim_measure_id():
+    result = import_powerbi_from_file(BIM_FIXTURE)
+    sales = next(s for s in result.schema_ if s.name == "Sales")
+    total_sales = next(p for p in sales.properties if p.name == "Total Sales")
+    assert total_sales.id == "Total_Sales_id"
+
+
+def test_import_bim_relationship_ids_use_name_convention():
+    result = import_powerbi_from_file(BIM_FIXTURE)
+    sales = next(s for s in result.schema_ if s.name == "Sales")
+    rel = sales.relationships[0]
+    assert rel.from_ == "Sales.OrderDate"
+    assert rel.to == "Date.Date"
 
 
 # ---------------------------------------------------------------------------
