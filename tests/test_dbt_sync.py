@@ -23,6 +23,7 @@ from datacontract.integration.dbt_sync import (
     _attach_test_config,
     _bound_violation_predicate,
     _build_singular_sql,
+    _describe_dbt_test,
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
     _rewrite_relationships_to_ref,
@@ -285,14 +286,79 @@ def test_attach_config_string_test():
     }
 
 
+def test_attach_config_string_test_with_check_type():
+    assert _attach_test_config("not_null", "warn", check_type="field_required") == {
+        "not_null": {"config": {"severity": "warn", "tags": ["datacontract_cli", "dc:field_required"]}}
+    }
+
+
 def test_attach_config_dict_test():
-    result = _attach_test_config({"accepted_values": {"values": [1, 2]}}, "error")
+    result = _attach_test_config({"accepted_values": {"values": [1, 2]}}, "error", check_type="field_enum")
     assert result == {
         "accepted_values": {
             "values": [1, 2],
-            "config": {"severity": "error", "tags": ["datacontract_cli"]},
+            "config": {"severity": "error", "tags": ["datacontract_cli", "dc:field_enum"]},
         }
     }
+
+
+@pytest.mark.parametrize(
+    "test, expected",
+    [
+        ("not_null", "Check that field order_id has no missing values"),
+        ("unique", "Check that field order_id has no duplicate values"),
+        (
+            {"accepted_values": {"values": ["pending", "shipped"]}},
+            "Check that field order_id only contains enum values ['pending', 'shipped']",
+        ),
+        ({"accepted_values": {"values": ["X"]}}, "Check that field order_id is equal to X"),
+        (
+            {"relationships": {"to": "ref('customers')", "field": "id"}},
+            "Check that field order_id references ref('customers').id",
+        ),
+        (
+            {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": ["order_id", "order_status"]}},
+            "Check that model orders has a unique combination of columns order_id, order_status",
+        ),
+    ],
+)
+def test_describe_dbt_test_templates(test, expected):
+    """Templates should read like the equivalent built-in check names so the published UI matches."""
+    assert _describe_dbt_test(test, "order_id", "orders") == expected
+
+
+def test_attach_test_config_embeds_description():
+    wrapped = _attach_test_config(
+        "not_null",
+        "warn",
+        description="Check that field order_id has no missing values",
+        check_type="field_required",
+    )
+    assert wrapped == {
+        "not_null": {
+            "config": {"severity": "warn", "tags": ["datacontract_cli", "dc:field_required"]},
+            "description": "Check that field order_id has no missing values",
+        }
+    }
+
+
+def test_generate_outputs_emits_descriptions_for_typed_field_tests():
+    """`not_null`, `unique`, `accepted_values` must carry a synthesized description
+    so the published Run.check name shows the human-readable form."""
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    schema_obj = odcs.schema_[0]
+    model_dict, _ = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", Run.create_run())
+
+    cols = {c["name"]: c for c in model_dict["columns"]}
+    descriptions_by_test_name = {}
+    for col_name, col in cols.items():
+        for entry in col.get("data_tests", []):
+            ((test_name, args),) = entry.items()
+            descriptions_by_test_name[(col_name, test_name)] = args.get("description")
+
+    assert descriptions_by_test_name[("order_id", "not_null")] == "Check that field order_id has no missing values"
+    assert descriptions_by_test_name[("order_id", "unique")] == "Check that field order_id has no duplicate values"
+    assert "only contains enum values" in descriptions_by_test_name[("order_status", "accepted_values")]
 
 
 def test_rewrite_relationships_to_ref():
@@ -321,12 +387,20 @@ def test_generate_outputs_wraps_tests_with_tag_and_emits_singulars():
     assert model_dict["name"] == "orders"
     assert model_dict["description"] == "Orders table"
 
-    # Sync-specific: every YAML test carries the datacontract_cli tag via inline config.
+    # Sync-specific: every YAML test carries the datacontract_cli tag plus a dc:<type> tag.
     cols = {c["name"]: c for c in model_dict["columns"]}
+    expected_dc_tag = {
+        "not_null": "dc:field_required",
+        "unique": "dc:field_unique",
+        "accepted_values": "dc:field_enum",
+        "relationships": "dc:field_relationships",
+    }
     for t in cols["order_id"]["data_tests"]:
         assert isinstance(t, dict)
-        (args,) = t.values()
-        assert args["config"]["tags"] == ["datacontract_cli"]
+        ((test_name, args),) = t.items()
+        tags = args["config"]["tags"]
+        assert tags[0] == "datacontract_cli"
+        assert tags[1] == expected_dc_tag[test_name]
 
     # Single-PK in this fixture → no model-level data_tests.
     assert "data_tests" not in model_dict
@@ -337,11 +411,10 @@ def test_generate_outputs_wraps_tests_with_tag_and_emits_singulars():
     assert all(s.filename.startswith("orders_sync_test__orders__") for s in singulars)
     assert all(s.filename.endswith(".sql") for s in singulars)
     assert any(s.description and "95%" in s.description for s in singulars)
-    # Field-level bound tests have no description (the source is `logicalTypeOptions`).
-    field_bounds = {s.filename for s in singulars if s.description is None}
-    assert "orders_sync_test__orders__order_id__length.sql" in field_bounds
-    assert "orders_sync_test__orders__order_id__pattern.sql" in field_bounds
-    assert "orders_sync_test__orders__order_total__range.sql" in field_bounds
+    by_name = {s.filename: s for s in singulars}
+    assert "length between 8 and 10" in by_name["orders_sync_test__orders__order_id__length.sql"].description
+    assert "matches regex pattern" in by_name["orders_sync_test__orders__order_id__pattern.sql"].description
+    assert "minimum of 0" in by_name["orders_sync_test__orders__order_total__range.sql"].description
 
 
 def test_generate_outputs_composite_pk_emits_model_level_unique():
@@ -406,7 +479,7 @@ def test_generate_outputs_singular_sql_carries_severity_and_tag():
     row_count = next(s for s in singulars if "row_count" in s.filename)
     # severity=error normalized from `severity: error` in the fixture
     assert "severity='error'" in row_count.sql
-    assert "tags=['datacontract_cli']" in row_count.sql
+    assert "tags=['datacontract_cli', 'dc:custom_sql']" in row_count.sql
 
 
 def test_build_singular_sql_wraps_query_with_violation_predicate():
@@ -416,13 +489,31 @@ def test_build_singular_sql_wraps_query_with_violation_predicate():
         "error",
         "my-contract",
         "orders",
+        check_type="row_count",
     )
     assert "AUTO-GENERATED" in sql
     assert "my-contract" in sql
-    assert "{{ config(severity='error', tags=['datacontract_cli']) }}" in sql
+    assert "severity='error'" in sql
+    assert "tags=['datacontract_cli', 'dc:row_count']" in sql
+    assert '"dc_model": "orders"' in sql  # Model is round-tripped through `meta`
+    assert "dc_field" not in sql  # model-level test, no field
     assert "WITH _dc_metric (metric_value) AS (" in sql
     assert "SELECT COUNT(*) FROM orders" in sql
     assert "WHERE metric_value IS NULL OR metric_value <= 1000" in sql
+
+
+def test_build_singular_sql_embeds_field_in_meta_when_provided():
+    sql = _build_singular_sql(
+        "SELECT 1",
+        "metric_value <> 1",
+        "warn",
+        "c",
+        "orders",
+        check_type="quality_custom",
+        field="order_id",
+    )
+    assert '"dc_model": "orders"' in sql
+    assert '"dc_field": "order_id"' in sql
 
 
 @pytest.mark.parametrize(
@@ -728,6 +819,140 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
     assert statuses == {"passed", "failed", "warning", "error", "info"}
 
 
+def test_parse_run_results_derives_check_type_from_dc_tag(tmp_path: Path):
+    """`Check.type` is read from the `dc:<type>` tag attached to each test node.
+
+    Falls back to `dbt_test` when no `dc:*` tag is present.
+    """
+    project = _copy_dbt_project(tmp_path)
+    target_dir = project / "target"
+    target_dir.mkdir()
+
+    run_results = {
+        "results": [
+            {"unique_id": "test.proj.a", "status": "pass", "failures": 0, "message": None},
+            {"unique_id": "test.proj.b", "status": "pass", "failures": 0, "message": None},
+            {"unique_id": "test.proj.c", "status": "pass", "failures": 0, "message": None},
+        ]
+    }
+    (target_dir / "run_results.json").write_text(json.dumps(run_results))
+
+    manifest = {
+        "nodes": {
+            "test.proj.a": {"name": "a", "tags": ["datacontract_cli", "dc:field_required"]},
+            "test.proj.b": {"name": "b", "tags": ["datacontract_cli", "dc:row_count"]},
+            # Legacy artifact without a dc:* tag — must fall back to "dbt_test".
+            "test.proj.c": {"name": "c", "tags": ["datacontract_cli"]},
+        }
+    }
+    (target_dir / "manifest.json").write_text(json.dumps(manifest))
+
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    parsed = parse_run_results(project, odcs)
+
+    by_name = {c.name: c for c in parsed.checks}
+    assert by_name["a"].type == "field_required"
+    assert by_name["b"].type == "row_count"
+    assert by_name["c"].type == "dbt_test"
+
+
+def test_parse_run_results_recovers_model_and_field_from_config_meta(tmp_path: Path):
+    """Singular SQL tests have no `column_name`/`attached_node` in the manifest.
+
+    `dbt sync` round-trips both names through `config(meta={...})`, which dbt
+    surfaces on `node.config.meta`. The parser must fall back to it.
+    """
+    project = _copy_dbt_project(tmp_path)
+    target_dir = project / "target"
+    target_dir.mkdir()
+    (target_dir / "run_results.json").write_text(
+        json.dumps(
+            {
+                "results": [
+                    {"unique_id": "test.proj.field_bound", "status": "fail", "failures": 2, "message": "boom"},
+                    {"unique_id": "test.proj.no_ref_quality", "status": "pass", "failures": 0, "message": None},
+                ]
+            }
+        )
+    )
+    (target_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "nodes": {
+                    # Singular SQL: no `column_name`, no `attached_node`. Meta supplies both.
+                    "test.proj.field_bound": {
+                        "name": "orders_sync_test__orders__order_id__length",
+                        "config": {"meta": {"dc_model": "orders", "dc_field": "order_id"}},
+                    },
+                    # User `quality.query` without `ref()` → `depends_on.nodes` is empty;
+                    # meta is the only signal we have for the model.
+                    "test.proj.no_ref_quality": {
+                        "name": "no_ref_quality",
+                        "config": {"meta": {"dc_model": "orders"}},
+                    },
+                }
+            }
+        )
+    )
+
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    parsed = parse_run_results(project, odcs)
+
+    by_name = {c.name: c for c in parsed.checks}
+    field_bound = by_name["orders_sync_test__orders__order_id__length"]
+    assert field_bound.model == "orders"
+    assert field_bound.field == "order_id"
+
+    no_ref = by_name["no_ref_quality"]
+    assert no_ref.model == "orders"
+    assert no_ref.field is None
+
+
+def test_parse_run_results_recovers_description_from_config_meta(tmp_path: Path):
+    """dbt 1.11's manifest leaves `node.description == ''` for singular SQL tests even
+    when a description is set in the model YAML's top-level `data_tests:` block.
+    `dbt sync` round-trips the human-readable description through `config(meta={...})`
+    so `Check.name` reads "Check that field email matches…" instead of the SQL filename.
+    """
+    project = _copy_dbt_project(tmp_path)
+    target_dir = project / "target"
+    target_dir.mkdir()
+    (target_dir / "run_results.json").write_text(
+        json.dumps(
+            {
+                "results": [
+                    {"unique_id": "test.proj.email_pattern", "status": "warn", "failures": 1, "message": None},
+                ]
+            }
+        )
+    )
+    (target_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "nodes": {
+                    "test.proj.email_pattern": {
+                        "name": "orders_sync_test__customers__email__pattern",
+                        # Empty string (what dbt 1.11 actually writes), not None.
+                        "description": "",
+                        "config": {
+                            "meta": {
+                                "dc_model": "customers",
+                                "dc_field": "email",
+                                "dc_description": "Check that field email matches regex pattern ^[^@]+@[^@]+$",
+                            }
+                        },
+                    },
+                }
+            }
+        )
+    )
+
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    parsed = parse_run_results(project, odcs)
+    assert len(parsed.checks) == 1
+    assert parsed.checks[0].name == "Check that field email matches regex pattern ^[^@]+@[^@]+$"
+
+
 def test_parse_run_results_honors_custom_target_path(tmp_path: Path):
     """When `target-path` is overridden, dbt writes artifacts to that dir — not `target/`."""
     project = _custom_paths_project(tmp_path, model_paths=["models"], test_paths=["tests"])
@@ -834,3 +1059,313 @@ def test_integration_end_to_end(tmp_path: Path):
     )
 
     assert result.run is not None
+
+
+# ---------------------------------------------------------------------------
+# --publish flag
+# ---------------------------------------------------------------------------
+
+
+def _stub_dbt_test(monkeypatch, project: Path) -> None:
+    """Replace `subprocess.run` so `dbt test` succeeds and leaves a minimal run_results.json."""
+    target_dir = project / "target"
+    target_dir.mkdir(exist_ok=True)
+
+    def fake_run(args, **kwargs):
+        (target_dir / "run_results.json").write_text(
+            json.dumps(
+                {"results": [{"unique_id": "test.proj.x.abc", "status": "pass", "failures": 0, "message": None}]}
+            )
+        )
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+
+def test_run_tests_forwards_dbt_output_to_run_logs(monkeypatch, tmp_path: Path):
+    """`run_tests` must surface `dbt test` stdout/stderr through `run.logs` so the
+    published Run carries the same context an operator would see locally — minus
+    ANSI codes and empty lines."""
+    project = _copy_dbt_project(tmp_path)
+    target_dir = project / "target"
+    target_dir.mkdir()
+
+    dbt_stdout = "\x1b[0m13:59:19  Running with dbt=1.11.7\n\x1b[0m13:59:19  \n13:59:20  Done. PASS=1\n"
+    dbt_stderr = "deprecation warning: foo\n"
+
+    def fake_run(args, **kwargs):
+        (target_dir / "run_results.json").write_text(
+            json.dumps(
+                {"results": [{"unique_id": "test.proj.x.abc", "status": "pass", "failures": 0, "message": None}]}
+            )
+        )
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout=dbt_stdout, stderr=dbt_stderr)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    result = sync(contract=str(CONTRACT_PATH), project_dir=project)
+    messages = [log.message for log in result.run.logs]
+    assert "13:59:19  Running with dbt=1.11.7" in messages
+    assert "13:59:20  Done. PASS=1" in messages
+    assert "deprecation warning: foo" in messages
+    # ANSI escape codes are stripped and empty lines dropped.
+    assert not any("\x1b[" in m for m in messages)
+    assert "" not in messages
+
+
+def test_publish_not_called_when_flag_absent(monkeypatch, tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test(monkeypatch, project)
+
+    publish_mock = mock.MagicMock()
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", publish_mock)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "sync", str(CONTRACT_PATH), "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    publish_mock.assert_not_called()
+
+
+def test_publish_failure_exits_non_zero(monkeypatch, tmp_path: Path):
+    """Publish failure → exit 1 so CI scripts catch it. The error message itself
+    surfaces via stdlib logging (same path as every other `run.log_*` call); the
+    CLI doesn't double-print it on stdout."""
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test(monkeypatch, project)
+
+    def failing_publish(run, publish_url, ssl_verification):
+        run.log_error("Failed publishing test results. Error: boom")
+
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", failing_publish)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(CONTRACT_PATH),
+            "--project-dir",
+            str(project),
+            "--publish",
+            "https://example.com/results",
+        ],
+    )
+    assert result.exit_code == 1, result.output
+
+
+def test_cli_publish_option_renders_in_help():
+    result = CliRunner().invoke(app, ["dbt", "sync", "--help"], terminal_width=200, color=False)
+    assert result.exit_code == 0
+    plain = re.sub(r"\s+", "", re.sub(r"\x1b\[[0-9;]*[mGKHF]", "", result.stdout))
+    assert "--publish" in plain
+    # --ssl-verification gets truncated
+    assert "--ssl-verific" in plain
+
+
+def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test(monkeypatch, project)
+
+    captured: dict = {}
+
+    def fake_publish(run, publish_url, ssl_verification):
+        captured["url"] = publish_url
+        captured["ssl"] = ssl_verification
+        run.log_info("Published test results successfully")
+
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(CONTRACT_PATH),
+            "--project-dir",
+            str(project),
+            "--publish",
+            "https://example.com/results",
+            "--no-ssl-verification",
+        ],
+    )
+    if result.exit_code != 0:
+        sys.stderr.write(result.output)
+        if result.exception:
+            raise result.exception
+    assert result.exit_code == 0
+    assert captured["url"] == "https://example.com/results"
+    assert captured["ssl"] is False
+
+
+def test_cli_publish_with_skip_tests_rejected(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(CONTRACT_PATH),
+            "--project-dir",
+            str(project),
+            "--skip-tests",
+            "--publish",
+            "https://example.com",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "--publish cannot be combined with --skip-tests" in result.stdout
+
+
+def test_cli_publish_rejects_non_http_url(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(CONTRACT_PATH),
+            "--project-dir",
+            str(project),
+            "--publish",
+            "ftp://foo",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "must start with http:// or https://" in result.stdout
+
+
+def test_cli_server_defaults_to_target(monkeypatch, tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test(monkeypatch, project)
+
+    captured: dict = {}
+
+    def fake_publish(run, publish_url, ssl_verification):
+        captured["server"] = run.server
+
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(CONTRACT_PATH),
+            "--project-dir",
+            str(project),
+            "--target",
+            "dev",
+            "--publish",
+            "https://example.com",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert captured["server"] == "dev"
+
+
+def test_cli_server_flag_overrides_target(monkeypatch, tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test(monkeypatch, project)
+
+    captured: dict = {}
+
+    def fake_publish(run, publish_url, ssl_verification):
+        captured["server"] = run.server
+
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
+
+    # Contract declares a single server. Make it match what we'll pass via --server.
+    contract = tmp_path / "with-server.odcs.yaml"
+    contract.write_text(
+        CONTRACT_PATH.read_text()
+        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(contract),
+            "--project-dir",
+            str(project),
+            "--target",
+            "ci",
+            "--server",
+            "production",
+            "--publish",
+            "https://example.com",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert captured["server"] == "production"
+
+
+def test_cli_server_defaults_to_single_contract_server(monkeypatch, tmp_path: Path):
+    """Single-server contracts are unambiguous; --target should be ignored for run.server."""
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test(monkeypatch, project)
+
+    captured: dict = {}
+
+    def fake_publish(run, publish_url, ssl_verification):
+        captured["server"] = run.server
+
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
+
+    contract = tmp_path / "with-server.odcs.yaml"
+    contract.write_text(
+        CONTRACT_PATH.read_text()
+        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(contract),
+            "--project-dir",
+            str(project),
+            "--target",
+            "ci",
+            "--publish",
+            "https://example.com",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert captured["server"] == "production"
+
+
+def test_cli_server_rejects_unknown_name(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    contract = tmp_path / "with-server.odcs.yaml"
+    contract.write_text(
+        CONTRACT_PATH.read_text()
+        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(contract),
+            "--project-dir",
+            str(project),
+            "--server",
+            "typo",
+            "--skip-tests",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "not declared in the contract" in result.stdout
+    assert "production" in result.stdout

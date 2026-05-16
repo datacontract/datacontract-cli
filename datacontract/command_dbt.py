@@ -4,8 +4,15 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import OrderedCommandsWithMigrationHints, console, debug_option, enable_debug_logging
+from datacontract.cli import (
+    OrderedCommandsWithMigrationHints,
+    console,
+    debug_option,
+    enable_debug_logging,
+    validate_publish_url,
+)
 from datacontract.integration.dbt_sync import ModelResolution, check_dbt_on_path, generate_dbt_tests, run_tests
+from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
 from datacontract.model.run import ResultEnum
 from datacontract.output.test_results_writer import print_test_results_table, to_field
 
@@ -46,6 +53,14 @@ def sync_command(
         bool,
         typer.Option("--skip-tests/--run-tests", help="Generate tests but skip running `dbt test`."),
     ] = False,
+    publish: Annotated[Optional[str], typer.Option(help="The url to publish the results after the test.")] = None,
+    server: Annotated[
+        Optional[str],
+        typer.Option(
+            help="ODCS server name for published test results. Auto-selected if the contract contains only one server. Otherwise defaults to --target.",
+        ),
+    ] = None,
+    ssl_verification: Annotated[bool, typer.Option(help="SSL verification when publishing the data contract.")] = True,
     debug: debug_option = None,
 ):
     """
@@ -54,6 +69,11 @@ def sync_command(
     Within the specified dbt project, this command wipes `<model-paths>/datacontract_cli/` and `<test-paths>/datacontract_cli/`, regenerates them from the contract, then runs `dbt test`.
     """
     enable_debug_logging(debug)
+
+    if publish is not None and skip_tests:
+        console.print("[red]--publish cannot be combined with --skip-tests (no run results to publish).[/red]")
+        raise typer.Exit(code=1)
+    validate_publish_url(publish)
 
     if not skip_tests:
         check_dbt_on_path()
@@ -65,6 +85,14 @@ def sync_command(
         model_resolution=model_resolution,
         console=console,
     )
+
+    if server is not None and gen.odcs.servers:
+        known = [s.server for s in gen.odcs.servers if s.server]
+        if server not in known:
+            console.print(
+                f"[red]--server {server!r} is not declared in the contract. Available: {', '.join(known) or '(none)'}[/red]"
+            )
+            raise typer.Exit(code=1)
 
     yaml_dir = gen.written_yaml[0].parent if gen.written_yaml else None
     sql_dir = gen.written_sql[0].parent if gen.written_sql else None
@@ -80,8 +108,23 @@ def sync_command(
         return
 
     run = run_tests(gen, target=target, profiles_dir=profiles_dir)
+    if server is not None:
+        run.server = server
+    elif gen.odcs.servers and len(gen.odcs.servers) == 1:
+        run.server = gen.odcs.servers[0].server
+    else:
+        run.server = target
+
+    publish_failed = False
+    if publish is not None:
+        initial_logs_length = len(run.logs)
+        publish_test_results_to_entropy_data(run, publish, ssl_verification)
+        publish_failed = any(log.level == "ERROR" for log in run.logs[initial_logs_length:])
+
     if not run.checks:
         console.print("[yellow]No test results parsed.[/yellow]")
+        if publish_failed:
+            raise typer.Exit(code=1)
         return
 
     print_test_results_table(run, console)
@@ -89,6 +132,8 @@ def sync_command(
     took = (run.timestampEnd - run.timestampStart).total_seconds()
     if run.result == ResultEnum.passed:
         console.print(f"🟢 dbt tests passed. Ran {total} tests. Took {took} seconds.")
+        if publish_failed:
+            raise typer.Exit(code=1)
         return
     if run.result == ResultEnum.warning:
         console.print("🟠 dbt tests have warnings:")
@@ -101,5 +146,5 @@ def sync_command(
             prefix = f"{field} " if field else ""
             console.print(f"{i}) {prefix}{check.name}: {check.reason}")
             i += 1
-    if run.result in (ResultEnum.failed, ResultEnum.error):
+    if run.result in (ResultEnum.failed, ResultEnum.error) or publish_failed:
         raise typer.Exit(code=1)

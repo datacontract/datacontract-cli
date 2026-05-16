@@ -129,6 +129,13 @@ def enable_debug_logging(debug: bool):
         )
 
 
+def validate_publish_url(publish: str | None) -> None:
+    """Reject `--publish` values that aren't http/https before any real work runs."""
+    if publish is not None and not (publish.startswith("http://") or publish.startswith("https://")):
+        console.print(f"[red]--publish URL must start with http:// or https:// (got: {publish!r}).[/red]")
+        raise typer.Exit(code=1)
+
+
 def _print_logs(run, out=None):
     if out is None:
         out = console
