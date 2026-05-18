@@ -1203,9 +1203,7 @@ def test_cli_publish_rejects_non_http_url(tmp_path: Path):
 
 
 def test_cli_publish_skipped_when_no_server_resolvable(monkeypatch, tmp_path: Path):
-    """No --server and no `servers:` block in the contract → warn and skip publish.
-    The dbt --target name is a dbt concept, not an ODCS server identifier, so
-    falling back to it would mislabel the published run."""
+    """No --server, no --target, and no `servers:` block → warn and skip publish."""
     project = _copy_dbt_project(tmp_path)
     _stub_dbt_test(monkeypatch, project)
 
@@ -1221,8 +1219,6 @@ def test_cli_publish_skipped_when_no_server_resolvable(monkeypatch, tmp_path: Pa
             str(CONTRACT_PATH),
             "--project-dir",
             str(project),
-            "--target",
-            "dev",
             "--publish",
             "https://example.com",
         ],
