@@ -710,6 +710,7 @@ def _column_dict(
         is_single_pk=(prop.name == single_pk_name),
         supports_constraints=False,
         source_name=odcs.id or "_source",
+        include_dbt_expectations_bounds=False,
     )
     base = _rewrite_relationships_to_ref(base)
     tests = [
