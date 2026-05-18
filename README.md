@@ -258,6 +258,7 @@ A list of available extras:
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
 | protobuf                | `pip install datacontract-cli[protobuf]`   |
 | RDF                     | `pip install datacontract-cli[rdf]`        |
+| Amazon Redshift         | `pip install datacontract-cli[redshift]`   |
 | S3 Integration          | `pip install datacontract-cli[s3]`         |
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
@@ -947,6 +948,52 @@ models:
 |----------------------------------|--------------------|-------------|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
+
+</details>
+
+<details markdown="1">
+<summary><strong>Amazon Redshift</strong></summary>
+
+Data Contract CLI can test data in Amazon Redshift (both provisioned clusters and Redshift Serverless).
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  redshift:
+    type: redshift
+    host: my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
+    port: 5439
+    database: dev
+    schema: analytics
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+##### Environment Variables
+All [parameters supported by Soda](https://docs.soda.io/soda/connect-redshift.html), uppercased and prepended by `DATACONTRACT_REDSHIFT_` prefix.
+For example:
+
+| Soda parameter      | Environment Variable                      | Details             |
+|---------------------|-------------------------------------------|---------------------|
+| `username`          | `DATACONTRACT_REDSHIFT_USERNAME`          |                     |
+| `password`          | `DATACONTRACT_REDSHIFT_PASSWORD`          | leave unset for IAM |
+| `region`            | `DATACONTRACT_REDSHIFT_REGION`            | for IAM             |
+| `access_key_id`     | `DATACONTRACT_REDSHIFT_ACCESS_KEY_ID`     | for IAM             |
+| `secret_access_key` | `DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY` | for IAM             |
+| `role_arn`          | `DATACONTRACT_REDSHIFT_ROLE_ARN`          | for IAM             |
+
+IAM credentials can be supplied in two ways:
+
+1. **AWS_PROFILE** — set `AWS_PROFILE` in your shell to a profile defined in `~/.aws/credentials` and `DATACONTRACT_REDSHIFT_REGION`.
+2. **Explicit keys** — set `DATACONTRACT_REDSHIFT_REGION`, `..._ACCESS_KEY_ID`, `..._SECRET_ACCESS_KEY`, and `..._SESSION_TOKEN` for temporary credentials, or `..._ROLE_ARN` to assume a role.
+
+>IAM authentication is supported only for **provisioned** Redshift clusters.
 
 </details>
 

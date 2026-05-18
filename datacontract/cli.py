@@ -123,10 +123,14 @@ def common(
 
 
 def enable_debug_logging(debug: bool):
+    root = logging.getLogger()
     if debug:
         logging.basicConfig(
             level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
         )
+    elif not root.handlers:
+        # Without a handler, Python's lastResort emits WARNING/ERROR messages
+        root.addHandler(logging.NullHandler())
 
 
 def validate_publish_url(publish: str | None) -> None:
