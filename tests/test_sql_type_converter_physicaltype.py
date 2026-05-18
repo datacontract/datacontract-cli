@@ -175,6 +175,21 @@ def test_decimal_10_2_mysql():
     assert result == "decimal(10,2)"
 
 
+def test_numeric_10_2_mysql():
+    """NUMERIC(10,2) on mysql canonicalizes to 'decimal' (MySQL treats them as synonyms
+    and information_schema reports 'decimal'), params preserved -> 'decimal(10,2)'."""
+    field = SchemaProperty(name="price", physicalType="NUMERIC(10,2)")
+    result = convert_to_sql_type(field, "mysql")
+    assert result == "decimal(10,2)"
+
+
+def test_logical_numeric_mysql():
+    """logicalType='numeric' on mysql canonicalizes to 'decimal' (no params)."""
+    field = SchemaProperty(name="price", logicalType="numeric")
+    result = convert_to_sql_type(field, "mysql")
+    assert result == "decimal"
+
+
 def test_float_24_mysql():
     """FLOAT(24) on mysql: 'float' -> 'float', accepts params -> 'float(24)'."""
     field = SchemaProperty(name="col", physicalType="FLOAT(24)")
