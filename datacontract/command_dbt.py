@@ -117,9 +117,13 @@ def sync_command(
 
     publish_failed = False
     if publish is not None:
-        initial_logs_length = len(run.logs)
-        publish_test_results_to_entropy_data(run, publish, ssl_verification)
-        publish_failed = any(log.level == "ERROR" for log in run.logs[initial_logs_length:])
+        if server is None and not gen.odcs.servers:
+            console.print(
+                "[yellow]Skipping publish: no --server passed and the contract declares no servers. "
+                "Add a `servers:` block or pass --server to identify the run.[/yellow]"
+            )
+        else:
+            publish_failed = not publish_test_results_to_entropy_data(run, publish, ssl_verification)
 
     if not run.checks:
         console.print("[yellow]No test results parsed.[/yellow]")

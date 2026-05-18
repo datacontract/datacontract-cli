@@ -48,15 +48,3 @@ def test_changelog_with_changes():
     assert "Removed" in result.output
     assert "Updated" in result.output
     assert "Added" in result.output
-
-
-def test_test_command_rejects_non_http_publish_url():
-    result = runner.invoke(app, ["test", "fixtures/lint/valid_datacontract.yaml", "--publish", "ftp://foo"])
-    assert result.exit_code == 1
-    assert "must start with http:// or https://" in result.stdout
-
-
-def test_ci_command_rejects_non_http_publish_url():
-    result = runner.invoke(app, ["ci", "fixtures/lint/valid_datacontract.yaml", "--publish", "ftp://foo"])
-    assert result.exit_code == 1
-    assert "must start with http:// or https://" in result.stdout

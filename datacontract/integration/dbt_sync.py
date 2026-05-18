@@ -292,7 +292,7 @@ def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) ->
     return None
 
 
-def _describe_field_bound(prop: "SchemaProperty", kind: str) -> Optional[str]:
+def _describe_field_bound(prop: SchemaProperty, kind: str) -> Optional[str]:
     """Human-readable descriptions for the singular SQL tests `_field_singular_tests` emits.
 
     `kind` is one of `"length"`, `"pattern"`, `"range"`.
@@ -1000,7 +1000,7 @@ def _get_test_metadata(test_node: dict) -> Tuple[Optional[str], Optional[str], O
                 break
 
     # Singular SQL tests have no `column_name` / `attached_node` in the manifest,
-    # therfore we stored them to `config(meta={...})`.
+    # therefore we stored them to `config(meta={...})`.
     meta = (test_node.get("config") or {}).get("meta") or {}
     if not column:
         dc_field = meta.get("dc_field")

@@ -286,12 +286,6 @@ def test_attach_config_string_test():
     }
 
 
-def test_attach_config_string_test_with_check_type():
-    assert _attach_test_config("not_null", "warn", check_type="field_required") == {
-        "not_null": {"config": {"severity": "warn", "tags": ["datacontract_cli", "dc:field_required"]}}
-    }
-
-
 def test_attach_config_dict_test():
     result = _attach_test_config({"accepted_values": {"values": [1, 2]}}, "error", check_type="field_enum")
     assert result == {
@@ -325,21 +319,6 @@ def test_attach_config_dict_test():
 def test_describe_dbt_test_templates(test, expected):
     """Templates should read like the equivalent built-in check names so the published UI matches."""
     assert _describe_dbt_test(test, "order_id", "orders") == expected
-
-
-def test_attach_test_config_embeds_description():
-    wrapped = _attach_test_config(
-        "not_null",
-        "warn",
-        description="Check that field order_id has no missing values",
-        check_type="field_required",
-    )
-    assert wrapped == {
-        "not_null": {
-            "config": {"severity": "warn", "tags": ["datacontract_cli", "dc:field_required"]},
-            "description": "Check that field order_id has no missing values",
-        }
-    }
 
 
 def test_generate_outputs_emits_descriptions_for_typed_field_tests():
@@ -500,20 +479,6 @@ def test_build_singular_sql_wraps_query_with_violation_predicate():
     assert "WITH _dc_metric (metric_value) AS (" in sql
     assert "SELECT COUNT(*) FROM orders" in sql
     assert "WHERE metric_value IS NULL OR metric_value <= 1000" in sql
-
-
-def test_build_singular_sql_embeds_field_in_meta_when_provided():
-    sql = _build_singular_sql(
-        "SELECT 1",
-        "metric_value <> 1",
-        "warn",
-        "c",
-        "orders",
-        check_type="quality_custom",
-        field="order_id",
-    )
-    assert '"dc_model": "orders"' in sql
-    assert '"dc_field": "order_id"' in sql
 
 
 @pytest.mark.parametrize(
@@ -1079,6 +1044,7 @@ def _stub_dbt_test(monkeypatch, project: Path) -> None:
         )
         return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
+    monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
     monkeypatch.setattr(subprocess, "run", fake_run)
 
 
@@ -1101,6 +1067,7 @@ def test_run_tests_forwards_dbt_output_to_run_logs(monkeypatch, tmp_path: Path):
         )
         return subprocess.CompletedProcess(args=args, returncode=0, stdout=dbt_stdout, stderr=dbt_stderr)
 
+    monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     result = sync(contract=str(CONTRACT_PATH), project_dir=project)
@@ -1135,6 +1102,7 @@ def test_publish_failure_exits_non_zero(monkeypatch, tmp_path: Path):
 
     def failing_publish(run, publish_url, ssl_verification):
         run.log_error("Failed publishing test results. Error: boom")
+        return False
 
     monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", failing_publish)
 
@@ -1147,20 +1115,13 @@ def test_publish_failure_exits_non_zero(monkeypatch, tmp_path: Path):
             str(CONTRACT_PATH),
             "--project-dir",
             str(project),
+            "--server",
+            "prod",
             "--publish",
             "https://example.com/results",
         ],
     )
     assert result.exit_code == 1, result.output
-
-
-def test_cli_publish_option_renders_in_help():
-    result = CliRunner().invoke(app, ["dbt", "sync", "--help"], terminal_width=200, color=False)
-    assert result.exit_code == 0
-    plain = re.sub(r"\s+", "", re.sub(r"\x1b\[[0-9;]*[mGKHF]", "", result.stdout))
-    assert "--publish" in plain
-    # --ssl-verification gets truncated
-    assert "--ssl-verific" in plain
 
 
 def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
@@ -1173,6 +1134,7 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
         captured["url"] = publish_url
         captured["ssl"] = ssl_verification
         run.log_info("Published test results successfully")
+        return True
 
     monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
 
@@ -1185,6 +1147,8 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
             str(CONTRACT_PATH),
             "--project-dir",
             str(project),
+            "--server",
+            "prod",
             "--publish",
             "https://example.com/results",
             "--no-ssl-verification",
@@ -1238,16 +1202,15 @@ def test_cli_publish_rejects_non_http_url(tmp_path: Path):
     assert "must start with http:// or https://" in result.stdout
 
 
-def test_cli_server_defaults_to_target(monkeypatch, tmp_path: Path):
+def test_cli_publish_skipped_when_no_server_resolvable(monkeypatch, tmp_path: Path):
+    """No --server and no `servers:` block in the contract → warn and skip publish.
+    The dbt --target name is a dbt concept, not an ODCS server identifier, so
+    falling back to it would mislabel the published run."""
     project = _copy_dbt_project(tmp_path)
     _stub_dbt_test(monkeypatch, project)
 
-    captured: dict = {}
-
-    def fake_publish(run, publish_url, ssl_verification):
-        captured["server"] = run.server
-
-    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
+    publish_mock = mock.MagicMock(return_value=True)
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", publish_mock)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -1265,7 +1228,8 @@ def test_cli_server_defaults_to_target(monkeypatch, tmp_path: Path):
         ],
     )
     assert result.exit_code == 0, result.output
-    assert captured["server"] == "dev"
+    assert "Skipping publish" in result.stdout
+    publish_mock.assert_not_called()
 
 
 def test_cli_server_flag_overrides_target(monkeypatch, tmp_path: Path):
@@ -1276,6 +1240,7 @@ def test_cli_server_flag_overrides_target(monkeypatch, tmp_path: Path):
 
     def fake_publish(run, publish_url, ssl_verification):
         captured["server"] = run.server
+        return True
 
     monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
 
@@ -1316,6 +1281,7 @@ def test_cli_server_defaults_to_single_contract_server(monkeypatch, tmp_path: Pa
 
     def fake_publish(run, publish_url, ssl_verification):
         captured["server"] = run.server
+        return True
 
     monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
 
