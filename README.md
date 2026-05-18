@@ -258,6 +258,7 @@ A list of available extras:
 | PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
 | protobuf                | `pip install datacontract-cli[protobuf]`   |
 | RDF                     | `pip install datacontract-cli[rdf]`        |
+| Amazon Redshift         | `pip install datacontract-cli[redshift]`   |
 | S3 Integration          | `pip install datacontract-cli[s3]`         |
 | Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
@@ -947,6 +948,41 @@ models:
 |----------------------------------|--------------------|-------------|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres`         | Username    |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password    |
+
+</details>
+
+<details markdown="1">
+<summary><strong>Amazon Redshift</strong></summary>
+
+Data Contract CLI can test data in Amazon Redshift (both provisioned clusters and Redshift Serverless).
+
+##### Example
+
+datacontract.yaml
+```yaml
+servers:
+  redshift:
+    type: redshift
+    host: my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
+    port: 5439
+    database: dev
+    schema: analytics
+models:
+  my_table_1: # corresponds to a table
+    type: table
+    fields:
+      my_column_1: # corresponds to a column
+        type: varchar
+```
+
+##### Environment Variables
+
+| Environment Variable             | Example            | Description |
+|----------------------------------|--------------------|-------------|
+| `DATACONTRACT_REDSHIFT_USERNAME` | `admin`            | Username    |
+| `DATACONTRACT_REDSHIFT_PASSWORD` | `mysecretpassword` | Password    |
+
+Any additional `DATACONTRACT_REDSHIFT_*` environment variable is forwarded to the Soda data source configuration (key lower-cased, prefix stripped). For example, `DATACONTRACT_REDSHIFT_REGION=us-east-1` becomes `region: us-east-1`, which lets you supply IAM-based credentials (`access_key_id`, `secret_access_key`, `region`, ...) without changes here.
 
 </details>
 
