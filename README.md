@@ -998,7 +998,12 @@ are obtained from the `servers` section of the YAML-file.
 
 ##### IAM Authentication
 
-Set `DATACONTRACT_REDSHIFT_USERNAME` (the database user) and AWS credentials (`DATACONTRACT_REDSHIFT_ACCESS_KEY_ID` + `DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY` + `DATACONTRACT_REDSHIFT_REGION`, or `DATACONTRACT_REDSHIFT_ROLE_ARN`), and leave `DATACONTRACT_REDSHIFT_PASSWORD` unset. soda-core-redshift will call `GetClusterCredentials` to obtain a temporary password.
+Set `DATACONTRACT_REDSHIFT_USERNAME` (the database user that exists in the cluster) and leave `DATACONTRACT_REDSHIFT_PASSWORD` unset. soda-core-redshift will then call `GetClusterCredentials` to obtain a temporary password. AWS credentials can be supplied in two ways:
+
+1. **Explicit keys** — set `DATACONTRACT_REDSHIFT_ACCESS_KEY_ID`, `DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY`, `DATACONTRACT_REDSHIFT_REGION` (and `DATACONTRACT_REDSHIFT_SESSION_TOKEN` for temporary credentials, or `DATACONTRACT_REDSHIFT_ROLE_ARN` to assume a role).
+2. **AWS_PROFILE** — set `AWS_PROFILE` in your shell to a profile defined in `~/.aws/credentials`. boto3's default credential chain picks it up. Also set `DATACONTRACT_REDSHIFT_REGION` so soda routes to the right Redshift endpoint.
+
+> `DATACONTRACT_REDSHIFT_PROFILE_NAME` is accepted by soda-core-redshift but only consulted when assuming a role. For direct IAM access, use `AWS_PROFILE` in the shell instead.
 
 **Limitation:** IAM authentication is supported only for **provisioned** Redshift clusters. Redshift Serverless requires username/password — the upstream soda-core-redshift driver doesn't call the Serverless `GetCredentials` API.
 

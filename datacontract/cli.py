@@ -129,8 +129,7 @@ def enable_debug_logging(debug: bool):
             level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
         )
     elif not root.handlers:
-        # Without a handler, Python's lastResort emits WARNING/ERROR messages with the raw
-        # "ERROR:root:..." format, leaking past the CLI's rich tables. Suppress.
+        # Without a handler, Python's lastResort emits WARNING/ERROR messages
         root.addHandler(logging.NullHandler())
 
 

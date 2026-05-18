@@ -190,7 +190,7 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
     if server_type == "snowflake":
         return convert_to_snowflake(field)
     elif server_type == "postgres" or server_type == "redshift":
-        return convert_type_to_postgres(field)
+        return convert_type_to_postgres(field)  # Redshift is Postgres-compatible
     elif server_type == "mysql":
         return convert_type_to_mysql(field)
     elif server_type == "dataframe":
