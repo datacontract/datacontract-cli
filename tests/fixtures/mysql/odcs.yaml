@@ -30,6 +30,11 @@ schema:
     physicalType: timestamp
     isNullable: true
     isUnique: false
+  - name: field_four
+    logicalType: number
+    physicalType: numeric
+    isNullable: true
+    isUnique: false
 servers:
 - server: mysql
   type: mysql
