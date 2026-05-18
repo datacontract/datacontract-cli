@@ -60,7 +60,7 @@ def sync_command(
             help="ODCS server name for published test results. Auto-selected if the contract contains only one server. Otherwise defaults to --target.",
         ),
     ] = None,
-    ssl_verification: Annotated[bool, typer.Option(help="SSL verification when publishing the data contract.")] = True,
+    ssl_verification: Annotated[bool, typer.Option(help="SSL verification when publishing test results.")] = True,
     debug: debug_option = None,
 ):
     """
@@ -117,11 +117,18 @@ def sync_command(
 
     publish_failed = False
     if publish is not None:
-        if server is None and not gen.odcs.servers:
-            console.print(
-                "[yellow]Skipping publish: no --server passed and the contract declares no servers. "
-                "Add a `servers:` block or pass --server to identify the run.[/yellow]"
-            )
+        if run.server is None:
+            if not gen.odcs.servers:
+                console.print(
+                    "[yellow]Skipping publish: the contract declares no servers. "
+                    "Add a `servers:` block or pass --server to identify the run.[/yellow]"
+                )
+            else:
+                known = ", ".join(s.server for s in gen.odcs.servers if s.server) or "(none)"
+                console.print(
+                    f"[yellow]Skipping publish: the contract declares multiple servers ({known}). "
+                    f"Pass --server to identify the run.[/yellow]"
+                )
         else:
             publish_failed = not publish_test_results_to_entropy_data(run, publish, ssl_verification)
 

@@ -1170,8 +1170,7 @@ models:
 │                                                                     server. Otherwise defaults   │
 │                                                                     to --target.                 │
 │ --ssl-verification    --no-ssl-verification                         SSL verification when        │
-│                                                                     publishing the data          │
-│                                                                     contract.                    │
+│                                                                     publishing test results.     │
 │                                                                     [default: ssl-verification]  │
 │ --debug               --no-debug                                    Enable debug logging         │
 │ --help                                                              Show this message and exit.  │
