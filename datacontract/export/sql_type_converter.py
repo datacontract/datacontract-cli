@@ -278,9 +278,10 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return _attach_params_if_present("time", field)
     if base_type in ["number"]:
         return _attach_params_if_present("numeric", field)
-    if base_type in ["decimal"]:
-        return _attach_params_if_present("decimal", field)
-    if base_type in ["numeric"]:
+    if base_type in ["decimal", "numeric"]:
+        # Postgres treats DECIMAL and NUMERIC as exact synonyms and canonicalizes
+        # to NUMERIC in information_schema.columns. Emit NUMERIC so soda's
+        # column-type check matches what the database actually reports.
         return _attach_params_if_present("numeric", field)
     if base_type in ["float"]:
         return "real"
@@ -339,10 +340,11 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return _attach_params_if_present("time", field)
     if base_type in ["number"]:
         return _attach_params_if_present("decimal", field)
-    if base_type in ["decimal"]:
+    if base_type in ["decimal", "numeric"]:
+        # MySQL treats DECIMAL and NUMERIC as synonyms and canonicalizes to DECIMAL
+        # in information_schema.columns. Emit DECIMAL so soda's column-type check
+        # matches what the database actually reports.
         return _attach_params_if_present("decimal", field)
-    if base_type in ["numeric"]:
-        return _attach_params_if_present("numeric", field)
     if base_type in ["float"]:
         return _attach_params_if_present("float", field)
     if base_type in ["double"]:

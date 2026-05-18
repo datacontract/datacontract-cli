@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **breaking:** `export dbt` no longer emits `dbt_expectations` macros for length / regex / numeric-range / row-count bounds; those entries are dropped from the YAML output. `dbt sync` covers the same bounds via portable singular SQL, so the generated dbt project no longer requires `dbt_expectations` in `packages.yml`. `dbt_utils` is still used for composite-primary-key uniqueness only.
 
+### Fixed
+- sql type converter: emit canonical `decimal`/`numeric` per dialect (Postgres → `numeric`, MySQL → `decimal`) so `test`'s column-type check matches `information_schema` (#1237)
+
 ## [0.12.2] - 2026-05-05
 
 ### Added

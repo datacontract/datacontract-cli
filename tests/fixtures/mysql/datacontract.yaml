@@ -24,3 +24,5 @@ models:
         minimum: 10
       field_three:
         type: timestamp
+      field_four:
+        type: numeric
