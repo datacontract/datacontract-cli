@@ -996,6 +996,12 @@ Beware, that parameters:
 
 are obtained from the `servers` section of the YAML-file.
 
+##### IAM Authentication
+
+Set `DATACONTRACT_REDSHIFT_USERNAME` (the database user) and AWS credentials (`DATACONTRACT_REDSHIFT_ACCESS_KEY_ID` + `DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY` + `DATACONTRACT_REDSHIFT_REGION`, or `DATACONTRACT_REDSHIFT_ROLE_ARN`), and leave `DATACONTRACT_REDSHIFT_PASSWORD` unset. soda-core-redshift will call `GetClusterCredentials` to obtain a temporary password.
+
+**Limitation:** IAM authentication is supported only for **provisioned** Redshift clusters. Redshift Serverless requires username/password — the upstream soda-core-redshift driver doesn't call the Serverless `GetCredentials` API.
+
 </details>
 
 <details markdown="1">

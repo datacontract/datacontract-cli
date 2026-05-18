@@ -54,3 +54,22 @@ def test_to_redshift_soda_configuration_missing_username_raises(monkeypatch):
     with pytest.raises(DataContractException) as exc_info:
         to_redshift_soda_configuration(_server())
     assert exc_info.value.type == "redshift-connection"
+
+
+def test_to_redshift_soda_configuration_iam_mode_omits_password(monkeypatch):
+    # IAM mode: username + AWS creds set, password unset. soda-core-redshift triggers
+    # IAM only when the password key is absent from the config, so we must omit it.
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_USERNAME", "admin")
+    monkeypatch.delenv("DATACONTRACT_REDSHIFT_PASSWORD", raising=False)
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_ACCESS_KEY_ID", "AKIA...")
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY", "secret-key")
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_REGION", "eu-central-1")
+
+    yaml_str = to_redshift_soda_configuration(_server())
+    config = yaml.safe_load(yaml_str)["data_source redshift"]
+
+    assert "password" not in config
+    assert config["username"] == "admin"
+    assert config["access_key_id"] == "AKIA..."
+    assert config["secret_access_key"] == "secret-key"
+    assert config["region"] == "eu-central-1"
