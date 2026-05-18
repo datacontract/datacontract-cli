@@ -1144,23 +1144,37 @@ models:
 │                             `*.odcs.yaml` in the current directory and its subdirectories.       │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --project-dir                        PATH                 Path to the dbt project root (must     │
-│                                                           contain `dbt_project.yml`). Defaults   │
-│                                                           to the current directory.              │
-│ --schema-name                        TEXT                 Which ODCS schema object to sync, by   │
-│                                                           name.                                  │
-│                                                           [default: all]                         │
-│ --model-resolution                   [name|physicalName]  How to map an ODCS schema to a dbt     │
-│                                                           model name.                            │
-│                                                           [default: name]                        │
-│ --target                             TEXT                 Forwarded to `dbt test --target`.      │
-│ --profiles-dir                       PATH                 Forwarded to `dbt test                 │
-│                                                           --profiles-dir`.                       │
-│ --skip-tests          --run-tests                         Generate tests but skip running `dbt   │
-│                                                           test`.                                 │
-│                                                           [default: run-tests]                   │
-│ --debug               --no-debug                          Enable debug logging                   │
-│ --help                                                    Show this message and exit.            │
+│ --project-dir                                  PATH                 Path to the dbt project root │
+│                                                                     (must contain                │
+│                                                                     `dbt_project.yml`). Defaults │
+│                                                                     to the current directory.    │
+│ --schema-name                                  TEXT                 Which ODCS schema object to  │
+│                                                                     sync, by name.               │
+│                                                                     [default: all]               │
+│ --model-resolution                             [name|physicalName]  How to map an ODCS schema to │
+│                                                                     a dbt model name.            │
+│                                                                     [default: name]              │
+│ --target                                       TEXT                 Forwarded to `dbt test       │
+│                                                                     --target`.                   │
+│ --profiles-dir                                 PATH                 Forwarded to `dbt test       │
+│                                                                     --profiles-dir`.             │
+│ --skip-tests          --run-tests                                   Generate tests but skip      │
+│                                                                     running `dbt test`.          │
+│                                                                     [default: run-tests]         │
+│ --publish                                      TEXT                 The url to publish the       │
+│                                                                     results after the test.      │
+│ --server                                       TEXT                 ODCS server name for         │
+│                                                                     published test results.      │
+│                                                                     Auto-selected if the         │
+│                                                                     contract contains only one   │
+│                                                                     server. Otherwise defaults   │
+│                                                                     to --target.                 │
+│ --ssl-verification    --no-ssl-verification                         SSL verification when        │
+│                                                                     publishing the data          │
+│                                                                     contract.                    │
+│                                                                     [default: ssl-verification]  │
+│ --debug               --no-debug                                    Enable debug logging         │
+│ --help                                                              Show this message and exit.  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse                          
@@ -1177,7 +1191,7 @@ On each run, the command:
 - **Emits singular SQL tests** for all ODCS `quality` that can't be expressed as native YAML tests.
 - **Runs `dbt test --select tag:datacontract_cli`** to run the generated tests; pre-existing dbt tests are untouched. Pass `--skip-tests` to regenerate without invoking dbt.
 
-Prerequisites: `dbt-core` plus an adapter (e.g. `dbt-duckdb`, `dbt-postgres`) on `PATH`, [`dbt_utils`](https://github.com/dbt-labs/dbt-utils) installed in your dbt project's `packages.yml` (used for composite primary keys).
+Prerequisites: `dbt-core` plus an adapter (e.g. `dbt-duckdb`, `dbt-postgres`) on `PATH`, [`dbt_utils`](https://github.com/dbt-labs/dbt-utils) installed in your dbt project's `packages.yml`.
 
 ```bash
 # Auto-discover a contract named *.odcs.yaml in a dbt project
@@ -1186,8 +1200,11 @@ $ datacontract dbt sync
 # Explicit contract, run against a specific dbt target
 $ datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse --target dev
 
-# Only generate tests, don't run them
+# Only generate dbt tests, don't run them
 $ datacontract dbt sync orders.odcs.yaml --skip-tests
+
+# Run and publish results to an Entropy Data instance
+$ datacontract dbt sync orders.odcs.yaml --publish https://api.entropy-data.com/api/test-results
 ```
 
 ### ci
@@ -2106,9 +2123,9 @@ Create a data contract based on the actual data. This is the fastest way to get 
 
 4. Set up a CI pipeline that executes daily for continuous quality checks. Use the [`ci`](#ci) command for
    CI-optimized output (GitHub Actions annotations and step summary, Azure DevOps annotations).
-   You can also report the test results to tools like [Data Mesh Manager](https://datamesh-manager.com).
+   You can also report the test results to tools like [Entropy Data](https://entropy-data.com).
    ```bash
-   $ datacontract ci --publish https://api.datamesh-manager.com/api/test-results
+   $ datacontract ci --publish https://api.entropy-data.com/api/test-results
    ```
 
 ### Contract-First
