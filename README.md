@@ -976,13 +976,25 @@ models:
 ```
 
 ##### Environment Variables
+All [parameters supported by Soda](https://docs.soda.io/soda/connect-redshift.html), uppercased and prepended by `DATACONTRACT_REDSHIFT_` prefix.
+For example:
 
-| Environment Variable             | Example            | Description |
-|----------------------------------|--------------------|-------------|
-| `DATACONTRACT_REDSHIFT_USERNAME` | `admin`            | Username    |
-| `DATACONTRACT_REDSHIFT_PASSWORD` | `mysecretpassword` | Password    |
+| Soda parameter        | Environment Variable                       |
+|-----------------------|--------------------------------------------|
+| `username`            | `DATACONTRACT_REDSHIFT_USERNAME`           |
+| `password`            | `DATACONTRACT_REDSHIFT_PASSWORD`           |
+| `region`              | `DATACONTRACT_REDSHIFT_REGION`             |
+| `access_key_id`       | `DATACONTRACT_REDSHIFT_ACCESS_KEY_ID`      |
+| `secret_access_key`   | `DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY`  |
+| `role_arn`            | `DATACONTRACT_REDSHIFT_ROLE_ARN`           |
 
-Any additional `DATACONTRACT_REDSHIFT_*` environment variable is forwarded to the Soda data source configuration (key lower-cased, prefix stripped). For example, `DATACONTRACT_REDSHIFT_REGION=us-east-1` becomes `region: us-east-1`, which lets you supply IAM-based credentials (`access_key_id`, `secret_access_key`, `region`, ...) without changes here.
+Beware, that parameters:
+* `host`
+* `port`
+* `database`
+* `schema`
+
+are obtained from the `servers` section of the YAML-file.
 
 </details>
 
