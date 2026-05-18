@@ -223,6 +223,10 @@ def _to_column(
     column["data_tests"] = []
     if dbt_type is not None:
         column["data_type"] = dbt_type
+    else:
+        column["data_tests"].append(
+            {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
+        )
     if prop.description is not None:
         column["description"] = prop.description.strip().replace("\n", " ")
 
