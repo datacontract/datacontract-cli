@@ -216,21 +216,113 @@ def _normalize_severity(severity: Optional[str]) -> str:
     return "warn"
 
 
-def _attach_test_config(test: Any, severity: str) -> Any:
-    """Wrap a test entry with `config: { severity, tags }`.
+def _check_type_for_generic_test(test: Any) -> Optional[str]:
+    """Map a dbt generic test entry (string or `{name: args}` dict) to a `Check.type` value."""
+    dbt_test_name = None
+    if isinstance(test, str):
+        dbt_test_name = test
+    if isinstance(test, dict) and len(test) == 1:
+        ((name, _),) = test.items()
+        dbt_test_name = name
+
+    return {
+        "not_null": "field_required",
+        "unique": "field_unique",
+        "accepted_values": "field_enum",
+        "relationships": "field_relationships",
+        "dbt_utils.unique_combination_of_columns": "model_unique_combination",
+    }.get(dbt_test_name)
+
+
+def _attach_test_config(
+    test: Any,
+    severity: str,
+    description: Optional[str] = None,
+    check_type: Optional[str] = None,
+) -> Any:
+    """Wrap a test entry with `config: { severity, tags }` and an optional `description`.
 
     Strings (`"not_null"`) become single-key dicts so the config can ride along
     in the same form dbt accepts.
     """
-    config = {"severity": severity, "tags": [OUTPUT_TAG]}
+    tags = [OUTPUT_TAG]
+    if check_type:
+        tags.append(f"dc:{check_type}")
+    config = {"severity": severity, "tags": tags}
     if isinstance(test, str):
-        return {test: {"config": config}}
+        body: dict = {"config": config}
+        if description:
+            body["description"] = description
+        return {test: body}
     if isinstance(test, dict) and len(test) == 1:
         ((name, args),) = test.items()
         merged = dict(args) if isinstance(args, dict) else {"value": args}
         merged["config"] = config
+        if description:
+            merged["description"] = description
         return {name: merged}
     return test
+
+
+def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) -> Optional[str]:
+    """Synthesize a human-readable description for a dbt test entry.
+
+    Similar to the check names in `datacontract/engines/data_contract_checks.py`, but for dbt.
+    """
+    if isinstance(test, str):
+        if test == "not_null":
+            return f"Check that field {field_name} has no missing values"
+        if test == "unique":
+            return f"Check that field {field_name} has no duplicate values"
+        return None
+    if isinstance(test, dict) and len(test) == 1:
+        ((name, args),) = test.items()
+        if not isinstance(args, dict):
+            return None
+        if name == "accepted_values":
+            values = args.get("values")
+            if isinstance(values, list) and len(values) == 1:
+                return f"Check that field {field_name} is equal to {values[0]}"
+            return f"Check that field {field_name} only contains enum values {values}"
+        if name == "relationships":
+            return f"Check that field {field_name} references {args.get('to')}.{args.get('field')}"
+        if name == "dbt_utils.unique_combination_of_columns":
+            cols = args.get("combination_of_columns") or []
+            return f"Check that model {model_name} has a unique combination of columns {', '.join(cols)}"
+    return None
+
+
+def _describe_field_bound(prop: SchemaProperty, kind: str) -> Optional[str]:
+    """Human-readable descriptions for the singular SQL tests `_field_singular_tests` emits.
+
+    `kind` is one of `"length"`, `"pattern"`, `"range"`.
+    """
+    if kind == "length":
+        min_length = get_logical_type_option(prop, "minLength")
+        max_length = get_logical_type_option(prop, "maxLength")
+        if min_length is not None and max_length is not None:
+            return f"Check that field {prop.name} has a length between {min_length} and {max_length}"
+        if min_length is not None:
+            return f"Check that field {prop.name} has a length of at least {min_length}"
+        if max_length is not None:
+            return f"Check that field {prop.name} has a length of at most {max_length}"
+        return None
+    if kind == "pattern":
+        pattern = get_logical_type_option(prop, "pattern")
+        return f"Check that field {prop.name} matches regex pattern {pattern}"
+    if kind == "range":
+        parts = []
+        for key, label in (
+            ("minimum", "an inclusive minimum of"),
+            ("maximum", "an inclusive maximum of"),
+            ("exclusiveMinimum", "a strict minimum of"),
+            ("exclusiveMaximum", "a strict maximum of"),
+        ):
+            value = get_logical_type_option(prop, key)
+            if value is not None:
+                parts.append(f"{label} {value}")
+        return f"Check that field {prop.name} has " + " and ".join(parts) if parts else None
+    return None
 
 
 _REL_SOURCE_RE = re.compile(r'source\(\s*"[^"]*"\s*,\s*"([^"]+)"\s*\)')
@@ -331,6 +423,7 @@ def _singular_tests_for_qualities(
     run: Run,
     *,
     label_prefix: str = "",
+    field: Optional[str] = None,
 ) -> List[SingularTest]:
     """Generate singular tests for ODCS quality entries that have an associated `query` and bound."""
     out: List[SingularTest] = []
@@ -349,21 +442,50 @@ def _singular_tests_for_qualities(
         out.append(
             SingularTest(
                 filename=f"{filename}.sql",
-                sql=_build_singular_sql(quality.query, predicate, severity, contract_id, model),
+                sql=_build_singular_sql(
+                    quality.query,
+                    predicate,
+                    severity,
+                    contract_id,
+                    model,
+                    check_type="custom_sql",
+                    field=field,
+                    description=quality.description,
+                ),
                 description=quality.description,
             )
         )
     return out
 
 
-def _build_singular_sql(query: str, violation_predicate: str, severity: str, contract_id: str, model: str) -> str:
+def _format_dc_meta(model: str, field: Optional[str] = None, description: Optional[str] = None) -> str:
+    """Render the `meta={...}` arg for dbt `config()` so singular tests carry their contract model/field/description."""
+    meta: dict[str, str] = {"dc_model": model}
+    if field:
+        meta["dc_field"] = field
+    if description:
+        meta["dc_description"] = description
+    return f"meta={json.dumps(meta)}"
+
+
+def _build_singular_sql(
+    query: str,
+    violation_predicate: str,
+    severity: str,
+    contract_id: str,
+    model: str,
+    *,
+    check_type: str,
+    field: Optional[str] = None,
+    description: Optional[str] = None,
+) -> str:
     # The ODCS query is expected to yield a single-column scalar metric. We alias that
     # column to `metric_value` via the CTE column list, then return rows only when the
     # bound is violated — dbt singular-test semantics (rows returned = test failed).
     return (
         f"-- AUTO-GENERATED by `datacontract dbt sync`. Do not edit.\n"
         f"-- Source contract: {contract_id} (model: {model})\n"
-        f"{{{{ config(severity='{severity}', tags=['{OUTPUT_TAG}']) }}}}\n"
+        f"{{{{ config(severity='{severity}', tags=['{OUTPUT_TAG}', 'dc:{check_type}'], {_format_dc_meta(model, field, description)}) }}}}\n"
         f"WITH _dc_metric (metric_value) AS (\n"
         f"{query.rstrip()}\n"
         f")\n"
@@ -376,17 +498,43 @@ def _row_count_singular_test(quality: DataQuality, contract_id: str, model: str)
     predicate = _bound_violation_predicate(quality)
     if predicate is None:
         return None
-    severity = _normalize_severity(quality.severity)
-    label = _quality_label(quality, 1)
-    filename = f"{_slugify(contract_id)}__{_slugify(model)}__{_slugify(label)}.sql"
-    sql = _build_singular_sql(
-        f"SELECT COUNT(*) FROM {{{{ ref('{model}') }}}}",
-        predicate,
-        severity,
-        contract_id,
-        model,
+    description = quality.description or _describe_row_count_quality(quality, model)
+    return SingularTest(
+        filename=_slugify(f"{contract_id}__{model}__{_quality_label(quality, 1)}") + ".sql",
+        sql=_build_singular_sql(
+            f"SELECT COUNT(*) FROM {{{{ ref('{model}') }}}}",
+            predicate,
+            _normalize_severity(quality.severity),
+            contract_id,
+            model,
+            check_type="row_count",
+            description=description,
+        ),
+        description=description,
     )
-    return SingularTest(filename=filename, sql=sql, description=quality.description)
+
+
+def _describe_row_count_quality(quality: DataQuality, model: str) -> Optional[str]:
+    if quality.mustBe is not None:
+        return f"Check that model {model} has exactly {quality.mustBe} rows"
+    if quality.mustNotBe is not None:
+        return f"Check that model {model} does not have exactly {quality.mustNotBe} rows"
+    if quality.mustBeGreaterThan is not None:
+        return f"Check that model {model} has more than {quality.mustBeGreaterThan} rows"
+    if quality.mustBeGreaterOrEqualTo is not None:
+        return f"Check that model {model} has at least {quality.mustBeGreaterOrEqualTo} rows"
+    if quality.mustBeLessThan is not None:
+        return f"Check that model {model} has fewer than {quality.mustBeLessThan} rows"
+    if quality.mustBeLessOrEqualTo is not None:
+        return f"Check that model {model} has at most {quality.mustBeLessOrEqualTo} rows"
+    if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
+        return f"Check that model {model} has between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]} rows"
+    if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
+        return (
+            f"Check that model {model} has a row count outside "
+            f"{quality.mustNotBeBetween[0]} to {quality.mustNotBeBetween[1]}"
+        )
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -422,7 +570,7 @@ def _regex_violation_jinja(column: str, pattern: str) -> str:
 
 
 def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
-    """For `prop`, yield `(label_suffix, sql_predicate)` for each declared bound.
+    """For `prop`, yield `(kind, sql_predicate)` for each declared bound, where `kind` is one of `"length"` / `"pattern"` / `"range"`.
 
     `sql_predicate` is TRUE only for rows that violate the bound. Length checks
     fire when the value is non-null but its length is out of range; numeric
@@ -469,16 +617,19 @@ def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
 def _build_row_violation_sql(
     *,
     model: str,
+    field: str,
     column_null_filter: str,
     violation_predicate: str,
     severity: str,
     contract_id: str,
     label: str,
+    check_type: str,
+    description: Optional[str] = None,
 ) -> str:
     return (
         f"-- AUTO-GENERATED by `datacontract dbt sync`. Do not edit.\n"
         f"-- Source contract: {contract_id} (model: {model}, check: {label})\n"
-        f"{{{{ config(severity='{severity}', tags=['{OUTPUT_TAG}']) }}}}\n"
+        f"{{{{ config(severity='{severity}', tags=['{OUTPUT_TAG}', 'dc:{check_type}'], {_format_dc_meta(model, field, description)}) }}}}\n"
         f"SELECT *\n"
         f"FROM {{{{ ref('{model}') }}}}\n"
         f"WHERE {column_null_filter} IS NOT NULL\n"
@@ -490,18 +641,26 @@ def _field_singular_tests(prop: SchemaProperty, contract_id: str, model: str) ->
     """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
     column = _quote_identifier(prop.name)
     out: List[SingularTest] = []
-    for suffix, predicate in _field_bound_predicates(prop):
-        label = f"{prop.name}__{suffix}"
-        filename = f"{_slugify(contract_id)}__{_slugify(model)}__{_slugify(label)}.sql"
-        sql = _build_row_violation_sql(
-            model=model,
-            column_null_filter=column,
-            violation_predicate=predicate,
-            severity="warn",
-            contract_id=contract_id,
-            label=label,
+    for kind, predicate in _field_bound_predicates(prop):
+        label = f"{prop.name}__{kind}"
+        description = _describe_field_bound(prop, kind)
+        out.append(
+            SingularTest(
+                filename=_slugify(f"{contract_id}__{model}__{label}") + ".sql",
+                sql=_build_row_violation_sql(
+                    model=model,
+                    field=prop.name,
+                    column_null_filter=column,
+                    violation_predicate=predicate,
+                    severity="warn",
+                    contract_id=contract_id,
+                    label=label,
+                    check_type={"length": "field_length", "pattern": "field_regex", "range": "field_range"}[kind],
+                    description=description,
+                ),
+                description=description,
+            )
         )
-        out.append(SingularTest(filename=filename, sql=sql, description=None))
     return out
 
 
@@ -518,10 +677,13 @@ def _model_data_tests(
     singular_tests: List[SingularTest] = []
     pk_cols = [p.name for p in (schema_obj.properties or []) if p.primaryKey]
     if len(pk_cols) > 1:
+        pk_test = {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": pk_cols}}
         yaml_tests.append(
             _attach_test_config(
-                {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": pk_cols}},
+                pk_test,
                 severity="warn",
+                description=_describe_dbt_test(pk_test, None, model),
+                check_type="model_unique_combination",
             )
         )
     for q in schema_obj.quality or []:
@@ -538,7 +700,9 @@ def _model_data_tests(
     return yaml_tests, singular_tests
 
 
-def _column_dict(prop: SchemaProperty, odcs: OpenDataContractStandard, single_pk_name: Optional[str], run: Run) -> dict:
+def _column_dict(
+    prop: SchemaProperty, odcs: OpenDataContractStandard, single_pk_name: Optional[str], model_name: str, run: Run
+) -> dict:
     column: dict = {"name": prop.name}
     base = field_to_data_tests(
         prop,
@@ -546,21 +710,36 @@ def _column_dict(prop: SchemaProperty, odcs: OpenDataContractStandard, single_pk
         is_single_pk=(prop.name == single_pk_name),
         supports_constraints=False,
         source_name=odcs.id or "_source",
+        include_dbt_expectations_bounds=False,
     )
     base = _rewrite_relationships_to_ref(base)
-    tests = [_attach_test_config(t, severity="warn") for t in base]
+    tests = [
+        _attach_test_config(
+            test,
+            severity="warn",
+            description=_describe_dbt_test(test, prop.name, model_name),
+            check_type=_check_type_for_generic_test(test),
+        )
+        for test in base
+    ]
 
-    for q in prop.quality or []:
-        if q.metric and q.metric.lower() == "invalidvalues":
+    for data_quality in prop.quality or []:
+        if data_quality.metric and data_quality.metric.lower() == "invalidvalues":
             continue
-        if q.query:
+        if data_quality.query:
             continue
-        if q.mustBe is not None:
+        if data_quality.mustBe is not None:
+            entry = {"accepted_values": {"values": [data_quality.mustBe]}}
             tests.append(
-                _attach_test_config({"accepted_values": {"values": [q.mustBe]}}, _normalize_severity(q.severity))
+                _attach_test_config(
+                    entry,
+                    _normalize_severity(data_quality.severity),
+                    description=data_quality.description or _describe_dbt_test(entry, prop.name, model_name),
+                    check_type="field_enum",
+                )
             )
             continue
-        run.log_warn(f"Skipping unsupported quality on `{prop.name}`: metric={q.metric!r}")
+        run.log_warn(f"Skipping unsupported quality on `{prop.name}`: metric={data_quality.metric!r}")
 
     if tests:
         column["data_tests"] = tests
@@ -588,7 +767,7 @@ def generate_dbt_tests_for_schema(
 
     columns: list = []
     for prop in schema_obj.properties or []:
-        columns.append(_column_dict(prop, odcs, single_pk_name, run))
+        columns.append(_column_dict(prop, odcs, single_pk_name, model_name, run))
     if columns:
         model_dict["columns"] = columns
 
@@ -599,7 +778,14 @@ def generate_dbt_tests_for_schema(
     # Existing `quality.query` singular tests (one CTE per scalar metric)
     for prop in schema_obj.properties or []:
         singulars.extend(
-            _singular_tests_for_qualities(prop.quality, contract_id, model_name, run, label_prefix=f"{prop.name}__")
+            _singular_tests_for_qualities(
+                prop.quality,
+                contract_id,
+                model_name,
+                run,
+                label_prefix=f"{prop.name}__",
+                field=prop.name,
+            )
         )
     singulars.extend(_singular_tests_for_qualities(schema_obj.quality, contract_id, model_name, run))
     _disambiguate_singular_filenames(singulars)
@@ -813,6 +999,23 @@ def _get_test_metadata(test_node: dict) -> Tuple[Optional[str], Optional[str], O
             if isinstance(dep, str) and dep.startswith("model."):
                 model = dep.split(".")[-1]
                 break
+
+    # Singular SQL tests have no `column_name` / `attached_node` in the manifest,
+    # therefore we stored them to `config(meta={...})`.
+    meta = (test_node.get("config") or {}).get("meta") or {}
+    if not column:
+        dc_field = meta.get("dc_field")
+        if isinstance(dc_field, str):
+            column = dc_field
+    if not model:
+        dc_model = meta.get("dc_model")
+        if isinstance(dc_model, str):
+            model = dc_model
+    if not description:
+        dc_description = meta.get("dc_description")
+        if isinstance(dc_description, str):
+            description = dc_description
+
     return model, column, description
 
 
@@ -853,6 +1056,10 @@ def parse_run_results(project_dir: Path, odcs: OpenDataContractStandard) -> Run:
         message = r.get("message")
         node = nodes.get(unique_id) or {}
         model, column, description = _get_test_metadata(node)
+        check_type = next(
+            (t.removeprefix("dc:") for t in (node.get("tags") or []) if isinstance(t, str) and t.startswith("dc:")),
+            "dbt_test",
+        )
         fallback_name = node.get("name")
         if not fallback_name:
             parts = unique_id.split(".")
@@ -864,7 +1071,7 @@ def parse_run_results(project_dir: Path, odcs: OpenDataContractStandard) -> Run:
             reason_parts.append(message)
         run.checks.append(
             Check(
-                type="dbt_test",
+                type=check_type,
                 name=description or fallback_name,
                 model=model,
                 field=column,
@@ -988,15 +1195,21 @@ def run_tests(
         target=target,
         profiles_dir=profiles_dir,
     )
-    if completed.stdout:
-        logger.info(completed.stdout)
-    if completed.stderr:
-        logger.info(completed.stderr)
+
+    gen_run = generated.generation_run
+    ansi = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
+    for stream in (completed.stdout, completed.stderr):
+        if not stream:
+            continue
+        for line in ansi.sub("", stream).splitlines():
+            line = line.strip()
+            if line:
+                gen_run.log_info(line)
 
     parsed_run = parse_run_results(generated.project_dir, generated.odcs)
     # Stitch generation-time logs onto the parsed Run so warn-counts include
     # any generation-time skips.
-    parsed_run.logs = generated.generation_run.logs + parsed_run.logs
+    parsed_run.logs = gen_run.logs + parsed_run.logs
     parsed_run.timestampStart = generated.generation_run.timestampStart
     parsed_run.finish()
     return parsed_run

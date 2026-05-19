@@ -1,5 +1,6 @@
 import logging
 import typing
+from importlib import metadata
 
 from open_data_contract_standard.model import OpenDataContractStandard, Team
 
@@ -36,6 +37,7 @@ class DataContract:
         publish_test_results: bool = False,
         all_errors: bool = False,
         check_categories: set[str] | None = None,
+        fastapi_url: str = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -51,6 +53,7 @@ class DataContract:
         self._ssl_verification = ssl_verification
         self._all_errors = all_errors
         self._check_categories = check_categories
+        self._fastapi_url = fastapi_url
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -112,10 +115,22 @@ class DataContract:
         run.finish()
         return run
 
+    def _runtime_info(self) -> str:
+        try:
+            version = metadata.version("datacontract-cli")
+        except metadata.PackageNotFoundError:
+            version = "unknown"
+        if self._fastapi_url is not None:
+            execution = f"running through FastAPI at {self._fastapi_url}"
+        else:
+            execution = "running as CLI locally"
+        return f"Data Contract CLI {version} {execution}"
+
     def test(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
+            run.log_info(self._runtime_info())
             data_contract = resolve.resolve_data_contract(
                 self._data_contract_file,
                 self._data_contract_str,
