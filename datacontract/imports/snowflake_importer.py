@@ -44,7 +44,7 @@ def information_schema_table_privileges_query() -> str:
             TABLE_SCHEMA, 
             CURRENT_WAREHOUSE() as WAREHOUSE,
             ARRAY_AGG(
-                OBJECT_CONSTRUCT(
+                DISTINCT OBJECT_CONSTRUCT(
                     'role', GRANTEE,
                     'access',LOWER(PRIVILEGE_TYPE),
                     'firstLevelApprovers', GRANTOR
@@ -382,7 +382,7 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             account=account,
             host=f"{account}.snowflakecomputing.com",
             database=row["TABLE_CATALOG"],
-            schema=schema_identifier,
+            schema=schema,
             warehouse=row["WAREHOUSE"],
             port=443,
             roles=list_role_adapter.validate_json(row["ROLES"]),

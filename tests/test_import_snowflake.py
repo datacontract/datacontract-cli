@@ -30,7 +30,11 @@ def test_cli():
             "TEST_SCHEMA",
         ],
     )
-    assert result.exit_code == 1
+    assert (
+        result.exit_code == 1
+        and result.exception.msg
+        == "290404 (08001): None: 404 Not Found: post test_account.snowflakecomputing.com:443/session/authenticator-request"
+    )
 
 
 def test_cli_connection():
@@ -142,45 +146,3 @@ def test_import_snowflake_from_connector_success():
             assert len(table.properties) == 2
             assert table.properties[0].name == "COL1"
             assert table.properties[1].name == "COL2"
-
-
-# @pytest.mark.skipif(os.environ.get("DATACONTRACT_SNOWFLAKE_USERNAME") is None, reason="Requires DATACONTRACT_SNOWFLAKE_USERNAME to be set")
-# def test_cli():
-#     load_dotenv(override=True)
-#     # os.environ['DATACONTRACT_SNOWFLAKE_USERNAME'] = "xxx"
-#     # os.environ['DATACONTRACT_SNOWFLAKE_PASSWORD'] = "xxx"
-#     # os.environ['DATACONTRACT_SNOWFLAKE_ROLE'] = "xxx"
-#     # os.environ['DATACONTRACT_SNOWFLAKE_WAREHOUSE'] = "COMPUTE_WH"
-#     runner = CliRunner()
-#     result = runner.invoke(
-#         app,
-#         [
-#             "import",
-#             "snowflake",
-#             "--source",
-#             "workspace.canada-central.azure",
-#             "--schema",
-#             "PUBLIC",
-#             "--database",
-#             "DEMO_DB"
-#         ],
-#     )
-#     assert result.exit_code == 0
-
-# @pytest.mark.skipif(os.environ.get("DATACONTRACT_SNOWFLAKE_USERNAME") is None, reason="Requires DATACONTRACT_SNOWFLAKE_USERNAME to be set")
-# def test_import_source():
-#     load_dotenv(override=True)
-#     # os.environ['DATACONTRACT_SNOWFLAKE_USERNAME'] = "xxx"
-#     # os.environ['DATACONTRACT_SNOWFLAKE_PASSWORD'] = "xxx"
-#     # os.environ['DATACONTRACT_SNOWFLAKE_ROLE'] = "xxx"
-#     # os.environ['DATACONTRACT_SNOWFLAKE_WAREHOUSE'] = "COMPUTE_WH"
-#     result = DataContract.import_source("snowflake",  {
-#         "source": "workspace.canada-central.azure",
-#         "schema": "PUBLIC",
-#         "database": "DEMO_DB"
-#     })
-
-#     print("Result:\n", result.to_yaml())
-#     with open("fixtures/snowflake/import/datacontract.yaml") as file:
-#         expected = file.read()
-#     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
