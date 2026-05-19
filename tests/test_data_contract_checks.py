@@ -549,8 +549,11 @@ def test_field_checks_use_physical_name_when_set():
 
     present = next(c for c in checks if c.type == "field_is_present")
     assert present.field == "BRAND"
+    # Key is "checks for <model>" (model name may be quoted per dialect) — read
+    # it positionally rather than hardcoding the dialect-specific spelling.
     impl = yaml.safe_load(present.implementation)
-    assert impl["checks for orders"][0]["schema"]["fail"]["when required column missing"] == ["BRAND"]
+    (sodacl_checks,) = impl.values()
+    assert sodacl_checks[0]["schema"]["fail"]["when required column missing"] == ["BRAND"]
 
     type_check = next(c for c in checks if c.type == "field_type")
     assert type_check.field == "BRAND"
