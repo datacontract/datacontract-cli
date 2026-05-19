@@ -33,7 +33,7 @@ def test_cli():
     assert (
         result.exit_code == 1
         and result.exception.msg
-        == "290404 (08001): None: 404 Not Found: post test_account.snowflakecomputing.com:443/session/authenticator-request"
+        == "'251005: 251005: User is empty, but it must be provided unless authenticator is one of OAUTH, PROGRAMMATIC_ACCESS_TOKEN, PAT_WITH_EXTERNAL_SESSION, NO_AUTH, WORKLOAD_IDENTITY.'"
     )
 
 
