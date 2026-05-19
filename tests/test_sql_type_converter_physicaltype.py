@@ -102,10 +102,18 @@ def test_decimal_precision_snowflake():
 
 
 def test_decimal_precision_postgres():
-    """DECIMAL(10,2) on postgres: 'decimal' -> 'decimal', decimal accepts params -> 'decimal(10,2)'."""
+    """DECIMAL(10,2) on postgres: 'decimal' canonicalizes to 'numeric' (Postgres treats them
+    as synonyms and information_schema reports 'numeric'), params preserved -> 'numeric(10,2)'."""
     field = SchemaProperty(name="price", physicalType="DECIMAL(10,2)")
     result = convert_to_sql_type(field, "postgres")
-    assert result == "decimal(10,2)"
+    assert result == "numeric(10,2)"
+
+
+def test_logical_decimal_postgres():
+    """logicalType='decimal' on postgres canonicalizes to 'numeric' (no params)."""
+    field = SchemaProperty(name="price", logicalType="decimal")
+    result = convert_to_sql_type(field, "postgres")
+    assert result == "numeric"
 
 
 def test_nvarchar_50_postgres():
@@ -165,6 +173,21 @@ def test_decimal_10_2_mysql():
     field = SchemaProperty(name="price", physicalType="DECIMAL(10,2)")
     result = convert_to_sql_type(field, "mysql")
     assert result == "decimal(10,2)"
+
+
+def test_numeric_10_2_mysql():
+    """NUMERIC(10,2) on mysql canonicalizes to 'decimal' (MySQL treats them as synonyms
+    and information_schema reports 'decimal'), params preserved -> 'decimal(10,2)'."""
+    field = SchemaProperty(name="price", physicalType="NUMERIC(10,2)")
+    result = convert_to_sql_type(field, "mysql")
+    assert result == "decimal(10,2)"
+
+
+def test_logical_numeric_mysql():
+    """logicalType='numeric' on mysql canonicalizes to 'decimal' (no params)."""
+    field = SchemaProperty(name="price", logicalType="numeric")
+    result = convert_to_sql_type(field, "mysql")
+    assert result == "decimal"
 
 
 def test_float_24_mysql():

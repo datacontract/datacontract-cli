@@ -4,7 +4,7 @@ from pathlib import Path
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import _print_logs, app, console, debug_option, enable_debug_logging
+from datacontract.cli import _print_logs, app, console, debug_option, enable_debug_logging, validate_publish_url
 from datacontract.data_contract import DataContract
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.output.output_format import OutputFormat
@@ -73,6 +73,7 @@ def test(
     Run schema and quality tests on configured servers.
     """
     enable_debug_logging(debug)
+    validate_publish_url(publish)
 
     check_categories = None
     if checks is not None:
