@@ -526,3 +526,44 @@ def test_freshness_check_backticks_special_field_on_databricks():
     impl = yaml.safe_load(check.implementation)
     keys = list(impl["checks for events"][0].keys())
     assert keys == ["freshness(`$file_modified_time`) < 24h"]
+
+
+# --- Field-level physicalName resolution (ODCS) ---
+
+
+def test_field_checks_use_physical_name_when_set():
+    """When a property declares a physicalName, field checks must target it.
+
+    physicalName is the actual column name in the system under test. The
+    table level already prefers physicalName (to_schema_name); the field
+    level must do the same, otherwise a contract with a logical name like
+    `brand` and physicalName `BRAND` fails "required column missing" even
+    though the BRAND column exists.
+    """
+    schema_object = SchemaObject(
+        name="orders",
+        properties=[SchemaProperty(name="brand", physicalName="BRAND", logicalType="string")],
+    )
+
+    checks = to_schema_checks(schema_object=schema_object, server=Server(type="snowflake"))
+
+    present = next(c for c in checks if c.type == "field_is_present")
+    assert present.field == "BRAND"
+    impl = yaml.safe_load(present.implementation)
+    assert impl["checks for orders"][0]["schema"]["fail"]["when required column missing"] == ["BRAND"]
+
+    type_check = next(c for c in checks if c.type == "field_type")
+    assert type_check.field == "BRAND"
+
+
+def test_field_checks_fall_back_to_name_without_physical_name():
+    """Without physicalName, field checks use the logical name (unchanged)."""
+    schema_object = SchemaObject(
+        name="orders",
+        properties=[SchemaProperty(name="sku", logicalType="string")],
+    )
+
+    checks = to_schema_checks(schema_object=schema_object, server=Server(type="snowflake"))
+
+    present = next(c for c in checks if c.type == "field_is_present")
+    assert present.field == "sku"
