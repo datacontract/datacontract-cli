@@ -174,6 +174,24 @@ def _get_references(manifest: dict, node: dict) -> dict[str, str]:
     return references
 
 
+def _matches_dbt_node_filter(node: dict, dbt_nodes: list[str]) -> bool:
+    """Return True if *node* matches any entry in *dbt_nodes*.
+
+    Entries may be plain model names (``my_model``) or versioned names using
+    dbt's ``name.vN`` convention (``my_model.v1``).  A plain name matches any
+    version of that model; a versioned name matches only the specific version.
+    """
+    for filter_name in dbt_nodes:
+        if "." in filter_name:
+            base, _, version_str = filter_name.rpartition(".")
+            version_num = version_str.lstrip("v")
+            if node.get("name") == base and str(node.get("version", "")) == version_num:
+                return True
+        elif node.get("name") == filter_name:
+            return True
+    return False
+
+
 def import_dbt_manifest(
     manifest: dict,
     dbt_nodes: list[str],
@@ -193,7 +211,7 @@ def import_dbt_manifest(
         if node.get("resource_type") not in resource_types:
             continue
 
-        if dbt_nodes and node.get("name") not in dbt_nodes:
+        if dbt_nodes and not _matches_dbt_node_filter(node, dbt_nodes):
             continue
 
         model_unique_id = node["unique_id"]
