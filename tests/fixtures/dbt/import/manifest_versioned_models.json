@@ -1,0 +1,173 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "dbt_version": "1.8.0",
+    "generated_at": "2024-07-09T00:33:06.822862Z",
+    "invocation_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "env": {},
+    "project_name": "test_project",
+    "project_id": "test_project_id",
+    "user_id": null,
+    "send_anonymous_usage_stats": false,
+    "adapter_type": "duckdb"
+  },
+  "nodes": {
+    "model.test_project.mart_orders.v1": {
+      "database": "test_project",
+      "schema": "main",
+      "name": "mart_orders",
+      "resource_type": "model",
+      "package_name": "test_project",
+      "path": "mart_orders_v1.sql",
+      "original_file_path": "models/mart_orders_v1.sql",
+      "unique_id": "model.test_project.mart_orders.v1",
+      "fqn": ["test_project", "mart_orders", "v1"],
+      "alias": "mart_orders_v1",
+      "checksum": {"name": "sha256", "checksum": "aabbcc"},
+      "config": {
+        "enabled": true,
+        "materialized": "table",
+        "tags": [],
+        "contract": {"enforced": false, "alias_types": true},
+        "access": "protected"
+      },
+      "tags": [],
+      "description": "Orders mart version 1",
+      "columns": {
+        "order_id": {
+          "name": "order_id",
+          "description": "Primary key",
+          "meta": {},
+          "data_type": "integer",
+          "constraints": [{"type": "primary_key"}],
+          "quote": null,
+          "tags": []
+        },
+        "amount": {
+          "name": "amount",
+          "description": "Order amount",
+          "meta": {},
+          "data_type": "numeric",
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        }
+      },
+      "version": 1,
+      "constraints": [],
+      "meta": {},
+      "depends_on": {"macros": [], "nodes": []},
+      "refs": [],
+      "sources": []
+    },
+    "model.test_project.mart_orders.v2": {
+      "database": "test_project",
+      "schema": "main",
+      "name": "mart_orders",
+      "resource_type": "model",
+      "package_name": "test_project",
+      "path": "mart_orders_v2.sql",
+      "original_file_path": "models/mart_orders_v2.sql",
+      "unique_id": "model.test_project.mart_orders.v2",
+      "fqn": ["test_project", "mart_orders", "v2"],
+      "alias": "mart_orders_v2",
+      "checksum": {"name": "sha256", "checksum": "ddeeff"},
+      "config": {
+        "enabled": true,
+        "materialized": "table",
+        "tags": [],
+        "contract": {"enforced": false, "alias_types": true},
+        "access": "protected"
+      },
+      "tags": [],
+      "description": "Orders mart version 2",
+      "columns": {
+        "order_id": {
+          "name": "order_id",
+          "description": "Primary key",
+          "meta": {},
+          "data_type": "integer",
+          "constraints": [{"type": "primary_key"}],
+          "quote": null,
+          "tags": []
+        },
+        "amount": {
+          "name": "amount",
+          "description": "Order amount",
+          "meta": {},
+          "data_type": "numeric",
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        },
+        "currency": {
+          "name": "currency",
+          "description": "Currency code, added in v2",
+          "meta": {},
+          "data_type": "varchar",
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        }
+      },
+      "version": 2,
+      "constraints": [],
+      "meta": {},
+      "depends_on": {"macros": [], "nodes": []},
+      "refs": [],
+      "sources": []
+    },
+    "model.test_project.dim_customers": {
+      "database": "test_project",
+      "schema": "main",
+      "name": "dim_customers",
+      "resource_type": "model",
+      "package_name": "test_project",
+      "path": "dim_customers.sql",
+      "original_file_path": "models/dim_customers.sql",
+      "unique_id": "model.test_project.dim_customers",
+      "fqn": ["test_project", "dim_customers"],
+      "alias": "dim_customers",
+      "checksum": {"name": "sha256", "checksum": "112233"},
+      "config": {
+        "enabled": true,
+        "materialized": "table",
+        "tags": [],
+        "contract": {"enforced": false, "alias_types": true},
+        "access": "protected"
+      },
+      "tags": [],
+      "description": "Customer dimension",
+      "columns": {
+        "customer_id": {
+          "name": "customer_id",
+          "description": "Primary key",
+          "meta": {},
+          "data_type": "integer",
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        }
+      },
+      "version": null,
+      "constraints": [],
+      "meta": {},
+      "depends_on": {"macros": [], "nodes": []},
+      "refs": [],
+      "sources": []
+    }
+  },
+  "sources": {},
+  "exposures": {},
+  "metrics": {},
+  "groups": {},
+  "selectors": {},
+  "parent_map": {},
+  "child_map": {
+    "model.test_project.mart_orders.v1": [],
+    "model.test_project.mart_orders.v2": [],
+    "model.test_project.dim_customers": []
+  },
+  "group_map": {},
+  "docs": {}
+}
