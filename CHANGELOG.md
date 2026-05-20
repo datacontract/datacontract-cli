@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test` now logs the Data Contract CLI version and whether it ran as a local CLI or through the FastAPI server (including the request URL) as part of the test result logs
+- `datacontract test` now resolves `authoritativeDefinitions[type=semantics]` on each property and fills missing `logicalType` / `description` / `examples` / `businessName` from the concept at run time. A property that only carries a semantic ref (e.g. produced by the datacontract-editor's "Add from definition") now generates presence and type checks instead of silently skipping them. The API key is sent only to trusted hosts (`*.entropy-data.com` and the netloc of `ENTROPY_DATA_HOST` / `DATAMESH_MANAGER_HOST` / `DATACONTRACT_MANAGER_HOST`); other hosts are queried anonymously. Honors the existing `--no-ssl-verification` flag for self-signed certificates in self-hosted deployments. Concepts are cached per-process
 
 ### Fixed
 - Schema checks now resolve each property by its `physicalName` when set (falling back to `name`), matching the existing table-level resolution and the SQL/BigQuery exporters. Previously a property whose logical `name` differed from its physical column (e.g. `name: brand` with `physicalName: BRAND`) failed the presence and type checks even though the physical column existed (#1246)

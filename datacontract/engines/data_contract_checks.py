@@ -14,6 +14,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
+from datacontract.integration.semantic_enrichment import enrich_in_place
 from datacontract.model.run import Check
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,20 @@ def _get_schema_custom_property_value(schema: SchemaObject, key: str) -> Optiona
     return None
 
 
-def create_checks(data_contract: OpenDataContractStandard, server: Server, schema_name: str = "all") -> List[Check]:
+def create_checks(
+    data_contract: OpenDataContractStandard,
+    server: Server,
+    schema_name: str = "all",
+    *,
+    ssl_verification: bool = True,
+) -> List[Check]:
+    # Fill `logicalType` / `description` / `examples` / `businessName` on
+    # properties that carry only an `authoritativeDefinitions[type=semantics]`
+    # reference, by resolving the concept once per URL. Mutates only the
+    # in-memory contract; failures are silent. `ssl_verification=False`
+    # passes through to the resolver (self-signed certs in self-hosted
+    # deployments).
+    enrich_in_place(data_contract, ssl_verification=ssl_verification)
     checks: List[Check] = []
     if data_contract.schema_ is None:
         return checks

@@ -29,6 +29,7 @@ def execute_data_contract_test(
     duckdb_connection: "DuckDBPyConnection" = None,
     schema_name: str = "all",
     check_categories: set[str] | None = None,
+    ssl_verification: bool = True,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -62,7 +63,7 @@ def execute_data_contract_test(
     if server.type == "api":
         server = process_api_response(run, server)
 
-    checks = create_checks(data_contract, server, schema_name=schema_name)
+    checks = create_checks(data_contract, server, schema_name=schema_name, ssl_verification=ssl_verification)
     if check_categories is not None:
         checks = [c for c in checks if c.category in check_categories]
         if not checks:

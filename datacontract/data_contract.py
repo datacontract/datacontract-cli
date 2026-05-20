@@ -147,6 +147,7 @@ class DataContract:
                 self._duckdb_connection,
                 schema_name=self._schema_name,
                 check_categories=self._check_categories,
+                ssl_verification=self._ssl_verification,
             )
 
         except DataContractException as e:

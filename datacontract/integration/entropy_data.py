@@ -1,4 +1,6 @@
 import os
+import re
+from threading import Lock
 from urllib.parse import urlparse
 
 import requests
@@ -7,6 +9,21 @@ from datacontract.model.run import Run
 
 # used to retrieve the HTML location of the published data contract or test results
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
+
+# Pattern for a user-facing semantic definition URL exposed by the platform:
+#   <scheme>://<host>/<vanity>/semantics/<namespace>/<externalId>
+# These URLs appear in ODCS as `authoritativeDefinitions[type=semantics]`.
+_SEMANTIC_URL_RE = re.compile(
+    r"^(?P<scheme>https?)://(?P<host>[^/]+)/"
+    r"(?P<vanity>[^/]+)/semantics/"
+    r"(?P<namespace>[^/]+)/(?P<external_id>[^/?#]+)(?:[?#].*)?$"
+)
+
+# Per-process cache for resolved concepts. Keyed by the original URL so
+# callers don't need to know whether resolution was successful.
+_SEMANTIC_CACHE: dict[str, dict | None] = {}
+_SEMANTIC_CACHE_LOCK = Lock()
+_SEMANTIC_RESOLVE_TIMEOUT = 10  # seconds
 
 
 def publish_test_results_to_entropy_data(run: Run, publish_url: str, ssl_verification: bool) -> bool:
@@ -127,3 +144,112 @@ def _extract_hostname(url: str) -> str:
     """
     parsed = urlparse(url)
     return parsed.netloc.split(":")[0] if parsed.netloc else url
+
+
+def _looks_like_entropy_data_host(host: str) -> bool:
+    """True if `host` is a known/configured entropy-data host.
+
+    Used to decide whether to attach the API key when resolving a URL
+    named by a contract author. We never leak the key to arbitrary hosts.
+    Matches the configured ENTROPY_DATA_HOST (or its aliases) and any
+    `*.entropy-data.com` / `entropy-data.com` host.
+    """
+    if not host:
+        return False
+    host = host.lower().split(":")[0]
+    if host == "entropy-data.com" or host.endswith(".entropy-data.com"):
+        return True
+    configured = (
+        os.getenv("ENTROPY_DATA_HOST") or os.getenv("DATAMESH_MANAGER_HOST") or os.getenv("DATACONTRACT_MANAGER_HOST")
+    )
+    if configured:
+        netloc = urlparse(configured).netloc.lower().split(":")[0]
+        if netloc and host == netloc:
+            return True
+    return False
+
+
+def _semantic_url_to_api(url: str) -> str | None:
+    """Translate a user-facing semantic URL into the API endpoint.
+
+    Input:  <scheme>://<host>/<vanity>/semantics/<namespace>/<externalId>
+    Output: <scheme>://<host>/api/semantics/experimental
+                /namespaces/<namespace>/concepts/<externalId>
+
+    The vanity URL is not part of the API path — tenancy is resolved by
+    the API key. Returns None if the URL doesn't match the expected shape.
+    """
+    m = _SEMANTIC_URL_RE.match(url or "")
+    if not m:
+        return None
+    return (
+        f"{m.group('scheme')}://{m.group('host')}/api/semantics/experimental"
+        f"/namespaces/{m.group('namespace')}/concepts/{m.group('external_id')}"
+    )
+
+
+def resolve_semantic_definition(url: str, *, ssl_verification: bool = True) -> dict | None:
+    """Resolve a semantic-definition URL to its concept document.
+
+    `authoritativeDefinitions[type=semantics]` URLs in ODCS point at a
+    concept maintained by the platform. Readers that need fields the
+    contract doesn't inline (`logicalType`, `description`, ...) can call
+    this to fetch the concept JSON; callers then merge selected fields
+    into their in-memory model. The contract on disk is never mutated.
+
+    Returns the concept dict on success, None on any failure (unknown URL
+    shape, untrusted host that returned non-200, network error, malformed
+    response). Results — including resolved None — are cached per-process
+    by the original URL, so calling this once per property is cheap.
+
+    The API key is only attached when the URL's host matches a known
+    entropy-data host (or one configured via ENTROPY_DATA_HOST and its
+    aliases). For other hosts the request goes anonymously, so a contract
+    that names a third-party URL never receives the user's key.
+    """
+    if not url:
+        return None
+    with _SEMANTIC_CACHE_LOCK:
+        if url in _SEMANTIC_CACHE:
+            return _SEMANTIC_CACHE[url]
+    api_url = _semantic_url_to_api(url)
+    if api_url is None:
+        with _SEMANTIC_CACHE_LOCK:
+            _SEMANTIC_CACHE[url] = None
+        return None
+
+    headers = {"Accept": "application/json"}
+    host = urlparse(api_url).netloc.split(":")[0]
+    if _looks_like_entropy_data_host(host):
+        try:
+            headers["x-api-key"] = _get_api_key()
+        except Exception:
+            # No API key configured — attempt anonymously; if the endpoint
+            # needs auth it will 401 and we return None below.
+            pass
+
+    try:
+        response = requests.get(api_url, headers=headers, verify=ssl_verification, timeout=_SEMANTIC_RESOLVE_TIMEOUT)
+    except requests.RequestException:
+        with _SEMANTIC_CACHE_LOCK:
+            _SEMANTIC_CACHE[url] = None
+        return None
+
+    if response.status_code != 200:
+        with _SEMANTIC_CACHE_LOCK:
+            _SEMANTIC_CACHE[url] = None
+        return None
+
+    try:
+        concept = response.json()
+    except ValueError:
+        concept = None
+    with _SEMANTIC_CACHE_LOCK:
+        _SEMANTIC_CACHE[url] = concept
+    return concept
+
+
+def clear_semantic_cache() -> None:
+    """Drop the per-process semantic-definition cache. Used by tests."""
+    with _SEMANTIC_CACHE_LOCK:
+        _SEMANTIC_CACHE.clear()
