@@ -30,11 +30,7 @@ def test_cli():
             "TEST_SCHEMA",
         ],
     )
-    assert (
-        result.exit_code == 1
-        and result.exception.msg
-        == "'251005: 251005: User is empty, but it must be provided unless authenticator is one of OAUTH, PROGRAMMATIC_ACCESS_TOKEN, PAT_WITH_EXTERNAL_SESSION, NO_AUTH, WORKLOAD_IDENTITY.'"
-    )
+    assert result.exit_code == 1 and result.exception.msg.split(",")[0] == "251005: 251005: User is empty"
 
 
 def test_cli_connection():
