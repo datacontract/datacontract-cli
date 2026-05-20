@@ -3,7 +3,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.imports.dbt_importer import read_dbt_manifest
+from datacontract.imports.dbt_importer import _matches_dbt_node_filter, read_dbt_manifest
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -154,3 +154,51 @@ def test_cli_versioned_filter_v1():
     assert result.exit_code == 0
     parsed = yaml.safe_load(result.output)
     assert parsed.get("schema"), "Expected non-empty schema in CLI output for mart_orders.v1"
+
+
+# --- _matches_dbt_node_filter unit tests ---
+
+
+def test_matches_plain_name():
+    node = {"name": "orders", "version": None}
+    assert _matches_dbt_node_filter(node, ["orders"]) is True
+
+
+def test_matches_versioned_v_prefix():
+    node = {"name": "orders", "version": 1}
+    assert _matches_dbt_node_filter(node, ["orders.v1"]) is True
+
+
+def test_matches_versioned_no_v_prefix():
+    node = {"name": "orders", "version": 2}
+    assert _matches_dbt_node_filter(node, ["orders.2"]) is True
+
+
+def test_does_not_match_wrong_version():
+    node = {"name": "orders", "version": 1}
+    assert _matches_dbt_node_filter(node, ["orders.v2"]) is False
+
+
+def test_plain_name_matches_all_versions():
+    node_v1 = {"name": "orders", "version": 1}
+    node_v2 = {"name": "orders", "version": 2}
+    assert _matches_dbt_node_filter(node_v1, ["orders"]) is True
+    assert _matches_dbt_node_filter(node_v2, ["orders"]) is True
+
+
+def test_dotted_plain_name_not_misread_as_versioned():
+    """A name like 'schema.orders' with no version suffix must match as a plain name."""
+    node = {"name": "schema.orders", "version": None}
+    assert _matches_dbt_node_filter(node, ["schema.orders"]) is True
+
+
+def test_dotted_plain_name_does_not_match_wrong_node():
+    node = {"name": "schema.other", "version": None}
+    assert _matches_dbt_node_filter(node, ["schema.orders"]) is False
+
+
+def test_empty_filter_list():
+    node = {"name": "orders", "version": 1}
+    # Empty list means no filter — the caller should not invoke the helper,
+    # but it should be safe to call and return False.
+    assert _matches_dbt_node_filter(node, []) is False
