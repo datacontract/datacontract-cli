@@ -556,7 +556,7 @@ def check_property_regex(
     )
 
 
-def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()):   
+def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()):
     check_type = "row_count"
     if "%" in threshold:
         logger.warning("Row count threshold cannot be specified as a percentage.")
@@ -929,10 +929,12 @@ def prepare_query(
 
 def to_sodacl_threshold(quality: DataQuality) -> str | None:
     if quality.unit is not None and quality.unit not in ("rows", "percent"):
-        logger.warning(f"Unsupported quality.unit ={quality.unit} in quality check, must be 'rows' or 'percent' or None")
+        logger.warning(
+            f"Unsupported quality.unit ={quality.unit} in quality check, must be 'rows' or 'percent' or None"
+        )
         return None
     threshold_suffix = "%" if quality.unit == "percent" else ""
-    
+
     if quality.mustBe is not None:
         return f"= {quality.mustBe}{threshold_suffix}"
     if quality.mustNotBe is not None:
