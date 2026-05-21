@@ -191,27 +191,6 @@ class TestCheckAzureBlobFile:
         checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "size"]
         assert checks and checks[0].result == ResultEnum.passed
 
-    # ── Property: lastModified (with "now" sentinel) ────────────────────────
-
-    def test_future_last_modified_fails(self):
-        blobs = [_make_blob("raw/orders/future.json", last_modified=datetime.now(timezone.utc) + timedelta(days=1))]
-        run = self._run_with_blobs(blobs)
-        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "lastModified"]
-        assert checks and checks[0].result == ResultEnum.failed
-
-    def test_past_last_modified_passes(self):
-        blobs = [_make_blob("raw/orders/old.json", last_modified=datetime.now(timezone.utc) - timedelta(days=1))]
-        run = self._run_with_blobs(blobs)
-        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "lastModified"]
-        assert checks and checks[0].result == ResultEnum.passed
-
-    def test_naive_datetime_treated_as_utc_and_passes(self):
-        """A naive datetime in the past is interpreted as UTC and should pass."""
-        blobs = [_make_blob("raw/orders/naive.json", last_modified=datetime.now() - timedelta(hours=2))]
-        run = self._run_with_blobs(blobs)
-        checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "lastModified"]
-        assert checks and checks[0].result == ResultEnum.passed
-
     # ── Property: contentType (MIME normalisation) ──────────────────────────
 
     def test_wrong_content_type_fails(self):

@@ -143,6 +143,11 @@ api = [
   "uvicorn>=0.44.0,<0.47.0",
 ]
 
+azure = [
+  "azure-identity==1.25.3",
+  "azure-storage-blob==12.29.0"
+]
+
 protobuf = [
   # `protoc` (the compiler) must be installed separately on the system; see README.
   # Wide range: only `descriptor_pb2.FileDescriptorSet` is used, stable since 3.x.
@@ -150,7 +155,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[azure,kafka,bigquery,csv,excel,snowflake,postgres,mysql,databricks,sqlserver,s3,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[azure,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,databricks,sqlserver,s3,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version

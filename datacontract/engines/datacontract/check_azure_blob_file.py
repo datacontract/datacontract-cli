@@ -1,65 +1,3 @@
-"""Azure Blob Storage / ADLS Gen2 metadata checks for schemas with physicalType='file'.
-
-Each ODCS schema object with ``physicalType='file'`` represents a **unique folder/prefix**
-in Azure Blob Storage or ADLS Gen2. Its ``properties`` list maps directly to
-``BlobProperties`` attributes from the Azure SDK: for every declared property the engine
-extracts the corresponding attribute from each blob and validates it against the quality
-constraints declared on that property.
-
-BlobProperties binding (ODCS property name → BlobProperties attribute)::
-
-  ==================  =====================================================
-  Property name       BlobProperties attribute
-  ==================  =====================================================
-  name                blob.name
-  size                blob.size
-  lastModified        blob.last_modified          (UTC datetime)
-  creationTime        blob.creation_time          (UTC datetime)
-  lastAccessedOn      blob.last_accessed_on       (UTC datetime)
-  contentType         blob.content_settings.content_type
-  contentEncoding     blob.content_settings.content_encoding
-  contentLanguage     blob.content_settings.content_language
-  contentDisposition  blob.content_settings.content_disposition
-  cacheControl        blob.content_settings.cache_control
-  contentMd5          blob.content_settings.content_md5
-  etag                blob.etag
-  blobType            blob.blob_type.value        (e.g. "BlockBlob")
-  blobTier            blob.blob_tier.value        (e.g. "Hot")
-  archiveStatus       blob.archive_status
-  serverEncrypted     blob.server_encrypted
-  deleted             blob.deleted
-  snapshotId          blob.snapshot
-  versionId           blob.version_id
-  tagCount            blob.tag_count
-  ==================  =====================================================
-
-Schema-level quality checks (``schema.quality``):
-  Metrics ``rowCount``, ``itemCount``, ``fileCount`` are evaluated as *file-count*
-  thresholds against the total number of blobs found under the prefix.
-
-Datetime sentinel:
-  Quality constraints on datetime properties accept the special string ``"now"`` as a
-  comparand (``mustBeLessThan``, ``mustBeGreaterThan``, etc.) — it is resolved to the
-  current UTC datetime at evaluation time.
-
-ContentType normalisation:
-  MIME parameters are stripped before comparison
-  (``"application/json; charset=utf-8"`` matches ``"application/json"``).
-
-Supported ``location`` URL formats (on the server block):
-  - ``https://<account>.blob.core.windows.net/<container>/<prefix>``
-  - ``abfss://<container>@<account>.dfs.core.windows.net/<prefix>``
-  - ``abfs://<container>@<account>.dfs.core.windows.net/<prefix>``
-  - ``wasbs://<container>@<account>.blob.core.windows.net/<prefix>``
-
-Authentication (environment variables, evaluated in priority order):
-  1. ``DATACONTRACT_AZURE_CONNECTION_STRING``
-  2. ``DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY``
-  3. Service principal: ``DATACONTRACT_AZURE_TENANT_ID`` + ``DATACONTRACT_AZURE_CLIENT_ID``
-     + ``DATACONTRACT_AZURE_CLIENT_SECRET``
-  4. ``DefaultAzureCredential`` (managed identity, Azure CLI, workload identity, …)
-"""
-
 from __future__ import annotations
 
 import logging
@@ -78,6 +16,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 
 if TYPE_CHECKING:
@@ -114,7 +53,7 @@ _BLOB_EXTRACTORS: Dict[str, Callable[["BlobProperties"], Any]] = {
 }
 
 # Quality metrics on SchemaObject interpreted as file-count thresholds
-_FILE_COUNT_METRICS = {"rowCount", "itemCount", "fileCount"}
+_FILE_COUNT_METRICS = {"rowCount"}
 
 # Properties whose values are datetimes — auto-checked "not in future" when declared
 _DATETIME_PROPS = {"lastModified", "creationTime", "lastAccessedOn"}
@@ -184,7 +123,9 @@ def check_azure_blob_file(
             result=ResultEnum.failed,
             reason=f"Could not extract container name from location '{location}'. "
             "Supported formats: https://<account>.blob.core.windows.net/<container>/<prefix>, "
-            "abfss://<container>@<account>.dfs.core.windows.net/<prefix>.",
+            "abfss://<container>@<account>.dfs.core.windows.net/<prefix>, "
+            "azure://<container>@<account>.blob.core.windows.net/<prefix>, "
+            "wasbs://<container>@<account>.blob.core.windows.net/<prefix>.",
         )
         return
 
@@ -261,10 +202,8 @@ def _check_property(
     extractor = _BLOB_EXTRACTORS.get(prop_name)
 
     if extractor is None:
-        logger.debug(
-            "[%s] No BlobProperties extractor for property '%s' — skipped",
-            schema_name,
-            prop_name,
+        run.log_warn(
+            f"[{schema_name}] No BlobProperties extractor for property '{prop_name}' — skipped"
         )
         return
 
@@ -276,7 +215,7 @@ def _check_property(
                 run,
                 check_type="azure_file_property_required",
                 category="schema",
-                name=f"[{schema_name}] Azure Blob File — {prop_name} is required",
+                name=f"Check schema[{schema_name}].properties[{prop_name}] is required",
                 model=schema_name,
                 field=prop_name,
                 result=ResultEnum.failed,
@@ -288,43 +227,13 @@ def _check_property(
                 run,
                 check_type="azure_file_property_required",
                 category="schema",
-                name=f"[{schema_name}] Azure Blob File — {prop_name} is required",
+                name=f"Check schema[{schema_name}].properties[{prop_name}] is required",
                 model=schema_name,
                 field=prop_name,
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) have a value for '{prop_name}'.",
             )
 
-    # ── auto "not in future" for datetime BlobProperties attributes ───────────
-    if prop_name in _DATETIME_PROPS:
-        now = datetime.now(timezone.utc)
-        future_blobs = [(b.name, str(extractor(b))) for b in blobs if extractor(b) is not None and extractor(b) > now]
-        if future_blobs:
-            details = "; ".join(f"{name} ({ts})" for name, ts in future_blobs[:5])
-            if len(future_blobs) > 5:
-                details += f" … and {len(future_blobs) - 5} more"
-            _append_check(
-                run,
-                check_type="azure_file_property_quality",
-                category="quality",
-                name=f"[{schema_name}] Azure Blob File — {prop_name} not in future",
-                model=schema_name,
-                field=prop_name,
-                result=ResultEnum.failed,
-                reason=f"{len(future_blobs)} blob(s) have a {prop_name} date in the future.",
-                details=details,
-            )
-        else:
-            _append_check(
-                run,
-                check_type="azure_file_property_quality",
-                category="quality",
-                name=f"[{schema_name}] Azure Blob File — {prop_name} not in future",
-                model=schema_name,
-                field=prop_name,
-                result=ResultEnum.passed,
-                reason=f"All {len(blobs)} blob(s) have {prop_name} in the past.",
-            )
 
     # ── quality constraints ────────────────────────────────────────────────────
     if not prop.quality:
@@ -343,7 +252,7 @@ def _check_property(
                 violations.append((blob.name, reason))
 
         constraint_desc = _describe_quality_constraint(quality)
-        check_name = f"[{schema_name}] Azure Blob File — {prop_name} {constraint_desc}"
+        check_name = f"Check schema[{schema_name}].properties[{prop_name}] has {constraint_desc}"
 
         if violations:
             details = "; ".join(f"{name}: {r}" for name, r in violations[:5])
@@ -384,9 +293,6 @@ def _evaluate_quality_constraint(quality: DataQuality, value: Any, prop_name: st
     Returns ``(passed, human-readable reason)``.
     """
 
-    def _resolve(v: Any) -> Any:
-        return v
-
     def _normalize(v: Any) -> Any:
         """Strip MIME parameters from content-type strings."""
         if prop_name in _MIMETYPE_PROPS and isinstance(v, str):
@@ -396,50 +302,50 @@ def _evaluate_quality_constraint(quality: DataQuality, value: Any, prop_name: st
     norm_value = _normalize(value)
 
     if quality.mustBe is not None:
-        expected = _normalize(_resolve(quality.mustBe))
+        expected = _normalize(quality.mustBe)
         return norm_value == expected, f"value is {value!r}; expected {quality.mustBe!r}"
 
     if quality.mustNotBe is not None:
-        expected = _normalize(_resolve(quality.mustNotBe))
+        expected = _normalize(quality.mustNotBe)
         return norm_value != expected, f"value is {value!r}; must not be {quality.mustNotBe!r}"
 
     if quality.mustBeGreaterThan is not None:
-        threshold = _resolve(quality.mustBeGreaterThan)
+        threshold = quality.mustBeGreaterThan
         try:
             return value > threshold, f"value is {value!r}; must be > {threshold!r}"
         except TypeError:
             return False, f"Cannot compare {value!r} > {threshold!r}"
 
     if quality.mustBeGreaterOrEqualTo is not None:
-        threshold = _resolve(quality.mustBeGreaterOrEqualTo)
+        threshold = quality.mustBeGreaterOrEqualTo
         try:
             return value >= threshold, f"value is {value!r}; must be >= {threshold!r}"
         except TypeError:
             return False, f"Cannot compare {value!r} >= {threshold!r}"
 
     if quality.mustBeLessThan is not None:
-        threshold = _resolve(quality.mustBeLessThan)
+        threshold = quality.mustBeLessThan
         try:
             return value < threshold, f"value is {value!r}; must be < {threshold!r}"
         except TypeError:
             return False, f"Cannot compare {value!r} < {threshold!r}"
 
     if quality.mustBeLessOrEqualTo is not None:
-        threshold = _resolve(quality.mustBeLessOrEqualTo)
+        threshold = quality.mustBeLessOrEqualTo
         try:
             return value <= threshold, f"value is {value!r}; must be <= {threshold!r}"
         except TypeError:
             return False, f"Cannot compare {value!r} <= {threshold!r}"
 
     if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
-        lo, hi = _resolve(quality.mustBeBetween[0]), _resolve(quality.mustBeBetween[1])
+        lo, hi = quality.mustBeBetween[0], quality.mustBeBetween[1]
         try:
             return lo <= value <= hi, f"value is {value!r}; must be between {lo!r} and {hi!r}"
         except TypeError:
             return False, f"Cannot compare {lo!r} <= {value!r} <= {hi!r}"
 
     if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
-        lo, hi = _resolve(quality.mustNotBeBetween[0]), _resolve(quality.mustNotBeBetween[1])
+        lo, hi = quality.mustNotBeBetween[0], quality.mustNotBeBetween[1]
         try:
             return not (lo <= value <= hi), f"value is {value!r}; must not be between {lo!r} and {hi!r}"
         except TypeError:
@@ -486,7 +392,7 @@ def _check_location_not_empty(
             run,
             check_type=check_type,
             category="schema",
-            name=f"[{schema_name}] Azure Blob File — location not empty",
+            name=f"Check schema[{schema_name}] has a location not empty",
             model=schema_name,
             result=ResultEnum.passed,
             reason=f"Found {len(blobs)} blob(s) under prefix '{prefix}'.",
@@ -496,35 +402,7 @@ def _check_location_not_empty(
             run,
             check_type=check_type,
             category="schema",
-            name=f"[{schema_name}] Azure Blob File — location not empty",
-            model=schema_name,
-            result=ResultEnum.failed,
-            reason=f"No blobs found under prefix '{prefix}'. The location appears to be empty.",
-        )
-
-
-def _check_location_not_empty(
-    run: Run,
-    schema_name: str,
-    blobs: list,
-    prefix: str,
-) -> None:
-    if blobs:
-        _append_check(
-            run,
-            check_type="azure_file_location_not_empty",
-            category="schema",
-            name=f"[{schema_name}] Azure Blob File — location not empty",
-            model=schema_name,
-            result=ResultEnum.passed,
-            reason=f"Found {len(blobs)} blob(s) under prefix '{prefix}'.",
-        )
-    else:
-        _append_check(
-            run,
-            check_type="azure_file_location_not_empty",
-            category="schema",
-            name=f"[{schema_name}] Azure Blob File — location not empty",
+            name=f"Check schema[{schema_name}] has a location not empty",
             model=schema_name,
             result=ResultEnum.failed,
             reason=f"No blobs found under prefix '{prefix}'. The location appears to be empty.",
@@ -547,7 +425,7 @@ def _check_file_count_quality(
             run,
             check_type="azure_file_count_quality",
             category="quality",
-            name=f"[{schema_name}] Azure Blob File — {quality.metric} {constraint_desc}",
+            name=f"Check schema[{schema_name}] has {quality.metric} {constraint_desc}",
             model=schema_name,
             result=ResultEnum.passed if passed else ResultEnum.failed,
             reason=reason,
@@ -564,10 +442,14 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
     try:
         from azure.storage.blob import BlobServiceClient
     except ImportError as exc:
-        raise ImportError(
-            "The 'azure-storage-blob' package is required for Azure Blob File checks. "
-            "Install it with: pip install azure-storage-blob"
-        ) from exc
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="azure-storage extra missing",
+            reason="Install the extra datacontract-cli[azure] to use azure",
+            engine="datacontract",
+            original_exception=exc,
+        )
 
     # 1. Connection string
     conn_str = os.getenv("DATACONTRACT_AZURE_CONNECTION_STRING")
@@ -590,10 +472,14 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
         try:
             from azure.identity import ClientSecretCredential
         except ImportError as exc:
-            raise ImportError(
-                "The 'azure-identity' package is required for service-principal authentication. "
-                "Install it with: pip install azure-identity"
-            ) from exc
+            raise DataContractException(
+            type="schema",
+            result="failed",
+            name="azure-identity extra missing",
+            reason="Install the extra datacontract-cli[azure] to use azure",
+            engine="datacontract",
+            original_exception=exc,
+        )
         credential = ClientSecretCredential(
             tenant_id=tenant_id,
             client_id=client_id,
@@ -605,10 +491,14 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
     try:
         from azure.identity import DefaultAzureCredential
     except ImportError as exc:
-        raise ImportError(
-            "The 'azure-identity' package is required for DefaultAzureCredential authentication. "
-            "Install it with: pip install azure-identity"
-        ) from exc
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="azure-identity extra missing",
+            reason="Install the extra datacontract-cli[azure] to use azure",
+            engine="datacontract",
+            original_exception=exc,
+        )
     return BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
 
 
@@ -619,6 +509,7 @@ def _account_url_from_location(location: str) -> str:
     # https://<account>.blob.core.windows.net/<container>/...
     if parsed.scheme in ("https", "http") and ".blob.core.windows.net" in parsed.netloc:
         return f"https://{parsed.netloc}"
+      
 
     # abfss://<container>@<account>.dfs.core.windows.net/<path>
     if parsed.scheme in ("abfss", "abfs"):
@@ -629,7 +520,7 @@ def _account_url_from_location(location: str) -> str:
             return f"https://{account}.blob.core.windows.net"
 
     # wasbs://<container>@<account>.blob.core.windows.net/<path>
-    if parsed.scheme in ("wasbs", "wasb"):
+    if parsed.scheme in ("wasbs", "wasb", "azure"):
         m = re.match(r"[^@]+@(.+)", parsed.netloc)
         if m:
             return f"https://{m.group(1)}"
@@ -660,7 +551,7 @@ def _parse_location(location: str) -> Tuple[Optional[str], str]:
         return container or None, prefix
 
     # wasbs://<container>@<account>.blob.core.windows.net/<prefix>
-    if parsed.scheme in ("wasbs", "wasb"):
+    if parsed.scheme in ("wasbs", "wasb", "azure"):
         m = re.match(r"([^@]+)@", parsed.netloc)
         container = m.group(1) if m else None
         prefix = parsed.path.lstrip("/")
@@ -709,7 +600,7 @@ def _append_check(
     run.checks.append(
         Check(
             id=str(uuid.uuid4()),
-            key=f"{model or 'global'}__{check_type}",
+            key=f"{model or 'global'}__{field}__{check_type}",
             category=category,
             type=check_type,
             name=name,
