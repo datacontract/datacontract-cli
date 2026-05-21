@@ -77,11 +77,17 @@ def execute_data_contract_test(
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
 
     # Azure Blob / ADLS Gen2 file-metadata checks (physicalType=file schemas and server format is binary)
-    if server.type in ("azure") and server.format =="binary" and _has_file_schemas(data_contract, schema_name):
+    if server.type in ("azure") and server.format == "binary" and _has_file_schemas(data_contract, schema_name):
         check_azure_blob_file(run, data_contract, server)
     else:
         check_soda_execute(
-            run, data_contract, server, spark, duckdb_connection, schema_name=schema_name, check_categories=check_categories
+            run,
+            data_contract,
+            server,
+            spark,
+            duckdb_connection,
+            schema_name=schema_name,
+            check_categories=check_categories,
         )
 
 

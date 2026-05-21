@@ -202,9 +202,7 @@ def _check_property(
     extractor = _BLOB_EXTRACTORS.get(prop_name)
 
     if extractor is None:
-        run.log_warn(
-            f"[{schema_name}] No BlobProperties extractor for property '{prop_name}' — skipped"
-        )
+        run.log_warn(f"[{schema_name}] No BlobProperties extractor for property '{prop_name}' — skipped")
         return
 
     # ── required check ────────────────────────────────────────────────────────
@@ -233,7 +231,6 @@ def _check_property(
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) have a value for '{prop_name}'.",
             )
-
 
     # ── quality constraints ────────────────────────────────────────────────────
     if not prop.quality:
@@ -473,13 +470,13 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
             from azure.identity import ClientSecretCredential
         except ImportError as exc:
             raise DataContractException(
-            type="schema",
-            result="failed",
-            name="azure-identity extra missing",
-            reason="Install the extra datacontract-cli[azure] to use azure",
-            engine="datacontract",
-            original_exception=exc,
-        )
+                type="schema",
+                result="failed",
+                name="azure-identity extra missing",
+                reason="Install the extra datacontract-cli[azure] to use azure",
+                engine="datacontract",
+                original_exception=exc,
+            )
         credential = ClientSecretCredential(
             tenant_id=tenant_id,
             client_id=client_id,
@@ -509,7 +506,6 @@ def _account_url_from_location(location: str) -> str:
     # https://<account>.blob.core.windows.net/<container>/...
     if parsed.scheme in ("https", "http") and ".blob.core.windows.net" in parsed.netloc:
         return f"https://{parsed.netloc}"
-      
 
     # abfss://<container>@<account>.dfs.core.windows.net/<path>
     if parsed.scheme in ("abfss", "abfs"):
