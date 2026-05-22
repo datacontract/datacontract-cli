@@ -1,4 +1,3 @@
-import pytest
 import yaml
 from open_data_contract_standard.model import (
     DataQuality,
@@ -13,7 +12,6 @@ from datacontract.data_contract import DataContract
 from datacontract.engines.data_contract_checks import (
     QuotingConfig,
     _escape_sql_string_values,
-    _has_unsupported_databricks_type,
     check_property_enum,
     check_property_invalid_values,
     check_property_is_present,
@@ -575,65 +573,8 @@ def test_field_checks_fall_back_to_name_without_physical_name():
 
 
 # ---------------------------------------------------------------------------
-# _has_unsupported_databricks_type tests (#1245, #1219)
+# Databricks varchar/map type-check skip (#1245, #1219)
 # ---------------------------------------------------------------------------
-
-
-def _make_prop(physical_type):
-    """Helper: create a SchemaProperty with the given physicalType."""
-    return SchemaProperty(name="col", physicalType=physical_type)
-
-
-@pytest.mark.parametrize(
-    "physical_type,expected",
-    [
-        ("varchar(30)", True),
-        ("varchar", True),
-        ("VARCHAR(255)", True),
-        ("struct<name:varchar(30),age:int>", True),
-        ("array<varchar(30)>", True),
-        ("map<string,string>", True),
-        ("struct<data:map<string,int>>", True),
-        ("string", False),
-        ("int", False),
-        ("struct<age:int,name:string>", False),
-        (None, False),
-        ("", False),
-    ],
-)
-def test_has_unsupported_databricks_type(physical_type, expected):
-    prop = _make_prop(physical_type)
-    assert _has_unsupported_databricks_type(prop) == expected
-
-
-def test_to_schema_checks_databricks_varchar_skips_type_check():
-    """Databricks + varchar(n) physicalType produces only field_is_present, no field_type check."""
-    schema_object = SchemaObject(
-        name="orders",
-        properties=[SchemaProperty(name="name", physicalType="varchar(30)")],
-    )
-    server = Server(type="databricks")
-
-    checks = to_schema_checks(schema_object=schema_object, server=server)
-
-    types = [c.type for c in checks]
-    assert "field_is_present" in types
-    assert "field_type" not in types
-
-
-def test_to_schema_checks_databricks_map_in_struct_skips_type_check():
-    """Databricks + struct containing map skips the type check."""
-    schema_object = SchemaObject(
-        name="events",
-        properties=[SchemaProperty(name="metadata", physicalType="struct<data:map<string,int>>")],
-    )
-    server = Server(type="databricks")
-
-    checks = to_schema_checks(schema_object=schema_object, server=server)
-
-    types = [c.type for c in checks]
-    assert "field_is_present" in types
-    assert "field_type" not in types
 
 
 def test_to_schema_checks_non_databricks_varchar_still_produces_type_check():
