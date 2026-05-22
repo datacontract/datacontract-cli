@@ -80,7 +80,7 @@ def test_resolve_definition_caches_by_url(tmp_path):
     assert _resolve_definition(url) is first
 
 
-@patch("datacontract.lint.urls.requests.get")
+@patch("datacontract.lint.resolve.requests.get")
 def test_resolve_definition_absolute_url_used_verbatim(mock_get):
     mock_get.return_value = _http_response(200, SAMPLE_DEFINITION_YAML)
     url = "https://example.com/definitions/foo.yaml"
@@ -89,7 +89,7 @@ def test_resolve_definition_absolute_url_used_verbatim(mock_get):
     assert mock_get.call_args.args[0] == url
 
 
-@patch("datacontract.lint.urls.requests.get")
+@patch("datacontract.lint.resolve.requests.get")
 def test_resolve_definition_iri_used_verbatim(mock_get, monkeypatch):
     # An IRI is an absolute reference — used as written, not joined to a host.
     monkeypatch.setenv("ENTROPY_DATA_API_KEY", "ed_test_key")
@@ -100,7 +100,7 @@ def test_resolve_definition_iri_used_verbatim(mock_get, monkeypatch):
     assert mock_get.call_args.args[0] == iri
 
 
-@patch("datacontract.lint.urls.requests.get")
+@patch("datacontract.lint.resolve.requests.get")
 def test_resolve_definition_relative_path_joined_to_host(mock_get, monkeypatch):
     # A relative reference is resolved against ENTROPY_DATA_HOST and fetched
     # with the x-api-key header.
@@ -113,15 +113,28 @@ def test_resolve_definition_relative_path_joined_to_host(mock_get, monkeypatch):
     assert mock_get.call_args.kwargs["headers"]["x-api-key"] == "ed_test_key"
 
 
-@patch("datacontract.lint.urls.requests.get")
-def test_resolve_definition_other_source_needs_no_api_key(mock_get, monkeypatch):
-    # Non-entropy-data sources resolve anonymously -- no API key required.
-    for var in ("ENTROPY_DATA_API_KEY", "DATAMESH_MANAGER_API_KEY", "DATACONTRACT_MANAGER_API_KEY"):
-        monkeypatch.delenv(var, raising=False)
+@patch("datacontract.lint.resolve.requests.get")
+def test_resolve_definition_does_not_leak_api_key_to_third_party_host(mock_get, monkeypatch):
+    # A key is configured, but a third-party URL named in a contract must
+    # never receive it -- it is fetched anonymously.
+    monkeypatch.setenv("ENTROPY_DATA_API_KEY", "ed_test_key")
+    monkeypatch.delenv("ENTROPY_DATA_HOST", raising=False)
     mock_get.return_value = _http_response(200, SAMPLE_DEFINITION_YAML)
 
     assert _resolve_definition("https://raw.githubusercontent.com/acme/defs/main/foo.yaml")["type"] == "string"
     assert "x-api-key" not in mock_get.call_args.kwargs["headers"]
+
+
+@patch("datacontract.lint.resolve.requests.get")
+def test_resolve_definition_self_hosted_host_gets_api_key(mock_get, monkeypatch):
+    # A self-hosted instance on a custom domain (no "entropy-data.com") still
+    # gets the key, because its host matches the configured ENTROPY_DATA_HOST.
+    monkeypatch.setenv("ENTROPY_DATA_HOST", "https://datacontracts.acme.com")
+    monkeypatch.setenv("ENTROPY_DATA_API_KEY", "ed_test_key")
+    mock_get.return_value = _http_response(200, SAMPLE_DEFINITION_YAML)
+
+    assert _resolve_definition("https://datacontracts.acme.com/v/definitions/foo")["type"] == "string"
+    assert mock_get.call_args.kwargs["headers"]["x-api-key"] == "ed_test_key"
 
 
 def test_resolve_definition_entropy_data_reference_without_api_key_returns_none(monkeypatch):
@@ -132,19 +145,19 @@ def test_resolve_definition_entropy_data_reference_without_api_key_returns_none(
     assert _resolve_definition("/demo576739864845/definitions/foo/bar") is None
 
 
-@patch("datacontract.lint.urls.requests.get")
+@patch("datacontract.lint.resolve.requests.get")
 def test_resolve_definition_returns_none_on_http_error(mock_get):
     mock_get.return_value = _http_response(404, "not found")
     assert _resolve_definition("https://example.com/definitions/missing.yaml") is None
 
 
-@patch("datacontract.lint.urls.requests.get")
+@patch("datacontract.lint.resolve.requests.get")
 def test_resolve_definition_returns_none_on_network_error(mock_get):
     mock_get.side_effect = requests.ConnectionError("offline")
     assert _resolve_definition("https://example.com/definitions/foo.yaml") is None
 
 
-@patch("datacontract.lint.urls.requests.get")
+@patch("datacontract.lint.resolve.requests.get")
 def test_resolve_definition_caches_failure(mock_get):
     # A dead reference is resolved (and failed) once, not re-fetched per property.
     mock_get.return_value = _http_response(404, "not found")

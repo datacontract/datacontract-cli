@@ -127,3 +127,24 @@ def _extract_hostname(url: str) -> str:
     """
     parsed = urlparse(url)
     return parsed.netloc.split(":")[0] if parsed.netloc else url
+
+
+def entropy_data_api_key_for(url: str) -> str | None:
+    """Return the entropy-data API key to use for `url`, or None.
+
+    The key is returned only when `url` targets the configured entropy-data
+    host (`ENTROPY_DATA_HOST` and its aliases, default `api.entropy-data.com`)
+    or a `*.entropy-data.com` SaaS host -- so a contract cannot cause the key
+    to be sent to an arbitrary third-party URL. Returns None when the host is
+    not entropy-data's or when no key is configured.
+    """
+    host = (urlparse(url).hostname or "").lower()
+    if not host:
+        return None
+    configured = (urlparse(_get_host()).hostname or "").lower()
+    if not (host == "entropy-data.com" or host.endswith(".entropy-data.com") or host == configured):
+        return None
+    try:
+        return _get_api_key()
+    except Exception:
+        return None

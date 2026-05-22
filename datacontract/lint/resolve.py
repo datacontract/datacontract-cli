@@ -15,6 +15,7 @@ from open_data_contract_standard.model import (
     SchemaProperty,
 )
 
+from datacontract.lint.files import read_file
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
@@ -121,6 +122,9 @@ _DEFINITION_LOGICAL_TYPE_OPTIONS = (
 # customProperties, mirroring the dcs importer's ODCS mapping.
 _DEFINITION_CUSTOM_PROPERTIES = ("pii", "precision", "scale")
 
+# HTTP timeout (seconds) for fetching a definition document.
+_DEFINITION_RESOLVE_TIMEOUT = 10
+
 # Per-process cache of resolved definition documents, keyed by reference URL,
 # so a definition shared by many properties is fetched only once. A failed
 # resolution is cached as None so a dead reference is not retried per property.
@@ -194,12 +198,13 @@ def _resolve_definition(url: str) -> dict | None:
     outside entropy-data resolve just as well. `file://` URLs and local
     paths are read from disk.
 
-    The entropy-data `x-api-key` header is applied per host by the shared
-    resource loader; other hosts are queried anonymously.
+    The `x-api-key` header is sent only when the resolved URL targets the
+    configured entropy-data host; a third-party URL named in a contract is
+    fetched anonymously and never receives the key.
 
     Returns the definition as a dict, or None when it cannot be resolved
-    -- an unreachable URL, a missing file, a non-200 response, a missing
-    API key, or a malformed body. Resolution failure is never fatal: an
+    -- an unreachable URL, a missing file, a non-200 response, or a
+    malformed body. Resolution failure is never fatal: an
     `authoritativeDefinitions` entry is an informational ODCS link, so a
     broken one is logged and the property is left as written. Results,
     including a resolved None, are cached per process by the reference URL.
@@ -210,12 +215,14 @@ def _resolve_definition(url: str) -> dict | None:
     from datacontract.integration.entropy_data import _get_host
 
     location = urljoin(_get_host(), url)
-    if location.startswith("file://"):
-        location = location[len("file://") :]
-
     definition: dict | None
     try:
-        definition = _to_yaml(read_resource(location))
+        if location.startswith(("http://", "https://")):
+            document = _fetch_definition_over_http(location)
+        else:
+            path = location[len("file://") :] if location.startswith("file://") else location
+            document = read_file(path)
+        definition = _to_yaml(document)
     except (DataContractException, requests.RequestException) as e:
         logging.warning(f"Could not resolve definition '{url}': {e}. Leaving the property as written.")
         definition = None
@@ -226,6 +233,33 @@ def _resolve_definition(url: str) -> dict | None:
 
     _definition_cache[url] = definition
     return definition
+
+
+def _fetch_definition_over_http(url: str) -> str:
+    """GET a definition document over HTTP and return its body.
+
+    The entropy-data `x-api-key` header is attached only when `url` targets
+    the configured entropy-data host (or a `*.entropy-data.com` host) -- it
+    is never sent to a third-party URL a contract happens to name. Raises a
+    DataContractException on a non-200 response.
+    """
+    from datacontract.integration.entropy_data import entropy_data_api_key_for
+
+    headers = {"Accept": "application/yaml"}
+    api_key = entropy_data_api_key_for(url)
+    if api_key:
+        headers["x-api-key"] = api_key
+
+    response = requests.get(url, headers=headers, timeout=_DEFINITION_RESOLVE_TIMEOUT)
+    if response.status_code != 200:
+        raise DataContractException(
+            type="lint",
+            result=ResultEnum.failed,
+            name="Resolve definition reference",
+            reason=f"GET {url} returned HTTP {response.status_code}",
+            engine="datacontract",
+        )
+    return response.text
 
 
 def _apply_definition_to_property(prop: SchemaProperty, definition: dict):
