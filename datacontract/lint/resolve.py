@@ -1,12 +1,19 @@
 import importlib.resources as resources
 import logging
 from pathlib import Path
+from urllib.parse import urljoin
 
 import fastjsonschema
+import requests
 import yaml
 from fastjsonschema import JsonSchemaValueException
 from jsonschema import validators
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import (
+    CustomProperty,
+    DataQuality,
+    OpenDataContractStandard,
+    SchemaProperty,
+)
 
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
@@ -84,30 +91,191 @@ def resolve_data_contract_from_location(
     return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, all_errors)
 
 
+# `authoritativeDefinitions[].type` value that points at a reusable definition
+# document whose fields should enrich the referencing property.
+DEFINITION_AUTHORITATIVE_TYPE = "definition"
+
+# Definition field -> ODCS SchemaProperty attribute the value is copied to.
+# Constraint fields are handled separately (see _DEFINITION_LOGICAL_TYPE_OPTIONS).
+_DEFINITION_TO_PROPERTY = {
+    "type": "logicalType",
+    "title": "businessName",
+    "description": "description",
+    "classification": "classification",
+    "tags": "tags",
+}
+
+# Definition fields that map into the property's `logicalTypeOptions` dict.
+_DEFINITION_LOGICAL_TYPE_OPTIONS = (
+    "format",
+    "minLength",
+    "maxLength",
+    "pattern",
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+)
+
+# Definition fields with no native ODCS property field -- carried as
+# customProperties, mirroring the dcs importer's ODCS mapping.
+_DEFINITION_CUSTOM_PROPERTIES = ("pii", "precision", "scale")
+
+# Per-process cache of resolved definition documents, keyed by reference URL,
+# so a definition shared by many properties is fetched only once. A failed
+# resolution is cached as None so a dead reference is not retried per property.
+_definition_cache: dict[str, dict | None] = {}
+
+
+def clear_definition_cache() -> None:
+    """Drop the per-process definition cache. Used by tests."""
+    _definition_cache.clear()
+
+
 def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
-    """Inline any definition references into the schema properties."""
+    """Resolve every property's `authoritativeDefinitions[type=definition]`
+    reference and inline the referenced definition's fields.
+
+    A property may reference a reusable definition document instead of
+    inlining `logicalType` / `description` / constraints. This walks every
+    schema property -- including array items and nested properties --
+    fetches each referenced definition once, and fills in the fields the
+    property leaves unset. Inline values always win.
+
+    Only the in-memory contract is changed; the file on disk is untouched.
+    `authoritativeDefinitions` is an informational link in ODCS, so a
+    reference that cannot be resolved is skipped (and logged) -- the
+    property is left exactly as the contract wrote it, never rejected.
+    """
     if data_contract.schema_ is None:
         return
 
     for schema_obj in data_contract.schema_:
         if schema_obj.properties:
             for prop in schema_obj.properties:
-                inline_definition_into_property(prop, data_contract)
+                inline_definition_into_property(prop)
 
 
-def inline_definition_into_property(prop: SchemaProperty, data_contract: OpenDataContractStandard):
-    """Recursively inline definitions into a property and its nested properties."""
-    # Iterate over items for arrays
+def inline_definition_into_property(prop: SchemaProperty):
+    """Recursively resolve and inline a definition into a property and its
+    nested properties / array items."""
+    # Recurse into array items and nested object properties first.
     if prop.items is not None:
-        inline_definition_into_property(prop.items, data_contract)
-
-    # Iterate over nested properties
+        inline_definition_into_property(prop.items)
     if prop.properties is not None:
         for nested_prop in prop.properties:
-            inline_definition_into_property(nested_prop, data_contract)
+            inline_definition_into_property(nested_prop)
 
-    # No definition $ref support in ODCS at the moment
-    # ODCS uses a different approach - definitions would be handled differently
+    url = _definition_reference_url(prop)
+    if url is None:
+        return
+
+    definition = _resolve_definition(url)
+    if definition is not None:
+        _apply_definition_to_property(prop, definition)
+
+
+def _definition_reference_url(prop: SchemaProperty) -> str | None:
+    """Return the URL of the property's first `type: definition` authoritative
+    definition, or None when it has none."""
+    for authoritative_definition in prop.authoritativeDefinitions or []:
+        if authoritative_definition.type == DEFINITION_AUTHORITATIVE_TYPE and authoritative_definition.url:
+            return authoritative_definition.url
+    return None
+
+
+def _resolve_definition(url: str) -> dict | None:
+    """Fetch and parse the definition document referenced by `url`.
+
+    A reference is a relative path, an absolute URL, or an IRI. `urljoin`
+    resolves all three uniformly: a relative reference is joined onto the
+    configured host (`ENTROPY_DATA_HOST` and its aliases), while an
+    absolute URL or IRI is used as written -- so definitions hosted
+    outside entropy-data resolve just as well. `file://` URLs and local
+    paths are read from disk.
+
+    The entropy-data `x-api-key` header is applied per host by the shared
+    resource loader; other hosts are queried anonymously.
+
+    Returns the definition as a dict, or None when it cannot be resolved
+    -- an unreachable URL, a missing file, a non-200 response, a missing
+    API key, or a malformed body. Resolution failure is never fatal: an
+    `authoritativeDefinitions` entry is an informational ODCS link, so a
+    broken one is logged and the property is left as written. Results,
+    including a resolved None, are cached per process by the reference URL.
+    """
+    if url in _definition_cache:
+        return _definition_cache[url]
+
+    from datacontract.integration.entropy_data import _get_host
+
+    location = urljoin(_get_host(), url)
+    if location.startswith("file://"):
+        location = location[len("file://") :]
+
+    definition: dict | None
+    try:
+        definition = _to_yaml(read_resource(location))
+    except (DataContractException, requests.RequestException) as e:
+        logging.warning(f"Could not resolve definition '{url}': {e}. Leaving the property as written.")
+        definition = None
+    else:
+        if not isinstance(definition, dict):
+            logging.warning(f"Definition '{url}' is not a valid object. Leaving the property as written.")
+            definition = None
+
+    _definition_cache[url] = definition
+    return definition
+
+
+def _apply_definition_to_property(prop: SchemaProperty, definition: dict):
+    """Inline `definition`'s fields into `prop`, filling only the fields the
+    contract author did not set. Inline values always win.
+
+    Whether a field is "set" follows pydantic's `model_fields_set` -- the
+    same test the pre-ODCS resolver used -- so an explicitly written value
+    (even an empty one, e.g. `description: ""`) is preserved.
+    """
+    author_set = set(prop.model_fields_set)
+
+    for definition_field, property_attribute in _DEFINITION_TO_PROPERTY.items():
+        if definition_field in definition and property_attribute not in author_set:
+            setattr(prop, property_attribute, definition[definition_field])
+
+    # A definition carries a single `example`; an ODCS property has `examples`.
+    if "example" in definition and "examples" not in author_set:
+        prop.examples = [definition["example"]]
+
+    # Type constraints live under `logicalTypeOptions`, merged key by key so
+    # an inline option is never replaced by the definition's.
+    logical_type_options = dict(prop.logicalTypeOptions or {})
+    for definition_field in _DEFINITION_LOGICAL_TYPE_OPTIONS:
+        if definition_field in definition and definition_field not in logical_type_options:
+            logical_type_options[definition_field] = definition[definition_field]
+    if logical_type_options:
+        prop.logicalTypeOptions = logical_type_options
+
+    # `enum` has no ODCS property field; carry it as a quality rule, mirroring
+    # the dcs importer.
+    if definition.get("enum") and "quality" not in author_set:
+        prop.quality = [
+            DataQuality(
+                type="library",
+                metric="invalidValues",
+                arguments={"validValues": definition["enum"]},
+                mustBe=0,
+            )
+        ]
+
+    # `pii` / `precision` / `scale` have no ODCS property field either; carry
+    # them as customProperties, again mirroring the dcs importer.
+    custom_properties = list(prop.customProperties or [])
+    existing = {cp.property for cp in custom_properties}
+    for definition_field in _DEFINITION_CUSTOM_PROPERTIES:
+        if definition.get(definition_field) is not None and definition_field not in existing:
+            custom_properties.append(CustomProperty(property=definition_field, value=str(definition[definition_field])))
+    if custom_properties:
+        prop.customProperties = custom_properties
 
 
 def _resolve_data_contract_from_str(
