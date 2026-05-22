@@ -1,5 +1,6 @@
 import importlib.resources as resources
 import logging
+import re
 from pathlib import Path
 
 import fastjsonschema
@@ -207,8 +208,23 @@ def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_erro
         fastjsonschema.validate(schema, yaml_str, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
-        logging.warning(f"Data Contract YAML is invalid. Validation error: {e.message}")
-        raise _validation_error_to_exception(e.message, original_exception=e)
+        matches = re.findall(r"\[(\d+)\]", e.message)
+        schema_index = matches[0] if len(matches) > 0 else None
+        property_index = matches[1] if len(matches) > 1 else None
+        except_message = e.message
+        if schema_index is not None:
+            except_message = except_message.replace(
+                f"schema[{schema_index}]", f"schema.{yaml_str['schema'][int(schema_index)]['name']}"
+            )
+
+        if property_index is not None:
+            except_message = except_message.replace(
+                f"properties[{property_index}]",
+                f"properties.{yaml_str['schema'][int(schema_index)]['properties'][int(property_index)]['name']}",
+            )
+
+        logging.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
+        raise _validation_error_to_exception(except_message, original_exception=e)
     except Exception as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
         raise _validation_error_to_exception(str(e), original_exception=e)

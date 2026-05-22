@@ -54,12 +54,13 @@ def test_lint_invalid_odcs_schema():
 
     assert run.result == "failed"
 
+
 def test_lint_invalid_odcs_schema_multiple_errors():
     data_contract_file = "fixtures/lint/invalid_multiple_schema_errors.odcs.yaml"
     result = runner.invoke(app, ["lint", data_contract_file])
 
     assert result.exit_code == 1
-    assert "data.schema[no_description_schema].description must be " in result.stdout
+    assert "data.schema.no_description_schema.description must be " in result.stdout
 
 
 def test_lint_invalid_odcs_schema_all_errors_api():
