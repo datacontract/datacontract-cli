@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+
+### Fixed
+
+
+## [0.12.4] - 2026-05-21
+
+### Added
 - `datacontract test` now logs the Data Contract CLI version and whether it ran as a local CLI or through the FastAPI server (including the request URL) as part of the test result logs
 
 ### Fixed
