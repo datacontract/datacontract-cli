@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from datacontract.cli import _print_logs, app, console, debug_option, enable_debug_logging
+from datacontract.cli import _print_logs, app, console, debug_option, enable_debug_logging, validate_publish_url
 from datacontract.data_contract import DataContract
 from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
@@ -65,6 +65,7 @@ def ci(
     Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
     """
     enable_debug_logging(debug)
+    validate_publish_url(publish)
 
     if not locations:
         locations = ["datacontract.yaml"]

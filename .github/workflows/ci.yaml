@@ -133,3 +133,4 @@ jobs:
           tags: datacontract/cli:snapshot-latest
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
+          provenance: mode=max

@@ -51,11 +51,11 @@ def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
 
 
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
-_ANSI_QUOTING_DIALECTS = {"postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"}
+_ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"}
 
 _BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
-_PERMISSIVE_BARE_DIALECTS = {"postgres", "snowflake", "oracle", "sqlserver"}
+_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver"}
 
 
 def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> str:
@@ -130,7 +130,11 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
     quoting_config = config
 
     for prop in properties:
-        property_name = prop.name
+        # ODCS: physicalName is the actual column name in the system under
+        # test. to_schema_name() already prefers schema_object.physicalName at
+        # the table level — mirror that at the field level so checks target the
+        # real column when the logical `name` differs from the physical one.
+        property_name = prop.physicalName or prop.name
 
         checks.append(check_property_is_present(schema_name, property_name, quoting_config))
         if check_types and (prop.physicalType is not None or prop.logicalType is not None):
