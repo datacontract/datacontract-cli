@@ -55,6 +55,26 @@ _ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "snowflake", "azu
 
 _BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
+
+_DATABRICKS_UNSUPPORTED_TYPE_RE = re.compile(r"\bvarchar\b|\bmap\s*<", re.IGNORECASE)
+
+
+def _has_unsupported_databricks_type(prop) -> bool:
+    """Return True if physicalType contains varchar(n) or map at any nesting level,
+    or if any nested property (recursively) has an unsupported type.
+
+    soda-core-spark-df ≤3.5.6 cannot match these types correctly on PySpark 4.0+:
+    - varchar(n): reported as a distinct VarcharType by PySpark 4.0+, not in SCHEMA_CHECK_TYPES_MAPPING
+    - map: convert_to_databricks() returns None for maps nested inside structs
+    Affected issues: #1245 (varchar), #1219 (map in struct)
+    """
+    if _DATABRICKS_UNSUPPORTED_TYPE_RE.search(prop.physicalType or ""):
+        return True
+    if prop.properties:
+        return any(_has_unsupported_databricks_type(nested) for nested in prop.properties)
+    return False
+
+
 _PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver"}
 
 
@@ -138,9 +158,19 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
         checks.append(check_property_is_present(schema_name, property_name, quoting_config))
         if check_types and (prop.physicalType is not None or prop.logicalType is not None):
-            sql_type: str = convert_to_sql_type(prop, server_type)
-            if sql_type is not None:
-                checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
+            if server_type == "databricks" and _has_unsupported_databricks_type(prop):
+                logger.warning(
+                    "Skipping schema type check for column '%s': physicalType '%s' "
+                    "contains varchar(n) or map, which are not reliably matched by "
+                    "soda-core-spark-df ≤3.5.6 on PySpark 4.0+. "
+                    "See https://github.com/datacontract/datacontract-cli/issues/1245",
+                    property_name,
+                    prop.physicalType,
+                )
+            else:
+                sql_type: str = convert_to_sql_type(prop, server_type)
+                if sql_type is not None:
+                    checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
         if prop.required:
             checks.append(check_property_required(schema_name, property_name, quoting_config))
         if prop.unique:
