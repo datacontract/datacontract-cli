@@ -1148,6 +1148,7 @@
             "databricks",
             "dataframe",
             "glue",
+            "hana",
             "kafka",
             "kinesis",
             "local",

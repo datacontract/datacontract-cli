@@ -209,6 +209,8 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
         return convert_type_to_oracle(field)
     elif server_type == "clickhouse":
         return convert_type_to_clickhouse(field)
+    elif server_type == "hana":
+        return convert_type_to_hana(field)
     # Fallback: return the raw type string (preserves original behavior for unknown/None server_type)
     return _get_type(field)
 
@@ -979,3 +981,9 @@ def convert_type_to_clickhouse(field: Union[SchemaProperty, FieldLike]) -> None 
     if _get_params(field):
         return _get_type(field)
     return _warn_cannot_map_type(field, "clickhouse")
+
+
+def convert_type_to_hana(field: Union[SchemaProperty, FieldLike]) -> None | str:
+    from datacontract.engines.hana.hana_type_mapping import convert_type_to_hana as _convert_type_to_hana
+
+    return _convert_type_to_hana(field)

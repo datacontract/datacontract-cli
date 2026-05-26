@@ -139,6 +139,10 @@ athena = [
   "ibis-framework[athena]>=10.0.0,<13.0.0"
 ]
 
+hana = [
+  "hdbcli>=2.20.0,<3.0.0",
+]
+
 trino = [
   "ibis-framework[trino]>=10.0.0,<13.0.0"
 ]
