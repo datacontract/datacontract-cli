@@ -1,7 +1,7 @@
 import importlib.resources as resources
 import logging
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote, urljoin, urlparse
 
 import fastjsonschema
 import requests
@@ -86,7 +86,11 @@ def resolve_data_contract_from_location(
     return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
 
 
-DEFINITION_AUTHORITATIVE_TYPE = "definition"
+# Precedence-ordered: a property with both semantics and definition references
+# resolves through semantics (matches the editor's useInheritedDefinition).
+# "semantic" (singular) is accepted for back-compat with contracts written
+# before the entropy-data type migration.
+_RESOLVABLE_AUTHORITATIVE_TYPES = ("semantics", "semantic", "definition")
 
 # `name` and `id` are the property's own; `authoritativeDefinitions` is the link itself;
 # `properties`/`items` are the contract author's structure.
@@ -103,7 +107,8 @@ def clear_definition_cache() -> None:
 
 
 def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
-    """Resolve `authoritativeDefinitions[type=definition]` on every property.
+    """Resolve `authoritativeDefinitions[type in {semantics, definition}]` on
+    every property.
 
     In-memory only. Inline values always win. Resolution failures raise
     `DataContractException` -- a broken reference rejects the contract.
@@ -125,44 +130,41 @@ def inline_definition_into_property(prop: SchemaProperty):
         for nested_prop in prop.properties:
             inline_definition_into_property(nested_prop)
 
-    url = _definition_reference_url(prop)
-    if url is None:
+    resolved = _resolvable_reference(prop)
+    if resolved is None:
         return
 
-    definition = _resolve_definition(url)
+    type_, url = resolved
+    definition = _resolve_definition(url, type_)
     _apply_definition_to_property(prop, definition)
 
 
-def _definition_reference_url(prop: SchemaProperty) -> str | None:
-    """URL of the property's first `authoritativeDefinitions[type=definition]`, or None."""
-    for authoritative_definition in prop.authoritativeDefinitions or []:
-        if authoritative_definition.type == DEFINITION_AUTHORITATIVE_TYPE and authoritative_definition.url:
-            return authoritative_definition.url
+def _resolvable_reference(prop: SchemaProperty) -> tuple[str, str] | None:
+    """`(type, url)` of the highest-precedence resolvable authoritativeDefinition
+    on `prop`, or None. Precedence: semantics > semantic > definition."""
+    for wanted_type in _RESOLVABLE_AUTHORITATIVE_TYPES:
+        for ad in prop.authoritativeDefinitions or []:
+            if ad.type == wanted_type and ad.url:
+                return wanted_type, ad.url
     return None
 
 
-def _resolve_definition(url: str) -> SchemaProperty:
-    """Fetch and parse the definition at `url`.
+def _resolve_definition(url: str, type_: str) -> SchemaProperty:
+    """Fetch and parse the definition or semantic concept at `url`.
 
-    The configured `x-api-key` is sent only when the resolved URL's host
-    matches the configured host -- a third-party `url:` never leaks the
-    key. Cached per URL after a successful fetch; failures aren't cached.
+    `type_` controls how an absolute URL on a different host is handled:
+    a `semantics`/`semantic` URL whose host differs from the configured
+    entropy-data host is treated as an IRI and routed through
+    `/api/semantics?iri=...`; a `definition` URL is fetched directly
+    (anonymously, so the API key never leaks). The `x-api-key` is only
+    ever sent to the configured host.
+
+    Cached per URL after a successful fetch; failures aren't cached.
     """
-    from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
-
     if url in _definition_cache:
         return _definition_cache[url]
 
-    configured_host = _get_host()
-    # urljoin keeps absolute URLs as-is and joins leading-slash paths onto
-    # the host -- covers both shapes ODCS allows for `url`.
-    target_url = urljoin(configured_host, url)
-
-    headers = {"Accept": "application/vnd.entropydata.odcs+json"}
-    if _hosts_match(target_url, configured_host):
-        api_key = _get_api_key_or_none()
-        if api_key is not None:
-            headers["x-api-key"] = api_key
+    target_url, headers = _build_request(url, type_)
 
     try:
         response = requests.get(target_url, headers=headers, timeout=10)
@@ -181,6 +183,52 @@ def _resolve_definition(url: str) -> SchemaProperty:
 
     _definition_cache[url] = definition
     return definition
+
+
+def _build_request(url: str, type_: str) -> tuple[str, dict[str, str]]:
+    """Return the URL to fetch and the headers to use for a given reference.
+
+    Three cases:
+      - URL on the configured host (relative path or matching absolute URL):
+        fetched directly, x-api-key sent when configured.
+      - Off-host `definition` URL: fetched directly and anonymously -- a
+        contract may legitimately reference a third-party REST URL, and the
+        API key must never leak across hosts.
+      - Off-host `semantics`/`semantic` URL: treated as an IRI and routed
+        through `/api/semantics?iri=...` on the configured host. Requires an
+        API key (that endpoint is API-key only).
+    """
+    from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
+
+    configured_host = _get_host()
+    # urljoin keeps absolute URLs as-is and joins leading-slash paths onto
+    # the host -- covers both shapes ODCS allows for `url`.
+    direct_url = urljoin(configured_host, url)
+    headers = {"Accept": "application/vnd.entropydata.odcs+json"}
+
+    if _hosts_match(direct_url, configured_host):
+        api_key = _get_api_key_or_none()
+        if api_key is not None:
+            headers["x-api-key"] = api_key
+        return direct_url, headers
+
+    if type_ == "definition":
+        # Third-party REST URL: fetch anonymously, no IRI fallback.
+        return direct_url, headers
+
+    # Off-host semantics reference: IRI lookup against the configured host.
+    api_key = _get_api_key_or_none()
+    if api_key is None:
+        raise _definition_resolution_error(
+            url,
+            f"{configured_host.rstrip('/')}/api/semantics",
+            "the reference looks like an IRI (host does not match the configured "
+            "entropy-data host); resolving an IRI goes through /api/semantics which "
+            "requires an API key (set ENTROPY_DATA_API_KEY)",
+        )
+    headers["x-api-key"] = api_key
+    lookup_url = f"{configured_host.rstrip('/')}/api/semantics?iri={quote(url, safe='')}"
+    return lookup_url, headers
 
 
 def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProperty):

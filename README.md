@@ -333,10 +333,11 @@ Commands
 │                                                                the first one.                    │
 │ --inline-references    --no-inline-references                  Resolve external references       │
 │                                                                (currently:                       │
-│                                                                authoritativeDefinitions[type=de… │
-│                                                                in the contract and inline the    │
-│                                                                fetched content from the          │
-│                                                                configured entropy-data host.     │
+│                                                                authoritativeDefinitions[type in  │
+│                                                                {definition, semantics}]) in the  │
+│                                                                contract and inline the fetched   │
+│                                                                content from the configured       │
+│                                                                entropy-data host.                │
 │                                                                [default: inline-references]      │
 │ --debug                --no-debug                              Enable debug logging              │
 │ --help                                                         Show this message and exit.       │
@@ -362,9 +363,10 @@ Commands
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --inline-references    --no-inline-references      Resolve external references (currently:       │
-│                                                    authoritativeDefinitions[type=definition]) in │
-│                                                    the contract and inline the fetched content   │
-│                                                    from the configured entropy-data host.        │
+│                                                    authoritativeDefinitions[type in {definition, │
+│                                                    semantics}]) in the contract and inline the   │
+│                                                    fetched content from the configured           │
+│                                                    entropy-data host.                            │
 │                                                    [default: inline-references]                  │
 │ --debug                --no-debug                  Enable debug logging                          │
 │ --help                                             Show this message and exit.                   │
@@ -434,9 +436,11 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 │ --inline-references       --no-inline-references                     Resolve external references │
 │                                                                      (currently:                 │
 │                                                                      authoritativeDefinitions[t… │
-│                                                                      in the contract and inline  │
-│                                                                      the fetched content from    │
-│                                                                      the configured entropy-data │
+│                                                                      in {definition,             │
+│                                                                      semantics}]) in the         │
+│                                                                      contract and inline the     │
+│                                                                      fetched content from the    │
+│                                                                      configured entropy-data     │
 │                                                                      host.                       │
 │                                                                      [default:                   │
 │                                                                      inline-references]          │
@@ -1329,9 +1333,10 @@ $ datacontract dbt sync orders.odcs.yaml --publish https://api.entropy-data.com/
 │ --inline-references    --no-inline-references                           Resolve external         │
 │                                                                         references (currently:   │
 │                                                                         authoritativeDefinition… │
-│                                                                         in the contract and      │
-│                                                                         inline the fetched       │
-│                                                                         content from the         │
+│                                                                         in {definition,          │
+│                                                                         semantics}]) in the      │
+│                                                                         contract and inline the  │
+│                                                                         fetched content from the │
 │                                                                         configured entropy-data  │
 │                                                                         host.                    │
 │                                                                         [default:                │

@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Resolve `authoritativeDefinitions[type=definition]` on schema properties: the referenced ODCS property is fetched from the configured entropy-data host (`ENTROPY_DATA_HOST`) and inlined into the property, filling fields the contract author left unset. The configured `x-api-key` is sent only when the resolved URL's host matches `ENTROPY_DATA_HOST` so a third-party `url:` cannot receive the user's key.
-- **Breaking:** Per default, any resolution failure of `authoritativeDefinitions[type=definition]` rejects the contract on `lint`, `test`, `ci`, `export`, and `changelog`.
+- Resolve `authoritativeDefinitions[type=semantics]` (and the legacy `type=semantic`) the same way. A `url:` that points at the configured entropy-data host is fetched directly; a `url:` that's an IRI (host doesn't match) is routed through `GET /api/semantics?iri=...` on the configured host, which uses the API key's organization to resolve. Precedence: a property with both a semantics and a definition reference resolves through the semantic one.
+- **Breaking:** Per default, any resolution failure of `authoritativeDefinitions[type in {definition, semantics}]` rejects the contract on `lint`, `test`, `ci`, `export`, and `changelog`.
 - `--no-inline-references` flag to skip the HTTP fetch above and leave each property as written. Useful for offline runs (e.g. CI without `ENTROPY_DATA_API_KEY`) and pure round-trip exports (e.g. `export excel`).
 
 ### Fixed

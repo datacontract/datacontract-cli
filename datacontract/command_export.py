@@ -42,7 +42,7 @@ dialect_option = Annotated[
 inline_references_option = Annotated[
     bool,
     typer.Option(
-        help="Resolve external references (currently: authoritativeDefinitions\\[type=definition]) in the "
+        help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
         "contract and inline the fetched content from the configured entropy-data host."
     ),
 ]
