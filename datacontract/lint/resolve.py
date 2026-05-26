@@ -88,9 +88,9 @@ def resolve_data_contract_from_location(
 
 DEFINITION_AUTHORITATIVE_TYPE = "definition"
 
-# `name` is the property's own; `authoritativeDefinitions` is the link itself;
+# `name` and `id` are the property's own; `authoritativeDefinitions` is the link itself;
 # `properties`/`items` are the contract author's structure.
-_NON_MERGEABLE_FIELDS = frozenset({"name", "authoritativeDefinitions", "properties", "items"})
+_NON_MERGEABLE_FIELDS = frozenset({"id", "name", "authoritativeDefinitions", "properties", "items"})
 
 # Per-process success-only cache: transient failures aren't cached so they
 # can retry on the next run.

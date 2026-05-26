@@ -318,18 +318,28 @@ Commands
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                    TEXT          The location (url or path) of the ODCS JSON       │
-│                                                Schema                                            │
-│ --output                         PATH          Specify the file path where the test results      │
-│                                                should be written to (e.g.,                       │
-│                                                './test-results/TEST-datacontract.xml'). If no    │
-│                                                path is provided, the output will be printed to   │
-│                                                stdout.                                           │
-│ --output-format                  [json|junit]  The target format for the test results.           │
-│ --all-errors                                   Report all JSON Schema validation errors instead  │
-│                                                of stopping after the first one.                  │
-│ --debug            --no-debug                  Enable debug logging                              │
-│ --help                                         Show this message and exit.                       │
+│ --json-schema                                    TEXT          The location (url or path) of the │
+│                                                                ODCS JSON Schema                  │
+│ --output                                         PATH          Specify the file path where the   │
+│                                                                test results should be written to │
+│                                                                (e.g.,                            │
+│                                                                './test-results/TEST-datacontrac… │
+│                                                                If no path is provided, the       │
+│                                                                output will be printed to stdout. │
+│ --output-format                                  [json|junit]  The target format for the test    │
+│                                                                results.                          │
+│ --all-errors                                                   Report all JSON Schema validation │
+│                                                                errors instead of stopping after  │
+│                                                                the first one.                    │
+│ --inline-references    --no-inline-references                  Resolve external references       │
+│                                                                (currently:                       │
+│                                                                authoritativeDefinitions[type=de… │
+│                                                                in the contract and inline the    │
+│                                                                fetched content from the          │
+│                                                                configured entropy-data host.     │
+│                                                                [default: inline-references]      │
+│ --debug                --no-debug                              Enable debug logging              │
+│ --help                                                         Show this message and exit.       │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract lint datacontract.yaml                                                       
@@ -351,8 +361,13 @@ Commands
 │                    [required]                                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --debug    --no-debug      Enable debug logging                                                  │
-│ --help                     Show this message and exit.                                           │
+│ --inline-references    --no-inline-references      Resolve external references (currently:       │
+│                                                    authoritativeDefinitions[type=definition]) in │
+│                                                    the contract and inline the fetched content   │
+│                                                    from the configured entropy-data host.        │
+│                                                    [default: inline-references]                  │
+│ --debug                --no-debug                  Enable debug logging                          │
+│ --help                                             Show this message and exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml                          
@@ -416,6 +431,15 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 │                                                                      publishing the data         │
 │                                                                      contract.                   │
 │                                                                      [default: ssl-verification] │
+│ --inline-references       --no-inline-references                     Resolve external references │
+│                                                                      (currently:                 │
+│                                                                      authoritativeDefinitions[t… │
+│                                                                      in the contract and inline  │
+│                                                                      the fetched content from    │
+│                                                                      the configured entropy-data │
+│                                                                      host.                       │
+│                                                                      [default:                   │
+│                                                                      inline-references]          │
 │ --debug                   --no-debug                                 Enable debug logging        │
 │ --help                                                               Show this message and exit. │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -1266,43 +1290,55 @@ $ datacontract dbt sync orders.odcs.yaml --publish https://api.entropy-data.com/
 │                                  file(s).                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                                  TEXT                   The location (url or path) │
-│                                                                       of the ODCS JSON Schema    │
-│ --server                                       TEXT                   The server configuration   │
-│                                                                       to run the schema and      │
-│                                                                       quality tests. Use the key │
-│                                                                       of the server object in    │
-│                                                                       the data contract yaml     │
-│                                                                       file to refer to a server, │
-│                                                                       e.g., `production`, or     │
-│                                                                       `all` for all servers      │
-│                                                                       (default).                 │
-│                                                                       [default: all]             │
-│ --publish                                      TEXT                   The url to publish the     │
-│                                                                       results after the test.    │
-│ --output                                       PATH                   Specify the file path      │
-│                                                                       where the test results     │
-│                                                                       should be written to       │
-│                                                                       (e.g.,                     │
-│                                                                       './test-results/TEST-data… │
-│ --output-format                                [json|junit]           The target format for the  │
-│                                                                       test results.              │
-│ --logs                --no-logs                                       Print logs                 │
-│                                                                       [default: no-logs]         │
-│ --json                                                                Print test results as JSON │
-│                                                                       to stdout.                 │
-│ --fail-on                                      [warning|error|never]  Minimum severity that      │
-│                                                                       causes a non-zero exit     │
-│                                                                       code.                      │
-│                                                                       [default: error]           │
-│ --ssl-verification    --no-ssl-verification                           SSL verification when      │
-│                                                                       publishing the data        │
-│                                                                       contract.                  │
-│                                                                       [default:                  │
-│                                                                       ssl-verification]          │
-│ --debug               --no-debug                                      Enable debug logging       │
-│ --help                                                                Show this message and      │
-│                                                                       exit.                      │
+│ --json-schema                                    TEXT                   The location (url or     │
+│                                                                         path) of the ODCS JSON   │
+│                                                                         Schema                   │
+│ --server                                         TEXT                   The server configuration │
+│                                                                         to run the schema and    │
+│                                                                         quality tests. Use the   │
+│                                                                         key of the server object │
+│                                                                         in the data contract     │
+│                                                                         yaml file to refer to a  │
+│                                                                         server, e.g.,            │
+│                                                                         `production`, or `all`   │
+│                                                                         for all servers          │
+│                                                                         (default).               │
+│                                                                         [default: all]           │
+│ --publish                                        TEXT                   The url to publish the   │
+│                                                                         results after the test.  │
+│ --output                                         PATH                   Specify the file path    │
+│                                                                         where the test results   │
+│                                                                         should be written to     │
+│                                                                         (e.g.,                   │
+│                                                                         './test-results/TEST-da… │
+│ --output-format                                  [json|junit]           The target format for    │
+│                                                                         the test results.        │
+│ --logs                 --no-logs                                        Print logs               │
+│                                                                         [default: no-logs]       │
+│ --json                                                                  Print test results as    │
+│                                                                         JSON to stdout.          │
+│ --fail-on                                        [warning|error|never]  Minimum severity that    │
+│                                                                         causes a non-zero exit   │
+│                                                                         code.                    │
+│                                                                         [default: error]         │
+│ --ssl-verification     --no-ssl-verification                            SSL verification when    │
+│                                                                         publishing the data      │
+│                                                                         contract.                │
+│                                                                         [default:                │
+│                                                                         ssl-verification]        │
+│ --inline-references    --no-inline-references                           Resolve external         │
+│                                                                         references (currently:   │
+│                                                                         authoritativeDefinition… │
+│                                                                         in the contract and      │
+│                                                                         inline the fetched       │
+│                                                                         content from the         │
+│                                                                         configured entropy-data  │
+│                                                                         host.                    │
+│                                                                         [default:                │
+│                                                                         inline-references]       │
+│ --debug                --no-debug                                       Enable debug logging     │
+│ --help                                                                  Show this message and    │
+│                                                                         exit.                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit         
