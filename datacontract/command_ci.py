@@ -59,6 +59,13 @@ def ci(
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
+    inline_references: Annotated[
+        bool,
+        typer.Option(
+            help="Resolve external references in the contract and inline the fetched content "
+            "from the configured entropy-data host (currently: authoritativeDefinitions[type=definition])."
+        ),
+    ] = True,
     debug: debug_option = None,
 ):
     """
@@ -96,6 +103,7 @@ def ci(
             publish_url=publish,
             server=server,
             ssl_verification=ssl_verification,
+            inline_references=inline_references,
         ).test()
         if logs:
             _print_logs(run, out)

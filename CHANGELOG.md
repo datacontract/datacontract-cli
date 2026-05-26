@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- Resolve `authoritativeDefinitions[type=definition]` on schema properties: the referenced ODCS property is fetched from the configured entropy-data host (`ENTROPY_DATA_HOST`) and inlined into the property, filling fields the contract author left unset. The configured `x-api-key` is sent only when the resolved URL's host matches `ENTROPY_DATA_HOST` so a third-party `url:` cannot receive the user's key. Any resolution failure — host mismatch, HTTP error, network error, malformed body — rejects the contract.
+- `--no-inline-references` flag on `lint`, `test`, `ci`, `export`, and `changelog` to skip the HTTP fetch above and leave each property as written. Useful for offline runs (e.g. CI without `ENTROPY_DATA_API_KEY`) and pure round-trip exports (e.g. `export excel`).
 
 ### Fixed
 - Schema type check no longer fails for `varchar(n)` columns on Databricks with PySpark 4.0+, and for `map` and `varchar` types nested inside `struct` columns; affected columns emit a warning and skip the type check instead

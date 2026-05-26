@@ -36,6 +36,13 @@ def lint(
             help="Report all JSON Schema validation errors instead of stopping after the first one.",
         ),
     ] = False,
+    inline_references: Annotated[
+        bool,
+        typer.Option(
+            help="Resolve external references in the contract and inline the fetched content "
+            "from the configured entropy-data host (currently: authoritativeDefinitions[type=definition])."
+        ),
+    ] = True,
     debug: debug_option = None,
 ):
     """
@@ -43,5 +50,10 @@ def lint(
     """
     enable_debug_logging(debug)
 
-    run = DataContract(data_contract_file=location, schema_location=schema, all_errors=all_errors).lint()
+    run = DataContract(
+        data_contract_file=location,
+        schema_location=schema,
+        all_errors=all_errors,
+        inline_references=inline_references,
+    ).lint()
     write_test_result(run, console, output_format, output)
