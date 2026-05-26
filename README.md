@@ -1881,11 +1881,6 @@ datacontract import dbt --source <manifest_path> --model <model_name_1> --model 
 datacontract import dbt --source <manifest_path>
 ```
 
-```bash
-# Import a specific version of a versioned dbt model
-datacontract import dbt --source <manifest_path> --model mart_orders.v1
-```
-
 </details>
 
 <details markdown="1">
