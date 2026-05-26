@@ -284,8 +284,7 @@ Commands
 
 ### init
 ```
-                                                                                                    
- Usage: datacontract init [OPTIONS] [LOCATION]                                                      
+Usage: datacontract init [OPTIONS] [LOCATION]                                                      
                                                                                                     
  Create an empty data contract.                                                                     
                                                                                                     
@@ -301,15 +300,12 @@ Commands
 │ --help                                 Show this message and exit.                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract init datacontract.yaml                                                       
-                                                                                                    
-
+ Example: datacontract init datacontract.yaml
 ```
 
 ### lint
 ```
-                                                                                                    
- Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
+Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
                                                                                                     
  Validate that the datacontract.yaml is correctly formatted.                                        
                                                                                                     
@@ -343,15 +339,12 @@ Commands
 │ --help                                                         Show this message and exit.       │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract lint datacontract.yaml                                                       
-                                                                                                    
-
+ Example: datacontract lint datacontract.yaml
 ```
 
 ### changelog
 ```
-                                                                                                    
- Usage: datacontract changelog [OPTIONS] V1 V2                                                      
+Usage: datacontract changelog [OPTIONS] V1 V2                                                      
                                                                                                     
  Show a changelog between two data contracts.                                                       
                                                                                                     
@@ -372,9 +365,7 @@ Commands
 │ --help                                             Show this message and exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml                          
-                                                                                                    
-
+ Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 ```
 
 ```bash
@@ -383,8 +374,7 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 
 ### test
 ```
-                                                                                                    
- Usage: datacontract test [OPTIONS] [LOCATION]                                                      
+Usage: datacontract test [OPTIONS] [LOCATION]                                                      
                                                                                                     
  Run schema and quality tests on configured servers.                                                
                                                                                                     
@@ -448,9 +438,7 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 │ --help                                                               Show this message and exit. │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract test datacontract.yaml --server production                                   
-                                                                                                    
-
+ Example: datacontract test datacontract.yaml --server production
 ```
 
 Data Contract CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid.
@@ -1284,8 +1272,7 @@ $ datacontract dbt sync orders.odcs.yaml --publish https://api.entropy-data.com/
 
 ### ci
 ```
-                                                                                                    
- Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                                    
+Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                                    
                                                                                                     
  Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.                  
                                                                                                     
@@ -1346,9 +1333,7 @@ $ datacontract dbt sync orders.odcs.yaml --publish https://api.entropy-data.com/
 │                                                                         exit.                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit         
-                                                                                                    
-
+ Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit
 ```
 
 The `ci` command wraps [`test`](#test) with CI/CD-specific features:
@@ -1431,8 +1416,7 @@ steps:
 
 ### export
 ```
-                                                                                                    
- Usage: datacontract export [OPTIONS] COMMAND [ARGS]...                                             
+Usage: datacontract export [OPTIONS] COMMAND [ARGS]...                                             
                                                                                                     
  Convert a data contract to a target format.                                                        
                                                                                                     
@@ -1472,9 +1456,7 @@ steps:
                                                                                                     
  Example: datacontract export html datacontract.yaml --output datacontract.html                     
  For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), use           
- `datacontract export sql --dialect <dialect>`.                                                     
-                                                                                                    
-
+ `datacontract export sql --dialect <dialect>`.
 ```
 
 Run `datacontract export <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
@@ -1810,8 +1792,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 
 ### import
 ```
-                                                                                                    
- Usage: datacontract import [OPTIONS] COMMAND [ARGS]...                                             
+Usage: datacontract import [OPTIONS] COMMAND [ARGS]...                                             
                                                                                                     
  Create a data contract from a source format.                                                       
                                                                                                     
@@ -1837,9 +1818,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │ excel       Import a data contract from an Excel file.                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml    
-                                                                                                    
-
+ Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
@@ -2074,8 +2053,7 @@ datacontract import protobuf --source "test.proto"
 
 ### catalog
 ```
-                                                                                                    
- Usage: datacontract catalog [OPTIONS]                                                              
+Usage: datacontract catalog [OPTIONS]                                                              
                                                                                                     
  Create a html catalog of data contracts.                                                           
                                                                                                     
@@ -2090,9 +2068,7 @@ datacontract import protobuf --source "test.proto"
 │ --help                               Show this message and exit.                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract catalog --files "**/*.yaml" --output catalog/                                
-                                                                                                    
-
+ Example: datacontract catalog --files "**/*.yaml" --output catalog/
 ```
 
 Examples:
@@ -2107,8 +2083,7 @@ datacontract catalog --files "*.odcs.yaml"
 
 ### publish
 ```
-                                                                                                    
- Usage: datacontract publish [OPTIONS] [LOCATION]                                                   
+Usage: datacontract publish [OPTIONS] [LOCATION]                                                   
                                                                                                     
  Publish the data contract to the Entropy Data.                                                     
                                                                                                     
@@ -2126,15 +2101,12 @@ datacontract catalog --files "*.odcs.yaml"
 │ --help                                               Show this message and exit.                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract publish datacontract.yaml                                                    
-                                                                                                    
-
+ Example: datacontract publish datacontract.yaml
 ```
 
 ### api
 ```
-                                                                                                    
- Usage: datacontract api [OPTIONS]                                                                  
+Usage: datacontract api [OPTIONS]                                                                  
                                                                                                     
  Start the datacontract CLI as server application with REST API.                                    
                                                                                                     
@@ -2163,9 +2135,7 @@ datacontract catalog --files "*.odcs.yaml"
 │ --help                            Show this message and exit.                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract api --port 4242 --host 0.0.0.0                                               
-                                                                                                    
-
+ Example: datacontract api --port 4242 --host 0.0.0.0
 ```
 
 ## Integrations
