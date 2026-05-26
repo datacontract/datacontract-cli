@@ -96,10 +96,8 @@ def _get_api_key() -> str:
 
 
 def _get_api_key_or_none() -> str | None:
-    """Same lookup as `_get_api_key`, but returns None instead of raising when
-    no key is configured. Used by callers that may legitimately need to fall
-    back to anonymous requests (e.g. resolving a definition hosted outside
-    the configured entropy-data instance)."""
+    """Same lookup as `_get_api_key` but returns None instead of raising;
+    for callers that may legitimately fall back to anonymous requests."""
     return (
         os.getenv("ENTROPY_DATA_API_KEY")
         or os.getenv("DATAMESH_MANAGER_API_KEY")

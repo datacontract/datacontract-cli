@@ -86,21 +86,14 @@ def resolve_data_contract_from_location(
     return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
 
 
-# `authoritativeDefinitions[].type` value that points at a reusable business
-# definition whose ODCS-shaped representation should be inlined into the
-# referencing property.
 DEFINITION_AUTHORITATIVE_TYPE = "definition"
 
-# Definition-response fields that must NOT overwrite the referencing property:
-# `name` and `authoritativeDefinitions` identify the link itself, and the
-# recursive `properties` / `items` are the contract author's structure, not the
-# definition's. Every other ODCS SchemaProperty field is mergeable.
+# `name` is the property's own; `authoritativeDefinitions` is the link itself;
+# `properties`/`items` are the contract author's structure.
 _NON_MERGEABLE_FIELDS = frozenset({"name", "authoritativeDefinitions", "properties", "items"})
 
-# Resolved definitions cached per process by reference URL so a definition
-# shared by many properties (typical: a domain-wide ID type) is fetched once.
-# Only successful resolutions are cached -- a transient network failure on the
-# first contract must not poison later contracts in the same process.
+# Per-process success-only cache: transient failures aren't cached so they
+# can retry on the next run.
 _definition_cache: dict[str, SchemaProperty] = {}
 
 
@@ -110,17 +103,10 @@ def clear_definition_cache() -> None:
 
 
 def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
-    """Resolve every property's `authoritativeDefinitions[type=definition]`
-    reference against the configured entropy-data host and inline the
-    referenced definition's ODCS fields.
+    """Resolve `authoritativeDefinitions[type=definition]` on every property.
 
-    Walks every schema property -- including array items and nested
-    properties. The author's inline values always win; only the fields the
-    property leaves unset are filled in. Only the in-memory contract is
-    changed; the file on disk is untouched. Any failure (host mismatch,
-    HTTP error, network error, malformed body) raises a
-    `DataContractException` -- a broken definition reference must reject
-    the contract rather than silently fall back.
+    In-memory only. Inline values always win. Resolution failures raise
+    `DataContractException` -- a broken reference rejects the contract.
     """
     if data_contract.schema_ is None:
         return
@@ -132,8 +118,7 @@ def inline_definitions_into_data_contract(data_contract: OpenDataContractStandar
 
 
 def inline_definition_into_property(prop: SchemaProperty):
-    """Recursively resolve and inline a definition into a property and its
-    nested properties / array items."""
+    """Resolve and inline; recurse into nested properties and array items."""
     if prop.items is not None:
         inline_definition_into_property(prop.items)
     if prop.properties is not None:
@@ -149,8 +134,7 @@ def inline_definition_into_property(prop: SchemaProperty):
 
 
 def _definition_reference_url(prop: SchemaProperty) -> str | None:
-    """Return the URL of the property's first `type: definition` authoritative
-    definition, or None when it has none."""
+    """URL of the property's first `authoritativeDefinitions[type=definition]`, or None."""
     for authoritative_definition in prop.authoritativeDefinitions or []:
         if authoritative_definition.type == DEFINITION_AUTHORITATIVE_TYPE and authoritative_definition.url:
             return authoritative_definition.url
@@ -158,17 +142,11 @@ def _definition_reference_url(prop: SchemaProperty) -> str | None:
 
 
 def _resolve_definition(url: str) -> SchemaProperty:
-    """Fetch and parse the business definition referenced by `url`.
+    """Fetch and parse the definition at `url`.
 
-    A relative `url` is resolved against the configured entropy-data host;
-    an absolute URL is fetched as-is. The configured `x-api-key` is sent
-    only when the resolved URL's host matches the configured host -- so a
-    third-party `url:` never leaks the user's key, and a different host
-    will simply be queried anonymously (and typically rejected by the
-    remote, which surfaces as a contract error).
-
-    Cached per URL after a successful fetch. Failures are not cached so a
-    transient blip can be retried on the next run.
+    The configured `x-api-key` is sent only when the resolved URL's host
+    matches the configured host -- a third-party `url:` never leaks the
+    key. Cached per URL after a successful fetch; failures aren't cached.
     """
     from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
 
@@ -176,9 +154,8 @@ def _resolve_definition(url: str) -> SchemaProperty:
         return _definition_cache[url]
 
     configured_host = _get_host()
-    # urljoin keeps an absolute URL as-is and joins a leading-slash path onto
-    # the host -- which is exactly what we need for both shapes ODCS allows
-    # in `authoritativeDefinitions[].url`.
+    # urljoin keeps absolute URLs as-is and joins leading-slash paths onto
+    # the host -- covers both shapes ODCS allows for `url`.
     target_url = urljoin(configured_host, url)
 
     headers = {"Accept": "application/vnd.entropydata.odcs+json"}
@@ -207,12 +184,10 @@ def _resolve_definition(url: str) -> SchemaProperty:
 
 
 def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProperty):
-    """Inline the definition's set fields into `prop`, filling only the fields
-    the contract author left unset. Author values always win.
+    """Inline the definition's set fields where the property left them unset.
 
-    "Set" follows pydantic's `model_fields_set` -- the same test the
-    pre-ODCS resolver used -- so an explicitly written value (even an
-    empty one, e.g. `description: ""`) is preserved.
+    "Set" follows pydantic's `model_fields_set`, so `description: ""`
+    counts as set and is preserved.
     """
     author_set = set(prop.model_fields_set)
     for field in definition.model_fields_set:
@@ -222,8 +197,7 @@ def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProper
 
 
 def _hosts_match(url: str, host: str) -> bool:
-    """True when two URLs resolve to the same network host (scheme + netloc),
-    treating a missing port the same as the scheme's default."""
+    """True when both URLs have the same netloc (host + port if specified)."""
     return urlparse(url).netloc == urlparse(host).netloc
 
 
