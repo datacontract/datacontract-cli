@@ -88,9 +88,7 @@ def test_lint_valid_odcs_3_1_0_schema():
 
 
 def test_lint_with_ref():
-    data_contract = DataContract(
-        data_contract_file="fixtures/lint/valid_datacontract_ref.yaml", inline_references=True
-    )
+    data_contract = DataContract(data_contract_file="fixtures/lint/valid_datacontract_ref.yaml", inline_references=True)
 
     run = data_contract.lint()
     OpenDataContractStandard.model_validate(data_contract.get_data_contract())
