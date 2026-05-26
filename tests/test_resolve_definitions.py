@@ -382,6 +382,121 @@ def test_malformed_body_raises(env):
     assert "/bad" in str(exc.value)
 
 
+# --- Semantics ------------------------------------------------------------
+#
+# `authoritativeDefinitions[type=semantics].url` resolves via the same path
+# as `type=definition` when the URL points at the configured entropy-data
+# host (REST URL). When the URL's host differs, it's treated as an IRI and
+# routed through `/api/semantics?iri=...` instead.
+
+
+def _semantics_prop(url: str, type_: str = "semantics", **inline) -> SchemaProperty:
+    return SchemaProperty(
+        name=inline.pop("name", "brand"),
+        authoritativeDefinitions=[AuthoritativeDefinition(type=type_, url=url)],
+        **inline,
+    )
+
+
+@responses.activate
+def test_semantics_rest_url_resolves_against_configured_host(env):
+    responses.add(
+        responses.GET,
+        f"{_HOST}/demo/semantics/main/product.brand",
+        body=_definition_body(logicalType="string", businessName="brand"),
+        status=200,
+    )
+
+    prop = _semantics_prop("/demo/semantics/main/product.brand")
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert prop.logicalType == "string"
+    assert prop.businessName == "brand"
+    assert responses.calls[0].request.headers["x-api-key"] == _API_KEY
+
+
+@responses.activate
+def test_semantics_iri_routes_through_api_semantics_lookup(env):
+    """An IRI is not directly fetchable; the resolver translates it to the
+    `/api/semantics?iri=...` lookup endpoint on the configured host."""
+    iri = "http://www.entropy-data.com/ns/main/Article"
+    responses.add(
+        responses.GET,
+        f"{_HOST}/api/semantics",
+        body=_definition_body(logicalType="string", businessName="Article"),
+        status=200,
+    )
+
+    prop = _semantics_prop(iri)
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert prop.logicalType == "string"
+    assert prop.businessName == "Article"
+    # The request must hit the configured host's lookup endpoint, NOT the
+    # IRI's host -- the latter doesn't serve this content.
+    call = responses.calls[0]
+    assert call.request.url.startswith(f"{_HOST}/api/semantics")
+    assert "iri=http" in call.request.url
+    assert call.request.headers["x-api-key"] == _API_KEY
+
+
+@responses.activate
+def test_semantics_iri_without_api_key_raises(env, monkeypatch):
+    """Resolving an IRI requires an API key; the lookup endpoint is API-key only."""
+    monkeypatch.delenv("ENTROPY_DATA_API_KEY", raising=False)
+    iri = "http://www.entropy-data.com/ns/main/Article"
+
+    prop = _semantics_prop(iri)
+    with pytest.raises(DataContractException) as exc:
+        inline_definitions_into_data_contract(_contract(prop))
+    assert "API key" in str(exc.value)
+    assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_semantics_legacy_singular_type_is_resolved(env):
+    """Contracts written before the entropy-data type migration from
+    `"semantic"` to `"semantics"` still resolve."""
+    responses.add(
+        responses.GET,
+        f"{_HOST}/demo/semantics/main/x",
+        body=_definition_body(logicalType="string"),
+        status=200,
+    )
+
+    prop = _semantics_prop("/demo/semantics/main/x", type_="semantic")
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert prop.logicalType == "string"
+
+
+@responses.activate
+def test_semantics_wins_over_definition_when_both_present(env):
+    """Matches the editor's `useInheritedDefinition` convention: a property
+    that links to both a semantic concept and a definition resolves through
+    the semantic concept; only that one is fetched."""
+    responses.add(
+        responses.GET,
+        f"{_HOST}/sem",
+        body=_definition_body(logicalType="string", businessName="from-semantics"),
+        status=200,
+    )
+    # Definition URL not registered -- if the resolver picks it, the test
+    # fails with ConnectionError.
+
+    prop = SchemaProperty(
+        name="brand",
+        authoritativeDefinitions=[
+            AuthoritativeDefinition(type="definition", url="/def"),
+            AuthoritativeDefinition(type="semantics", url="/sem"),
+        ],
+    )
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert prop.businessName == "from-semantics"
+    assert len(responses.calls) == 1
+
+
 # --- CLI integration: --no-inline-references -----------------------------
 
 
