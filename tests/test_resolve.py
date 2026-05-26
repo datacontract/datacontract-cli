@@ -23,7 +23,7 @@ def test_resolve_dcs_inlines_definition():
         name: order_id
         type: int
     """,
-        inline_definitions=True,
+        inline_references=True,
     )
     # ODCS uses schema_ (list) with properties (list) and logicalType
     orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
@@ -52,7 +52,7 @@ def test_resolve_data_contract_complex_definition():
           order_id:
             type: int
     """,
-        inline_definitions=True,
+        inline_references=True,
     )
     orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
     order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
@@ -84,7 +84,7 @@ def test_resolve_data_contract_array_definition():
         name: order_id
         type: int
     """,
-        inline_definitions=True,
+        inline_references=True,
     )
     my_message_schema = next(s for s in odcs.schema_ if s.name == "my_message")
     my_data_prop = next(p for p in my_message_schema.properties if p.name == "my_data")
@@ -115,7 +115,7 @@ def test_resolve_data_contract_nested_definition():
         name: order_id
         type: int
     """,
-        inline_definitions=True,
+        inline_references=True,
     )
     my_message_schema = next(s for s in odcs.schema_ if s.name == "my_message")
     my_data_prop = next(p for p in my_message_schema.properties if p.name == "my_data")
@@ -146,7 +146,7 @@ def test_resolve_data_contract_simple_definition_file():
               order_id:
                 $ref: "file://{temp_file.name}"
         """,
-            inline_definitions=True,
+            inline_references=True,
         )
         orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
         order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
@@ -179,7 +179,7 @@ def test_resolve_data_contract_complex_definition_file():
               order_id:
                 $ref: "file://{temp_file.name}#/fields/order_id"
         """,
-            inline_definitions=True,
+            inline_references=True,
         )
         orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
         order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")
@@ -218,7 +218,7 @@ def test_resolve_data_contract_relative_refrence():
               order_id:
                 $ref: "file://{temp_dir}/order.yaml#/definitions/order_id"
         """,
-            inline_definitions=True,
+            inline_references=True,
         )
         orders_schema = next(s for s in odcs.schema_ if s.name == "orders")
         order_id_prop = next(p for p in orders_schema.properties if p.name == "order_id")

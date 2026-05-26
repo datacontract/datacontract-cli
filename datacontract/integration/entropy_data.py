@@ -87,16 +87,24 @@ def _get_api_key() -> str:
     2. DATAMESH_MANAGER_API_KEY
     3. DATACONTRACT_MANAGER_API_KEY
     """
-    api_key = os.getenv("ENTROPY_DATA_API_KEY")
-    if api_key is None:
-        api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
-    if api_key is None:
-        api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
+    api_key = _get_api_key_or_none()
     if api_key is None:
         raise Exception(
             "Cannot publish, as neither ENTROPY_DATA_API_KEY, DATAMESH_MANAGER_API_KEY, nor DATACONTRACT_MANAGER_API_KEY is set"
         )
     return api_key
+
+
+def _get_api_key_or_none() -> str | None:
+    """Same lookup as `_get_api_key`, but returns None instead of raising when
+    no key is configured. Used by callers that may legitimately need to fall
+    back to anonymous requests (e.g. resolving a definition hosted outside
+    the configured entropy-data instance)."""
+    return (
+        os.getenv("ENTROPY_DATA_API_KEY")
+        or os.getenv("DATAMESH_MANAGER_API_KEY")
+        or os.getenv("DATACONTRACT_MANAGER_API_KEY")
+    )
 
 
 def _get_host() -> str:

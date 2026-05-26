@@ -1,8 +1,10 @@
 import importlib.resources as resources
 import logging
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
 
 import fastjsonschema
+import requests
 import yaml
 from fastjsonschema import JsonSchemaValueException
 from jsonschema import validators
@@ -55,16 +57,16 @@ def resolve_data_contract(
     data_contract_str: str = None,
     data_contract: OpenDataContractStandard = None,
     schema_location: str = None,
-    inline_definitions: bool = False,
+    inline_references: bool = False,
     all_errors: bool = False,
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
     if data_contract_location is not None:
         return resolve_data_contract_from_location(
-            data_contract_location, schema_location, inline_definitions, all_errors
+            data_contract_location, schema_location, inline_references, all_errors
         )
     elif data_contract_str is not None:
-        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, all_errors)
+        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
     elif data_contract is not None:
         return data_contract
     else:
@@ -78,40 +80,170 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_definitions: bool = False, all_errors: bool = False
+    location, schema_location: str = None, inline_references: bool = False, all_errors: bool = False
 ) -> OpenDataContractStandard:
     data_contract_str = read_resource(location)
-    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_definitions, all_errors)
+    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
+
+
+# `authoritativeDefinitions[].type` value that points at a reusable business
+# definition whose ODCS-shaped representation should be inlined into the
+# referencing property.
+DEFINITION_AUTHORITATIVE_TYPE = "definition"
+
+# Definition-response fields that must NOT overwrite the referencing property:
+# `name` and `authoritativeDefinitions` identify the link itself, and the
+# recursive `properties` / `items` are the contract author's structure, not the
+# definition's. Every other ODCS SchemaProperty field is mergeable.
+_NON_MERGEABLE_FIELDS = frozenset({"name", "authoritativeDefinitions", "properties", "items"})
+
+# Resolved definitions cached per process by reference URL so a definition
+# shared by many properties (typical: a domain-wide ID type) is fetched once.
+# Only successful resolutions are cached -- a transient network failure on the
+# first contract must not poison later contracts in the same process.
+_definition_cache: dict[str, SchemaProperty] = {}
+
+
+def clear_definition_cache() -> None:
+    """Drop the per-process definition cache. Used by tests."""
+    _definition_cache.clear()
 
 
 def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
-    """Inline any definition references into the schema properties."""
+    """Resolve every property's `authoritativeDefinitions[type=definition]`
+    reference against the configured entropy-data host and inline the
+    referenced definition's ODCS fields.
+
+    Walks every schema property -- including array items and nested
+    properties. The author's inline values always win; only the fields the
+    property leaves unset are filled in. Only the in-memory contract is
+    changed; the file on disk is untouched. Any failure (host mismatch,
+    HTTP error, network error, malformed body) raises a
+    `DataContractException` -- a broken definition reference must reject
+    the contract rather than silently fall back.
+    """
     if data_contract.schema_ is None:
         return
 
     for schema_obj in data_contract.schema_:
         if schema_obj.properties:
             for prop in schema_obj.properties:
-                inline_definition_into_property(prop, data_contract)
+                inline_definition_into_property(prop)
 
 
-def inline_definition_into_property(prop: SchemaProperty, data_contract: OpenDataContractStandard):
-    """Recursively inline definitions into a property and its nested properties."""
-    # Iterate over items for arrays
+def inline_definition_into_property(prop: SchemaProperty):
+    """Recursively resolve and inline a definition into a property and its
+    nested properties / array items."""
     if prop.items is not None:
-        inline_definition_into_property(prop.items, data_contract)
-
-    # Iterate over nested properties
+        inline_definition_into_property(prop.items)
     if prop.properties is not None:
         for nested_prop in prop.properties:
-            inline_definition_into_property(nested_prop, data_contract)
+            inline_definition_into_property(nested_prop)
 
-    # No definition $ref support in ODCS at the moment
-    # ODCS uses a different approach - definitions would be handled differently
+    url = _definition_reference_url(prop)
+    if url is None:
+        return
+
+    definition = _resolve_definition(url)
+    _apply_definition_to_property(prop, definition)
+
+
+def _definition_reference_url(prop: SchemaProperty) -> str | None:
+    """Return the URL of the property's first `type: definition` authoritative
+    definition, or None when it has none."""
+    for authoritative_definition in prop.authoritativeDefinitions or []:
+        if authoritative_definition.type == DEFINITION_AUTHORITATIVE_TYPE and authoritative_definition.url:
+            return authoritative_definition.url
+    return None
+
+
+def _resolve_definition(url: str) -> SchemaProperty:
+    """Fetch and parse the business definition referenced by `url`.
+
+    A relative `url` is resolved against the configured entropy-data host;
+    an absolute URL is fetched as-is. The configured `x-api-key` is sent
+    only when the resolved URL's host matches the configured host -- so a
+    third-party `url:` never leaks the user's key, and a different host
+    will simply be queried anonymously (and typically rejected by the
+    remote, which surfaces as a contract error).
+
+    Cached per URL after a successful fetch. Failures are not cached so a
+    transient blip can be retried on the next run.
+    """
+    from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
+
+    if url in _definition_cache:
+        return _definition_cache[url]
+
+    configured_host = _get_host()
+    # urljoin keeps an absolute URL as-is and joins a leading-slash path onto
+    # the host -- which is exactly what we need for both shapes ODCS allows
+    # in `authoritativeDefinitions[].url`.
+    target_url = urljoin(configured_host, url)
+
+    headers = {"Accept": "application/vnd.entropydata.odcs+json"}
+    if _hosts_match(target_url, configured_host):
+        api_key = _get_api_key_or_none()
+        if api_key is not None:
+            headers["x-api-key"] = api_key
+
+    try:
+        response = requests.get(target_url, headers=headers, timeout=10)
+    except requests.RequestException as e:
+        raise _definition_resolution_error(url, target_url, str(e), original_exception=e)
+
+    if response.status_code != 200:
+        raise _definition_resolution_error(url, target_url, f"HTTP {response.status_code} {response.reason}")
+
+    try:
+        definition = SchemaProperty.model_validate_json(response.content)
+    except Exception as e:
+        raise _definition_resolution_error(
+            url, target_url, f"response body is not a valid ODCS property: {e}", original_exception=e
+        )
+
+    _definition_cache[url] = definition
+    return definition
+
+
+def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProperty):
+    """Inline the definition's set fields into `prop`, filling only the fields
+    the contract author left unset. Author values always win.
+
+    "Set" follows pydantic's `model_fields_set` -- the same test the
+    pre-ODCS resolver used -- so an explicitly written value (even an
+    empty one, e.g. `description: ""`) is preserved.
+    """
+    author_set = set(prop.model_fields_set)
+    for field in definition.model_fields_set:
+        if field in _NON_MERGEABLE_FIELDS or field in author_set:
+            continue
+        setattr(prop, field, getattr(definition, field))
+
+
+def _hosts_match(url: str, host: str) -> bool:
+    """True when two URLs resolve to the same network host (scheme + netloc),
+    treating a missing port the same as the scheme's default."""
+    return urlparse(url).netloc == urlparse(host).netloc
+
+
+def _definition_resolution_error(
+    url: str, target_url: str, detail: str, original_exception: Exception | None = None
+) -> DataContractException:
+    reason = f"Could not resolve business definition '{url}' from {target_url}: {detail}"
+    logging.warning(reason)
+    return DataContractException(
+        type="lint",
+        result=ResultEnum.failed,
+        name="Resolve business definition",
+        reason=reason,
+        engine="datacontract",
+        original_exception=original_exception,
+    )
 
 
 def _resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_definitions: bool = False, all_errors: bool = False
+    data_contract_str, schema_location: str = None, inline_references: bool = False, all_errors: bool = False
 ) -> OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 
@@ -134,7 +266,7 @@ def _resolve_data_contract_from_str(
 
         # Parse ODCS directly
         odcs = _parse_odcs_from_dict(yaml_dict)
-        if inline_definitions:
+        if inline_references:
             inline_definitions_into_data_contract(odcs)
         return odcs
 
@@ -144,7 +276,7 @@ def _resolve_data_contract_from_str(
 
     dcs = parse_dcs_from_dict(yaml_dict)
     odcs = convert_dcs_to_odcs(dcs)
-    if inline_definitions:
+    if inline_references:
         inline_definitions_into_data_contract(odcs)
     return odcs
 
