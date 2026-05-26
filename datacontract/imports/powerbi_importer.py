@@ -1,23 +1,3 @@
-"""Power BI .pbit / .pbip / model.bim importer for the Data Contract CLI.
-
-Extraction strategy (in priority order):
-  1. ``.pbit`` — read the embedded ``DataModelSchema`` entry (UTF-16 LE BIM JSON).
-  2. ``.bim`` or ``.json`` — read directly as a BIM JSON file (e.g. from pbi-tools
-     or a Power BI Project / .pbip folder).
-  3. If ``DataModelSchema`` is absent from the .pbit, a clear error is raised
-     with instructions to re-save from an up-to-date Power BI Desktop or to
-     extract the model using pbi-tools (https://pbi.tools).
-
-What gets mapped to ODCS:
-  - Tables          → SchemaObject  (physicalType: table | calculated table)
-  - Columns         → SchemaProperty (logicalType via PBI type map)
-  - Calculated cols → SchemaProperty (physicalType: calculated column, DAX in customProperties)
-  - Measures        → SchemaProperty (physicalType: measure, DAX in customProperties)
-  - Hierarchies     → SchemaProperty (logicalType: object, levels as nested properties)
-  - Relationships   → SchemaObject.relationships (ODCS Relationship, from_/to use schema/property IDs)
-  - Hidden tables   → included but tagged with "hidden"
-"""
-
 from __future__ import annotations
 
 import json
