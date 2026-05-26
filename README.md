@@ -1908,6 +1908,8 @@ datacontract import unity --table <table_full_name>
 Importing from dbt manifest file.
 You may give the `--model` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
 
+For [versioned dbt models](https://docs.getdbt.com/docs/collaborate/govern/model-versions), use the `name.vN` convention to target a specific version. Omitting the version suffix imports all versions of that model.
+
 Examples:
 
 ```bash

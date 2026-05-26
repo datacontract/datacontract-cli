@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Schema checks now resolve each property by its `physicalName` when set (falling back to `name`), matching the existing table-level resolution and the SQL/BigQuery exporters. Previously a property whose logical `name` differed from its physical column (e.g. `name: brand` with `physicalName: BRAND`) failed the presence and type checks even though the physical column existed (#1246)
+- `import dbt --model <name>.vN` now correctly imports the specified version of a versioned dbt model. Previously the filter compared the full `name.vN` string against `node["name"]` (which is always the bare base name), producing a silent empty contract (#1249)
 
 ## [0.12.3] - 2026-05-18
 
