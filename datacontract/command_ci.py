@@ -71,7 +71,7 @@ def ci(
     """
     Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
     """
-    enable_debug_logging(debug)
+    enable_debug_logging(debug, otherwise_disable_stderr=True)
     validate_publish_url(publish)
 
     if not locations:
