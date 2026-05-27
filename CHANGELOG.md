@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Schema type check no longer fails for `varchar(n)` columns on Databricks with PySpark 4.0+, and for `map` and `varchar` types nested inside `struct` columns; affected columns emit a warning and skip the type check instead
-- `WARNING`/`ERROR` log messages are now shown by default (on stderr) for `import`, `export`, `changelog`, `catalog`, `dbt`, and `publish`. Previously a `NullHandler` on the root logger suppressed all logging unless `--debug` was set, hiding diagnostics such as the `import sql` placeholder-connection warning. `test`/`ci`/`lint` keep stderr quiet since they already render these messages to the console.
+- `WARNING`/`ERROR` log messages are no longer hidden by default for `import`, `export`, `changelog`, `catalog`, `dbt`, and `publish`.
 
 ## [0.12.4] - 2026-05-21
 
