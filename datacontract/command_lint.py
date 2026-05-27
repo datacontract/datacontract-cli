@@ -48,7 +48,7 @@ def lint(
     """
     Validate that the datacontract.yaml is correctly formatted.
     """
-    enable_debug_logging(debug)
+    enable_debug_logging(debug, otherwise_disable_stderr=True)
 
     run = DataContract(
         data_contract_file=location,
