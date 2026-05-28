@@ -94,6 +94,16 @@ redshift = [
 s3 = [
   "s3fs>=2025.2.0,<2027.0.0",
   "aiobotocore>=2.17.0,<3.8.0",
+  "duckdb-extension-httpfs>=1.0.1,<1.1.0",
+  "duckdb-extension-aws>=1.0.3,<1.1.0",
+]
+
+gcs = [
+  "duckdb-extension-httpfs>=1.0.1,<1.1.0",
+]
+
+azure = [
+  "duckdb-extension-azure>=1.0.3,<1.1.0",
 ]
 
 snowflake = [
@@ -150,7 +160,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,databricks,sqlserver,s3,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version
