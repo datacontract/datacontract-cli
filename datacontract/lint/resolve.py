@@ -29,6 +29,30 @@ _SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
 }
 
 
+def _resolve_jsonschema_compliance_error_message_path(yaml_str, message):
+    matches = re.findall(r"\[(\d+)\]", message)
+    schema_index = matches[0] if len(matches) > 0 else None
+    property_index = matches[1] if len(matches) > 1 else None
+    except_message = message
+    if schema_index is not None and "schema" in yaml_str and int(schema_index) < len(yaml_str["schema"]):
+        except_message = except_message.replace(
+            f"schema[{schema_index}]", f"schema.{yaml_str['schema'][int(schema_index)]['name']}"
+        )
+
+    if (
+        property_index is not None
+        and "schema" in yaml_str
+        and int(schema_index) < len(yaml_str["schema"])
+        and "properties" in yaml_str["schema"][int(schema_index)]
+        and int(property_index) < len(yaml_str["schema"][int(schema_index)]["properties"])
+    ):
+        except_message = except_message.replace(
+            f"properties[{property_index}]",
+            f"properties.{yaml_str['schema'][int(schema_index)]['properties'][int(property_index)]['name']}",
+        )
+    return except_message
+
+
 def resolve_data_contract_dict(
     data_contract_location: str = None,
     data_contract_str: str = None,
@@ -208,29 +232,14 @@ def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_erro
         fastjsonschema.validate(schema, yaml_str, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
-        matches = re.findall(r"\[(\d+)\]", e.message)
-        schema_index = matches[0] if len(matches) > 0 else None
-        property_index = matches[1] if len(matches) > 1 else None
-        except_message = e.message
-        if schema_index is not None and "schema" in yaml_str and int(schema_index) < len(yaml_str["schema"]):
-            except_message = except_message.replace(
-                f"schema[{schema_index}]", f"schema.{yaml_str['schema'][int(schema_index)]['name']}"
-            )
-
-        if (
-            property_index is not None
-            and "schema" in yaml_str
-            and int(schema_index) < len(yaml_str["schema"])
-            and "properties" in yaml_str["schema"][int(schema_index)]
-            and int(property_index) < len(yaml_str["schema"][int(schema_index)]["properties"])
-        ):
-            except_message = except_message.replace(
-                f"properties[{property_index}]",
-                f"properties.{yaml_str['schema'][int(schema_index)]['properties'][int(property_index)]['name']}",
-            )
-
-        logging.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
-        raise _validation_error_to_exception(except_message, original_exception=e)
+        try:
+            except_message = _resolve_jsonschema_compliance_error_message_path(yaml_str, e.message)
+        except Exception:
+            logging.warning("YAML doesn't conform to JSON schema. Attempting to resolve error message path.")
+            except_message = e.message
+        finally:
+            logging.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
+            raise _validation_error_to_exception(except_message, original_exception=e)
     except Exception as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
         raise _validation_error_to_exception(str(e), original_exception=e)
