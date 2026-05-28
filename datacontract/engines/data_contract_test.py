@@ -76,8 +76,8 @@ def execute_data_contract_test(
         if check_categories is None or "schema" in check_categories:
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
 
-    # Azure Blob / ADLS Gen2 file-metadata checks (physicalType=file schemas and server format is binary)
-    if server.type in ("azure") and server.format == "binary" and _has_file_schemas(data_contract, schema_name):
+    # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
+    if server.type in ("azure") and _has_blob_schemas(data_contract, schema_name):
         check_azure_blob_file(run, data_contract, server)
     else:
         check_soda_execute(
@@ -143,13 +143,13 @@ def process_api_response(run, server):
     return new_server
 
 
-def _has_file_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
-    """Return True if the (possibly filtered) schema list contains any physicalType='file' schema."""
+def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
+    """Return True if the (possibly filtered) schema list contains any logicalType='blob' schema."""
     if data_contract.schema_ is None:
         return False
     for s in data_contract.schema_:
         if schema_name != "all" and s.name != schema_name:
             continue
-        if (s.physicalType or "").lower() == "file":
+        if (s.logicalType or "").lower() == "blob":
             return True
     return False

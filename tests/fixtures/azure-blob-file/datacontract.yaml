@@ -10,12 +10,12 @@ description:
 servers:
   - server: production
     type: azure
-    format: json
+    format: jpg
     location: https://myaccount.blob.core.windows.net/mycontainer/raw/orders/
 
 schema:
   - name: orders_files
-    physicalType: file
+    logicalType: blob
     description: Nightly order exports — one JSON file per batch run.
     # Schema-level quality: expect at least 1 file in the prefix
     quality:
@@ -47,7 +47,7 @@ schema:
         required: true
         quality:
           - name: expected-mime-type
-            mustBe: "application/json"
+            mustBe: "image/jpeg"
 
       - name: blobType
         logicalType: string

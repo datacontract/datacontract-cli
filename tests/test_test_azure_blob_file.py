@@ -304,10 +304,10 @@ class TestCheckAzureBlobFile:
 
         dc = OpenDataContractStandard()
         dc.servers = [Server(server="prod", type="azure")]
-        dc.schema_ = [SchemaObject(name="files", physicalType="file")]
+        dc.schema_ = [SchemaObject(name="files", logicalType="blob")]
         run = _make_run()
         check_azure_blob_file(run, dc, dc.servers[0])
-        checks = _checks_by_type(run, "azure_file_configuration")
+        checks = _checks_by_type(run, "azure_blob_configuration")
         assert checks and checks[0].result == ResultEnum.failed
 
     # ── Connection error ────────────────────────────────────────────────────
@@ -317,12 +317,12 @@ class TestCheckAzureBlobFile:
 
         dc = OpenDataContractStandard()
         dc.servers = [Server(server="prod", type="azure", location="https://acct.blob.core.windows.net/c/")]
-        dc.schema_ = [SchemaObject(name="files", physicalType="file")]
+        dc.schema_ = [SchemaObject(name="files", logicalType="blob")]
         run = _make_run()
         with patch(
             "datacontract.engines.datacontract.check_azure_blob_file._build_blob_service_client",
             side_effect=Exception("auth failed"),
         ):
             check_azure_blob_file(run, dc, dc.servers[0])
-        checks = _checks_by_type(run, "azure_file_connection")
+        checks = _checks_by_type(run, "azure_blob_connection")
         assert checks and checks[0].result == ResultEnum.error

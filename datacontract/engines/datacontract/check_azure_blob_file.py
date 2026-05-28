@@ -72,17 +72,17 @@ def check_azure_blob_file(
     data_contract: OpenDataContractStandard,
     server: Server,
 ) -> None:
-    """Run Azure Blob Storage metadata checks for all file-physicalType schemas.
+    """Run Azure Blob Storage metadata checks for all blob-logicalType schemas.
 
-    Only schemas with ``physicalType == "file"`` are processed; others are skipped.
-    No exception is raised if the server is not Azure or if no file schemas exist —
+    Only schemas with ``logicalType == "blob"`` are processed; others are skipped.
+    No exception is raised if the server is not Azure or if no blob schemas exist —
     the function simply returns without adding checks.
     """
     if data_contract.schema_ is None:
         return
 
-    file_schemas = [s for s in data_contract.schema_ if (s.physicalType or "").lower() == "file"]
-    if not file_schemas:
+    blob_schemas = [s for s in data_contract.schema_ if (s.logicalType or "").lower() == "blob"]
+    if not blob_schemas:
         return
 
     location = server.location if server else None
@@ -130,10 +130,10 @@ def check_azure_blob_file(
         return
 
     run.log_info(
-        f"Azure Blob File checks: container='{container_name}', prefix='{prefix}', {len(file_schemas)} file schema(s)"
+        f"Azure Blob File checks: container='{container_name}', prefix='{prefix}', {len(blob_schemas)} blob schema(s)"
     )
 
-    for schema in file_schemas:
+    for schema in blob_schemas:
         _check_schema(run, schema, blob_service_client, container_name, prefix)
 
 
