@@ -11,7 +11,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 class DbmlExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         found_server = _get_server_by_name(data_contract, server) if server else None
         return to_dbml_diagram(data_contract, found_server)
 
