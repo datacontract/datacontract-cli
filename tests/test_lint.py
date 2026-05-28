@@ -37,6 +37,28 @@ def test_lint_custom_schema():
     assert run.result == "passed"
 
 
+def test_lint_extra_top_level_field_rejected_without_custom_schema():
+    """Without --json-schema, extra top-level fields must fail (default ODCS is strict)."""
+    data_contract_file = "fixtures/lint/odcs_with_extra_top_level.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "failed"
+
+
+def test_lint_extra_top_level_field_allowed_with_custom_schema():
+    """With --json-schema, the custom schema is the source of truth and the
+    Pydantic step must accept extra top-level fields it allows."""
+    data_contract_file = "fixtures/lint/odcs_with_extra_top_level.yaml"
+    schema_file = "fixtures/lint/odcs_with_extra_top_level.schema.json"
+    data_contract = DataContract(data_contract_file=data_contract_file, schema_location=schema_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "passed"
+
+
 def test_lint_valid_odcs_schema():
     data_contract_file = "fixtures/lint/valid.odcs.yaml"
     data_contract = DataContract(data_contract_file=data_contract_file)

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolve `authoritativeDefinitions[type=semantics]` (and the legacy `type=semantic`) the same way. A `url:` that points at the configured entropy-data host is fetched directly; a `url:` that's an IRI (host doesn't match) is routed through `GET /api/semantics?iri=...` on the configured host, which uses the API key's organization to resolve. Precedence: a property with both a semantics and a definition reference resolves through the semantic one.
 - **Breaking:** Per default, any resolution failure of `authoritativeDefinitions[type in {definition, semantics}]` rejects the contract on `lint`, `test`, `ci`, `export`, and `changelog`.
 - `--no-inline-references` flag to skip the HTTP fetch above and leave each property as written. Useful for offline runs (e.g. CI without `ENTROPY_DATA_API_KEY`) and pure round-trip exports (e.g. `export excel`).
+- When `--json-schema` points at a custom JSON Schema, the ODCS Pydantic step now accepts extra top-level fields the schema allows
 
 ### Fixed
 - Schema type check no longer fails for `varchar(n)` columns on Databricks with PySpark 4.0+, and for `map` and `varchar` types nested inside `struct` columns; affected columns emit a warning and skip the type check instead

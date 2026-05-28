@@ -9,12 +9,24 @@ import yaml
 from fastjsonschema import JsonSchemaValueException
 from jsonschema import validators
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from pydantic import ConfigDict
 
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
+
+
+class _LaxOpenDataContractStandard(OpenDataContractStandard):
+    """ODCS variant that accepts unknown top-level fields.
+
+    Used when the contract is validated against a user-supplied JSON schema
+    (`--json-schema`): the custom schema is the source of truth, so the
+    Pydantic step must not re-reject extras the schema already accepted.
+    """
+
+    model_config = ConfigDict(extra="allow")
 
 
 class _SafeLoaderNoTimestamp(yaml.SafeLoader):
@@ -281,13 +293,15 @@ def _resolve_data_contract_from_str(
 
     if is_open_data_contract_standard(yaml_dict):
         logging.info("Importing ODCS v3")
-        # Validate the ODCS schema
+        # When a custom JSON schema is provided, treat it as the source of
+        # truth and accept extra top-level fields the standard ODCS Pydantic
+        # class would reject.
+        custom_schema = schema_location is not None
         if schema_location is None:
             schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
         _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors)
 
-        # Parse ODCS directly
-        odcs = _parse_odcs_from_dict(yaml_dict)
+        odcs = _parse_odcs_from_dict(yaml_dict, lax=custom_schema)
         if inline_references:
             inline_definitions_into_data_contract(odcs)
         return odcs
@@ -303,10 +317,11 @@ def _resolve_data_contract_from_str(
     return odcs
 
 
-def _parse_odcs_from_dict(yaml_dict: dict) -> OpenDataContractStandard:
+def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContractStandard:
     """Parse ODCS from a dictionary."""
+    cls = _LaxOpenDataContractStandard if lax else OpenDataContractStandard
     try:
-        return OpenDataContractStandard(**yaml_dict)
+        return cls(**yaml_dict)
     except Exception as e:
         raise DataContractException(
             type="schema",
