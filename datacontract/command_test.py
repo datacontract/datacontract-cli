@@ -67,12 +67,19 @@ def test(
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
+    inline_references: Annotated[
+        bool,
+        typer.Option(
+            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
+            "contract and inline the fetched content from the configured entropy-data host."
+        ),
+    ] = True,
     debug: debug_option = None,
 ):
     """
     Run schema and quality tests on configured servers.
     """
-    enable_debug_logging(debug)
+    enable_debug_logging(debug, otherwise_disable_stderr=True)
     validate_publish_url(publish)
 
     check_categories = None
@@ -102,6 +109,7 @@ def test(
         schema_name=schema_name,
         ssl_verification=ssl_verification,
         check_categories=check_categories,
+        inline_references=inline_references,
     ).test()
     if logs:
         _print_logs(run)
