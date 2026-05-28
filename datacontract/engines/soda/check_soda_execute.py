@@ -41,6 +41,7 @@ def check_soda_execute(
         ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
         from soda.scan import Scan
     except ImportError as e:
+        # soda-core is not installed
         if server.type == "s3":
             extra = "s3,duckdb"
         elif server.type == "local":
@@ -48,7 +49,7 @@ def check_soda_execute(
         else:
             extra = server.type
         raise ImportError(
-            f"soda-core is required to test '{server.type}' servers. "
+            f"soda-core is required to test '{server.type}' servers.\n"
             f"Install with: pip install 'datacontract-cli[{extra}]'"
         ) from e
 

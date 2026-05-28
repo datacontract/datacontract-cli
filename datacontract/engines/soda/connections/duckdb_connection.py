@@ -195,9 +195,7 @@ def _load_extension(con, name: str, extra: str) -> None:
     import shutil
     import tempfile
 
-    # first try to use locally bundled wheel to support air-gapped environments.
-    # Decompress to a tempfile rather than the wheel dir, which may be read-only
-    # (system installs, read-only Docker layers).
+    # first try to use locally bundled wheel to support air-gapped environments
     try:
         ext_module = importlib.import_module(f"duckdb_extension_{name}")
         module_path = pathlib.Path(str(importlib.resources.files(ext_module)))
@@ -205,8 +203,6 @@ def _load_extension(con, name: str, extra: str) -> None:
         extension_file_gz = module_path / "extensions" / duckdb_version / f"{name}.duckdb_extension.gz"
 
         if extension_file_gz.exists():
-            # DuckDB derives the extension's init-symbol name from the file basename,
-            # so the file must be named "{name}.duckdb_extension" — not a random tempname.
             tmpdir = pathlib.Path(tempfile.mkdtemp(prefix=f"datacontract-{name}-"))
             extension_file = tmpdir / f"{name}.duckdb_extension"
             with gzip.open(extension_file_gz, "rb") as src, open(extension_file, "wb") as dst:
