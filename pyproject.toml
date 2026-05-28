@@ -92,8 +92,7 @@ redshift = [
 ]
 
 # DuckDB extension wheels are skipped on Linux/aarch64 — no 1.0.x manylinux2014_aarch64 build exists.
-# ARM Linux users fall back to DuckDB's online auto-install (pre-PR behavior); air-gapped use is
-# unsupported on that platform until soda-core-duckdb allows a newer duckdb minor with aarch64 wheels.
+# ARM Linux users fall back to DuckDB's online auto-install (does not work in air-gapped environments)
 s3 = [
   "s3fs>=2025.2.0,<2027.0.0",
   "aiobotocore>=2.17.0,<3.8.0",
