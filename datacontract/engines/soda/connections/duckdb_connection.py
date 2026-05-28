@@ -193,26 +193,28 @@ def _load_extension(con, name: str, extra: str) -> None:
     import importlib.resources
     import pathlib
     import shutil
+    import tempfile
 
-    # first try to use locally bundled wheel to support air-gapped environments
+    # first try to use locally bundled wheel to support air-gapped environments.
+    # Decompress to a tempfile rather than the wheel dir, which may be read-only
+    # (system installs, read-only Docker layers).
     try:
         ext_module = importlib.import_module(f"duckdb_extension_{name}")
-        if ext_module is not None:
-            module_path = pathlib.Path(str(importlib.resources.files(ext_module)))
-            duckdb_version = con.sql("PRAGMA version;").fetchone()[0]
-            extension_dir = module_path / "extensions" / duckdb_version
-            extension_file_gz = extension_dir / f"{name}.duckdb_extension.gz"
-            extension_file = extension_dir / f"{name}.duckdb_extension"
+        module_path = pathlib.Path(str(importlib.resources.files(ext_module)))
+        duckdb_version = con.sql("PRAGMA version;").fetchone()[0]
+        extension_file_gz = module_path / "extensions" / duckdb_version / f"{name}.duckdb_extension.gz"
 
-            if not extension_file.exists() and extension_file_gz.exists():
-                with gzip.open(extension_file_gz, "rb") as src, open(extension_file, "wb") as dst:
-                    shutil.copyfileobj(src, dst)
-
-            if extension_file.exists():
-                con.sql(f"LOAD '{extension_file}'")
-                return
+        if extension_file_gz.exists():
+            # DuckDB derives the extension's init-symbol name from the file basename,
+            # so the file must be named "{name}.duckdb_extension" — not a random tempname.
+            tmpdir = pathlib.Path(tempfile.mkdtemp(prefix=f"datacontract-{name}-"))
+            extension_file = tmpdir / f"{name}.duckdb_extension"
+            with gzip.open(extension_file_gz, "rb") as src, open(extension_file, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            con.sql(f"LOAD '{extension_file}'")
+            return
     except ImportError:
-        ext_module = None
+        pass
 
     try:
         con.install_extension(name)

@@ -35,10 +35,22 @@ def check_soda_execute(
     schema_name: str = "all",
     check_categories: set[str] | None = None,
 ):
-    from soda.common.config_helper import ConfigHelper
+    try:
+        from soda.common.config_helper import ConfigHelper
 
-    ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
-    from soda.scan import Scan
+        ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
+        from soda.scan import Scan
+    except ImportError as e:
+        if server.type == "s3":
+            extra = "s3,duckdb"
+        elif server.type == "local":
+            extra = "duckdb"
+        else:
+            extra = server.type
+        raise ImportError(
+            f"soda-core is required to test '{server.type}' servers. "
+            f"Install with: pip install 'datacontract-cli[{extra}]'"
+        ) from e
 
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
