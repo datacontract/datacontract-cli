@@ -32,7 +32,7 @@ class DataContract:
         publish_url: str = None,
         spark: "SparkSession" = None,
         duckdb_connection: "DuckDBPyConnection" = None,
-        inline_definitions: bool = True,
+        inline_references: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
         all_errors: bool = False,
@@ -49,7 +49,7 @@ class DataContract:
         self._publish_test_results = publish_test_results
         self._spark = spark
         self._duckdb_connection = duckdb_connection
-        self._inline_definitions = inline_definitions
+        self._inline_references = inline_references
         self._ssl_verification = ssl_verification
         self._all_errors = all_errors
         self._check_categories = check_categories
@@ -70,7 +70,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
                 all_errors=self._all_errors,
             )
             run.checks.append(
@@ -136,7 +136,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             execute_data_contract_test(
@@ -188,7 +188,7 @@ class DataContract:
             data_contract_str=self._data_contract_str,
             data_contract=self._data_contract,
             schema_location=self._schema_location,
-            inline_definitions=self._inline_definitions,
+            inline_references=self._inline_references,
         )
 
     def get_data_contract_file(self) -> str | None:
@@ -207,7 +207,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             return exporter_factory.create(export_format).export(
@@ -223,7 +223,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             return exporter_factory.create(export_format).export(

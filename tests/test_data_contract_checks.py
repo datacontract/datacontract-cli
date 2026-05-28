@@ -570,3 +570,49 @@ def test_field_checks_fall_back_to_name_without_physical_name():
 
     present = next(c for c in checks if c.type == "field_is_present")
     assert present.field == "sku"
+
+
+# ---------------------------------------------------------------------------
+# Databricks varchar/map type-check skip (#1245, #1219)
+# ---------------------------------------------------------------------------
+
+
+def test_to_schema_checks_non_databricks_varchar_still_produces_type_check():
+    """Non-Databricks server with varchar physicalType still emits a field_type check."""
+    schema_object = SchemaObject(
+        name="orders",
+        properties=[SchemaProperty(name="name", physicalType="varchar(30)")],
+    )
+    server = Server(type="snowflake")
+
+    checks = to_schema_checks(schema_object=schema_object, server=server)
+
+    types = [c.type for c in checks]
+    assert "field_type" in types
+
+
+def test_to_schema_checks_databricks_struct_with_nested_varchar_skips_type_check():
+    """Databricks struct column whose nested property has varchar physicalType skips type check.
+
+    The parent physicalType (struct<varchar_field:string>) does not itself contain
+    varchar as a type token, but the nested property does — so the parent check
+    must be skipped too (issue #1245).
+    """
+    nested = SchemaProperty(name="varchar_field", physicalType="varchar(100)")
+    schema_object = SchemaObject(
+        name="complex_datatypes",
+        properties=[
+            SchemaProperty(
+                name="struct_with_varchar_test",
+                physicalType="struct<varchar_field:string>",
+                properties=[nested],
+            )
+        ],
+    )
+    server = Server(type="databricks")
+
+    checks = to_schema_checks(schema_object=schema_object, server=server)
+
+    types = [c.type for c in checks]
+    assert "field_is_present" in types
+    assert "field_type" not in types

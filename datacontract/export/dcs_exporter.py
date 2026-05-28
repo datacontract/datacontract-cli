@@ -28,7 +28,7 @@ from datacontract.export.exporter import Exporter
 
 
 class DcsExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         return to_dcs_yaml(data_contract)
 
 
