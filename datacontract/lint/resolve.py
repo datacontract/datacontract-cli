@@ -66,7 +66,7 @@ def _resolve_jsonschema_compliance_error_message_path(yaml_str, message):
                 f"properties.{yaml_str['schema'][int(schema_index)]['properties'][int(property_index)]['name']}",
             )
     except Exception:
-        logging.warning("YAML doesn't conform to JSON schema. Attempting to resolve error message path.")
+        logging.warning("YAML doesn't conform to JSON schema. Could not resolve indexed schema or property names.")
         except_message = message
     finally:
         return except_message
