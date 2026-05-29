@@ -77,6 +77,14 @@ def test_lint_invalid_odcs_schema():
     assert run.result == "failed"
 
 
+def test_lint_invalid_odcs_schema_multiple_errors():
+    data_contract_file = "fixtures/lint/invalid_multiple_schema_errors.odcs.yaml"
+    result = runner.invoke(app, ["lint", data_contract_file])
+
+    assert result.exit_code == 1
+    assert "data.schema.no_description_schema.description must be " in result.stdout
+
+
 def test_lint_invalid_odcs_schema_all_errors_api():
     data_contract_file = "fixtures/lint/invalid_multiple_errors.odcs.yaml"
     data_contract = DataContract(data_contract_file=data_contract_file, all_errors=True)
@@ -90,7 +98,6 @@ def test_lint_invalid_odcs_schema_all_errors_api():
 
 def test_lint_cli_invalid_odcs_schema_all_errors():
     data_contract_file = "fixtures/lint/invalid_multiple_errors.odcs.yaml"
-
     result = runner.invoke(app, ["lint", data_contract_file, "--all-errors"])
 
     assert result.exit_code == 1
