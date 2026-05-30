@@ -20,11 +20,11 @@ jobs:
           # Pull request
           only-pr-labels: 'waiting-for-response'
           days-before-stale: 30
-          days-before-close: 14
+          days-before-close: 30
           stale-pr-label: 'stale'
           stale-pr-message: >
             This PR has been inactive for 30 days.
-            It will be closed in 14 days if there is no further activity.
+            It will be closed in 30 more days if there is no further activity.
             Feel free to reopen if you'd like to continue working on it.
           close-pr-message: >
             Closed due to inactivity. Feel free to reopen if you'd like to pick this up again.
