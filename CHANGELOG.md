@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- new `datacontract import powerbi` command : import PowerBI Semantic Model into an ODCS contract
+
 ### Added
 - Resolve `authoritativeDefinitions[type=definition]` on schema properties: the referenced ODCS property is fetched from the configured entropy-data host (`ENTROPY_DATA_HOST`) and inlined into the property, filling fields the contract author left unset. The configured `x-api-key` is sent only when the resolved URL's host matches `ENTROPY_DATA_HOST` so a third-party `url:` cannot receive the user's key.
 - Resolve `authoritativeDefinitions[type=semantics]` (and the legacy `type=semantic`) the same way. A `url:` that points at the configured entropy-data host is fetched directly; a `url:` that's an IRI (host doesn't match) is routed through `GET /api/semantics?iri=...` on the configured host, which uses the API key's organization to resolve. Precedence: a property with both a semantics and a definition reference resolves through the semantic one.
