@@ -10,7 +10,7 @@ description:
 servers:
   - server: production
     type: azure
-    format: json
+    format: binary
     location: https://myaccount.blob.core.windows.net/mycontainer/raw/orders/
 
 schema:
@@ -38,7 +38,7 @@ schema:
 
       - name: lastModified
         logicalType: timestamp
-        description: UTC timestamp of the last modification. Auto-checked not-in-future.
+        description: UTC timestamp of the last modification.
         required: true
 
       - name: contentType

@@ -627,15 +627,13 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX`            | The Client Secret value                              |
 
 
-Azure Blob Storage / ADLS Gen2 metadata checks for schemas with physicalType='file'.
+##### Azure Blob Storage / ADLS Gen2 metadata checks
 
 Each ODCS schema object with ``physicalType='file'`` represents a **unique folder/prefix**
 in Azure Blob Storage or ADLS Gen2. Its ``properties`` list maps directly to
 ``BlobProperties`` attributes from the Azure SDK: for every declared property the engine
 extracts the corresponding attribute from each blob and validates it against the quality
 constraints declared on that property.
-
-BlobProperties binding (ODCS property name → BlobProperties attribute)::
 
 | Property name       | BlobProperties attribute                        |
 |---------------------|-------------------------------------------------|
