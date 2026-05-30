@@ -10,7 +10,7 @@ from datacontract.export.protobuf_exporter import to_protobuf
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/protobuf/datacontract.yaml", "--format", "protobuf"])
+    result = runner.invoke(app, ["export", "protobuf", "./fixtures/protobuf/datacontract.yaml"])
     assert result.exit_code == 0
 
 

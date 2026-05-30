@@ -1,6 +1,6 @@
-import os
-
 import yaml
+
+from datacontract.model.exceptions import require_env
 
 
 def to_postgres_soda_configuration(server):
@@ -10,8 +10,8 @@ def to_postgres_soda_configuration(server):
             "type": "postgres",
             "host": server.host,
             "port": str(server.port),
-            "username": os.getenv("DATACONTRACT_POSTGRES_USERNAME"),
-            "password": os.getenv("DATACONTRACT_POSTGRES_PASSWORD"),
+            "username": require_env("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres"),
+            "password": require_env("DATACONTRACT_POSTGRES_PASSWORD", server_type="postgres"),
             "database": server.database,
             "schema": server.schema_,
         }

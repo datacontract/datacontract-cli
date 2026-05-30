@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from enum import Enum
 
 import sqlglot
 from open_data_contract_standard.model import OpenDataContractStandard
@@ -15,6 +16,20 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+
+
+class SqlDialect(str, Enum):
+    postgres = "postgres"
+    tsql = "tsql"
+    sqlserver = "sqlserver"
+    bigquery = "bigquery"
+    snowflake = "snowflake"
+    databricks = "databricks"
+    spark = "spark"
+    duckdb = "duckdb"
+    oracle = "oracle"
+    mysql = "mysql"
+    redshift = "redshift"
 
 
 class SqlImporter(Importer):

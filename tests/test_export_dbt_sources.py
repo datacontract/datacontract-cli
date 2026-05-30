@@ -13,7 +13,7 @@ from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(
-        app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "dbt-sources", "--server", "production"]
+        app, ["export", "dbt-sources", "./fixtures/export/datacontract.odcs.yaml", "--server", "production"]
     )
     print(result.stdout)
     assert result.exit_code == 0
@@ -22,7 +22,7 @@ def test_cli():
 def test_cli_bigquery():
     runner = CliRunner()
     result = runner.invoke(
-        app, ["export", "./fixtures/dbt/export/datacontract.yaml", "--format", "dbt-sources", "--server", "production"]
+        app, ["export", "dbt-sources", "./fixtures/dbt/export/datacontract.yaml", "--server", "production"]
     )
     print(result.stdout)
     assert result.exit_code == 0

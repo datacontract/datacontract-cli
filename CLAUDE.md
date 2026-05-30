@@ -85,10 +85,10 @@ datacontract lint datacontract.yaml
 datacontract test datacontract.yaml
 
 # Export a data contract to a different format
-datacontract export --format html datacontract.yaml --output datacontract.html
+datacontract export html datacontract.yaml --output datacontract.html
 
 # Import from a different format
-datacontract import --format sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
+datacontract import sql --source my-ddl.sql --dialect postgres --output datacontract.yaml
 
 # Show a changelog between two data contracts
 datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
@@ -129,6 +129,7 @@ The project uses factory patterns for extensibility:
 - Many tests use fixtures in `tests/fixtures/` which provide sample data contracts and test data
 - Supports integration testing with various databases and data stores
 - **Tests describe expected behavior, not actual behavior.** Write the test for what the code *should* do. If the test fails, fix the code under test, not the test (unless there is a justified reason for simplification).
+- Don't add tests that duplicate existing coverage.
 
 ## Code Conventions
 

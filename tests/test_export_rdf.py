@@ -14,15 +14,13 @@ from datacontract.lint.resolve import resolve_data_contract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(
-        app, ["export", "./fixtures/export/rdf/datacontract.yaml", "--format", "rdf", "--rdf-base", "urn:acme:"]
-    )
+    result = runner.invoke(app, ["export", "rdf", "./fixtures/export/rdf/datacontract.yaml", "--base", "urn:acme:"])
     assert result.exit_code == 0
 
 
 def test_no_rdf_base():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/rdf/datacontract.yaml", "--format", "rdf"])
+    result = runner.invoke(app, ["export", "rdf", "./fixtures/export/rdf/datacontract.yaml"])
     assert result.exit_code == 0
 
 

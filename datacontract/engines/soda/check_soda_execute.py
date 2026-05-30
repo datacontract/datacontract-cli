@@ -18,6 +18,7 @@ from datacontract.engines.soda.connections.impala import to_impala_soda_configur
 from datacontract.engines.soda.connections.kafka import create_spark_session, read_kafka_topic
 from datacontract.engines.soda.connections.mysql import to_mysql_soda_configuration
 from datacontract.engines.soda.connections.postgres import to_postgres_soda_configuration
+from datacontract.engines.soda.connections.redshift import to_redshift_soda_configuration
 from datacontract.engines.soda.connections.snowflake import to_snowflake_soda_configuration
 from datacontract.engines.soda.connections.sqlserver import to_sqlserver_soda_configuration
 from datacontract.engines.soda.connections.trino import to_trino_soda_configuration
@@ -34,10 +35,23 @@ def check_soda_execute(
     schema_name: str = "all",
     check_categories: set[str] | None = None,
 ):
-    from soda.common.config_helper import ConfigHelper
+    try:
+        from soda.common.config_helper import ConfigHelper
 
-    ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
-    from soda.scan import Scan
+        ConfigHelper.get_instance().upsert_value("send_anonymous_usage_stats", False)
+        from soda.scan import Scan
+    except ImportError as e:
+        # soda-core is not installed
+        if server.type == "s3":
+            extra = "s3,duckdb"
+        elif server.type == "local":
+            extra = "duckdb"
+        else:
+            extra = server.type
+        raise ImportError(
+            f"soda-core is required to test '{server.type}' servers.\n"
+            f"Install with: pip install 'datacontract-cli[{extra}]'"
+        ) from e
 
     if data_contract is None:
         run.log_warn("Cannot run engine soda-core, as data contract is invalid")
@@ -74,6 +88,10 @@ def check_soda_execute(
         scan.set_data_source_name(server.type)
     elif server.type == "postgres":
         soda_configuration_str = to_postgres_soda_configuration(server)
+        scan.add_configuration_yaml_str(soda_configuration_str)
+        scan.set_data_source_name(server.type)
+    elif server.type == "redshift":
+        soda_configuration_str = to_redshift_soda_configuration(server)
         scan.add_configuration_yaml_str(soda_configuration_str)
         scan.set_data_source_name(server.type)
     elif server.type == "mysql":
@@ -191,13 +209,14 @@ def check_soda_execute(
         )
 
     if scan.has_error_logs():
-        run.log_warn("Engine soda-core has errors. See the logs for details.")
+        reason = _first_error_message(scan_results) or "Engine soda-core has errors. See the logs for details."
+        run.log_error(f"Engine soda-core has errors: {reason}")
         run.checks.append(
             Check(
                 type="general",
                 name="Data Contract Tests",
-                result=ResultEnum.warning,
-                reason="Engine soda-core has errors. See the logs for details.",
+                result=ResultEnum.failed,
+                reason=reason,
                 engine="soda-core",
             )
         )
@@ -209,6 +228,15 @@ def get_check(run, scan_result) -> Check | None:
     if check_by_name is not None:
         return check_by_name
 
+    return None
+
+
+def _first_error_message(scan_results: dict) -> str | None:
+    for log in scan_results.get("logs") or []:
+        if log.get("level") == "ERROR":
+            message = log.get("message")
+            if message:
+                return message.strip().splitlines()[0]
     return None
 
 

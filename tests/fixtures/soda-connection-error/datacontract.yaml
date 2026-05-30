@@ -1,0 +1,20 @@
+dataContractSpecification: 1.2.1
+id: unreachable
+info:
+  title: Unreachable Postgres
+  version: 0.0.1
+  owner: test
+servers:
+  unreachable:
+    type: postgres
+    host: 127.0.0.1
+    port: 15999
+    database: x
+    schema: public
+models:
+  m:
+    type: table
+    fields:
+      f:
+        type: varchar
+        required: true

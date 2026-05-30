@@ -122,16 +122,18 @@ def create_property(
         logical_type_options["exclusiveMinimum"] = exclusive_minimum
     if exclusive_maximum is not None:
         logical_type_options["exclusiveMaximum"] = exclusive_maximum
-    if precision is not None:
-        logical_type_options["precision"] = precision
-    if scale is not None:
-        logical_type_options["scale"] = scale
     if format:
         logical_type_options["format"] = format
     if logical_type_options:
         prop.logicalTypeOptions = logical_type_options
 
-    # Custom properties
+    # precision/scale are forbidden in logicalTypeOptions for number types per ODCS v3.1.0,
+    # so carry them in customProperties instead.
+    custom_properties = dict(custom_properties or {})
+    if precision is not None:
+        custom_properties.setdefault("precision", precision)
+    if scale is not None:
+        custom_properties.setdefault("scale", scale)
     if custom_properties:
         prop.customProperties = [CustomProperty(property=k, value=v) for k, v in custom_properties.items()]
 

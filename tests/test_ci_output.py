@@ -28,7 +28,7 @@ def _make_run(checks):
 def test_ci_output_infers_format_from_filename(tmp_path):
     run = _make_run([Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)])
 
-    with patch("datacontract.cli.DataContract") as mock_datacontract:
+    with patch("datacontract.command_ci.DataContract") as mock_datacontract:
         mock_datacontract.return_value.test.return_value = run
         result = runner.invoke(
             app,
