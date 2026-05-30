@@ -1,5 +1,6 @@
 import importlib.resources as resources
 import logging
+import re
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlparse
 
@@ -9,12 +10,24 @@ import yaml
 from fastjsonschema import JsonSchemaValueException
 from jsonschema import validators
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from pydantic import ConfigDict
 
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
+
+
+class _LaxOpenDataContractStandard(OpenDataContractStandard):
+    """ODCS variant that accepts unknown top-level fields.
+
+    Used when the contract is validated against a user-supplied JSON schema
+    (`--json-schema`): the custom schema is the source of truth, so the
+    Pydantic step must not re-reject extras the schema already accepted.
+    """
+
+    model_config = ConfigDict(extra="allow")
 
 
 class _SafeLoaderNoTimestamp(yaml.SafeLoader):
@@ -28,6 +41,35 @@ _SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
     k: [(tag, regexp) for tag, regexp in v if tag != "tag:yaml.org,2002:timestamp"]
     for k, v in _SafeLoaderNoTimestamp.yaml_implicit_resolvers.copy().items()
 }
+
+
+def _resolve_jsonschema_compliance_error_message_path(yaml_str, message):
+    try:
+        matches = re.findall(r"\[(\d+)\]", message)
+        schema_index = matches[0] if len(matches) > 0 else None
+        property_index = matches[1] if len(matches) > 1 else None
+        except_message = message
+        if schema_index is not None and "schema" in yaml_str and int(schema_index) < len(yaml_str["schema"]):
+            except_message = except_message.replace(
+                f"schema[{schema_index}]", f"schema.{yaml_str['schema'][int(schema_index)]['name']}"
+            )
+
+        if (
+            property_index is not None
+            and "schema" in yaml_str
+            and int(schema_index) < len(yaml_str["schema"])
+            and "properties" in yaml_str["schema"][int(schema_index)]
+            and int(property_index) < len(yaml_str["schema"][int(schema_index)]["properties"])
+        ):
+            except_message = except_message.replace(
+                f"properties[{property_index}]",
+                f"properties.{yaml_str['schema'][int(schema_index)]['properties'][int(property_index)]['name']}",
+            )
+    except Exception:
+        logging.warning("YAML doesn't conform to JSON schema. Could not resolve indexed schema or property names.")
+        except_message = message
+    finally:
+        return except_message
 
 
 def resolve_data_contract_dict(
@@ -281,13 +323,15 @@ def _resolve_data_contract_from_str(
 
     if is_open_data_contract_standard(yaml_dict):
         logging.info("Importing ODCS v3")
-        # Validate the ODCS schema
+        # When a custom JSON schema is provided, treat it as the source of
+        # truth and accept extra top-level fields the standard ODCS Pydantic
+        # class would reject.
+        custom_schema = schema_location is not None
         if schema_location is None:
             schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
         _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors)
 
-        # Parse ODCS directly
-        odcs = _parse_odcs_from_dict(yaml_dict)
+        odcs = _parse_odcs_from_dict(yaml_dict, lax=custom_schema)
         if inline_references:
             inline_definitions_into_data_contract(odcs)
         return odcs
@@ -303,10 +347,11 @@ def _resolve_data_contract_from_str(
     return odcs
 
 
-def _parse_odcs_from_dict(yaml_dict: dict) -> OpenDataContractStandard:
+def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContractStandard:
     """Parse ODCS from a dictionary."""
+    cls = _LaxOpenDataContractStandard if lax else OpenDataContractStandard
     try:
-        return OpenDataContractStandard(**yaml_dict)
+        return cls(**yaml_dict)
     except Exception as e:
         raise DataContractException(
             type="schema",
@@ -361,8 +406,10 @@ def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_erro
         fastjsonschema.validate(schema, yaml_str, use_default=False)
         logging.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
-        logging.warning(f"Data Contract YAML is invalid. Validation error: {e.message}")
-        raise _validation_error_to_exception(e.message, original_exception=e)
+        except_message = _resolve_jsonschema_compliance_error_message_path(yaml_str, e.message)
+
+        logging.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
+        raise _validation_error_to_exception(except_message, original_exception=e)
     except Exception as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
         raise _validation_error_to_exception(str(e), original_exception=e)

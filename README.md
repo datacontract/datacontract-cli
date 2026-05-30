@@ -239,31 +239,33 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
 
 A list of available extras:
 
-| Dependency              | Installation Command                       |
-|-------------------------|--------------------------------------------|
-| Amazon Athena           | `pip install datacontract-cli[athena]`     |
-| Avro Support            | `pip install datacontract-cli[avro]`       |
-| Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
-| CSV                     | `pip install datacontract-cli[csv]`        |
-| Databricks Integration  | `pip install datacontract-cli[databricks]` |
-| DBML                    | `pip install datacontract-cli[dbml]`       |
-| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
-| Excel                   | `pip install datacontract-cli[excel]`      |
-| Iceberg                 | `pip install datacontract-cli[iceberg]`    |
-| Impala                  | `pip install datacontract-cli[impala]`     |
-| Kafka Integration       | `pip install datacontract-cli[kafka]`      |
-| MySQL Integration       | `pip install datacontract-cli[mysql]`      |
-| Oracle                  | `pip install datacontract-cli[oracle]`     |
-| Parquet                 | `pip install datacontract-cli[parquet]`    |
-| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
-| protobuf                | `pip install datacontract-cli[protobuf]`   |
-| RDF                     | `pip install datacontract-cli[rdf]`        |
-| Amazon Redshift         | `pip install datacontract-cli[redshift]`   |
-| S3 Integration          | `pip install datacontract-cli[s3]`         |
-| Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
-| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
-| Trino                   | `pip install datacontract-cli[trino]`      |
-| API (run as web server) | `pip install datacontract-cli[api]`        |
+| Dependency                               | Installation Command                       |
+|------------------------------------------|--------------------------------------------|
+| Amazon Athena                            | `pip install datacontract-cli[athena]`     |
+| Avro Support                             | `pip install datacontract-cli[avro]`       |
+| Azure Integration                        | `pip install datacontract-cli[azure]`      |
+| Google BigQuery                          | `pip install datacontract-cli[bigquery]`   |
+| CSV                                      | `pip install datacontract-cli[csv]`        |
+| Databricks Integration                   | `pip install datacontract-cli[databricks]` |
+| DBML                                     | `pip install datacontract-cli[dbml]`       |
+| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]`     |
+| Excel                                    | `pip install datacontract-cli[excel]`      |
+| GCS Integration                          | `pip install datacontract-cli[gcs]`        |
+| Iceberg                                  | `pip install datacontract-cli[iceberg]`    |
+| Impala                                   | `pip install datacontract-cli[impala]`     |
+| Kafka Integration                        | `pip install datacontract-cli[kafka]`      |
+| MySQL Integration                        | `pip install datacontract-cli[mysql]`      |
+| Oracle                                   | `pip install datacontract-cli[oracle]`     |
+| Parquet                                  | `pip install datacontract-cli[parquet]`    |
+| PostgreSQL Integration                   | `pip install datacontract-cli[postgres]`   |
+| protobuf                                 | `pip install datacontract-cli[protobuf]`   |
+| RDF                                      | `pip install datacontract-cli[rdf]`        |
+| Amazon Redshift                          | `pip install datacontract-cli[redshift]`   |
+| S3 Integration                           | `pip install datacontract-cli[s3]`         |
+| Snowflake Integration                    | `pip install datacontract-cli[snowflake]`  |
+| Microsoft SQL Server                     | `pip install datacontract-cli[sqlserver]`  |
+| Trino                                    | `pip install datacontract-cli[trino]`      |
+| API (run as web server)                  | `pip install datacontract-cli[api]`        |
 
 
 ## Documentation

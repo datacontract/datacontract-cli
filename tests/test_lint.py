@@ -37,6 +37,28 @@ def test_lint_custom_schema():
     assert run.result == "passed"
 
 
+def test_lint_extra_top_level_field_rejected_without_custom_schema():
+    """Without --json-schema, extra top-level fields must fail (default ODCS is strict)."""
+    data_contract_file = "fixtures/lint/odcs_with_extra_top_level.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "failed"
+
+
+def test_lint_extra_top_level_field_allowed_with_custom_schema():
+    """With --json-schema, the custom schema is the source of truth and the
+    Pydantic step must accept extra top-level fields it allows."""
+    data_contract_file = "fixtures/lint/odcs_with_extra_top_level.yaml"
+    schema_file = "fixtures/lint/odcs_with_extra_top_level.schema.json"
+    data_contract = DataContract(data_contract_file=data_contract_file, schema_location=schema_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "passed"
+
+
 def test_lint_valid_odcs_schema():
     data_contract_file = "fixtures/lint/valid.odcs.yaml"
     data_contract = DataContract(data_contract_file=data_contract_file)
@@ -55,6 +77,14 @@ def test_lint_invalid_odcs_schema():
     assert run.result == "failed"
 
 
+def test_lint_invalid_odcs_schema_multiple_errors():
+    data_contract_file = "fixtures/lint/invalid_multiple_schema_errors.odcs.yaml"
+    result = runner.invoke(app, ["lint", data_contract_file])
+
+    assert result.exit_code == 1
+    assert "data.schema.no_description_schema.description must be " in result.stdout
+
+
 def test_lint_invalid_odcs_schema_all_errors_api():
     data_contract_file = "fixtures/lint/invalid_multiple_errors.odcs.yaml"
     data_contract = DataContract(data_contract_file=data_contract_file, all_errors=True)
@@ -68,7 +98,6 @@ def test_lint_invalid_odcs_schema_all_errors_api():
 
 def test_lint_cli_invalid_odcs_schema_all_errors():
     data_contract_file = "fixtures/lint/invalid_multiple_errors.odcs.yaml"
-
     result = runner.invoke(app, ["lint", data_contract_file, "--all-errors"])
 
     assert result.exit_code == 1
