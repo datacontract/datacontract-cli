@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.12.3"
+version = "0.12.4"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -64,7 +64,7 @@ databricks = [
   "soda-core-spark-df>=3.3.20,<3.6.0",
   "soda-core-spark[databricks]>=3.3.20,<3.6.0",
   "databricks-sql-connector>=3.7.0,<4.3.0",
-  "databricks-sdk<0.109.0",
+  "databricks-sdk<0.112.0",
   "pyspark>=3.5.0,<5.0.0",
 ]
 
@@ -139,8 +139,8 @@ rdf = [
 ]
 
 api = [
-  "fastapi==0.136.1",
-  "uvicorn>=0.44.0,<0.47.0",
+  "fastapi>=0.115.0,<0.137.0",
+  "uvicorn>=0.44.0,<0.49.0",
 ]
 
 azure = [
@@ -170,7 +170,7 @@ dev = [
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.13",
-  "ruff==0.15.12",
+  "ruff==0.15.14",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
   "trino==0.337.0",
 ]
@@ -193,8 +193,14 @@ build-backend = "setuptools.build_meta"
 # "Character set 'utf8' unsupported". Override to allow newer
 # mysql-connector-python releases that know about the current charsets.
 # See: https://github.com/sodadata/soda-core/issues/2515
+#
+# yarl 1.24.0 and 1.24.1 were published to PyPI with cp310-only wheels and no
+# sdist, so `uv sync` fails on Python 3.11/3.12/3.13 ("no wheel for the current
+# platform"). The whole 1.24.x line is affected; pin below it (resolves to the
+# last good 1.23.0) until a 1.24.x with full wheels is available.
 override-dependencies = [
     "mysql-connector-python>=8.0.30,<9.7.0",
+    "yarl<1.24",
 ]
 
 [tool.pytest.ini_options]

@@ -21,17 +21,17 @@ def _get_description_str(description: Union[str, Description, None]) -> Optional
 
 
 class DbtModelsExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         return to_dbt_models_yaml(data_contract, server)
 
 
 class DbtSourceExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         return to_dbt_sources_yaml(data_contract, server)
 
 
 class DbtStageExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         model_name, model_value = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         return to_dbt_staging_sql(
             data_contract,

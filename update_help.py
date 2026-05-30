@@ -18,7 +18,7 @@ def fetch_help(command_path: list[str]) -> str:
         env={**env, **dict(os.environ)},
     )
     print(f"Help text fetched for command: {label}\n{result.stdout}")
-    return result.stdout
+    return result.stdout.strip()
 
 
 def discover_commands(readme: str, prefix: list[str] | None = None) -> list[list[str]]:
@@ -68,7 +68,7 @@ def update_markdown(file_path: Path, command_paths: list[list[str]]) -> None:
         else:
             print(f"No match found for command: {command}")
 
-        updated_content = f"### {command}\n```\n{help_text}```"
+        updated_content = f"### {command}\n```\n{help_text}\n```"
         content = re.sub(pattern, updated_content, content, flags=re.DOTALL)
 
     print(f"Writing updated content back to file: {file_path}")

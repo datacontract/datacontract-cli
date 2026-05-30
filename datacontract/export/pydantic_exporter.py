@@ -8,7 +8,7 @@ from datacontract.export.exporter import Exporter
 
 
 class PydanticExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         return to_pydantic_model_str(data_contract)
 
 

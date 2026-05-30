@@ -9,7 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - new `file store test on azure blob storage to employ data contract as storage policy` ([#1227](https://github.com/datacontract/datacontract-cli/issues/1227))
 
 ### Added
+- Resolve `authoritativeDefinitions[type=definition]` on schema properties: the referenced ODCS property is fetched from the configured entropy-data host (`ENTROPY_DATA_HOST`) and inlined into the property, filling fields the contract author left unset. The configured `x-api-key` is sent only when the resolved URL's host matches `ENTROPY_DATA_HOST` so a third-party `url:` cannot receive the user's key.
+- Resolve `authoritativeDefinitions[type=semantics]` (and the legacy `type=semantic`) the same way. A `url:` that points at the configured entropy-data host is fetched directly; a `url:` that's an IRI (host doesn't match) is routed through `GET /api/semantics?iri=...` on the configured host, which uses the API key's organization to resolve. Precedence: a property with both a semantics and a definition reference resolves through the semantic one.
+- **Breaking:** Per default, any resolution failure of `authoritativeDefinitions[type in {definition, semantics}]` rejects the contract on `lint`, `test`, `ci`, `export`, and `changelog`.
+- `--no-inline-references` flag to skip the HTTP fetch above and leave each property as written. Useful for offline runs (e.g. CI without `ENTROPY_DATA_API_KEY`) and pure round-trip exports (e.g. `export excel`).
+
+### Fixed
+- Schema type check no longer fails for `varchar(n)` columns on Databricks with PySpark 4.0+, and for `map` and `varchar` types nested inside `struct` columns; affected columns emit a warning and skip the type check instead
+- `WARNING`/`ERROR` log messages are no longer hidden by default for `import`, `export`, `changelog`, `catalog`, `dbt`, and `publish`.
+
+## [0.12.4] - 2026-05-21
+
+### Added
 - `datacontract test` now logs the Data Contract CLI version and whether it ran as a local CLI or through the FastAPI server (including the request URL) as part of the test result logs
+
+### Fixed
+- Schema checks now resolve each property by its `physicalName` when set (falling back to `name`), matching the existing table-level resolution and the SQL/BigQuery exporters. Previously a property whose logical `name` differed from its physical column (e.g. `name: brand` with `physicalName: BRAND`) failed the presence and type checks even though the physical column existed (#1246)
+- `import dbt --model <name>.vN` now correctly imports the specified version of a versioned dbt model. Previously the filter compared the full `name.vN` string against `node["name"]` (which is always the bare base name), producing a silent empty contract (#1249)
 
 ## [0.12.3] - 2026-05-18
 
