@@ -1,0 +1,14 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: "invalid_odcs_multiple"
+name: "This is invalid ODCS, because description is empty and it should be a string."
+version: "1.0.0"
+status: "draft"
+schema:
+  - name: no_description_schema
+    logicalType: object
+    description:
+    properties:
+      - name: id
+        logicalType: string
+        description: The unique identifier for the object.

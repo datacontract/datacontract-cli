@@ -16,8 +16,8 @@ from datacontract.output.output_format import OutputFormat
 def write_test_result(
     run: Run,
     console: Console,
-    output_format: OutputFormat,
-    output_path: Path,
+    output_format: Optional[OutputFormat],
+    output_path: Optional[Path],
     data_contract: Optional[OpenDataContractStandard] = None,
 ):
     if output_format is not None and not output_path:
@@ -61,7 +61,7 @@ def write_test_result(
             if details_str:
                 console.print(f"Server: {run.server} ({details_str})")
 
-    _print_table(run, console)
+    print_test_results_table(run, console)
     if run.result == "passed":
         console.print(
             f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
@@ -93,7 +93,7 @@ def write_test_result(
         raise typer.Exit(code=1)
 
 
-def _print_table(run, console):
+def print_test_results_table(run, console):
     table = Table(box=box.ROUNDED)
     table.add_column("Result", no_wrap=True)
     table.add_column("Check", max_width=100)

@@ -10,7 +10,7 @@ from datacontract.cli import app
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "html"])
+    result = runner.invoke(app, ["export", "html", "./fixtures/export/datacontract.odcs.yaml"])
     assert result.exit_code == 0
 
 
@@ -20,9 +20,8 @@ def test_cli_with_output(tmp_path: Path):
         app,
         [
             "export",
-            "./fixtures/export/datacontract.odcs.yaml",
-            "--format",
             "html",
+            "./fixtures/export/datacontract.odcs.yaml",
             "--output",
             tmp_path / "datacontract.html",
         ],
@@ -34,7 +33,7 @@ def test_cli_with_output(tmp_path: Path):
 def test_schemas_are_rendered():
     """Regression test for #880: schemas should render in the ODCS HTML template."""
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "html"])
+    result = runner.invoke(app, ["export", "html", "./fixtures/export/datacontract.odcs.yaml"])
     assert result.exit_code == 0
     # The schema name 'orders' and a property name 'order_id' should appear in the output
     assert "orders" in result.output

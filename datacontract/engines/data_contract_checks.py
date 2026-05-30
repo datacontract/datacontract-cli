@@ -1,8 +1,8 @@
+import logging
 import re
 import uuid
 from dataclasses import dataclass
 from typing import List, Optional
-from venv import logger
 
 import yaml
 from open_data_contract_standard.model import (
@@ -15,6 +15,8 @@ from open_data_contract_standard.model import (
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
 from datacontract.model.run import Check
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +48,48 @@ def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
     elif quoting_config.quote_field_name_with_backticks:
         return f"`{field_name}`"
     return field_name
+
+
+_BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
+_ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"}
+
+_BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
+
+_DATABRICKS_UNSUPPORTED_TYPE_RE = re.compile(r"\bvarchar\b|\bmap\s*<", re.IGNORECASE)
+
+
+def _has_unsupported_databricks_type(prop) -> bool:
+    """Return True if physicalType contains varchar(n) or map at any nesting level,
+    or if any nested property (recursively) has an unsupported type.
+
+    soda-core-spark-df ≤3.5.6 cannot match these types correctly on PySpark 4.0+:
+    - varchar(n): reported as a distinct VarcharType by PySpark 4.0+, not in SCHEMA_CHECK_TYPES_MAPPING
+    - map: convert_to_databricks() returns None for maps nested inside structs
+    Affected issues: #1245 (varchar), #1219 (map in struct)
+    """
+    if _DATABRICKS_UNSUPPORTED_TYPE_RE.search(prop.physicalType or ""):
+        return True
+    if prop.properties:
+        return any(_has_unsupported_databricks_type(nested) for nested in prop.properties)
+    return False
+
+
+_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver"}
+
+
+def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> str:
+    """Quote an identifier only when the target dialect would reject it bare.
+
+    Avoids unnecessary quoting, because quoting leads to case-sensitivity.
+    """
+    if identifier is None:
+        return identifier
+    server_type = server.type if server and server.type else None
+    pattern = _BARE_IDENTIFIER_PERMISSIVE if server_type in _PERMISSIVE_BARE_DIALECTS else _BARE_IDENTIFIER_STRICT
+    if pattern.match(identifier):
+        return identifier
+    return f"`{identifier}`" if server_type in _BACKTICK_DIALECTS else f'"{identifier}"'
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -84,7 +128,7 @@ def create_checks(data_contract: OpenDataContractStandard, server: Server, schem
             continue
         schema_checks = to_schema_checks(schema_obj, server)
         checks.extend(schema_checks)
-    checks.extend(to_servicelevel_checks(data_contract))
+    checks.extend(to_servicelevel_checks(data_contract, server))
     return [check for check in checks if check is not None]
 
 
@@ -98,21 +142,35 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
 
     type1 = server.type if server and server.type else None
     config = QuotingConfig(
-        quote_field_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_field_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
-        quote_model_name=type1 in ["postgres", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"],
-        quote_model_name_with_backticks=type1 in ["databricks", "bigquery", "mysql"],
+        quote_field_name=type1 in _ANSI_QUOTING_DIALECTS,
+        quote_field_name_with_backticks=type1 in _BACKTICK_DIALECTS,
+        quote_model_name=type1 in _ANSI_QUOTING_DIALECTS,
+        quote_model_name_with_backticks=type1 in _BACKTICK_DIALECTS,
     )
     quoting_config = config
 
     for prop in properties:
-        property_name = prop.name
-        logical_type = prop.logicalType
+        # ODCS: physicalName is the actual column name in the system under
+        # test. to_schema_name() already prefers schema_object.physicalName at
+        # the table level — mirror that at the field level so checks target the
+        # real column when the logical `name` differs from the physical one.
+        property_name = prop.physicalName or prop.name
 
         checks.append(check_property_is_present(schema_name, property_name, quoting_config, server))
-        if check_types and logical_type is not None:
-            sql_type: str = convert_to_sql_type(prop, server_type)
-            checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
+        if check_types and (prop.physicalType is not None or prop.logicalType is not None):
+            if server_type == "databricks" and _has_unsupported_databricks_type(prop):
+                logger.warning(
+                    "Skipping schema type check for column '%s': physicalType '%s' "
+                    "contains varchar(n) or map, which are not reliably matched by "
+                    "soda-core-spark-df ≤3.5.6 on PySpark 4.0+. "
+                    "See https://github.com/datacontract/datacontract-cli/issues/1245",
+                    property_name,
+                    prop.physicalType,
+                )
+            else:
+                sql_type: str = convert_to_sql_type(prop, server_type)
+                if sql_type is not None:
+                    checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
         if prop.required:
             checks.append(check_property_required(schema_name, property_name, quoting_config))
         if prop.unique:
@@ -233,6 +291,9 @@ def check_property_is_present(
 def check_property_type(
     model_name: str, field_name: str, expected_type: str, quoting_config: QuotingConfig = QuotingConfig()
 ):
+    if expected_type is None:
+        logger.warning(f"Cannot build type check for {model_name}.{field_name}: expected_type is None.")
+        return None
     check_type = "field_type"
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
@@ -759,10 +820,10 @@ def check_quality_list(
         elif quality.type == "sql":
             if property_name is None:
                 check_key = f"{schema_name}__quality_sql_{count}"
-                check_type = "field_quality_sql"
+                check_type = "model_quality_sql"
             else:
                 check_key = f"{schema_name}__{property_name}__quality_sql_{count}"
-                check_type = "model_quality_sql"
+                check_type = "field_quality_sql"
             threshold = to_sodacl_threshold(quality)
             query = prepare_query(quality, schema_name, property_name, quoting_config, server)
             if query is None:
@@ -878,6 +939,7 @@ def prepare_query(
 
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
+    query = re.sub(r'["\']?\$?\{object}["\']?', model_name_for_soda, query)
 
     if server and server.schema_:
         if quoting_config.quote_model_name:
@@ -935,14 +997,14 @@ def _get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> O
     return next((s for s in data_contract.schema_ if s.name == name), None)
 
 
-def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Check]:
+def to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Optional[Server] = None) -> List[Check]:
     checks: List[Check] = []
     if data_contract.slaProperties is None:
         return checks
 
     for sla in data_contract.slaProperties:
         if sla.property == "freshness":
-            check = to_sla_freshness_check(data_contract, sla)
+            check = to_sla_freshness_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
@@ -953,7 +1015,9 @@ def to_servicelevel_checks(data_contract: OpenDataContractStandard) -> List[Chec
     return checks
 
 
-def to_sla_freshness_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
+def to_sla_freshness_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Check | None:
     """Create a freshness check from an ODCS latency SLA property."""
     if sla.element is None:
         logger.info("slaProperties.latency.element is not defined, skipping freshness check")
@@ -999,10 +1063,11 @@ def to_sla_freshness_check(data_contract: OpenDataContractStandard, sla) -> Chec
 
     check_type = "servicelevel_freshness"
     check_key = "servicelevel_freshness"
+    quoted_field = _quote_identifier_if_needed(field_name, server)
     sodacl_check_dict = {
         f"checks for {model_name}": [
             {
-                f"freshness({field_name}) < {threshold}": {
+                f"freshness({quoted_field}) < {threshold}": {
                     "name": check_key,
                 },
             }

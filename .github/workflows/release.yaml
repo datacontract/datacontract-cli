@@ -200,6 +200,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
+          provenance: mode=max
 
   push-to-ecr:
     runs-on: ubuntu-latest

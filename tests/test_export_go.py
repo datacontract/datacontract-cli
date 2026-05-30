@@ -8,7 +8,7 @@ from datacontract.data_contract import DataContract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "go"])
+    result = runner.invoke(app, ["export", "go", "./fixtures/export/datacontract.odcs.yaml"])
     assert result.exit_code == 0
 
 

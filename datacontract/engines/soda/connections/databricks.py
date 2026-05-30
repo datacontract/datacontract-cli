@@ -2,17 +2,15 @@ import os
 
 import yaml
 
+from datacontract.model.exceptions import require_env
+
 
 def to_databricks_soda_configuration(server):
-    token = os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
-    if token is None:
-        raise ValueError("DATACONTRACT_DATABRICKS_TOKEN environment variable is not set")
+    token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
     http_path = os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH")
     host = server.host
     if host is None:
-        host = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME")
-    if host is None:
-        raise ValueError("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set")
+        host = require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
     soda_configuration = {
         f"data_source {server.type}": {
             "type": "spark",

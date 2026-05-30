@@ -9,7 +9,8 @@ from datacontract.model.run import Run
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
 
 
-def publish_test_results_to_entropy_data(run: Run, publish_url: str, ssl_verification: bool):
+def publish_test_results_to_entropy_data(run: Run, publish_url: str, ssl_verification: bool) -> bool:
+    """Publish `run` to the Entropy Data instance. Returns True on success, False otherwise."""
     try:
         host = publish_url
         if publish_url is None:
@@ -38,15 +39,17 @@ def publish_test_results_to_entropy_data(run: Run, publish_url: str, ssl_verific
         if response.status_code != 200:
             display_host = _extract_hostname(host)
             run.log_error(f"Error publishing test results to {display_host}: {response.text}")
-            return
+            return False
         run.log_info("Published test results successfully")
 
         location_html = response.headers.get(RESPONSE_HEADER_LOCATION_HTML)
         if location_html is not None and len(location_html) > 0:
             print(f"🚀 Open {location_html}")
+        return True
 
     except Exception as e:
         run.log_error(f"Failed publishing test results. Error: {str(e)}")
+        return False
 
 
 def publish_data_contract_to_entropy_data(data_contract_dict: dict, ssl_verification: bool):
@@ -84,16 +87,22 @@ def _get_api_key() -> str:
     2. DATAMESH_MANAGER_API_KEY
     3. DATACONTRACT_MANAGER_API_KEY
     """
-    api_key = os.getenv("ENTROPY_DATA_API_KEY")
-    if api_key is None:
-        api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
-    if api_key is None:
-        api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
+    api_key = _get_api_key_or_none()
     if api_key is None:
         raise Exception(
             "Cannot publish, as neither ENTROPY_DATA_API_KEY, DATAMESH_MANAGER_API_KEY, nor DATACONTRACT_MANAGER_API_KEY is set"
         )
     return api_key
+
+
+def _get_api_key_or_none() -> str | None:
+    """Same lookup as `_get_api_key` but returns None instead of raising;
+    for callers that may legitimately fall back to anonymous requests."""
+    return (
+        os.getenv("ENTROPY_DATA_API_KEY")
+        or os.getenv("DATAMESH_MANAGER_API_KEY")
+        or os.getenv("DATACONTRACT_MANAGER_API_KEY")
+    )
 
 
 def _get_host() -> str:

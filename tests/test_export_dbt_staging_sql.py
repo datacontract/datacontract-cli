@@ -14,9 +14,8 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/dbt/export/datacontract.odcs.yaml",
-            "--format",
             "dbt-staging-sql",
+            "./fixtures/dbt/export/datacontract.odcs.yaml",
             "--schema-name",
             "orders",
         ],

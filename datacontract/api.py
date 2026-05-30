@@ -6,7 +6,7 @@ from typing import Annotated, Optional
 import pydantic
 import typer
 import yaml
-from fastapi import Body, Depends, FastAPI, HTTPException, Query, status
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
@@ -305,6 +305,7 @@ def check_api_key(api_key_header: str | None):
     response_model_exclude_unset=True,
 )
 async def test(
+    request: Request,
     body: Annotated[
         str,
         Body(
@@ -332,7 +333,9 @@ async def test(
     check_api_key(api_key)
     logging.info("Testing data contract...")
     logging.info(body)
-    return DataContract(data_contract_str=body, server=server, publish_url=publish_url).test()
+    return DataContract(
+        data_contract_str=body, server=server, publish_url=publish_url, fastapi_url=str(request.url)
+    ).test()
 
 
 @app.post(

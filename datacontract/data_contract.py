@@ -1,5 +1,6 @@
 import logging
 import typing
+from importlib import metadata
 
 from open_data_contract_standard.model import OpenDataContractStandard, Team
 
@@ -31,11 +32,12 @@ class DataContract:
         publish_url: str = None,
         spark: "SparkSession" = None,
         duckdb_connection: "DuckDBPyConnection" = None,
-        inline_definitions: bool = True,
+        inline_references: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
         all_errors: bool = False,
         check_categories: set[str] | None = None,
+        fastapi_url: str = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -47,10 +49,11 @@ class DataContract:
         self._publish_test_results = publish_test_results
         self._spark = spark
         self._duckdb_connection = duckdb_connection
-        self._inline_definitions = inline_definitions
+        self._inline_references = inline_references
         self._ssl_verification = ssl_verification
         self._all_errors = all_errors
         self._check_categories = check_categories
+        self._fastapi_url = fastapi_url
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -67,7 +70,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
                 all_errors=self._all_errors,
             )
             run.checks.append(
@@ -112,16 +115,28 @@ class DataContract:
         run.finish()
         return run
 
+    def _runtime_info(self) -> str:
+        try:
+            version = metadata.version("datacontract-cli")
+        except metadata.PackageNotFoundError:
+            version = "unknown"
+        if self._fastapi_url is not None:
+            execution = f"running through FastAPI at {self._fastapi_url}"
+        else:
+            execution = "running as CLI locally"
+        return f"Data Contract CLI {version} {execution}"
+
     def test(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
+            run.log_info(self._runtime_info())
             data_contract = resolve.resolve_data_contract(
                 self._data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             execute_data_contract_test(
@@ -173,7 +188,7 @@ class DataContract:
             data_contract_str=self._data_contract_str,
             data_contract=self._data_contract,
             schema_location=self._schema_location,
-            inline_definitions=self._inline_definitions,
+            inline_references=self._inline_references,
         )
 
     def get_data_contract_file(self) -> str | None:
@@ -192,7 +207,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             return exporter_factory.create(export_format).export(
@@ -208,7 +223,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             return exporter_factory.create(export_format).export(
@@ -256,7 +271,6 @@ class DataContract:
         cls,
         format: str,
         source: typing.Optional[str] = None,
-        template: typing.Optional[str] = None,
         **kwargs,
     ) -> OpenDataContractStandard:
         """Import a data contract from a source in a given format.

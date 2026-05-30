@@ -17,7 +17,7 @@ from datacontract.lint.resolve import resolve_data_contract_from_location
 
 
 def test_ir():
-    contract = resolve_data_contract_from_location("fixtures/lint/valid_datacontract_ref.yaml", inline_definitions=True)
+    contract = resolve_data_contract_from_location("fixtures/lint/valid_datacontract_ref.yaml", inline_references=True)
     expected = AvroIDLProtocol(
         name="OrdersLatest",
         description="Successful customer orders in the webshop.\n"
@@ -42,7 +42,7 @@ def test_ir():
 
 
 def test_avro_idl_str():
-    contract = resolve_data_contract_from_location("fixtures/lint/valid_datacontract_ref.yaml", inline_definitions=True)
+    contract = resolve_data_contract_from_location("fixtures/lint/valid_datacontract_ref.yaml", inline_references=True)
     expected = dedent(
         """
           /** Successful customer orders in the webshop.
@@ -63,7 +63,7 @@ def test_avro_idl_str():
 
 def test_avro_idl_cli_export():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/lint/valid_datacontract_ref.yaml", "--format", "avro-idl"])
+    result = runner.invoke(app, ["export", "avro-idl", "./fixtures/lint/valid_datacontract_ref.yaml"])
     if result.exit_code:
         print(result.output)
     assert result.exit_code == 0

@@ -1,11 +1,8 @@
 import json
-from typing import List, TypedDict
+import re
+from typing import Any, List, Optional, TypedDict
 
-from dbt.artifacts.resources.v1.components import ColumnInfo
-from dbt.contracts.graph.manifest import Manifest
-from dbt.contracts.graph.nodes import GenericTestNode, ManifestNode, ModelNode
-from dbt_common.contracts.constraints import ConstraintType
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.bigquery_importer import map_type_from_bigquery
 from datacontract.imports.importer import Importer
@@ -14,6 +11,13 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
 )
+
+# Minimum supported dbt manifest schema version. v9 corresponds to dbt 1.5
+# (May 2023), which is when column constraints and the current test_metadata
+# shape stabilized. Older manifests should be regenerated.
+MIN_MANIFEST_SCHEMA_VERSION = 9
+
+_SCHEMA_VERSION_RE = re.compile(r"/v(\d+)\.json")
 
 
 class DBTImportArgs(TypedDict, total=False):
@@ -35,81 +39,194 @@ class DbtManifestImporter(Importer):
         )
 
 
-def read_dbt_manifest(manifest_path: str) -> Manifest:
-    """Read a manifest from file."""
+def read_dbt_manifest(manifest_path: str) -> dict:
+    """Read and validate a dbt manifest.json file."""
     with open(file=manifest_path, mode="r", encoding="utf-8") as f:
-        manifest_dict: dict = json.load(f)
-    manifest = Manifest.from_dict(manifest_dict)
-    manifest.build_parent_and_child_maps()
+        manifest: dict = json.load(f)
+    _check_schema_version(manifest)
     return manifest
 
 
-def _get_primary_keys(manifest: Manifest, node: ManifestNode) -> list[str]:
-    node_unique_id = node.unique_id
-    if isinstance(node, ModelNode):
-        test_nodes = []
-        for node_id in manifest.child_map.get(node_unique_id, []):
-            test_node = manifest.nodes.get(node_id)
-            if not test_node or test_node.resource_type != "test":
-                continue
-            if not isinstance(test_node, GenericTestNode):
-                continue
-            if test_node.config.where is not None:
-                continue
-            test_nodes.append(test_node)
-        return node.infer_primary_key(test_nodes)
+def _check_schema_version(manifest: dict) -> None:
+    schema_url = manifest.get("metadata", {}).get("dbt_schema_version", "")
+    match = _SCHEMA_VERSION_RE.search(schema_url)
+    if not match:
+        return
+    version = int(match.group(1))
+    if version < MIN_MANIFEST_SCHEMA_VERSION:
+        raise ValueError(
+            f"dbt manifest schema version v{version} is not supported. "
+            f"Minimum supported version is v{MIN_MANIFEST_SCHEMA_VERSION} (dbt 1.5+). "
+            f"Regenerate the manifest with a newer dbt version."
+        )
+
+
+def _get_test_metadata_column(test_node: dict) -> Optional[str]:
+    """Pull the column name from a generic test node, preferring kwargs.column_name."""
+    test_metadata = test_node.get("test_metadata") or {}
+    kwargs = test_metadata.get("kwargs") or {}
+    column = kwargs.get("column_name")
+    if isinstance(column, str):
+        return column
+    return test_node.get("column_name")
+
+
+def _is_generic_test(node: dict) -> bool:
+    return node.get("resource_type") == "test" and node.get("test_metadata") is not None
+
+
+def _iter_attached_tests(manifest: dict, model_unique_id: str):
+    """Yield generic test nodes attached to the given model, skipping conditional (where) tests."""
+    child_map = manifest.get("child_map") or {}
+    nodes = manifest.get("nodes") or {}
+    for child_id in child_map.get(model_unique_id, []):
+        child = nodes.get(child_id)
+        if not child or not _is_generic_test(child):
+            continue
+        if (child.get("config") or {}).get("where") is not None:
+            continue
+        yield child
+
+
+def _infer_primary_keys(manifest: dict, node: dict) -> List[str]:
+    """Reimplements dbt's ModelNode.infer_primary_key against a raw manifest dict.
+
+    Order of precedence:
+    1. Model-level primary_key constraint
+    2. Column-level primary_key constraint
+    3. Columns with both unique and not_null tests
+    4. Columns with enabled unique tests
+    5. Columns with disabled unique tests
+    """
+    if node.get("resource_type") != "model":
+        return []
+
+    for constraint in node.get("constraints") or []:
+        if constraint.get("type") == "primary_key":
+            cols = constraint.get("columns") or []
+            if cols:
+                return list(cols)
+
+    for column_name, column in (node.get("columns") or {}).items():
+        for constraint in column.get("constraints") or []:
+            if constraint.get("type") == "primary_key":
+                return [column_name]
+
+    enabled_unique: set = set()
+    disabled_unique: set = set()
+    not_null: set = set()
+    for test_node in _iter_attached_tests(manifest, node["unique_id"]):
+        test_metadata = test_node.get("test_metadata") or {}
+        test_name = test_metadata.get("name")
+        kwargs = test_metadata.get("kwargs") or {}
+
+        columns: List[str] = []
+        column_name = kwargs.get("column_name")
+        if isinstance(column_name, str):
+            columns = [column_name]
+        else:
+            combo = kwargs.get("combination_of_columns")
+            if isinstance(combo, list):
+                columns = [c for c in combo if isinstance(c, str)]
+
+        if not columns:
+            continue
+
+        if test_name in ("unique", "unique_combination_of_columns"):
+            target = enabled_unique if (test_node.get("config") or {}).get("enabled", True) else disabled_unique
+            target.update(columns)
+        elif test_name == "not_null":
+            not_null.update(columns)
+
+    both = [c for c in not_null if c in enabled_unique or c in disabled_unique]
+    if both:
+        return both
+    if enabled_unique:
+        return list(enabled_unique)
+    if disabled_unique:
+        return list(disabled_unique)
     return []
 
 
-def _get_references(manifest: Manifest, node: ManifestNode) -> dict[str, str]:
-    node_unique_id = node.unique_id
-    references = {}
-    for node_id in manifest.child_map.get(node_unique_id, []):
-        test_node = manifest.nodes.get(node_id)
-        if not test_node or test_node.resource_type != "test":
+def _get_references(manifest: dict, node: dict) -> dict[str, str]:
+    """Find foreign-key references from `relationships` tests attached to this model."""
+    references: dict[str, str] = {}
+    nodes = manifest.get("nodes") or {}
+    node_unique_id = node["unique_id"]
+    for test_node in _iter_attached_tests(manifest, node_unique_id):
+        test_metadata = test_node.get("test_metadata") or {}
+        if test_metadata.get("name") != "relationships":
             continue
-        if not isinstance(test_node, GenericTestNode):
+        if test_node.get("attached_node") != node_unique_id:
             continue
-        if test_node.test_metadata.name != "relationships":
+        depends_on_nodes = (test_node.get("depends_on") or {}).get("nodes") or []
+        target_ids = [n for n in depends_on_nodes if n != node_unique_id]
+        if not target_ids:
             continue
-        if test_node.config.where is not None:
+        target_node = nodes.get(target_ids[0])
+        if not target_node:
             continue
-        if test_node.attached_node != node_unique_id:
+        column_name = _get_test_metadata_column(test_node)
+        target_field = (test_metadata.get("kwargs") or {}).get("field")
+        if not column_name or not target_field:
             continue
-        relationship_target_node_id = [n for n in test_node.depends_on.nodes if n != node_unique_id][0]
-        relationship_target_node = manifest.nodes.get(relationship_target_node_id)
-        references[f"{node.name}.{test_node.column_name}"] = (
-            f"""{relationship_target_node.name}.{test_node.test_metadata.kwargs["field"]}"""
-        )
+        references[f"{node['name']}.{column_name}"] = f"{target_node['name']}.{target_field}"
     return references
 
 
+_VERSION_SUFFIX_RE = re.compile(r"^v?(\d+)$")
+
+
+def _matches_dbt_node_filter(node: dict, dbt_nodes: list[str]) -> bool:
+    """Return True if *node* matches any entry in *dbt_nodes*.
+
+    Entries may be plain model names (``my_model``) or versioned names using
+    dbt's ``name.vN`` convention (``my_model.v1``).  A plain name matches any
+    version of that model; a versioned name matches only the specific version.
+
+    Model names that contain dots but whose final segment does not look like a
+    version suffix (``v<digits>`` or bare ``<digits>``) are treated as plain
+    names so that names such as ``schema.my_model`` are matched correctly.
+    """
+    for filter_name in dbt_nodes:
+        if "." in filter_name:
+            base, _, suffix = filter_name.rpartition(".")
+            m = _VERSION_SUFFIX_RE.match(suffix)
+            if m:
+                # Versioned filter — match base name and version number only.
+                if node.get("name") == base and str(node.get("version", "")) == m.group(1):
+                    return True
+                continue  # versioned filter didn't match; try next entry
+            # Suffix doesn't look like a version — fall through to plain-name match.
+        if node.get("name") == filter_name:
+            return True
+    return False
+
+
 def import_dbt_manifest(
-    manifest: Manifest,
+    manifest: dict,
     dbt_nodes: list[str],
     resource_types: list[str],
 ) -> OpenDataContractStandard:
     """Extracts all relevant information from the manifest into an ODCS data contract."""
+    metadata = manifest.get("metadata") or {}
     odcs = create_odcs()
-    odcs.name = manifest.metadata.project_name
+    odcs.name = metadata.get("project_name")
 
-    # Store dbt version as custom property
-    from open_data_contract_standard.model import CustomProperty
+    odcs.customProperties = [CustomProperty(property="dbt_version", value=metadata.get("dbt_version"))]
 
-    odcs.customProperties = [CustomProperty(property="dbt_version", value=manifest.metadata.dbt_version)]
-
-    adapter_type = manifest.metadata.adapter_type
+    adapter_type = metadata.get("adapter_type")
     odcs.schema_ = []
 
-    for node in manifest.nodes.values():
-        if node.resource_type not in resource_types:
+    for node in (manifest.get("nodes") or {}).values():
+        if node.get("resource_type") not in resource_types:
             continue
 
-        if dbt_nodes and node.name not in dbt_nodes:
+        if dbt_nodes and not _matches_dbt_node_filter(node, dbt_nodes):
             continue
 
-        model_unique_id = node.unique_id
-        primary_keys = _get_primary_keys(manifest, node)
+        model_unique_id = node["unique_id"]
+        primary_keys = _infer_primary_keys(manifest, node)
         references = _get_references(manifest, node)
 
         primary_key = None
@@ -119,26 +236,24 @@ def import_dbt_manifest(
         properties = create_fields(
             manifest,
             model_unique_id=model_unique_id,
-            columns=node.columns,
+            columns=node.get("columns") or {},
             primary_key_name=primary_key,
             references=references,
             adapter_type=adapter_type,
         )
 
         schema_obj = create_schema_object(
-            name=node.name,
-            physical_type=node.config.materialized,
-            description=node.description,
+            name=node.get("name"),
+            physical_type=(node.get("config") or {}).get("materialized"),
+            description=node.get("description"),
             properties=properties,
         )
 
-        # Add tags as custom property
-        if node.tags:
+        if node.get("tags"):
             if schema_obj.customProperties is None:
                 schema_obj.customProperties = []
-            schema_obj.customProperties.append(CustomProperty(property="tags", value=",".join(node.tags)))
+            schema_obj.customProperties.append(CustomProperty(property="tags", value=",".join(node["tags"])))
 
-        # Handle composite primary key
         if len(primary_keys) > 1:
             if schema_obj.customProperties is None:
                 schema_obj.customProperties = []
@@ -195,9 +310,9 @@ def map_dbt_type_to_odcs(data_type: str) -> str:
 
 
 def create_fields(
-    manifest: Manifest,
+    manifest: dict,
     model_unique_id: str,
-    columns: dict[str, ColumnInfo],
+    columns: dict[str, Any],
     primary_key_name: str,
     references: dict[str, str],
     adapter_type: str,
@@ -209,78 +324,69 @@ def create_fields(
     ]
 
 
-def get_column_tests(manifest: Manifest, model_name: str, column_name: str) -> list[dict[str, str]]:
+def get_column_tests(manifest: dict, model_unique_id: str, column_name: str) -> list[dict[str, str]]:
+    nodes = manifest.get("nodes") or {}
+    if model_unique_id not in nodes:
+        raise ValueError(f"Model {model_unique_id} not found in manifest.")
+
     column_tests = []
-    model_node = manifest.nodes.get(model_name)
-    if not model_node:
-        raise ValueError(f"Model {model_name} not found in manifest.")
-
-    model_unique_id = model_node.unique_id
-    test_ids = manifest.child_map.get(model_unique_id, [])
-
-    for test_id in test_ids:
-        test_node = manifest.nodes.get(test_id)
-        if not test_node or test_node.resource_type != "test":
+    for test_node in _iter_attached_tests(manifest, model_unique_id):
+        if test_node.get("column_name") != column_name:
             continue
-
-        if not isinstance(test_node, GenericTestNode):
-            continue
-
-        if test_node.column_name != column_name:
-            continue
-
-        if test_node.config.where is not None:
-            continue
-
+        test_metadata = test_node.get("test_metadata") or {}
         column_tests.append(
             {
-                "test_name": test_node.name,
-                "test_type": test_node.test_metadata.name,
-                "column": test_node.column_name,
+                "test_name": test_node.get("name"),
+                "test_type": test_metadata.get("name"),
+                "column": test_node.get("column_name"),
             }
         )
     return column_tests
 
 
 def create_field(
-    manifest: Manifest,
+    manifest: dict,
     model_unique_id: str,
-    column: ColumnInfo,
+    column: dict,
     primary_key_name: str,
     references: dict[str, str],
     adapter_type: str,
 ) -> SchemaProperty:
     """Create an ODCS SchemaProperty from a dbt column."""
-    column_type = convert_data_type_by_adapter_type(column.data_type, adapter_type) if column.data_type else "string"
+    data_type = column.get("data_type")
+    column_type = convert_data_type_by_adapter_type(data_type, adapter_type) if data_type else "string"
 
-    all_tests = get_column_tests(manifest, model_unique_id, column.name)
+    all_tests = get_column_tests(manifest, model_unique_id, column.get("name"))
+
+    constraints = column.get("constraints") or []
 
     required = False
-    if any(constraint.type == ConstraintType.not_null for constraint in column.constraints):
+    if any(c.get("type") == "not_null" for c in constraints):
         required = True
     if [test for test in all_tests if test["test_type"] == "not_null"]:
         required = True
 
     unique = False
-    if any(constraint.type == ConstraintType.unique for constraint in column.constraints):
+    if any(c.get("type") == "unique" for c in constraints):
         unique = True
     if [test for test in all_tests if test["test_type"] == "unique"]:
         unique = True
 
-    is_primary_key = column.name == primary_key_name
+    is_primary_key = column.get("name") == primary_key_name
 
     custom_props = {}
-    references_key = f"{manifest.nodes[model_unique_id].name}.{column.name}"
+    model_node = (manifest.get("nodes") or {}).get(model_unique_id) or {}
+    references_key = f"{model_node.get('name')}.{column.get('name')}"
     if references_key in references:
         custom_props["references"] = references[references_key]
-    if column.tags:
-        custom_props["tags"] = ",".join(column.tags)
+    if column.get("tags"):
+        custom_props["tags"] = ",".join(column["tags"])
 
     return create_property(
-        name=column.name,
+        name=column.get("name"),
         logical_type=column_type,
-        physical_type=column.data_type,
-        description=column.description,
+        physical_type=data_type,
+        description=column.get("description"),
         required=required if required else None,
         unique=unique if unique else None,
         primary_key=is_primary_key if is_primary_key else None,

@@ -20,7 +20,7 @@ class SparkExporter(Exporter):
         server,
         sql_server_type,
         export_args,
-    ) -> dict[str, types.StructType]:
+    ) -> str:
         """
         Export the given data contract to Spark schemas.
 
@@ -32,7 +32,7 @@ class SparkExporter(Exporter):
             export_args: Additional arguments for export.
 
         Returns:
-            dict[str, types.StructType]: A dictionary mapping model names to their corresponding Spark schemas.
+            str: A string representation of the Spark schema for each model.
         """
         return to_spark(data_contract)
 

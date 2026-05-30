@@ -106,7 +106,7 @@ def _property_from_struct_type(spark_field: types.StructField) -> SchemaProperty
     return create_property(
         name=spark_field.name,
         logical_type=logical_type,
-        physical_type=str(spark_field.dataType),
+        physical_type=spark_field.dataType.simpleString(),
         description=description,
         required=required if required else None,
         properties=nested_properties,
@@ -129,7 +129,7 @@ def _type_to_property(name: str, spark_type: types.DataType, required: bool = Tr
     return create_property(
         name=name,
         logical_type=logical_type,
-        physical_type=str(spark_type),
+        physical_type=spark_type.simpleString(),
         required=required if required else None,
         properties=nested_properties,
         items=items_prop,

@@ -11,7 +11,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "json",
             "--source",
             "fixtures/import/json/product_detail.json",
