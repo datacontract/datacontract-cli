@@ -207,7 +207,7 @@ def fill_schema(workbook: Workbook, odcs: OpenDataContractStandard, custom_props
             # Note: copy_worksheet should have copied the named ranges already
 
             # Fill in schema information
-            fill_single_schema(new_sheet, schema)
+            fill_single_schema(new_sheet, schema, custom_props_start_col)
     else:
         # Remove the template sheet even if no schemas
         workbook.remove(schema_template_sheet)
