@@ -109,12 +109,7 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
         property_name = prop.name
         logical_type = prop.logicalType
 
-        checks.append(
-            check_property_is_present(
-                schema_name, property_name, quoting_config,
-                use_raw_model=(server_type in ["local", "s3", "gcs", "azure"] and server.format in ["csv", "parquet"]),
-            )
-        )
+        checks.append(check_property_is_present(schema_name, property_name, quoting_config, server))
         if check_types and logical_type is not None:
             sql_type: str = convert_to_sql_type(prop, server_type)
             checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
@@ -198,16 +193,19 @@ def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
 
 
 def check_property_is_present(
-    model_name, field_name, quoting_config: QuotingConfig = QuotingConfig(), use_raw_model: bool = False
+    model_name, field_name, quoting_config: QuotingConfig = QuotingConfig(), server: Server = None
 ) -> Check:
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
-    # For CSV/Parquet on DuckDB, use the _raw view to detect truly missing columns.
-    # The unioned table fills missing columns with NULLs, making the check always pass.
-    # See https://github.com/datacontract/datacontract-cli/issues/1065
-    table_name = f"{model_name}_raw" if use_raw_model else model_name
+    # DuckDB-backed file formats expose a sibling {model}__raw__ view (the actual model contains all columns from the contract and cannot be used to check for presence)
+    uses_raw_view = (
+        server is not None
+        and server.type in ["local", "s3", "gcs", "azure"]
+        and server.format in ["csv", "parquet", "json"]
+    )
+    target = f"{model_name}__raw__" if uses_raw_view else model_name
     sodacl_check_dict = {
-        checks_for(table_name, quoting_config, check_type): [
+        checks_for(target, quoting_config, check_type): [
             {
                 "schema": {
                     "name": check_key,
