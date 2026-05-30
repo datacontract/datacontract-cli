@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Schema type check no longer fails for `varchar(n)` columns on Databricks with PySpark 4.0+, and for `map` and `varchar` types nested inside `struct` columns; affected columns emit a warning and skip the type check instead
 - `WARNING`/`ERROR` log messages are no longer hidden by default for `import`, `export`, `changelog`, `catalog`, `dbt`, and `publish`.
 - `datacontract test` against S3, GCS, and Azure no longer fails with `Failed to download extension` in air-gapped containers. The required DuckDB extensions are now bundled via the `s3`/`gcs`/`azure` install extras (#1191)
+- JSON/CSV/Parquet with DuckDB: `field_is_present` check now correctly detects missing columns (#1065)
 
 ## [0.12.4] - 2026-05-21
 
