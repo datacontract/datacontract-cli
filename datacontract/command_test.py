@@ -4,7 +4,15 @@ from pathlib import Path
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import _print_logs, app, console, debug_option, enable_debug_logging, validate_publish_url
+from datacontract.cli import (
+    _print_logs,
+    app,
+    console,
+    debug_option,
+    enable_debug_logging,
+    resolve_output_format,
+    validate_publish_url,
+)
 from datacontract.data_contract import DataContract
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.output.output_format import OutputFormat
@@ -54,7 +62,10 @@ def test(
             help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
         ),
     ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+    ] = None,
     checks: Annotated[
         str,
         typer.Option(
@@ -96,6 +107,8 @@ def test(
             console.print(f"[red]Invalid --checks specified: {', '.join(invalid)}[/red]")
             console.print(f"Available categories: {', '.join(c.value for c in CheckCategory)}")
             raise typer.Exit(code=1)
+
+    output_format = resolve_output_format(output_format, output)
 
     console.print(f"Testing {location}")
     if server == "all":
