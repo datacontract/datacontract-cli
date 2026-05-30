@@ -4,13 +4,30 @@ on:
   schedule:
     - cron: '0 9 * * 1' # every Monday at 9am UTC
   workflow_dispatch:
+  pull_request_target:
+    types: [synchronize]
 
 permissions:
   pull-requests: write
   issues: write
 
 jobs:
+  # Immediately drop the 'stale' label when new commits are pushed to a PR,
+  # so contributors don't wait until the next scheduled run.
+  unstale:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - run: gh pr edit "$NUMBER" --remove-label stale --repo "$REPO" || true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+
   stale:
+    if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v9
