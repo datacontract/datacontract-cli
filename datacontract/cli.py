@@ -145,10 +145,8 @@ def resolve_output_format(output_format: Optional[OutputFormat], output: Optiona
 
     inferred = OutputFormat.infer_from_output_path(output)
     if inferred is None:
-        extension = output.suffix or "no extension"
-        console.print(
-            f"Error: Cannot infer output format from extension '{extension}'. Please specify --output-format (json or junit)."
-        )
+        detail = f" from extension '{output.suffix}'" if output.suffix else ""
+        console.print(f"Error: Cannot infer output format{detail}. Please specify --output-format (json or junit).")
         raise typer.Exit(code=1)
 
     return inferred
@@ -287,7 +285,10 @@ def ci(
             help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
         ),
     ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+    ] = None,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
     fail_on: Annotated[
