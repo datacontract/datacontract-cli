@@ -38,6 +38,7 @@ class ImportFormat(str, Enum):
     csv = "csv"
     protobuf = "protobuf"
     excel = "excel"
+    snowflake = "snowflake"
 
     @classmethod
     def get_supported_formats(cls):

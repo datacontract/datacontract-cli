@@ -882,15 +882,21 @@ models:
 
 ##### Environment Variables
 All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
+Depending on the `authenticator` mode required by your Snowflake workspace, please set your environment variables accordingly.
 For example:
 
-| Soda parameter       | Environment Variable                        |
-|----------------------|---------------------------------------------|
-| `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
-| `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
-| `warehouse`          | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`          |
-| `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
-| `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
+| Soda parameter           | Environment Variable                            |
+|--------------------------|-------------------------------------------------|
+| `username`               | `DATACONTRACT_SNOWFLAKE_USERNAME`               |
+| `password`               | `DATACONTRACT_SNOWFLAKE_PASSWORD`               |
+| `warehouse`              | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`              |
+| `role`                   | `DATACONTRACT_SNOWFLAKE_ROLE`                   |
+| `connection_timeout`     | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`     |
+| `authenticator`          | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR`          |
+| `private_key`            | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`            |
+| `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
+| `private_key_path`       | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`       |
+
 
 Beware, that parameters:
 * `account`
@@ -1818,6 +1824,7 @@ Usage: datacontract import [OPTIONS] COMMAND [ARGS]...
 │ spark       Import a data contract from a Spark schema.                                          │
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
+│ snowflake   Import a data contract from an Snowflake account                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
@@ -2050,7 +2057,19 @@ Example:
 datacontract import protobuf --source "test.proto"
 ```
 
-</details>
+#### snowflake
+
+Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
+Multiple authentification are supported, 
+login/password using the `DATACONTRACT_SNOWFLAKE_ ...` test environement variable are setup,
+MFA using external browser is selected when `DATACONTRACT_SNOWFLAKE_PASSWORD` is missing
+TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CONNECTION_NAME` environment variable is defined
+
+Example:
+
+```bash
+datacontract import --format snowflake --source account.canada-central.azure --database databaseName --schema schemaName
+```
 
 
 ### catalog

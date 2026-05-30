@@ -55,14 +55,17 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
     }
 
     def parse_args(self, ctx: Context, args):
-        # First positional argument
-        subcommand = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
+        positionals = [a for a in args if isinstance(a, str) and not a.startswith("-")]
+        subcommand = positionals[0] if positionals else None
+
+        # this function is called by both `datacontract` and `datacontract import`
+        is_import_snowflake = (positionals[:1] == ["snowflake"]) or (positionals[:2] == ["import", "snowflake"])
 
         rewritten_args = []
         for arg in args:
             if isinstance(arg, str) and arg.startswith("--"):
                 flag, _, value = arg.partition("=")
-                if flag == "--schema":
+                if flag == "--schema" and not is_import_snowflake:
                     typer.secho(
                         "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
                         err=True,
