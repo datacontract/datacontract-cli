@@ -973,7 +973,7 @@ def to_sodacl_threshold(quality: DataQuality) -> str | None:
             f"Unsupported quality.unit ={quality.unit} in quality check, must be 'rows' (default) or 'percent'"
         )
         return None
-    threshold_suffix = "%" if quality.unit.lower() == "percent" else ""
+    threshold_suffix = "%" if (quality.unit or "").lower() == "percent" else ""
 
     if quality.mustBe is not None:
         return f"= {quality.mustBe}{threshold_suffix}"
