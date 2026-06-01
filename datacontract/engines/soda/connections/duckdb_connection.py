@@ -74,6 +74,10 @@ def get_duckdb_connection(
                         f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
                     )
                     add_nested_views(con, model_name, schema_obj.properties)
+                # Raw view without the columns= projection to check for absent columns (check_property_is_present)
+                con.sql(
+                    f"""CREATE VIEW "{model_name}__raw__" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);"""
+                )
             elif server.format == "parquet":
                 create_view_with_schema_union(con, schema_obj, model_path, "read_parquet", to_parquet_types)
             elif server.format == "csv":
@@ -91,6 +95,13 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
     """Create a view by unioning empty schema table with data files using union_by_name"""
     converted_types = type_converter(schema_obj)
     model_name = schema_obj.name
+
+    # Raw view to check for absent columns (check_property_is_present)
+    con.sql(
+        f"""CREATE VIEW "{model_name}__raw__" AS
+            SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+    )
+
     if converted_types:
         # Create empty table with contract schema
         columns_def = [f'"{col_name}" {col_type}' for col_name, col_type in converted_types.items()]

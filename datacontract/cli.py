@@ -2,13 +2,16 @@ import logging
 import os
 import sys
 from importlib import metadata
-from typing import Iterable
+from pathlib import Path
+from typing import Iterable, Optional
 
 import typer
 from click import Context
 from rich.console import Console
 from typer.core import TyperGroup
 from typing_extensions import Annotated
+
+from datacontract.output.output_format import OutputFormat
 
 console = Console()
 
@@ -147,6 +150,19 @@ def validate_publish_url(publish: str | None) -> None:
     if publish is not None and not (publish.startswith("http://") or publish.startswith("https://")):
         console.print(f"[red]--publish URL must start with http:// or https:// (got: {publish!r}).[/red]")
         raise typer.Exit(code=1)
+
+
+def resolve_output_format(output_format: Optional[OutputFormat], output: Optional[Path]) -> Optional[OutputFormat]:
+    if output_format is not None or output is None:
+        return output_format
+
+    inferred = OutputFormat.infer_from_output_path(output)
+    if inferred is None:
+        detail = f" from extension '{output.suffix}'" if output.suffix else ""
+        console.print(f"Error: Cannot infer output format{detail}. Please specify --output-format (json or junit).")
+        raise typer.Exit(code=1)
+
+    return inferred
 
 
 def _print_logs(run, out=None):

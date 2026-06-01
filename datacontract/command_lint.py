@@ -3,7 +3,7 @@ from pathlib import Path
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import app, console, debug_option, enable_debug_logging
+from datacontract.cli import app, console, debug_option, enable_debug_logging, resolve_output_format
 from datacontract.data_contract import DataContract
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
@@ -28,7 +28,10 @@ def lint(
             help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml'). If no path is provided, the output will be printed to stdout."
         ),
     ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+    ] = None,
     all_errors: Annotated[
         bool,
         typer.Option(
@@ -50,6 +53,7 @@ def lint(
     """
     enable_debug_logging(debug, otherwise_disable_stderr=True)
 
+    output_format = resolve_output_format(output_format, output)
     run = DataContract(
         data_contract_file=location,
         schema_location=schema,

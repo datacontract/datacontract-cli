@@ -4,13 +4,30 @@ on:
   schedule:
     - cron: '0 9 * * 1' # every Monday at 9am UTC
   workflow_dispatch:
+  pull_request_target:
+    types: [synchronize]
 
 permissions:
   pull-requests: write
   issues: write
 
 jobs:
+  # Immediately drop the 'stale' label when new commits are pushed to a PR,
+  # so contributors don't wait until the next scheduled run.
+  unstale:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - run: gh pr edit "$NUMBER" --remove-label stale --repo "$REPO" || true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+
   stale:
+    if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v9
@@ -20,11 +37,11 @@ jobs:
           # Pull request
           only-pr-labels: 'waiting-for-response'
           days-before-stale: 30
-          days-before-close: 14
+          days-before-close: 30
           stale-pr-label: 'stale'
           stale-pr-message: >
             This PR has been inactive for 30 days.
-            It will be closed in 14 days if there is no further activity.
+            It will be closed in 30 more days if there is no further activity.
             Feel free to reopen if you'd like to continue working on it.
           close-pr-message: >
             Closed due to inactivity. Feel free to reopen if you'd like to pick this up again.

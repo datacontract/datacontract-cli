@@ -156,7 +156,7 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
         # real column when the logical `name` differs from the physical one.
         property_name = prop.physicalName or prop.name
 
-        checks.append(check_property_is_present(schema_name, property_name, quoting_config))
+        checks.append(check_property_is_present(schema_name, property_name, quoting_config, server))
         if check_types and (prop.physicalType is not None or prop.logicalType is not None):
             if server_type == "databricks" and _has_unsupported_databricks_type(prop):
                 logger.warning(
@@ -250,11 +250,20 @@ def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
     return schema_object.name
 
 
-def check_property_is_present(model_name, field_name, quoting_config: QuotingConfig = QuotingConfig()) -> Check:
+def check_property_is_present(
+    model_name, field_name, quoting_config: QuotingConfig = QuotingConfig(), server: Server = None
+) -> Check:
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
+    # DuckDB-backed file formats expose a sibling {model}__raw__ view (the actual model contains all columns from the contract and cannot be used to check for presence)
+    uses_raw_view = (
+        server is not None
+        and server.type in ["local", "s3", "gcs", "azure"]
+        and server.format in ["csv", "parquet", "json"]
+    )
+    target = f"{model_name}__raw__" if uses_raw_view else model_name
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(target, quoting_config, check_type): [
             {
                 "schema": {
                     "name": check_key,
