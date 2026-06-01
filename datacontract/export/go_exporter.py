@@ -7,7 +7,7 @@ from datacontract.export.exporter import Exporter
 
 
 class GoExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         return to_go_types(data_contract)
 
 

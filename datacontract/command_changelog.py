@@ -13,9 +13,18 @@ from datacontract.output.text_changelog_results import write_text_changelog_resu
 def changelog(
     v1: Annotated[str, typer.Argument(help="The location (url or path) of the source (before) data contract YAML.")],
     v2: Annotated[str, typer.Argument(help="The location (url or path) of the target (after) data contract YAML.")],
+    inline_references: Annotated[
+        bool,
+        typer.Option(
+            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
+            "contract and inline the fetched content from the configured entropy-data host."
+        ),
+    ] = True,
     debug: debug_option = None,
 ):
     """Show a changelog between two data contracts."""
     enable_debug_logging(debug)
-    result = DataContract(data_contract_file=v1).changelog(DataContract(data_contract_file=v2))
+    result = DataContract(data_contract_file=v1, inline_references=inline_references).changelog(
+        DataContract(data_contract_file=v2, inline_references=inline_references)
+    )
     write_text_changelog_results(result, console)

@@ -74,6 +74,10 @@ def get_duckdb_connection(
                         f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
                     )
                     add_nested_views(con, model_name, schema_obj.properties)
+                # Raw view without the columns= projection to check for absent columns (check_property_is_present)
+                con.sql(
+                    f"""CREATE VIEW "{model_name}__raw__" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', hive_partitioning=1);"""
+                )
             elif server.format == "parquet":
                 create_view_with_schema_union(con, schema_obj, model_path, "read_parquet", to_parquet_types)
             elif server.format == "csv":
@@ -91,6 +95,13 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
     """Create a view by unioning empty schema table with data files using union_by_name"""
     converted_types = type_converter(schema_obj)
     model_name = schema_obj.name
+
+    # Raw view to check for absent columns (check_property_is_present)
+    con.sql(
+        f"""CREATE VIEW "{model_name}__raw__" AS
+            SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+    )
+
     if converted_types:
         # Create empty table with contract schema
         columns_def = [f'"{col_name}" {col_type}' for col_name, col_type in converted_types.items()]
@@ -188,7 +199,43 @@ def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properti
             add_nested_views(con, nested_model_name, prop.properties)
 
 
+def _load_extension(con, name: str, extra: str) -> None:
+    import gzip
+    import importlib.resources
+    import pathlib
+    import shutil
+    import tempfile
+
+    # first try to use locally bundled wheel to support air-gapped environments
+    try:
+        ext_module = importlib.import_module(f"duckdb_extension_{name}")
+        module_path = pathlib.Path(str(importlib.resources.files(ext_module)))
+        duckdb_version = con.sql("PRAGMA version;").fetchone()[0]
+        extension_file_gz = module_path / "extensions" / duckdb_version / f"{name}.duckdb_extension.gz"
+
+        if extension_file_gz.exists():
+            tmpdir = pathlib.Path(tempfile.mkdtemp(prefix=f"datacontract-{name}-"))
+            extension_file = tmpdir / f"{name}.duckdb_extension"
+            with gzip.open(extension_file_gz, "rb") as src, open(extension_file, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            con.sql(f"LOAD '{extension_file}'")
+            return
+    except ImportError:
+        pass
+
+    try:
+        con.install_extension(name)
+        con.load_extension(name)
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to install the '{name}' DuckDB extension. "
+            f"Please install the extension wheel via: pip install 'datacontract-cli[{extra}]'"
+        ) from e
+
+
 def setup_s3_connection(con, server: Server):
+    _load_extension(con, "httpfs", "s3")
+    _load_extension(con, "aws", "s3")
     s3_region = os.getenv("DATACONTRACT_S3_REGION")
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
@@ -233,6 +280,7 @@ def setup_s3_connection(con, server: Server):
 
 
 def setup_gcs_connection(con, server: Server):
+    _load_extension(con, "httpfs", "gcs")
     key_id = require_env("DATACONTRACT_GCS_KEY_ID", server_type="gcs")
     secret = require_env("DATACONTRACT_GCS_SECRET", server_type="gcs")
 
@@ -253,8 +301,7 @@ def setup_azure_connection(con, server: Server):
         to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
     )
 
-    con.install_extension("azure")
-    con.load_extension("azure")
+    _load_extension(con, "azure", "azure")
 
     if storage_account is not None:
         con.sql(f"""

@@ -2,13 +2,16 @@ import logging
 import os
 import sys
 from importlib import metadata
-from typing import Iterable
+from pathlib import Path
+from typing import Iterable, Optional
 
 import typer
 from click import Context
 from rich.console import Console
 from typer.core import TyperGroup
 from typing_extensions import Annotated
+
+from datacontract.output.output_format import OutputFormat
 
 console = Console()
 
@@ -122,15 +125,24 @@ def common(
     pass
 
 
-def enable_debug_logging(debug: bool):
-    root = logging.getLogger()
-    if debug:
-        logging.basicConfig(
-            level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
-        )
-    elif not root.handlers:
-        # Without a handler, Python's lastResort emits WARNING/ERROR messages
-        root.addHandler(logging.NullHandler())
+def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
+    if not debug and otherwise_disable_stderr:
+        # some commands render run.logs to the console themselves; a NullHandler keeps
+        # the mirrored stdlib WARNING/ERROR (Run.log_*) off stderr so it isn't shown twice.
+        logging.basicConfig(handlers=[logging.NullHandler()], force=True)
+        return
+
+    logging.basicConfig(
+        level=logging.DEBUG if debug else logging.WARNING,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stderr,
+        force=True,
+    )
+
+    if not debug:
+        # Keep noisy third-party loggers quiet
+        for noisy_logger in ("snowflake.connector", "py4j", "pyspark", "urllib3", "soda"):
+            logging.getLogger(noisy_logger).setLevel(logging.ERROR)
 
 
 def validate_publish_url(publish: str | None) -> None:
@@ -138,6 +150,19 @@ def validate_publish_url(publish: str | None) -> None:
     if publish is not None and not (publish.startswith("http://") or publish.startswith("https://")):
         console.print(f"[red]--publish URL must start with http:// or https:// (got: {publish!r}).[/red]")
         raise typer.Exit(code=1)
+
+
+def resolve_output_format(output_format: Optional[OutputFormat], output: Optional[Path]) -> Optional[OutputFormat]:
+    if output_format is not None or output is None:
+        return output_format
+
+    inferred = OutputFormat.infer_from_output_path(output)
+    if inferred is None:
+        detail = f" from extension '{output.suffix}'" if output.suffix else ""
+        console.print(f"Error: Cannot infer output format{detail}. Please specify --output-format (json or junit).")
+        raise typer.Exit(code=1)
+
+    return inferred
 
 
 def _print_logs(run, out=None):

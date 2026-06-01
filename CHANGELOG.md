@@ -7,10 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.12.5] - 2026-05-30
+
 ### Added
+- Resolve `authoritativeDefinitions[type=definition]` on schema properties, filling fields the contract author left unset (#1261)
+  - **Breaking:** Per default, any resolution failure of `authoritativeDefinitions[type in {definition, semantics}]` now rejects the contract on `lint`, `test`, `ci`, `export`, and `changelog`. (#1261)
+  - Resolve `authoritativeDefinitions[type=semantics]` (and the legacy `type=semantic`) the same way. A `url:` that points at the configured entropy-data host is fetched directly; a `url:` that's an IRI (host doesn't match) is routed through `GET /api/semantics?iri=...` on the configured host, which uses the API key's organization to resolve. (#1262)
+  - `--no-inline-references` flag to skip the HTTP fetch (#1261)
+- When `--json-schema` points at a custom JSON Schema, the ODCS Pydantic step now accepts extra top-level fields the schema allows (#1266)
+
+### Changed
+- JSON Schema validation errors now identify the offending schema and property by name instead of array indices (#1255 @dmaresma)
+- `test`, `lint`, and `ci` now infer `--output-format` from the `--output` file extension when not given (`.json` → json, `.xml` → junit) (#1156 @dallylee)
 
 ### Fixed
-
+- Schema type check no longer fails for `varchar(n)` columns on Databricks with PySpark 4.0+, and for `map` and `varchar` types nested inside `struct` columns; affected columns emit a warning and skip the type check instead (#1219,#1245 @IchEssBlumen)
+- `WARNING`/`ERROR` log messages are no longer hidden by default for `import`, `export`, `changelog`, `catalog`, `dbt`, and `publish` (#1264)
+- `datacontract test` against S3, GCS, and Azure no longer fails with `Failed to download extension` in air-gapped containers. The required DuckDB extensions are now bundled via the `s3`/`gcs`/`azure` install extras (#1191 @ParenParikh)
+- JSON/CSV/Parquet with DuckDB: `field_is_present` check now correctly detects missing columns (#1065,#1163 @hieusats)
+- `import dbt --model <name>.vN` now correctly imports the specified version of a versioned dbt model. Previously the filter compared the full `name.vN` string against `node["name"]` (which is always the bare base name), producing a silent empty contract (#1249 @willbowditch)
 
 ## [0.12.4] - 2026-05-21
 
