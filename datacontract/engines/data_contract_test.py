@@ -12,6 +12,7 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+from datacontract.engines.datacontract.check_azure_blob_file import check_azure_blob_file
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
 )
@@ -74,9 +75,20 @@ def execute_data_contract_test(
     if server.format == "json" and server.type != "kafka":
         if check_categories is None or "schema" in check_categories:
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
-    check_soda_execute(
-        run, data_contract, server, spark, duckdb_connection, schema_name=schema_name, check_categories=check_categories
-    )
+
+    # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
+    if server.type in ("azure") and _has_blob_schemas(data_contract, schema_name):
+        check_azure_blob_file(run, data_contract, server)
+    else:
+        check_soda_execute(
+            run,
+            data_contract,
+            server,
+            spark,
+            duckdb_connection,
+            schema_name=schema_name,
+            check_categories=check_categories,
+        )
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:
@@ -129,3 +141,15 @@ def process_api_response(run, server):
         path=f"{tmp_dir.name}/api_response.json",
     )
     return new_server
+
+
+def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
+    """Return True if the (possibly filtered) schema list contains any logicalType='blob' schema."""
+    if data_contract.schema_ is None:
+        return False
+    for s in data_contract.schema_:
+        if schema_name != "all" and s.name != schema_name:
+            continue
+        if (s.logicalType or "").lower() == "blob":
+            return True
+    return False

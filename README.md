@@ -621,8 +621,17 @@ datacontract.yaml
 servers:
   production:
     type: azure
-    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/inventory_events/*.parquet
+    location: azure://container@datameshdatabricksdemo.dfs.core.windows.net/entity={model}/year=*/month=*/day=*/*.parquet
     format: parquet
+```
+
+blobstore.datacontract.yaml
+```yaml
+servers:
+  production:
+    type: azure
+    location: azure://web@datameshdatabricksdemo.blob.core.windows.net/media={model}/year=*/month=*/day=*/*.jpg
+    format: binary
 ```
 
 ##### Environment Variables
@@ -634,6 +643,58 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 | `DATACONTRACT_AZURE_TENANT_ID`     | `79f5b80f-10ff-40b9-9d1f-774b42d605fc` | The Azure Tenant ID                                  |
 | `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622` | The ApplicationID / ClientID of the app registration |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX`            | The Client Secret value                              |
+
+
+##### Azure Blob Storage / ADLS Gen2 metadata checks
+
+Each ODCS schema object with ``physicalType='file'`` represents a **unique folder/prefix**
+in Azure Blob Storage or ADLS Gen2. Its ``properties`` list maps directly to
+``BlobProperties`` attributes from the Azure SDK: for every declared property the engine
+extracts the corresponding attribute from each blob and validates it against the quality
+constraints declared on that property.
+
+| Property name       | BlobProperties attribute                        |
+|---------------------|-------------------------------------------------|
+|  name               | blob.name                                       |
+|  size               | blob.size                                       |
+|  lastModified       | blob.last_modified          (UTC datetime)      |
+|  creationTime       | blob.creation_time          (UTC datetime)      |
+|  lastAccessedOn     | blob.last_accessed_on       (UTC datetime)      |
+|  contentType        | blob.content_settings.content_type              |
+|  contentEncoding    | blob.content_settings.content_encoding          |
+|  contentLanguage    | blob.content_settings.content_language          |
+|  contentDisposition | blob.content_settings.content_disposition       |
+|  cacheControl       | blob.content_settings.cache_control             |
+|  contentMd5         | blob.content_settings.content_md5               |
+|  etag               | blob.etag                                       |
+|  blobType           | blob.blob_type.value        (e.g. "BlockBlob")  |
+|  blobTier           | blob.blob_tier.value        (e.g. "Hot")        |
+|  archiveStatus      | blob.archive_status                             |
+|  serverEncrypted    | blob.server_encrypted                           |
+|  deleted            | blob.deleted                                    |
+|  snapshotId         | blob.snapshot                                   |
+|  versionId          | blob.version_id                                 |
+|  tagCount           | blob.tag_count                                  |
+
+
+Schema-level quality checks (``schema.quality``):
+  Metrics ``rowCount`` are evaluated as *file-count*
+  thresholds against the total number of blobs found under the prefix.
+
+Datetime sentinel:
+  Quality constraints on datetime properties accept the special string ``"now"`` as a
+  comparand (``mustBeLessThan``, ``mustBeGreaterThan``, etc.) — it is resolved to the
+  current UTC datetime at evaluation time.
+
+ContentType normalisation:
+  MIME parameters are stripped before comparison
+  (``"application/json; charset=utf-8"`` matches ``"application/json"``).
+
+Supported ``location`` URL formats (on the server block):
+  - ``https://<account>.blob.core.windows.net/<container>/<prefix>``
+  - ``abfss://<container>@<account>.dfs.core.windows.net/<prefix>``
+  - ``azure://<container>@<account>.blob.core.windows.net/<prefix>``
+  - ``wasbs://<container>@<account>.blob.core.windows.net/<prefix>``
 
 </details>
 
