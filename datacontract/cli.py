@@ -122,15 +122,24 @@ def common(
     pass
 
 
-def enable_debug_logging(debug: bool):
-    root = logging.getLogger()
-    if debug:
-        logging.basicConfig(
-            level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
-        )
-    elif not root.handlers:
-        # Without a handler, Python's lastResort emits WARNING/ERROR messages
-        root.addHandler(logging.NullHandler())
+def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
+    if not debug and otherwise_disable_stderr:
+        # some commands render run.logs to the console themselves; a NullHandler keeps
+        # the mirrored stdlib WARNING/ERROR (Run.log_*) off stderr so it isn't shown twice.
+        logging.basicConfig(handlers=[logging.NullHandler()], force=True)
+        return
+
+    logging.basicConfig(
+        level=logging.DEBUG if debug else logging.WARNING,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stderr,
+        force=True,
+    )
+
+    if not debug:
+        # Keep noisy third-party loggers quiet
+        for noisy_logger in ("snowflake.connector", "py4j", "pyspark", "urllib3", "soda"):
+            logging.getLogger(noisy_logger).setLevel(logging.ERROR)
 
 
 def validate_publish_url(publish: str | None) -> None:

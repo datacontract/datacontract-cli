@@ -174,6 +174,35 @@ def _get_references(manifest: dict, node: dict) -> dict[str, str]:
     return references
 
 
+_VERSION_SUFFIX_RE = re.compile(r"^v?(\d+)$")
+
+
+def _matches_dbt_node_filter(node: dict, dbt_nodes: list[str]) -> bool:
+    """Return True if *node* matches any entry in *dbt_nodes*.
+
+    Entries may be plain model names (``my_model``) or versioned names using
+    dbt's ``name.vN`` convention (``my_model.v1``).  A plain name matches any
+    version of that model; a versioned name matches only the specific version.
+
+    Model names that contain dots but whose final segment does not look like a
+    version suffix (``v<digits>`` or bare ``<digits>``) are treated as plain
+    names so that names such as ``schema.my_model`` are matched correctly.
+    """
+    for filter_name in dbt_nodes:
+        if "." in filter_name:
+            base, _, suffix = filter_name.rpartition(".")
+            m = _VERSION_SUFFIX_RE.match(suffix)
+            if m:
+                # Versioned filter — match base name and version number only.
+                if node.get("name") == base and str(node.get("version", "")) == m.group(1):
+                    return True
+                continue  # versioned filter didn't match; try next entry
+            # Suffix doesn't look like a version — fall through to plain-name match.
+        if node.get("name") == filter_name:
+            return True
+    return False
+
+
 def import_dbt_manifest(
     manifest: dict,
     dbt_nodes: list[str],
@@ -193,7 +222,7 @@ def import_dbt_manifest(
         if node.get("resource_type") not in resource_types:
             continue
 
-        if dbt_nodes and node.get("name") not in dbt_nodes:
+        if dbt_nodes and not _matches_dbt_node_filter(node, dbt_nodes):
             continue
 
         model_unique_id = node["unique_id"]

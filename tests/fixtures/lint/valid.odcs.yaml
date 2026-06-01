@@ -52,7 +52,7 @@ schema:
     tags:
     - "businesskey"
     authoritativeDefinitions:
-    - type: "definition"
+    - type: "businessDefinition"
       url: "https://datamesh-manager-demo.azurecontainerapps.io/demo440238121320/definitions/fulfillment/shipment_id"
   - name: "order_id"
     physicalName: "oid"
@@ -60,7 +60,7 @@ schema:
     primaryKey: false
     partitioned: false
     authoritativeDefinitions:
-    - type: "definition"
+    - type: "businessDefinition"
       url: "https://datamesh-manager-demo.azurecontainerapps.io/demo440238121320/definitions/sales/order_id"
   - name: "delivery_date"
     businessName: "Delivery Date"

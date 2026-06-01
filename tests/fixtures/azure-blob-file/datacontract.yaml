@@ -38,7 +38,7 @@ schema:
 
       - name: lastModified
         logicalType: timestamp
-        description: UTC timestamp of the last modification. Auto-checked not-in-future.
+        description: UTC timestamp of the last modification.
         required: true
 
       - name: contentType

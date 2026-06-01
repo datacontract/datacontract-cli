@@ -120,7 +120,7 @@ schema:
           - name: struct_field1
             physicalType: float
             """,
-        inline_definitions=True,
+        inline_references=True,
     )
     datacontract.model_dump()
     schema = Schema.model_validate_json(_export(datacontract))

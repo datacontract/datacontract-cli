@@ -59,12 +59,19 @@ def ci(
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
+    inline_references: Annotated[
+        bool,
+        typer.Option(
+            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
+            "contract and inline the fetched content from the configured entropy-data host."
+        ),
+    ] = True,
     debug: debug_option = None,
 ):
     """
     Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
     """
-    enable_debug_logging(debug)
+    enable_debug_logging(debug, otherwise_disable_stderr=True)
     validate_publish_url(publish)
 
     if not locations:
@@ -96,6 +103,7 @@ def ci(
             publish_url=publish,
             server=server,
             ssl_verification=ssl_verification,
+            inline_references=inline_references,
         ).test()
         if logs:
             _print_logs(run, out)

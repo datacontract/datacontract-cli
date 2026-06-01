@@ -18,6 +18,7 @@ jobs:
           start-date: '2026-04-08'
 
           # Pull request
+          only-pr-labels: 'waiting-for-response'
           days-before-stale: 30
           days-before-close: 14
           stale-pr-label: 'stale'
