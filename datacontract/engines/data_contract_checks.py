@@ -967,12 +967,12 @@ def prepare_query(
 
 
 def to_sodacl_threshold(quality: DataQuality) -> str | None:
-    if quality.unit is not None and quality.unit not in ("rows", "percent"):
+    if quality.unit is not None and quality.unit.lower() not in ("rows", "percent"):
         logger.warning(
-            f"Unsupported quality.unit ={quality.unit} in quality check, must be 'rows' or 'percent' or None"
+            f"Unsupported quality.unit ={quality.unit} in quality check, must be 'rows' (default) or 'percent'"
         )
         return None
-    threshold_suffix = "%" if quality.unit == "percent" else ""
+    threshold_suffix = "%" if quality.unit.lower() == "percent" else ""
 
     if quality.mustBe is not None:
         return f"= {quality.mustBe}{threshold_suffix}"
