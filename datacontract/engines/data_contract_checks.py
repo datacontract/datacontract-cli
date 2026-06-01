@@ -597,6 +597,9 @@ def check_property_regex(
 
 def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConfig = QuotingConfig()):
     check_type = "row_count"
+    if "%" in threshold:
+        logger.warning("Row count threshold cannot be specified as a percentage.")
+        return None
     check_key = f"{model_name}__{check_type}"
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
@@ -625,10 +628,11 @@ def check_model_duplicate_values(
     check_type = "model_duplicate_values"
     check_key = f"{model_name}__{check_type}"
     col_joined = ", ".join(_quote_field_name(col, quoting_config) for col in cols)
+    metric = "duplicate_count" if not threshold.endswith("%") else "duplicate_percent"
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
             {
-                f"duplicate_count({col_joined}) {threshold}": {"name": check_key},
+                f"{metric}({col_joined}) {threshold}": {"name": check_key},
             }
         ],
     }
@@ -637,7 +641,7 @@ def check_model_duplicate_values(
         key=check_key,
         category="quality",
         type=check_type,
-        name=f"Check that model {model_name} has duplicate_count {threshold} for columns {col_joined}",
+        name=f"Check that model {model_name} has {metric} {threshold} for columns {col_joined}",
         model=model_name,
         field=None,
         engine="soda",
@@ -653,10 +657,11 @@ def check_property_duplicate_values(
 
     check_type = "field_duplicate_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
+    metric = "duplicate_count" if not threshold.endswith("%") else "duplicate_percent"
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
             {
-                f"duplicate_count({field_name_for_soda}) {threshold}": {
+                f"{metric}({field_name_for_soda}) {threshold}": {
                     "name": check_key,
                 },
             }
@@ -667,7 +672,7 @@ def check_property_duplicate_values(
         key=check_key,
         category="quality",
         type=check_type,
-        name=f"Check that field {field_name} has duplicate_count {threshold}",
+        name=f"Check that field {field_name} has {metric} {threshold}",
         model=model_name,
         field=field_name,
         engine="soda",
@@ -683,10 +688,11 @@ def check_property_null_values(
 
     check_type = "field_null_values"
     check_key = f"{model_name}__{field_name}__{check_type}"
+    metric = "missing_count" if not threshold.endswith("%") else "missing_percent"
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
             {
-                f"missing_count({field_name_for_soda}) {threshold}": {
+                f"{metric}({field_name_for_soda}) {threshold}": {
                     "name": check_key,
                 },
             }
@@ -697,7 +703,7 @@ def check_property_null_values(
         key=check_key,
         category="quality",
         type=check_type,
-        name=f"Check that field {field_name} has missing_count {threshold}",
+        name=f"Check that field {field_name} has {metric} {threshold}",
         model=model_name,
         field=field_name,
         engine="soda",
@@ -724,11 +730,11 @@ def check_property_invalid_values(
 
     if valid_values is not None:
         sodacl_check_config["valid values"] = _escape_sql_string_values(valid_values)
-
+    metric = "invalid_count" if not threshold.endswith("%") else "invalid_percent"
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
             {
-                f"invalid_count({field_name_for_soda}) {threshold}": sodacl_check_config,
+                f"{metric}({field_name_for_soda}) {threshold}": sodacl_check_config,
             }
         ],
     }
@@ -737,7 +743,7 @@ def check_property_invalid_values(
         key=check_key,
         category="quality",
         type=check_type,
-        name=f"Check that field {field_name} has invalid_count {threshold}",
+        name=f"Check that field {field_name} has {metric} {threshold}",
         model=model_name,
         field=field_name,
         engine="soda",
@@ -767,10 +773,11 @@ def check_property_missing_values(
         if filtered_missing_values:
             sodacl_check_config["missing values"] = _escape_sql_string_values(filtered_missing_values)
 
+    metric = "missing_count" if not threshold.endswith("%") else "missing_percent"
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
             {
-                f"missing_count({field_name_for_soda}) {threshold}": sodacl_check_config,
+                f"{metric}({field_name_for_soda}) {threshold}": sodacl_check_config,
             }
         ],
     }
@@ -779,7 +786,7 @@ def check_property_missing_values(
         key=check_key,
         category="quality",
         type=check_type,
-        name=f"Check that field {field_name} has missing_count {threshold}",
+        name=f"Check that field {field_name} has {metric} {threshold}",
         model=model_name,
         field=field_name,
         engine="soda",
@@ -961,32 +968,39 @@ def prepare_query(
 
 
 def to_sodacl_threshold(quality: DataQuality) -> str | None:
+    if quality.unit is not None and quality.unit.lower() not in ("rows", "percent"):
+        logger.warning(
+            f"Unsupported quality.unit ={quality.unit} in quality check, must be 'rows' (default) or 'percent'"
+        )
+        return None
+    threshold_suffix = "%" if (quality.unit or "").lower() == "percent" else ""
+
     if quality.mustBe is not None:
-        return f"= {quality.mustBe}"
+        return f"= {quality.mustBe}{threshold_suffix}"
     if quality.mustNotBe is not None:
-        return f"!= {quality.mustNotBe}"
+        return f"!= {quality.mustNotBe}{threshold_suffix}"
     if quality.mustBeGreaterThan is not None:
-        return f"> {quality.mustBeGreaterThan}"
+        return f"> {quality.mustBeGreaterThan}{threshold_suffix}"
     if quality.mustBeGreaterOrEqualTo is not None:
-        return f">= {quality.mustBeGreaterOrEqualTo}"
+        return f">= {quality.mustBeGreaterOrEqualTo}{threshold_suffix}"
     if quality.mustBeLessThan is not None:
-        return f"< {quality.mustBeLessThan}"
+        return f"< {quality.mustBeLessThan}{threshold_suffix}"
     if quality.mustBeLessOrEqualTo is not None:
-        return f"<= {quality.mustBeLessOrEqualTo}"
+        return f"<= {quality.mustBeLessOrEqualTo}{threshold_suffix}"
     if quality.mustBeBetween is not None:
         if len(quality.mustBeBetween) != 2:
             logger.warning(
                 f"Quality check has invalid mustBeBetween, must have exactly 2 integers in an array: {quality.mustBeBetween}"
             )
             return None
-        return f"between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]}"
+        return f"between {quality.mustBeBetween[0]}{threshold_suffix} and {quality.mustBeBetween[1]}{threshold_suffix}"
     if quality.mustNotBeBetween is not None:
         if len(quality.mustNotBeBetween) != 2:
             logger.warning(
                 f"Quality check has invalid mustNotBeBetween, must have exactly 2 integers in an array: {quality.mustNotBeBetween}"
             )
             return None
-        return f"not between {quality.mustNotBeBetween[0]} and {quality.mustNotBeBetween[1]}"
+        return f"not between {quality.mustNotBeBetween[0]}{threshold_suffix} and {quality.mustNotBeBetween[1]}{threshold_suffix}"
     return None
 
 
