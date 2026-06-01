@@ -1,3 +1,6 @@
+import logging
+
+import pytest
 import yaml
 from open_data_contract_standard.model import (
     DataQuality,
@@ -17,13 +20,16 @@ from datacontract.engines.data_contract_checks import (
     check_property_is_present,
     check_property_missing_values,
     check_property_not_equal,
+    check_property_null_values,
     check_property_required,
     check_property_type,
     check_property_unique,
+    check_row_count,
     create_checks,
     prepare_query,
     to_schema_checks,
     to_sla_freshness_check,
+    to_sodacl_threshold,
 )
 
 
@@ -616,3 +622,145 @@ def test_to_schema_checks_databricks_struct_with_nested_varchar_skips_type_check
     types = [c.type for c in checks]
     assert "field_is_present" in types
     assert "field_type" not in types
+
+
+# --- Tests for to_sodacl_threshold function ---
+
+
+@pytest.mark.parametrize(
+    "unit,quality_kwargs,expected",
+    [
+        # Test percent unit appends %
+        ("percent", {"mustBe": 5}, "= 5%"),
+        ("percent", {"mustBeGreaterThan": 10}, "> 10%"),
+        ("percent", {"mustBeGreaterOrEqualTo": 10}, ">= 10%"),
+        ("percent", {"mustBeLessThan": 20}, "< 20%"),
+        ("percent", {"mustBeLessOrEqualTo": 30}, "<= 30%"),
+        ("percent", {"mustNotBe": 0}, "!= 0%"),
+        ("percent", {"mustBeBetween": [5, 15]}, "between 5% and 15%"),
+        ("percent", {"mustNotBeBetween": [80, 100]}, "not between 80% and 100%"),
+        # Test case insensitivity
+        ("PERCENT", {"mustBeLessThan": 10}, "< 10%"),
+        ("Percent", {"mustBe": 15}, "= 15%"),
+        # Test rows unit does not append %
+        ("rows", {"mustBe": 100}, "= 100"),
+        ("rows", {"mustBeGreaterThan": 50}, "> 50"),
+        # Test default (None) does not append %
+        (None, {"mustBe": 50}, "= 50"),
+        (None, {"mustBeLessThan": 75}, "< 75"),
+    ],
+)
+def test_to_sodacl_threshold_with_units(unit, quality_kwargs, expected):
+    """Test that to_sodacl_threshold correctly handles different units and operators."""
+    quality = DataQuality(unit=unit, **quality_kwargs)
+    result = to_sodacl_threshold(quality)
+    assert result == expected
+
+
+def test_to_sodacl_threshold_invalid_unit(caplog):
+    """Test that invalid unit returns None and raises a warning."""
+    quality = DataQuality(unit="invalid", mustBe=5)
+    with caplog.at_level(logging.WARNING):
+        result = to_sodacl_threshold(quality)
+
+    assert result is None
+    assert "Unsupported quality.unit" in caplog.text
+
+
+# --- Tests for unit handling in check_* functions ---
+
+
+@pytest.mark.parametrize(
+    "threshold,expected_metric,expected_check",
+    [
+        ("< 5%", "missing_percent", "missing_percent(status) < 5%"),
+        ("< 10", "missing_count", "missing_count(status) < 10"),
+    ],
+)
+def test_check_property_null_values_metric_selection(threshold, expected_metric, expected_check):
+    """Test that check_property_null_values selects correct metric based on threshold."""
+    check = check_property_null_values("orders", "status", threshold)
+
+    assert check.model == "orders"
+    assert check.field == "status"
+    assert check.type == "field_null_values"
+    assert expected_metric in check.name
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_keys = list(checks[0].keys())
+    assert check_keys == [expected_check]
+
+
+@pytest.mark.parametrize(
+    "threshold,expected_metric,expected_check",
+    [
+        ("= 0%", "invalid_percent", "invalid_percent(status) = 0%"),
+        ("= 0", "invalid_count", "invalid_count(status) = 0"),
+    ],
+)
+def test_check_property_invalid_values_metric_selection(threshold, expected_metric, expected_check):
+    """Test that check_property_invalid_values selects correct metric based on threshold."""
+    check = check_property_invalid_values("orders", "status", threshold, valid_values=["active", "inactive"])
+
+    assert check.model == "orders"
+    assert check.field == "status"
+    assert check.type == "field_invalid_values"
+    assert expected_metric in check.name
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_keys = list(checks[0].keys())
+    assert check_keys == [expected_check]
+
+
+@pytest.mark.parametrize(
+    "threshold,expected_metric,expected_check",
+    [
+        ("<= 2%", "missing_percent", "missing_percent(status) <= 2%"),
+        ("<= 5", "missing_count", "missing_count(status) <= 5"),
+    ],
+)
+def test_check_property_missing_values_metric_selection(threshold, expected_metric, expected_check):
+    """Test that check_property_missing_values selects correct metric based on threshold."""
+    check = check_property_missing_values("orders", "status", threshold, missing_values=["n/a", "null"])
+
+    assert check.model == "orders"
+    assert check.field == "status"
+    assert check.type == "field_missing_values"
+    assert expected_metric in check.name
+
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_keys = list(checks[0].keys())
+    assert check_keys == [expected_check]
+
+
+@pytest.mark.parametrize(
+    "threshold",
+    [
+        "> 100%",
+        "between 10% and 50%",
+    ],
+)
+def test_check_row_count_with_percent_returns_none(threshold, caplog):
+    """Test that check_row_count returns None when threshold contains '%'."""
+    with caplog.at_level(logging.WARNING):
+        result = check_row_count("orders", threshold, QuotingConfig())
+    assert result is None
+    assert "Row count threshold cannot be specified as a percentage." in caplog.text
+
+
+def test_check_row_count_without_percent_works():
+    """Test that check_row_count works normally without '%'."""
+    check = check_row_count("orders", "> 1000", QuotingConfig())
+
+    assert check is not None
+    assert check.model == "orders"
+    assert check.type == "row_count"
+
+    # Parse the implementation to verify the SodaCL check
+    impl = yaml.safe_load(check.implementation)
+    checks = impl["checks for orders"]
+    check_keys = list(checks[0].keys())
+    assert check_keys == ["row_count > 1000"]
