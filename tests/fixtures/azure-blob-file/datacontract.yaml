@@ -10,8 +10,8 @@ description:
 servers:
   - server: production
     type: azure
-    format: jpg
     location: https://myaccount.blob.core.windows.net/mycontainer/raw/orders/
+    format: json
 
 schema:
   - name: orders_files
@@ -47,7 +47,7 @@ schema:
         required: true
         quality:
           - name: expected-mime-type
-            mustBe: "image/jpeg"
+            mustBe: "application/json"
 
       - name: blobType
         logicalType: string

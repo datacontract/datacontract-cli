@@ -78,17 +78,18 @@ def execute_data_contract_test(
 
     # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
     if server.type in ("azure") and _has_blob_schemas(data_contract, schema_name):
-        check_azure_blob_file(run, data_contract, server)
-    else:
-        check_soda_execute(
-            run,
-            data_contract,
-            server,
-            spark,
-            duckdb_connection,
-            schema_name=schema_name,
-            check_categories=check_categories,
-        )
+        if check_categories is None or "schema" in check_categories:
+            check_azure_blob_file(run, data_contract, server, check_categories=check_categories)
+
+    check_soda_execute(
+        run,
+        data_contract,
+        server,
+        spark,
+        duckdb_connection,
+        schema_name=schema_name,
+        check_categories=check_categories,
+    )
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:

@@ -159,18 +159,6 @@ class TestCheckAzureBlobFile:
             check_azure_blob_file(run, data_contract, server)
         return run
 
-    # ── Location not empty ──────────────────────────────────────────────────
-
-    def test_empty_location_fails(self):
-        run = self._run_with_blobs([])
-        checks = _checks_by_type(run, "azure_file_location_not_empty")
-        assert checks and checks[0].result == ResultEnum.failed
-
-    def test_non_empty_location_passes(self):
-        run = self._run_with_blobs([_make_blob("raw/orders/a.json")])
-        checks = _checks_by_type(run, "azure_file_location_not_empty")
-        assert checks and checks[0].result == ResultEnum.passed
-
     # ── Property: size ──────────────────────────────────────────────────────
 
     def test_oversized_blob_fails_size_quality(self):

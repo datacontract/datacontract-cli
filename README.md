@@ -621,18 +621,10 @@ datacontract.yaml
 servers:
   production:
     type: azure
-    location: azure://container@datameshdatabricksdemo.dfs.core.windows.net/entity={model}/year=*/month=*/day=*/*.parquet
-    format: parquet
+    location: azure://container@datameshdatabricksdemo.blob.core.windows.net
+    format: jpg
 ```
 
-blobstore.datacontract.yaml
-```yaml
-servers:
-  production:
-    type: azure
-    location: azure://web@datameshdatabricksdemo.blob.core.windows.net/media={model}/year=*/month=*/day=*/*.jpg
-    format: binary
-```
 
 ##### Environment Variables
 
@@ -681,10 +673,6 @@ Schema-level quality checks (``schema.quality``):
   Metrics ``rowCount`` are evaluated as *file-count*
   thresholds against the total number of blobs found under the prefix.
 
-Datetime sentinel:
-  Quality constraints on datetime properties accept the special string ``"now"`` as a
-  comparand (``mustBeLessThan``, ``mustBeGreaterThan``, etc.) — it is resolved to the
-  current UTC datetime at evaluation time.
 
 ContentType normalisation:
   MIME parameters are stripped before comparison

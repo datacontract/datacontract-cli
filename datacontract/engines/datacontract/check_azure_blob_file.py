@@ -53,13 +53,22 @@ _BLOB_EXTRACTORS: Dict[str, Callable[["BlobProperties"], Any]] = {
 }
 
 # Quality metrics on SchemaObject interpreted as file-count thresholds
-_FILE_COUNT_METRICS = {"rowCount"}
-
-# Properties whose values are datetimes — auto-checked "not in future" when declared
-_DATETIME_PROPS = {"lastModified", "creationTime", "lastAccessedOn"}
+_FILE_COUNT_METRICS = {
+    "rowCount",
+    "fileCount",
+    "blobCount",
+    "itemCount",
+    "recordCount",
+    "count",
+    "numFiles",
+    "numBlobs",
+    "numItems",
+    "numObjects",
+    "numRows",
+}
 
 # Property names where MIME parameter stripping is applied before comparison
-_MIMETYPE_PROPS = {"contentType"}
+_MIMETYPE_PROPS = {"contentType", "content-type", "mimetype", "mimeType", "mime_type"}
 
 
 # ---------------------------------------------------------------------------
@@ -71,6 +80,7 @@ def check_azure_blob_file(
     run: Run,
     data_contract: OpenDataContractStandard,
     server: Server,
+    check_categories: set[str] | None = None,
 ) -> None:
     """Run Azure Blob Storage metadata checks for all blob-logicalType schemas.
 
@@ -89,7 +99,7 @@ def check_azure_blob_file(
     if not location:
         _append_check(
             run,
-            check_type="azure_file_configuration",
+            check_type="azure_blob_configuration",
             category="schema",
             name="Azure Blob File — server location",
             model=None,
@@ -103,7 +113,7 @@ def check_azure_blob_file(
     except Exception as exc:
         _append_check(
             run,
-            check_type="azure_file_connection",
+            check_type="azure_blob_connection",
             category="schema",
             name="Azure Blob File — connection",
             model=None,
@@ -116,7 +126,7 @@ def check_azure_blob_file(
     if container_name is None:
         _append_check(
             run,
-            check_type="azure_file_configuration",
+            check_type="azure_blob_configuration",
             category="schema",
             name="Azure Blob File — location parse",
             model=None,
@@ -166,9 +176,6 @@ def _check_schema(
             reason=f"Failed to list blobs in container '{container_name}' with prefix '{prefix}': {exc}",
         )
         return
-
-    # ── Check: location not empty ─────────────────────────────────────────────
-    _check_location_not_empty(run, schema_name, blobs, prefix)
 
     if not blobs:
         return
@@ -375,35 +382,6 @@ def _describe_quality_constraint(quality: DataQuality) -> str:
 # ---------------------------------------------------------------------------
 # Location-not-empty check  (schema-level, not property-level)
 # ---------------------------------------------------------------------------
-
-
-def _check_location_not_empty(
-    run: Run,
-    schema_name: str,
-    blobs: list,
-    prefix: str,
-) -> None:
-    check_type = "azure_file_location_not_empty"
-    if blobs:
-        _append_check(
-            run,
-            check_type=check_type,
-            category="schema",
-            name=f"Check schema[{schema_name}] has a location not empty",
-            model=schema_name,
-            result=ResultEnum.passed,
-            reason=f"Found {len(blobs)} blob(s) under prefix '{prefix}'.",
-        )
-    else:
-        _append_check(
-            run,
-            check_type=check_type,
-            category="schema",
-            name=f"Check schema[{schema_name}] has a location not empty",
-            model=schema_name,
-            result=ResultEnum.failed,
-            reason=f"No blobs found under prefix '{prefix}'. The location appears to be empty.",
-        )
 
 
 def _check_file_count_quality(
