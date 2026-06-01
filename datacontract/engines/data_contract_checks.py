@@ -599,6 +599,7 @@ def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConf
     check_type = "row_count"
     if "%" in threshold:
         logger.warning("Row count threshold cannot be specified as a percentage.")
+        return None
     check_key = f"{model_name}__{check_type}"
     sodacl_check_dict = {
         checks_for(model_name, quoting_config, check_type): [
@@ -640,7 +641,7 @@ def check_model_duplicate_values(
         key=check_key,
         category="quality",
         type=check_type,
-        name=f"Check that model {model_name} has duplicate_count {threshold} for columns {col_joined}",
+        name=f"Check that model {model_name} has {metric} {threshold} for columns {col_joined}",
         model=model_name,
         field=None,
         engine="soda",
