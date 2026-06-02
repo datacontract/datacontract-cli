@@ -1,7 +1,11 @@
 # syntax=docker/dockerfile:1.7
 
 # ---------- Builder ----------
-FROM python:3.11-slim-trixie AS builder
+# Docker Hardened Image (DHI) with Socket Firewall Free: signed, SBOM/VEX,
+# tighter CVE patch SLAs than upstream Debian, and `pip`/`uv` installs are
+# proxied through Socket Firewall to block malicious dependencies at build time.
+# Requires `docker login dhi.io` with a Docker Hub account that has DHI access.
+FROM dhi.io/python:3.11-debian13-sfw-dev AS builder
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -14,18 +18,18 @@ ENV PYTHONUNBUFFERED=1 \
 COPY --from=ghcr.io/astral-sh/uv:0.11.15 /uv /uvx /bin/
 
 # create the venv that we'll copy into the runtime image
-RUN python -m venv "$VIRTUAL_ENV"
+RUN python3 -m venv "$VIRTUAL_ENV"
 
 WORKDIR /app
 
-# install dependencies into the venv
+# install dependencies into the venv, routed through Socket Firewall
 COPY pyproject.toml MANIFEST.in /app/
 COPY datacontract/ /app/datacontract/
-RUN uv pip install --no-cache-dir ".[all]"
+RUN sfw uv pip install --no-cache-dir ".[all]"
 
 
 # ---------- Runtime ----------
-FROM python:3.11-slim-trixie AS runtime
+FROM dhi.io/python:3.11-debian13-sfw-dev AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
