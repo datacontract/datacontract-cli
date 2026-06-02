@@ -17,12 +17,6 @@ ENV PYTHONUNBUFFERED=1 \
 # install uv (build-time only)
 COPY --from=ghcr.io/astral-sh/uv:0.11.15 /uv /uvx /bin/
 
-# install protoc here so we can copy it into the minimal runtime
-# (the runtime image has no apt and no shell)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
-
 # create the venv that we'll copy into the runtime image
 RUN python3 -m venv "$VIRTUAL_ENV"
 
@@ -35,23 +29,29 @@ RUN sfw uv pip install --no-cache-dir ".[all]"
 
 
 # ---------- Runtime ----------
-# Minimal Docker Hardened Image: signed, SBOM/VEX, nonroot (uid 65532), no
-# shell, no apt. Only the artifacts copied below from the builder are present.
-FROM dhi.io/python:3.11-debian13 AS runtime
+# Docker Hardened Image (dev variant): signed, SBOM/VEX, DHI patch SLAs.
+# Switched to nonroot via the USER directive below.
+FROM dhi.io/python:3.11-debian13-dev AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     VIRTUAL_ENV=/opt/venv \
-    PATH=/opt/venv/bin:/opt/protoc/bin:$PATH \
-    LD_LIBRARY_PATH=/opt/protoc/lib:$LD_LIBRARY_PATH
+    JAVA_HOME=/opt/java/openjdk/17-jre \
+    PATH=/opt/venv/bin:/opt/java/openjdk/17-jre/bin:$PATH
 
-# copy the pre-built venv (readable+executable by nonroot)
+# protoc is required by `datacontract import protobuf`
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+# copy the pre-built venv (readable+executable by the nonroot user)
 COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
 
-# copy protoc + its shared libs so `datacontract import protobuf` works in the
-# runtime. Glob matches the Debian multi-arch lib path for amd64 and arm64.
-COPY --from=builder /usr/bin/protoc /opt/protoc/bin/protoc
-COPY --from=builder /usr/lib/*-linux-gnu/libproto*.so* /opt/protoc/lib/
+# Eclipse Temurin JRE 17 — required by PySpark-backed engines (Kafka, Spark).
+# Without Java, those engines fail at SparkSession startup. Adding the JRE here
+# means `datacontract test` against a kafka/spark server works in the image
+# without users having to extend it.
+COPY --from=dhi.io/eclipse-temurin:17-debian13 /opt/java/openjdk /opt/java/openjdk
 
 USER nonroot:nonroot
 WORKDIR /home/datacontract
