@@ -224,6 +224,12 @@ You can create an alias for the Docker command to make it easier to use:
 alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/cli:latest'
 ```
 
+The image is built on a [Docker Hardened Image](https://docs.docker.com/dhi/) (DHI) base, which is distroless and runs as a non-root user (`nonroot`) by default. If the CLI needs to write back to the mounted directory (e.g. via `--output`), pass your host UID/GID so that file ownership matches:
+
+```bash
+docker run --rm -u "$(id -u):$(id -g)" -v "${PWD}:/home/datacontract" datacontract/cli export html datacontract.yaml --output datacontract.html
+```
+
 _Note:_ The output of Docker command line messages is limited to 80 columns and may include line breaks. Don't pipe docker output to files if you want to export code. Use the `--output` option instead.
 
 
