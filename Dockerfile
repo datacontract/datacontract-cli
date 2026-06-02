@@ -35,12 +35,16 @@ RUN sfw uv pip install --no-cache-dir ".[all]"
 
 
 # ---------- Runtime ----------
-# Docker Hardened Image (dev variant): signed, SBOM/VEX, DHI patch SLAs.
-# Dev (not the minimal `3.11-debian13`) because PySpark's `spark-submit` is a
-# bash script — the minimal image ships no shell, so Kafka/Spark engines can't
-# even start there. Dev adds bash + coreutils + apt at ~60 MB cost and lets us
-# drop the manual /opt/protoc lib gymnastics. Default user is root; switched to
-# nonroot via the USER directive at the bottom.
+# NOTE: the `-dev` suffix is intentional. In Docker Hardened Images, `-dev`
+# names a hardened production variant that ships bash + coreutils + apt — it is
+# NOT a development-only image. It's signed, ships SBOM/VEX, and is on the same
+# DHI patch SLAs as the minimal variant.
+#
+# We picked `-dev` over the minimal `3.11-debian13` (no shell, no apt) because
+# PySpark's `spark-submit` is a bash script. Without bash, Kafka/Spark engines
+# can't even start. The `-dev` variant adds bash + coreutils + apt at ~60 MB
+# cost and lets us drop a /opt/protoc shared-lib copy hack. Default user is
+# root; switched to nonroot via the USER directive at the bottom.
 FROM dhi.io/python:3.11-debian13-dev AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
