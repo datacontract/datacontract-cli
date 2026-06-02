@@ -53,7 +53,7 @@ COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
 COPY --from=builder /usr/bin/protoc /opt/protoc/bin/protoc
 COPY --from=builder /usr/lib/*-linux-gnu/libproto*.so* /opt/protoc/lib/
 
-USER 65532:65532
+USER nonroot:nonroot
 WORKDIR /home/datacontract
 
 ENTRYPOINT ["datacontract"]
