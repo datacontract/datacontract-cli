@@ -43,8 +43,8 @@ RUN sfw uv pip install --no-cache-dir ".[all]"
 # We picked `-dev` over the minimal `3.11-debian13` (no shell, no apt) because
 # PySpark's `spark-submit` is a bash script. Without bash, Kafka/Spark engines
 # can't even start. The `-dev` variant adds bash + coreutils + apt at ~60 MB
-# cost and lets us drop a /opt/protoc shared-lib copy hack. Default user is
-# root; switched to nonroot via the USER directive at the bottom.
+# cost. Default user is root; switched to nonroot via the USER directive at
+# the bottom.
 FROM dhi.io/python:3.11-debian13-dev AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
