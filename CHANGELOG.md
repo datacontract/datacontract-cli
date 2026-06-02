@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Container image is now based on [Docker Hardened Images](https://hub.docker.com/hardened-images/catalog/dhi/python): signed, ships SBOM/VEX, and has tighter CVE patch SLAs than upstream Debian. Runs as nonroot (uid 65532) instead of root. `pip` / `uv` installs at build time are routed through Socket Firewall Free, which blocks malicious dependencies. (#1275, #1277)
+- Container image now ships Eclipse Temurin JRE 17, so PySpark-backed engines (Kafka, Spark) actually run inside the image — previously they failed at `SparkSession` startup because the base image had no JVM. End users pulling `datacontract/cli` are unaffected by the build-side changes. (#1277)
+
 ## [0.12.5] - 2026-05-30
 
 ### Added
