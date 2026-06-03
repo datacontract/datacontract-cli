@@ -25,8 +25,6 @@ from datacontract.model.run import Check, ResultEnum, Run
 
 logger = logging.getLogger(__name__)
 
-_AGGREGATABLE = {MetricType.ROW_COUNT, MetricType.MISSING_COUNT, MetricType.INVALID_COUNT}
-
 
 class _ColumnNotFound(Exception):
     pass
@@ -163,19 +161,21 @@ def _run_model(run: Run, con, model: str, specs: List[CheckSpec]):
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
         try:
+            named = None  # set for count-style metrics that get batched
             if spec.metric == MetricType.ROW_COUNT:
-                agg_exprs.append((spec, t.count().name(spec.key)))
+                named = t.count().name(spec.key)
             elif spec.metric == MetricType.MISSING_COUNT:
                 col = _resolve_col(columns, spec.field)
-                agg_exprs.append((spec, _count_true(_missing_expr(t, col, spec.missing_values)).name(spec.key)))
+                named = _count_true(_missing_expr(t, col, spec.missing_values)).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 col = _resolve_col(columns, spec.field)
                 expr = _invalid_expr(t, col, schema[col], spec)
                 if expr is None:
                     # No validity constraints => nothing can be invalid.
+                    _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
                     _evaluate(run, spec, 0)
                 else:
-                    agg_exprs.append((spec, _count_true(expr).name(spec.key)))
+                    named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
                 _run_duplicate(run, t, columns, spec)
             elif spec.metric == MetricType.FIELD_PRESENT:
@@ -186,6 +186,12 @@ def _run_model(run: Run, con, model: str, specs: List[CheckSpec]):
                 _run_freshness(run, t, columns, spec)
             elif spec.metric == MetricType.CUSTOM_SQL:
                 _run_custom_sql(run, con, spec)
+
+            if named is not None:
+                # Record the representative per-check SQL (these are executed
+                # together as one batched aggregation, see _run_aggregation).
+                _record_sql(run, spec, t.aggregate([named]))
+                agg_exprs.append((spec, named))
         except _ColumnNotFound as e:
             _set_result(run, spec.key, ResultEnum.failed, str(e))
         except Exception as e:
@@ -297,12 +303,16 @@ def _invalid_expr(t, col, dtype, spec: CheckSpec):
 def _run_duplicate(run: Run, t, columns, spec: CheckSpec):
     cols = [_resolve_col(columns, c) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
-    dup_count = grouped.filter(grouped["_dup_n"] > 1).count().execute()
+    dup_groups = grouped.filter(grouped["_dup_n"] > 1)
+    _record_sql(run, spec, dup_groups)
+    dup_count = dup_groups.count().execute()
     dup_count = int(dup_count) if dup_count is not None else 0
     _evaluate(run, spec, dup_count)
 
 
 def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
+    target = f"{model}__raw__" if spec.uses_raw_view else model
+    _set_impl(run, spec.key, f"column '{spec.field}' exists in {target}", "introspection")
     present = set(columns.keys())
     if spec.uses_raw_view:
         try:
@@ -320,6 +330,12 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
 
 
 def _run_type(run: Run, schema, columns, spec: CheckSpec):
+    _set_impl(
+        run,
+        spec.key,
+        f"type of '{spec.field}' is compatible with '{spec.expected_type_label}' ({spec.expected_category})",
+        "introspection",
+    )
     actual_col = columns.get(spec.field.lower())
     if actual_col is None:
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
@@ -342,7 +358,9 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
     import pandas as pd
 
     col = _resolve_col(columns, spec.field)
-    raw = t[col].min().execute() if spec.metric == MetricType.RETENTION else t[col].max().execute()
+    reduction = t[col].min() if spec.metric == MetricType.RETENTION else t[col].max()
+    _record_sql(run, spec, t.aggregate(value=reduction))
+    raw = reduction.execute()
     if raw is None or pd.isna(raw):
         _set_result(run, spec.key, ResultEnum.failed, f"No timestamp value found in '{spec.field}'")
         return
@@ -362,6 +380,7 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
 
 
 def _run_custom_sql(run: Run, con, spec: CheckSpec):
+    _set_impl(run, spec.key, spec.query, "sql")
     value = _run_scalar(con, spec.query, spec.dialect)
     _evaluate(run, spec, value)
 
@@ -410,6 +429,33 @@ def _set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]):
     check.result = result
     if reason is not None:
         check.reason = reason
+
+
+def _set_impl(run: Run, key: str, implementation: Optional[str], language: Optional[str]):
+    """Record what a check actually runs: the compiled SQL (language='sql'),
+    a schema-introspection note (language='introspection'), etc."""
+    check = next((c for c in run.checks if c.key == key), None)
+    if check is None:
+        return
+    check.implementation = implementation
+    check.language = language
+
+
+def _record_sql(run: Run, spec: CheckSpec, expr) -> None:
+    """Compile a (bound) ibis expression to backend-dialect SQL and store it."""
+    sql = _to_sql(expr)
+    if sql:
+        _set_impl(run, spec.key, sql, "sql")
+
+
+def _to_sql(expr) -> Optional[str]:
+    import ibis
+
+    try:
+        return str(ibis.to_sql(expr))
+    except Exception as e:  # pragma: no cover - SQL rendering is best-effort
+        logger.debug("Could not render SQL for check: %s", e)
+        return None
 
 
 def _fail_all(run: Run, specs: List[CheckSpec], result: ResultEnum, reason: str):
