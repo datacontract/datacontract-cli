@@ -52,7 +52,9 @@ schema:
     con = get_duckdb_connection(data_contract, server, run)
     tbl = con.table("sample_data")
     assert tbl.columns == ["id", "tags", "name"]
-    assert [x[1].lower() for x in tbl.description] == ["number", "list", "dict"]
+    # duckdb >=1.5 returns DuckDBPyType objects in `description`; assert on the
+    # stable type id (number->bigint, list->list, dict->struct).
+    assert [x[1].id for x in tbl.description] == ["bigint", "list", "struct"]
     # test that duckdb correct unpacked the nested structures.
     assert tbl.fetchone() == (
         1,
@@ -64,18 +66,18 @@ schema:
     ## check nested tables
     tbl = con.table("sample_data__tags")
     assert tbl.columns == ["foo", "arr"]
-    assert [x[1].lower() for x in tbl.description] == ["string", "list"]
+    assert [x[1].id for x in tbl.description] == ["varchar", "list"]
     assert tbl.fetchone() == ("bar", [1, 2, 3])
     assert tbl.fetchone() == ("lap", [4])
     assert tbl.fetchone() == ("zap", [])
     assert tbl.fetchone() is None
     tbl = con.table("sample_data__tags__arr")
     assert tbl.columns == ["arr"]
-    assert [x[1].lower() for x in tbl.description] == ["number"]
+    assert [x[1].id for x in tbl.description] == ["bigint"]
     assert tbl.fetchall() == [(1,), (2,), (3,), (4,)]
     tbl = con.table("sample_data__name")
     assert tbl.columns == ["first", "last"]
-    assert [x[1].lower() for x in tbl.description] == ["string", "string"]
+    assert [x[1].id for x in tbl.description] == ["varchar", "varchar"]
     assert tbl.fetchall() == [("John", "Doe")]
 
 

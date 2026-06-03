@@ -11,8 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Replaced the Soda Core quality/test engine with [ibis](https://ibis-project.org/). `datacontract test` now compiles schema and quality checks into ibis expressions (dialect-correct SQL per backend via sqlglot, local/remote files via DuckDB) instead of generating SodaCL. Install extras now pull `ibis-framework[<backend>]` instead of `soda-core-*`. Check semantics and pass/fail results are preserved for the supported sources (postgres, redshift, mysql, snowflake, bigquery, databricks, sqlserver, oracle, trino, athena, impala, kafka/dataframe via the ibis Spark backend, and local/S3/GCS/Azure files).
 - **Breaking:** Raw SodaCL custom quality checks (`quality.type: custom` with `engine: soda`) are no longer executed and now report a warning. Migrate them to `quality.type: sql` or a library metric (e.g. `metric: rowCount`).
 - MySQL is tested through DuckDB's `mysql` extension instead of ibis's native MySQL backend, so the `mysql` extra stays pure-pip (no `mysqlclient` C build / system MySQL client libraries required).
+- Bumped DuckDB to the 1.5.x line (from 1.0.x) with the bundled `duckdb-extension-*` wheels (httpfs/aws/azure) pinned in lockstep. The 1.5.x extension wheels publish arm64 Linux builds, so air-gapped installs on arm64 Linux are now supported (the previous platform skip markers were removed).
 - Container image is now based on [Docker Hardened Images](https://hub.docker.com/hardened-images/catalog/dhi/python): signed, ships SBOM/VEX, and has tighter CVE patch SLAs than upstream Debian. Runs as nonroot (uid 65532) instead of root. `pip` / `uv` installs at build time are routed through Socket Firewall Free, which blocks malicious dependencies. (#1275, #1277)
 - Container image now ships Eclipse Temurin JRE 17, so PySpark-backed engines (Kafka, Spark) actually run inside the image — previously they failed at `SparkSession` startup because the base image had no JVM. End users pulling `datacontract/cli` are unaffected by the build-side changes. (#1277)
+
+### Fixed
+- DuckDB S3 secret creation no longer fails (`Secret Validation Failure`) on DuckDB ≥1.5: explicit `KEY_ID`/`SECRET` now use the default `config` provider instead of `CREDENTIAL_CHAIN`.
+- `import csv` no longer fails with a DuckDB binder error on DuckDB ≥1.5 (the uniqueness probe now uses `count(DISTINCT ...)` via SQL).
 
 ### Removed
 - The `soda-core` runtime dependency and all `soda-core-*` install extras, plus the `setuptools` runtime shim they required. The `sodacl` export format (`datacontract export sodacl`) is unchanged and is now generated independently of any Soda runtime.

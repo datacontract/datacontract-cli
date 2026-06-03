@@ -87,23 +87,24 @@ redshift = [
   "ibis-framework[postgres]>=10.0.0,<13.0.0"
 ]
 
-# DuckDB extension wheels are skipped on Linux/aarch64 — no 1.0.x manylinux2014_aarch64 build exists.
-# ARM Linux users fall back to DuckDB's online auto-install (does not work in air-gapped environments)
+# DuckDB extension wheels are bundled for air-gapped installs. The 1.5.x line
+# publishes wheels for all platforms including manylinux2014_aarch64, so no
+# platform markers are needed.
 s3 = [
   "s3fs>=2025.2.0,<2027.0.0",
   "aiobotocore>=2.17.0,<3.8.0",
-  'duckdb-extension-httpfs>=1.0.1,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
-  'duckdb-extension-aws>=1.0.3,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
+  "duckdb-extension-httpfs>=1.5.0,<1.6.0",
+  "duckdb-extension-aws>=1.5.0,<1.6.0",
 ]
 
 gcs = [
   "datacontract-cli[duckdb]",
-  'duckdb-extension-httpfs>=1.0.1,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
+  "duckdb-extension-httpfs>=1.5.0,<1.6.0",
 ]
 
 azure = [
   "datacontract-cli[duckdb]",
-  'duckdb-extension-azure>=1.0.3,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
+  "duckdb-extension-azure>=1.5.0,<1.6.0",
 ]
 
 snowflake = [
@@ -135,13 +136,11 @@ dbml = [
   "pydbml>=1.1.1"
 ]
 
-# duckdb is capped at the 1.0.x line to stay compatible with the bundled
-# duckdb-extension-* wheels (httpfs/aws/azure), which are pinned to <1.1.0 for
-# air-gapped installs. Newer duckdb (1.5.x) also changes CSV/JSON/secret
-# behavior and the mysql-extension port handling; bumping requires matching
-# extension wheels and code updates.
+# duckdb must stay in lockstep with the bundled duckdb-extension-* wheels
+# (httpfs/aws/azure) used for air-gapped installs, since those extensions are
+# built per duckdb version. Both are pinned to the 1.5.x line.
 duckdb = [
-  "duckdb>=1.0.0,<1.1.0",
+  "duckdb>=1.5.0,<1.6.0",
   "ibis-framework[duckdb]>=10.0.0,<13.0.0",
 ]
 
