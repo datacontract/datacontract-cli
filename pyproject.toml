@@ -162,9 +162,8 @@ api = [
 ]
 
 protobuf = [
-  # `protoc` (the compiler) must be installed separately on the system; see README.
-  # Wide range: only `descriptor_pb2.FileDescriptorSet` is used, stable since 3.x.
-  "protobuf>=3.20,<8.0",
+  # Pure-Python .proto parser — no `protoc` system binary or C extension needed.
+  "proto-schema-parser>=1.0,<3.0",
 ]
 
 all = [
