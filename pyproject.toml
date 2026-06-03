@@ -70,8 +70,12 @@ kafka = [
   "pyspark>=3.5.0,<5.0.0",
 ]
 
+# MySQL is tested through DuckDB's `mysql` extension (ATTACH), not ibis's
+# native MySQL backend, which would require `mysqlclient` (a C extension with no
+# macOS/Linux wheels). mysql-connector-python is a pure-Python driver used by
+# the test fixtures to seed data.
 mysql = [
-  "ibis-framework[mysql]>=10.0.0,<13.0.0",
+  "datacontract-cli[duckdb]",
   "mysql-connector-python>=8.0.30,<9.7.0",
 ]
 
@@ -132,8 +136,13 @@ dbml = [
   "pydbml>=1.1.1"
 ]
 
+# duckdb is capped at the 1.0.x line to stay compatible with the bundled
+# duckdb-extension-* wheels (httpfs/aws/azure), which are pinned to <1.1.0 for
+# air-gapped installs. Newer duckdb (1.5.x) also changes CSV/JSON/secret
+# behavior and the mysql-extension port handling; bumping requires matching
+# extension wheels and code updates.
 duckdb = [
-  "duckdb>=1.0.0,<1.6.0",
+  "duckdb>=1.0.0,<1.1.0",
   "ibis-framework[duckdb]>=10.0.0,<13.0.0",
 ]
 

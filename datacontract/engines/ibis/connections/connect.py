@@ -127,13 +127,7 @@ def connect_ibis(
         return ibis.postgres.connect(**kwargs)
 
     if server_type == "mysql":
-        return ibis.mysql.connect(
-            host=server.host,
-            port=int(server.port) if server.port else 3306,
-            user=require_env("DATACONTRACT_MYSQL_USERNAME", server_type="mysql"),
-            password=require_env("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql"),
-            database=server.database,
-        )
+        return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name)
 
     if server_type == "snowflake":
         prefix = "DATACONTRACT_SNOWFLAKE_"
@@ -204,6 +198,68 @@ def connect_ibis(
 
     _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
     return None
+
+
+def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str):
+    """Connect to MySQL through DuckDB's ``mysql`` extension.
+
+    ibis's native MySQL backend requires ``mysqlclient`` (a C extension with no
+    macOS/Linux wheels, needing system MySQL client libraries to build). Routing
+    through DuckDB keeps the install pure-pip: DuckDB ATTACHes the MySQL database
+    and we expose each contract model as a view in the default catalog so the
+    rest of the engine works unchanged.
+    """
+    import duckdb
+
+    from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
+
+    user = require_env("DATACONTRACT_MYSQL_USERNAME", server_type="mysql")
+    password = require_env("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql")
+    host = server.host or "localhost"
+    port = int(server.port) if server.port else 3306
+    database = server.database
+
+    con = duckdb.connect()
+    _load_extension(con, "mysql", "mysql")
+
+    parts = [f"host={host}", f"port={port}", f"user={user}", f"password={password}"]
+    if database:
+        parts.append(f"database={database}")
+    conn_str = " ".join(parts).replace("'", "''")
+    run.log_info(f"Attaching MySQL {host}:{port} via the duckdb mysql extension")
+    con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql)")
+
+    if data_contract.schema_:
+        for schema_obj in data_contract.schema_:
+            if schema_name != "all" and schema_obj.name != schema_name:
+                continue
+            model = schema_obj.physicalName or schema_obj.name
+            _materialize_attached_table(con, "mysqldb", database, model)
+
+    return ibis.duckdb.from_connection(con)
+
+
+def _materialize_attached_table(con, catalog: str, database: str | None, model: str):
+    """Copy an attached-catalog table into a local DuckDB table named ``model``.
+
+    Materializing (rather than a view over the attached catalog) ensures all
+    checks run against local DuckDB data. Pushing complex check queries through
+    the DuckDB MySQL scanner can trigger DuckDB binder errors (e.g. on the
+    grouped duplicate-count query), so we read the rows once and check locally.
+    """
+    candidates = []
+    if database:
+        candidates.append(f'{catalog}."{database}"."{model}"')
+    candidates.append(f'{catalog}."{model}"')
+    last_error = None
+    for src in candidates:
+        try:
+            con.execute(f'CREATE OR REPLACE TABLE "{model}" AS SELECT * FROM {src}')
+            return
+        except Exception as e:  # noqa: BLE001 - try the next naming candidate
+            last_error = e
+    if last_error is not None:
+        logger.warning("Could not read MySQL table '%s': %s", model, last_error)
 
 
 def _connect_sqlserver(ibis, server: Server):
