@@ -32,7 +32,7 @@ def create_spark_session():
     pyspark_version = "3.5.5"  # MUST be the same as in the pyproject.toml
     spark = (
         SparkSession.builder.appName("datacontract")
-        .config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
+        .config("spark.sql.warehouse.dir", f"{tmp_dir.name}/spark-warehouse")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
         .config("spark.ui.enabled", "false")
         .config("spark.driver.bindAddress", "127.0.0.1")

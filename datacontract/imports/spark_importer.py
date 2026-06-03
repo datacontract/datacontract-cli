@@ -40,7 +40,7 @@ def import_spark(
     atexit.register(tmp_dir.cleanup)
 
     spark = (
-        SparkSession.builder.config("spark.sql.warehouse.dir", f"{tmp_dir}/spark-warehouse")
+        SparkSession.builder.config("spark.sql.warehouse.dir", f"{tmp_dir.name}/spark-warehouse")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
         .config("spark.ui.enabled", "false")
         .getOrCreate()
