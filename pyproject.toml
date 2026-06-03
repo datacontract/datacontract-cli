@@ -57,7 +57,9 @@ databricks = [
   "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.3.0",
   "databricks-sdk<0.112.0",
-  "pyspark>=3.5.0,<5.0.0",
+  # Capped to Spark 3.5.x: the Kafka/Avro paths load Scala 2.12 / Spark 3.5
+  # connector jars (see kafka.py), which are incompatible with Spark 4.x.
+  "pyspark>=3.5.0,<4.0.0",
 ]
 
 iceberg = [
@@ -67,7 +69,9 @@ iceberg = [
 kafka = [
   "datacontract-cli[avro]",
   "ibis-framework[pyspark]>=10.0.0,<13.0.0",
-  "pyspark>=3.5.0,<5.0.0",
+  # Capped to Spark 3.5.x: the Kafka/Avro paths load Scala 2.12 / Spark 3.5
+  # connector jars (see kafka.py), which are incompatible with Spark 4.x.
+  "pyspark>=3.5.0,<4.0.0",
 ]
 
 # MySQL is tested through DuckDB's `mysql` extension (ATTACH), not ibis's
