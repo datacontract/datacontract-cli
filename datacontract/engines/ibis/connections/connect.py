@@ -132,6 +132,10 @@ def connect_ibis(
     if server_type == "snowflake":
         prefix = "DATACONTRACT_SNOWFLAKE_"
         extra = {k.replace(prefix, "").lower(): v for k, v in os.environ.items() if k.startswith(prefix)}
+        # ibis passes kwargs straight to snowflake-connector-python, which uses
+        # `user` (not soda's `username`). Keep DATACONTRACT_SNOWFLAKE_USERNAME working.
+        if "username" in extra:
+            extra.setdefault("user", extra.pop("username"))
         return ibis.snowflake.connect(
             account=server.account,
             database=server.database,
