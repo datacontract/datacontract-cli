@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Breaking Changes
+- Replaced the Soda Core quality/test engine with [ibis](https://ibis-project.org/). `datacontract test` now compiles schema and quality checks into ibis expressions (dialect-correct SQL per backend via sqlglot, local/remote files via DuckDB) instead of generating SodaCL. Install extras now pull `ibis-framework[<backend>]` instead of `soda-core-*`. Check semantics and pass/fail results are preserved for the supported sources (postgres, redshift, mysql, snowflake, bigquery, databricks, sqlserver, oracle, trino, athena, impala, kafka/dataframe via the ibis Spark backend, and local/S3/GCS/Azure files).
+- Raw SodaCL custom quality checks (`quality.type: custom` with `engine: soda`) are no longer executed and now report a warning. Migrate them to `quality.type: sql` or a library metric (e.g. `metric: rowCount`).
+
 ### Added
 - Python 3.13 support (`requires-python` now allows 3.10–3.13). On 3.13 the Spark-backed extras resolve to PySpark 4.0 (Spark 3.5 has no 3.13 build); the Kafka/Avro connector jars already adapt to the runtime Spark/Scala version. `create_spark_session` now pins `PYSPARK_PYTHON`/`PYSPARK_DRIVER_PYTHON` to the running interpreter so Spark's Python workers match the driver.
 - `datacontract test` against Databricks now supports more authentication methods beyond the personal access token (`DATACONTRACT_DATABRICKS_TOKEN`): an OAuth service principal for machine-to-machine auth (`DATACONTRACT_DATABRICKS_CLIENT_ID` + `DATACONTRACT_DATABRICKS_CLIENT_SECRET`), a local config profile via the Databricks SDK unified auth (`DATACONTRACT_DATABRICKS_PROFILE`, also covers Azure CLI/MSI), and an explicit connector auth type (`DATACONTRACT_DATABRICKS_AUTH_TYPE`, e.g. `databricks-oauth` for the interactive browser flow).
 
 ### Changed
-- **Breaking:** Replaced the Soda Core quality/test engine with [ibis](https://ibis-project.org/). `datacontract test` now compiles schema and quality checks into ibis expressions (dialect-correct SQL per backend via sqlglot, local/remote files via DuckDB) instead of generating SodaCL. Install extras now pull `ibis-framework[<backend>]` instead of `soda-core-*`. Check semantics and pass/fail results are preserved for the supported sources (postgres, redshift, mysql, snowflake, bigquery, databricks, sqlserver, oracle, trino, athena, impala, kafka/dataframe via the ibis Spark backend, and local/S3/GCS/Azure files).
-- **Breaking:** Raw SodaCL custom quality checks (`quality.type: custom` with `engine: soda`) are no longer executed and now report a warning. Migrate them to `quality.type: sql` or a library metric (e.g. `metric: rowCount`).
 - MySQL is tested through DuckDB's `mysql` extension instead of ibis's native MySQL backend, so the `mysql` extra stays pure-pip (no `mysqlclient` C build / system MySQL client libraries required).
 - Bumped DuckDB to the 1.5.x line (from 1.0.x) with the bundled `duckdb-extension-*` wheels (httpfs/aws/azure) pinned in lockstep. The 1.5.x extension wheels publish arm64 Linux builds, so air-gapped installs on arm64 Linux are now supported (the previous platform skip markers were removed).
 - The Kafka/Avro Spark connector jars are now derived from the installed PySpark at runtime (Spark version + Scala binary version), so both PySpark 3.5.x (Scala 2.12) and 4.x (Scala 2.13) work. The `kafka` and `databricks` extras allow `pyspark<5.0`.
