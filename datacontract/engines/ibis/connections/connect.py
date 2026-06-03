@@ -1,0 +1,272 @@
+"""Build an ibis backend connection for an ODCS server.
+
+Replaces the per-source soda configuration builders. Each branch maps the
+``Server`` fields and the same ``DATACONTRACT_*`` environment variables the soda
+connections used onto an ``ibis.<backend>.connect(...)`` call. File sources
+reuse the DuckDB view builder (``duckdb_connection.py``) and Spark sources reuse
+the Spark/Kafka helpers (``kafka.py``), wrapping the resulting connection/session
+with the ibis duckdb / pyspark backend.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import typing
+
+from open_data_contract_standard.model import OpenDataContractStandard, Server
+
+from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
+from datacontract.model.exceptions import DataContractException, require_env
+from datacontract.model.run import Check, ResultEnum, Run
+
+if typing.TYPE_CHECKING:
+    import ibis
+    from pyspark.sql import SparkSession
+
+logger = logging.getLogger(__name__)
+
+_FILE_SERVER_TYPES = {"s3", "gcs", "azure", "local"}
+_SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta"}
+
+
+def _import_ibis():
+    try:
+        import ibis
+
+        return ibis
+    except ImportError as e:  # pragma: no cover - import guard
+        raise ImportError(
+            "ibis-framework is required to run datacontract tests. "
+            "Install with: pip install 'datacontract-cli[<server-type>]'"
+        ) from e
+
+
+def connect_ibis(
+    run: Run,
+    data_contract: OpenDataContractStandard,
+    server: Server,
+    spark: "SparkSession" = None,
+    duckdb_connection=None,
+    schema_name: str = "all",
+) -> "ibis.BaseBackend | None":
+    """Return a connected ibis backend, or ``None`` if the server is unsupported.
+
+    On an unsupported server type/format an explanatory warning ``Check`` is
+    appended to ``run`` (mirroring the previous soda behaviour).
+    """
+    ibis = _import_ibis()
+    server_type = server.type
+
+    if server_type in _FILE_SERVER_TYPES:
+        if server.format not in _SUPPORTED_FILE_FORMATS:
+            _unsupported(run, f"Format {server.format} not yet supported by datacontract CLI")
+            return None
+        run.log_info(f"Connecting to {server_type} {server.format} via duckdb")
+        con = get_duckdb_connection(data_contract, server, run, duckdb_connection, schema_name=schema_name)
+        return ibis.duckdb.from_connection(con)
+
+    if server_type == "kafka":
+        from datacontract.engines.ibis.connections.kafka import create_spark_session, read_kafka_topic
+
+        if spark is None:
+            spark = create_spark_session()
+        read_kafka_topic(spark, data_contract, server)
+        return ibis.pyspark.connect(session=spark)
+
+    if server_type == "dataframe":
+        if spark is None:
+            run.log_warn(
+                "Server type dataframe only works with the Python library and requires a Spark session, "
+                "please provide one with the DataContract class"
+            )
+            return None
+        return ibis.pyspark.connect(session=spark)
+
+    if server_type == "databricks":
+        if spark is not None:
+            run.log_info("Connecting to databricks via spark")
+            database_name = ".".join(filter(None, [server.catalog, server.schema_]))
+            if database_name:
+                spark.sql(f"USE {database_name}")
+            return ibis.pyspark.connect(session=spark)
+        run.log_info("Connecting to databricks directly")
+        token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
+        http_path = os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH")
+        host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+        return ibis.databricks.connect(
+            server_hostname=host,
+            http_path=http_path,
+            access_token=token,
+            catalog=server.catalog,
+            schema=server.schema_,
+        )
+
+    if server_type == "postgres":
+        return ibis.postgres.connect(
+            host=server.host,
+            port=int(server.port) if server.port else 5432,
+            user=require_env("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres"),
+            password=require_env("DATACONTRACT_POSTGRES_PASSWORD", server_type="postgres"),
+            database=server.database,
+            schema=server.schema_,
+        )
+
+    if server_type == "redshift":
+        kwargs = dict(
+            host=server.host,
+            port=int(server.port) if server.port else 5439,
+            user=require_env("DATACONTRACT_REDSHIFT_USERNAME", server_type="redshift"),
+            database=server.database,
+            schema=server.schema_,
+        )
+        password = os.getenv("DATACONTRACT_REDSHIFT_PASSWORD")
+        if password:
+            kwargs["password"] = password
+        # Redshift speaks the postgres wire protocol; ibis has no dedicated backend.
+        return ibis.postgres.connect(**kwargs)
+
+    if server_type == "mysql":
+        return ibis.mysql.connect(
+            host=server.host,
+            port=int(server.port) if server.port else 3306,
+            user=require_env("DATACONTRACT_MYSQL_USERNAME", server_type="mysql"),
+            password=require_env("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql"),
+            database=server.database,
+        )
+
+    if server_type == "snowflake":
+        prefix = "DATACONTRACT_SNOWFLAKE_"
+        extra = {k.replace(prefix, "").lower(): v for k, v in os.environ.items() if k.startswith(prefix)}
+        return ibis.snowflake.connect(
+            account=server.account,
+            database=server.database,
+            schema=server.schema_,
+            **extra,
+        )
+
+    if server_type == "bigquery":
+        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
+        credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
+        if credentials_path:
+            from google.oauth2 import service_account
+
+            kwargs["credentials"] = service_account.Credentials.from_service_account_file(credentials_path)
+        return ibis.bigquery.connect(**kwargs)
+
+    if server_type == "sqlserver":
+        return _connect_sqlserver(ibis, server)
+
+    if server_type == "oracle":
+        service_name = server.serviceName or server.database
+        oracle_client_dir = os.getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
+        if oracle_client_dir:
+            import oracledb
+
+            oracledb.init_oracle_client(lib_dir=oracle_client_dir)
+        return ibis.oracle.connect(
+            host=server.host,
+            port=int(server.port) if server.port else 1521,
+            user=require_env("DATACONTRACT_ORACLE_USERNAME", server_type="oracle"),
+            password=require_env("DATACONTRACT_ORACLE_PASSWORD", server_type="oracle"),
+            service_name=service_name,
+        )
+
+    if server_type == "trino":
+        user = require_env("DATACONTRACT_TRINO_USERNAME", server_type="trino")
+        password = os.getenv("DATACONTRACT_TRINO_PASSWORD")
+        kwargs = dict(
+            host=server.host,
+            port=int(server.port) if server.port else 8080,
+            user=user,
+            database=server.catalog,
+            schema=server.schema_,
+        )
+        if password:
+            import trino as trino_pkg
+
+            kwargs["auth"] = trino_pkg.auth.BasicAuthentication(user, password)
+            kwargs["http_scheme"] = "https"
+        return ibis.trino.connect(**kwargs)
+
+    if server_type == "athena":
+        return _connect_athena(ibis, server)
+
+    if server_type == "impala":
+        return ibis.impala.connect(
+            host=server.host,
+            port=int(server.port) if server.port else 21050,
+            user=os.getenv("DATACONTRACT_IMPALA_USERNAME"),
+            password=os.getenv("DATACONTRACT_IMPALA_PASSWORD"),
+            database=getattr(server, "database", None),
+            use_ssl=_get_bool_env("DATACONTRACT_IMPALA_USE_SSL", True),
+        )
+
+    _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
+    return None
+
+
+def _connect_sqlserver(ibis, server: Server):
+    driver = _get_custom_property(server, "driver") or os.getenv("DATACONTRACT_SQLSERVER_DRIVER")
+    return ibis.mssql.connect(
+        host=server.host,
+        port=int(server.port) if server.port else 1433,
+        user=require_env("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver"),
+        password=require_env("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver"),
+        database=server.database,
+        driver=driver,
+    )
+
+
+def _connect_athena(ibis, server: Server):
+    s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
+    s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
+    if not server.schema_:
+        raise DataContractException(
+            type="athena-connection",
+            name="missing_schema",
+            reason="Schema is required for Athena connection.",
+            engine="datacontract",
+        )
+    if not getattr(server, "stagingDir", None):
+        raise DataContractException(
+            type="athena-connection",
+            name="missing_s3_staging_dir",
+            reason="S3 staging directory is required for Athena connection.",
+            engine="datacontract",
+        )
+    return ibis.athena.connect(
+        s3_staging_dir=server.stagingDir,
+        aws_access_key_id=s3_access_key_id,
+        aws_secret_access_key=s3_secret_access_key,
+        region_name=os.getenv("DATACONTRACT_S3_REGION") or getattr(server, "region_name", None),
+        schema_name=server.schema_,
+    )
+
+
+def _get_custom_property(server: Server, name: str):
+    if server.customProperties:
+        for prop in server.customProperties:
+            if prop.property == name:
+                return prop.value
+    return None
+
+
+def _get_bool_env(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "y", "on")
+
+
+def _unsupported(run: Run, reason: str):
+    run.checks.append(
+        Check(
+            type="general",
+            name="Check that server type is supported",
+            result=ResultEnum.warning,
+            reason=reason,
+            engine="datacontract",
+        )
+    )
+    run.log_warn(reason)

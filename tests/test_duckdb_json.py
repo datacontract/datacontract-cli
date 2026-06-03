@@ -1,4 +1,4 @@
-from datacontract.engines.soda.connections.duckdb_connection import get_duckdb_connection
+from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.lint import resolve
 from datacontract.model.run import Run
 

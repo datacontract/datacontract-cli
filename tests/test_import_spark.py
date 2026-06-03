@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.engines.data_contract_checks import check_property_type, create_checks
+from datacontract.export.sodacl_check_builder import check_property_type, create_checks
 from datacontract.export.sql_type_converter import convert_to_databricks, convert_to_dataframe
 
 
@@ -193,7 +193,7 @@ def test_imported_spark_physical_types_map_to_databricks(df_user):
 
 def test_check_property_type_refuses_none_expected_type(caplog):
     """If expected_type is None, check_property_type should log a warning and return None."""
-    with caplog.at_level(logging.WARNING, logger="datacontract.engines.data_contract_checks"):
+    with caplog.at_level(logging.WARNING, logger="datacontract.export.sodacl_check_builder"):
         result = check_property_type("model", "field", None)
     assert result is None
     assert any("None" in r.message and "field" in r.message for r in caplog.records)

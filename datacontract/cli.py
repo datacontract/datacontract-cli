@@ -141,7 +141,7 @@ def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
 
     if not debug:
         # Keep noisy third-party loggers quiet
-        for noisy_logger in ("snowflake.connector", "py4j", "pyspark", "urllib3", "soda"):
+        for noisy_logger in ("snowflake.connector", "py4j", "pyspark", "urllib3", "ibis"):
             logging.getLogger(noisy_logger).setLevel(logging.ERROR)
 
 
