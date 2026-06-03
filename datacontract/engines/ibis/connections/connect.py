@@ -90,17 +90,7 @@ def connect_ibis(
             if database_name:
                 spark.sql(f"USE {database_name}")
             return ibis.pyspark.connect(session=spark)
-        run.log_info("Connecting to databricks directly")
-        token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
-        http_path = os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH")
-        host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
-        return ibis.databricks.connect(
-            server_hostname=host,
-            http_path=http_path,
-            access_token=token,
-            catalog=server.catalog,
-            schema=server.schema_,
-        )
+        return _connect_databricks(ibis, server, run)
 
     if server_type == "postgres":
         return ibis.postgres.connect(
@@ -202,6 +192,81 @@ def connect_ibis(
 
     _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
     return None
+
+
+def _connect_databricks(ibis, server: Server, run: Run):
+    """Connect to Databricks SQL directly, selecting the auth method from env vars.
+
+    Auth is resolved in priority order, so an existing token-based setup keeps
+    working unchanged:
+
+    1. personal access token (``DATACONTRACT_DATABRICKS_TOKEN``) — the default
+    2. OAuth machine-to-machine / service principal, from
+       ``DATACONTRACT_DATABRICKS_CLIENT_ID`` + ``DATACONTRACT_DATABRICKS_CLIENT_SECRET``
+       (the usual choice for CI/CD)
+    3. a local Databricks config profile (``DATACONTRACT_DATABRICKS_PROFILE``),
+       delegating to the Databricks SDK's unified auth (also covers Azure CLI/MSI)
+    4. an explicit connector ``auth_type`` (``DATACONTRACT_DATABRICKS_AUTH_TYPE``),
+       e.g. ``databricks-oauth`` for the interactive user-to-machine browser flow
+
+    The OAuth credential providers build their SDK ``Config`` lazily, so token
+    exchange happens when the connection is opened rather than while reading env.
+    """
+    host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+    kwargs = dict(
+        server_hostname=host,
+        http_path=os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH"),
+        catalog=server.catalog,
+        schema=server.schema_,
+    )
+
+    token = os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
+    client_id = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_ID")
+    client_secret = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET")
+    profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
+    auth_type = os.getenv("DATACONTRACT_DATABRICKS_AUTH_TYPE")
+
+    if token:
+        run.log_info("Connecting to databricks with a personal access token")
+        return ibis.databricks.connect(access_token=token, **kwargs)
+
+    if client_id and client_secret:
+        run.log_info("Connecting to databricks with an OAuth service principal (M2M)")
+        sdk_host = host if host.startswith("http") else f"https://{host}"
+        kwargs["credentials_provider"] = _databricks_credentials_provider(
+            host=sdk_host, client_id=client_id, client_secret=client_secret
+        )
+        return ibis.databricks.connect(**kwargs)
+
+    if profile:
+        run.log_info(f"Connecting to databricks with config profile '{profile}'")
+        kwargs["credentials_provider"] = _databricks_credentials_provider(profile=profile)
+        return ibis.databricks.connect(**kwargs)
+
+    if auth_type:
+        run.log_info(f"Connecting to databricks with auth_type '{auth_type}'")
+        return ibis.databricks.connect(auth_type=auth_type, **kwargs)
+
+    # Nothing configured: fail with the same clear message as before.
+    token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
+    return ibis.databricks.connect(access_token=token, **kwargs)
+
+
+def _databricks_credentials_provider(**config_kwargs):
+    """Return a ``credentials_provider`` callable for the Databricks SQL connector.
+
+    The connector expects a zero-arg callable returning a header factory. We
+    build the SDK ``Config`` lazily inside that callable so authentication (and
+    any OAuth token exchange) happens at connect time, with credential resolution
+    delegated to the Databricks SDK's unified auth.
+    """
+
+    def credentials_provider():
+        from databricks.sdk.core import Config
+
+        return Config(**config_kwargs).authenticate
+
+    return credentials_provider
 
 
 def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str):

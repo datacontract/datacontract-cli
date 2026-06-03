@@ -753,9 +753,17 @@ models:
 
 | Environment Variable                      | Example                              | Description                                               |
 |-------------------------------------------|--------------------------------------|-----------------------------------------------------------|
-| `DATACONTRACT_DATABRICKS_TOKEN`           | `dapia00000000000000000000000000000` | The personal access token to authenticate                 |
-| `DATACONTRACT_DATABRICKS_HTTP_PATH`       | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster     |
 | `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | The host name of the SQL warehouse or compute cluster |
+| `DATACONTRACT_DATABRICKS_HTTP_PATH`       | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster     |
+| `DATACONTRACT_DATABRICKS_TOKEN`           | `dapia00000000000000000000000000000` | A personal access token (PAT) to authenticate             |
+| `DATACONTRACT_DATABRICKS_CLIENT_ID`       | `00000000-0000-0000-0000-000000000000` | Service principal application (client) ID for OAuth machine-to-machine (M2M) auth |
+| `DATACONTRACT_DATABRICKS_CLIENT_SECRET`   | `dose00000000000000000000000000000000` | Service principal OAuth secret, used together with the client ID |
+| `DATACONTRACT_DATABRICKS_PROFILE`         | `my-profile`                         | A profile from `~/.databrickscfg`, delegating to the Databricks SDK unified auth (also resolves Azure CLI / managed identity) |
+| `DATACONTRACT_DATABRICKS_AUTH_TYPE`       | `databricks-oauth`                   | Explicit connector auth type, e.g. `databricks-oauth` for the interactive user-to-machine (U2M) browser login |
+
+The authentication method is selected from the variables you set, in this order:
+a personal access token, then an OAuth service principal (`CLIENT_ID` + `CLIENT_SECRET`),
+then a config profile, then an explicit `AUTH_TYPE`.
 
 </details>
 
