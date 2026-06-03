@@ -27,6 +27,11 @@ from datacontract.model.exceptions import DataContractException
 
 logger = logging.getLogger(__name__)
 
+# Custom property columns start at column AM (0-based index 38), i.e., after column AL.
+# Any column header at or beyond this index in the properties header row is treated as a
+# custom property name; non-blank intersections with each data row become CustomProperty entries.
+CUSTOM_PROPERTIES_START_COL = 38
+
 
 class ExcelImporter(Importer):
     def import_source(
@@ -178,13 +183,21 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
         properties_range = get_range_by_name_in_sheet(sheet, "schema.properties")
         if not properties_range:
             return None
-
+        
         # Get header row to map column names to indices
         header_row = list(sheet.rows)[properties_range[0] - 1]  # Convert to 0-based indexing
         headers = {}
         for i, cell in enumerate(header_row):
             if cell.value:
                 headers[cell.value.lower()] = i
+
+        # Columns at or beyond CUSTOM_PROPERTIES_START_COL with a non-blank header are
+        # custom property names (unpivoted: header = property, cell value = value).
+        custom_prop_cols: dict[int, str] = {
+            i: str(cell.value).strip()
+            for i, cell in enumerate(header_row)
+            if i >= CUSTOM_PROPERTIES_START_COL and cell.value and str(cell.value).strip()
+        }
 
         # Process property rows
         property_lookup = {}  # Dictionary to keep track of properties by name for nesting
@@ -250,6 +263,15 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
             examples = get_cell_value(row, headers.get("example(s)"))
             if examples:
                 property_obj.examples = [ex.strip() for ex in examples.split(",") if ex.strip()]
+
+            # Custom properties: unpivot header row columns >= CUSTOM_PROPERTIES_START_COL
+            if custom_prop_cols:
+                custom_props = [
+                    CustomProperty(property=prop_name, value=get_cell_value(row, col_idx))
+                    for col_idx, prop_name in custom_prop_cols.items()
+                    if get_cell_value(row, col_idx) is not None
+                ]
+                property_obj.customProperties = custom_props if custom_props else None
 
             # Add to lookup dictionary
             property_lookup[property_name] = property_obj
