@@ -68,6 +68,15 @@ def create_spark_session():
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract-cli-spark")
     atexit.register(tmp_dir.cleanup)
 
+    # Make Spark's Python workers use the same interpreter as the driver. Without
+    # this, PySpark launches workers from the `python3` on PATH, which fails with
+    # PYTHON_VERSION_MISMATCH when it differs from the running interpreter (common
+    # on Python 3.13, where Spark 3.5 isn't available and Spark 4.x is used).
+    import sys
+
+    os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
+    os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
+
     spark = (
         SparkSession.builder.appName("datacontract")
         .config("spark.sql.warehouse.dir", f"{tmp_dir.name}/spark-warehouse")
