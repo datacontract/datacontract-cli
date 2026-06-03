@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- `datacontract test` against Databricks now supports more authentication methods beyond the personal access token (`DATACONTRACT_DATABRICKS_TOKEN`): an OAuth service principal for machine-to-machine auth (`DATACONTRACT_DATABRICKS_CLIENT_ID` + `DATACONTRACT_DATABRICKS_CLIENT_SECRET`), a local config profile via the Databricks SDK unified auth (`DATACONTRACT_DATABRICKS_PROFILE`, also covers Azure CLI/MSI), and an explicit connector auth type (`DATACONTRACT_DATABRICKS_AUTH_TYPE`, e.g. `databricks-oauth` for the interactive browser flow).
+
 ### Changed
 - **Breaking:** Replaced the Soda Core quality/test engine with [ibis](https://ibis-project.org/). `datacontract test` now compiles schema and quality checks into ibis expressions (dialect-correct SQL per backend via sqlglot, local/remote files via DuckDB) instead of generating SodaCL. Install extras now pull `ibis-framework[<backend>]` instead of `soda-core-*`. Check semantics and pass/fail results are preserved for the supported sources (postgres, redshift, mysql, snowflake, bigquery, databricks, sqlserver, oracle, trino, athena, impala, kafka/dataframe via the ibis Spark backend, and local/S3/GCS/Azure files).
 - **Breaking:** Raw SodaCL custom quality checks (`quality.type: custom` with `engine: soda`) are no longer executed and now report a warning. Migrate them to `quality.type: sql` or a library metric (e.g. `metric: rowCount`).
