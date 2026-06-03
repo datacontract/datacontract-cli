@@ -676,6 +676,8 @@ models:
 | `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name                                                                                                                  |
 | `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True`                          | Deprecated. Equivalent to `AUTHENTICATION=windows`                                                                                |
 
+The `cli` mode reuses an `az login` session through the Azure default credential chain and requires ODBC Driver 18.1 or newer.
+
 </details>
 
 <details markdown="1">

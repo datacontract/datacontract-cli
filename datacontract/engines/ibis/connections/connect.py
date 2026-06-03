@@ -332,15 +332,73 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
 
 
 def _connect_sqlserver(ibis, server: Server):
+    return ibis.mssql.connect(**_sqlserver_connection_kwargs(server))
+
+
+def _sqlserver_connection_kwargs(server: Server) -> dict:
+    """Build the ``ibis.mssql.connect`` kwargs, selecting the auth mode from env vars.
+
+    ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` picks the mode (default ``sql``):
+
+    - ``sql`` — SQL Server auth with ``USERNAME`` / ``PASSWORD``
+    - ``windows`` — Windows integrated auth (Kerberos/NTLM), no credentials
+    - ``ActiveDirectoryPassword`` — Entra ID with ``USERNAME`` / ``PASSWORD``
+    - ``ActiveDirectoryServicePrincipal`` — Entra ID with ``CLIENT_ID`` / ``CLIENT_SECRET``
+    - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint)
+    - ``cli`` — reuse an ``az login`` session via the Azure default credential chain
+
+    The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
+    ``windows`` and takes precedence. Extra keys (``Authentication``,
+    ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) are forwarded
+    verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
+    so they use the ODBC spellings.
+    """
     driver = _get_custom_property(server, "driver") or os.getenv("DATACONTRACT_SQLSERVER_DRIVER")
-    return ibis.mssql.connect(
+
+    authentication = os.getenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "sql").lower()
+    if _get_bool_env("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", False):
+        authentication = "windows"
+
+    kwargs = dict(
         host=server.host,
         port=int(server.port) if server.port else 1433,
-        user=require_env("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver"),
-        password=require_env("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver"),
         database=server.database,
         driver=driver,
+        user=None,
+        password=None,
     )
+
+    # ODBC Driver 18 encrypts and verifies the server certificate by default.
+    kwargs["Encrypt"] = "yes" if _get_bool_env("DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION", True) else "no"
+    if _get_bool_env("DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE", False):
+        kwargs["TrustServerCertificate"] = "yes"
+
+    if authentication == "windows":
+        kwargs["Trusted_Connection"] = "yes"
+    elif authentication == "cli":
+        # DefaultAzureCredential includes the Azure CLI session (requires ODBC
+        # Driver 18.1+). Suppress ibis's no-credentials Trusted_Connection default.
+        kwargs["Authentication"] = "ActiveDirectoryDefault"
+        kwargs["Trusted_Connection"] = "no"
+    elif authentication == "activedirectoryserviceprincipal":
+        kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
+        kwargs["user"] = require_env("DATACONTRACT_SQLSERVER_CLIENT_ID", server_type="sqlserver")
+        kwargs["password"] = require_env("DATACONTRACT_SQLSERVER_CLIENT_SECRET", server_type="sqlserver")
+    elif authentication == "activedirectorypassword":
+        kwargs["Authentication"] = "ActiveDirectoryPassword"
+        kwargs["user"] = require_env("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver")
+        kwargs["password"] = require_env("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver")
+    elif authentication == "activedirectoryinteractive":
+        kwargs["Authentication"] = "ActiveDirectoryInteractive"
+        kwargs["Trusted_Connection"] = "no"
+        username = os.getenv("DATACONTRACT_SQLSERVER_USERNAME")
+        if username:
+            kwargs["user"] = username  # login hint; no password for the browser flow
+    else:
+        kwargs["user"] = require_env("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver")
+        kwargs["password"] = require_env("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver")
+
+    return kwargs
 
 
 def _connect_athena(ibis, server: Server):
