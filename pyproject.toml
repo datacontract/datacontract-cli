@@ -72,11 +72,10 @@ kafka = [
 
 # MySQL is tested through DuckDB's `mysql` extension (ATTACH), not ibis's
 # native MySQL backend, which would require `mysqlclient` (a C extension with no
-# macOS/Linux wheels). mysql-connector-python is a pure-Python driver used by
-# the test fixtures to seed data.
+# macOS/Linux wheels). No Python MySQL driver is needed at runtime; the test
+# fixtures' seed driver (mysql-connector-python) lives in the `dev` extra.
 mysql = [
   "datacontract-cli[duckdb]",
-  "mysql-connector-python>=8.0.30,<9.7.0",
 ]
 
 postgres = [
@@ -181,9 +180,11 @@ dev = [
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.13",
-  # psycopg2 is used directly by the postgres test fixtures to load seed SQL
-  # (the ibis postgres backend itself uses psycopg v3).
+  # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
+  # test fixtures to load seed SQL (the engine connects via ibis-postgres'
+  # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
+  "mysql-connector-python>=8.0.30,<9.7.0",
   "ruff==0.15.14",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
   "trino==0.337.0",
