@@ -126,10 +126,27 @@ def execute_ibis_checks(
         for model, model_specs in by_model.items():
             _run_model(run, con, model, model_specs)
     finally:
-        try:
-            con.disconnect()
-        except Exception:
-            pass
+        _maybe_disconnect(con, spark, duckdb_connection)
+
+
+def _maybe_disconnect(con, spark, duckdb_connection):
+    """Dispose the connection, but only if the engine created/owns it.
+
+    Never tear down a caller-provided resource: a Spark session (the pyspark
+    backend wraps a shared, externally-owned session) or an externally-supplied
+    DuckDB connection. Doing so would break the caller / subsequent runs.
+    """
+    backend = getattr(con, "name", "")
+    if backend == "pyspark":
+        return
+    if backend == "duckdb" and duckdb_connection is not None:
+        return
+    if spark is not None:
+        return
+    try:
+        con.disconnect()
+    except Exception:
+        pass
 
 
 def _run_model(run: Run, con, model: str, specs: List[CheckSpec]):
