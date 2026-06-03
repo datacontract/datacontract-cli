@@ -452,7 +452,7 @@ $ datacontract test --server production datacontract.yaml
 For CI/CD pipelines, see [`ci`](#ci).
 
 The application uses different engines, based on the server `type`.
-Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_.
+Internally, it connects with DuckDB, Spark, or a native connection and executes most checks with _ibis_ (compiling dialect-specific SQL per backend) and validates JSON with _fastjsonschema_.
 
 #### Supported Data Sources
 
@@ -583,7 +583,7 @@ We support authentication to BigQuery using Service Account Key or Application D
 * BigQuery Job User
 * BigQuery Data Viewer
 
-When no `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is set, the CLI falls back to ADC/WIF automatically via Soda's `use_context_auth`.
+When no `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is set, the CLI falls back to Application Default Credentials (ADC/WIF) automatically.
 
 ##### Example
 
@@ -881,16 +881,17 @@ models:
 ```
 
 ##### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
+Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver that the ibis Snowflake backend uses.
 For example:
 
-| Soda parameter       | Environment Variable                        |
+| Connection parameter | Environment Variable                        |
 |----------------------|---------------------------------------------|
-| `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
+| `user`               | `DATACONTRACT_SNOWFLAKE_USERNAME` or `DATACONTRACT_SNOWFLAKE_USER` |
 | `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
 | `warehouse`          | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`          |
 | `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
-| `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
+
+(`DATACONTRACT_SNOWFLAKE_USERNAME` is accepted as an alias for the connector's `user` parameter.)
 
 Beware, that parameters:
 * `account`
@@ -994,24 +995,14 @@ models:
 ```
 
 ##### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-redshift.html), uppercased and prepended by `DATACONTRACT_REDSHIFT_` prefix.
-For example:
+Redshift is reached over the PostgreSQL wire protocol via the ibis Postgres backend, using username/password authentication.
 
-| Soda parameter      | Environment Variable                      | Details             |
-|---------------------|-------------------------------------------|---------------------|
-| `username`          | `DATACONTRACT_REDSHIFT_USERNAME`          |                     |
-| `password`          | `DATACONTRACT_REDSHIFT_PASSWORD`          | leave unset for IAM |
-| `region`            | `DATACONTRACT_REDSHIFT_REGION`            | for IAM             |
-| `access_key_id`     | `DATACONTRACT_REDSHIFT_ACCESS_KEY_ID`     | for IAM             |
-| `secret_access_key` | `DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY` | for IAM             |
-| `role_arn`          | `DATACONTRACT_REDSHIFT_ROLE_ARN`          | for IAM             |
+| Connection parameter | Environment Variable             |
+|----------------------|----------------------------------|
+| `user`               | `DATACONTRACT_REDSHIFT_USERNAME` |
+| `password`           | `DATACONTRACT_REDSHIFT_PASSWORD` |
 
-IAM credentials can be supplied in two ways:
-
-1. **AWS_PROFILE** — set `AWS_PROFILE` in your shell to a profile defined in `~/.aws/credentials` and `DATACONTRACT_REDSHIFT_REGION`.
-2. **Explicit keys** — set `DATACONTRACT_REDSHIFT_REGION`, `..._ACCESS_KEY_ID`, `..._SECRET_ACCESS_KEY`, and `..._SESSION_TOKEN` for temporary credentials, or `..._ROLE_ARN` to assume a role.
-
->IAM authentication is supported only for **provisioned** Redshift clusters.
+> Note: IAM-based authentication (region / access key / role ARN) is not currently supported for Redshift, because ibis connects through the generic Postgres backend rather than a Redshift-specific driver.
 
 </details>
 
@@ -1087,7 +1078,7 @@ models:
 <details markdown="1">
 <summary><strong>Impala</strong></summary>
 
-Data Contract CLI can run Soda checks against an Apache Impala cluster.
+Data Contract CLI can run checks against an Apache Impala cluster.
 
 ##### Example
 
@@ -1098,7 +1089,7 @@ servers:
     type: impala
     host: my-impala-host
     port: 443
-    # Optional default database used for Soda scans
+    # Optional default database used for the checks
     database: my_database
 models:
   my_table_1: # corresponds to a table
@@ -1130,7 +1121,7 @@ If `physicalType` is not specified in the schema, we recommend the following map
 | `date`     | `DATE`                  |
 | `datetime` | `TIMESTAMP`             |
 
-This keeps the Impala schema compatible with the expectations of the Soda checks generated by datacontract-cli.
+This keeps the Impala schema compatible with the expectations of the checks generated by datacontract-cli.
 
 </details>
 
@@ -2034,15 +2025,9 @@ datacontract import csv --source "test.csv"
 
 Importing from protobuf File. Specify file in `source` parameter.
 
-Requires the `protoc` compiler installed on the system. Install with:
-
-| Platform       | Command                              |
-|----------------|--------------------------------------|
-| macOS          | `brew install protobuf`              |
-| Debian/Ubuntu  | `sudo apt install protobuf-compiler` |
-| Fedora/RHEL    | `sudo dnf install protobuf-compiler` |
-| Arch           | `sudo pacman -S protobuf`            |
-| Windows        | `choco install protoc` (or [download a release](https://github.com/protocolbuffers/protobuf/releases)) |
+`.proto` files are parsed with a pure-Python parser, so no `protoc` compiler or
+other system dependency is required. Transitive `import` statements (including
+across subdirectories) are resolved automatically.
 
 Example:
 
