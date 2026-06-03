@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.engines.ibis.connections.kafka import spark_connector_packages
 from datacontract.export.sodacl_check_builder import check_property_type, create_checks
 from datacontract.export.sql_type_converter import convert_to_databricks, convert_to_dataframe
 
@@ -26,10 +27,7 @@ def spark(tmp_path_factory) -> SparkSession:
         .config("spark.driver.host", "127.0.0.1")
         .config("spark.driver.bindAddress", "127.0.0.1")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
-        .config(
-            "spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5,org.apache.spark:spark-avro_2.12:3.5.5",
-        )
+        .config("spark.jars.packages", spark_connector_packages())
         .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")

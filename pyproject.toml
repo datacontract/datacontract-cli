@@ -69,9 +69,11 @@ iceberg = [
 kafka = [
   "datacontract-cli[avro]",
   "ibis-framework[pyspark]>=10.0.0,<13.0.0",
-  # Capped to Spark 3.5.x: the Kafka/Avro paths load Scala 2.12 / Spark 3.5
-  # connector jars (see kafka.py), which are incompatible with Spark 4.x.
-  "pyspark>=3.5.0,<4.0.0",
+  # kafka.py derives the Kafka/Avro connector jar coordinates (Spark version and
+  # Scala binary version) from the installed pyspark at runtime, so both 3.5.x
+  # (Scala 2.12) and 4.x (Scala 2.13) work. ibis-framework[pyspark] currently
+  # caps pyspark to <4.1, so this resolves to the 4.0.x line.
+  "pyspark>=3.5.0,<5.0.0",
 ]
 
 # MySQL is tested through DuckDB's `mysql` extension (ATTACH), not ibis's

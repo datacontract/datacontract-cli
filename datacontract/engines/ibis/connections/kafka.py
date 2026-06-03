@@ -11,6 +11,45 @@ from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
 
+def _scala_binary_version() -> str:
+    """Return the Scala binary version the installed PySpark was built against.
+
+    The bundled ``spark-core_<scala>-<version>.jar`` is the source of truth; if
+    it can't be located, fall back to the Spark major version (4.x ships Scala
+    2.13, earlier lines ship 2.12).
+    """
+    import pyspark
+
+    jars_dir = os.path.join(os.path.dirname(pyspark.__file__), "jars")
+    try:
+        for name in os.listdir(jars_dir):
+            if name.startswith("spark-core_") and name.endswith(".jar"):
+                # spark-core_<scala>-<version>.jar
+                return name[len("spark-core_") :].split("-", 1)[0]
+    except OSError:
+        pass
+    major = int(pyspark.__version__.split(".", 1)[0])
+    return "2.13" if major >= 4 else "2.12"
+
+
+def spark_connector_packages() -> str:
+    """Maven coordinates for the Kafka and Avro Spark connectors.
+
+    Derived from the installed PySpark runtime so the fetched JARs always match
+    the running Spark version and its Scala binary version. Resolving these
+    against a mismatched runtime (e.g. 3.5 JARs on a Spark 4 / Scala 2.13
+    runtime) fails at session startup.
+    """
+    import pyspark
+
+    spark_version = pyspark.__version__
+    scala_version = _scala_binary_version()
+    return (
+        f"org.apache.spark:spark-sql-kafka-0-10_{scala_version}:{spark_version},"
+        f"org.apache.spark:spark-avro_{scala_version}:{spark_version}"
+    )
+
+
 def create_spark_session():
     """Create and configure a Spark session."""
 
@@ -29,7 +68,6 @@ def create_spark_session():
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract-cli-spark")
     atexit.register(tmp_dir.cleanup)
 
-    pyspark_version = "3.5.5"  # MUST be the same as in the pyproject.toml
     spark = (
         SparkSession.builder.appName("datacontract")
         .config("spark.sql.warehouse.dir", f"{tmp_dir.name}/spark-warehouse")
@@ -37,10 +75,7 @@ def create_spark_session():
         .config("spark.ui.enabled", "false")
         .config("spark.driver.bindAddress", "127.0.0.1")
         .config("spark.driver.host", "127.0.0.1")
-        .config(
-            "spark.jars.packages",
-            f"org.apache.spark:spark-sql-kafka-0-10_2.12:{pyspark_version},org.apache.spark:spark-avro_2.12:{pyspark_version}",
-        )
+        .config("spark.jars.packages", spark_connector_packages())
         .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")
