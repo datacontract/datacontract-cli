@@ -109,7 +109,7 @@ def import_csv(source: str, include_examples: bool = False) -> OpenDataContractS
 
         unique = None
         if dc_type not in ["boolean", "array"]:
-            distinct_values = tbl.count(f'DISTINCT "{field_name}"').fetchone()[0]
+            distinct_values = con.sql(f'SELECT count(DISTINCT "{field_name}") FROM "{table_name}"').fetchone()[0]
             if distinct_values > 0 and distinct_values == tallies[("count", field_name)]:
                 unique = True
 

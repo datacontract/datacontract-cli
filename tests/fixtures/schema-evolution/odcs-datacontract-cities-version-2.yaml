@@ -45,6 +45,24 @@ servers:
     environment: DEV
     format: parquet
     path: ./fixtures/schema-evolution/invalid/cities-version-2-invalid.parquet
+  - server: historical-json
+    type: local
+    environment: DEV
+    format: json
+    delimiter: new_line
+    path: ./fixtures/schema-evolution/cities-version-1.json
+  - server: current-json
+    type: local
+    environment: DEV
+    format: json
+    delimiter: new_line
+    path: ./fixtures/schema-evolution/cities-version-2.json
+  - server: mixed-schema-json
+    type: local
+    environment: DEV
+    format: json
+    delimiter: new_line
+    path: ./fixtures/schema-evolution/cities-version-*.json
 schema:
   - name: cities
     physicalType: file
