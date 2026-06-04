@@ -2062,7 +2062,7 @@ TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CON
 Example:
 
 ```bash
-datacontract import --format snowflake --source account.canada-central.azure --database databaseName --schema schemaName
+datacontract import snowflake --source account.canada-central.azure --database databaseName --schema schemaName
 ```
 
 
