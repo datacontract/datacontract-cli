@@ -22,6 +22,10 @@ output_option = Annotated[
         help="File path where the Data Contract will be saved. If not provided, it will be printed to stdout."
     ),
 ]
+database_option = Annotated[
+    Optional[str],
+    typer.Option("--database", help="The database name."),
+]
 schema_option = Annotated[
     Optional[str],
     typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
@@ -435,11 +439,25 @@ def import_powerbi(
     source: Annotated[Optional[str], typer.Option(help="Path to the Power BI .pbit file.")] = None,
     output: output_option = None,
     schema: schema_option = None,
+    name="snowflake",
+    epilog="Example: datacontract import snowflake --source account --database DEMO_DB --schema PUBLIC --output datacontract.yaml",
+)
+    """Import a data contract from a Power BI .pbit file."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(format="powerbi", source=source, schema=schema, owner=owner, id=id)
+    _write_result(result, output)
+def import_snowflake(
+    source: Annotated[Optional[str], typer.Option(help="Snowflake account name.")] = None,
+    output: output_option = None,
+    database: database_option = None,
+    schema: Annotated[Optional[str], typer.Option("--schema", help="Snowflake schema name.")] = None,
     owner: owner_option = None,
     id: id_option = None,
     debug: debug_option = None,
 ):
-    """Import a data contract from a Power BI .pbit file."""
+    """Import a data contract from a Snowflake workspace."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="powerbi", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)

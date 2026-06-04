@@ -1,3 +1,12 @@
+"""Self-contained SodaCL check generator for the ``sodacl`` export format.
+
+This module builds SodaCL YAML from an ODCS data contract. It is used **only**
+by :class:`datacontract.export.sodacl_exporter.SodaExporter` and is fully
+decoupled from the test/execution path (which uses the ibis engine and the
+engine-neutral check IR in ``datacontract/engines/checks``). It depends only on
+PyYAML and the ODCS model — it does not import or require ``soda-core``.
+"""
+
 import logging
 import re
 import uuid
@@ -55,6 +64,26 @@ _ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "snowflake", "azu
 
 _BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
+
+_DATABRICKS_UNSUPPORTED_TYPE_RE = re.compile(r"\bvarchar\b|\bmap\s*<", re.IGNORECASE)
+
+
+def _has_unsupported_databricks_type(prop) -> bool:
+    """Return True if physicalType contains varchar(n) or map at any nesting level,
+    or if any nested property (recursively) has an unsupported type.
+
+    soda-core-spark-df ≤3.5.6 cannot match these types correctly on PySpark 4.0+:
+    - varchar(n): reported as a distinct VarcharType by PySpark 4.0+, not in SCHEMA_CHECK_TYPES_MAPPING
+    - map: convert_to_databricks() returns None for maps nested inside structs
+    Affected issues: #1245 (varchar), #1219 (map in struct)
+    """
+    if _DATABRICKS_UNSUPPORTED_TYPE_RE.search(prop.physicalType or ""):
+        return True
+    if prop.properties:
+        return any(_has_unsupported_databricks_type(nested) for nested in prop.properties)
+    return False
+
+
 _PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver"}
 
 
@@ -130,13 +159,27 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
     quoting_config = config
 
     for prop in properties:
-        property_name = prop.name
+        # ODCS: physicalName is the actual column name in the system under
+        # test. to_schema_name() already prefers schema_object.physicalName at
+        # the table level — mirror that at the field level so checks target the
+        # real column when the logical `name` differs from the physical one.
+        property_name = prop.physicalName or prop.name
 
-        checks.append(check_property_is_present(schema_name, property_name, quoting_config))
+        checks.append(check_property_is_present(schema_name, property_name, quoting_config, server))
         if check_types and (prop.physicalType is not None or prop.logicalType is not None):
-            sql_type: str = convert_to_sql_type(prop, server_type)
-            if sql_type is not None:
-                checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
+            if server_type == "databricks" and _has_unsupported_databricks_type(prop):
+                logger.warning(
+                    "Skipping schema type check for column '%s': physicalType '%s' "
+                    "contains varchar(n) or map, which are not reliably matched by "
+                    "soda-core-spark-df ≤3.5.6 on PySpark 4.0+. "
+                    "See https://github.com/datacontract/datacontract-cli/issues/1245",
+                    property_name,
+                    prop.physicalType,
+                )
+            else:
+                sql_type: str = convert_to_sql_type(prop, server_type)
+                if sql_type is not None:
+                    checks.append(check_property_type(schema_name, property_name, sql_type, quoting_config))
         if prop.required:
             checks.append(check_property_required(schema_name, property_name, quoting_config))
         if prop.unique:
@@ -216,11 +259,20 @@ def to_schema_name(schema_object: SchemaObject, server_type: str) -> str:
     return schema_object.name
 
 
-def check_property_is_present(model_name, field_name, quoting_config: QuotingConfig = QuotingConfig()) -> Check:
+def check_property_is_present(
+    model_name, field_name, quoting_config: QuotingConfig = QuotingConfig(), server: Server = None
+) -> Check:
     check_type = "field_is_present"
     check_key = f"{model_name}__{field_name}__{check_type}"
+    # DuckDB-backed file formats expose a sibling {model}__raw__ view (the actual model contains all columns from the contract and cannot be used to check for presence)
+    uses_raw_view = (
+        server is not None
+        and server.type in ["local", "s3", "gcs", "azure"]
+        and server.format in ["csv", "parquet", "json"]
+    )
+    target = f"{model_name}__raw__" if uses_raw_view else model_name
     sodacl_check_dict = {
-        checks_for(model_name, quoting_config, check_type): [
+        checks_for(target, quoting_config, check_type): [
             {
                 "schema": {
                     "name": check_key,

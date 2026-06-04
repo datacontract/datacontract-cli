@@ -239,31 +239,33 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
 
 A list of available extras:
 
-| Dependency              | Installation Command                       |
-|-------------------------|--------------------------------------------|
-| Amazon Athena           | `pip install datacontract-cli[athena]`     |
-| Avro Support            | `pip install datacontract-cli[avro]`       |
-| Google BigQuery         | `pip install datacontract-cli[bigquery]`   |
-| CSV                     | `pip install datacontract-cli[csv]`        |
-| Databricks Integration  | `pip install datacontract-cli[databricks]` |
-| DBML                    | `pip install datacontract-cli[dbml]`       |
-| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
-| Excel                   | `pip install datacontract-cli[excel]`      |
-| Iceberg                 | `pip install datacontract-cli[iceberg]`    |
-| Impala                  | `pip install datacontract-cli[impala]`     |
-| Kafka Integration       | `pip install datacontract-cli[kafka]`      |
-| MySQL Integration       | `pip install datacontract-cli[mysql]`      |
-| Oracle                  | `pip install datacontract-cli[oracle]`     |
-| Parquet                 | `pip install datacontract-cli[parquet]`    |
-| PostgreSQL Integration  | `pip install datacontract-cli[postgres]`   |
-| protobuf                | `pip install datacontract-cli[protobuf]`   |
-| RDF                     | `pip install datacontract-cli[rdf]`        |
-| Amazon Redshift         | `pip install datacontract-cli[redshift]`   |
-| S3 Integration          | `pip install datacontract-cli[s3]`         |
-| Snowflake Integration   | `pip install datacontract-cli[snowflake]`  |
-| Microsoft SQL Server    | `pip install datacontract-cli[sqlserver]`  |
-| Trino                   | `pip install datacontract-cli[trino]`      |
-| API (run as web server) | `pip install datacontract-cli[api]`        |
+| Dependency                               | Installation Command                       |
+|------------------------------------------|--------------------------------------------|
+| Amazon Athena                            | `pip install datacontract-cli[athena]`     |
+| Avro Support                             | `pip install datacontract-cli[avro]`       |
+| Azure Integration                        | `pip install datacontract-cli[azure]`      |
+| Google BigQuery                          | `pip install datacontract-cli[bigquery]`   |
+| CSV                                      | `pip install datacontract-cli[csv]`        |
+| Databricks Integration                   | `pip install datacontract-cli[databricks]` |
+| DBML                                     | `pip install datacontract-cli[dbml]`       |
+| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]`     |
+| Excel                                    | `pip install datacontract-cli[excel]`      |
+| GCS Integration                          | `pip install datacontract-cli[gcs]`        |
+| Iceberg                                  | `pip install datacontract-cli[iceberg]`    |
+| Impala                                   | `pip install datacontract-cli[impala]`     |
+| Kafka Integration                        | `pip install datacontract-cli[kafka]`      |
+| MySQL Integration                        | `pip install datacontract-cli[mysql]`      |
+| Oracle                                   | `pip install datacontract-cli[oracle]`     |
+| Parquet                                  | `pip install datacontract-cli[parquet]`    |
+| PostgreSQL Integration                   | `pip install datacontract-cli[postgres]`   |
+| protobuf                                 | `pip install datacontract-cli[protobuf]`   |
+| RDF                                      | `pip install datacontract-cli[rdf]`        |
+| Amazon Redshift                          | `pip install datacontract-cli[redshift]`   |
+| S3 Integration                           | `pip install datacontract-cli[s3]`         |
+| Snowflake Integration                    | `pip install datacontract-cli[snowflake]`  |
+| Microsoft SQL Server                     | `pip install datacontract-cli[sqlserver]`  |
+| Trino                                    | `pip install datacontract-cli[trino]`      |
+| API (run as web server)                  | `pip install datacontract-cli[api]`        |
 
 
 ## Documentation
@@ -284,8 +286,7 @@ Commands
 
 ### init
 ```
-                                                                                                    
- Usage: datacontract init [OPTIONS] [LOCATION]                                                      
+Usage: datacontract init [OPTIONS] [LOCATION]                                                      
                                                                                                     
  Create an empty data contract.                                                                     
                                                                                                     
@@ -301,15 +302,12 @@ Commands
 │ --help                                 Show this message and exit.                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract init datacontract.yaml                                                       
-                                                                                                    
-
+ Example: datacontract init datacontract.yaml
 ```
 
 ### lint
 ```
-                                                                                                    
- Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
+Usage: datacontract lint [OPTIONS] [LOCATION]                                                      
                                                                                                     
  Validate that the datacontract.yaml is correctly formatted.                                        
                                                                                                     
@@ -318,29 +316,37 @@ Commands
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                    TEXT          The location (url or path) of the ODCS JSON       │
-│                                                Schema                                            │
-│ --output                         PATH          Specify the file path where the test results      │
-│                                                should be written to (e.g.,                       │
-│                                                './test-results/TEST-datacontract.xml'). If no    │
-│                                                path is provided, the output will be printed to   │
-│                                                stdout.                                           │
-│ --output-format                  [json|junit]  The target format for the test results.           │
-│ --all-errors                                   Report all JSON Schema validation errors instead  │
-│                                                of stopping after the first one.                  │
-│ --debug            --no-debug                  Enable debug logging                              │
-│ --help                                         Show this message and exit.                       │
+│ --json-schema                                    TEXT          The location (url or path) of the │
+│                                                                ODCS JSON Schema                  │
+│ --output                                         PATH          Specify the file path where the   │
+│                                                                test results should be written to │
+│                                                                (e.g.,                            │
+│                                                                './test-results/TEST-datacontrac… │
+│                                                                If no path is provided, the       │
+│                                                                output will be printed to stdout. │
+│ --output-format                                  [json|junit]  The target format for the test    │
+│                                                                results.                          │
+│ --all-errors                                                   Report all JSON Schema validation │
+│                                                                errors instead of stopping after  │
+│                                                                the first one.                    │
+│ --inline-references    --no-inline-references                  Resolve external references       │
+│                                                                (currently:                       │
+│                                                                authoritativeDefinitions[type in  │
+│                                                                {definition, semantics}]) in the  │
+│                                                                contract and inline the fetched   │
+│                                                                content from the configured       │
+│                                                                entropy-data host.                │
+│                                                                [default: inline-references]      │
+│ --debug                --no-debug                              Enable debug logging              │
+│ --help                                                         Show this message and exit.       │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract lint datacontract.yaml                                                       
-                                                                                                    
-
+ Example: datacontract lint datacontract.yaml
 ```
 
 ### changelog
 ```
-                                                                                                    
- Usage: datacontract changelog [OPTIONS] V1 V2                                                      
+Usage: datacontract changelog [OPTIONS] V1 V2                                                      
                                                                                                     
  Show a changelog between two data contracts.                                                       
                                                                                                     
@@ -351,13 +357,17 @@ Commands
 │                    [required]                                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --debug    --no-debug      Enable debug logging                                                  │
-│ --help                     Show this message and exit.                                           │
+│ --inline-references    --no-inline-references      Resolve external references (currently:       │
+│                                                    authoritativeDefinitions[type in {definition, │
+│                                                    semantics}]) in the contract and inline the   │
+│                                                    fetched content from the configured           │
+│                                                    entropy-data host.                            │
+│                                                    [default: inline-references]                  │
+│ --debug                --no-debug                  Enable debug logging                          │
+│ --help                                             Show this message and exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml                          
-                                                                                                    
-
+ Example: datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 ```
 
 ```bash
@@ -366,8 +376,7 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 
 ### test
 ```
-                                                                                                    
- Usage: datacontract test [OPTIONS] [LOCATION]                                                      
+Usage: datacontract test [OPTIONS] [LOCATION]                                                      
                                                                                                     
  Run schema and quality tests on configured servers.                                                
                                                                                                     
@@ -416,13 +425,22 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 │                                                                      publishing the data         │
 │                                                                      contract.                   │
 │                                                                      [default: ssl-verification] │
+│ --inline-references       --no-inline-references                     Resolve external references │
+│                                                                      (currently:                 │
+│                                                                      authoritativeDefinitions[t… │
+│                                                                      in {definition,             │
+│                                                                      semantics}]) in the         │
+│                                                                      contract and inline the     │
+│                                                                      fetched content from the    │
+│                                                                      configured entropy-data     │
+│                                                                      host.                       │
+│                                                                      [default:                   │
+│                                                                      inline-references]          │
 │ --debug                   --no-debug                                 Enable debug logging        │
 │ --help                                                               Show this message and exit. │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract test datacontract.yaml --server production                                   
-                                                                                                    
-
+ Example: datacontract test datacontract.yaml --server production
 ```
 
 Data Contract CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid.
@@ -434,7 +452,7 @@ $ datacontract test --server production datacontract.yaml
 For CI/CD pipelines, see [`ci`](#ci).
 
 The application uses different engines, based on the server `type`.
-Internally, it connects with DuckDB, Spark, or a native connection and executes the most tests with _soda-core_ and _fastjsonschema_.
+Internally, it connects with DuckDB, Spark, or a native connection and executes most checks with _ibis_ (compiling dialect-specific SQL per backend) and validates JSON with _fastjsonschema_.
 
 #### Supported Data Sources
 
@@ -565,7 +583,7 @@ We support authentication to BigQuery using Service Account Key or Application D
 * BigQuery Job User
 * BigQuery Data Viewer
 
-When no `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is set, the CLI falls back to ADC/WIF automatically via Soda's `use_context_auth`.
+When no `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is set, the CLI falls back to Application Default Credentials (ADC/WIF) automatically.
 
 ##### Example
 
@@ -658,6 +676,8 @@ models:
 | `DATACONTRACT_SQLSERVER_DRIVER`                   | `ODBC Driver 18 for SQL Server` | ODBC driver name                                                                                                                  |
 | `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`       | `True`                          | Deprecated. Equivalent to `AUTHENTICATION=windows`                                                                                |
 
+The `cli` mode reuses an `az login` session through the Azure default credential chain and requires ODBC Driver 18.1 or newer.
+
 </details>
 
 <details markdown="1">
@@ -735,9 +755,17 @@ models:
 
 | Environment Variable                      | Example                              | Description                                               |
 |-------------------------------------------|--------------------------------------|-----------------------------------------------------------|
-| `DATACONTRACT_DATABRICKS_TOKEN`           | `dapia00000000000000000000000000000` | The personal access token to authenticate                 |
-| `DATACONTRACT_DATABRICKS_HTTP_PATH`       | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster     |
 | `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | The host name of the SQL warehouse or compute cluster |
+| `DATACONTRACT_DATABRICKS_HTTP_PATH`       | `/sql/1.0/warehouses/b053a3ffffffff` | The HTTP path to the SQL warehouse or compute cluster     |
+| `DATACONTRACT_DATABRICKS_TOKEN`           | `dapia00000000000000000000000000000` | A personal access token (PAT) to authenticate             |
+| `DATACONTRACT_DATABRICKS_CLIENT_ID`       | `00000000-0000-0000-0000-000000000000` | Service principal application (client) ID for OAuth machine-to-machine (M2M) auth |
+| `DATACONTRACT_DATABRICKS_CLIENT_SECRET`   | `dose00000000000000000000000000000000` | Service principal OAuth secret, used together with the client ID |
+| `DATACONTRACT_DATABRICKS_PROFILE`         | `my-profile`                         | A profile from `~/.databrickscfg`, delegating to the Databricks SDK unified auth (also resolves Azure CLI / managed identity) |
+| `DATACONTRACT_DATABRICKS_AUTH_TYPE`       | `databricks-oauth`                   | Explicit connector auth type, e.g. `databricks-oauth` for the interactive user-to-machine (U2M) browser login |
+
+The authentication method is selected from the variables you set, in this order:
+a personal access token, then an OAuth service principal (`CLIENT_ID` + `CLIENT_SECRET`),
+then a config profile, then an explicit `AUTH_TYPE`.
 
 </details>
 
@@ -863,16 +891,22 @@ models:
 ```
 
 ##### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
+Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver.
+Depending on the `authenticator` mode required by your Snowflake workspace, please set your environment variables accordingly.
 For example:
 
-| Soda parameter       | Environment Variable                        |
-|----------------------|---------------------------------------------|
-| `username`           | `DATACONTRACT_SNOWFLAKE_USERNAME`           |
-| `password`           | `DATACONTRACT_SNOWFLAKE_PASSWORD`           |
-| `warehouse`          | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`          |
-| `role`               | `DATACONTRACT_SNOWFLAKE_ROLE`               |
-| `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
+| Soda parameter           | Environment Variable                            |
+|--------------------------|-------------------------------------------------|
+| `username`               | `DATACONTRACT_SNOWFLAKE_USERNAME`               |
+| `password`               | `DATACONTRACT_SNOWFLAKE_PASSWORD`               |
+| `warehouse`              | `DATACONTRACT_SNOWFLAKE_WAREHOUSE`              |
+| `role`                   | `DATACONTRACT_SNOWFLAKE_ROLE`                   |
+| `connection_timeout`     | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`     |
+| `authenticator`          | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR`          |
+| `private_key`            | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`            |
+| `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
+| `private_key_path`       | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`       |
+
 
 Beware, that parameters:
 * `account`
@@ -976,24 +1010,14 @@ models:
 ```
 
 ##### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-redshift.html), uppercased and prepended by `DATACONTRACT_REDSHIFT_` prefix.
-For example:
+Redshift is reached over the PostgreSQL wire protocol via the ibis Postgres backend, using username/password authentication.
 
-| Soda parameter      | Environment Variable                      | Details             |
-|---------------------|-------------------------------------------|---------------------|
-| `username`          | `DATACONTRACT_REDSHIFT_USERNAME`          |                     |
-| `password`          | `DATACONTRACT_REDSHIFT_PASSWORD`          | leave unset for IAM |
-| `region`            | `DATACONTRACT_REDSHIFT_REGION`            | for IAM             |
-| `access_key_id`     | `DATACONTRACT_REDSHIFT_ACCESS_KEY_ID`     | for IAM             |
-| `secret_access_key` | `DATACONTRACT_REDSHIFT_SECRET_ACCESS_KEY` | for IAM             |
-| `role_arn`          | `DATACONTRACT_REDSHIFT_ROLE_ARN`          | for IAM             |
+| Connection parameter | Environment Variable             |
+|----------------------|----------------------------------|
+| `user`               | `DATACONTRACT_REDSHIFT_USERNAME` |
+| `password`           | `DATACONTRACT_REDSHIFT_PASSWORD` |
 
-IAM credentials can be supplied in two ways:
-
-1. **AWS_PROFILE** — set `AWS_PROFILE` in your shell to a profile defined in `~/.aws/credentials` and `DATACONTRACT_REDSHIFT_REGION`.
-2. **Explicit keys** — set `DATACONTRACT_REDSHIFT_REGION`, `..._ACCESS_KEY_ID`, `..._SECRET_ACCESS_KEY`, and `..._SESSION_TOKEN` for temporary credentials, or `..._ROLE_ARN` to assume a role.
-
->IAM authentication is supported only for **provisioned** Redshift clusters.
+> Note: IAM-based authentication (region / access key / role ARN) is not currently supported for Redshift, because ibis connects through the generic Postgres backend rather than a Redshift-specific driver.
 
 </details>
 
@@ -1069,7 +1093,7 @@ models:
 <details markdown="1">
 <summary><strong>Impala</strong></summary>
 
-Data Contract CLI can run Soda checks against an Apache Impala cluster.
+Data Contract CLI can run checks against an Apache Impala cluster.
 
 ##### Example
 
@@ -1080,7 +1104,7 @@ servers:
     type: impala
     host: my-impala-host
     port: 443
-    # Optional default database used for Soda scans
+    # Optional default database used for the checks
     database: my_database
 models:
   my_table_1: # corresponds to a table
@@ -1112,7 +1136,7 @@ If `physicalType` is not specified in the schema, we recommend the following map
 | `date`     | `DATE`                  |
 | `datetime` | `TIMESTAMP`             |
 
-This keeps the Impala schema compatible with the expectations of the Soda checks generated by datacontract-cli.
+This keeps the Impala schema compatible with the expectations of the checks generated by datacontract-cli.
 
 </details>
 
@@ -1256,8 +1280,7 @@ $ datacontract dbt sync orders.odcs.yaml --publish https://api.entropy-data.com/
 
 ### ci
 ```
-                                                                                                    
- Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                                    
+Usage: datacontract ci [OPTIONS] [LOCATIONS]...                                                    
                                                                                                     
  Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.                  
                                                                                                     
@@ -1266,48 +1289,59 @@ $ datacontract dbt sync orders.odcs.yaml --publish https://api.entropy-data.com/
 │                                  file(s).                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                                  TEXT                   The location (url or path) │
-│                                                                       of the ODCS JSON Schema    │
-│ --server                                       TEXT                   The server configuration   │
-│                                                                       to run the schema and      │
-│                                                                       quality tests. Use the key │
-│                                                                       of the server object in    │
-│                                                                       the data contract yaml     │
-│                                                                       file to refer to a server, │
-│                                                                       e.g., `production`, or     │
-│                                                                       `all` for all servers      │
-│                                                                       (default).                 │
-│                                                                       [default: all]             │
-│ --publish                                      TEXT                   The url to publish the     │
-│                                                                       results after the test.    │
-│ --output                                       PATH                   Specify the file path      │
-│                                                                       where the test results     │
-│                                                                       should be written to       │
-│                                                                       (e.g.,                     │
-│                                                                       './test-results/TEST-data… │
-│ --output-format                                [json|junit]           The target format for the  │
-│                                                                       test results.              │
-│ --logs                --no-logs                                       Print logs                 │
-│                                                                       [default: no-logs]         │
-│ --json                                                                Print test results as JSON │
-│                                                                       to stdout.                 │
-│ --fail-on                                      [warning|error|never]  Minimum severity that      │
-│                                                                       causes a non-zero exit     │
-│                                                                       code.                      │
-│                                                                       [default: error]           │
-│ --ssl-verification    --no-ssl-verification                           SSL verification when      │
-│                                                                       publishing the data        │
-│                                                                       contract.                  │
-│                                                                       [default:                  │
-│                                                                       ssl-verification]          │
-│ --debug               --no-debug                                      Enable debug logging       │
-│ --help                                                                Show this message and      │
-│                                                                       exit.                      │
+│ --json-schema                                    TEXT                   The location (url or     │
+│                                                                         path) of the ODCS JSON   │
+│                                                                         Schema                   │
+│ --server                                         TEXT                   The server configuration │
+│                                                                         to run the schema and    │
+│                                                                         quality tests. Use the   │
+│                                                                         key of the server object │
+│                                                                         in the data contract     │
+│                                                                         yaml file to refer to a  │
+│                                                                         server, e.g.,            │
+│                                                                         `production`, or `all`   │
+│                                                                         for all servers          │
+│                                                                         (default).               │
+│                                                                         [default: all]           │
+│ --publish                                        TEXT                   The url to publish the   │
+│                                                                         results after the test.  │
+│ --output                                         PATH                   Specify the file path    │
+│                                                                         where the test results   │
+│                                                                         should be written to     │
+│                                                                         (e.g.,                   │
+│                                                                         './test-results/TEST-da… │
+│ --output-format                                  [json|junit]           The target format for    │
+│                                                                         the test results.        │
+│ --logs                 --no-logs                                        Print logs               │
+│                                                                         [default: no-logs]       │
+│ --json                                                                  Print test results as    │
+│                                                                         JSON to stdout.          │
+│ --fail-on                                        [warning|error|never]  Minimum severity that    │
+│                                                                         causes a non-zero exit   │
+│                                                                         code.                    │
+│                                                                         [default: error]         │
+│ --ssl-verification     --no-ssl-verification                            SSL verification when    │
+│                                                                         publishing the data      │
+│                                                                         contract.                │
+│                                                                         [default:                │
+│                                                                         ssl-verification]        │
+│ --inline-references    --no-inline-references                           Resolve external         │
+│                                                                         references (currently:   │
+│                                                                         authoritativeDefinition… │
+│                                                                         in {definition,          │
+│                                                                         semantics}]) in the      │
+│                                                                         contract and inline the  │
+│                                                                         fetched content from the │
+│                                                                         configured entropy-data  │
+│                                                                         host.                    │
+│                                                                         [default:                │
+│                                                                         inline-references]       │
+│ --debug                --no-debug                                       Enable debug logging     │
+│ --help                                                                  Show this message and    │
+│                                                                         exit.                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit         
-                                                                                                    
-
+ Example: datacontract ci datacontract.yaml --output test-results.xml --output-format junit
 ```
 
 The `ci` command wraps [`test`](#test) with CI/CD-specific features:
@@ -1390,8 +1424,7 @@ steps:
 
 ### export
 ```
-                                                                                                    
- Usage: datacontract export [OPTIONS] COMMAND [ARGS]...                                             
+Usage: datacontract export [OPTIONS] COMMAND [ARGS]...                                             
                                                                                                     
  Convert a data contract to a target format.                                                        
                                                                                                     
@@ -1431,9 +1464,7 @@ steps:
                                                                                                     
  Example: datacontract export html datacontract.yaml --output datacontract.html                     
  For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), use           
- `datacontract export sql --dialect <dialect>`.                                                     
-                                                                                                    
-
+ `datacontract export sql --dialect <dialect>`.
 ```
 
 Run `datacontract export <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
@@ -1769,8 +1800,7 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 
 ### import
 ```
-                                                                                                    
- Usage: datacontract import [OPTIONS] COMMAND [ARGS]...                                             
+Usage: datacontract import [OPTIONS] COMMAND [ARGS]...                                             
                                                                                                     
  Create a data contract from a source format.                                                       
                                                                                                     
@@ -1795,11 +1825,10 @@ For more information about the Excel template structure, visit the [ODCS Excel T
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
 │ powerbi     Import a data contract from an PowerBI template file.                                │
+│ snowflake   Import a data contract from an Snowflake account                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml    
-                                                                                                    
-
+ Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
@@ -1867,6 +1896,8 @@ datacontract import unity --table <table_full_name>
 
 Importing from dbt manifest file.
 You may give the `--model` parameter to enumerate the tables that should be imported. If no tables are given, _all_ available tables of the database will be imported.
+
+For [versioned dbt models](https://docs.getdbt.com/docs/collaborate/govern/model-versions), use the `name.vN` convention to target a specific version. Omitting the version suffix imports all versions of that model.
 
 Examples:
 
@@ -2011,15 +2042,9 @@ datacontract import csv --source "test.csv"
 
 Importing from protobuf File. Specify file in `source` parameter.
 
-Requires the `protoc` compiler installed on the system. Install with:
-
-| Platform       | Command                              |
-|----------------|--------------------------------------|
-| macOS          | `brew install protobuf`              |
-| Debian/Ubuntu  | `sudo apt install protobuf-compiler` |
-| Fedora/RHEL    | `sudo dnf install protobuf-compiler` |
-| Arch           | `sudo pacman -S protobuf`            |
-| Windows        | `choco install protoc` (or [download a release](https://github.com/protocolbuffers/protobuf/releases)) |
+`.proto` files are parsed with a pure-Python parser, so no `protoc` compiler or
+other system dependency is required. Transitive `import` statements (including
+across subdirectories) are resolved automatically.
 
 Example:
 
@@ -2029,11 +2054,25 @@ datacontract import protobuf --source "test.proto"
 
 </details>
 
+<details markdown="1">
+<summary><strong>snowflake</strong></summary>
+
+Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
+Multiple authentification are supported, 
+login/password using the `DATACONTRACT_SNOWFLAKE_ ...` test environement variable are setup,
+MFA using external browser is selected when `DATACONTRACT_SNOWFLAKE_PASSWORD` is missing
+TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CONNECTION_NAME` environment variable is defined
+
+Example:
+
+```bash
+datacontract import snowflake --source account.canada-central.azure --database databaseName --schema schemaName
+```
+</details>
 
 ### catalog
 ```
-                                                                                                    
- Usage: datacontract catalog [OPTIONS]                                                              
+Usage: datacontract catalog [OPTIONS]                                                              
                                                                                                     
  Create a html catalog of data contracts.                                                           
                                                                                                     
@@ -2048,9 +2087,7 @@ datacontract import protobuf --source "test.proto"
 │ --help                               Show this message and exit.                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract catalog --files "**/*.yaml" --output catalog/                                
-                                                                                                    
-
+ Example: datacontract catalog --files "**/*.yaml" --output catalog/
 ```
 
 Examples:
@@ -2065,8 +2102,7 @@ datacontract catalog --files "*.odcs.yaml"
 
 ### publish
 ```
-                                                                                                    
- Usage: datacontract publish [OPTIONS] [LOCATION]                                                   
+Usage: datacontract publish [OPTIONS] [LOCATION]                                                   
                                                                                                     
  Publish the data contract to the Entropy Data.                                                     
                                                                                                     
@@ -2084,15 +2120,12 @@ datacontract catalog --files "*.odcs.yaml"
 │ --help                                               Show this message and exit.                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract publish datacontract.yaml                                                    
-                                                                                                    
-
+ Example: datacontract publish datacontract.yaml
 ```
 
 ### api
 ```
-                                                                                                    
- Usage: datacontract api [OPTIONS]                                                                  
+Usage: datacontract api [OPTIONS]                                                                  
                                                                                                     
  Start the datacontract CLI as server application with REST API.                                    
                                                                                                     
@@ -2121,9 +2154,7 @@ datacontract catalog --files "*.odcs.yaml"
 │ --help                            Show this message and exit.                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
- Example: datacontract api --port 4242 --host 0.0.0.0                                               
-                                                                                                    
-
+ Example: datacontract api --port 4242 --host 0.0.0.0
 ```
 
 ## Integrations
@@ -2373,10 +2404,11 @@ models:
 
 - Install [uv](https://docs.astral.sh/uv/)
 - Python base interpreter should be 3.11.x.
+- A JDK (17 or 21) must be installed for the Spark-based tests (e.g. `test_test_kafka.py`, `test_test_delta.py`, `test_test_dataframe.py`, `test_import_spark.py`). Java 25 is not yet supported. On macOS and Linux you can install one with [SDKMAN](https://sdkman.io): `sdk install java 21.0.11-tem` (or any 21.x build from `sdk list java`). Verify with `java --version`.
 - Docker engine must be running to execute the tests.
 
 ```bash
-# make sure uv is installed
+sdk use java 21.0.11-tem
 uv python pin 3.11
 uv venv
 uv pip install -e '.[dev]'

@@ -32,12 +32,13 @@ class DataContract:
         publish_url: str = None,
         spark: "SparkSession" = None,
         duckdb_connection: "DuckDBPyConnection" = None,
-        inline_definitions: bool = True,
+        inline_references: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
         all_errors: bool = False,
         check_categories: set[str] | None = None,
         fastapi_url: str = None,
+        include_failed_samples: bool = False,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -49,11 +50,12 @@ class DataContract:
         self._publish_test_results = publish_test_results
         self._spark = spark
         self._duckdb_connection = duckdb_connection
-        self._inline_definitions = inline_definitions
+        self._inline_references = inline_references
         self._ssl_verification = ssl_verification
         self._all_errors = all_errors
         self._check_categories = check_categories
         self._fastapi_url = fastapi_url
+        self._include_failed_samples = include_failed_samples
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -70,7 +72,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
                 all_errors=self._all_errors,
             )
             run.checks.append(
@@ -92,14 +94,11 @@ class DataContract:
                         name=error.name,
                         reason=error.reason,
                         engine=error.engine,
-                        details="",
                     )
                 )
                 run.log_error(str(error))
         except DataContractException as e:
-            run.checks.append(
-                Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
-            )
+            run.checks.append(Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine))
             run.log_error(str(e))
         except Exception as e:
             run.checks.append(
@@ -136,7 +135,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             execute_data_contract_test(
@@ -147,6 +146,7 @@ class DataContract:
                 self._duckdb_connection,
                 schema_name=self._schema_name,
                 check_categories=self._check_categories,
+                include_failed_samples=self._include_failed_samples,
             )
 
         except DataContractException as e:
@@ -158,7 +158,6 @@ class DataContract:
                     reason=e.reason,
                     model=e.model,
                     engine=e.engine,
-                    details="",
                 )
             )
             run.log_error(str(e))
@@ -188,7 +187,7 @@ class DataContract:
             data_contract_str=self._data_contract_str,
             data_contract=self._data_contract,
             schema_location=self._schema_location,
-            inline_definitions=self._inline_definitions,
+            inline_references=self._inline_references,
         )
 
     def get_data_contract_file(self) -> str | None:
@@ -207,7 +206,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             return exporter_factory.create(export_format).export(
@@ -223,7 +222,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
             return exporter_factory.create(export_format).export(

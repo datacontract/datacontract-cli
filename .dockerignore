@@ -1,0 +1,97 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+.gitleaks.toml
+
+# CI / repo metadata
+.github
+.editorconfig
+.pre-commit-config.yaml
+
+# Virtualenvs and Python caches
+.venv
+venv
+env
+ENV
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+.eggs
+build
+dist
+sdist
+wheels
+share/python-wheels
+
+# Test / lint / type-check caches
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.pyre
+.pytype
+.tox
+.nox
+.coverage
+.coverage.*
+htmlcov
+coverage.xml
+*.cover
+
+# Tests and fixtures (not needed at runtime)
+tests
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+*.iml
+
+# Docs and assets not needed in the image
+README.md
+CHANGELOG.md
+API.md
+LICENSE
+CLAUDE.md
+CNAME
+_config.yml
+_layouts
+datacontractcli.drawio
+datacontractcli.png
+favicon.png
+update_help.py
+release
+
+# Local data / scratch
+tmp
+*.log
+*.duckdb
+.duckdb
+db.duckdb
+.soda
+contracts
+quality
+datacontract.yaml
+datacontract.sh
+cli
+
+# Secrets and environment files
+.env
+.env.*
+*.pem
+*.key
+
+# Claude / agent tooling
+.claude
+.auto-claude
+.auto-claude-security.json
+.auto-claude-status
+.claude_settings.json
+.worktrees
+.security-key
+logs/security
+
+# Docker itself
+Dockerfile
+.dockerignore
