@@ -44,17 +44,16 @@ FROM dhi.io/python:3.11-debian13-dev AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     VIRTUAL_ENV=/opt/venv \
-    JAVA_HOME=/opt/java/openjdk/17-jre \
-    PATH=/opt/venv/bin:/opt/java/openjdk/17-jre/bin:$PATH
+    JAVA_HOME=/opt/java/openjdk/21-jre \
+    PATH=/opt/venv/bin:/opt/java/openjdk/21-jre/bin:$PATH
 
 # copy the pre-built venv (readable+executable by the nonroot user)
 COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
 
-# Eclipse Temurin JRE 17 — required by PySpark-backed engines (Kafka, Spark).
-# Without Java, those engines fail at SparkSession startup. Adding the JRE here
-# means `datacontract test` against a kafka/spark server works in the image
-# without users having to extend it.
-COPY --from=dhi.io/eclipse-temurin:17-debian13 /opt/java/openjdk /opt/java/openjdk
+# Eclipse Temurin JRE 21 — required by PySpark-backed engines (Kafka, Spark).
+# Spark 4.0 (what `.[all]` resolves to) supports Java 17 and 21. Without Java,
+# those engines fail at SparkSession startup.
+COPY --from=dhi.io/eclipse-temurin:21-debian13 /opt/java/openjdk /opt/java/openjdk
 
 USER nonroot:nonroot
 WORKDIR /home/datacontract
