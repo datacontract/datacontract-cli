@@ -29,6 +29,7 @@ def execute_data_contract_test(
     duckdb_connection: "DuckDBPyConnection" = None,
     schema_name: str = "all",
     check_categories: set[str] | None = None,
+    include_failed_samples: bool = False,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -74,7 +75,16 @@ def execute_data_contract_test(
     if server.format == "json" and server.type != "kafka":
         if check_categories is None or "schema" in check_categories:
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
-    execute_ibis_checks(run, data_contract, server, specs, spark, duckdb_connection, schema_name=schema_name)
+    execute_ibis_checks(
+        run,
+        data_contract,
+        server,
+        specs,
+        spark,
+        duckdb_connection,
+        schema_name=schema_name,
+        include_failed_samples=include_failed_samples,
+    )
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:

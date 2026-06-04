@@ -60,6 +60,19 @@ def expected_type_category(prop: SchemaProperty) -> tuple[str, str]:
     return normalize_type_name(label), (label or "")
 
 
+_PERCENT_UNITS = {"percent", "percentage", "%"}
+
+
+def is_percent_unit(quality: DataQuality) -> bool:
+    """True when the quality threshold is expressed as a percentage of rows.
+
+    ODCS carries this on ``quality.unit`` (e.g. ``unit: percent``). The default
+    (rows / absolute count) returns False.
+    """
+    unit = getattr(quality, "unit", None)
+    return unit is not None and str(unit).strip().lower() in _PERCENT_UNITS
+
+
 def to_threshold(quality: DataQuality) -> Optional[Threshold]:
     if quality.mustBe is not None:
         return Threshold(Op.EQ, quality.mustBe)
@@ -324,7 +337,15 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
 # metric-check builders (preserve legacy keys / types)
 # ---------------------------------------------------------------------------
 def _missing_count_check(
-    model, field, check_type, threshold, name, category="quality", missing_values=None
+    model,
+    field,
+    check_type,
+    threshold,
+    name,
+    category="quality",
+    missing_values=None,
+    threshold_is_percent=False,
+    severity=None,
 ) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
@@ -335,11 +356,13 @@ def _missing_count_check(
         field=field,
         metric=MetricType.MISSING_COUNT,
         threshold=threshold,
+        threshold_is_percent=threshold_is_percent,
+        severity=severity,
         missing_values=missing_values,
     )
 
 
-def _duplicate_count_check(model, field, check_type, threshold, name, category="quality") -> CheckSpec:
+def _duplicate_count_check(model, field, check_type, threshold, name, category="quality", severity=None) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
         category=category,
@@ -349,11 +372,22 @@ def _duplicate_count_check(model, field, check_type, threshold, name, category="
         field=field,
         metric=MetricType.DUPLICATE_COUNT,
         threshold=threshold,
+        severity=severity,
         columns=[field],
     )
 
 
-def _invalid_count_check(model, field, check_type, name, threshold=None, category="schema", **kwargs) -> CheckSpec:
+def _invalid_count_check(
+    model,
+    field,
+    check_type,
+    name,
+    threshold=None,
+    category="schema",
+    threshold_is_percent=False,
+    severity=None,
+    **kwargs,
+) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
         category=category,
@@ -363,11 +397,13 @@ def _invalid_count_check(model, field, check_type, name, threshold=None, categor
         field=field,
         metric=MetricType.INVALID_COUNT,
         threshold=threshold or Threshold(Op.EQ, 0),
+        threshold_is_percent=threshold_is_percent,
+        severity=severity,
         **kwargs,
     )
 
 
-def _row_count_check(model, threshold: Threshold) -> CheckSpec:
+def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__row_count",
         category="schema",
@@ -377,6 +413,7 @@ def _row_count_check(model, threshold: Threshold) -> CheckSpec:
         field=None,
         metric=MetricType.ROW_COUNT,
         threshold=threshold,
+        severity=severity,
     )
 
 
@@ -435,6 +472,7 @@ def _quality_checks(
                     threshold=threshold,
                     query=query,
                     dialect=getattr(quality, "dialect", None),
+                    severity=quality.severity,
                 )
             )
         elif quality.metric is not None:
@@ -450,8 +488,18 @@ def _quality_checks(
 
 def _quality_metric_check(model, field, quality: DataQuality, threshold: Threshold) -> List[CheckSpec]:
     metric = quality.metric
+    severity = quality.severity
+    is_percent = is_percent_unit(quality)
+
+    # Percent thresholds only make sense for the count-of-bad-rows metrics, where
+    # the engine can divide by the model row count. Warn (and fall back to an
+    # absolute comparison) rather than silently comparing a count to a percent.
+    if is_percent and metric not in ("nullValues", "missingValues", "invalidValues"):
+        logger.warning(f"Quality metric {metric} does not support unit: percent; comparing absolute count")
+        is_percent = False
+
     if metric == "rowCount":
-        return [_row_count_check(model, threshold)]
+        return [_row_count_check(model, threshold, severity=severity)]
     if metric == "duplicateValues":
         if field is None:
             cols = quality.arguments.get("properties") if quality.arguments else None
@@ -467,6 +515,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                     metric=MetricType.DUPLICATE_COUNT,
                     threshold=threshold,
                     columns=cols,
+                    severity=severity,
                 )
             ]
         return [
@@ -476,6 +525,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 "field_duplicate_values",
                 threshold,
                 name=f"Check that field {field} has duplicate_count {threshold.describe()}",
+                severity=severity,
             )
         ]
     if metric == "nullValues":
@@ -489,6 +539,8 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 "field_null_values",
                 threshold,
                 name=f"Check that field {field} has missing_count {threshold.describe()}",
+                threshold_is_percent=is_percent,
+                severity=severity,
             )
         ]
     if metric == "invalidValues":
@@ -505,6 +557,8 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 threshold=threshold,
                 category="quality",
                 valid_values=valid_values,
+                threshold_is_percent=is_percent,
+                severity=severity,
             )
         ]
     if metric == "missingValues":
@@ -522,6 +576,8 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 threshold,
                 name=f"Check that field {field} has missing_count {threshold.describe()}",
                 missing_values=missing_values or None,
+                threshold_is_percent=is_percent,
+                severity=severity,
             )
         ]
     logger.warning(f"Quality check {metric} is not yet supported")

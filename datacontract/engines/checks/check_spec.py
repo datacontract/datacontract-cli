@@ -96,6 +96,16 @@ class CheckSpec:
     field: Optional[str] = None
     threshold: Optional[Threshold] = None
 
+    # The threshold compares a percentage of rows (ODCS quality.unit: percent)
+    # rather than an absolute count. Only meaningful for the count-of-bad-rows
+    # metrics (missing_count, invalid_count), where the engine divides by the
+    # model row count before applying the threshold.
+    threshold_is_percent: bool = False
+
+    # ODCS quality.severity. A non-blocking severity (e.g. "warning", "info")
+    # downgrades a failing check to a warning instead of a failure. None => fail.
+    severity: Optional[str] = None
+
     # --- metric arguments -------------------------------------------------
     missing_values: Optional[List[Any]] = None  # MISSING_COUNT / INVALID_COUNT
     valid_values: Optional[List[Any]] = None  # INVALID_COUNT

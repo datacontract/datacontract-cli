@@ -76,6 +76,7 @@ def execute_ibis_checks(
     spark=None,
     duckdb_connection=None,
     schema_name: str = "all",
+    include_failed_samples: bool = False,
 ):
     if data_contract is None:
         run.log_warn("Cannot run engine ibis, as data contract is invalid")
@@ -122,7 +123,7 @@ def execute_ibis_checks(
 
     try:
         for model, model_specs in by_model.items():
-            _run_model(run, con, model, model_specs)
+            _run_model(run, con, model, model_specs, data_contract, server, include_failed_samples)
     finally:
         _maybe_disconnect(con, spark, duckdb_connection)
 
@@ -147,7 +148,15 @@ def _maybe_disconnect(con, spark, duckdb_connection):
         pass
 
 
-def _run_model(run: Run, con, model: str, specs: List[CheckSpec]):
+def _run_model(
+    run: Run,
+    con,
+    model: str,
+    specs: List[CheckSpec],
+    data_contract: Optional[OpenDataContractStandard] = None,
+    server: Optional[Server] = None,
+    include_failed_samples: bool = False,
+):
     try:
         t = _resolve_table(con, model)
     except Exception as e:
@@ -201,13 +210,19 @@ def _run_model(run: Run, con, model: str, specs: List[CheckSpec]):
     if agg_exprs:
         _run_aggregation(run, t, agg_exprs)
 
+    if include_failed_samples:
+        _collect_failed_samples(run, t, columns, schema, model, specs, data_contract, server)
+
 
 def _run_aggregation(run: Run, t, agg_exprs):
     import pandas as pd
 
+    # Add the total row count so "bad row" metrics can report a failed fraction.
+    row_count_key = "__dc_row_count__"
+    exprs = [expr for _, expr in agg_exprs]
+    exprs.append(t.count().name(row_count_key))
     try:
-        agg = t.aggregate([expr for _, expr in agg_exprs])
-        df = agg.execute()
+        df = t.aggregate(exprs).execute()
     except Exception as e:
         logger.warning("Aggregation query failed: %s", e)
         for spec, _ in agg_exprs:
@@ -215,10 +230,147 @@ def _run_aggregation(run: Run, t, agg_exprs):
         return
 
     row = df.iloc[0]
+    rc = row[row_count_key]
+    total = 0 if (rc is None or pd.isna(rc)) else int(rc)
     for spec, _ in agg_exprs:
         val = row[spec.key]
         val = 0 if (val is None or pd.isna(val)) else int(val)
-        _evaluate(run, spec, val)
+        _evaluate(run, spec, val, row_count=total)
+
+
+# ---------------------------------------------------------------------------
+# failed-row samples (opt-in via --include-failed-samples)
+# ---------------------------------------------------------------------------
+_FAILED_SAMPLE_LIMIT = 5
+
+# ODCS property classifications whose values are omitted from samples.
+_SENSITIVE_CLASSIFICATIONS = {
+    "pii",
+    "personal",
+    "personal_data",
+    "confidential",
+    "restricted",
+    "sensitive",
+    "secret",
+}
+
+_SAMPLEABLE_METRICS = (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT, MetricType.DUPLICATE_COUNT)
+
+
+def _collect_failed_samples(run, t, columns, schema, model, specs, data_contract, server):
+    """Second pass: for failed/warned bad-row checks, fetch a few offending rows.
+
+    Reuses the same predicates the counts were built from. Columns are limited to
+    the contract's identifier (unique / primary-key) fields plus the offending
+    column, and sensitive columns (by ODCS classification) are dropped.
+    """
+    identifiers, sensitive = _sample_field_meta(data_contract, server, model)
+    for spec in specs:
+        if spec.metric not in _SAMPLEABLE_METRICS:
+            continue
+        check = next((c for c in run.checks if c.key == spec.key), None)
+        if check is None or check.result not in (ResultEnum.failed, ResultEnum.warning):
+            continue
+        try:
+            samples = _samples_for(t, columns, schema, spec, identifiers, sensitive)
+        except Exception as e:  # pragma: no cover - sampling is best-effort
+            logger.debug("Could not collect failed samples for '%s': %s", spec.key, e)
+            continue
+        if samples:
+            check.failed_samples = samples
+
+
+def _sample_field_meta(data_contract, server, model):
+    """(identifier columns, sensitive columns) for a model, from the ODCS schema."""
+    identifiers: List[str] = []
+    sensitive: set = set()
+    if data_contract is None:
+        return identifiers, sensitive
+    from datacontract.engines.checks.create_checks import to_schema_name
+
+    server_type = server.type if server and server.type else None
+    for schema_obj in data_contract.schema_ or []:
+        if to_schema_name(schema_obj, server_type) != model:
+            continue
+        for prop in schema_obj.properties or []:
+            fname = prop.physicalName or prop.name
+            if prop.unique or prop.primaryKey:
+                identifiers.append(fname)
+            classification = (getattr(prop, "classification", None) or "").strip().lower()
+            if classification in _SENSITIVE_CLASSIFICATIONS:
+                sensitive.add(fname.lower())
+        break
+    return identifiers, sensitive
+
+
+def _select_columns(columns, sensitive, wanted):
+    """Resolve wanted contract field names to actual table columns, in order,
+    de-duplicated, dropping sensitive ones and any not present in the table."""
+    selected: List[str] = []
+    seen: set = set()
+    for name in wanted:
+        if name is None:
+            continue
+        key = name.lower()
+        if key in sensitive or key in seen:
+            continue
+        actual = columns.get(key)
+        if actual is None:
+            continue
+        seen.add(key)
+        selected.append(actual)
+    return selected
+
+
+def _samples_for(t, columns, schema, spec: CheckSpec, identifiers, sensitive):
+    if spec.metric == MetricType.DUPLICATE_COUNT:
+        return _duplicate_samples(t, columns, sensitive, spec)
+
+    col = _resolve_col(columns, spec.field)
+    if spec.metric == MetricType.MISSING_COUNT:
+        predicate = _missing_expr(t, col, spec.missing_values)
+    else:  # INVALID_COUNT
+        predicate = _invalid_expr(t, col, schema[col], spec)
+        if predicate is None:
+            return None
+
+    select_cols = _select_columns(columns, sensitive, [*identifiers, spec.field])
+    rows = t.filter(predicate)
+    rows = rows.select(select_cols) if select_cols else rows
+    return _df_to_records(rows.limit(_FAILED_SAMPLE_LIMIT).execute())
+
+
+def _duplicate_samples(t, columns, sensitive, spec: CheckSpec):
+    """The duplicated key values and how often each occurs."""
+    key_fields = spec.columns or ([spec.field] if spec.field else [])
+    key_cols = [_resolve_col(columns, c) for c in key_fields]
+    grouped = t.group_by(key_cols).aggregate(duplicate_count=t.count())
+    dups = grouped.filter(grouped["duplicate_count"] > 1)
+    df = dups.limit(_FAILED_SAMPLE_LIMIT).execute()
+    drop = [c for c in key_cols if c.lower() in sensitive]
+    if drop and df is not None and not df.empty:
+        df = df.drop(columns=drop)
+    return _df_to_records(df)
+
+
+def _df_to_records(df):
+    if df is None or df.empty:
+        return None
+    return [{col: _json_safe(row[col]) for col in df.columns} for _, row in df.iterrows()]
+
+
+def _json_safe(value):
+    import pandas as pd
+
+    try:
+        if value is None or pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass  # arrays / structs are not NA-checkable; fall through to coercion
+    v = _py(value)
+    if v is None or isinstance(v, (str, int, float, bool)):
+        return v
+    return str(v)
 
 
 # ---------------------------------------------------------------------------
@@ -297,6 +449,32 @@ def _invalid_expr(t, col, dtype, spec: CheckSpec):
     return (~missing) & invalid_any
 
 
+def _constraint_info(spec: CheckSpec) -> dict:
+    """The validity rule(s) an invalid_count check enforces, with their parameters.
+
+    Explains *what* made rows invalid (e.g. a max length of 20, an allowed set of
+    values). Derived from the check spec, so it costs no query. The check model
+    splits each schema rule into its own single-rule check, so this is normally a
+    single entry; several are still handled for forward-compatibility.
+    """
+    info: dict = {}
+    if spec.valid_values is not None:
+        info["valid_values"] = spec.valid_values
+    if spec.invalid_values:
+        info["invalid_values"] = spec.invalid_values
+    if spec.valid_regex is not None:
+        info["pattern"] = spec.valid_regex
+    if spec.valid_min is not None:
+        info["minimum"] = spec.valid_min
+    if spec.valid_max is not None:
+        info["maximum"] = spec.valid_max
+    if spec.valid_min_length is not None:
+        info["min_length"] = spec.valid_min_length
+    if spec.valid_max_length is not None:
+        info["max_length"] = spec.valid_max_length
+    return info
+
+
 # ---------------------------------------------------------------------------
 # dedicated check runners
 # ---------------------------------------------------------------------------
@@ -308,6 +486,8 @@ def _run_duplicate(run: Run, t, columns, spec: CheckSpec):
     dup_count = dup_groups.count().execute()
     dup_count = int(dup_count) if dup_count is not None else 0
     _evaluate(run, spec, dup_count)
+    if len(cols) > 1:
+        _update_diagnostics(run, spec.key, {"columns": cols})
 
 
 def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
@@ -321,6 +501,7 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
         except Exception:
             pass
     ok = spec.field.lower() in present
+    _set_diagnostics(run, spec.key, _diag(metric="field_present", field=spec.field, present=ok))
     _set_result(
         run,
         spec.key,
@@ -336,12 +517,19 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
         f"type of '{spec.field}' is compatible with '{spec.expected_type_label}' ({spec.expected_category})",
         "introspection",
     )
+    expected_label = f"{spec.expected_type_label} ({spec.expected_category})"
     actual_col = columns.get(spec.field.lower())
     if actual_col is None:
+        _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=expected_label))
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
     dtype = schema[actual_col]
     actual_category = ibis_dtype_category(dtype)
+    _set_diagnostics(
+        run,
+        spec.key,
+        _diag(metric="field_type", field=spec.field, expected=expected_label, actual=f"{dtype} ({actual_category})"),
+    )
     if category_matches(spec.expected_category, actual_category):
         _set_result(run, spec.key, ResultEnum.passed, None)
     else:
@@ -362,6 +550,9 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
     _record_sql(run, spec, t.aggregate(value=reduction))
     raw = reduction.execute()
     if raw is None or pd.isna(raw):
+        _set_diagnostics(
+            run, spec.key, _diag(metric=spec.metric.value, field=spec.field, threshold_seconds=spec.seconds)
+        )
         _set_result(run, spec.key, ResultEnum.failed, f"No timestamp value found in '{spec.field}'")
         return
     ts = pd.Timestamp(raw)
@@ -370,7 +561,20 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
     now = pd.Timestamp.now(tz="UTC")
     delta_seconds = (now - ts).total_seconds()
     ok = delta_seconds < spec.seconds
-    label = "Retention" if spec.metric == MetricType.RETENTION else "Freshness"
+    is_retention = spec.metric == MetricType.RETENTION
+    label = "Retention" if is_retention else "Freshness"
+    ts_key = "oldest_timestamp" if is_retention else "latest_timestamp"
+    _set_diagnostics(
+        run,
+        spec.key,
+        _diag(
+            metric=spec.metric.value,
+            field=spec.field,
+            age_seconds=int(delta_seconds),
+            threshold_seconds=spec.seconds,
+            **{ts_key: ts.isoformat()},
+        ),
+    )
     _set_result(
         run,
         spec.key,
@@ -408,18 +612,70 @@ def _run_scalar(con, query: str, dialect: Optional[str]):
 # ---------------------------------------------------------------------------
 # result helpers
 # ---------------------------------------------------------------------------
-def _evaluate(run: Run, spec: CheckSpec, value):
+def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None):
+    is_bad_row = spec.metric in (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT)
+    # A percent threshold (ODCS quality.unit: percent) compares the failed
+    # fraction (0-100) against the threshold value instead of the absolute
+    # count. It needs the model row count, so it only applies to bad-row metrics.
+    is_percent = bool(spec.threshold_is_percent) and is_bad_row
+    percent = (round(value / row_count * 100, 6) if row_count else 0.0) if is_percent else None
+    compare_value = percent if is_percent else value
+
+    diag = _diag(
+        metric=spec.metric.value,
+        field=spec.field,
+        value=value,
+        unit="percent" if is_percent else None,
+        severity=spec.severity,
+        threshold=spec.threshold.describe() if spec.threshold is not None else None,
+    )
+    # For "bad row" metrics, show how many of the total rows failed.
+    if row_count is not None and is_bad_row:
+        diag["row_count"] = row_count
+        diag["failed_fraction"] = round(value / row_count, 6) if row_count else 0.0
+    if percent is not None:
+        diag["percent"] = percent
+    # For invalid_count, explain which validity rule was enforced.
+    if spec.metric == MetricType.INVALID_COUNT:
+        constraint = _constraint_info(spec)
+        if constraint:
+            diag["constraint"] = constraint
+    elif spec.metric == MetricType.MISSING_COUNT and spec.missing_values:
+        diag["missing_values"] = spec.missing_values
+    _set_diagnostics(run, spec.key, diag)
+
     if spec.threshold is None:
         _set_result(run, spec.key, ResultEnum.passed, None)
         return
-    ok = spec.threshold.passes(value)
+    ok = spec.threshold.passes(compare_value)
     target = spec.field or spec.model
-    _set_result(
-        run,
-        spec.key,
-        ResultEnum.passed if ok else ResultEnum.failed,
-        None if ok else f"Actual {spec.metric.value}({target}) was {value}, expected {spec.threshold.describe()}",
-    )
+    if ok:
+        reason = None
+    elif is_percent:
+        reason = (
+            f"Actual {spec.metric.value}({target}) was {percent}% ({value} of {row_count} rows), "
+            f"expected {spec.threshold.describe()}%"
+        )
+    else:
+        reason = f"Actual {spec.metric.value}({target}) was {value}, expected {spec.threshold.describe()}"
+    _set_result(run, spec.key, ResultEnum.passed if ok else _fail_result(spec), reason)
+
+
+# Severities (ODCS quality.severity) that downgrade a failing check to a warning
+# instead of a hard failure. Anything else (including None) fails the run.
+_WARNING_SEVERITIES = {"info", "warning", "warn", "low", "minor", "trivial"}
+
+
+def _fail_result(spec: CheckSpec) -> ResultEnum:
+    """The result to set when a check does not meet its threshold.
+
+    Honors ODCS ``quality.severity``: a non-blocking severity makes the check a
+    warning (which does not fail the run); the default is a hard failure.
+    """
+    severity = (spec.severity or "").strip().lower()
+    if severity in _WARNING_SEVERITIES:
+        return ResultEnum.warning
+    return ResultEnum.failed
 
 
 def _set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]):
@@ -429,6 +685,33 @@ def _set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]):
     check.result = result
     if reason is not None:
         check.reason = reason
+
+
+def _diag(**kwargs) -> dict:
+    """Build a diagnostics dict, dropping keys whose value is None.
+
+    None entries are dropped because they would otherwise serialize as ``null``
+    in the JSON output (``exclude_none`` only prunes top-level model fields, not
+    nested dict contents).
+    """
+    return {k: v for k, v in kwargs.items() if v is not None}
+
+
+def _set_diagnostics(run: Run, key: str, diagnostics: dict) -> None:
+    """Attach structured diagnostics (the measured value, threshold, etc.) to a check."""
+    check = next((c for c in run.checks if c.key == key), None)
+    if check is not None:
+        check.diagnostics = diagnostics
+
+
+def _update_diagnostics(run: Run, key: str, extra: dict) -> None:
+    """Merge extra entries into a check's existing diagnostics dict."""
+    check = next((c for c in run.checks if c.key == key), None)
+    if check is None:
+        return
+    if check.diagnostics is None:
+        check.diagnostics = {}
+    check.diagnostics.update(extra)
 
 
 def _set_impl(run: Run, key: str, implementation: Optional[str], language: Optional[str]):

@@ -31,8 +31,12 @@ class Check(BaseModel):
 
     result: ResultEnum | None = None
     reason: str | None = None
-    details: str | None = None
     diagnostics: dict | None = None
+    # A capped sample of rows that failed this check (only collected when
+    # `datacontract test --include-failed-samples` is set). Each entry is a row
+    # restricted to identifier + offending columns, with sensitive columns
+    # omitted. The full failed count lives in `diagnostics`, not here.
+    failed_samples: list | None = None
 
 
 class Log(BaseModel):
