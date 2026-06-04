@@ -2064,7 +2064,7 @@ Example:
 ```bash
 datacontract import snowflake --source account.canada-central.azure --database databaseName --schema schemaName
 ```
-
+</details>
 
 ### catalog
 ```
