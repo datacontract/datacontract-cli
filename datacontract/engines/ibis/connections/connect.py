@@ -126,7 +126,14 @@ def connect_ibis(
         # `user` (not soda's `username`). Keep DATACONTRACT_SNOWFLAKE_USERNAME working.
         if "username" in extra:
             extra.setdefault("user", extra.pop("username"))
+        # ibis tries to CREATE DATABASE for helper UDFs on connect (create_object_udfs=True).
+        # datacontract only reads, and the read-only roles used for testing lack CREATE DATABASE,
+        # so this otherwise emits a noisy "Insufficient privileges" warning. Default it off, but
+        # let users opt back in via DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true (env values are
+        # strings, so coerce it; an unset/blank/non-"true" value keeps UDF creation disabled).
+        create_object_udfs = str(extra.pop("create_object_udfs", "")).strip().lower() == "true"
         return ibis.snowflake.connect(
+            create_object_udfs=create_object_udfs,
             account=server.account,
             database=server.database,
             schema=server.schema_,
