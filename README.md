@@ -891,7 +891,7 @@ models:
 ```
 
 ##### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
+Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver.
 Depending on the `authenticator` mode required by your Snowflake workspace, please set your environment variables accordingly.
 For example:
 
