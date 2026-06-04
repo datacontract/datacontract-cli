@@ -1,0 +1,28 @@
+dataContractSpecification: 1.2.1
+id: diagnostics_test
+info:
+  title: Contract to exercise ibis check diagnostics
+  version: 1.0.0
+  owner: my-domain-team
+servers:
+  local:
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+models:
+  orders:
+    fields:
+      order_id:
+        type: integer
+        required: true
+        unique: true
+      email:
+        type: string
+        required: true
+        minLength: 5
+        maxLength: 20
+        pattern: ^.+@.+$
+      amount:
+        type: integer
+        minimum: 0
+        maximum: 100

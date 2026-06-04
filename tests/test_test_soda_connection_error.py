@@ -16,8 +16,8 @@ def test_soda_connection_error_result_is_failed(monkeypatch):
     run = DataContract(data_contract_file=CONTRACT).test()
 
     assert run.result == ResultEnum.failed
-    assert any(check.result == ResultEnum.failed and check.engine == "soda-core" for check in run.checks), (
-        "Expected a failed soda-core check for the unreachable server"
+    assert any(check.result == ResultEnum.failed and check.engine == "ibis" for check in run.checks), (
+        "Expected a failed ibis check for the unreachable server"
     )
 
 

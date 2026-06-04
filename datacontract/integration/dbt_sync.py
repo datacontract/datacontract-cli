@@ -267,7 +267,7 @@ def _attach_test_config(
 def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) -> Optional[str]:
     """Synthesize a human-readable description for a dbt test entry.
 
-    Similar to the check names in `datacontract/engines/data_contract_checks.py`, but for dbt.
+    Similar to the check names in `datacontract/engines/checks/create_checks.py`, but for dbt.
     """
     if isinstance(test, str):
         if test == "not_null":

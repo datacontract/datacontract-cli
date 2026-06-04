@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "0.12.5"
+version = "1.0.0"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -13,7 +13,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
 ]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.15"
 dependencies = [
   "typer>=0.18.0,<0.27",
   "pydantic>=2.8.2,<2.14.0",
@@ -32,13 +32,6 @@ dependencies = [
   "datacontract-specification>=1.2.3,<2.0.0",
   "open-data-contract-standard>=3.1.2,<4.0.0",
   "deepdiff>=6.0.0,<10.0.0",
-  # setuptools provides the distutils shim that soda-core's env_helper.py
-  # imports (`from distutils.util import strtobool`). distutils was removed
-  # from stdlib in Python 3.12 (and stripped from python-build-standalone
-  # 3.11 builds), so without setuptools, soda-core blows up on import.
-  # See soda-core#2091. Was previously pulled in transitively via
-  # grpcio-tools; required explicitly now that we use external protoc.
-  "setuptools>=70",
 ]
 
 [project.optional-dependencies]
@@ -48,7 +41,7 @@ avro = [
 ]
 
 bigquery = [
-  "soda-core-bigquery>=3.3.20,<3.6.0",
+  "ibis-framework[bigquery]>=10.0.0,<13.0.0",
 ]
 
 csv = [
@@ -61,10 +54,12 @@ excel = [
 
 
 databricks = [
-  "soda-core-spark-df>=3.3.20,<3.6.0",
-  "soda-core-spark[databricks]>=3.3.20,<3.6.0",
+  "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.3.0",
   "databricks-sdk<0.112.0",
+  # Not capped to Spark 3.5.x like older builds were: the databricks path uses a
+  # caller-provided Spark session (or the databricks SQL connector) and never
+  # loads the Kafka/Avro connector jars, so it isn't tied to a Scala/Spark line.
   "pyspark>=3.5.0,<5.0.0",
 ]
 
@@ -74,74 +69,85 @@ iceberg = [
 
 kafka = [
   "datacontract-cli[avro]",
-  "soda-core-spark-df>=3.3.20,<3.6.0",
+  "ibis-framework[pyspark]>=10.0.0,<13.0.0",
+  # kafka.py derives the Kafka/Avro connector jar coordinates (Spark version and
+  # Scala binary version) from the installed pyspark at runtime, so both 3.5.x
+  # (Scala 2.12) and 4.x (Scala 2.13) work. ibis-framework[pyspark] currently
+  # caps pyspark to <4.1, so this resolves to the 4.0.x line.
   "pyspark>=3.5.0,<5.0.0",
 ]
 
+# MySQL is tested through DuckDB's `mysql` extension (ATTACH), not ibis's
+# native MySQL backend, which would require `mysqlclient` (a C extension with no
+# macOS/Linux wheels). No Python MySQL driver is needed at runtime; the test
+# fixtures' seed driver (mysql-connector-python) lives in the `dev` extra.
 mysql = [
-  "soda-core-mysql>=3.3.20,<3.6.0",
-  "mysql-connector-python>=8.0.30,<9.7.0",
+  "datacontract-cli[duckdb]",
 ]
 
 postgres = [
-  "soda-core-postgres>=3.3.20,<3.6.0"
+  "ibis-framework[postgres]>=10.0.0,<13.0.0"
 ]
 
 redshift = [
-  "soda-core-redshift>=3.3.20,<3.6.0"
+  # Redshift speaks the postgres wire protocol; ibis has no dedicated backend.
+  "ibis-framework[postgres]>=10.0.0,<13.0.0"
 ]
 
-# DuckDB extension wheels are skipped on Linux/aarch64 — no 1.0.x manylinux2014_aarch64 build exists.
-# ARM Linux users fall back to DuckDB's online auto-install (does not work in air-gapped environments)
+# DuckDB extension wheels are bundled for air-gapped installs. The 1.5.x line
+# publishes wheels for all platforms including manylinux2014_aarch64, so no
+# platform markers are needed.
 s3 = [
   "s3fs>=2025.2.0,<2027.0.0",
-  "aiobotocore>=2.17.0,<3.8.0",
-  'duckdb-extension-httpfs>=1.0.1,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
-  'duckdb-extension-aws>=1.0.3,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
+  "duckdb-extension-httpfs>=1.5.0,<1.6.0",
+  "duckdb-extension-aws>=1.5.0,<1.6.0",
 ]
 
 gcs = [
   "datacontract-cli[duckdb]",
-  'duckdb-extension-httpfs>=1.0.1,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
+  "duckdb-extension-httpfs>=1.5.0,<1.6.0",
 ]
 
 azure = [
   "datacontract-cli[duckdb]",
-  'duckdb-extension-azure>=1.0.3,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
+  "duckdb-extension-azure>=1.5.0,<1.6.0",
 ]
 
 snowflake = [
   "snowflake-connector-python[pandas]>=3.6,<4.6",
-  "soda-core-snowflake>=3.3.20,<3.6.0"
+  "ibis-framework[snowflake]>=10.0.0,<13.0.0"
 ]
 
 sqlserver = [
-  "soda-core-sqlserver>=3.3.20,<3.6.0"
+  "ibis-framework[mssql]>=10.0.0,<13.0.0"
 ]
 
 oracle = [
-  "soda-core-oracle>=3.3.20,<3.6.0"
+  "ibis-framework[oracle]>=10.0.0,<13.0.0"
 ]
 
 athena = [
-  "soda-core-athena>=3.3.20,<3.6.0"
+  "ibis-framework[athena]>=10.0.0,<13.0.0"
 ]
 
 trino = [
-  "soda-core-trino>=3.3.20,<3.6.0"
+  "ibis-framework[trino]>=10.0.0,<13.0.0"
 ]
 
 impala = [
-  "soda-core-impala>=3.3.20,<3.6.0"
+  "ibis-framework[impala]>=10.0.0,<13.0.0"
 ]
 
 dbml = [
   "pydbml>=1.1.1"
 ]
 
+# duckdb must stay in lockstep with the bundled duckdb-extension-* wheels
+# (httpfs/aws/azure) used for air-gapped installs, since those extensions are
+# built per duckdb version. Both are pinned to the 1.5.x line.
 duckdb = [
-  "duckdb>=1.0.0,<1.6.0",
-  "soda-core-duckdb>=3.3.20,<3.6.0",
+  "duckdb>=1.5.0,<1.6.0",
+  "ibis-framework[duckdb]>=10.0.0,<13.0.0",
 ]
 
 parquet = [
@@ -158,9 +164,8 @@ api = [
 ]
 
 protobuf = [
-  # `protoc` (the compiler) must be installed separately on the system; see README.
-  # Wide range: only `descriptor_pb2.FileDescriptorSet` is used, stable since 3.x.
-  "protobuf>=3.20,<8.0",
+  # Pure-Python .proto parser — no `protoc` system binary or C extension needed.
+  "proto-schema-parser>=1.0,<3.0",
 ]
 
 all = [
@@ -179,6 +184,11 @@ dev = [
   "pytest",
   "pytest-xdist",
   "pymssql==2.3.13",
+  # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
+  # test fixtures to load seed SQL (the engine connects via ibis-postgres'
+  # psycopg v3 and DuckDB's mysql extension respectively).
+  "psycopg2-binary>=2.9,<3.0",
+  "mysql-connector-python>=8.0.30,<9.7.0",
   "ruff==0.15.14",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
   "trino==0.337.0",
@@ -196,19 +206,11 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
-# soda-core-mysql exact-pins mysql-connector-python==8.0.30 (from 2022),
-# which doesn't recognize the charset IDs returned by modern MySQL server
-# images (used by our testcontainers-based MySQL tests) and raises
-# "Character set 'utf8' unsupported". Override to allow newer
-# mysql-connector-python releases that know about the current charsets.
-# See: https://github.com/sodadata/soda-core/issues/2515
-#
 # yarl 1.24.0 and 1.24.1 were published to PyPI with cp310-only wheels and no
 # sdist, so `uv sync` fails on Python 3.11/3.12/3.13 ("no wheel for the current
 # platform"). The whole 1.24.x line is affected; pin below it (resolves to the
 # last good 1.23.0) until a 1.24.x with full wheels is available.
 override-dependencies = [
-    "mysql-connector-python>=8.0.30,<9.7.0",
     "yarl<1.24",
 ]
 
