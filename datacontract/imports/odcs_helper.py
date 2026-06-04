@@ -4,7 +4,9 @@ from typing import Any, Dict, List
 
 from open_data_contract_standard.model import (
     CustomProperty,
+    DataQuality,
     OpenDataContractStandard,
+    Role,
     SchemaObject,
     SchemaProperty,
     Server,
@@ -35,6 +37,7 @@ def create_schema_object(
     business_name: str = None,
     properties: List[SchemaProperty] = None,
     tags: List[str] = None,
+    quality: List[DataQuality] = None,
 ) -> SchemaObject:
     """Create a SchemaObject (equivalent to DCS Model)."""
     schema = SchemaObject(
@@ -51,6 +54,8 @@ def create_schema_object(
         schema.properties = properties
     if tags:
         schema.tags = tags
+    if quality:
+        schema.quality = quality
     return schema
 
 
@@ -79,9 +84,11 @@ def create_property(
     properties: List["SchemaProperty"] = None,
     items: "SchemaProperty" = None,
     custom_properties: Dict[str, Any] = None,
+    id: str = None,
+    quality: List[DataQuality] = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field)."""
-    prop = SchemaProperty(name=name)
+    prop = SchemaProperty(name=name, id=id)
     prop.logicalType = logical_type
 
     if physical_type:
@@ -137,6 +144,10 @@ def create_property(
     if custom_properties:
         prop.customProperties = [CustomProperty(property=k, value=v) for k, v in custom_properties.items()]
 
+    # Data quality
+    if quality:
+        prop.quality = quality
+
     return prop
 
 
@@ -156,6 +167,8 @@ def create_server(
     catalog: str = None,
     topic: str = None,
     format: str = None,
+    roles: List[Role] = None,
+    warehouse: str = None,
 ) -> Server:
     """Create a Server object."""
     server = Server(server=name, type=server_type)
@@ -185,6 +198,10 @@ def create_server(
         server.topic = topic
     if format:
         server.format = format
+    if roles:
+        server.roles = roles
+    if warehouse:
+        server.warehouse = warehouse
     return server
 
 
