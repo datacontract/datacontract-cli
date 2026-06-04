@@ -2382,10 +2382,10 @@ models:
 
 - Install [uv](https://docs.astral.sh/uv/)
 - Python base interpreter should be 3.11.x.
+- A JDK (17 or 21) must be installed for the Spark-based tests (e.g. `test_test_kafka.py`, `test_test_delta.py`, `test_test_dataframe.py`, `test_import_spark.py`). Java 25 is not yet supported. Verify with `java --version`.
 - Docker engine must be running to execute the tests.
 
 ```bash
-# make sure uv is installed
 uv python pin 3.11
 uv venv
 uv pip install -e '.[dev]'

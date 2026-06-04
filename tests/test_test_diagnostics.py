@@ -11,7 +11,7 @@ import pandas as pd
 
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
-from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, _run_freshness, _run_type
+from datacontract.engines.ibis.ibis_check_execute import _run_freshness, _run_type, build_check_stubs
 from datacontract.model.run import ResultEnum, Run
 
 

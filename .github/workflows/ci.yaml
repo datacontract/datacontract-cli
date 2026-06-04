@@ -43,6 +43,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Java (required for Spark-based tests)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
       - name: Install system dependencies (msodbcsql18, protoc)
         run: |
           sudo apt-get update
