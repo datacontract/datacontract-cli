@@ -2051,7 +2051,7 @@ Example:
 datacontract import protobuf --source "test.proto"
 ```
 
-#### snowflake
+#### Snowflake
 
 Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
 Multiple authentification are supported, 
