@@ -50,6 +50,32 @@ def spark_connector_packages() -> str:
     )
 
 
+def connector_jars_already_on_classpath() -> bool:
+    """True when the Kafka/Avro Spark connector JARs are already bundled into the
+    PySpark ``jars`` directory (i.e. on the classpath).
+
+    This is what makes an air-gapped runtime possible. ``spark.jars.packages``
+    always hands the coordinates to Ivy, which contacts a Maven resolver on every
+    session start; a warm Ivy cache is not enough, so with no network it fails
+    with ``UNRESOLVED DEPENDENCIES``. When the connectors are pre-fetched onto the
+    classpath at image build time, we can skip ``spark.jars.packages`` entirely
+    and start offline.
+    """
+    import pyspark
+
+    jars_dir = os.path.join(os.path.dirname(pyspark.__file__), "jars")
+    try:
+        names = os.listdir(jars_dir)
+    except OSError:
+        return False
+    # Match by substring so this holds whether the JARs use canonical Maven names
+    # (spark-sql-kafka-0-10_2.13-<v>.jar) or Ivy's org-prefixed retrieve names
+    # (org.apache.spark_spark-sql-kafka-0-10_2.13-<v>.jar).
+    has_kafka = any("spark-sql-kafka-0-10" in n and n.endswith(".jar") for n in names)
+    has_avro = any("spark-avro" in n and n.endswith(".jar") for n in names)
+    return has_kafka and has_avro
+
+
 def create_spark_session():
     """Create and configure a Spark session."""
 
@@ -77,16 +103,23 @@ def create_spark_session():
     os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
     os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
 
-    spark = (
+    builder = (
         SparkSession.builder.appName("datacontract")
         .config("spark.sql.warehouse.dir", f"{tmp_dir.name}/spark-warehouse")
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
         .config("spark.ui.enabled", "false")
         .config("spark.driver.bindAddress", "127.0.0.1")
         .config("spark.driver.host", "127.0.0.1")
-        .config("spark.jars.packages", spark_connector_packages())
-        .getOrCreate()
     )
+
+    # Only resolve the connectors from Maven when they aren't already bundled on
+    # the classpath. The Docker image pre-fetches them at build time, so it can
+    # start offline; pip-installed users without the bundled JARs still get them
+    # downloaded on first use.
+    if not connector_jars_already_on_classpath():
+        builder = builder.config("spark.jars.packages", spark_connector_packages())
+
+    spark = builder.getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
     print(f"Using PySpark version {spark.version}")
     return spark

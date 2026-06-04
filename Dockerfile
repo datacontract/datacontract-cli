@@ -55,6 +55,51 @@ COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
 # those engines fail at SparkSession startup.
 COPY --from=dhi.io/eclipse-temurin:21-debian13 /opt/java/openjdk /opt/java/openjdk
 
+# Air-gap the Kafka/Spark engine: pre-fetch the Spark Kafka + Avro connector JARs
+# at build time and bundle them onto the PySpark classpath. Without this, the
+# first `datacontract test` against a Kafka server resolves `spark.jars.packages`
+# from Maven Central at runtime (~60 MB download, needs outbound network). The
+# JARs are resolved with the exact Spark/Scala version of the bundled PySpark, so
+# they always match the runtime; `connector_jars_already_on_classpath()` then
+# tells the engine to skip the Maven resolve and start offline.
+RUN <<'PY' python3
+import glob
+import os
+import shutil
+
+import pyspark
+from pyspark.sql import SparkSession
+
+from datacontract.engines.ibis.connections.kafka import spark_connector_packages
+
+ivy_home = "/tmp/ivyhome"
+spark = (
+    SparkSession.builder.appName("prefetch-connectors")
+    .config("spark.jars.ivy", ivy_home)
+    .config("spark.driver.bindAddress", "127.0.0.1")
+    .config("spark.driver.host", "127.0.0.1")
+    .config("spark.ui.enabled", "false")
+    .config("spark.jars.packages", spark_connector_packages())
+    .getOrCreate()
+)
+spark.stop()
+
+jars_dir = os.path.join(os.path.dirname(pyspark.__file__), "jars")
+jars = glob.glob(os.path.join(ivy_home, "jars", "*.jar"))
+assert jars, "no connector JARs were resolved"
+for jar in jars:
+    # Ivy retrieves as "<org>_<artifact>-<rev>.jar"; strip the org prefix so the
+    # bundled files use the canonical Maven name, matching the existing PySpark JARs.
+    name = os.path.basename(jar)
+    canonical = name.split("_", 1)[1] if "_" in name else name
+    shutil.copy2(jar, os.path.join(jars_dir, canonical))
+shutil.rmtree(ivy_home, ignore_errors=True)
+print(f"Bundled {len(jars)} connector JARs into {jars_dir}")
+PY
+
+# Keep the venv (incl. the freshly bundled JARs) owned by the nonroot runtime user.
+RUN chown -R 65532:65532 /opt/venv
+
 USER nonroot:nonroot
 WORKDIR /home/datacontract
 

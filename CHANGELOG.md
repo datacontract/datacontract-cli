@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Container image now bundles the Spark Kafka and Avro connector JARs at build time, so `datacontract test` against a Kafka server runs fully offline (air-gapped). Previously the first run resolved `spark.jars.packages` from Maven Central (~60 MB of JARs), which required outbound network and added roughly a minute of startup. A warm Ivy cache is not enough: Spark hands the coordinates to Ivy on every session start, so with no network it fails with `UNRESOLVED DEPENDENCIES`. The JARs are now pre-fetched with the exact Spark/Scala version of the bundled PySpark and placed on the PySpark classpath, and `create_spark_session` skips the Maven resolve when they are already present (`connector_jars_already_on_classpath()`). Pip-installed users without the bundled JARs still download them on first use, so behaviour outside the image is unchanged.
+
 ## [1.0.0] - 2026-06-04
 
 ### Breaking Changes
