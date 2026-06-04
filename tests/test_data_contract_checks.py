@@ -9,7 +9,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.data_contract import DataContract
-from datacontract.engines.data_contract_checks import (
+from datacontract.export.sodacl_check_builder import (
     QuotingConfig,
     _escape_sql_string_values,
     check_property_enum,

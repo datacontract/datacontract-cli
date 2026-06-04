@@ -73,6 +73,13 @@ def test(
             f"(available: {', '.join(c.value for c in CheckCategory)}). Omit to enable all."
         ),
     ] = None,
+    include_failed_samples: Annotated[
+        bool,
+        typer.Option(
+            help="Collect a small sample of rows that failed each missing/invalid/duplicate check "
+            "(identifier + offending columns; sensitive columns omitted). Off by default."
+        ),
+    ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
         bool,
@@ -123,6 +130,7 @@ def test(
         ssl_verification=ssl_verification,
         check_categories=check_categories,
         inline_references=inline_references,
+        include_failed_samples=include_failed_samples,
     ).test()
     if logs:
         _print_logs(run)
