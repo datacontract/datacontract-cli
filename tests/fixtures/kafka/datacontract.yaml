@@ -24,8 +24,6 @@ schema:
       - name: sku
         logicalType: string
     quality:
-      - type: custom
-        engine: soda
-        implementation: |
-          checks for inventory:
-            - row_count >= 10
+      - type: library
+        metric: rowCount
+        mustBeGreaterOrEqualTo: 10

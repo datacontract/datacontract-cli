@@ -1,0 +1,11 @@
+apiVersion: "v3.1.0"
+kind: "DataContract"
+id: "extra-fields-test"
+name: "Contract with extra top-level fields"
+version: "1.0.0"
+status: "draft"
+change_management:
+  process: "GitOps"
+  reviewers:
+    - "alice"
+    - "bob"

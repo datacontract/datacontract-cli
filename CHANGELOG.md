@@ -7,11 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.0.0] - 2026-06-04
+
+### Breaking Changes
+- Replaced the Soda Core quality/test engine with [ibis](https://ibis-project.org/). `datacontract test` now compiles schema and quality checks into ibis expressions (dialect-correct SQL per backend via sqlglot, local/remote files via DuckDB) instead of generating SodaCL. Install extras now pull `ibis-framework[<backend>]` instead of `soda-core-*`. Check semantics and pass/fail results are preserved for the supported sources (postgres, redshift, mysql, snowflake, bigquery, databricks, sqlserver, oracle, trino, athena, impala, kafka/dataframe via the ibis Spark backend, and local/S3/GCS/Azure files).
+- Raw SodaCL custom quality checks (`quality.type: custom` with `engine: soda`) are no longer executed and now report a warning. Migrate them to `quality.type: sql` or a library metric (e.g. `metric: rowCount`).
+
 ### Added
-- new `datacontract dbt sync` command: generate dbt tests from an ODCS contract, then run `dbt test` for them (#1222)
+- Python 3.13 and 3.14 support (`requires-python` now allows 3.10–3.14). On 3.13/3.14 the Spark-backed extras resolve to PySpark 4.0 (Spark 3.5 has no 3.13+ build); the Kafka/Avro connector jars already adapt to the runtime Spark/Scala version. `create_spark_session` now pins `PYSPARK_PYTHON`/`PYSPARK_DRIVER_PYTHON` to the running interpreter so Spark's Python workers match the driver.
+- `datacontract test` against Databricks now supports more authentication methods beyond the personal access token (`DATACONTRACT_DATABRICKS_TOKEN`): an OAuth service principal for machine-to-machine auth (`DATACONTRACT_DATABRICKS_CLIENT_ID` + `DATACONTRACT_DATABRICKS_CLIENT_SECRET`), a local config profile via the Databricks SDK unified auth (`DATACONTRACT_DATABRICKS_PROFILE`, also covers Azure CLI/MSI), and an explicit connector auth type (`DATACONTRACT_DATABRICKS_AUTH_TYPE`, e.g. `databricks-oauth` for the interactive browser flow).
+- `datacontract test` now records structured `diagnostics` on each check explaining why it passed or failed: the metric, measured value, threshold, and (for "bad row" metrics) the total row count and failed fraction. `invalid_count` checks also report the validity rule they enforced (e.g. `{"max_length": 20}`, `{"pattern": "^.+@.+$"}`). The diagnostics surface in the JSON output and the JUnit failure text. This replaces the Soda-specific `diagnostics` payload that the ibis migration had left unpopulated.
+- `datacontract test` now honors ODCS `quality.unit: percent` on the count-of-bad-rows library metrics (`nullValues`, `missingValues`, `invalidValues`). The threshold is then compared against the failed fraction (0–100) of the model row count instead of an absolute count, so e.g. `metric: nullValues`, `unit: percent`, `mustBeLessThan: 5` passes when fewer than 5% of rows are null. Percent on metrics where a row fraction has no meaning (`rowCount`, `duplicateValues`) logs a warning and falls back to the absolute count. The measured `percent` is added to the check diagnostics.
+- `datacontract test` now honors ODCS `quality.severity`: a non-blocking severity (`info`, `warning`, `low`, `minor`, `trivial`) downgrades a failing quality check to a `warning` instead of a `failed`, so it no longer fails the run. Any other severity (or none) still fails. The severity is recorded in the check diagnostics.
+- `datacontract test --include-failed-samples` collects a small sample of the rows that failed each `missing`/`invalid`/`duplicate` check (off by default). Each sample is restricted to the contract's identifier columns (`unique` / `primaryKey` fields) plus the offending column; duplicate checks report the duplicated key values and their counts. Columns whose ODCS `classification` marks them sensitive (`pii`, `personal`, `confidential`, `restricted`, `sensitive`, `secret`) are omitted. Samples are capped at 5 rows per check and surface on `Check.failed_samples` in the JSON output and in the JUnit failure text. This is local-only and needs no Soda Cloud (soda-core itself collects failed-row samples only via Soda Cloud).
 
 ### Changed
-- **breaking:** `export dbt` no longer emits `dbt_expectations` macros for length / regex / numeric-range / row-count bounds; those entries are dropped from the YAML output. `dbt sync` covers the same bounds via portable singular SQL, so the generated dbt project no longer requires `dbt_expectations` in `packages.yml`. `dbt_utils` is still used for composite-primary-key uniqueness only.
+- MySQL is tested through DuckDB's `mysql` extension instead of ibis's native MySQL backend, so the `mysql` extra stays pure-pip (no `mysqlclient` C build / system MySQL client libraries required).
+- Bumped DuckDB to the 1.5.x line (from 1.0.x) with the bundled `duckdb-extension-*` wheels (httpfs/aws/azure) pinned in lockstep. The 1.5.x extension wheels publish arm64 Linux builds, so air-gapped installs on arm64 Linux are now supported (the previous platform skip markers were removed).
+- The Kafka/Avro Spark connector jars are now derived from the installed PySpark at runtime (Spark version + Scala binary version), so both PySpark 3.5.x (Scala 2.12) and 4.x (Scala 2.13) work. The `kafka` and `databricks` extras allow `pyspark<5.0`.
+- `import protobuf` now uses the pure-Python `proto-schema-parser` instead of the `protoc` system binary. The `protobuf` extra no longer requires `protoc` (or the `protobuf` runtime), so `.proto` import works out of the box, including transitive imports across subdirectories.
+- Container image is now based on [Docker Hardened Images](https://hub.docker.com/hardened-images/catalog/dhi/python): signed, ships SBOM/VEX, and has tighter CVE patch SLAs than upstream Debian. Runs as nonroot (uid 65532) instead of root. `pip` / `uv` installs at build time are routed through Socket Firewall Free, which blocks malicious dependencies. (#1275, #1277)
+- Container image now ships Eclipse Temurin JRE 17, so PySpark-backed engines (Kafka, Spark) actually run inside the image — previously they failed at `SparkSession` startup because the base image had no JVM. End users pulling `datacontract/cli` are unaffected by the build-side changes. (#1277)
+
+### Fixed
+- DuckDB S3 secret creation no longer fails (`Secret Validation Failure`) on DuckDB ≥1.5: explicit `KEY_ID`/`SECRET` now use the default `config` provider instead of `CREDENTIAL_CHAIN`.
+- `import csv` no longer fails with a DuckDB binder error on DuckDB ≥1.5 (the uniqueness probe now uses `count(DISTINCT ...)` via SQL).
+
+### Removed
+- The `soda-core` runtime dependency and all `soda-core-*` install extras, plus the `setuptools` runtime shim they required. The `sodacl` export format (`datacontract export sodacl`) is unchanged and is now generated independently of any Soda runtime.
+- The unused `details` field on test-result checks (`Run.checks[].details`). It was a Soda-era placeholder that was never populated; the new structured `diagnostics` field replaces it. The JUnit failure text no longer prints a `Details:` line.
+
+## [0.12.5] - 2026-05-30
+
+### Added
+- Resolve `authoritativeDefinitions[type=definition]` on schema properties, filling fields the contract author left unset (#1261)
+  - **Breaking:** Per default, any resolution failure of `authoritativeDefinitions[type in {definition, semantics}]` now rejects the contract on `lint`, `test`, `ci`, `export`, and `changelog`. (#1261)
+  - Resolve `authoritativeDefinitions[type=semantics]` (and the legacy `type=semantic`) the same way. A `url:` that points at the configured entropy-data host is fetched directly; a `url:` that's an IRI (host doesn't match) is routed through `GET /api/semantics?iri=...` on the configured host, which uses the API key's organization to resolve. (#1262)
+  - `--no-inline-references` flag to skip the HTTP fetch (#1261)
+- When `--json-schema` points at a custom JSON Schema, the ODCS Pydantic step now accepts extra top-level fields the schema allows (#1266)
+
+### Changed
+- JSON Schema validation errors now identify the offending schema and property by name instead of array indices (#1255 @dmaresma)
+- `test`, `lint`, and `ci` now infer `--output-format` from the `--output` file extension when not given (`.json` → json, `.xml` → junit) (#1156 @dallylee)
+
+### Fixed
+- Schema type check no longer fails for `varchar(n)` columns on Databricks with PySpark 4.0+, and for `map` and `varchar` types nested inside `struct` columns; affected columns emit a warning and skip the type check instead (#1219,#1245 @IchEssBlumen)
+- `WARNING`/`ERROR` log messages are no longer hidden by default for `import`, `export`, `changelog`, `catalog`, `dbt`, and `publish` (#1264)
+- `datacontract test` against S3, GCS, and Azure no longer fails with `Failed to download extension` in air-gapped containers. The required DuckDB extensions are now bundled via the `s3`/`gcs`/`azure` install extras (#1191 @ParenParikh)
+- JSON/CSV/Parquet with DuckDB: `field_is_present` check now correctly detects missing columns (#1065,#1163 @hieusats)
+- `import dbt --model <name>.vN` now correctly imports the specified version of a versioned dbt model. Previously the filter compared the full `name.vN` string against `node["name"]` (which is always the bare base name), producing a silent empty contract (#1249 @willbowditch)
+
+## [0.12.4] - 2026-05-21
+
+### Added
+- `datacontract test` now logs the Data Contract CLI version and whether it ran as a local CLI or through the FastAPI server (including the request URL) as part of the test result logs
+
+### Fixed
+- Schema checks now resolve each property by its `physicalName` when set (falling back to `name`), matching the existing table-level resolution and the SQL/BigQuery exporters. Previously a property whose logical `name` differed from its physical column (e.g. `name: brand` with `physicalName: BRAND`) failed the presence and type checks even though the physical column existed (#1246)
+
+## [0.12.3] - 2026-05-18
+
+### Added
+- new `datacontract dbt sync` command: generate dbt tests from an ODCS contract, then run `dbt test` for them, and optionally publish the results to Entropy Data (#1222, #1235)
+- `redshift` server type for `datacontract test` (requires `pip install datacontract-cli[redshift]`). (#1236)
+
+### Fixed
+- SQL type converter: emit canonical `decimal`/`numeric` per dialect (Postgres → `numeric`, MySQL → `decimal`) so `test`'s column-type check matches `information_schema` (#1237)
 
 ## [0.12.2] - 2026-05-05
 

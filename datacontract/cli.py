@@ -2,13 +2,16 @@ import logging
 import os
 import sys
 from importlib import metadata
-from typing import Iterable
+from pathlib import Path
+from typing import Iterable, Optional
 
 import typer
 from click import Context
 from rich.console import Console
 from typer.core import TyperGroup
 from typing_extensions import Annotated
+
+from datacontract.output.output_format import OutputFormat
 
 console = Console()
 
@@ -55,14 +58,17 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
     }
 
     def parse_args(self, ctx: Context, args):
-        # First positional argument
-        subcommand = next((a for a in args if isinstance(a, str) and not a.startswith("-")), None)
+        positionals = [a for a in args if isinstance(a, str) and not a.startswith("-")]
+        subcommand = positionals[0] if positionals else None
+
+        # this function is called by both `datacontract` and `datacontract import`
+        is_import_snowflake = (positionals[:1] == ["snowflake"]) or (positionals[:2] == ["import", "snowflake"])
 
         rewritten_args = []
         for arg in args:
             if isinstance(arg, str) and arg.startswith("--"):
                 flag, _, value = arg.partition("=")
-                if flag == "--schema":
+                if flag == "--schema" and not is_import_snowflake:
                     typer.secho(
                         "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
                         err=True,
@@ -122,11 +128,44 @@ def common(
     pass
 
 
-def enable_debug_logging(debug: bool):
-    if debug:
-        logging.basicConfig(
-            level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", stream=sys.stderr
-        )
+def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
+    if not debug and otherwise_disable_stderr:
+        # some commands render run.logs to the console themselves; a NullHandler keeps
+        # the mirrored stdlib WARNING/ERROR (Run.log_*) off stderr so it isn't shown twice.
+        logging.basicConfig(handlers=[logging.NullHandler()], force=True)
+        return
+
+    logging.basicConfig(
+        level=logging.DEBUG if debug else logging.WARNING,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stderr,
+        force=True,
+    )
+
+    if not debug:
+        # Keep noisy third-party loggers quiet
+        for noisy_logger in ("snowflake.connector", "py4j", "pyspark", "urllib3", "ibis"):
+            logging.getLogger(noisy_logger).setLevel(logging.ERROR)
+
+
+def validate_publish_url(publish: str | None) -> None:
+    """Reject `--publish` values that aren't http/https before any real work runs."""
+    if publish is not None and not (publish.startswith("http://") or publish.startswith("https://")):
+        console.print(f"[red]--publish URL must start with http:// or https:// (got: {publish!r}).[/red]")
+        raise typer.Exit(code=1)
+
+
+def resolve_output_format(output_format: Optional[OutputFormat], output: Optional[Path]) -> Optional[OutputFormat]:
+    if output_format is not None or output is None:
+        return output_format
+
+    inferred = OutputFormat.infer_from_output_path(output)
+    if inferred is None:
+        detail = f" from extension '{output.suffix}'" if output.suffix else ""
+        console.print(f"Error: Cannot infer output format{detail}. Please specify --output-format (json or junit).")
+        raise typer.Exit(code=1)
+
+    return inferred
 
 
 def _print_logs(run, out=None):
