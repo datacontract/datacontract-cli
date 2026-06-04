@@ -115,15 +115,17 @@ def to_class_name(check):
 
 
 def to_failure_text(check):
-    return (
+    text = (
         f"Name: {check.name}\n"
         f"Engine: {check.engine}\n"
         f"Implementation:\n{check.implementation}\n\n"
         f"Result: {check.result.value if check.result is not None else ''}\n"
         f"Reason: {check.reason}\n"
-        f"Details: {check.details}\n"
         f"Diagnostics:\n{yaml.dump(check.diagnostics, default_flow_style=False)}"
     )
+    if check.failed_samples:
+        text += f"Failed samples:\n{yaml.dump(check.failed_samples, default_flow_style=False)}"
+    return text
 
 
 def count_errors(run):

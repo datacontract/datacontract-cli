@@ -17,12 +17,6 @@ ENV PYTHONUNBUFFERED=1 \
 # install uv (build-time only)
 COPY --from=ghcr.io/astral-sh/uv:0.11.15 /uv /uvx /bin/
 
-# protoc is required by `datacontract import protobuf` — install here and copy
-# the binary + its shared libs into the runtime below
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
-
 # create the venv that we'll copy into the runtime image
 RUN python3 -m venv "$VIRTUAL_ENV"
 
@@ -55,11 +49,6 @@ ENV PYTHONUNBUFFERED=1 \
 
 # copy the pre-built venv (readable+executable by the nonroot user)
 COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
-
-# copy protoc + its shared libs from the builder. The library glob handles
-# both linux/amd64 and linux/arm64 (Debian multi-arch lib paths).
-COPY --from=builder /usr/bin/protoc /usr/bin/protoc
-COPY --from=builder /usr/lib/*-linux-gnu/libproto*.so* /usr/lib/
 
 # Eclipse Temurin JRE 17 — required by PySpark-backed engines (Kafka, Spark).
 # Without Java, those engines fail at SparkSession startup. Adding the JRE here

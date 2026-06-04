@@ -38,6 +38,7 @@ class DataContract:
         all_errors: bool = False,
         check_categories: set[str] | None = None,
         fastapi_url: str = None,
+        include_failed_samples: bool = False,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -54,6 +55,7 @@ class DataContract:
         self._all_errors = all_errors
         self._check_categories = check_categories
         self._fastapi_url = fastapi_url
+        self._include_failed_samples = include_failed_samples
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -92,14 +94,11 @@ class DataContract:
                         name=error.name,
                         reason=error.reason,
                         engine=error.engine,
-                        details="",
                     )
                 )
                 run.log_error(str(error))
         except DataContractException as e:
-            run.checks.append(
-                Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
-            )
+            run.checks.append(Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine))
             run.log_error(str(e))
         except Exception as e:
             run.checks.append(
@@ -147,6 +146,7 @@ class DataContract:
                 self._duckdb_connection,
                 schema_name=self._schema_name,
                 check_categories=self._check_categories,
+                include_failed_samples=self._include_failed_samples,
             )
 
         except DataContractException as e:
@@ -158,7 +158,6 @@ class DataContract:
                     reason=e.reason,
                     model=e.model,
                     engine=e.engine,
-                    details="",
                 )
             )
             run.log_error(str(e))

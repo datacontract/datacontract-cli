@@ -251,10 +251,12 @@ def setup_s3_connection(con, server: Server):
 
     if s3_access_key_id is not None:
         if s3_session_token is not None:
+            # No PROVIDER: defaults to `config`, which accepts the explicit
+            # KEY_ID/SECRET below. (duckdb >=1.5 rejects CREDENTIAL_CHAIN
+            # combined with explicit credentials.)
             con.sql(f"""
                 CREATE OR REPLACE SECRET s3_secret (
                     TYPE S3,
-                    PROVIDER CREDENTIAL_CHAIN,
                     REGION '{s3_region}',
                     KEY_ID '{s3_access_key_id}',
                     SECRET '{s3_secret_access_key}',
@@ -268,7 +270,6 @@ def setup_s3_connection(con, server: Server):
             con.sql(f"""
                 CREATE OR REPLACE SECRET s3_secret (
                     TYPE S3,
-                    PROVIDER CREDENTIAL_CHAIN,
                     REGION '{s3_region}',
                     KEY_ID '{s3_access_key_id}',
                     SECRET '{s3_secret_access_key}',

@@ -1,3 +1,12 @@
+"""Self-contained SodaCL check generator for the ``sodacl`` export format.
+
+This module builds SodaCL YAML from an ODCS data contract. It is used **only**
+by :class:`datacontract.export.sodacl_exporter.SodaExporter` and is fully
+decoupled from the test/execution path (which uses the ibis engine and the
+engine-neutral check IR in ``datacontract/engines/checks``). It depends only on
+PyYAML and the ODCS model — it does not import or require ``soda-core``.
+"""
+
 import logging
 import re
 import uuid
