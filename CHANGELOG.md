@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Raw SodaCL custom quality checks (`quality.type: custom` with `engine: soda`) are no longer executed and now report a warning. Migrate them to `quality.type: sql` or a library metric (e.g. `metric: rowCount`).
 
 ### Added
-- Python 3.13 support (`requires-python` now allows 3.10–3.13). On 3.13 the Spark-backed extras resolve to PySpark 4.0 (Spark 3.5 has no 3.13 build); the Kafka/Avro connector jars already adapt to the runtime Spark/Scala version. `create_spark_session` now pins `PYSPARK_PYTHON`/`PYSPARK_DRIVER_PYTHON` to the running interpreter so Spark's Python workers match the driver.
+- Python 3.13 and 3.14 support (`requires-python` now allows 3.10–3.14). On 3.13/3.14 the Spark-backed extras resolve to PySpark 4.0 (Spark 3.5 has no 3.13+ build); the Kafka/Avro connector jars already adapt to the runtime Spark/Scala version. `create_spark_session` now pins `PYSPARK_PYTHON`/`PYSPARK_DRIVER_PYTHON` to the running interpreter so Spark's Python workers match the driver.
 - `datacontract test` against Databricks now supports more authentication methods beyond the personal access token (`DATACONTRACT_DATABRICKS_TOKEN`): an OAuth service principal for machine-to-machine auth (`DATACONTRACT_DATABRICKS_CLIENT_ID` + `DATACONTRACT_DATABRICKS_CLIENT_SECRET`), a local config profile via the Databricks SDK unified auth (`DATACONTRACT_DATABRICKS_PROFILE`, also covers Azure CLI/MSI), and an explicit connector auth type (`DATACONTRACT_DATABRICKS_AUTH_TYPE`, e.g. `databricks-oauth` for the interactive browser flow).
 
 ### Changed
