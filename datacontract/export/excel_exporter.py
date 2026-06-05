@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 ODCS_EXCEL_TEMPLATE_URL = (
     "https://github.com/datacontract/open-data-contract-standard-excel-template/raw/refs/heads/main/odcs-template.xlsx"
 )
+CUSTOM_PROPS_START_COL = 39
 
 
 class ExcelExporter(Exporter):
@@ -53,13 +54,18 @@ class ExcelExporter(Exporter):
         return export_to_excel_bytes(odcs, template)
 
 
-def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optional[str] = None) -> bytes:
+def export_to_excel_bytes(
+    odcs: OpenDataContractStandard,
+    template_path: Optional[str] = None,
+    custom_props_start_col: Optional[int] = CUSTOM_PROPS_START_COL,
+) -> bytes:
     """
     Export ODCS to Excel format using the official template and return as bytes
 
     Args:
         odcs: OpenDataContractStandard object to export
         template_path: Optional path/URL to custom Excel template. If None, uses default template.
+        custom_props_start_col: Column index where custom properties start (1-based)
 
     Returns:
         Excel file as bytes
@@ -71,7 +77,7 @@ def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optiona
 
     try:
         fill_fundamentals(workbook, odcs)
-        fill_schema(workbook, odcs)
+        fill_schema(workbook, odcs, custom_props_start_col)
         fill_quality(workbook, odcs)
         fill_custom_properties(workbook, odcs)
         fill_support(workbook, odcs)
@@ -168,7 +174,7 @@ def fill_pricing(workbook: Workbook, odcs: OpenDataContractStandard):
         set_cell_value_by_name(workbook, "price.priceUnit", odcs.price.priceUnit)
 
 
-def fill_schema(workbook: Workbook, odcs: OpenDataContractStandard):
+def fill_schema(workbook: Workbook, odcs: OpenDataContractStandard, custom_props_start_col: Optional[int]):
     """Fill schema information by cloning template sheets"""
     # Get template sheet "Schema <table_name>"
     schema_template_sheet = workbook["Schema <table_name>"]
@@ -201,7 +207,7 @@ def fill_schema(workbook: Workbook, odcs: OpenDataContractStandard):
             # Note: copy_worksheet should have copied the named ranges already
 
             # Fill in schema information
-            fill_single_schema(new_sheet, schema)
+            fill_single_schema(new_sheet, schema, custom_props_start_col)
     else:
         # Remove the template sheet even if no schemas
         workbook.remove(schema_template_sheet)
@@ -232,7 +238,7 @@ def copy_sheet_names(workbook: Workbook, template_sheet: Worksheet, new_sheet: W
         logger.warning(f"Error copying sheet names: {e}")
 
 
-def fill_single_schema(sheet: Worksheet, schema: SchemaObject):
+def fill_single_schema(sheet: Worksheet, schema: SchemaObject, custom_props_start_col: int):
     """Fill a single schema sheet with schema information using named ranges"""
     # Use worksheet-scoped named ranges that were copied from the template
     set_cell_value_by_name_in_sheet(sheet, "schema.name", schema.name)
@@ -250,10 +256,12 @@ def fill_single_schema(sheet: Worksheet, schema: SchemaObject):
 
     # Fill properties using the template's properties table structure
     if schema.properties:
-        fill_properties_in_schema_sheet(sheet, schema.properties)
+        fill_properties_in_schema_sheet(sheet, schema.properties, custom_props_start_col=custom_props_start_col)
 
 
-def fill_properties_in_schema_sheet(sheet: Worksheet, properties: List[SchemaProperty], prefix: str = ""):
+def fill_properties_in_schema_sheet(
+    sheet: Worksheet, properties: List[SchemaProperty], prefix: str = "", custom_props_start_col: int = 39
+):
     """Fill properties in the schema sheet using the template's existing properties table"""
     try:
         # The template already has a properties table starting at row 13 with headers
@@ -263,6 +271,36 @@ def fill_properties_in_schema_sheet(sheet: Worksheet, properties: List[SchemaPro
 
         # Reverse the headers dict to map header_name -> column_index
         header_map = {header_name.lower(): col_idx for col_idx, header_name in headers.items()}
+
+        def _collect_custom_property_names(props: List[SchemaProperty]) -> list:
+            """Recursively collect unique customProperties.property names, preserving insertion order."""
+            seen: dict = {}
+
+            def _recurse(prop_list):
+                for prop in prop_list:
+                    if prop.customProperties:
+                        for cp in prop.customProperties:
+                            if cp.property and cp.property not in seen:
+                                seen[cp.property] = None
+                    if prop.properties:
+                        _recurse(prop.properties)
+                    if prop.items:
+                        _recurse([prop.items])
+
+            _recurse(props)
+            return list(seen.keys())
+
+        def _register_custom_property_columns(props: List[SchemaProperty]):
+            """Write custom property names as extra column headers starting at column AM (index 39)
+            and register them in header_map so fill_single_property_template can populate values."""
+
+            for offset, name in enumerate(_collect_custom_property_names(props)):
+                col_1based = custom_props_start_col + offset
+                sheet.cell(row=header_row_index, column=col_1based).value = name
+                # header_map uses 0-based indices (col_idx + 1 in set_by_header)
+                header_map[name.lower()] = col_1based - 1
+
+        _register_custom_property_columns(properties)
 
         # Fill properties starting after header row
         row_index = header_row_index + 1
@@ -314,6 +352,11 @@ def fill_single_property_template(
     if property.authoritativeDefinitions and len(property.authoritativeDefinitions) > 0:
         set_by_header("Authoritative Definition URL", property.authoritativeDefinitions[0].url)
         set_by_header("Authoritative Definition Type", property.authoritativeDefinitions[0].type)
+
+    # customProperties Pivot extra columns
+    if property.customProperties:
+        for custom_prop in property.customProperties:
+            set_by_header(f"{custom_prop.property}", custom_prop.value)
 
     next_row_index = row_index + 1
 
