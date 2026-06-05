@@ -1,6 +1,6 @@
 import yaml
 
-from datacontract.engines.data_contract_checks import _retention_value_to_seconds
+from datacontract.export.sodacl_check_builder import _retention_value_to_seconds
 from datacontract.export.sodacl_exporter import SodaExporter
 from datacontract.lint.resolve import resolve_data_contract_from_location
 

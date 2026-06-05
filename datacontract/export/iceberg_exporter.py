@@ -19,7 +19,7 @@ class IcebergExporter(Exporter):
         server,
         sql_server_type,
         export_args,
-    ):
+    ) -> str:
         """
         Export the given data contract to an Iceberg schema.
 

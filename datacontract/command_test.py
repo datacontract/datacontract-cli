@@ -4,7 +4,15 @@ from pathlib import Path
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import _print_logs, app, console, debug_option, enable_debug_logging
+from datacontract.cli import (
+    _print_logs,
+    app,
+    console,
+    debug_option,
+    enable_debug_logging,
+    resolve_output_format,
+    validate_publish_url,
+)
 from datacontract.data_contract import DataContract
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.output.output_format import OutputFormat
@@ -54,7 +62,10 @@ def test(
             help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml')."
         ),
     ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+    ] = None,
     checks: Annotated[
         str,
         typer.Option(
@@ -62,17 +73,32 @@ def test(
             f"(available: {', '.join(c.value for c in CheckCategory)}). Omit to enable all."
         ),
     ] = None,
+    include_failed_samples: Annotated[
+        bool,
+        typer.Option(
+            help="Collect a small sample of rows that failed each missing/invalid/duplicate check "
+            "(identifier + offending columns; sensitive columns omitted). Off by default."
+        ),
+    ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     ssl_verification: Annotated[
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
+    ] = True,
+    inline_references: Annotated[
+        bool,
+        typer.Option(
+            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
+            "contract and inline the fetched content from the configured entropy-data host."
+        ),
     ] = True,
     debug: debug_option = None,
 ):
     """
     Run schema and quality tests on configured servers.
     """
-    enable_debug_logging(debug)
+    enable_debug_logging(debug, otherwise_disable_stderr=True)
+    validate_publish_url(publish)
 
     check_categories = None
     if checks is not None:
@@ -89,6 +115,8 @@ def test(
             console.print(f"Available categories: {', '.join(c.value for c in CheckCategory)}")
             raise typer.Exit(code=1)
 
+    output_format = resolve_output_format(output_format, output)
+
     console.print(f"Testing {location}")
     if server == "all":
         server = None
@@ -101,6 +129,8 @@ def test(
         schema_name=schema_name,
         ssl_verification=ssl_verification,
         check_categories=check_categories,
+        inline_references=inline_references,
+        include_failed_samples=include_failed_samples,
     ).test()
     if logs:
         _print_logs(run)

@@ -3,7 +3,7 @@ from pathlib import Path
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import app, console, debug_option, enable_debug_logging
+from datacontract.cli import app, console, debug_option, enable_debug_logging, resolve_output_format
 from datacontract.data_contract import DataContract
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
@@ -28,7 +28,10 @@ def lint(
             help="Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml'). If no path is provided, the output will be printed to stdout."
         ),
     ] = None,
-    output_format: Annotated[OutputFormat, typer.Option(help="The target format for the test results.")] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+    ] = None,
     all_errors: Annotated[
         bool,
         typer.Option(
@@ -36,12 +39,25 @@ def lint(
             help="Report all JSON Schema validation errors instead of stopping after the first one.",
         ),
     ] = False,
+    inline_references: Annotated[
+        bool,
+        typer.Option(
+            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
+            "contract and inline the fetched content from the configured entropy-data host."
+        ),
+    ] = True,
     debug: debug_option = None,
 ):
     """
     Validate that the datacontract.yaml is correctly formatted.
     """
-    enable_debug_logging(debug)
+    enable_debug_logging(debug, otherwise_disable_stderr=True)
 
-    run = DataContract(data_contract_file=location, schema_location=schema, all_errors=all_errors).lint()
+    output_format = resolve_output_format(output_format, output)
+    run = DataContract(
+        data_contract_file=location,
+        schema_location=schema,
+        all_errors=all_errors,
+        inline_references=inline_references,
+    ).lint()
     write_test_result(run, console, output_format, output)
