@@ -10,6 +10,8 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.model.server import to_odcs_server_type
+
 
 def create_odcs(
     id: str = None,
@@ -157,8 +159,16 @@ def create_server(
     topic: str = None,
     format: str = None,
 ) -> Server:
-    """Create a Server object."""
-    server = Server(server=name, type=server_type)
+    """Create a Server object.
+
+    Server types outside the ODCS enum (e.g. ``dataframe``) are written in a
+    standard-compliant way as ``type: custom`` with the real type carried in a
+    ``customType`` custom property.
+    """
+    odcs_type, custom_properties = to_odcs_server_type(server_type)
+    server = Server(server=name, type=odcs_type)
+    if custom_properties:
+        server.customProperties = custom_properties
     if environment:
         server.environment = environment
     if host:
