@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - new `file store test on azure blob storage to employ data contract as storage policy` ([#1227](https://github.com/datacontract/datacontract-cli/issues/1227))
+- improvement `export excel schema's properties add customProperties` Pivot property as column header and value as cell's value
 
 ## [1.0.0] - 2026-06-04
 
