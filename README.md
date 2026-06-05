@@ -891,7 +891,7 @@ models:
 ```
 
 ##### Environment Variables
-All [parameters supported by Soda](https://docs.soda.io/soda/connect-snowflake.html), uppercased and prepended by `DATACONTRACT_SNOWFLAKE_` prefix.
+Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver.
 Depending on the `authenticator` mode required by your Snowflake workspace, please set your environment variables accordingly.
 For example:
 
@@ -1824,6 +1824,7 @@ Usage: datacontract import [OPTIONS] COMMAND [ARGS]...
 │ spark       Import a data contract from a Spark schema.                                          │
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
+│ powerbi     Import a data contract from an PowerBI template file.                                │
 │ snowflake   Import a data contract from an Snowflake account                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
@@ -2065,6 +2066,21 @@ Example:
 datacontract import --format snowflake --source account.canada-central.azure --database databaseName --schema schemaName
 ```
 
+<details markdown="1">
+<summary><strong>snowflake</strong></summary>
+
+Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
+Multiple authentification are supported, 
+login/password using the `DATACONTRACT_SNOWFLAKE_ ...` test environement variable are setup,
+MFA using external browser is selected when `DATACONTRACT_SNOWFLAKE_PASSWORD` is missing
+TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CONNECTION_NAME` environment variable is defined
+
+Example:
+
+```bash
+datacontract import snowflake --source account.canada-central.azure --database databaseName --schema schemaName
+```
+</details>
 
 ### catalog
 ```
