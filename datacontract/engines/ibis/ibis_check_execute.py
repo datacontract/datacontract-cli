@@ -22,6 +22,7 @@ from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_category
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,24 @@ def execute_ibis_checks(
         con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name)
     except DataContractException:
         raise
+    except ImportError:
+        server_type = get_server_type(server)
+        reason = (
+            f"The '{server_type}' backend is not installed. "
+            f"Install it with: pip install 'datacontract-cli[{server_type}]'"
+        )
+        logger.exception("ibis backend import failed")
+        run.log_error(reason)
+        run.checks.append(
+            Check(
+                type="general",
+                name="Data Contract Tests",
+                result=ResultEnum.failed,
+                reason=reason,
+                engine="ibis",
+            )
+        )
+        return
     except Exception as e:
         reason = _first_line(str(e)) or "Engine ibis could not connect to the data source."
         logger.exception("ibis connection failed")
