@@ -7,8 +7,11 @@ from datacontract.data_contract import DataContract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
-datacontract = "fixtures/sqlserver/datacontract.yaml"
-sql_file_path = "fixtures/sqlserver/data/data.sql"
+# Absolute paths so the module-scoped container fixture (which runs before the
+# function-scoped change_test_dir chdir) can find the fixtures from any cwd.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+datacontract = os.path.join(_HERE, "fixtures/sqlserver/datacontract.yaml")
+sql_file_path = os.path.join(_HERE, "fixtures/sqlserver/data/data.sql")
 
 sql_server = SqlServerContainer()
 SQL_SERVER_PORT: int = 1433
