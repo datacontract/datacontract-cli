@@ -445,7 +445,9 @@ def import_powerbi(
 ):
     """Import a data contract from a Power BI .pbit file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="powerbi-semantic-model", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        format="powerbi-semantic-model", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 

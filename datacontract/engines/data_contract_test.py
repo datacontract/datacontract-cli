@@ -12,7 +12,6 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
-from datacontract.engines.datacontract.check_azure_blob_file import check_azure_blob_file
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
 )
