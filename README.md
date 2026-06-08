@@ -1873,7 +1873,7 @@ Usage: datacontract import [OPTIONS] COMMAND [ARGS]...
 │ spark       Import a data contract from a Spark schema.                                          │
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
-│ powerbi     Import a data contract from an PowerBI template file.                                │
+│ powerbi-semantic-model     Import a data contract from an Power BI template file .pbit or .bism. │
 │ snowflake   Import a data contract from an Snowflake account                                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     

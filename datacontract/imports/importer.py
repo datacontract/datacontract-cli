@@ -38,7 +38,7 @@ class ImportFormat(str, Enum):
     csv = "csv"
     protobuf = "protobuf"
     excel = "excel"
-    powerbi = "powerbi"
+    powerbi = "powerbi-semantic-model"
     snowflake = "snowflake"
 
     @classmethod

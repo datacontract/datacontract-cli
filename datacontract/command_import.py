@@ -432,8 +432,8 @@ def import_excel(
 
 
 @import_app.command(
-    name="powerbi",
-    epilog="Example: datacontract import powerbi --source datacontract.pbit --output datacontract.yaml",
+    name="powerbi-semantic-model",
+    epilog="Example: datacontract import powerbi-semantic-model --source datacontract.pbit --output datacontract.yaml",
 )
 def import_powerbi(
     source: Annotated[Optional[str], typer.Option(help="Path to the Power BI .pbit file.")] = None,
@@ -445,7 +445,7 @@ def import_powerbi(
 ):
     """Import a data contract from a Power BI .pbit file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="powerbi", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(format="powerbi-semantic-model", source=source, schema=schema, owner=owner, id=id)
     _write_result(result, output)
 
 
