@@ -114,7 +114,7 @@ azure = [
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.6",
+  "snowflake-connector-python[pandas]>=3.6,<4.7",
   "ibis-framework[snowflake]>=10.0.0,<13.0.0"
 ]
 
