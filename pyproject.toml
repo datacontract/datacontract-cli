@@ -56,7 +56,7 @@ excel = [
 databricks = [
   "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.3.0",
-  "databricks-sdk<0.112.0",
+  "databricks-sdk<0.116.0",
   # Not capped to Spark 3.5.x like older builds were: the databricks path uses a
   # caller-provided Spark session (or the databricks SQL connector) and never
   # loads the Kafka/Avro connector jars, so it isn't tied to a Scala/Spark line.
@@ -116,7 +116,7 @@ azure = [
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.6",
+  "snowflake-connector-python[pandas]>=3.6,<4.7",
   "ibis-framework[snowflake]>=10.0.0,<13.0.0"
 ]
 
@@ -162,7 +162,7 @@ rdf = [
 
 api = [
   "fastapi>=0.115.0,<0.137.0",
-  "uvicorn>=0.44.0,<0.49.0",
+  "uvicorn>=0.44.0,<0.50.0",
 ]
 
 protobuf = [
@@ -180,7 +180,7 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.2.1",
+  "moto==5.2.2",
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
   "pytest",
@@ -191,7 +191,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<9.7.0",
-  "ruff==0.15.14",
+  "ruff==0.15.16",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
   "trino==0.337.0",
 ]

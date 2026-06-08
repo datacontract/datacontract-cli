@@ -19,6 +19,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, Server
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException, require_env
 from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.server import get_server_type
 
 if typing.TYPE_CHECKING:
     import ibis
@@ -56,7 +57,7 @@ def connect_ibis(
     appended to ``run`` (mirroring the previous soda behaviour).
     """
     ibis = _import_ibis()
-    server_type = server.type
+    server_type = get_server_type(server)
 
     if server_type in _FILE_SERVER_TYPES:
         if server.format not in _SUPPORTED_FILE_FORMATS:
