@@ -6,7 +6,10 @@ name: My Data Contract
 status: draft
 servers:
 - server: local
-  type: dataframe
+  type: custom
+  customProperties:
+  - property: customType
+    value: dataframe
 schema:
 - name: users
   physicalType: table
