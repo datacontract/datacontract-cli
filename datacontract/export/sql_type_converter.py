@@ -207,6 +207,8 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
         return convert_type_to_trino(field)
     elif server_type == "oracle":
         return convert_type_to_oracle(field)
+    elif server_type == "clickhouse":
+        return convert_type_to_clickhouse(field)
     # Fallback: return the raw type string (preserves original behavior for unknown/None server_type)
     return _get_type(field)
 
@@ -880,3 +882,100 @@ def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
     }
 
     return mapping.get(logical_type)
+
+
+def convert_type_to_clickhouse(field: Union[SchemaProperty, FieldLike]) -> None | str:
+    """Convert a data contract field to the corresponding ClickHouse SQL type.
+
+    Reference: https://clickhouse.com/docs/en/sql-reference/data-types
+
+    Supports explicit override via custom property ``clickhouseType``.
+    Complex types are expanded recursively:
+        - ``array`` → ``Array(T)``
+        - ``object``, ``record``, ``struct`` with known fields → ``Tuple(name1 Type1, ...)``
+        - ``map`` → ``Map(KeyType, ValueType)`` (uses config keys ``mapKeys``/``mapValues``,
+          defaults to ``String, String``)
+    """
+    clickhouse_type = _get_config_value(field, "clickhouseType")
+    if clickhouse_type:
+        return clickhouse_type
+
+    base_type = _get_base_type(field)
+    if base_type is None:
+        return None
+
+    # String-like
+    if base_type in ["string", "varchar", "text", "nvarchar"]:
+        if _get_format(field) == "uuid":
+            return "UUID"
+        return "String"
+
+    # Numeric
+    if base_type in ["number", "decimal", "numeric"]:
+        precision = _get_precision(field)
+        scale = _get_scale(field)
+        if precision is not None and scale is not None:
+            return f"Decimal({precision},{scale})"
+        if precision is not None:
+            return f"Decimal({precision},0)"
+        return "Decimal(38,0)"
+
+    if base_type == "float":
+        return "Float32"
+    if base_type == "double":
+        return "Float64"
+
+    # Integer types
+    if base_type in ["integer", "int"]:
+        return "Int32"
+    if base_type in ["long", "bigint"]:
+        return "Int64"
+    if base_type == "tinyint":
+        return "Int8"
+    if base_type == "smallint":
+        return "Int16"
+
+    # Boolean
+    if base_type == "boolean":
+        return "Bool"
+
+    # Temporal
+    if base_type in ["timestamp", "timestamp_tz", "timestamp_ntz"]:
+        return "DateTime64(3)"
+    if base_type == "date":
+        return "Date"
+    if base_type == "time":
+        return "String"
+
+    # Binary / bytes
+    if base_type in ["bytes", "binary"]:
+        params = _get_params(field)
+        if params:
+            return f"FixedString({params})"
+        return "String"
+
+    # Complex types
+    if base_type in ["object", "record", "struct"]:
+        nested_fields = []
+        for nested_field_name, nested_field in _get_nested_fields(field).items():
+            nested_field_type = convert_type_to_clickhouse(nested_field)
+            nested_fields.append(f"{nested_field_name} {nested_field_type}")
+        return f"Tuple({', '.join(nested_fields)})"
+
+    if base_type == "map":
+        keys = _get_config_value(field, "mapKeys")
+        values = _get_config_value(field, "mapValues")
+        key_type = keys if keys else "String"
+        value_type = values if values else "String"
+        return f"Map({key_type}, {value_type})"
+
+    if base_type == "array":
+        items = _get_items(field)
+        if items:
+            item_type = convert_type_to_clickhouse(items)
+            return f"Array({item_type})"
+        return "Array(String)"
+
+    if _get_params(field):
+        return _get_type(field)
+    return _warn_cannot_map_type(field, "clickhouse")

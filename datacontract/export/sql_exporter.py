@@ -3,6 +3,8 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
 
+CLICKHOUSE_ENGINE_DEFAULT = "MergeTree()"
+
 
 class SqlExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
@@ -10,7 +12,13 @@ class SqlExporter(Exporter):
             data_contract,
             sql_server_type,
         )
-        return to_sql_ddl(data_contract, server_type, export_args.get("server"))
+        return to_sql_ddl(
+            data_contract,
+            server_type,
+            server=export_args.get("server"),
+            clickhouse_engine=export_args.get("clickhouse_engine"),
+            clickhouse_order_by=export_args.get("clickhouse_order_by"),
+        )
 
 
 class SqlQueryExporter(Exporter):
@@ -61,7 +69,13 @@ def _to_sql_query(model_name: str, model_value: SchemaObject, server_type: str) 
     return result
 
 
-def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snowflake", server: str = None) -> str:
+def to_sql_ddl(
+    data_contract: OpenDataContractStandard,
+    server_type: str = "snowflake",
+    server: str = None,
+    clickhouse_engine: str | None = None,
+    clickhouse_order_by: str | None = None,
+) -> str:
     if data_contract is None:
         return ""
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -90,6 +104,9 @@ def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snow
             if srv.catalog is not None and srv.schema_ is not None:
                 table_prefix = srv.catalog + "." + srv.schema_ + "."
             break
+        if srv.type == "clickhouse":
+            server_type = "clickhouse"
+            break
         if srv.type == server_type:
             break
 
@@ -98,12 +115,24 @@ def to_sql_ddl(data_contract: OpenDataContractStandard, server_type: str = "snow
     result += f"-- SQL Dialect: {server_type}\n"
 
     for schema_obj in data_contract.schema_:
-        result += _to_sql_table(table_prefix + schema_obj.name, schema_obj, server_type)
+        result += _to_sql_table(
+            table_prefix + schema_obj.name,
+            schema_obj,
+            server_type,
+            clickhouse_engine=clickhouse_engine,
+            clickhouse_order_by=clickhouse_order_by,
+        )
 
     return result.strip()
 
 
-def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snowflake") -> str:
+def _to_sql_table(
+    model_name: str,
+    model: SchemaObject,
+    server_type: str = "snowflake",
+    clickhouse_engine: str | None = None,
+    clickhouse_order_by: str | None = None,
+) -> str:
     if server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
@@ -131,6 +160,8 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
             result += f' COMMENT "{_escape(prop.description)}"'
         if server_type == "snowflake" and prop.description is not None:
             result += f" COMMENT '{_escape(prop.description)}'"
+        if server_type == "clickhouse" and prop.description is not None:
+            result += f" COMMENT '{_escape(prop.description)}'"
         if current_line < total_lines:
             result += ","
         result += "\n"
@@ -145,12 +176,28 @@ def _to_sql_table(model_name: str, model: SchemaObject, server_type: str = "snow
         result += f"  CONSTRAINT pk_{constraint_name} PRIMARY KEY ({pk_columns})\n"
 
     result += ")"
-    if server_type == "databricks" and model.description is not None:
+    if server_type == "clickhouse":
+        engine = clickhouse_engine or CLICKHOUSE_ENGINE_DEFAULT
+        result += f"\nENGINE = {engine}"
+        order_by = clickhouse_order_by or _get_clickhouse_order_by(pk_props)
+        if order_by:
+            result += f"\nORDER BY ({order_by})"
+        if model.description is not None:
+            result += f"\nCOMMENT '{_escape(model.description)}'"
+    elif server_type == "databricks" and model.description is not None:
         result += f' COMMENT "{_escape(model.description)}"'
-    if server_type == "snowflake" and model.description is not None:
+    elif server_type == "snowflake" and model.description is not None:
         result += f" COMMENT='{_escape(model.description)}'"
     result += ";\n"
     return result
+
+
+def _get_clickhouse_order_by(pk_props: list) -> str | None:
+    """Build ORDER BY clause for ClickHouse from primary key columns."""
+    if not pk_props:
+        return None
+    sorted_pk = sorted(pk_props, key=lambda p: (p.primaryKeyPosition is None, p.primaryKeyPosition))
+    return ", ".join(p.physicalName or p.name for p in sorted_pk)
 
 
 def _escape(text: str | None) -> str | None:

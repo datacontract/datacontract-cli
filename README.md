@@ -1483,7 +1483,7 @@ Usage: datacontract export [OPTIONS] COMMAND [ARGS]...
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract export html datacontract.yaml --output datacontract.html                     
- For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), use           
+  For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle, clickhouse), use
  `datacontract export sql --dialect <dialect>`.
 ```
 
@@ -1513,7 +1513,72 @@ datacontract export sql datacontract.yaml --dialect postgres --output output.sql
 If using Databricks and an error is thrown when deploying SQL DDLs with `variant` columns, set the following property.
 
 ```shell
-spark.conf.set(“spark.databricks.delta.schema.typeCheck.enabled”, “false”)
+spark.conf.set("spark.databricks.delta.schema.typeCheck.enabled", "false")
+```
+
+##### ClickHouse
+
+Export a data contract to ClickHouse SQL DDL:
+
+```shell
+datacontract export sql datacontract.yaml --dialect clickhouse --output ddl.sql
+```
+
+The dialect is auto-detected from the server type (`type: clickhouse`) when `--dialect auto` (the default).
+
+**Type mapping:**
+
+| Logical Type | ClickHouse Type |
+|---|---|
+| `string`, `varchar`, `text` | `String` |
+| `string` (format=uuid) | `UUID` |
+| `timestamp`, `timestamp_tz`, `timestamp_ntz` | `DateTime64(3)` |
+| `date` | `Date` |
+| `time` | `String` |
+| `number`, `decimal`, `numeric` | `Decimal(P,S)` |
+| `integer`, `int` | `Int32` |
+| `long`, `bigint` | `Int64` |
+| `tinyint` | `Int8` |
+| `smallint` | `Int16` |
+| `float` | `Float32` |
+| `double` | `Float64` |
+| `boolean` | `Bool` |
+| `bytes`, `binary` | `FixedString(N)` or `String` |
+| `object`, `record`, `struct` | `Tuple(name1 Type1, ...)` or `String` |
+| `map` | `Map(KeyType, ValueType)` |
+| `array` | `Array(T)` |
+
+Override any field's ClickHouse type individually by setting the custom property `clickhouseType` in the data contract.
+
+**Engine and ORDER BY:**
+
+ClickHouse requires a table engine. The default is `ENGINE = MergeTree()`. Customize with:
+
+```shell
+# Custom engine
+datacontract export sql datacontract.yaml --dialect clickhouse \
+  --clickhouse-engine "ReplicatedMergeTree('/clickhouse/tables/{shard}/table', '{replica}')"
+
+# Custom ORDER BY (defaults to primary key columns if defined)
+datacontract export sql datacontract.yaml --dialect clickhouse \
+  --clickhouse-order-by "event_date DESC, event_id"
+```
+
+- `--clickhouse-engine`: The table engine. Default: `MergeTree()`. Pass the full engine expression (e.g., `ReplicatedMergeTree(...)`).
+- `--clickhouse-order-by`: Comma-separated ORDER BY columns. Default: primary key columns if defined; omitted if no primary keys exist.
+
+**Generated DDL example:**
+
+```sql
+CREATE TABLE orders (
+  order_id String not null COMMENT 'Primary key of the orders table.',
+  order_timestamp DateTime64(3) not null COMMENT 'The business timestamp in UTC.',
+  total_amount Decimal(38,0) COMMENT 'Total amount in cents.',
+  is_active Bool COMMENT 'Whether the order is active.'
+)
+ENGINE = MergeTree()
+ORDER BY (order_id)
+COMMENT 'One record per order.';
 ```
 
 </details>
