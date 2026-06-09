@@ -90,24 +90,9 @@ def to_sql_ddl(
         servers = [s for s in servers if s.server == server]
 
     for srv in servers:
-        if srv.type == "snowflake":
-            server_type = "snowflake"
-            break
-        if srv.type == "postgres":
-            server_type = "postgres"
-            break
-        if srv.type == "mysql":
-            server_type = "mysql"
-            break
         if srv.type == "databricks":
-            server_type = "databricks"
             if srv.catalog is not None and srv.schema_ is not None:
                 table_prefix = srv.catalog + "." + srv.schema_ + "."
-            break
-        if srv.type == "clickhouse":
-            server_type = "clickhouse"
-            break
-        if srv.type == server_type:
             break
 
     result = ""
