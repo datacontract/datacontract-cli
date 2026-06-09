@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - BigQuery: added support for a separate billing/compute project via the `DATACONTRACT_BIGQUERY_BILLING_PROJECT_ID` environment variable or a `billingProject` server custom property. When set, query jobs are submitted to (and billed against) the billing project while data is read from the `project` specified in the server config. This enables cross-project and cross-organisation validation without requiring `bigquery.jobUser` on the data project.
+### Fixed
+- `datacontract test` no longer fails with `Compilation rule for RegexSearch operation is not defined` when a contract uses `logicalTypeOptions.pattern` (or `pattern`) against SQL Server. SQL Server has no native regex operator, so the ibis mssql backend cannot compile `re_search`; pattern checks now fall back to a `PATINDEX(...) > 0` LIKE match, restoring the behaviour of the former soda-core engine. Patterns that use real regex syntax (anchors, quantifiers, groups, `.`) cannot be expressed as a T-SQL LIKE pattern and now raise a clear error instead of failing cryptically. (#1284)
 
 ## [1.0.0] - 2026-06-04
 
