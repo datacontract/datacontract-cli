@@ -183,7 +183,7 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
         properties_range = get_range_by_name_in_sheet(sheet, "schema.properties")
         if not properties_range:
             return None
-        
+
         # Get header row to map column names to indices
         header_row = list(sheet.rows)[properties_range[0] - 1]  # Convert to 0-based indexing
         headers = {}
