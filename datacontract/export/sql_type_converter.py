@@ -941,7 +941,7 @@ def convert_type_to_clickhouse(field: Union[SchemaProperty, FieldLike]) -> None 
 
     # Temporal
     if base_type in ["timestamp", "timestamp_tz", "timestamp_ntz"]:
-        return "DateTime64(3)"
+        return "DateTime64(6)"
     if base_type == "date":
         return "Date"
     if base_type == "time":

@@ -9,24 +9,24 @@ def test_to_sql_ddl_clickhouse():
     expected = """
 -- Data Contract: clickhouse-orders
 -- SQL Dialect: clickhouse
-CREATE TABLE orders (
-  order_id String not null primary key COMMENT 'Primary key of the orders table.',
-  order_timestamp DateTime64(3) not null COMMENT 'The business timestamp in UTC.',
-  customer_id String COMMENT 'Unique identifier for the customer.',
-  total_amount Decimal(38,0) COMMENT 'Total amount in cents.',
-  discount_rate Float32 COMMENT 'Discount rate applied.',
-  quantity Int32 not null COMMENT 'Number of items ordered.',
-  is_active Bool COMMENT 'Whether the order is active.',
-  tags Array(String) COMMENT 'Order tags.'
+CREATE TABLE IF NOT EXISTS `orders` (
+  `order_id` String primary key COMMENT 'Primary key of the orders table.',
+  `order_timestamp` DateTime64(6) COMMENT 'The business timestamp in UTC.',
+  `customer_id` Nullable(String) COMMENT 'Unique identifier for the customer.',
+  `total_amount` Nullable(Decimal(38,0)) COMMENT 'Total amount in cents.',
+  `discount_rate` Nullable(Float32) COMMENT 'Discount rate applied.',
+  `quantity` Int32 COMMENT 'Number of items ordered.',
+  `is_active` Nullable(Bool) COMMENT 'Whether the order is active.',
+  `tags` Nullable(Array(String)) COMMENT 'Order tags.'
 )
 ENGINE = MergeTree()
 ORDER BY (order_id)
 COMMENT 'One record per order.';
-CREATE TABLE events (
-  event_id String not null,
-  event_date Date not null,
-  duration Float64,
-  status_code Int8
+CREATE TABLE IF NOT EXISTS `events` (
+  `event_id` String,
+  `event_date` Date,
+  `duration` Nullable(Float64),
+  `status_code` Nullable(Int8)
 )
 ENGINE = MergeTree()
 COMMENT 'Event tracking data.';

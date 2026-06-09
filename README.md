@@ -1532,7 +1532,7 @@ The dialect is auto-detected from the server type (`type: clickhouse`) when `--d
 |---|---|
 | `string`, `varchar`, `text` | `String` |
 | `string` (format=uuid) | `UUID` |
-| `timestamp`, `timestamp_tz`, `timestamp_ntz` | `DateTime64(3)` |
+| `timestamp`, `timestamp_tz`, `timestamp_ntz` | `DateTime64(6)` |
 | `date` | `Date` |
 | `time` | `String` |
 | `number`, `decimal`, `numeric` | `Decimal(P,S)` |
@@ -1570,11 +1570,11 @@ datacontract export sql datacontract.yaml --dialect clickhouse \
 **Generated DDL example:**
 
 ```sql
-CREATE TABLE orders (
-  order_id String not null COMMENT 'Primary key of the orders table.',
-  order_timestamp DateTime64(3) not null COMMENT 'The business timestamp in UTC.',
-  total_amount Decimal(38,0) COMMENT 'Total amount in cents.',
-  is_active Bool COMMENT 'Whether the order is active.'
+CREATE TABLE IF NOT EXISTS `orders` (
+  `order_id` String primary key COMMENT 'Primary key of the orders table.',
+  `order_timestamp` DateTime64(6) COMMENT 'The business timestamp in UTC.',
+  `total_amount` Nullable(Decimal(38,0)) COMMENT 'Total amount in cents.',
+  `is_active` Nullable(Bool) COMMENT 'Whether the order is active.'
 )
 ENGINE = MergeTree()
 ORDER BY (order_id)

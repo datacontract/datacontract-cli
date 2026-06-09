@@ -90,7 +90,7 @@ def to_sql_ddl(
         servers = [s for s in servers if s.server == server]
 
     for srv in servers:
-        if srv.type == "databricks":
+        if srv.type == "databricks" and server_type == "databricks":
             if srv.catalog is not None and srv.schema_ is not None:
                 table_prefix = srv.catalog + "." + srv.schema_ + "."
             break
@@ -122,6 +122,8 @@ def _to_sql_table(
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
         result = f"CREATE OR REPLACE TABLE {model_name} (\n"
+    elif server_type == "clickhouse":
+        result = f"CREATE TABLE IF NOT EXISTS `{model_name}` (\n"
     else:
         result = f"CREATE TABLE {model_name} (\n"
 
@@ -136,20 +138,30 @@ def _to_sql_table(
     for prop in properties:
         type_str = convert_to_sql_type(prop, server_type)
         column_name = prop.physicalName or prop.name
-        result += f"  {column_name} {type_str}"
-        if prop.required:
-            result += " not null"
-        if prop.primaryKey and not composite_pk:
-            result += " primary key"
-        if server_type == "databricks" and prop.description is not None:
-            result += f' COMMENT "{_escape(prop.description)}"'
-        if server_type == "snowflake" and prop.description is not None:
-            result += f" COMMENT '{_escape(prop.description)}'"
-        if server_type == "clickhouse" and prop.description is not None:
-            result += f" COMMENT '{_escape(prop.description)}'"
+        if server_type == "clickhouse":
+            col = f"  `{column_name}` "
+            if prop.required:
+                col += type_str
+            else:
+                col += f"Nullable({type_str})"
+            if prop.primaryKey and not composite_pk:
+                col += " primary key"
+            if prop.description is not None:
+                col += f" COMMENT '{_escape(prop.description)}'"
+        else:
+            col = f"  {column_name} {type_str}"
+            if prop.required:
+                col += " not null"
+            if prop.primaryKey and not composite_pk:
+                col += " primary key"
+            if server_type == "databricks" and prop.description is not None:
+                col += f' COMMENT "{_escape(prop.description)}"'
+            if server_type == "snowflake" and prop.description is not None:
+                col += f" COMMENT '{_escape(prop.description)}'"
         if current_line < total_lines:
-            result += ","
-        result += "\n"
+            col += ","
+        col += "\n"
+        result += col
         current_line += 1
 
     if composite_pk:
