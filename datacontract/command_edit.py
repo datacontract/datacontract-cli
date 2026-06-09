@@ -9,12 +9,20 @@ from typing_extensions import Annotated
 
 from datacontract.cli import app, console, debug_option, enable_debug_logging
 
-DEFAULT_EDITOR_ASSETS_URL = "https://cdn.jsdelivr.net/npm/datacontract-editor@latest/dist"
+EDITOR_ASSETS_URL_TEMPLATE = "https://cdn.jsdelivr.net/npm/datacontract-editor@{version}/dist"
+DEFAULT_EDITOR_VERSION = "latest"
+DEFAULT_EDITOR_ASSETS_URL = EDITOR_ASSETS_URL_TEMPLATE.format(version=DEFAULT_EDITOR_VERSION)
 
 # Editor assets are proxied through the local server instead of loaded directly
 # from the CDN, because browsers refuse to construct Monaco's web workers from a
 # cross-origin URL.
 EDITOR_ASSETS_PATH = "/editor"
+
+
+def resolve_editor_assets_url(editor_version: str, editor_assets_url: str | None) -> str:
+    if editor_assets_url is not None:
+        return editor_assets_url
+    return EDITOR_ASSETS_URL_TEMPLATE.format(version=quote(editor_version))
 
 
 def _cli_version() -> str:
@@ -191,13 +199,20 @@ def edit(
     ] = "datacontract.yaml",
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4243,
     host: Annotated[str, typer.Option(help="Bind socket to this host.")] = "127.0.0.1",
-    editor_assets_url: Annotated[
+    editor_version: Annotated[
         str,
         typer.Option(
-            help="Base URL to load the Data Contract Editor assets (JS/CSS) from. "
-            "Override to pin a version or to use a self-hosted editor build."
+            help="Version of the datacontract-editor npm package to use, e.g. '0.1.9'. "
+            "Defaults to the latest published version."
         ),
-    ] = DEFAULT_EDITOR_ASSETS_URL,
+    ] = DEFAULT_EDITOR_VERSION,
+    editor_assets_url: Annotated[
+        str | None,
+        typer.Option(
+            help="Base URL to load the Data Contract Editor assets (JS/CSS) from, "
+            "e.g. a self-hosted editor build. Takes precedence over --editor-version."
+        ),
+    ] = None,
     open_browser: Annotated[
         bool, typer.Option("--open/--no-open", help="Open the editor in the default browser.")
     ] = True,
@@ -237,7 +252,7 @@ def edit(
 
     edit_app = create_app(
         file_path,
-        editor_assets_url=editor_assets_url,
+        editor_assets_url=resolve_editor_assets_url(editor_version, editor_assets_url),
         open_browser_url=url if open_browser else None,
     )
     uvicorn.run(edit_app, port=port, host=host, log_level="warning")

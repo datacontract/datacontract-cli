@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from datacontract.command_edit import create_app
+from datacontract.command_edit import create_app, resolve_editor_assets_url
 
 YAML_CONTENT = """apiVersion: v3.1.0
 kind: DataContract
@@ -110,6 +110,13 @@ def test_editor_assets_are_proxied_and_cached(contract_file):
         response = client.get("/editor/datacontract-editor.es.js")
         assert response.status_code == 200
         assert mock_get.call_count == 1
+
+
+def test_resolve_editor_assets_url():
+    assert resolve_editor_assets_url("latest", None) == "https://cdn.jsdelivr.net/npm/datacontract-editor@latest/dist"
+    assert resolve_editor_assets_url("0.1.9", None) == "https://cdn.jsdelivr.net/npm/datacontract-editor@0.1.9/dist"
+    # an explicit assets URL takes precedence over the version
+    assert resolve_editor_assets_url("0.1.9", "https://example.com/editor/dist") == "https://example.com/editor/dist"
 
 
 def test_editor_assets_path_traversal_is_rejected(contract_file):

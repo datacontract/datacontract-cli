@@ -330,11 +330,13 @@ Usage: datacontract edit [OPTIONS] [LOCATION]
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --port                               INTEGER  Bind socket to this port. [default: 4243]          │
 │ --host                               TEXT     Bind socket to this host. [default: 127.0.0.1]     │
+│ --editor-version                     TEXT     Version of the datacontract-editor npm package to  │
+│                                               use, e.g. '0.1.9'. Defaults to the latest          │
+│                                               published version.                                 │
+│                                               [default: latest]                                  │
 │ --editor-assets-url                  TEXT     Base URL to load the Data Contract Editor assets   │
-│                                               (JS/CSS) from. Override to pin a version or to use │
-│                                               a self-hosted editor build.                        │
-│                                               [default:                                          │
-│                                               https://cdn.jsdelivr.net/npm/datacontract-editor@… │
+│                                               (JS/CSS) from, e.g. a self-hosted editor build.    │
+│                                               Takes precedence over --editor-version.            │
 │ --open                 --no-open              Open the editor in the default browser.            │
 │                                               [default: open]                                    │
 │ --debug                --no-debug             Enable debug logging                               │
@@ -345,7 +347,7 @@ Usage: datacontract edit [OPTIONS] [LOCATION]
 ```
 
 Requires the `api` extra (`pip install 'datacontract-cli[api]'`).
-The [Data Contract Editor](https://github.com/datacontract/datacontract-editor) assets are loaded from a CDN by default; use `--editor-assets-url` to pin a version or point to a self-hosted build.
+The [Data Contract Editor](https://github.com/datacontract/datacontract-editor) assets are loaded from a CDN by default; use `--editor-version` to pin a specific editor version or `--editor-assets-url` to point to a self-hosted build.
 
 ### lint
 ```
