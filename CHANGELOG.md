@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- `datacontract export sql --dialect clickhouse`: export data contracts to ClickHouse SQL DDL. Supports full type mapping (`String`, `UUID`, `DateTime64(3)`, `Decimal(P,S)`, `Float32/64`, `Int8/16/32/64`, `Bool`, `Map(K,V)`, `Tuple(...)`, `Array(T)`, `FixedString(N)`), custom table engine (`--clickhouse-engine`, defaults to `MergeTree()`), custom ORDER BY (`--clickhouse-order-by`, defaults to primary key columns), and column/table comments.
+
 ### Fixed
 - `datacontract test` no longer fails with `Compilation rule for RegexSearch operation is not defined` when a contract uses `logicalTypeOptions.pattern` (or `pattern`) against SQL Server. SQL Server has no native regex operator, so the ibis mssql backend cannot compile `re_search`; pattern checks now fall back to a `PATINDEX(...) > 0` LIKE match, restoring the behaviour of the former soda-core engine. Patterns that use real regex syntax (anchors, quantifiers, groups, `.`) cannot be expressed as a T-SQL LIKE pattern and now raise a clear error instead of failing cryptically. (#1284)
 
