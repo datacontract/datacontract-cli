@@ -139,6 +139,8 @@ def _to_sql_table(
         type_str = convert_to_sql_type(prop, server_type)
         column_name = prop.physicalName or prop.name
         if server_type == "clickhouse":
+            # ClickHouse uses ORDER BY as the sorting/primary key.
+            # Inline PRIMARY KEY is not used; see _get_clickhouse_order_by.
             col = f"  `{column_name}` "
             if prop.required:
                 col += type_str
@@ -162,7 +164,7 @@ def _to_sql_table(
         result += col
         current_line += 1
 
-    if composite_pk:
+    if composite_pk and server_type != "clickhouse":
         # Sort by primaryKeyPosition (treat None as infinity so un-positioned cols go last)
         sorted_pk = sorted(pk_props, key=lambda p: (p.primaryKeyPosition is None, p.primaryKeyPosition))
         pk_columns = ", ".join(p.physicalName or p.name for p in sorted_pk)
@@ -188,7 +190,10 @@ def _to_sql_table(
 
 
 def _get_clickhouse_order_by(pk_props: list) -> str | None:
-    """Build ORDER BY clause for ClickHouse from primary key columns."""
+    """Build the ORDER BY clause for ClickHouse from primary key columns.
+    ClickHouse uses ORDER BY as its primary/sorting key mechanism, not
+    inline or table-level PRIMARY KEY constraints. This function maps the
+    data contract's primaryKey fields to the ClickHouse ORDER BY clause."""
     if not pk_props:
         return None
     sorted_pk = sorted(pk_props, key=lambda p: (p.primaryKeyPosition is None, p.primaryKeyPosition))

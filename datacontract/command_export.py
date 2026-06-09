@@ -107,6 +107,7 @@ clickhouse_order_by_option = Annotated[
     Optional[str],
     typer.Option(
         help="ORDER BY columns for ClickHouse (comma-separated). "
+        "ClickHouse uses ORDER BY as its primary/sorting key (not PRIMARY KEY). "
         "Default: primary key columns if defined, omitted otherwise. "
         'Example: --clickhouse-order-by "event_date DESC, event_id"'
     ),

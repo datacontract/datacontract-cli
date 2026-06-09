@@ -1566,6 +1566,9 @@ datacontract export sql datacontract.yaml --dialect clickhouse \
 
 - `--clickhouse-engine`: The table engine. Default: `MergeTree()`. Pass the full engine expression (e.g., `ReplicatedMergeTree(...)`).
 - `--clickhouse-order-by`: Comma-separated ORDER BY columns. Default: primary key columns if defined; omitted if no primary keys exist.
+  ClickHouse uses the `ORDER BY` clause as its sorting/primary key mechanism — it replaces
+  both inline `PRIMARY KEY` and table-level `PRIMARY KEY` constraints that other SQL dialects use.
+  Primary key fields in your data contract are automatically translated to the `ORDER BY` clause.
 
 **Generated DDL example:**
 
