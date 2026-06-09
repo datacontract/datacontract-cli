@@ -117,6 +117,9 @@ $ datacontract export html --output orders-v1.odcs.html https://datacontract.com
 # create a new data contract from example and write it to odcs.yaml
 $ datacontract init odcs.yaml
 
+# edit the data contract in the Data Contract Editor (web UI)
+$ datacontract edit odcs.yaml
+
 # lint the odcs.yaml and stop after the first validation error (default).
 $ datacontract lint odcs.yaml
 
@@ -273,6 +276,7 @@ A list of available extras:
 Commands
 
 - [init](#init)
+- [edit](#edit)
 - [lint](#lint)
 - [changelog](#changelog)
 - [test](#test)
@@ -304,6 +308,44 @@ Usage: datacontract init [OPTIONS] [LOCATION]
                                                                                                     
  Example: datacontract init datacontract.yaml
 ```
+
+### edit
+```
+Usage: datacontract edit [OPTIONS] [LOCATION]                                                      
+                                                                                                    
+ Edit a data contract file in the Data Contract Editor (web UI).                                    
+                                                                                                    
+ Starts a local web server that opens the Data Contract Editor for the given file.                  
+ Saving in the editor writes directly back to the local file.                                       
+ The server also acts as the editor's test runner: "Run test" in the editor executes                
+ the data contract tests locally against the servers defined in the data contract.                  
+ Credentials for the data sources must be provided as environment variables, see                    
+ https://cli.datacontract.com/#test                                                                 
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The path of the data contract yaml to edit. The file is created if   │
+│                             it does not exist.                                                   │
+│                             [default: datacontract.yaml]                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --port                               INTEGER  Bind socket to this port. [default: 4243]          │
+│ --host                               TEXT     Bind socket to this host. [default: 127.0.0.1]     │
+│ --editor-assets-url                  TEXT     Base URL to load the Data Contract Editor assets   │
+│                                               (JS/CSS) from. Override to pin a version or to use │
+│                                               a self-hosted editor build.                        │
+│                                               [default:                                          │
+│                                               https://cdn.jsdelivr.net/npm/datacontract-editor@… │
+│ --open                 --no-open              Open the editor in the default browser.            │
+│                                               [default: open]                                    │
+│ --debug                --no-debug             Enable debug logging                               │
+│ --help                                        Show this message and exit.                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Example: datacontract edit datacontract.yaml
+```
+
+Requires the `api` extra (`pip install 'datacontract-cli[api]'`).
+The [Data Contract Editor](https://github.com/datacontract/datacontract-editor) assets are loaded from a CDN by default; use `--editor-assets-url` to pin a version or point to a self-hosted build.
 
 ### lint
 ```
