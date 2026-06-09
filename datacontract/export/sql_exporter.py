@@ -132,7 +132,7 @@ def _to_sql_table(
     composite_pk = len(pk_props) > 1
     fields = len(properties)
     # When using a table-level composite PK constraint, we need an extra line for it
-    total_lines = fields + (1 if composite_pk else 0)
+    total_lines = fields + (1 if composite_pk and server_type != "clickhouse" else 0)
     current_line = 1
 
     for prop in properties:
