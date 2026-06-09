@@ -142,12 +142,30 @@ def connect_ibis(
         )
 
     if server_type == "bigquery":
-        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
         credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
+        credentials = None
         if credentials_path:
             from google.oauth2 import service_account
 
-            kwargs["credentials"] = service_account.Credentials.from_service_account_file(credentials_path)
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+
+        billing_project = _get_custom_property(server, "billingProject") or os.getenv(
+            "DATACONTRACT_BIGQUERY_BILLING_PROJECT_ID"
+        )
+
+        if billing_project and billing_project != server.project:
+            from google.cloud import bigquery as bq_client_lib
+
+            client = bq_client_lib.Client(project=billing_project, credentials=credentials)
+            return ibis.bigquery.connect(
+                project_id=server.project,
+                dataset_id=server.dataset,
+                client=client,
+            )
+
+        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
+        if credentials:
+            kwargs["credentials"] = credentials
         return ibis.bigquery.connect(**kwargs)
 
     if server_type == "sqlserver":

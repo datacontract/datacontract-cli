@@ -624,6 +624,7 @@ models:
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
+| `DATACONTRACT_BIGQUERY_BILLING_PROJECT_ID` | `my-compute-project` | Optional. Project to bill query jobs to. Use when the data lives in an external project and you want charges routed to your own project. Requires `bigquery.jobUser` on the billing project and `bigquery.dataViewer` on the data project. Can also be set per-contract via `customProperties: [{property: billingProject, value: my-compute-project}]`. |
 
 </details>
 
