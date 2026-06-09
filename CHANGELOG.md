@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 - improvement `export excel schema's properties add customProperties` Pivot property as column header and value as cell's value
 
+### Fixed
+- `datacontract test` no longer fails with `Compilation rule for RegexSearch operation is not defined` when a contract uses `logicalTypeOptions.pattern` (or `pattern`) against SQL Server. SQL Server has no native regex operator, so the ibis mssql backend cannot compile `re_search`; pattern checks now fall back to a `PATINDEX(...) > 0` LIKE match, restoring the behaviour of the former soda-core engine. Patterns that use real regex syntax (anchors, quantifiers, groups, `.`) cannot be expressed as a T-SQL LIKE pattern and now raise a clear error instead of failing cryptically. (#1284)
+
 ## [1.0.0] - 2026-06-04
 
 ### Breaking Changes
