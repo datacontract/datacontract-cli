@@ -144,8 +144,6 @@ def _to_sql_table(
                 col += type_str
             else:
                 col += f"Nullable({type_str})"
-            if prop.primaryKey and not composite_pk:
-                col += " primary key"
             if prop.description is not None:
                 col += f" COMMENT '{_escape(prop.description)}'"
         else:

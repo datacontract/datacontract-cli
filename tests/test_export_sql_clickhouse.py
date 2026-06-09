@@ -10,7 +10,7 @@ def test_to_sql_ddl_clickhouse():
 -- Data Contract: clickhouse-orders
 -- SQL Dialect: clickhouse
 CREATE TABLE IF NOT EXISTS `orders` (
-  `order_id` String primary key COMMENT 'Primary key of the orders table.',
+  `order_id` String COMMENT 'Primary key of the orders table.',
   `order_timestamp` DateTime64(6) COMMENT 'The business timestamp in UTC.',
   `customer_id` Nullable(String) COMMENT 'Unique identifier for the customer.',
   `total_amount` Nullable(Decimal(38,0)) COMMENT 'Total amount in cents.',

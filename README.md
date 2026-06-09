@@ -1571,7 +1571,7 @@ datacontract export sql datacontract.yaml --dialect clickhouse \
 
 ```sql
 CREATE TABLE IF NOT EXISTS `orders` (
-  `order_id` String primary key COMMENT 'Primary key of the orders table.',
+  `order_id` String COMMENT 'Primary key of the orders table.',
   `order_timestamp` DateTime64(6) COMMENT 'The business timestamp in UTC.',
   `total_amount` Nullable(Decimal(38,0)) COMMENT 'Total amount in cents.',
   `is_active` Nullable(Bool) COMMENT 'Whether the order is active.'
