@@ -428,13 +428,87 @@ def _as_string(column, dtype):
     return column.cast("string")
 
 
+def _backend_name(t) -> str:
+    """Backend name (e.g. ``mssql``, ``duckdb``) behind a bound table, or ``""``."""
+    try:
+        return getattr(t.get_backend(), "name", "") or ""
+    except Exception:
+        return ""
+
+
+# Regex metacharacters with no T-SQL LIKE/PATINDEX equivalent. Inside a bracket
+# class (``[...]``) these are literal and allowed; encountered outside one they
+# signal a real regex we cannot translate to a LIKE pattern.
+_MSSQL_UNSUPPORTED_REGEX_CHARS = set(".^$*+?(){}|\\")
+
+
+def _mssql_like_pattern(pattern: str) -> str:
+    """Validate that a contract ``pattern`` is expressible as a T-SQL LIKE pattern.
+
+    SQL Server has no native regex operator, so the mssql backend cannot compile
+    ``re_search`` ("Compilation rule for RegexSearch operation is not defined").
+    PATINDEX instead matches LIKE wildcards (``%``, ``_``, ``[...]`` classes).
+    Patterns built from literals and ``[...]`` classes (the common case, e.g.
+    ``[0-9][0-9][0-9][0-9][0-9]``) map directly. Patterns using real regex syntax
+    (anchors, quantifiers, groups, ``.``) cannot be expressed and raise here,
+    rather than silently matching the wrong rows.
+    """
+    in_class = False
+    for ch in pattern:
+        if in_class:
+            if ch == "]":
+                in_class = False
+            continue
+        if ch == "[":
+            in_class = True
+            continue
+        if ch in _MSSQL_UNSUPPORTED_REGEX_CHARS:
+            raise ValueError(
+                f"SQL Server does not support general regular expressions for pattern checks. "
+                f"The pattern {pattern!r} uses regex syntax ({ch!r}) that cannot be translated "
+                f"to a T-SQL LIKE/PATINDEX pattern. Only LIKE-compatible patterns (literals, "
+                f"'%', '_', and [...] character classes) are supported on SQL Server."
+            )
+    return pattern
+
+
+def _mssql_pattern_search(column, pattern: str):
+    """``PATINDEX(pattern, column) > 0`` for the mssql backend (unanchored match).
+
+    Mirrors the former soda-core SQL Server behaviour, where ``valid regex`` was
+    compiled to ``PATINDEX('<pattern>', expr) > 0``. The pattern is passed as a
+    bound literal, so it is escaped rather than string-interpolated.
+    """
+    import ibis
+
+    like = _mssql_like_pattern(pattern)
+
+    @ibis.udf.scalar.builtin
+    def patindex(pattern: str, expression: str) -> int:  # -> PATINDEX(pattern, expression)
+        ...
+
+    return patindex(like, column) > 0
+
+
+def _regex_search_expr(t, column, pattern: str):
+    """Unanchored regex/pattern match, portable across backends.
+
+    Most ibis backends compile ``re_search`` to a native regex operator. SQL
+    Server has none, so fall back to a PATINDEX-based LIKE match for the mssql
+    backend.
+    """
+    if _backend_name(t) == "mssql":
+        return _mssql_pattern_search(column, pattern)
+    return column.re_search(pattern)
+
+
 def _valid_expr(t, col, dtype, spec: CheckSpec):
     """Boolean: a non-missing value satisfies all configured validity constraints."""
     conds = []
     if spec.valid_values is not None:
         conds.append(t[col].isin(spec.valid_values))
     if spec.valid_regex is not None:
-        conds.append(_as_string(t[col], dtype).re_search(spec.valid_regex))
+        conds.append(_regex_search_expr(t, _as_string(t[col], dtype), spec.valid_regex))
     if spec.valid_min is not None:
         conds.append(t[col] >= spec.valid_min)
     if spec.valid_max is not None:
