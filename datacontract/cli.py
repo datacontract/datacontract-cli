@@ -7,6 +7,7 @@ from typing import Iterable, Optional
 
 import typer
 from click import Context
+from dotenv import find_dotenv, load_dotenv
 from rich.console import Console
 from typer.core import TyperGroup
 from typing_extensions import Annotated
@@ -125,7 +126,10 @@ def common(
     connect to data sources and execute schema and quality tests,
     and export to different formats.
     """
-    pass
+    # Load environment variables (e.g., credentials) from a .env file in the
+    # current working directory, walking up parent directories until one is found.
+    # Already-set environment variables take precedence.
+    load_dotenv(dotenv_path=find_dotenv(usecwd=True), override=False)
 
 
 def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
