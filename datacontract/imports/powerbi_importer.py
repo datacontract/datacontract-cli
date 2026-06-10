@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from open_data_contract_standard.model import (
     CustomProperty,
@@ -20,7 +21,7 @@ from datacontract.model.exceptions import DataContractException
 # ---------------------------------------------------------------------------
 # Power BI data type → (ODCS logical type, optional format)
 # ---------------------------------------------------------------------------
-_PBI_TYPE_MAP: Dict[str, tuple[str, Optional[str]]] = {
+_PBI_TYPE_TO_ODCS: dict[str, tuple[str, str | None]] = {
     "string": ("string", None),
     "int64": ("integer", None),
     "double": ("number", None),
@@ -36,11 +37,11 @@ _PBI_TYPE_MAP: Dict[str, tuple[str, Optional[str]]] = {
 }
 
 
-def _map_pbi_type(data_type: Optional[str]) -> tuple[str, Optional[str]]:
+def _map_pbi_type(data_type: str | None) -> tuple[str, str | None]:
     """Map a Power BI data type string to ``(logicalType, format)``."""
     if data_type is None:
         return ("string", None)
-    return _PBI_TYPE_MAP.get(data_type.lower(), ("string", None))
+    return _PBI_TYPE_TO_ODCS.get(data_type.lower(), ("string", None))
 
 
 def _make_id(name: str) -> str:
@@ -58,7 +59,7 @@ def _make_id(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-class PowerBIImporter(Importer):
+class PowerBiImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
@@ -98,7 +99,7 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
         raise DataContractException(
             type="import",
             name="powerbi import",
-            reason=(f"Unsupported file extension '{suffix}'. Supported formats: .pbit, .bim, .json (model.bim)"),
+            reason=(f"Unsupported file extension '{suffix}'. Supported formats: .pbit, .bim, .json"),
             engine="datacontract",
         )
 
@@ -110,7 +111,7 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
 # ---------------------------------------------------------------------------
 
 
-def _load_bim_from_pbit(pbit_path: Path) -> Dict[str, Any]:
+def _load_bim_from_pbit(pbit_path: Path) -> dict[str, Any]:
     """Extract and parse the ``DataModelSchema`` JSON from a .pbit ZIP archive.
 
     Power BI Desktop embeds the tabular model as a UTF-16 LE JSON file called
@@ -157,7 +158,7 @@ def _load_bim_from_pbit(pbit_path: Path) -> Dict[str, Any]:
         )
 
 
-def _load_bim_from_json(bim_path: Path) -> Dict[str, Any]:
+def _load_bim_from_json(bim_path: Path) -> dict[str, Any]:
     """Load a ``model.bim`` / ``.json`` file as BIM JSON (UTF-8 with optional BOM)."""
     try:
         with open(bim_path, encoding="utf-8-sig") as f:
@@ -177,7 +178,7 @@ def _load_bim_from_json(bim_path: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandard:
+def _build_odcs(bim: dict[str, Any], model_name: str) -> OpenDataContractStandard:
     # Some BIM files wrap everything under a top-level "model" key; others don't.
     model = bim.get("model", bim)
 
@@ -197,11 +198,11 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
     tables = model.get("tables", [])
     bim_relationships = model.get("relationships", [])
 
-    schema_objects: List[SchemaObject] = []
+    schema_objects: list[SchemaObject] = []
     # table name → SchemaObject (for relationship wiring)
-    table_name_to_obj: Dict[str, SchemaObject] = {}
+    table_name_to_obj: dict[str, SchemaObject] = {}
     # table name → {col name → SchemaProperty} (for from_/to ID resolution)
-    table_name_to_col_props: Dict[str, Dict[str, SchemaProperty]] = {}
+    table_name_to_col_props: dict[str, dict[str, SchemaProperty]] = {}
 
     for table in tables:
         schema_obj = _map_table(table)
@@ -209,7 +210,7 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
             t_name = table.get("name", "")
             schema_objects.append(schema_obj)
             table_name_to_obj[t_name] = schema_obj
-            col_props: Dict[str, SchemaProperty] = {}
+            col_props: dict[str, SchemaProperty] = {}
             if schema_obj.properties:
                 for prop in schema_obj.properties:
                     if prop.name:
@@ -217,6 +218,9 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
             table_name_to_col_props[t_name] = col_props
 
     _apply_bim_relationships(bim_relationships, table_name_to_obj, table_name_to_col_props)
+
+    if not schema_objects:
+        logging.warning("Power BI import produced an empty contract: No tables were found in the semantic model.")
 
     schema_objects.sort(key=lambda s: s.name.lower())
     odcs.schema_ = schema_objects
@@ -228,7 +232,7 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
 # ---------------------------------------------------------------------------
 
 
-def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
+def _map_table(table: dict[str, Any]) -> SchemaObject | None:
     name = table.get("name", "")
     if not name:
         return None
@@ -242,7 +246,7 @@ def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
     physical_type = _table_physical_type(table)
     tags = ["hidden"] if is_hidden else None
 
-    properties: List[SchemaProperty] = []
+    properties: list[SchemaProperty] = []
 
     # Columns — skip internal rowNumber columns added by the engine
     for col in table.get("columns", []):
@@ -276,7 +280,7 @@ def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
     return schema_obj
 
 
-def _table_physical_type(table: Dict[str, Any]) -> str:
+def _table_physical_type(table: dict[str, Any]) -> str:
     partitions = table.get("partitions", [])
     if not partitions:
         return "table"
@@ -289,7 +293,7 @@ def _table_physical_type(table: Dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
+def _map_column(col: dict[str, Any]) -> SchemaProperty | None:
     name = col.get("name", "")
     if not name:
         return None
@@ -303,7 +307,7 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
     is_nullable = col.get("isNullable", True)
     description = col.get("description") or None
 
-    custom_props: Dict[str, Any] = {}
+    custom_props: dict[str, Any] = {}
 
     if col.get("formatString"):
         custom_props["formatString"] = col["formatString"]
@@ -339,7 +343,7 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
 # ---------------------------------------------------------------------------
 
 
-def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
+def _map_measure(measure: dict[str, Any]) -> SchemaProperty | None:
     name = measure.get("name", "")
     if not name:
         return None
@@ -350,7 +354,7 @@ def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
     if isinstance(expression, list):
         expression = "\n".join(expression)
 
-    custom_props: Dict[str, Any] = {}
+    custom_props: dict[str, Any] = {}
     if measure.get("isHidden"):
         custom_props["isHidden"] = True
     if measure.get("displayFolder"):
@@ -391,7 +395,7 @@ def _infer_measure_type(format_string: str, expression: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _map_hierarchy(hierarchy: Dict[str, Any]) -> Optional[SchemaProperty]:
+def _map_hierarchy(hierarchy: dict[str, Any]) -> SchemaProperty | None:
     name = hierarchy.get("name", "")
     if not name:
         return None
@@ -425,9 +429,9 @@ def _map_hierarchy(hierarchy: Dict[str, Any]) -> Optional[SchemaProperty]:
 
 
 def _apply_bim_relationships(
-    bim_relationships: List[Dict[str, Any]],
-    table_name_to_obj: Dict[str, SchemaObject],
-    table_name_to_col_props: Dict[str, Dict[str, SchemaProperty]],
+    bim_relationships: list[dict[str, str]],
+    table_name_to_obj: dict[str, SchemaObject],
+    table_name_to_col_props: dict[str, dict[str, SchemaProperty]],
 ) -> None:
     """Attach BIM relationships as ODCS Relationship objects on the 'from' SchemaObject.
 
@@ -449,7 +453,7 @@ def _apply_bim_relationships(
         if from_obj is None or to_obj is None:
             continue
 
-        from_schema_id = from_obj.name or from_table.name
+        from_schema_id = from_obj.name
         to_schema_id = to_obj.name or to_table
 
         from_prop = table_name_to_col_props.get(from_table, {}).get(from_col_name)

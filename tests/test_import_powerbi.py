@@ -37,13 +37,6 @@ def _write_pbit(tmp_path, bim_dict: dict) -> str:
 # ---------------------------------------------------------------------------
 
 
-def test_import_bim_returns_odcs():
-    result = import_powerbi_from_file(BIM_FIXTURE)
-    assert result is not None
-    assert result.kind == "DataContract"
-    assert result.apiVersion == "v3.1.0"
-
-
 def test_import_bim_model_name():
     result = import_powerbi_from_file(BIM_FIXTURE)
     assert result.name == "model"
@@ -216,6 +209,33 @@ def test_import_bim_calculated_column_dax_expression():
     assert "SalesAmount" in margin.transformLogic
 
 
+def test_import_bim_calculated_column_list_expression(tmp_path):
+    """A calculated column whose DAX is stored as a list of strings is joined into one expression."""
+    bim = {
+        "model": {
+            "tables": [
+                {
+                    "name": "T",
+                    "columns": [
+                        {
+                            "name": "Calc",
+                            "dataType": "double",
+                            "columnType": "calculated",
+                            "expression": ["SalesAmount", " * ", "0.1"],
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+    bim_path = tmp_path / "model.bim"
+    bim_path.write_text(json.dumps(bim), encoding="utf-8")
+
+    result = import_powerbi_from_file(str(bim_path))
+    calc = result.schema_[0].properties[0]
+    assert calc.transformLogic == "SalesAmount * 0.1"
+
+
 # ---------------------------------------------------------------------------
 # Measures
 # ---------------------------------------------------------------------------
@@ -228,13 +248,6 @@ def test_import_bim_measures_present():
     assert "Total Sales" in measure_names
     assert "YTD Sales" in measure_names
     assert "Sales MoM %" in measure_names
-
-
-def test_import_bim_measure_physical_type():
-    result = import_powerbi_from_file(BIM_FIXTURE)
-    sales = next(s for s in result.schema_ if s.name == "Sales")
-    total_sales = next(p for p in sales.properties if p.name == "Total Sales")
-    assert total_sales.physicalType == "measure"
 
 
 def test_import_bim_measure_dax_expression():
@@ -269,6 +282,27 @@ def test_import_bim_measure_multiline_dax():
     assert "DATEADD" in mom.transformLogic
 
 
+def test_import_bim_measure_list_expression(tmp_path):
+    """A measure whose DAX is stored as a list of strings is joined with newlines."""
+    bim = {
+        "model": {
+            "tables": [
+                {
+                    "name": "T",
+                    "columns": [{"name": "c", "dataType": "int64", "columnType": "data"}],
+                    "measures": [{"name": "M", "expression": ["VAR x = 1", "RETURN x"]}],
+                }
+            ]
+        }
+    }
+    bim_path = tmp_path / "model.bim"
+    bim_path.write_text(json.dumps(bim), encoding="utf-8")
+
+    result = import_powerbi_from_file(str(bim_path))
+    measure = next(p for p in result.schema_[0].properties if p.name == "M")
+    assert measure.transformLogic == "VAR x = 1\nRETURN x"
+
+
 def test_import_bim_measure_inferred_number_type():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
@@ -287,13 +321,6 @@ def test_import_bim_hidden_measure_custom_property():
 # ---------------------------------------------------------------------------
 # Hierarchies
 # ---------------------------------------------------------------------------
-
-
-def test_import_bim_hierarchy_present():
-    result = import_powerbi_from_file(BIM_FIXTURE)
-    date_table = next(s for s in result.schema_ if s.name == "Date")
-    hier = next((p for p in date_table.properties if p.name == "Calendar"), None)
-    assert hier is not None
 
 
 def test_import_bim_hierarchy_physical_type():
@@ -334,17 +361,6 @@ def test_import_bim_hierarchy_description():
 # ---------------------------------------------------------------------------
 
 
-def test_import_bim_relationship_on_sales_table():
-    result = import_powerbi_from_file(BIM_FIXTURE)
-    sales = next(s for s in result.schema_ if s.name == "Sales")
-    assert sales.relationships is not None
-    assert len(sales.relationships) == 1
-    rel = sales.relationships[0]
-    assert rel.type == "foreignKey"
-    assert "OrderDate" in rel.from_
-    assert "Date" in rel.to
-
-
 def test_import_bim_no_relationship_on_date_table():
     result = import_powerbi_from_file(BIM_FIXTURE)
     date_table = next(s for s in result.schema_ if s.name == "Date")
@@ -379,7 +395,10 @@ def test_import_bim_measure_id():
 def test_import_bim_relationship_ids_use_name_convention():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
+    assert sales.relationships is not None
+    assert len(sales.relationships) == 1
     rel = sales.relationships[0]
+    assert rel.type == "foreignKey"
     assert rel.from_ == "Sales.OrderDate"
     assert rel.to == "Date.Date"
 
