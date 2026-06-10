@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+- The `postgres` and `redshift` extras now install `psycopg[binary]`, whose wheels bundle the libpq client library. Previously, `datacontract test` against PostgreSQL/Redshift failed on machines without PostgreSQL client libraries installed (`couldn't import psycopg: no pq wrapper available`).
+
 ## [1.0.1] - 2026-06-10
 
 ### Added

@@ -86,12 +86,18 @@ mysql = [
 ]
 
 postgres = [
-  "ibis-framework[postgres]>=10.0.0,<13.0.0"
+  "ibis-framework[postgres]>=10.0.0,<13.0.0",
+  # psycopg's binary wheels bundle libpq, so the extra works without
+  # PostgreSQL client libraries installed on the system.
+  "psycopg[binary]>=3.1,<4.0",
 ]
 
 redshift = [
   # Redshift speaks the postgres wire protocol; ibis has no dedicated backend.
-  "ibis-framework[postgres]>=10.0.0,<13.0.0"
+  "ibis-framework[postgres]>=10.0.0,<13.0.0",
+  # psycopg's binary wheels bundle libpq, so the extra works without
+  # PostgreSQL client libraries installed on the system.
+  "psycopg[binary]>=3.1,<4.0",
 ]
 
 # DuckDB extension wheels are bundled for air-gapped installs. The 1.5.x line
