@@ -93,6 +93,17 @@ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 
 ```
 
+### Maintenance Scripts
+
+```bash
+# Regenerate the command help sections in README.md
+python update_help.py
+
+# Update the bundled Data Contract Editor (datacontract/editor_assets/, used by `datacontract edit`)
+# to a specific version of the datacontract-editor npm package (latest if omitted)
+python update_editor_assets.py 0.1.10
+```
+
 ## Project Architecture
 
 The Data Contract CLI is an open-source command-line tool for working with data contracts:

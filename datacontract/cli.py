@@ -22,6 +22,7 @@ debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
 # Order in which top-level commands appear in `datacontract --help` (cf. README.md)
 COMMAND_ORDER = [
     "init",
+    "edit",
     "lint",
     "changelog",
     "test",
@@ -191,6 +192,7 @@ from datacontract import (  # noqa: E402, F401
     command_changelog,
     command_ci,
     command_dbt,
+    command_edit,
     command_export,
     command_import,
     command_init,

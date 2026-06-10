@@ -117,6 +117,9 @@ $ datacontract export html --output orders-v1.odcs.html https://datacontract.com
 # create a new data contract from example and write it to odcs.yaml
 $ datacontract init odcs.yaml
 
+# edit the data contract in the Data Contract Editor (web UI)
+$ datacontract edit odcs.yaml
+
 # lint the odcs.yaml and stop after the first validation error (default).
 $ datacontract lint odcs.yaml
 
@@ -273,6 +276,7 @@ A list of available extras:
 Commands
 
 - [init](#init)
+- [edit](#edit)
 - [lint](#lint)
 - [changelog](#changelog)
 - [test](#test)
@@ -304,6 +308,49 @@ Usage: datacontract init [OPTIONS] [LOCATION]
                                                                                                     
  Example: datacontract init datacontract.yaml
 ```
+
+### edit
+```
+Usage: datacontract edit [OPTIONS] [LOCATION]                                                      
+                                                                                                    
+ Edit a data contract file in the Data Contract Editor (web UI).                                    
+                                                                                                    
+ Starts a local web server that opens the Data Contract Editor for the given file.                  
+ The editor is bundled with the CLI, so no internet access is required.                             
+ Saving in the editor writes directly back to the local file.                                       
+ The server also acts as the editor's test runner: "Run test" in the editor executes                
+ the data contract tests locally against the servers defined in the data contract.                  
+ Credentials for the data sources must be provided as environment variables, see                    
+ https://cli.datacontract.com/#test                                                                 
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The path of the data contract yaml to edit. If the file does not     │
+│                             exist, you are asked whether to initialize a new data contract.      │
+│                             [default: datacontract.yaml]                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --port                               INTEGER  Bind socket to this port. [default: 4243]          │
+│ --host                               TEXT     Bind socket to this host. Hint: For running in     │
+│                                               docker, set it to 0.0.0.0                          │
+│                                               [default: 127.0.0.1]                               │
+│ --editor-version                     TEXT     Version of the datacontract-editor npm package to  │
+│                                               load from the CDN, e.g. '0.1.9' or 'latest'. By    │
+│                                               default, the editor version bundled with the CLI   │
+│                                               is used (works offline).                           │
+│ --editor-assets-url                  TEXT     Base URL to load the Data Contract Editor assets   │
+│                                               (JS/CSS) from, e.g. a self-hosted editor build.    │
+│                                               Takes precedence over --editor-version.            │
+│ --open                 --no-open              Open the editor in the default browser.            │
+│                                               [default: open]                                    │
+│ --debug                --no-debug             Enable debug logging                               │
+│ --help                                        Show this message and exit.                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Example: datacontract edit datacontract.yaml
+```
+
+Requires the `api` extra (`pip install 'datacontract-cli[api]'`).
+The [Data Contract Editor](https://github.com/datacontract/datacontract-editor) assets are loaded from a CDN by default; use `--editor-version` to pin a specific editor version or `--editor-assets-url` to point to a self-hosted build.
 
 ### lint
 ```
