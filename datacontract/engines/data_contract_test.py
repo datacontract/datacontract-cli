@@ -137,15 +137,3 @@ def process_api_response(run, server):
         path=f"{tmp_dir.name}/api_response.json",
     )
     return new_server
-
-
-def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
-    """Return True if the (possibly filtered) schema list contains any logicalType='blob' schema."""
-    if data_contract.schema_ is None:
-        return False
-    for s in data_contract.schema_:
-        if schema_name != "all" and s.name != schema_name:
-            continue
-        if (s.logicalType or "").lower() == "blob":
-            return True
-    return False

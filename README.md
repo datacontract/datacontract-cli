@@ -325,7 +325,8 @@ Usage: datacontract lint [OPTIONS] [LOCATION]
 │                                                                If no path is provided, the       │
 │                                                                output will be printed to stdout. │
 │ --output-format                                  [json|junit]  The target format for the test    │
-│                                                                results.                          │
+│                                                                results. Accepted values: json,   │
+│                                                                junit.                            │
 │ --all-errors                                                   Report all JSON Schema validation │
 │                                                                errors instead of stopping after  │
 │                                                                the first one.                    │
@@ -385,59 +386,76 @@ Usage: datacontract test [OPTIONS] [LOCATION]
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --json-schema                                          TEXT          The location (url or path)  │
-│                                                                      of the ODCS JSON Schema     │
-│ --server                                               TEXT          The server configuration to │
-│                                                                      run the schema and quality  │
-│                                                                      tests. Use the key of the   │
-│                                                                      server object in the data   │
-│                                                                      contract yaml file to refer │
-│                                                                      to a server, e.g.,          │
-│                                                                      `production`, or `all` for  │
-│                                                                      all servers (default).      │
-│                                                                      [default: all]              │
-│ --schema-name                                          TEXT          Which schema to test, e.g., │
-│                                                                      `orders`, or `all` for all  │
-│                                                                      schemas (default).          │
-│                                                                      [default: all]              │
-│ --publish-test-results    --no-publish-test-results                  Deprecated. Use publish     │
-│                                                                      parameter. Publish the      │
-│                                                                      results after the test      │
-│                                                                      [default:                   │
-│                                                                      no-publish-test-results]    │
-│ --publish                                              TEXT          The url to publish the      │
-│                                                                      results after the test.     │
-│ --output                                               PATH          Specify the file path where │
-│                                                                      the test results should be  │
-│                                                                      written to (e.g.,           │
-│                                                                      './test-results/TEST-datac… │
-│ --output-format                                        [json|junit]  The target format for the   │
-│                                                                      test results.               │
-│ --checks                                               TEXT          Comma-separated list of     │
-│                                                                      check categories to run     │
-│                                                                      (available: schema,         │
-│                                                                      quality, servicelevel,      │
-│                                                                      custom). Omit to enable     │
-│                                                                      all.                        │
-│ --logs                    --no-logs                                  Print logs                  │
-│                                                                      [default: no-logs]          │
-│ --ssl-verification        --no-ssl-verification                      SSL verification when       │
-│                                                                      publishing the data         │
-│                                                                      contract.                   │
-│                                                                      [default: ssl-verification] │
-│ --inline-references       --no-inline-references                     Resolve external references │
-│                                                                      (currently:                 │
-│                                                                      authoritativeDefinitions[t… │
-│                                                                      in {definition,             │
-│                                                                      semantics}]) in the         │
-│                                                                      contract and inline the     │
-│                                                                      fetched content from the    │
-│                                                                      configured entropy-data     │
-│                                                                      host.                       │
-│                                                                      [default:                   │
-│                                                                      inline-references]          │
-│ --debug                   --no-debug                                 Enable debug logging        │
-│ --help                                                               Show this message and exit. │
+│ --json-schema                                            TEXT          The location (url or      │
+│                                                                        path) of the ODCS JSON    │
+│                                                                        Schema                    │
+│ --server                                                 TEXT          The server configuration  │
+│                                                                        to run the schema and     │
+│                                                                        quality tests. Use the    │
+│                                                                        key of the server object  │
+│                                                                        in the data contract yaml │
+│                                                                        file to refer to a        │
+│                                                                        server, e.g.,             │
+│                                                                        `production`, or `all`    │
+│                                                                        for all servers           │
+│                                                                        (default).                │
+│                                                                        [default: all]            │
+│ --schema-name                                            TEXT          Which schema to test,     │
+│                                                                        e.g., `orders`, or `all`  │
+│                                                                        for all schemas           │
+│                                                                        (default).                │
+│                                                                        [default: all]            │
+│ --publish-test-results      --no-publish-test-results                  Deprecated. Use publish   │
+│                                                                        parameter. Publish the    │
+│                                                                        results after the test    │
+│                                                                        [default:                 │
+│                                                                        no-publish-test-results]  │
+│ --publish                                                TEXT          The url to publish the    │
+│                                                                        results after the test.   │
+│ --output                                                 PATH          Specify the file path     │
+│                                                                        where the test results    │
+│                                                                        should be written to      │
+│                                                                        (e.g.,                    │
+│                                                                        './test-results/TEST-dat… │
+│ --output-format                                          [json|junit]  The target format for the │
+│                                                                        test results. Accepted    │
+│                                                                        values: json, junit.      │
+│ --checks                                                 TEXT          Comma-separated list of   │
+│                                                                        check categories to run   │
+│                                                                        (available: schema,       │
+│                                                                        quality, servicelevel,    │
+│                                                                        custom). Omit to enable   │
+│                                                                        all.                      │
+│ --include-failed-samples    --no-include-failed-samp…                  Collect a small sample of │
+│                                                                        rows that failed each     │
+│                                                                        missing/invalid/duplicate │
+│                                                                        check (identifier +       │
+│                                                                        offending columns;        │
+│                                                                        sensitive columns         │
+│                                                                        omitted). Off by default. │
+│                                                                        [default:                 │
+│                                                                        no-include-failed-sample… │
+│ --logs                      --no-logs                                  Print logs                │
+│                                                                        [default: no-logs]        │
+│ --ssl-verification          --no-ssl-verification                      SSL verification when     │
+│                                                                        publishing the data       │
+│                                                                        contract.                 │
+│                                                                        [default:                 │
+│                                                                        ssl-verification]         │
+│ --inline-references         --no-inline-references                     Resolve external          │
+│                                                                        references (currently:    │
+│                                                                        authoritativeDefinitions… │
+│                                                                        in {definition,           │
+│                                                                        semantics}]) in the       │
+│                                                                        contract and inline the   │
+│                                                                        fetched content from the  │
+│                                                                        configured entropy-data   │
+│                                                                        host.                     │
+│                                                                        [default:                 │
+│                                                                        inline-references]        │
+│ --debug                     --no-debug                                 Enable debug logging      │
+│ --help                                                                 Show this message and     │
+│                                                                        exit.                     │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract test datacontract.yaml --server production
@@ -621,10 +639,9 @@ datacontract.yaml
 servers:
   production:
     type: azure
-    location: azure://container@datameshdatabricksdemo.blob.core.windows.net
-    format: jpg
+    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/inventory_events/*.parquet
+    format: parquet
 ```
-
 
 ##### Environment Variables
 
@@ -635,54 +652,6 @@ Authentication works with an Azure Service Principal (SPN) aka App Registration 
 | `DATACONTRACT_AZURE_TENANT_ID`     | `79f5b80f-10ff-40b9-9d1f-774b42d605fc` | The Azure Tenant ID                                  |
 | `DATACONTRACT_AZURE_CLIENT_ID`     | `3cf7ce49-e2e9-4cbc-a922-4328d4a58622` | The ApplicationID / ClientID of the app registration |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1MMXXXXXXXXXXXXX`            | The Client Secret value                              |
-
-
-##### Azure Blob Storage / ADLS Gen2 metadata checks
-
-Each ODCS schema object with ``physicalType='file'`` represents a **unique folder/prefix**
-in Azure Blob Storage or ADLS Gen2. Its ``properties`` list maps directly to
-``BlobProperties`` attributes from the Azure SDK: for every declared property the engine
-extracts the corresponding attribute from each blob and validates it against the quality
-constraints declared on that property.
-
-| Property name       | BlobProperties attribute                        |
-|---------------------|-------------------------------------------------|
-|  name               | blob.name                                       |
-|  size               | blob.size                                       |
-|  lastModified       | blob.last_modified          (UTC datetime)      |
-|  creationTime       | blob.creation_time          (UTC datetime)      |
-|  lastAccessedOn     | blob.last_accessed_on       (UTC datetime)      |
-|  contentType        | blob.content_settings.content_type              |
-|  contentEncoding    | blob.content_settings.content_encoding          |
-|  contentLanguage    | blob.content_settings.content_language          |
-|  contentDisposition | blob.content_settings.content_disposition       |
-|  cacheControl       | blob.content_settings.cache_control             |
-|  contentMd5         | blob.content_settings.content_md5               |
-|  etag               | blob.etag                                       |
-|  blobType           | blob.blob_type.value        (e.g. "BlockBlob")  |
-|  blobTier           | blob.blob_tier.value        (e.g. "Hot")        |
-|  archiveStatus      | blob.archive_status                             |
-|  serverEncrypted    | blob.server_encrypted                           |
-|  deleted            | blob.deleted                                    |
-|  snapshotId         | blob.snapshot                                   |
-|  versionId          | blob.version_id                                 |
-|  tagCount           | blob.tag_count                                  |
-
-
-Schema-level quality checks (``schema.quality``):
-  Metrics ``rowCount`` are evaluated as *file-count*
-  thresholds against the total number of blobs found under the prefix.
-
-
-ContentType normalisation:
-  MIME parameters are stripped before comparison
-  (``"application/json; charset=utf-8"`` matches ``"application/json"``).
-
-Supported ``location`` URL formats (on the server block):
-  - ``https://<account>.blob.core.windows.net/<container>/<prefix>``
-  - ``abfss://<container>@<account>.dfs.core.windows.net/<prefix>``
-  - ``azure://<container>@<account>.blob.core.windows.net/<prefix>``
-  - ``wasbs://<container>@<account>.blob.core.windows.net/<prefix>``
 
 </details>
 
@@ -1361,6 +1330,8 @@ Usage: datacontract ci [OPTIONS] [LOCATIONS]...
 │                                                                         './test-results/TEST-da… │
 │ --output-format                                  [json|junit]           The target format for    │
 │                                                                         the test results.        │
+│                                                                         Accepted values: json,   │
+│                                                                         junit.                   │
 │ --logs                 --no-logs                                        Print logs               │
 │                                                                         [default: no-logs]       │
 │ --json                                                                  Print test results as    │
@@ -1873,8 +1844,7 @@ Usage: datacontract import [OPTIONS] COMMAND [ARGS]...
 │ spark       Import a data contract from a Spark schema.                                          │
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
-│ powerbi-semantic-model     Import a data contract from an Power BI template file .pbit or .bism. │
-│ snowflake   Import a data contract from an Snowflake account                                     │
+│ snowflake   Import a data contract from a Snowflake workspace.                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
@@ -2101,19 +2071,7 @@ Example:
 datacontract import protobuf --source "test.proto"
 ```
 
-#### snowflake
-
-Importing from snowflake schema. Specify snowflake workspace account in `source` parameter, database name `database` and schema in `schema`. 
-Multiple authentification are supported, 
-login/password using the `DATACONTRACT_SNOWFLAKE_ ...` test environement variable are setup,
-MFA using external browser is selected when `DATACONTRACT_SNOWFLAKE_PASSWORD` is missing
-TOML file authentification using the default profile when `SNOWFLAKE_DEFAULT_CONNECTION_NAME` environment variable is defined
-
-Example:
-
-```bash
-datacontract import --format snowflake --source account.canada-central.azure --database databaseName --schema schemaName
-```
+</details>
 
 <details markdown="1">
 <summary><strong>snowflake</strong></summary>
