@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- BigQuery: added support for a separate billing/compute project via the `DATACONTRACT_BIGQUERY_BILLING_PROJECT_ID` environment variable or a `billingProject` server custom property. When set, query jobs are submitted to (and billed against) the billing project while data is read from the `project` specified in the server config. This enables cross-project and cross-organisation validation without requiring `bigquery.jobUser` on the data project.
+- BigQuery: added support for a separate billing/compute project via the `DATACONTRACT_BIGQUERY_BILLING_PROJECT` environment variable. When set, query jobs are submitted to (and billed against) the billing project while data is read from the `project` specified in the server config. This enables cross-project and cross-organisation validation without requiring `bigquery.jobUser` on the data project.
 
 ## [1.0.0] - 2026-06-04
 

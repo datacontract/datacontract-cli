@@ -149,9 +149,7 @@ def connect_ibis(
 
             credentials = service_account.Credentials.from_service_account_file(credentials_path)
 
-        billing_project = _get_custom_property(server, "billingProject") or os.getenv(
-            "DATACONTRACT_BIGQUERY_BILLING_PROJECT_ID"
-        )
+        billing_project = os.getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
 
         if billing_project and billing_project != server.project:
             from google.cloud import bigquery as bq_client_lib
