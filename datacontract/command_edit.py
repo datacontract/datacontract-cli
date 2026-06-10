@@ -159,16 +159,19 @@ def create_app(
         if ".." in asset_path or asset_path.startswith("/"):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         if editor_assets_url is None:
-            assets_root = editor_assets_dir.resolve()
-            asset_file = (assets_root / asset_path).resolve()
+            assets_root = os.path.realpath(editor_assets_dir)
+            asset_file = os.path.realpath(os.path.join(assets_root, asset_path))
             # the canonical path must stay within the assets directory
-            if not str(asset_file).startswith(str(assets_root) + os.sep) or not asset_file.is_file():
+            if not asset_file.startswith(assets_root + os.sep):
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            if not os.path.isfile(asset_file):
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Editor asset not found: {asset_path}",
                 )
-            content_type = mimetypes.guess_type(asset_file.name)[0] or "application/octet-stream"
-            return Response(content=asset_file.read_bytes(), media_type=content_type)
+            content_type = mimetypes.guess_type(asset_file)[0] or "application/octet-stream"
+            with open(asset_file, "rb") as f:
+                return Response(content=f.read(), media_type=content_type)
         cached = asset_cache.get(asset_path)
         if cached is None:
             upstream_url = f"{editor_assets_url}/{asset_path}"
