@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.0.1] - 2026-06-10
 
 ### Added
 - Environment variables (e.g., credentials for `datacontract test`) are now also loaded from a `.env` file in the current working directory, walking up parent directories until one is found. Already-set environment variables take precedence over `.env` values, so exported variables and CI secrets keep working unchanged. (#1295)
