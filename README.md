@@ -477,6 +477,14 @@ Internally, it connects with DuckDB, Spark, or a native connection and executes 
 The `server` block in the datacontract.yaml is used to set up the connection.
 In addition, credentials, such as username and passwords, are provided with environment variables.
 
+Environment variables are also loaded from a `.env` file in the current working directory (or the nearest parent directory containing one, so you can run the CLI from a subfolder of your project). Already-set environment variables take precedence over values from the `.env` file.
+
+```bash
+# .env
+DATACONTRACT_POSTGRES_USERNAME=postgres
+DATACONTRACT_POSTGRES_PASSWORD=postgres
+```
+
 Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for additional types and formats.
 
 <details markdown="1">
