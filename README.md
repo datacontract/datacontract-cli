@@ -324,7 +324,8 @@ Usage: datacontract edit [OPTIONS] [LOCATION]
  https://cli.datacontract.com/#test                                                                 
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The path of the data contract yaml to edit.                          │
+│   location      [LOCATION]  The path of the data contract yaml to edit. If the file does not     │
+│                             exist, you are asked whether to initialize a new data contract.      │
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮

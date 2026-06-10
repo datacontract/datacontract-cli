@@ -9,6 +9,7 @@ import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import app, console, debug_option, enable_debug_logging
+from datacontract.init.init_template import get_init_template
 
 EDITOR_ASSETS_URL_TEMPLATE = "https://cdn.jsdelivr.net/npm/datacontract-editor@{version}/dist"
 
@@ -229,7 +230,10 @@ def create_app(
 def edit(
     location: Annotated[
         str,
-        typer.Argument(help="The path of the data contract yaml to edit."),
+        typer.Argument(
+            help="The path of the data contract yaml to edit. "
+            "If the file does not exist, you are asked whether to initialize a new data contract."
+        ),
     ] = "datacontract.yaml",
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4243,
     host: Annotated[
@@ -278,10 +282,12 @@ def edit(
         console.print("[red]Error: File must be a YAML file (.yaml or .yml).[/red]")
         raise typer.Exit(code=1)
     if not file_path.exists():
-        console.print(
-            f"[red]Error: File '{location}' does not exist. Use `datacontract init {location}` to create it first.[/red]"
-        )
-        raise typer.Exit(code=1)
+        if not typer.confirm(f"File '{location}' does not exist. Initialize a new data contract?"):
+            console.print(f"Aborted. Use `datacontract init {location}` to create the file.")
+            raise typer.Exit(code=1)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(get_init_template(), encoding="utf-8")
+        console.print(f"📄 data contract written to {location}")
 
     url = f"http://{'localhost' if host == '127.0.0.1' else host}:{port}"
     console.print(f"Editing: {file_path}")

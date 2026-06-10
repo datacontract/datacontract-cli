@@ -29,12 +29,24 @@ def client(contract_file) -> TestClient:
     return TestClient(create_app(contract_file))
 
 
-def test_edit_fails_when_file_does_not_exist(tmp_path):
+def test_edit_offers_to_initialize_a_missing_file(tmp_path):
     runner = CliRunner()
-    result = runner.invoke(app, ["edit", str(tmp_path / "missing.yaml")])
+    file_path = tmp_path / "new.yaml"
+    with patch("uvicorn.run") as mock_run:
+        result = runner.invoke(app, ["edit", str(file_path), "--no-open"], input="y\n")
+    assert result.exit_code == 0
+    # the file is initialized with the init template before the editor starts
+    assert "apiVersion" in file_path.read_text(encoding="utf-8")
+    mock_run.assert_called_once()
+
+
+def test_edit_aborts_when_initialization_is_declined(tmp_path):
+    runner = CliRunner()
+    file_path = tmp_path / "missing.yaml"
+    result = runner.invoke(app, ["edit", str(file_path), "--no-open"], input="n\n")
     assert result.exit_code == 1
-    assert "does not exist" in result.output
     assert "datacontract init" in result.output
+    assert not file_path.exists()
 
 
 def test_index_serves_editor_page(client, contract_file):
