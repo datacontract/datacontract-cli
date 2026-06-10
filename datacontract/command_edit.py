@@ -1,5 +1,6 @@
 import json
 import mimetypes
+import os
 import webbrowser
 from importlib import metadata
 from pathlib import Path
@@ -158,8 +159,10 @@ def create_app(
         if ".." in asset_path or asset_path.startswith("/"):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         if editor_assets_url is None:
-            asset_file = editor_assets_dir / asset_path
-            if not asset_file.is_file():
+            assets_root = editor_assets_dir.resolve()
+            asset_file = (assets_root / asset_path).resolve()
+            # the canonical path must stay within the assets directory
+            if not str(asset_file).startswith(str(assets_root) + os.sep) or not asset_file.is_file():
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Editor asset not found: {asset_path}",
