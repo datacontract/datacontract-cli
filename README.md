@@ -2523,6 +2523,20 @@ Ensure you have a JDK 17 or 21 installed. Java 25 causes issues.
 java --version
 ```
 
+#### Linux system package for postgres/psycopg-based tests
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y libpq-dev
+```
+**Fedora/RHEL:**
+```bash
+# Fedora/RHEL:
+sudo dnf install -y postgresql-devel
+# Arch:
+sudo pacman -S postgresql-libs
+```
 
 ### Docker Build
 
