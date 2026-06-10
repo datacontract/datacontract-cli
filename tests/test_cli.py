@@ -1,3 +1,4 @@
+import os
 import re
 
 from typer.testing import CliRunner
@@ -35,6 +36,41 @@ def test_test_schema_name_option_in_help():
     assert result.exit_code == 0
     plain_output = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
     assert "--schema-name" in plain_output
+
+
+def test_loads_env_file_from_current_working_directory(tmp_path, monkeypatch):
+    (tmp_path / ".env").write_text("DATACONTRACT_TEST_DOTENV_VAR=from-dotenv\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("DATACONTRACT_TEST_DOTENV_VAR", raising=False)
+    try:
+        result = runner.invoke(app, ["lint", "unknown.yaml"])
+        assert result.exit_code == 1  # file does not exist, but the app callback has run
+        assert os.environ.get("DATACONTRACT_TEST_DOTENV_VAR") == "from-dotenv"
+    finally:
+        os.environ.pop("DATACONTRACT_TEST_DOTENV_VAR", None)
+
+
+def test_loads_env_file_from_parent_directory(tmp_path, monkeypatch):
+    (tmp_path / ".env").write_text("DATACONTRACT_TEST_DOTENV_VAR=from-dotenv\n")
+    subdir = tmp_path / "sub" / "dir"
+    subdir.mkdir(parents=True)
+    monkeypatch.chdir(subdir)
+    monkeypatch.delenv("DATACONTRACT_TEST_DOTENV_VAR", raising=False)
+    try:
+        result = runner.invoke(app, ["lint", "unknown.yaml"])
+        assert result.exit_code == 1  # file does not exist, but the app callback has run
+        assert os.environ.get("DATACONTRACT_TEST_DOTENV_VAR") == "from-dotenv"
+    finally:
+        os.environ.pop("DATACONTRACT_TEST_DOTENV_VAR", None)
+
+
+def test_env_file_does_not_override_existing_environment_variables(tmp_path, monkeypatch):
+    (tmp_path / ".env").write_text("DATACONTRACT_TEST_DOTENV_VAR=from-dotenv\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DATACONTRACT_TEST_DOTENV_VAR", "from-environment")
+    result = runner.invoke(app, ["lint", "unknown.yaml"])
+    assert result.exit_code == 1
+    assert os.environ.get("DATACONTRACT_TEST_DOTENV_VAR") == "from-environment"
 
 
 def test_changelog_help():
