@@ -346,6 +346,21 @@ Try to sync all groups:
 uv sync --all-groups --all-extras
 ```
 
+#### Linux system package for postgres/psycopg-based tests
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y libpq-dev
+```
+**Fedora/RHEL:**
+```bash
+# Fedora/RHEL:
+sudo dnf install -y postgresql-devel
+# Arch:
+sudo pacman -S postgresql-libs
+```
+
 ### Docker Build
 
 ```bash
