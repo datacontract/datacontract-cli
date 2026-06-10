@@ -3,8 +3,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from typer.testing import CliRunner
 
-from datacontract.command_edit import create_app, resolve_editor_assets_url
+from datacontract.cli import app
+from datacontract.command_edit import BUNDLED_EDITOR_ASSETS_DIR, create_app, resolve_editor_assets_url
 
 YAML_CONTENT = """apiVersion: v3.1.0
 kind: DataContract
@@ -27,6 +29,14 @@ def client(contract_file) -> TestClient:
     return TestClient(create_app(contract_file))
 
 
+def test_edit_fails_when_file_does_not_exist(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(app, ["edit", str(tmp_path / "missing.yaml")])
+    assert result.exit_code == 1
+    assert "does not exist" in result.output
+    assert "datacontract init" in result.output
+
+
 def test_index_serves_editor_page(client, contract_file):
     response = client.get("/")
     assert response.status_code == 200
@@ -37,6 +47,10 @@ def test_index_serves_editor_page(client, contract_file):
     assert f"/api/files/{contract_file.name}" in response.text
     # the editor's test runner must point back to this server
     assert "dataContractCliApiServerUrl: window.location.origin" in response.text
+    # saving must give feedback via the editor's toast notifications
+    assert "addNotification" in response.text
+    assert "type: 'success'" in response.text
+    assert "type: 'error'" in response.text
 
 
 def test_health(client):
@@ -113,10 +127,36 @@ def test_editor_assets_are_proxied_and_cached(contract_file):
 
 
 def test_resolve_editor_assets_url():
+    # no version and no URL means the bundled assets are used
+    assert resolve_editor_assets_url(None, None) is None
     assert resolve_editor_assets_url("latest", None) == "https://cdn.jsdelivr.net/npm/datacontract-editor@latest/dist"
     assert resolve_editor_assets_url("0.1.9", None) == "https://cdn.jsdelivr.net/npm/datacontract-editor@0.1.9/dist"
     # an explicit assets URL takes precedence over the version
     assert resolve_editor_assets_url("0.1.9", "https://example.com/editor/dist") == "https://example.com/editor/dist"
+
+
+def test_bundled_editor_assets_are_shipped_with_the_package():
+    # the editor must work offline, without loading anything from a CDN
+    assert (BUNDLED_EDITOR_ASSETS_DIR / "datacontract-editor.es.js").is_file()
+    assert (BUNDLED_EDITOR_ASSETS_DIR / "datacontract-editor.css").is_file()
+
+
+def test_editor_assets_are_served_from_bundled_files_without_network(contract_file):
+    client = TestClient(create_app(contract_file))
+    with patch("requests.get") as mock_get:
+        response = client.get("/editor/datacontract-editor.es.js")
+        assert response.status_code == 200
+        assert "javascript" in response.headers["content-type"]
+        response = client.get("/editor/datacontract-editor.css")
+        assert response.status_code == 200
+        assert "text/css" in response.headers["content-type"]
+        mock_get.assert_not_called()
+
+
+def test_missing_local_editor_asset_returns_404(contract_file, tmp_path):
+    client = TestClient(create_app(contract_file, editor_assets_dir=tmp_path))
+    response = client.get("/editor/does-not-exist.js")
+    assert response.status_code == 404
 
 
 def test_editor_assets_path_traversal_is_rejected(contract_file):

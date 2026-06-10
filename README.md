@@ -316,6 +316,7 @@ Usage: datacontract edit [OPTIONS] [LOCATION]
  Edit a data contract file in the Data Contract Editor (web UI).                                    
                                                                                                     
  Starts a local web server that opens the Data Contract Editor for the given file.                  
+ The editor is bundled with the CLI, so no internet access is required.                             
  Saving in the editor writes directly back to the local file.                                       
  The server also acts as the editor's test runner: "Run test" in the editor executes                
  the data contract tests locally against the servers defined in the data contract.                  
@@ -323,17 +324,18 @@ Usage: datacontract edit [OPTIONS] [LOCATION]
  https://cli.datacontract.com/#test                                                                 
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
-│   location      [LOCATION]  The path of the data contract yaml to edit. The file is created if   │
-│                             it does not exist.                                                   │
+│   location      [LOCATION]  The path of the data contract yaml to edit.                          │
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --port                               INTEGER  Bind socket to this port. [default: 4243]          │
-│ --host                               TEXT     Bind socket to this host. [default: 127.0.0.1]     │
+│ --host                               TEXT     Bind socket to this host. Hint: For running in     │
+│                                               docker, set it to 0.0.0.0                          │
+│                                               [default: 127.0.0.1]                               │
 │ --editor-version                     TEXT     Version of the datacontract-editor npm package to  │
-│                                               use, e.g. '0.1.9'. Defaults to the latest          │
-│                                               published version.                                 │
-│                                               [default: latest]                                  │
+│                                               load from the CDN, e.g. '0.1.9' or 'latest'. By    │
+│                                               default, the editor version bundled with the CLI   │
+│                                               is used (works offline).                           │
 │ --editor-assets-url                  TEXT     Base URL to load the Data Contract Editor assets   │
 │                                               (JS/CSS) from, e.g. a self-hosted editor build.    │
 │                                               Takes precedence over --editor-version.            │

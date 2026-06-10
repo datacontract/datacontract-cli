@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./logo_fuchsia_v2.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datacontract-editor</title>
+    <link href="./datacontract-editor.css" rel="stylesheet">
+    <style>
+      html, body { height: 100%; margin: 0; }
+      #root { height: 100%; width: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { init } from './datacontract-editor.es.js';
+
+      init({
+        container: '#root',
+        mode: 'SERVER',
+        persistence: 'localStorage',
+        initialView: 'form',
+        tests: {
+          enabled: true,
+          dataContractCliApiServerUrl: 'https://api.datacontract.com'
+        },
+      });
+    </script>
+  </body>
+</html>
