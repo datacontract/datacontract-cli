@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.0.2] - 2026-06-11
 
 ### Added
 - `datacontract edit` now accepts a URL: it asks to download a local copy and opens that in the editor, using the configured API key (e.g., `ENTROPY_DATA_API_KEY`) to fetch the file.
