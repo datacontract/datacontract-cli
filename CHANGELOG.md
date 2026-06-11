@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- `datacontract edit` now accepts a URL: it asks to download a local copy and opens that in the editor, using the configured API key (e.g., `ENTROPY_DATA_API_KEY`) to fetch the file.
 - BigQuery: added support for a separate billing/compute project via the `DATACONTRACT_BIGQUERY_BILLING_PROJECT` environment variable. When set, query jobs are submitted to (and billed against) the billing project while data is read from the `project` specified in the server config. This enables cross-project and cross-organisation validation without requiring `bigquery.jobUser` on the data project.
 ### Fixed
 - `datacontract test` no longer fails on Spark/Databricks tables containing columns of types ibis cannot represent, such as VariantType (#1296)
