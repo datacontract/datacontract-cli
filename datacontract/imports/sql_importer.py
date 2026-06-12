@@ -358,6 +358,13 @@ def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
         return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
         return ("string", None)
+    elif sql_type_normed.startswith("array"):
+        return ("array", None)
+    elif sql_type_normed.startswith("struct"):
+        return ("object", None)
+    elif sql_type_normed.startswith("map"):
+        # ODCS v3.1 has no map logical type; RFC 0030 adds logicalType: map in v3.2
+        return ("object", None)
     else:
         return ("object", None)
 
