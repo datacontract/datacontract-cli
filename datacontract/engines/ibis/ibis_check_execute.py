@@ -848,6 +848,8 @@ def _resolve_col(columns: dict, field: str) -> str:
 
 def _resolve_table(con, model: str):
     """Resolve a table by name, tolerating case differences across dialects."""
+    if getattr(con, "name", None) == "pyspark":
+        return _pyspark_table_unconvertible_as_unknown(con, model)
     try:
         return con.table(model)
     except Exception:
@@ -859,6 +861,32 @@ def _resolve_table(con, model: str):
         if match is None:
             raise
         return con.table(match)
+
+
+def _pyspark_table_unconvertible_as_unknown(con, name: str):
+    """Reflect a pyspark table, typing any column whose Spark type Ibis cannot
+    convert (e.g. Databricks `VariantType`) as `Unknown`.
+    """
+    import ibis
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+    from ibis.backends.pyspark.datatypes import PySparkType
+
+    fields, unknown_columns = {}, []
+    for field in con._session.table(name).schema.fields:
+        try:
+            fields[field.name] = PySparkType.to_ibis(field.dataType)
+        except Exception:
+            fields[field.name] = dt.unknown
+            unknown_columns.append(f"{field.name} ({field.dataType.simpleString()})")
+    if not unknown_columns:
+        # Nothing unconvertible, resolve the table normally
+        return con.table(name)
+    logger.warning(
+        f"Model '{name}': column(s) {', '.join(unknown_columns)} have a type ibis cannot represent. "
+        f"Type checks for these columns will fail."
+    )
+    return ops.DatabaseTable(name, schema=ibis.schema(fields), source=con).to_expr()
 
 
 def _py(value):

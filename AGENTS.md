@@ -146,3 +146,4 @@ The project uses factory patterns for extensibility:
 - Uses Pydantic for data validation and schema definition
 - Type hints throughout the codebase
 - Follows PEP 8 style guidelines with some adjustments (120 character line length)
+- `CHANGELOG.md` entries should be one line each: what changed (user-facing), not how or why. Append the fixed issue, if exists, as `(#NNN)`. No details on mechanism, rationale, or edge cases.

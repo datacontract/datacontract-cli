@@ -318,6 +318,7 @@ Usage: datacontract edit [OPTIONS] [LOCATION]
  Starts a local web server that opens the Data Contract Editor for the given file.                  
  The editor is bundled with the CLI, so no internet access is required.                             
  Saving in the editor writes directly back to the local file.                                       
+ If a URL is given, you are asked whether to download a local copy, which is then edited.           
  The server also acts as the editor's test runner: "Run test" in the editor executes                
  the data contract tests locally against the servers defined in the data contract.                  
  Credentials for the data sources must be provided as environment variables, see                    
@@ -325,7 +326,9 @@ Usage: datacontract edit [OPTIONS] [LOCATION]
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   location      [LOCATION]  The path of the data contract yaml to edit. If the file does not     │
-│                             exist, you are asked whether to initialize a new data contract.      │
+│                             exist, you are asked whether to initialize a new data contract. If a │
+│                             URL is given, you are asked whether to download a local copy to      │
+│                             edit.                                                                │
 │                             [default: datacontract.yaml]                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
@@ -679,6 +682,7 @@ models:
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
+| `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `my-compute-project` | Optional. Google Cloud project ID to bill query jobs to. Use when the data lives in an external project and you want charges routed to your own project. Requires `bigquery.jobUser` on the billing project and `bigquery.dataViewer` on the data project. |
 
 </details>
 
