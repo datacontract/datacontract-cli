@@ -120,7 +120,7 @@ importer_factory.register_lazy_importer(
     class_name="ExcelImporter",
 )
 importer_factory.register_lazy_importer(
-    name=ImportFormat.powerbi_semantic_model,
+    name=ImportFormat.powerbi,
     module_path="datacontract.imports.powerbi_importer",
     class_name="PowerBiImporter",
 )
