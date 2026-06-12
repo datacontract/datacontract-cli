@@ -19,6 +19,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, Server
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException, require_env
 from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.server import get_server_type
 
 if typing.TYPE_CHECKING:
     import ibis
@@ -56,7 +57,7 @@ def connect_ibis(
     appended to ``run`` (mirroring the previous soda behaviour).
     """
     ibis = _import_ibis()
-    server_type = server.type
+    server_type = get_server_type(server)
 
     if server_type in _FILE_SERVER_TYPES:
         if server.format not in _SUPPORTED_FILE_FORMATS:
@@ -141,12 +142,28 @@ def connect_ibis(
         )
 
     if server_type == "bigquery":
-        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
         credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
+        credentials = None
         if credentials_path:
             from google.oauth2 import service_account
 
-            kwargs["credentials"] = service_account.Credentials.from_service_account_file(credentials_path)
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+
+        billing_project = os.getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
+
+        if billing_project and billing_project != server.project:
+            from google.cloud import bigquery as bq_client_lib
+
+            client = bq_client_lib.Client(project=billing_project, credentials=credentials)
+            return ibis.bigquery.connect(
+                project_id=server.project,
+                dataset_id=server.dataset,
+                client=client,
+            )
+
+        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
+        if credentials:
+            kwargs["credentials"] = credentials
         return ibis.bigquery.connect(**kwargs)
 
     if server_type == "sqlserver":

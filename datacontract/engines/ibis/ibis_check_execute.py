@@ -22,6 +22,7 @@ from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_category
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,24 @@ def execute_ibis_checks(
         con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name)
     except DataContractException:
         raise
+    except ImportError:
+        server_type = get_server_type(server)
+        reason = (
+            f"The '{server_type}' backend is not installed. "
+            f"Install it with: pip install 'datacontract-cli[{server_type}]'"
+        )
+        logger.exception("ibis backend import failed")
+        run.log_error(reason)
+        run.checks.append(
+            Check(
+                type="general",
+                name="Data Contract Tests",
+                result=ResultEnum.failed,
+                reason=reason,
+                engine="ibis",
+            )
+        )
+        return
     except Exception as e:
         reason = _first_line(str(e)) or "Engine ibis could not connect to the data source."
         logger.exception("ibis connection failed")
@@ -409,13 +428,87 @@ def _as_string(column, dtype):
     return column.cast("string")
 
 
+def _backend_name(t) -> str:
+    """Backend name (e.g. ``mssql``, ``duckdb``) behind a bound table, or ``""``."""
+    try:
+        return getattr(t.get_backend(), "name", "") or ""
+    except Exception:
+        return ""
+
+
+# Regex metacharacters with no T-SQL LIKE/PATINDEX equivalent. Inside a bracket
+# class (``[...]``) these are literal and allowed; encountered outside one they
+# signal a real regex we cannot translate to a LIKE pattern.
+_MSSQL_UNSUPPORTED_REGEX_CHARS = set(".^$*+?(){}|\\")
+
+
+def _mssql_like_pattern(pattern: str) -> str:
+    """Validate that a contract ``pattern`` is expressible as a T-SQL LIKE pattern.
+
+    SQL Server has no native regex operator, so the mssql backend cannot compile
+    ``re_search`` ("Compilation rule for RegexSearch operation is not defined").
+    PATINDEX instead matches LIKE wildcards (``%``, ``_``, ``[...]`` classes).
+    Patterns built from literals and ``[...]`` classes (the common case, e.g.
+    ``[0-9][0-9][0-9][0-9][0-9]``) map directly. Patterns using real regex syntax
+    (anchors, quantifiers, groups, ``.``) cannot be expressed and raise here,
+    rather than silently matching the wrong rows.
+    """
+    in_class = False
+    for ch in pattern:
+        if in_class:
+            if ch == "]":
+                in_class = False
+            continue
+        if ch == "[":
+            in_class = True
+            continue
+        if ch in _MSSQL_UNSUPPORTED_REGEX_CHARS:
+            raise ValueError(
+                f"SQL Server does not support general regular expressions for pattern checks. "
+                f"The pattern {pattern!r} uses regex syntax ({ch!r}) that cannot be translated "
+                f"to a T-SQL LIKE/PATINDEX pattern. Only LIKE-compatible patterns (literals, "
+                f"'%', '_', and [...] character classes) are supported on SQL Server."
+            )
+    return pattern
+
+
+def _mssql_pattern_search(column, pattern: str):
+    """``PATINDEX(pattern, column) > 0`` for the mssql backend (unanchored match).
+
+    Mirrors the former soda-core SQL Server behaviour, where ``valid regex`` was
+    compiled to ``PATINDEX('<pattern>', expr) > 0``. The pattern is passed as a
+    bound literal, so it is escaped rather than string-interpolated.
+    """
+    import ibis
+
+    like = _mssql_like_pattern(pattern)
+
+    @ibis.udf.scalar.builtin
+    def patindex(pattern: str, expression: str) -> int:  # -> PATINDEX(pattern, expression)
+        ...
+
+    return patindex(like, column) > 0
+
+
+def _regex_search_expr(t, column, pattern: str):
+    """Unanchored regex/pattern match, portable across backends.
+
+    Most ibis backends compile ``re_search`` to a native regex operator. SQL
+    Server has none, so fall back to a PATINDEX-based LIKE match for the mssql
+    backend.
+    """
+    if _backend_name(t) == "mssql":
+        return _mssql_pattern_search(column, pattern)
+    return column.re_search(pattern)
+
+
 def _valid_expr(t, col, dtype, spec: CheckSpec):
     """Boolean: a non-missing value satisfies all configured validity constraints."""
     conds = []
     if spec.valid_values is not None:
         conds.append(t[col].isin(spec.valid_values))
     if spec.valid_regex is not None:
-        conds.append(_as_string(t[col], dtype).re_search(spec.valid_regex))
+        conds.append(_regex_search_expr(t, _as_string(t[col], dtype), spec.valid_regex))
     if spec.valid_min is not None:
         conds.append(t[col] >= spec.valid_min)
     if spec.valid_max is not None:
@@ -755,6 +848,8 @@ def _resolve_col(columns: dict, field: str) -> str:
 
 def _resolve_table(con, model: str):
     """Resolve a table by name, tolerating case differences across dialects."""
+    if getattr(con, "name", None) == "pyspark":
+        return _pyspark_table_unconvertible_as_unknown(con, model)
     try:
         return con.table(model)
     except Exception:
@@ -766,6 +861,32 @@ def _resolve_table(con, model: str):
         if match is None:
             raise
         return con.table(match)
+
+
+def _pyspark_table_unconvertible_as_unknown(con, name: str):
+    """Reflect a pyspark table, typing any column whose Spark type Ibis cannot
+    convert (e.g. Databricks `VariantType`) as `Unknown`.
+    """
+    import ibis
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+    from ibis.backends.pyspark.datatypes import PySparkType
+
+    fields, unknown_columns = {}, []
+    for field in con._session.table(name).schema.fields:
+        try:
+            fields[field.name] = PySparkType.to_ibis(field.dataType)
+        except Exception:
+            fields[field.name] = dt.unknown
+            unknown_columns.append(f"{field.name} ({field.dataType.simpleString()})")
+    if not unknown_columns:
+        # Nothing unconvertible, resolve the table normally
+        return con.table(name)
+    logger.warning(
+        f"Model '{name}': column(s) {', '.join(unknown_columns)} have a type ibis cannot represent. "
+        f"Type checks for these columns will fail."
+    )
+    return ops.DatabaseTable(name, schema=ibis.schema(fields), source=con).to_expr()
 
 
 def _py(value):
