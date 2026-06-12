@@ -10,6 +10,7 @@ import yaml
 from datacontract.imports.powerbi_importer import import_powerbi_from_file
 
 BIM_FIXTURE = "fixtures/powerbi/model.bim"
+PBIT_FIXTURE = "fixtures/powerbi/Artificial Intelligence Sample.pbit"
 
 
 # ---------------------------------------------------------------------------
@@ -426,16 +427,17 @@ def test_import_bim_calculated_table_physical_type():
 
 
 def test_import_pbit_from_zip(tmp_path):
-    with open(BIM_FIXTURE, encoding="utf-8-sig") as f:
-        bim_dict = json.load(f)
 
-    pbit_path = _write_pbit(tmp_path, bim_dict)
-    result = import_powerbi_from_file(pbit_path)
+    result = import_powerbi_from_file(PBIT_FIXTURE)
 
     assert result is not None
     names = {s.name for s in result.schema_}
-    assert "Sales" in names
-    assert "Date" in names
+    assert "Accounts" in names
+    assert "Campaigns" in names
+    assert "Case Calendar" in names
+    assert "Cases" in names
+    assert "Contacts" in names
+    assert "Industries" in names
 
 
 def test_import_pbit_missing_data_model_schema(tmp_path):
