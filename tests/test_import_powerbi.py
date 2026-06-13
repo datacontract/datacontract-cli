@@ -246,15 +246,15 @@ def test_import_bim_measures_present():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
     measure_names = {p.name for p in sales.properties if p.physicalType == "measure"}
-    assert "Total Sales" in measure_names
-    assert "YTD Sales" in measure_names
-    assert "Sales MoM %" in measure_names
+    assert "Total_Sales" in measure_names
+    assert "YTD_Sales" in measure_names
+    assert "Sales_MoM_percent" in measure_names
 
 
 def test_import_bim_measure_dax_expression():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
-    total_sales = next(p for p in sales.properties if p.name == "Total Sales")
+    total_sales = next(p for p in sales.properties if p.name == "Total_Sales")
     assert total_sales.transformLogic is not None
     assert total_sales.transformLogic == "SUM(Sales[SalesAmount])"
 
@@ -262,14 +262,14 @@ def test_import_bim_measure_dax_expression():
 def test_import_bim_measure_description():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
-    total_sales = next(p for p in sales.properties if p.name == "Total Sales")
+    total_sales = next(p for p in sales.properties if p.name == "Total_Sales")
     assert total_sales.description == "Sum of all sales amounts"
 
 
 def test_import_bim_measure_display_folder():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
-    ytd = next(p for p in sales.properties if p.name == "YTD Sales")
+    ytd = next(p for p in sales.properties if p.name == "YTD_Sales")
     folder_cp = next((cp for cp in (ytd.customProperties or []) if cp.property == "displayFolder"), None)
     assert folder_cp is not None
     assert folder_cp.value == "Time Intelligence"
@@ -278,9 +278,11 @@ def test_import_bim_measure_display_folder():
 def test_import_bim_measure_multiline_dax():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
-    mom = next(p for p in sales.properties if p.name == "Sales MoM %")
+    mom = next(p for p in sales.properties if p.name == "Sales_MoM_percent")
     assert mom.transformLogic is not None
     assert "DATEADD" in mom.transformLogic
+    # The original Power BI name (invalid as an ODCS reference token) is preserved.
+    assert mom.businessName == "Sales MoM %"
 
 
 def test_import_bim_measure_list_expression(tmp_path):
@@ -307,14 +309,14 @@ def test_import_bim_measure_list_expression(tmp_path):
 def test_import_bim_measure_inferred_number_type():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
-    total_sales = next(p for p in sales.properties if p.name == "Total Sales")
+    total_sales = next(p for p in sales.properties if p.name == "Total_Sales")
     assert total_sales.logicalType == "number"
 
 
 def test_import_bim_hidden_measure_custom_property():
     result = import_powerbi_from_file(BIM_FIXTURE)
     sales = next(s for s in result.schema_ if s.name == "Sales")
-    flag = next(p for p in sales.properties if p.name == "Is Top Customer Flag")
+    flag = next(p for p in sales.properties if p.name == "Is_Top_Customer_Flag")
     cp_keys = {cp.property for cp in (flag.customProperties or [])}
     assert "isHidden" in cp_keys
 
@@ -369,28 +371,8 @@ def test_import_bim_no_relationship_on_date_table():
 
 
 # ---------------------------------------------------------------------------
-# IDs
+# Relationships (references use normalized names)
 # ---------------------------------------------------------------------------
-
-
-def test_import_bim_table_id():
-    result = import_powerbi_from_file(BIM_FIXTURE)
-    sales = next(s for s in result.schema_ if s.name == "Sales")
-    assert sales.id == "Sales_id"
-
-
-def test_import_bim_column_id():
-    result = import_powerbi_from_file(BIM_FIXTURE)
-    sales = next(s for s in result.schema_ if s.name == "Sales")
-    order_id = next(p for p in sales.properties if p.name == "OrderID")
-    assert order_id.id == "OrderID_id"
-
-
-def test_import_bim_measure_id():
-    result = import_powerbi_from_file(BIM_FIXTURE)
-    sales = next(s for s in result.schema_ if s.name == "Sales")
-    total_sales = next(p for p in sales.properties if p.name == "Total Sales")
-    assert total_sales.id == "Total_Sales_id"
 
 
 def test_import_bim_relationship_ids_use_name_convention():
@@ -434,10 +416,22 @@ def test_import_pbit_from_zip(tmp_path):
     names = {s.name for s in result.schema_}
     assert "Accounts" in names
     assert "Campaigns" in names
-    assert "Case Calendar" in names
+    assert "Case_Calendar" in names
     assert "Cases" in names
     assert "Contacts" in names
     assert "Industries" in names
+    # The original name (with a space, invalid as an ODCS reference token) is preserved.
+    case_calendar = next(s for s in result.schema_ if s.name == "Case_Calendar")
+    assert case_calendar.businessName == "Case Calendar"
+
+
+def test_import_pbit_produces_valid_odcs():
+    """Power BI names with spaces must be normalized so the imported contract,
+    including its relationship references, is valid ODCS."""
+    from datacontract.data_contract import DataContract
+
+    result = import_powerbi_from_file(PBIT_FIXTURE)
+    assert DataContract(data_contract_str=result.to_yaml()).lint().has_passed()
 
 
 def test_import_pbit_missing_data_model_schema(tmp_path):
