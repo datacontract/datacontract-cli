@@ -1,0 +1,30 @@
+dataContractSpecification: 1.2.1
+id: quality-local-fallback
+info:
+  title: quality-local-fallback
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  local:
+    type: local
+    path: ./fixtures/quality-local-fallback/data/orders.csv
+    format: csv
+models:
+  orders:
+    type: table
+    fields:
+      id:
+        type: integer
+      order_date:
+        type: string
+    quality:
+      # A valid DuckDB query that ibis's con.sql() cannot round-trip
+      - type: sql
+        description: Span of order dates via native DuckDB date_diff
+        query: SELECT date_diff('day', MIN(CAST(order_date AS DATE)), MAX(CAST(order_date AS DATE))) FROM orders
+        mustBeGreaterThan: 0
+      # Runs after the fallback
+      - type: sql
+        description: Row count after the fallback check
+        query: SELECT count(*) FROM orders
+        mustBeGreaterThan: 0
