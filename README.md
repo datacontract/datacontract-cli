@@ -1903,6 +1903,7 @@ Usage: datacontract import [OPTIONS] COMMAND [ARGS]...
 │ spark       Import a data contract from a Spark schema.                                          │
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
+│ powerbi     Import a data contract from a Power BI semantic model (.pbit, .bim, or .json) file.  │
 │ snowflake   Import a data contract from a Snowflake workspace.                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
@@ -2147,6 +2148,24 @@ Example:
 datacontract import snowflake --source account.canada-central.azure --database databaseName --schema schemaName
 ```
 </details>
+
+<details markdown="1">
+<summary><strong>Power BI</strong></summary>
+
+Imports a data contract from a Power BI semantic model. Pass the file via the `source` parameter — a `.pbit` template, a `.bim`, or a `.json` (BIM/TMSL) file. Only the semantic model (tables, columns, measures, and hierarchies) is imported; report pages and visuals are not.
+
+See the [Power BI documentation](https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-templates) for how to export a `.pbit` file from a `.pbix` file.
+
+Example:
+
+```bash
+datacontract import powerbi --source "test.pbit"
+
+datacontract import powerbi --source "test.bim"
+```
+
+</details>
+
 
 ### catalog
 ```

@@ -1,0 +1,245 @@
+{
+  "name": "SemanticModel",
+  "compatibilityLevel": 1550,
+  "model": {
+    "culture": "en-US",
+    "tables": [
+      {
+        "name": "Sales",
+        "description": "Transactional sales data",
+        "columns": [
+          {
+            "name": "OrderID",
+            "dataType": "int64",
+            "isNullable": false,
+            "description": "Unique order identifier",
+            "columnType": "data"
+          },
+          {
+            "name": "OrderDate",
+            "dataType": "dateTime",
+            "isNullable": true,
+            "description": "Date the order was placed",
+            "columnType": "data",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "name": "CustomerKey",
+            "dataType": "int64",
+            "isNullable": false,
+            "columnType": "data"
+          },
+          {
+            "name": "ProductKey",
+            "dataType": "int64",
+            "isNullable": false,
+            "columnType": "data"
+          },
+          {
+            "name": "SalesAmount",
+            "dataType": "decimal",
+            "isNullable": true,
+            "description": "Net sales amount in USD",
+            "columnType": "data",
+            "summarizeBy": "sum",
+            "formatString": "#,##0.00"
+          },
+          {
+            "name": "Quantity",
+            "dataType": "int64",
+            "isNullable": true,
+            "columnType": "data",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "UnitPrice",
+            "dataType": "decimal",
+            "isNullable": true,
+            "columnType": "data",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Discount",
+            "dataType": "double",
+            "isNullable": true,
+            "columnType": "data",
+            "summarizeBy": "none",
+            "isHidden": true
+          },
+          {
+            "name": "GrossMargin",
+            "dataType": "decimal",
+            "isNullable": true,
+            "description": "Gross margin calculated from sales and cost",
+            "columnType": "calculated",
+            "expression": "Sales[SalesAmount] - Sales[CostAmount]",
+            "formatString": "#,##0.00",
+            "displayFolder": "Financials"
+          },
+          {
+            "name": "RowNumber",
+            "columnType": "rowNumber",
+            "dataType": "int64",
+            "isHidden": true
+          }
+        ],
+        "measures": [
+          {
+            "name": "Total Sales",
+            "description": "Sum of all sales amounts",
+            "expression": "SUM(Sales[SalesAmount])",
+            "formatString": "#,##0.00",
+            "displayFolder": "KPIs"
+          },
+          {
+            "name": "Total Quantity",
+            "description": "Total units sold",
+            "expression": "SUM(Sales[Quantity])",
+            "formatString": "#,##0",
+            "displayFolder": "KPIs"
+          },
+          {
+            "name": "Average Order Value",
+            "description": "Average revenue per order",
+            "expression": "DIVIDE([Total Sales], DISTINCTCOUNT(Sales[OrderID]), 0)",
+            "formatString": "#,##0.00",
+            "displayFolder": "KPIs"
+          },
+          {
+            "name": "YTD Sales",
+            "description": "Year-to-date sales using time intelligence",
+            "expression": "TOTALYTD([Total Sales], 'Date'[Date])",
+            "formatString": "#,##0.00",
+            "displayFolder": "Time Intelligence"
+          },
+          {
+            "name": "Sales MoM %",
+            "description": "Month-over-month sales growth rate",
+            "expression": "VAR _prev = CALCULATE([Total Sales], DATEADD('Date'[Date], -1, MONTH))\nRETURN DIVIDE([Total Sales] - _prev, _prev, BLANK())",
+            "formatString": "0.00%",
+            "displayFolder": "Time Intelligence"
+          },
+          {
+            "name": "Is Top Customer Flag",
+            "description": "Flag indicating whether the current filter context is a top-10 customer",
+            "expression": "IF(RANKX(ALL(Sales[CustomerKey]), [Total Sales]) <= 10, TRUE(), FALSE())",
+            "formatString": "\"True\";\"True\";\"False\"",
+            "isHidden": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Sales-Partition",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"server\", \"database\")\nin\n    Source"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Date",
+        "description": "Calendar date dimension",
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "isNullable": false,
+            "description": "Full date value",
+            "columnType": "data",
+            "formatString": "yyyy-MM-dd"
+          },
+          {
+            "name": "Year",
+            "dataType": "int64",
+            "isNullable": false,
+            "description": "Calendar year",
+            "columnType": "data"
+          },
+          {
+            "name": "Quarter",
+            "dataType": "string",
+            "isNullable": false,
+            "description": "Calendar quarter label (e.g. Q1)",
+            "columnType": "data"
+          },
+          {
+            "name": "Month",
+            "dataType": "int64",
+            "isNullable": false,
+            "description": "Calendar month number (1-12)",
+            "columnType": "data"
+          },
+          {
+            "name": "MonthName",
+            "dataType": "string",
+            "isNullable": false,
+            "description": "Full month name",
+            "columnType": "data"
+          },
+          {
+            "name": "IsWeekend",
+            "dataType": "boolean",
+            "isNullable": false,
+            "columnType": "data"
+          }
+        ],
+        "hierarchies": [
+          {
+            "name": "Calendar",
+            "description": "Standard calendar drill-down hierarchy",
+            "levels": [
+              {"ordinal": 0, "name": "Year",    "column": "Year"},
+              {"ordinal": 1, "name": "Quarter",  "column": "Quarter"},
+              {"ordinal": 2, "name": "Month",    "column": "MonthName"},
+              {"ordinal": 3, "name": "Date",     "column": "Date"}
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Date-Partition",
+            "source": {
+              "type": "calculated",
+              "expression": "CALENDAR(DATE(2020,1,1), DATE(2030,12,31))"
+            }
+          }
+        ]
+      },
+      {
+        "name": "DateTableTemplate",
+        "isHidden": true,
+        "columns": [
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "isNullable": false,
+            "columnType": "data"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DateTableTemplate-Partition",
+            "source": {
+              "type": "calculated",
+              "expression": "CALENDAR(DATE(2020,1,1), DATE(2020,12,31))"
+            }
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "Sales_Date",
+        "fromTable": "Sales",
+        "fromColumn": "OrderDate",
+        "toTable": "Date",
+        "toColumn": "Date",
+        "fromCardinality": "many",
+        "toCardinality": "one",
+        "isActive": true
+      }
+    ],
+    "roles": []
+  }
+}
