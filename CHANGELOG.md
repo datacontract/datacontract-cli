@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract import powerbi` imports a data contract from a Power BI semantic model (.pbit, .bim, or .json) (#1233)
+
 ### Changed
 - `datacontract edit` shows the edited filename in the editor header, no longer offers New/Load Example/Open, and Cancel reverts to the file on disk
 
