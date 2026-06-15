@@ -142,12 +142,28 @@ def connect_ibis(
         )
 
     if server_type == "bigquery":
-        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
         credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
+        credentials = None
         if credentials_path:
             from google.oauth2 import service_account
 
-            kwargs["credentials"] = service_account.Credentials.from_service_account_file(credentials_path)
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+
+        billing_project = os.getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
+
+        if billing_project and billing_project != server.project:
+            from google.cloud import bigquery as bq_client_lib
+
+            client = bq_client_lib.Client(project=billing_project, credentials=credentials)
+            return ibis.bigquery.connect(
+                project_id=server.project,
+                dataset_id=server.dataset,
+                client=client,
+            )
+
+        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
+        if credentials:
+            kwargs["credentials"] = credentials
         return ibis.bigquery.connect(**kwargs)
 
     if server_type == "sqlserver":
@@ -169,21 +185,7 @@ def connect_ibis(
         )
 
     if server_type == "trino":
-        user = require_env("DATACONTRACT_TRINO_USERNAME", server_type="trino")
-        password = os.getenv("DATACONTRACT_TRINO_PASSWORD")
-        kwargs = dict(
-            host=server.host,
-            port=int(server.port) if server.port else 8080,
-            user=user,
-            database=server.catalog,
-            schema=server.schema_,
-        )
-        if password:
-            import trino as trino_pkg
-
-            kwargs["auth"] = trino_pkg.auth.BasicAuthentication(user, password)
-            kwargs["http_scheme"] = "https"
-        return ibis.trino.connect(**kwargs)
+        return _connect_trino(ibis, server)
 
     if server_type == "athena":
         return _connect_athena(ibis, server)
@@ -412,6 +414,7 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
 def _connect_athena(ibis, server: Server):
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
+    s3_session_token = os.getenv("DATACONTRACT_S3_SESSION_TOKEN")
     if not server.schema_:
         raise DataContractException(
             type="athena-connection",
@@ -430,9 +433,58 @@ def _connect_athena(ibis, server: Server):
         s3_staging_dir=server.stagingDir,
         aws_access_key_id=s3_access_key_id,
         aws_secret_access_key=s3_secret_access_key,
+        aws_session_token=s3_session_token,
         region_name=os.getenv("DATACONTRACT_S3_REGION") or getattr(server, "region_name", None),
         schema_name=server.schema_,
     )
+
+
+def _connect_trino(ibis, server: Server):
+    authentication = os.getenv("DATACONTRACT_TRINO_AUTHENTICATION", "basic").strip().lower()
+
+    kwargs = dict(
+        host=server.host,
+        port=int(server.port) if server.port else 8080,
+        user=None,
+        database=server.catalog,
+        schema=server.schema_,
+    )
+
+    if authentication == "basic":
+        user = require_env("DATACONTRACT_TRINO_USERNAME", server_type="trino")
+        kwargs["user"] = user
+
+        password = os.getenv("DATACONTRACT_TRINO_PASSWORD")
+        if password:
+            import trino as trino_pkg
+
+            kwargs["auth"] = trino_pkg.auth.BasicAuthentication(user, password)
+            kwargs["http_scheme"] = "https"
+        return ibis.trino.connect(**kwargs)
+    elif authentication == "jwt":
+        import trino as trino_pkg
+
+        kwargs["auth"] = trino_pkg.auth.JWTAuthentication(
+            require_env("DATACONTRACT_TRINO_JWT_TOKEN", server_type="trino")
+        )
+        kwargs["http_scheme"] = "https"
+        return ibis.trino.connect(**kwargs)
+    elif authentication == "oauth2":
+        import trino as trino_pkg
+
+        kwargs["auth"] = trino_pkg.auth.OAuth2Authentication()
+        kwargs["http_scheme"] = "https"
+        return ibis.trino.connect(**kwargs)
+    else:
+        raise DataContractException(
+            type="trino-connection",
+            name="unsupported_authentication",
+            reason=(
+                "Unsupported DATACONTRACT_TRINO_AUTHENTICATION value "
+                f"{authentication!r}. Supported values are: basic, jwt, oauth2."
+            ),
+            engine="datacontract",
+        )
 
 
 def _get_custom_property(server: Server, name: str):

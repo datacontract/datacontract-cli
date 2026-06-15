@@ -3,14 +3,16 @@ import mimetypes
 import os
 import webbrowser
 from importlib import metadata
-from pathlib import Path
-from urllib.parse import quote
+from pathlib import Path, PurePosixPath
+from urllib.parse import quote, unquote, urlparse
 
 import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import app, console, debug_option, enable_debug_logging
 from datacontract.init.init_template import get_init_template
+from datacontract.lint.urls import fetch_resource
+from datacontract.model.exceptions import DataContractException
 
 EDITOR_ASSETS_URL_TEMPLATE = "https://cdn.jsdelivr.net/npm/datacontract-editor@{version}/dist"
 
@@ -34,6 +36,36 @@ def resolve_editor_assets_url(editor_version: str | None, editor_assets_url: str
     return None
 
 
+def local_copy_filename(url: str) -> str:
+    """Return the filename for the local copy of a remote data contract URL."""
+    name = PurePosixPath(unquote(urlparse(url).path)).name
+    if name.endswith((".yaml", ".yml")):
+        return name
+    return "datacontract.yaml"
+
+
+def _download_local_copy(url: str) -> str:
+    """Ask the user to download a local copy of the remote data contract and return its path."""
+    local_filename = local_copy_filename(url)
+    console.print("The editor edits local files only, but the data contract is available via a URL.")
+    if not typer.confirm(f"Download a local copy to '{local_filename}' and edit that?"):
+        console.print("Aborted.")
+        raise typer.Exit(code=1)
+    local_path = Path(local_filename)
+    if local_path.exists() and not typer.confirm(f"File '{local_filename}' already exists. Overwrite it?"):
+        console.print("Aborted.")
+        raise typer.Exit(code=1)
+    try:
+        content = fetch_resource(url)
+    except DataContractException as e:
+        console.print(f"[red]Error: {e.reason}[/red]")
+        raise typer.Exit(code=1)
+    local_path.write_text(content, encoding="utf-8")
+    console.print(f"📄 Downloaded {url} to {local_filename}")
+    console.print("Note: Saving in the editor writes to the local copy only, not back to the URL.")
+    return local_filename
+
+
 def _cli_version() -> str:
     try:
         return metadata.version("datacontract-cli")
@@ -43,9 +75,12 @@ def _cli_version() -> str:
 
 def _generate_index_html(filename: str) -> str:
     """
-    Generate the editor page, mirroring the CLI mode of the datacontract-editor npm launcher:
-    load the YAML from the local file API, write it back on save, and point the
-    editor's test runner at this server's own /test endpoint.
+    Generate the editor page: load the YAML from the local file API, write it back on
+    save, and point the editor's test runner at this server's own /test endpoint.
+
+    The editor runs in EMBEDDED mode, since the file menu (New, Load Example, Open)
+    makes no sense when the editor is bound to a single local file. The filename is
+    shown in the header via titlePrefix, and Cancel reverts to the file on disk.
     """
     filename_js = json.dumps(filename)
     file_api_path = f"/api/files/{quote(filename)}"
@@ -65,7 +100,7 @@ def _generate_index_html(filename: str) -> str:
   <body>
     <div id="root"></div>
     <script type="module">
-      import {{ init }} from '{EDITOR_ASSETS_PATH}/datacontract-editor.es.js';
+      import {{ init, parseYaml }} from '{EDITOR_ASSETS_PATH}/datacontract-editor.es.js';
 
       async function initCli() {{
         try {{
@@ -77,15 +112,40 @@ def _generate_index_html(filename: str) -> str:
 
           const notify = (notification) => editor?.getStore().getState().addNotification(notification);
 
+          // The header renders the titlePrefix followed by the contract's name,
+          // so only show the filename when the contract has a name.
+          let titlePrefix = null;
+          try {{
+            if (parseYaml(yaml)?.name) {{
+              titlePrefix = {filename_js};
+            }}
+          }} catch {{
+            // not parseable: no contract name to show the filename next to
+          }}
+
           const editor = init({{
             container: '#root',
-            mode: 'CLI',
+            mode: 'EMBEDDED',
+            showDelete: false,
+            titlePrefix: titlePrefix,
             yaml: yaml,
             persistence: 'none',
             initialView: 'form',
             tests: {{
               enabled: true,
               dataContractCliApiServerUrl: window.location.origin,
+            }},
+            onCancel: async () => {{
+              try {{
+                const response = await fetch('{file_api_path}');
+                if (!response.ok) {{
+                  throw new Error(response.statusText);
+                }}
+                editor.setYaml(await response.text());
+                notify({{ type: 'info', message: 'Discarded changes, reloaded ' + {filename_js} }});
+              }} catch (error) {{
+                notify({{ type: 'error', message: 'Failed to reload ' + {filename_js} + ': ' + error.message, duration: 5000 }});
+              }}
             }},
             onSave: async (yamlContent) => {{
               try {{
@@ -238,7 +298,8 @@ def edit(
         str,
         typer.Argument(
             help="The path of the data contract yaml to edit. "
-            "If the file does not exist, you are asked whether to initialize a new data contract."
+            "If the file does not exist, you are asked whether to initialize a new data contract. "
+            "If a URL is given, you are asked whether to download a local copy to edit."
         ),
     ] = "datacontract.yaml",
     port: Annotated[int, typer.Option(help="Bind socket to this port.")] = 4243,
@@ -270,6 +331,7 @@ def edit(
     Starts a local web server that opens the Data Contract Editor for the given file.
     The editor is bundled with the CLI, so no internet access is required.
     Saving in the editor writes directly back to the local file.
+    If a URL is given, you are asked whether to download a local copy, which is then edited.
     The server also acts as the editor's test runner: "Run test" in the editor executes
     the data contract tests locally against the servers defined in the data contract.
     Credentials for the data sources must be provided as environment variables, see
@@ -282,6 +344,9 @@ def edit(
     except ImportError:
         console.print("[red]Install the extra datacontract-cli\\[api] to use edit.[/red]")
         raise typer.Exit(code=1)
+
+    if location.startswith("http://") or location.startswith("https://"):
+        location = _download_local_copy(location)
 
     file_path = Path(location).resolve()
     if file_path.suffix not in (".yaml", ".yml"):

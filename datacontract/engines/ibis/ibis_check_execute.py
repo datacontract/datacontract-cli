@@ -695,10 +695,13 @@ def _run_scalar(con, query: str, dialect: Optional[str]):
         try:
             row = cursor.fetchone()
         finally:
-            try:
-                cursor.close()
-            except Exception:
-                pass
+            # On DuckDB, raw_sql returns the shared connection itself; closing it
+            # would tear down the connection and break every subsequent check.
+            if cursor is not getattr(con, "con", None):
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
         return _py(row[0]) if row else None
 
 
@@ -848,6 +851,8 @@ def _resolve_col(columns: dict, field: str) -> str:
 
 def _resolve_table(con, model: str):
     """Resolve a table by name, tolerating case differences across dialects."""
+    if getattr(con, "name", None) == "pyspark":
+        return _pyspark_table_unconvertible_as_unknown(con, model)
     try:
         return con.table(model)
     except Exception:
@@ -859,6 +864,32 @@ def _resolve_table(con, model: str):
         if match is None:
             raise
         return con.table(match)
+
+
+def _pyspark_table_unconvertible_as_unknown(con, name: str):
+    """Reflect a pyspark table, typing any column whose Spark type Ibis cannot
+    convert (e.g. Databricks `VariantType`) as `Unknown`.
+    """
+    import ibis
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+    from ibis.backends.pyspark.datatypes import PySparkType
+
+    fields, unknown_columns = {}, []
+    for field in con._session.table(name).schema.fields:
+        try:
+            fields[field.name] = PySparkType.to_ibis(field.dataType)
+        except Exception:
+            fields[field.name] = dt.unknown
+            unknown_columns.append(f"{field.name} ({field.dataType.simpleString()})")
+    if not unknown_columns:
+        # Nothing unconvertible, resolve the table normally
+        return con.table(name)
+    logger.warning(
+        f"Model '{name}': column(s) {', '.join(unknown_columns)} have a type ibis cannot represent. "
+        f"Type checks for these columns will fail."
+    )
+    return ops.DatabaseTable(name, schema=ibis.schema(fields), source=con).to_expr()
 
 
 def _py(value):
