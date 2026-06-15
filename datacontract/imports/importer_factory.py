@@ -122,7 +122,7 @@ importer_factory.register_lazy_importer(
 importer_factory.register_lazy_importer(
     name=ImportFormat.powerbi,
     module_path="datacontract.imports.powerbi_importer",
-    class_name="PowerBIImporter",
+    class_name="PowerBiImporter",
 )
 importer_factory.register_lazy_importer(
     name=ImportFormat.snowflake,

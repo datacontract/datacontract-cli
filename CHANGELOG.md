@@ -10,8 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - improvement `export excel schema's properties add customProperties` Pivot property as column header and value as cell's value
 ## [Unreleased]
 
+### Added
+- `datacontract import powerbi` imports a data contract from a Power BI semantic model (.pbit, .bim, or .json) (#1233)
+
 ### Changed
 - `datacontract edit` shows the edited filename in the editor header, no longer offers New/Load Example/Open, and Cancel reverts to the file on disk
+
+### Fixed
+- `datacontract test` no longer aborts remaining quality checks after a SQL quality check falls back to native execution on DuckDB-backed sources (#1302)
 
 ## [1.0.2] - 2026-06-11
 

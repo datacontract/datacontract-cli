@@ -695,10 +695,13 @@ def _run_scalar(con, query: str, dialect: Optional[str]):
         try:
             row = cursor.fetchone()
         finally:
-            try:
-                cursor.close()
-            except Exception:
-                pass
+            # On DuckDB, raw_sql returns the shared connection itself; closing it
+            # would tear down the connection and break every subsequent check.
+            if cursor is not getattr(con, "con", None):
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
         return _py(row[0]) if row else None
 
 
