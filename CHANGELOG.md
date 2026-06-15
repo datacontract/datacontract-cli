@@ -8,14 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `datacontract import powerbi` imports a data contract from a Power BI semantic model (.pbit, .bim, or .json) (#1233)
 - `datacontract test` against Trino now supports `DATACONTRACT_TRINO_AUTHENTICATION=jwt` with `DATACONTRACT_TRINO_JWT_TOKEN`, and `DATACONTRACT_TRINO_AUTHENTICATION=oauth2` for the interactive browser flow.
+
+## [1.0.3] - 2026-06-15
+
+### Added
+- `datacontract import powerbi` imports a data contract from a Power BI semantic model (.pbit, .bim, or .json) (#1232,#1233 @dmaresma)
 
 ### Changed
 - `datacontract edit` shows the edited filename in the editor header, no longer offers New/Load Example/Open, and Cancel reverts to the file on disk
 
 ### Fixed
 - `datacontract test` no longer aborts remaining quality checks after a SQL quality check falls back to native execution on DuckDB-backed sources (#1302)
+- Athena: pass `DATACONTRACT_S3_SESSION_TOKEN` to the connection again, fixing `UnrecognizedClientException` with temporary AWS credentials (#1309)
 
 ## [1.0.2] - 2026-06-11
 
