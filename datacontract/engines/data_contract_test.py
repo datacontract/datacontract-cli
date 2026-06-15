@@ -76,6 +76,10 @@ def execute_data_contract_test(
     if server.format == "json" and server.type != "kafka":
         if check_categories is None or "schema" in check_categories:
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
+    # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
+    if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
+        if check_categories is None or "schema" in check_categories:
+            check_azure_blob_file(run, data_contract, server, check_categories=check_categories)
     execute_ibis_checks(
         run,
         data_contract,
