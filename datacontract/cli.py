@@ -7,6 +7,7 @@ from typing import Iterable, Optional
 
 import typer
 from click import Context
+from dotenv import find_dotenv, load_dotenv
 from rich.console import Console
 from typer.core import TyperGroup
 from typing_extensions import Annotated
@@ -21,6 +22,7 @@ debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
 # Order in which top-level commands appear in `datacontract --help` (cf. README.md)
 COMMAND_ORDER = [
     "init",
+    "edit",
     "lint",
     "changelog",
     "test",
@@ -125,7 +127,10 @@ def common(
     connect to data sources and execute schema and quality tests,
     and export to different formats.
     """
-    pass
+    # Load environment variables (e.g., credentials) from a .env file in the
+    # current working directory, walking up parent directories until one is found.
+    # Already-set environment variables take precedence.
+    load_dotenv(dotenv_path=find_dotenv(usecwd=True), override=False)
 
 
 def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
@@ -187,6 +192,7 @@ from datacontract import (  # noqa: E402, F401
     command_changelog,
     command_ci,
     command_dbt,
+    command_edit,
     command_export,
     command_import,
     command_init,

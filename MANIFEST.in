@@ -1,3 +1,4 @@
 include datacontract/templates/style/output.css
 recursive-include datacontract/templates/ **/*.html
 recursive-include datacontract/schemas/ **/*.json **/*.yaml
+recursive-include datacontract/editor_assets/ *

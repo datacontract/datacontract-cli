@@ -117,6 +117,9 @@ $ datacontract export html --output orders-v1.odcs.html https://datacontract.com
 # create a new data contract from example and write it to odcs.yaml
 $ datacontract init odcs.yaml
 
+# edit the data contract in the Data Contract Editor (web UI)
+$ datacontract edit odcs.yaml
+
 # lint the odcs.yaml and stop after the first validation error (default).
 $ datacontract lint odcs.yaml
 
@@ -273,6 +276,7 @@ A list of available extras:
 Commands
 
 - [init](#init)
+- [edit](#edit)
 - [lint](#lint)
 - [changelog](#changelog)
 - [test](#test)
@@ -304,6 +308,52 @@ Usage: datacontract init [OPTIONS] [LOCATION]
                                                                                                     
  Example: datacontract init datacontract.yaml
 ```
+
+### edit
+```
+Usage: datacontract edit [OPTIONS] [LOCATION]                                                      
+                                                                                                    
+ Edit a data contract file in the Data Contract Editor (web UI).                                    
+                                                                                                    
+ Starts a local web server that opens the Data Contract Editor for the given file.                  
+ The editor is bundled with the CLI, so no internet access is required.                             
+ Saving in the editor writes directly back to the local file.                                       
+ If a URL is given, you are asked whether to download a local copy, which is then edited.           
+ The server also acts as the editor's test runner: "Run test" in the editor executes                
+ the data contract tests locally against the servers defined in the data contract.                  
+ Credentials for the data sources must be provided as environment variables, see                    
+ https://cli.datacontract.com/#test                                                                 
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   location      [LOCATION]  The path of the data contract yaml to edit. If the file does not     │
+│                             exist, you are asked whether to initialize a new data contract. If a │
+│                             URL is given, you are asked whether to download a local copy to      │
+│                             edit.                                                                │
+│                             [default: datacontract.yaml]                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --port                               INTEGER  Bind socket to this port. [default: 4243]          │
+│ --host                               TEXT     Bind socket to this host. Hint: For running in     │
+│                                               docker, set it to 0.0.0.0                          │
+│                                               [default: 127.0.0.1]                               │
+│ --editor-version                     TEXT     Version of the datacontract-editor npm package to  │
+│                                               load from the CDN, e.g. '0.1.9' or 'latest'. By    │
+│                                               default, the editor version bundled with the CLI   │
+│                                               is used (works offline).                           │
+│ --editor-assets-url                  TEXT     Base URL to load the Data Contract Editor assets   │
+│                                               (JS/CSS) from, e.g. a self-hosted editor build.    │
+│                                               Takes precedence over --editor-version.            │
+│ --open                 --no-open              Open the editor in the default browser.            │
+│                                               [default: open]                                    │
+│ --debug                --no-debug             Enable debug logging                               │
+│ --help                                        Show this message and exit.                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Example: datacontract edit datacontract.yaml
+```
+
+Requires the `api` extra (`pip install 'datacontract-cli[api]'`).
+The [Data Contract Editor](https://github.com/datacontract/datacontract-editor) assets are loaded from a CDN by default; use `--editor-version` to pin a specific editor version or `--editor-assets-url` to point to a self-hosted build.
 
 ### lint
 ```
@@ -477,6 +527,14 @@ Internally, it connects with DuckDB, Spark, or a native connection and executes 
 The `server` block in the datacontract.yaml is used to set up the connection.
 In addition, credentials, such as username and passwords, are provided with environment variables.
 
+Environment variables are also loaded from a `.env` file in the current working directory (or the nearest parent directory containing one, so you can run the CLI from a subfolder of your project). Already-set environment variables take precedence over values from the `.env` file.
+
+```bash
+# .env
+DATACONTRACT_POSTGRES_USERNAME=postgres
+DATACONTRACT_POSTGRES_PASSWORD=postgres
+```
+
 Feel free to create an [issue](https://github.com/datacontract/datacontract-cli/issues), if you need support for additional types and formats.
 
 <details markdown="1">
@@ -624,6 +682,7 @@ models:
 |----------------------------------------------|---------------------------|---------------------------------------------------------|
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file. If not set, ADC/WIF is used automatically. |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `sa@project.iam.gserviceaccount.com` | Optional. Service account to impersonate. Works with both key file and ADC auth. |
+| `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `my-compute-project` | Optional. Google Cloud project ID to bill query jobs to. Use when the data lives in an external project and you want charges routed to your own project. Requires `bigquery.jobUser` on the billing project and `bigquery.dataViewer` on the data project. |
 
 </details>
 
@@ -1844,8 +1903,8 @@ Usage: datacontract import [OPTIONS] COMMAND [ARGS]...
 │ spark       Import a data contract from a Spark schema.                                          │
 │ iceberg     Import a data contract from an Iceberg schema.                                       │
 │ excel       Import a data contract from an Excel file.                                           │
-│ powerbi     Import a data contract from an PowerBI template file.                                │
-│ snowflake   Import a data contract from an Snowflake account                                     │
+│ powerbi     Import a data contract from a Power BI semantic model (.pbit, .bim, or .json) file.  │
+│ snowflake   Import a data contract from a Snowflake workspace.                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
@@ -2101,6 +2160,24 @@ Example:
 datacontract import snowflake --source account.canada-central.azure --database databaseName --schema schemaName
 ```
 </details>
+
+<details markdown="1">
+<summary><strong>Power BI</strong></summary>
+
+Imports a data contract from a Power BI semantic model. Pass the file via the `source` parameter — a `.pbit` template, a `.bim`, or a `.json` (BIM/TMSL) file. Only the semantic model (tables, columns, measures, and hierarchies) is imported; report pages and visuals are not.
+
+See the [Power BI documentation](https://learn.microsoft.com/en-us/power-bi/create-reports/desktop-templates) for how to export a `.pbit` file from a `.pbix` file.
+
+Example:
+
+```bash
+datacontract import powerbi --source "test.pbit"
+
+datacontract import powerbi --source "test.bim"
+```
+
+</details>
+
 
 ### catalog
 ```

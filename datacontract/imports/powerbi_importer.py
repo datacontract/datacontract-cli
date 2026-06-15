@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
+import re
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from open_data_contract_standard.model import (
     CustomProperty,
@@ -20,7 +22,7 @@ from datacontract.model.exceptions import DataContractException
 # ---------------------------------------------------------------------------
 # Power BI data type → (ODCS logical type, optional format)
 # ---------------------------------------------------------------------------
-_PBI_TYPE_MAP: Dict[str, tuple[str, Optional[str]]] = {
+_PBI_TYPE_TO_ODCS: dict[str, tuple[str, str | None]] = {
     "string": ("string", None),
     "int64": ("integer", None),
     "double": ("number", None),
@@ -36,21 +38,25 @@ _PBI_TYPE_MAP: Dict[str, tuple[str, Optional[str]]] = {
 }
 
 
-def _map_pbi_type(data_type: Optional[str]) -> tuple[str, Optional[str]]:
+def _map_pbi_type(data_type: str | None) -> tuple[str, str | None]:
     """Map a Power BI data type string to ``(logicalType, format)``."""
     if data_type is None:
         return ("string", None)
-    return _PBI_TYPE_MAP.get(data_type.lower(), ("string", None))
+    return _PBI_TYPE_TO_ODCS.get(data_type.lower(), ("string", None))
 
 
-def _make_id(name: str) -> str:
-    """Build a stable ID from a name by replacing spaces with underscores and appending ``_id``.
+def _normalize(name: str) -> str:
+    """Turn a Power BI name into a valid ODCS identifier token.
 
     Examples:
-        "Sales"      → "Sales_id"
-        "Order Date" → "Order_Date_id"
+        "Sales"        → "Sales"
+        "Account Owner" → "Account_Owner"
+        "Sales MoM %"   → "Sales_MoM_percent"
     """
-    return name.replace(" ", "_").replace("(", "_").replace(")", "_").replace("%", "percent") + "_id"
+    normalized = re.sub(r"[^A-Za-z0-9_]", "_", name.replace("%", "percent"))
+    if normalized[:1].isdigit():
+        normalized = "_" + normalized
+    return normalized
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +64,7 @@ def _make_id(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-class PowerBIImporter(Importer):
+class PowerBiImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
@@ -98,7 +104,7 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
         raise DataContractException(
             type="import",
             name="powerbi import",
-            reason=(f"Unsupported file extension '{suffix}'. Supported formats: .pbit, .bim, .json (model.bim)"),
+            reason=(f"Unsupported file extension '{suffix}'. Supported formats: .pbit, .bim, .json"),
             engine="datacontract",
         )
 
@@ -110,7 +116,7 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
 # ---------------------------------------------------------------------------
 
 
-def _load_bim_from_pbit(pbit_path: Path) -> Dict[str, Any]:
+def _load_bim_from_pbit(pbit_path: Path) -> dict[str, Any]:
     """Extract and parse the ``DataModelSchema`` JSON from a .pbit ZIP archive.
 
     Power BI Desktop embeds the tabular model as a UTF-16 LE JSON file called
@@ -157,7 +163,7 @@ def _load_bim_from_pbit(pbit_path: Path) -> Dict[str, Any]:
         )
 
 
-def _load_bim_from_json(bim_path: Path) -> Dict[str, Any]:
+def _load_bim_from_json(bim_path: Path) -> dict[str, Any]:
     """Load a ``model.bim`` / ``.json`` file as BIM JSON (UTF-8 with optional BOM)."""
     try:
         with open(bim_path, encoding="utf-8-sig") as f:
@@ -177,7 +183,7 @@ def _load_bim_from_json(bim_path: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandard:
+def _build_odcs(bim: dict[str, Any], model_name: str) -> OpenDataContractStandard:
     # Some BIM files wrap everything under a top-level "model" key; others don't.
     model = bim.get("model", bim)
 
@@ -197,11 +203,9 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
     tables = model.get("tables", [])
     bim_relationships = model.get("relationships", [])
 
-    schema_objects: List[SchemaObject] = []
-    # table name → SchemaObject (for relationship wiring)
-    table_name_to_obj: Dict[str, SchemaObject] = {}
-    # table name → {col name → SchemaProperty} (for from_/to ID resolution)
-    table_name_to_col_props: Dict[str, Dict[str, SchemaProperty]] = {}
+    schema_objects: list[SchemaObject] = []
+    # original BIM table name → SchemaObject (for relationship wiring)
+    table_name_to_obj: dict[str, SchemaObject] = {}
 
     for table in tables:
         schema_obj = _map_table(table)
@@ -209,14 +213,11 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
             t_name = table.get("name", "")
             schema_objects.append(schema_obj)
             table_name_to_obj[t_name] = schema_obj
-            col_props: Dict[str, SchemaProperty] = {}
-            if schema_obj.properties:
-                for prop in schema_obj.properties:
-                    if prop.name:
-                        col_props[prop.name] = prop
-            table_name_to_col_props[t_name] = col_props
 
-    _apply_bim_relationships(bim_relationships, table_name_to_obj, table_name_to_col_props)
+    _apply_bim_relationships(bim_relationships, table_name_to_obj)
+
+    if not schema_objects:
+        logging.warning("Power BI import produced an empty contract: No tables were found in the semantic model.")
 
     schema_objects.sort(key=lambda s: s.name.lower())
     odcs.schema_ = schema_objects
@@ -228,7 +229,7 @@ def _build_odcs(bim: Dict[str, Any], model_name: str) -> OpenDataContractStandar
 # ---------------------------------------------------------------------------
 
 
-def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
+def _map_table(table: dict[str, Any]) -> SchemaObject | None:
     name = table.get("name", "")
     if not name:
         return None
@@ -242,7 +243,7 @@ def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
     physical_type = _table_physical_type(table)
     tags = ["hidden"] if is_hidden else None
 
-    properties: List[SchemaProperty] = []
+    properties: list[SchemaProperty] = []
 
     # Columns — skip internal rowNumber columns added by the engine
     for col in table.get("columns", []):
@@ -265,18 +266,18 @@ def _map_table(table: Dict[str, Any]) -> Optional[SchemaObject]:
             properties.append(prop)
 
     schema_obj = create_schema_object(
-        name=name,
+        name=_normalize(name),
         physical_type=physical_type,
         description=description,
+        business_name=name,
         tags=tags,
         properties=properties if properties else None,
     )
-    schema_obj.id = _make_id(name)
 
     return schema_obj
 
 
-def _table_physical_type(table: Dict[str, Any]) -> str:
+def _table_physical_type(table: dict[str, Any]) -> str:
     partitions = table.get("partitions", [])
     if not partitions:
         return "table"
@@ -289,7 +290,7 @@ def _table_physical_type(table: Dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
+def _map_column(col: dict[str, Any]) -> SchemaProperty | None:
     name = col.get("name", "")
     if not name:
         return None
@@ -303,7 +304,7 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
     is_nullable = col.get("isNullable", True)
     description = col.get("description") or None
 
-    custom_props: Dict[str, Any] = {}
+    custom_props: dict[str, Any] = {}
 
     if col.get("formatString"):
         custom_props["formatString"] = col["formatString"]
@@ -319,7 +320,7 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
         expression = "".join(expression)
 
     property = create_property(
-        name=name,
+        name=_normalize(name),
         logical_type=logical_type,
         physical_type=physical_type,
         description=description,
@@ -328,7 +329,7 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
         custom_properties=custom_props if custom_props else None,
     )
 
-    property.id = _make_id(name)
+    property.businessName = name
     property.transformLogic = expression.strip() if expression else None
 
     return property
@@ -339,7 +340,7 @@ def _map_column(col: Dict[str, Any]) -> Optional[SchemaProperty]:
 # ---------------------------------------------------------------------------
 
 
-def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
+def _map_measure(measure: dict[str, Any]) -> SchemaProperty | None:
     name = measure.get("name", "")
     if not name:
         return None
@@ -350,7 +351,7 @@ def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
     if isinstance(expression, list):
         expression = "\n".join(expression)
 
-    custom_props: Dict[str, Any] = {}
+    custom_props: dict[str, Any] = {}
     if measure.get("isHidden"):
         custom_props["isHidden"] = True
     if measure.get("displayFolder"):
@@ -359,13 +360,13 @@ def _map_measure(measure: Dict[str, Any]) -> Optional[SchemaProperty]:
     logical_type = _infer_measure_type(measure.get("formatString", ""), expression)
 
     property = create_property(
-        name=name,
+        name=_normalize(name),
         logical_type=logical_type,
         physical_type="measure",
         description=description,
         custom_properties=custom_props if custom_props else None,
     )
-    property.id = _make_id(name)
+    property.businessName = name
     property.transformLogic = expression.strip() if expression else None
 
     return property
@@ -391,7 +392,7 @@ def _infer_measure_type(format_string: str, expression: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _map_hierarchy(hierarchy: Dict[str, Any]) -> Optional[SchemaProperty]:
+def _map_hierarchy(hierarchy: dict[str, Any]) -> SchemaProperty | None:
     name = hierarchy.get("name", "")
     if not name:
         return None
@@ -399,24 +400,28 @@ def _map_hierarchy(hierarchy: Dict[str, Any]) -> Optional[SchemaProperty]:
     description = hierarchy.get("description") or None
     levels = sorted(hierarchy.get("levels", []), key=lambda lv: lv.get("ordinal", 0))
 
-    level_props = [
-        create_property(
-            name=lv["name"],
+    level_props = []
+    for lv in levels:
+        if not lv.get("name"):
+            continue
+        level_prop = create_property(
+            name=_normalize(lv.get("name")),
             logical_type="string",
             physical_type="hierarchy level",
-            custom_properties={"columnRef": lv["column"]} if lv.get("column") else None,
+            custom_properties={"columnRef": _normalize(lv["column"])} if lv.get("column") else None,
         )
-        for lv in levels
-        if lv.get("name")
-    ]
+        level_prop.businessName = lv.get("name")
+        level_props.append(level_prop)
 
-    return create_property(
-        name=name,
+    hierarchy_prop = create_property(
+        name=_normalize(name),
         logical_type="object",
         physical_type="hierarchy",
         description=description,
         properties=level_props if level_props else None,
     )
+    hierarchy_prop.businessName = name
+    return hierarchy_prop
 
 
 # ---------------------------------------------------------------------------
@@ -425,14 +430,13 @@ def _map_hierarchy(hierarchy: Dict[str, Any]) -> Optional[SchemaProperty]:
 
 
 def _apply_bim_relationships(
-    bim_relationships: List[Dict[str, Any]],
-    table_name_to_obj: Dict[str, SchemaObject],
-    table_name_to_col_props: Dict[str, Dict[str, SchemaProperty]],
+    bim_relationships: list[dict[str, str]],
+    table_name_to_obj: dict[str, SchemaObject],
 ) -> None:
     """Attach BIM relationships as ODCS Relationship objects on the 'from' SchemaObject.
 
-    ``from_`` and ``to`` are formatted as ``schemaId.propertyId``, using the
-    name-based ID (``{Name}_id``) for both tables and columns.
+    ``from`` and ``to`` are ``table.column`` references built from the normalized
+    (identifier-safe) names, so each matches the ``name`` of its target.
     The relationship is placed on the *from* side (many side) of the join.
     """
     for rel in bim_relationships:
@@ -441,22 +445,10 @@ def _apply_bim_relationships(
         to_table = rel.get("toTable", "")
         to_col_name = rel.get("toColumn", "")
 
-        if from_table.startswith("LocalDateTable_") or to_table.startswith("DateTableTemplate_"):
-            continue
-
         from_obj = table_name_to_obj.get(from_table)
         to_obj = table_name_to_obj.get(to_table)
         if from_obj is None or to_obj is None:
             continue
-
-        from_schema_id = from_obj.name or from_table.name
-        to_schema_id = to_obj.name or to_table
-
-        from_prop = table_name_to_col_props.get(from_table, {}).get(from_col_name)
-        from_prop_id = (from_prop.name if from_prop and from_prop.name else None) or from_col_name
-
-        to_prop = table_name_to_col_props.get(to_table, {}).get(to_col_name)
-        to_prop_id = (to_prop.name if to_prop and to_prop.name else None) or to_col_name
 
         from_card = rel.get("fromCardinality", "many")
         to_card = rel.get("toCardinality", "one")
@@ -468,8 +460,8 @@ def _apply_bim_relationships(
 
         odcs_rel = Relationship(
             type="foreignKey",
-            **{"from": f"{from_schema_id}.{from_prop_id}"},
-            to=f"{to_schema_id}.{to_prop_id}",
+            **{"from": f"{_normalize(from_table)}.{_normalize(from_col_name)}"},
+            to=f"{_normalize(to_table)}.{_normalize(to_col_name)}",
             customProperties=custom_props,
         )
 

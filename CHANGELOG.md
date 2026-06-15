@@ -5,8 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-- improvement `export excel schema's properties add customProperties` Pivot property as column header and value as cell's value
+## [Unreleased]
+
+### Added
+- `datacontract import powerbi` imports a data contract from a Power BI semantic model (.pbit, .bim, or .json) (#1233)
+
+### Changed
+- `datacontract edit` shows the edited filename in the editor header, no longer offers New/Load Example/Open, and Cancel reverts to the file on disk
+
+### Fixed
+- `datacontract test` no longer aborts remaining quality checks after a SQL quality check falls back to native execution on DuckDB-backed sources (#1302)
+
+## [1.0.2] - 2026-06-11
+
+### Added
+- `datacontract edit` now accepts a URL: it asks to download a local copy and opens that in the editor, using the configured API key (e.g., `ENTROPY_DATA_API_KEY`) to fetch the file.
+- BigQuery: added support for a separate billing/compute project via the `DATACONTRACT_BIGQUERY_BILLING_PROJECT` environment variable. When set, query jobs are submitted to (and billed against) the billing project while data is read from the `project` specified in the server config. This enables cross-project and cross-organisation validation without requiring `bigquery.jobUser` on the data project.
+### Fixed
+- `datacontract test` no longer fails on Spark/Databricks tables containing columns of types ibis cannot represent, such as VariantType (#1296)
+- The `postgres` and `redshift` extras now install `psycopg[binary]`, whose wheels bundle the libpq client library. Previously, `datacontract test` against PostgreSQL/Redshift failed on machines without PostgreSQL client libraries installed (`couldn't import psycopg: no pq wrapper available`).
+
+## [1.0.1] - 2026-06-10
+
+### Added
+- Environment variables (e.g., credentials for `datacontract test`) are now also loaded from a `.env` file in the current working directory, walking up parent directories until one is found. Already-set environment variables take precedence over `.env` values, so exported variables and CI secrets keep working unchanged. (#1295)
+- `datacontract edit <file>` opens a local data contract file in the [Data Contract Editor](https://github.com/datacontract/datacontract-editor) (web UI). Starts a local web server (default port 4243, requires the `api` extra) that serves the editor, writes saves directly back to the file, and doubles as the editor's test runner: "Run test" in the editor executes the data contract tests locally via the server's own `/test` endpoint. The editor is bundled with the CLI and works offline; `--editor-version` loads a specific editor version from the CDN instead, `--editor-assets-url` a self-hosted build. If the file does not exist, the command offers to initialize a new data contract (same template as `datacontract init`). Saving gives feedback in the editor and on the console.
 
 ### Fixed
 - `datacontract test` no longer fails with `Compilation rule for RegexSearch operation is not defined` when a contract uses `logicalTypeOptions.pattern` (or `pattern`) against SQL Server. SQL Server has no native regex operator, so the ibis mssql backend cannot compile `re_search`; pattern checks now fall back to a `PATINDEX(...) > 0` LIKE match, restoring the behaviour of the former soda-core engine. Patterns that use real regex syntax (anchors, quantifiers, groups, `.`) cannot be expressed as a T-SQL LIKE pattern and now raise a clear error instead of failing cryptically. (#1284)
