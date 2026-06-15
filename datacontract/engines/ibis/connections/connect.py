@@ -428,6 +428,7 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
 def _connect_athena(ibis, server: Server):
     s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
     s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
+    s3_session_token = os.getenv("DATACONTRACT_S3_SESSION_TOKEN")
     if not server.schema_:
         raise DataContractException(
             type="athena-connection",
@@ -446,6 +447,7 @@ def _connect_athena(ibis, server: Server):
         s3_staging_dir=server.stagingDir,
         aws_access_key_id=s3_access_key_id,
         aws_secret_access_key=s3_secret_access_key,
+        aws_session_token=s3_session_token,
         region_name=os.getenv("DATACONTRACT_S3_REGION") or getattr(server, "region_name", None),
         schema_name=server.schema_,
     )
