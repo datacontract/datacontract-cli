@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` no longer aborts remaining quality checks after a SQL quality check falls back to native execution on DuckDB-backed sources (#1302)
+- Athena: pass `DATACONTRACT_S3_SESSION_TOKEN` to the connection again, fixing `UnrecognizedClientException` with temporary AWS credentials
 
 ## [1.0.2] - 2026-06-11
 
