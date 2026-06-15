@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.0.2"
+version = "1.0.3"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -15,7 +15,8 @@ classifiers = [
 ]
 requires-python = ">=3.10,<3.15"
 dependencies = [
-  "typer>=0.18.0,<0.26",
+  "typer>=0.18.0,<0.27",
+  "click>=8.1.0,<9.0.0",
   "pydantic>=2.8.2,<2.14.0",
   "pyyaml~=6.0.1",
   "requests>=2.31,<2.35",
@@ -55,8 +56,8 @@ excel = [
 
 databricks = [
   "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
-  "databricks-sql-connector>=3.7.0,<4.3.0",
-  "databricks-sdk<0.116.0",
+  "databricks-sql-connector>=3.7.0,<4.4.0",
+  "databricks-sdk<0.118.0",
   # Not capped to Spark 3.5.x like older builds were: the databricks path uses a
   # caller-provided Spark session (or the databricks SQL connector) and never
   # loads the Kafka/Avro connector jars, so it isn't tied to a Scala/Spark line.
@@ -167,7 +168,7 @@ rdf = [
 ]
 
 api = [
-  "fastapi>=0.115.0,<0.137.0",
+  "fastapi>=0.115.0,<0.138.0",
   "uvicorn>=0.44.0,<0.50.0",
 ]
 
@@ -197,7 +198,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<9.7.0",
-  "ruff==0.15.16",
+  "ruff==0.15.17",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
   "trino==0.337.0",
 ]

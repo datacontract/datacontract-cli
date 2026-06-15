@@ -1209,10 +1209,12 @@ models:
 
 ##### Environment Variables
 
-| Environment Variable          | Example            | Description |
-|-------------------------------|--------------------|-------------|
-| `DATACONTRACT_TRINO_USERNAME` | `trino`            | Username    |
-| `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password    |
+| Environment Variable                 | Example            | Description                                                  |
+|--------------------------------------|--------------------|--------------------------------------------------------------|
+| `DATACONTRACT_TRINO_USERNAME`        | `trino`            | Username for `DATACONTRACT_TRINO_AUTHENTICATION=basic`       |
+| `DATACONTRACT_TRINO_PASSWORD`        | `mysecretpassword` | Password for `DATACONTRACT_TRINO_AUTHENTICATION=basic`       |
+| `DATACONTRACT_TRINO_AUTHENTICATION`  | `oauth2`           | Authentication mode: `basic` (default), `jwt`, or `oauth2`   |
+| `DATACONTRACT_TRINO_JWT_TOKEN`       | `eyJhbGciOi...`    | JWT bearer token for `DATACONTRACT_TRINO_AUTHENTICATION=jwt` |
 
 </details>
 
