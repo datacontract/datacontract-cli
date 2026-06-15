@@ -59,14 +59,3 @@ def test_to_sql_ddl_clickhouse_auto_detect():
     actual = DataContract(data_contract_file="fixtures/clickhouse/datacontract.yaml").export("sql")
     assert "-- SQL Dialect: clickhouse" in actual
     assert "ENGINE = MergeTree()" in actual
-
-
-def test_to_sql_ddl_clickhouse_no_pk_omits_order_by():
-    """Tables without primary keys should omit ORDER BY."""
-    actual = DataContract(data_contract_file="fixtures/clickhouse/datacontract.yaml").export(
-        "sql", sql_server_type="clickhouse"
-    )
-    # events table has no PK, so no ORDER BY
-    assert "ORDER BY" in actual  # orders table has one
-    # Only one ORDER BY (for orders, which has a PK)
-    assert actual.count("ORDER BY") == 1

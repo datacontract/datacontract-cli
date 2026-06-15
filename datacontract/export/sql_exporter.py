@@ -3,8 +3,6 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
 
-CLICKHOUSE_ENGINE_DEFAULT = "MergeTree()"
-
 
 class SqlExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
@@ -73,8 +71,7 @@ def to_sql_ddl(
     data_contract: OpenDataContractStandard,
     server_type: str = "snowflake",
     server: str = None,
-    clickhouse_engine: str | None = None,
-    clickhouse_order_by: str | None = None,
+    **kwargs,
 ) -> str:
     if data_contract is None:
         return ""
@@ -104,8 +101,7 @@ def to_sql_ddl(
             table_prefix + schema_obj.name,
             schema_obj,
             server_type,
-            clickhouse_engine=clickhouse_engine,
-            clickhouse_order_by=clickhouse_order_by,
+            **kwargs,
         )
 
     return result.strip()
@@ -115,8 +111,7 @@ def _to_sql_table(
     model_name: str,
     model: SchemaObject,
     server_type: str = "snowflake",
-    clickhouse_engine: str | None = None,
-    clickhouse_order_by: str | None = None,
+    **kwargs,
 ) -> str:
     if server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
@@ -174,9 +169,9 @@ def _to_sql_table(
 
     result += ")"
     if server_type == "clickhouse":
-        engine = clickhouse_engine or CLICKHOUSE_ENGINE_DEFAULT
+        engine = kwargs.get("clickhouse_engine") or "MergeTree()"
         result += f"\nENGINE = {engine}"
-        order_by = clickhouse_order_by or _get_clickhouse_order_by(pk_props)
+        order_by = kwargs.get("clickhouse_order_by") or _get_clickhouse_order_by(pk_props)
         if order_by:
             result += f"\nORDER BY ({order_by})"
         if model.description is not None:
@@ -190,10 +185,7 @@ def _to_sql_table(
 
 
 def _get_clickhouse_order_by(pk_props: list) -> str | None:
-    """Build the ORDER BY clause for ClickHouse from primary key columns.
-    ClickHouse uses ORDER BY as its primary/sorting key mechanism, not
-    inline or table-level PRIMARY KEY constraints. This function maps the
-    data contract's primaryKey fields to the ClickHouse ORDER BY clause."""
+    """Build the ORDER BY clause for ClickHouse from primary key columns."""
     if not pk_props:
         return None
     sorted_pk = sorted(pk_props, key=lambda p: (p.primaryKeyPosition is None, p.primaryKeyPosition))
