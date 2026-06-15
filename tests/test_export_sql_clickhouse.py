@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `discount_rate` Nullable(Float32) COMMENT 'Discount rate applied.',
   `quantity` Int32 COMMENT 'Number of items ordered.',
   `is_active` Nullable(Bool) COMMENT 'Whether the order is active.',
-  `tags` Nullable(Array(String)) COMMENT 'Order tags.'
+  `tags` Array(String) COMMENT 'Order tags.'
 )
 ENGINE = MergeTree()
 ORDER BY (order_id)

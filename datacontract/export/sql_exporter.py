@@ -137,7 +137,7 @@ def _to_sql_table(
             # ClickHouse uses ORDER BY as the sorting/primary key.
             # Inline PRIMARY KEY is not used; see _get_clickhouse_order_by.
             col = f"  `{column_name}` "
-            if prop.required:
+            if prop.required or type_str.startswith(("Array(", "Map(", "Tuple(")):
                 col += type_str
             else:
                 col += f"Nullable({type_str})"
