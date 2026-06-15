@@ -1544,8 +1544,8 @@ Usage: datacontract export [OPTIONS] COMMAND [ARGS]...
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Example: datacontract export html datacontract.yaml --output datacontract.html                     
-  For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle, clickhouse), use
- `datacontract export sql --dialect <dialect>`.
+ For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle, clickhouse),   
+ use `datacontract export sql --dialect <dialect>`.
 ```
 
 Run `datacontract export <format> --help` to see the format-specific options (e.g. `datacontract export sql --help`). If you are missing a format, please [create an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).

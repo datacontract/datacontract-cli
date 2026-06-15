@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test` against Trino now supports `DATACONTRACT_TRINO_AUTHENTICATION=jwt` with `DATACONTRACT_TRINO_JWT_TOKEN`, and `DATACONTRACT_TRINO_AUTHENTICATION=oauth2` for the interactive browser flow.
+- `datacontract export sql --dialect clickhouse`: export data contracts to ClickHouse SQL DDL. (#1293)
 
 ## [1.0.3] - 2026-06-15
 
@@ -34,7 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2026-06-10
 
 ### Added
-- `datacontract export sql --dialect clickhouse`: export data contracts to ClickHouse SQL DDL. Supports full type mapping (`String`, `UUID`, `DateTime64(6)`, `Decimal(P,S)`, `Float32/64`, `Int8/16/32/64`, `Bool`, `Map(K,V)`, `Tuple(...)`, `Array(T)`, `FixedString(N)`), custom table engine (`--clickhouse-engine`, defaults to `MergeTree()`), custom ORDER BY (`--clickhouse-order-by`, defaults to primary key columns), column/table comments, and `Nullable(T)` wrapping for optional fields. ClickHouse uses `ORDER BY` as its sorting/primary key (not `PRIMARY KEY` constraints). (#1293)
 - Environment variables (e.g., credentials for `datacontract test`) are now also loaded from a `.env` file in the current working directory, walking up parent directories until one is found. Already-set environment variables take precedence over `.env` values, so exported variables and CI secrets keep working unchanged. (#1295)
 - `datacontract edit <file>` opens a local data contract file in the [Data Contract Editor](https://github.com/datacontract/datacontract-editor) (web UI). Starts a local web server (default port 4243, requires the `api` extra) that serves the editor, writes saves directly back to the file, and doubles as the editor's test runner: "Run test" in the editor executes the data contract tests locally via the server's own `/test` endpoint. The editor is bundled with the CLI and works offline; `--editor-version` loads a specific editor version from the CDN instead, `--editor-assets-url` a self-hosted build. If the file does not exist, the command offers to initialize a new data contract (same template as `datacontract init`). Saving gives feedback in the editor and on the console.
 
