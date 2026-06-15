@@ -5,12 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-- new `file store test on azure blob storage to employ data contract as storage policy` ([#1227](https://github.com/datacontract/datacontract-cli/issues/1227))
-- improvement `export excel schema's properties add customProperties` Pivot property as column header and value as cell's value
 ## [Unreleased]
 
 ### Added
+- `datacontract test` validates Azure Blob Storage / ADLS Gen2 file metadata against a data contract used as a storage policy (#1227)
 - `datacontract import powerbi` imports a data contract from a Power BI semantic model (.pbit, .bim, or .json) (#1233)
 
 ### Changed
