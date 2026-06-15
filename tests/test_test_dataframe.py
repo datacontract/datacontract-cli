@@ -21,6 +21,7 @@ from datacontract.engines.ibis.connections.kafka import spark_connector_packages
 # logging.basicConfig(level=logging.INFO, force=True)
 
 datacontract = "fixtures/dataframe/datacontract.yaml"
+datacontract_nested = "fixtures/dataframe/datacontract_nested.yaml"
 
 load_dotenv(override=True)
 
@@ -78,6 +79,38 @@ def test_test_dataframe_fail(spark: SparkSession):
     assert len(failed) == 3
 
 
+def test_test_dataframe_nested_checks_pass(spark: SparkSession):
+    _prepare_nested_dataframe(spark)
+    data_contract = DataContract(
+        data_contract_file=datacontract_nested,
+        spark=spark,
+    )
+
+    run = data_contract.test()
+
+    print(run.pretty())
+    assert run.has_passed()
+    assert all(check.result == "passed" for check in run.checks)
+
+
+def test_test_dataframe_nested_checks_fail(spark: SparkSession):
+    _prepare_nested_fail_dataframe(spark)
+    data_contract = DataContract(
+        data_contract_file=datacontract_nested,
+        spark=spark,
+    )
+
+    run = data_contract.test()
+
+    print(run.pretty())
+    assert not run.has_passed()
+    failed = {(check.model, check.type, check.field) for check in run.checks if check.result == "failed"}
+    assert ("my_nested_table", "field_regex", "user.email") in failed
+    assert ("my_nested_table", "field_quality_sql", "user.status") in failed
+    assert ("my_nested_table__line_items", "field_required", "sku") in failed
+    assert ("my_nested_table__line_items", "field_invalid_values", "status") in failed
+
+
 schema = StructType(
     [
         StructField("field_one", StringType(), nullable=False),
@@ -97,6 +130,35 @@ schema = StructType(
                     ]
                 )
             ),
+        ),
+    ]
+)
+
+
+nested_schema = StructType(
+    [
+        StructField("id", StringType(), nullable=False),
+        StructField(
+            "user",
+            StructType(
+                [
+                    StructField("email", StringType(), nullable=True),
+                    StructField("status", StringType(), nullable=True),
+                ]
+            ),
+            nullable=True,
+        ),
+        StructField(
+            "line_items",
+            ArrayType(
+                StructType(
+                    [
+                        StructField("sku", StringType(), nullable=True),
+                        StructField("status", StringType(), nullable=True),
+                    ]
+                )
+            ),
+            nullable=True,
         ),
     ]
 )
@@ -172,3 +234,37 @@ def _prepare_fail_dataframe(spark):
     # Create temporary view
     # Name must match the model name in the data contract
     df.createOrReplaceTempView("my_table")
+
+
+def _prepare_nested_dataframe(spark):
+    data = [
+        Row(
+            id="1",
+            user=Row(email="alice@example.com", status="active"),
+            line_items=[Row(sku="SKU-1", status="ok"), Row(sku="SKU-2", status="hold")],
+        ),
+        Row(
+            id="2",
+            user=Row(email="bob@example.com", status="inactive"),
+            line_items=[Row(sku="SKU-3", status="ok")],
+        ),
+    ]
+    df = spark.createDataFrame(data, schema=nested_schema)
+    df.createOrReplaceTempView("my_nested_table")
+
+
+def _prepare_nested_fail_dataframe(spark):
+    data = [
+        Row(
+            id="1",
+            user=Row(email="alice-at-example.com", status="blocked"),
+            line_items=[Row(sku=None, status="bad"), Row(sku="SKU-2", status="hold")],
+        ),
+        Row(
+            id="2",
+            user=Row(email="bob@example.com", status="inactive"),
+            line_items=[Row(sku="SKU-3", status="ok")],
+        ),
+    ]
+    df = spark.createDataFrame(data, schema=nested_schema)
+    df.createOrReplaceTempView("my_nested_table")

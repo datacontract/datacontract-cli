@@ -1,0 +1,44 @@
+dataContractSpecification: 1.2.1
+id: dataframetestnested
+info:
+  title: dataframetestnested
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  unittest:
+    type: dataframe
+models:
+  my_nested_table:
+    type: table
+    fields:
+      id:
+        type: varchar
+        required: true
+        unique: true
+      user:
+        type: struct
+        required: true
+        fields:
+          email:
+            type: varchar
+            required: true
+            pattern: "^.+@.+$"
+          status:
+            type: varchar
+            quality:
+              - type: sql
+                query: SELECT COUNT(*) FROM {model} WHERE {field} NOT IN ('active', 'inactive')
+                mustBe: 0
+      line_items:
+        type: array
+        items:
+          type: struct
+          fields:
+            sku:
+              type: varchar
+              required: true
+            status:
+              type: varchar
+              enum:
+                - ok
+                - hold

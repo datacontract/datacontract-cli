@@ -222,6 +222,66 @@ def _get_type(prop: SchemaProperty) -> Optional[str]:
     return None
 
 
+def _field_name(prop: SchemaProperty) -> str:
+    return prop.physicalName or prop.name
+
+
+def add_spark_nested_views(spark, model_name: str, properties: List[SchemaProperty] | None):
+    """Create Spark temp views for nested struct fields and array-of-struct items.
+
+    The engine-neutral recursive check builder targets array item checks at
+    ``{model}__{array_field}``, mirroring the DuckDB nested-view convention.
+    For struct fields, the executor resolves dotted paths against the parent
+    model directly, but we still recurse here so arrays nested under structs can
+    materialize their own item views.
+    """
+    if not properties:
+        return
+
+    try:
+        from pyspark.sql import functions as F
+    except ImportError as e:
+        raise DataContractException(
+            type="schema",
+            result="failed",
+            name="pyspark is missing",
+            reason="Install the extra datacontract-cli[kafka] to use kafka",
+            engine="datacontract",
+            original_exception=e,
+        )
+
+    parent = spark.table(model_name)
+    nested_alias = "__dc_nested__"
+    for prop in properties:
+        field_name = _field_name(prop)
+        field_type = (_get_type(prop) or "").lower()
+
+        if field_type in {"object", "record", "struct"} and prop.properties:
+            child = parent.select(F.col(f"`{field_name}`").alias(nested_alias))
+            if not prop.required:
+                child = child.where(F.col(nested_alias).isNotNull())
+            child.select(f"{nested_alias}.*").createOrReplaceTempView(f"{model_name}__{field_name}")
+            add_spark_nested_views(spark, f"{model_name}__{field_name}", prop.properties)
+
+        elif field_type == "array" and prop.items and prop.items.properties:
+            child = parent
+            if not prop.required:
+                child = child.where(F.col(f"`{field_name}`").isNotNull())
+            child = child.select(F.explode_outer(F.col(f"`{field_name}`")).alias(nested_alias))
+            child.select(f"{nested_alias}.*").createOrReplaceTempView(f"{model_name}__{field_name}")
+            add_spark_nested_views(spark, f"{model_name}__{field_name}", prop.items.properties)
+
+
+def add_spark_nested_views_for_contract(spark, data_contract: OpenDataContractStandard, schema_name: str = "all"):
+    if not data_contract.schema_:
+        return
+    for schema_obj in data_contract.schema_:
+        model_name = schema_obj.physicalName or schema_obj.name
+        if schema_name != "all" and schema_obj.name != schema_name:
+            continue
+        add_spark_nested_views(spark, model_name, schema_obj.properties)
+
+
 def to_struct_type(properties: List[SchemaProperty]):
     try:
         from pyspark.sql.types import StructType

@@ -193,11 +193,11 @@ def _run_model(
             if spec.metric == MetricType.ROW_COUNT:
                 named = t.count().name(spec.key)
             elif spec.metric == MetricType.MISSING_COUNT:
-                col = _resolve_col(columns, spec.field)
-                named = _count_true(_missing_expr(t, col, spec.missing_values)).name(spec.key)
+                col = _resolve_expr(t, columns, spec.field)
+                named = _count_true(_missing_expr(col, spec.missing_values)).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
-                col = _resolve_col(columns, spec.field)
-                expr = _invalid_expr(t, col, schema[col], spec)
+                col = _resolve_expr(t, columns, spec.field)
+                expr = _invalid_expr(t, col, _resolve_dtype(schema, spec.field), spec)
                 if expr is None:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
@@ -207,7 +207,7 @@ def _run_model(
             elif spec.metric == MetricType.DUPLICATE_COUNT:
                 _run_duplicate(run, t, columns, spec)
             elif spec.metric == MetricType.FIELD_PRESENT:
-                _run_present(run, con, model, columns, spec)
+                _run_present(run, con, model, columns, schema, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
                 _run_type(run, schema, columns, spec)
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
@@ -345,11 +345,11 @@ def _samples_for(t, columns, schema, spec: CheckSpec, identifiers, sensitive):
     if spec.metric == MetricType.DUPLICATE_COUNT:
         return _duplicate_samples(t, columns, sensitive, spec)
 
-    col = _resolve_col(columns, spec.field)
+    col = _resolve_expr(t, columns, spec.field)
     if spec.metric == MetricType.MISSING_COUNT:
-        predicate = _missing_expr(t, col, spec.missing_values)
+        predicate = _missing_expr(col, spec.missing_values)
     else:  # INVALID_COUNT
-        predicate = _invalid_expr(t, col, schema[col], spec)
+        predicate = _invalid_expr(t, col, _resolve_dtype(schema, spec.field), spec)
         if predicate is None:
             return None
 
@@ -405,12 +405,12 @@ def _count_true(bool_expr):
     return bool_expr.ifelse(1, 0).sum()
 
 
-def _missing_expr(t, col, missing_values):
-    cond = t[col].isnull()
+def _missing_expr(col, missing_values):
+    cond = col.isnull()
     if missing_values:
         non_null = [v for v in missing_values if v is not None]
         if non_null:
-            cond = cond | t[col].isin(non_null)
+            cond = cond | col.isin(non_null)
     return cond
 
 
@@ -506,17 +506,17 @@ def _valid_expr(t, col, dtype, spec: CheckSpec):
     """Boolean: a non-missing value satisfies all configured validity constraints."""
     conds = []
     if spec.valid_values is not None:
-        conds.append(t[col].isin(spec.valid_values))
+        conds.append(col.isin(spec.valid_values))
     if spec.valid_regex is not None:
-        conds.append(_regex_search_expr(t, _as_string(t[col], dtype), spec.valid_regex))
+        conds.append(_regex_search_expr(t, _as_string(col, dtype), spec.valid_regex))
     if spec.valid_min is not None:
-        conds.append(t[col] >= spec.valid_min)
+        conds.append(col >= spec.valid_min)
     if spec.valid_max is not None:
-        conds.append(t[col] <= spec.valid_max)
+        conds.append(col <= spec.valid_max)
     if spec.valid_min_length is not None:
-        conds.append(_as_string(t[col], dtype).length() >= spec.valid_min_length)
+        conds.append(_as_string(col, dtype).length() >= spec.valid_min_length)
     if spec.valid_max_length is not None:
-        conds.append(_as_string(t[col], dtype).length() <= spec.valid_max_length)
+        conds.append(_as_string(col, dtype).length() <= spec.valid_max_length)
     if not conds:
         return None
     expr = conds[0]
@@ -527,13 +527,13 @@ def _valid_expr(t, col, dtype, spec: CheckSpec):
 
 def _invalid_expr(t, col, dtype, spec: CheckSpec):
     """Reproduce soda's invalid_count: NOT missing AND (NOT valid OR in invalid_values)."""
-    missing = _missing_expr(t, col, spec.missing_values)
+    missing = _missing_expr(col, spec.missing_values)
     valid = _valid_expr(t, col, dtype, spec)
     invalid_terms = []
     if valid is not None:
         invalid_terms.append(~valid)
     if spec.invalid_values:
-        invalid_terms.append(t[col].isin(spec.invalid_values))
+        invalid_terms.append(col.isin(spec.invalid_values))
     if not invalid_terms:
         return None
     invalid_any = invalid_terms[0]
@@ -572,7 +572,7 @@ def _constraint_info(spec: CheckSpec) -> dict:
 # dedicated check runners
 # ---------------------------------------------------------------------------
 def _run_duplicate(run: Run, t, columns, spec: CheckSpec):
-    cols = [_resolve_col(columns, c) for c in (spec.columns or [spec.field])]
+    cols = [_resolve_expr(t, columns, c) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
@@ -583,17 +583,21 @@ def _run_duplicate(run: Run, t, columns, spec: CheckSpec):
         _update_diagnostics(run, spec.key, {"columns": cols})
 
 
-def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
+def _run_present(run: Run, con, model: str, columns, schema, spec: CheckSpec):
     target = f"{model}__raw__" if spec.uses_raw_view else model
     _set_impl(run, spec.key, f"column '{spec.field}' exists in {target}", "introspection")
-    present = set(columns.keys())
     if spec.uses_raw_view:
         try:
-            raw = con.table(f"{model}__raw__")
-            present = {c.lower() for c in raw.columns}
+            raw = _resolve_table(con, f"{model}__raw__")
+            table = raw
         except Exception:
-            pass
-    ok = spec.field.lower() in present
+            table = _resolve_table(con, model)
+        target_schema = table.schema()
+    else:
+        # Reuse the already-resolved model schema to avoid an extra lookup that
+        # can fail on case-sensitive backends (for example Oracle).
+        target_schema = schema
+    ok = _field_present(target_schema, spec.field)
     _set_diagnostics(run, spec.key, _diag(metric="field_present", field=spec.field, present=ok))
     _set_result(
         run,
@@ -611,12 +615,11 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
         "introspection",
     )
     expected_label = f"{spec.expected_type_label} ({spec.expected_category})"
-    actual_col = columns.get(spec.field.lower())
-    if actual_col is None:
+    dtype = _resolve_dtype(schema, spec.field)
+    if dtype is None:
         _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=expected_label))
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
-    dtype = schema[actual_col]
     actual_category = ibis_dtype_category(dtype)
     _set_diagnostics(
         run,
@@ -638,8 +641,8 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
     import pandas as pd
 
-    col = _resolve_col(columns, spec.field)
-    reduction = t[col].min() if spec.metric == MetricType.RETENTION else t[col].max()
+    col = _resolve_expr(t, columns, spec.field)
+    reduction = col.min() if spec.metric == MetricType.RETENTION else col.max()
     _record_sql(run, spec, t.aggregate(value=reduction))
     raw = reduction.execute()
     if raw is None or pd.isna(raw):
@@ -844,6 +847,46 @@ def _resolve_col(columns: dict, field: str) -> str:
     if actual is None:
         raise _ColumnNotFound(f"Column '{field}' not found")
     return actual
+
+
+def _resolve_expr(t, columns: dict, field: str):
+    if field is None:
+        raise _ColumnNotFound("Column 'None' not found")
+    if "." not in field:
+        return t[_resolve_col(columns, field)]
+    return _resolve_nested_expr(t, field, columns)
+
+
+def _resolve_nested_expr(t, field: str, columns: dict):
+    expr = t[_resolve_col(columns, field.split(".", 1)[0])]
+    for part in field.split(".")[1:]:
+        expr = expr[part]
+    return expr
+
+
+def _resolve_dtype(schema, field: str):
+    if field is None:
+        return None
+    current = schema
+    parts = field.split(".")
+    dtype = None
+    for idx, part in enumerate(parts):
+        try:
+            dtype = current[part]
+        except Exception:
+            return None
+        if idx < len(parts) - 1:
+            try:
+                current = dtype.fields
+            except Exception:
+                return None
+    return dtype
+
+
+def _field_present(schema, field: str) -> bool:
+    if field is None:
+        return False
+    return _resolve_dtype(schema, field) is not None
 
 
 def _resolve_table(con, model: str):

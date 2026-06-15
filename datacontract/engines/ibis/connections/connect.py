@@ -82,6 +82,9 @@ def connect_ibis(
                 "please provide one with the DataContract class"
             )
             return None
+        from datacontract.engines.ibis.connections.kafka import add_spark_nested_views_for_contract
+
+        add_spark_nested_views_for_contract(spark, data_contract, schema_name=schema_name)
         return ibis.pyspark.connect(session=spark)
 
     if server_type == "databricks":
@@ -90,6 +93,9 @@ def connect_ibis(
             database_name = ".".join(filter(None, [server.catalog, server.schema_]))
             if database_name:
                 spark.sql(f"USE {database_name}")
+            from datacontract.engines.ibis.connections.kafka import add_spark_nested_views_for_contract
+
+            add_spark_nested_views_for_contract(spark, data_contract, schema_name=schema_name)
             return ibis.pyspark.connect(session=spark)
         return _connect_databricks(ibis, server, run)
 
