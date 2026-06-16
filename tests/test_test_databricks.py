@@ -15,7 +15,7 @@ datacontract = "fixtures/databricks-sql/datacontract.yaml"
 load_dotenv(override=True)
 
 
-def test_nested_struct_sql_quality_is_enabled_for_databricks_only():
+def test_nested_struct_and_array_checks_enabled_for_databricks():
     contract = """
 apiVersion: v3.0.2
 kind: DataContract
@@ -52,7 +52,8 @@ schema:
     assert nested_sql.metric == MetricType.CUSTOM_SQL
     assert nested_sql.model == "orders"
     assert "customer.email" in (nested_sql.query or "")
-    assert not any(c.model == "orders__discounts" for c in checks)
+    # Array models must also be generated for Databricks (via virtual CTE models).
+    assert any(c.model == "orders__discounts" for c in checks)
 
 
 @pytest.mark.skipif(

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 _FILE_SERVER_TYPES = {"local", "s3", "gcs", "azure"}
 _VERIFIED_NESTED_SQL_SERVER_TYPES = {"dataframe", "databricks"}
 _SUPPORTED_NESTED_STRUCT_SERVER_TYPES = {"dataframe", "databricks"}
-_SUPPORTED_NESTED_ARRAY_SERVER_TYPES = {"dataframe"}
+_SUPPORTED_NESTED_ARRAY_SERVER_TYPES = {"dataframe", "databricks"}
 
 
 # ---------------------------------------------------------------------------
