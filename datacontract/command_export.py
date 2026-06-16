@@ -60,6 +60,8 @@ def _export(
     engine: Optional[str] = None,
     template: Optional[Path | str] = None,
     inline_references: bool = True,
+    clickhouse_engine: Optional[str] = None,
+    clickhouse_order_by: Optional[str] = None,
 ):
     result = DataContract(
         data_contract_file=location,
@@ -74,6 +76,8 @@ def _export(
         sql_server_type=sql_server_type,
         engine=engine,
         template=template,
+        clickhouse_engine=clickhouse_engine,
+        clickhouse_order_by=clickhouse_order_by,
     )
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
@@ -92,6 +96,24 @@ def _export(
 # ---------------------------------------------------------------------------
 
 
+clickhouse_engine_option = Annotated[
+    Optional[str],
+    typer.Option(
+        help="The ClickHouse table engine. Default: MergeTree(). "
+        "Example: ReplicatedMergeTree('/clickhouse/tables/{shard}/table', '{replica}')"
+    ),
+]
+clickhouse_order_by_option = Annotated[
+    Optional[str],
+    typer.Option(
+        help="ORDER BY columns for ClickHouse (comma-separated). "
+        "ClickHouse uses ORDER BY as its primary/sorting key (not PRIMARY KEY). "
+        "Default: primary key columns if defined, omitted otherwise. "
+        'Example: --clickhouse-order-by "event_date DESC, event_id"'
+    ),
+]
+
+
 @export_app.command(
     name="sql",
     epilog="Example: datacontract export sql datacontract.yaml --dialect postgres --output ddl.sql",
@@ -104,6 +126,8 @@ def export_sql(
     schema_name: schema_name_option = "all",
     schema: schema_option = None,
     inline_references: inline_references_option = True,
+    clickhouse_engine: clickhouse_engine_option = None,
+    clickhouse_order_by: clickhouse_order_by_option = None,
     debug: debug_option = None,
 ):
     """Export a data contract to SQL DDL."""
@@ -117,6 +141,8 @@ def export_sql(
         schema,
         sql_server_type=dialect.value,
         inline_references=inline_references,
+        clickhouse_engine=clickhouse_engine,
+        clickhouse_order_by=clickhouse_order_by,
     )
 
 

@@ -1,0 +1,59 @@
+dataContractSpecification: 1.2.1
+id: clickhouse-orders
+info:
+  title: ClickHouse Orders
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  production:
+    type: clickhouse
+    host: localhost
+    port: 9000
+    database: default
+models:
+  orders:
+    description: One record per order.
+    type: table
+    fields:
+      order_id:
+        type: string
+        required: true
+        description: Primary key of the orders table.
+        primaryKey: 1
+      order_timestamp:
+        type: timestamp_tz
+        required: true
+        description: The business timestamp in UTC.
+      customer_id:
+        type: string
+        description: Unique identifier for the customer.
+      total_amount:
+        type: decimal
+        description: Total amount in cents.
+      discount_rate:
+        type: float
+        description: Discount rate applied.
+      quantity:
+        type: integer
+        required: true
+        description: Number of items ordered.
+      is_active:
+        type: boolean
+        description: Whether the order is active.
+      tags:
+        type: array<string>
+        description: Order tags.
+  events:
+    description: Event tracking data.
+    type: table
+    fields:
+      event_id:
+        type: string
+        required: true
+      event_date:
+        type: date
+        required: true
+      duration:
+        type: double
+      status_code:
+        type: tinyint
