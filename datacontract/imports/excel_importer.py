@@ -186,9 +186,10 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
 
         # Get header row to map column names to indices
         header_row = list(sheet.rows)[properties_range[0] - 1]  # Convert to 0-based indexing
+        # Standard columns live before CUSTOM_PROPERTIES_START_COL; custom-property columns must not overwrite a standard header key.
         headers = {}
         for i, cell in enumerate(header_row):
-            if cell.value:
+            if cell.value and i < CUSTOM_PROPERTIES_START_COL:
                 headers[cell.value.lower()] = i
 
         # Columns at or beyond CUSTOM_PROPERTIES_START_COL with a non-blank header are

@@ -279,23 +279,28 @@ def fill_properties_in_schema_sheet(sheet: Worksheet, properties: List[SchemaPro
 
         _recurse(properties)
 
+        custom_col_map: dict = {}
         for offset, name in enumerate(seen.keys()):
             col_1based = CUSTOM_PROPERTIES_START_COL + offset + 1
             sheet.cell(row=header_row_index, column=col_1based).value = name
-            # header_map uses 0-based indices
-            header_map[name.lower()] = col_1based - 1
+            custom_col_map[name] = col_1based
 
         # Fill properties starting after header row
         row_index = header_row_index + 1
         for property in properties:
-            row_index = fill_single_property_template(sheet, row_index, prefix, property, header_map)
+            row_index = fill_single_property_template(sheet, row_index, prefix, property, header_map, custom_col_map)
 
     except Exception as e:
         logger.warning(f"Error filling properties: {e}")
 
 
 def fill_single_property_template(
-    sheet: Worksheet, row_index: int, prefix: str, property: SchemaProperty, header_map: dict
+    sheet: Worksheet,
+    row_index: int,
+    prefix: str,
+    property: SchemaProperty,
+    header_map: dict,
+    custom_col_map: dict = None,
 ) -> int:
     """Fill a single property row using the template's column structure"""
     property_name = f"{prefix}{'.' + property.name if property.name else ''}" if prefix else property.name
@@ -337,9 +342,11 @@ def fill_single_property_template(
         set_by_header("Authoritative Definition Type", property.authoritativeDefinitions[0].type)
 
     # customProperties Pivot extra columns
-    if property.customProperties:
+    if property.customProperties and custom_col_map:
         for custom_prop in property.customProperties:
-            set_by_header(f"{custom_prop.property}", custom_prop.value)
+            col_1based = custom_col_map.get(custom_prop.property)
+            if col_1based is not None:
+                sheet.cell(row=row_index, column=col_1based).value = custom_prop.value
 
     next_row_index = row_index + 1
 
@@ -347,13 +354,13 @@ def fill_single_property_template(
     if property.properties:
         for nested_property in property.properties:
             next_row_index = fill_single_property_template(
-                sheet, next_row_index, property_name, nested_property, header_map
+                sheet, next_row_index, property_name, nested_property, header_map, custom_col_map
             )
 
     # Handle array items
     if property.items:
         next_row_index = fill_single_property_template(
-            sheet, next_row_index, f"{property_name}.items", property.items, header_map
+            sheet, next_row_index, f"{property_name}.items", property.items, header_map, custom_col_map
         )
 
     return next_row_index

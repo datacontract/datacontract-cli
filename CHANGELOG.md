@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `datacontract export excel`/`import excel` now round-trip property-level customProperties as extra columns in the schema properties table (#1268 @dmaresma)
+- `datacontract export excel`/`import excel` now round-trip property-level customProperties as extra columns in the schema properties table
 - `datacontract test` against Trino now supports `DATACONTRACT_TRINO_AUTHENTICATION=jwt` with `DATACONTRACT_TRINO_JWT_TOKEN`, and `DATACONTRACT_TRINO_AUTHENTICATION=oauth2` for the interactive browser flow.
 
 ## [1.0.3] - 2026-06-15
