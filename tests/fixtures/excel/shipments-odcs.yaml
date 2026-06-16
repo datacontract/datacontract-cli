@@ -37,7 +37,7 @@ schema:
     businessName: Shipment ID
     authoritativeDefinitions:
     - url: http://localhost:8080/demo203502625092/definitions/fulfillment/shipment_id
-      type: definition
+      type: businessDefinition
     tags:
     - businesskey
     customProperties:
@@ -57,7 +57,7 @@ schema:
     physicalName: oid
     authoritativeDefinitions:
     - url: http://localhost:8080/demo203502625092/definitions/sales/order_id
-      type: definition
+      type: businessDefinition
     customProperties:
     - property: ScdType
       value: '0'
