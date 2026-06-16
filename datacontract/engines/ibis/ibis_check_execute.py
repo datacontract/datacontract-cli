@@ -1247,13 +1247,29 @@ def _apply_row_filter(t, model: str, predicate: str):
 
 
 def _resolve_table(con, model: str, database: Optional[str] = None):
-    """Resolve a table by name, tolerating case differences across dialects."""
+    """Resolve a table by name, tolerating case differences and virtual models.
+
+    Falls back to CTE-based virtual models (e.g. for Databricks nested array
+    checks) before trying list_tables(). Virtual models are stored on the
+    connection object as _dc_virtual_model_queries.
+    """
     if getattr(con, "name", None) == "pyspark":
         return _pyspark_table_unconvertible_as_unknown(con, model)
     kwargs = {"database": database} if database else {}
     try:
         return con.table(model, **kwargs)
     except Exception:
+        # Try virtual models (Databricks nested array CTEs).
+        virtual_queries = getattr(con, "_dc_virtual_model_queries", None)
+        if isinstance(virtual_queries, dict):
+            query = virtual_queries.get(model)
+            if query is None:
+                # Case-insensitive match.
+                match = next((name for name in virtual_queries if name.lower() == model.lower()), None)
+                query = virtual_queries.get(match) if match else None
+            if query:
+                return con.sql(query)
+        # Fall back to list_tables for case-insensitive real table lookup.
         try:
             available = con.list_tables(**kwargs)
         except Exception:
