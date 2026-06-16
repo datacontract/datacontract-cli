@@ -40,6 +40,9 @@ schema:
       type: businessDefinition
     tags:
     - businesskey
+    customProperties:
+    - property: ScdType
+      value: '0'
     primaryKey: true
     logicalType: string
     required: false
@@ -55,12 +58,18 @@ schema:
     authoritativeDefinitions:
     - url: http://localhost:8080/demo203502625092/definitions/sales/order_id
       type: businessDefinition
+    customProperties:
+    - property: ScdType
+      value: '0'
     primaryKey: false
     partitioned: false
   - name: delivery_date
     physicalType: timestamp_tz
     description: The actual or expected delivery date of the shipment.
     businessName: Delivery Date
+    customProperties:
+    - property: ScdType
+      value: '1'
     primaryKey: false
     logicalType: date
     required: false
@@ -74,6 +83,9 @@ schema:
     physicalType: text
     description: The shipping carrier used for the delivery.
     businessName: Carrier
+    customProperties:
+    - property: ScdType
+      value: '1'
     primaryKey: false
     logicalType: string
     required: false
@@ -88,6 +100,9 @@ schema:
     physicalType: text
     description: Tracking number provided by the carrier.
     businessName: Tracking Number
+    customProperties:
+    - property: ScdType
+      value: '1'
     primaryKey: false
     logicalType: string
     required: false
@@ -101,6 +116,9 @@ schema:
     physicalType: text
     description: Current status of the shipment.
     businessName: Status
+    customProperties:
+    - property: ScdType
+      value: '1'
     primaryKey: false
     logicalType: string
     required: false
@@ -115,6 +133,9 @@ schema:
     physicalType: json
     description: A JSON representation of additional shipment info
     businessName: Inline Object Definition
+    customProperties:
+    - property: ScdType
+      value: '1'
     primaryKey: false
     logicalType: object
     required: false
@@ -132,6 +153,11 @@ schema:
     physicalType: JSON
     description: Shipping address details.
     businessName: Shipment Address
+    customProperties:
+    - property: ScdType
+      value: '1'
+    - property: isMasked
+      value: 'True'
     logicalType: object
     required: true
     classification: restricted
@@ -140,6 +166,11 @@ schema:
       physicalType: text
       description: Street address.
       businessName: Street
+      customProperties:
+      - property: ScdType
+        value: '1'
+      - property: isMasked
+        value: 'True'
       primaryKey: false
       logicalType: string
       required: true
@@ -152,6 +183,11 @@ schema:
       physicalType: text
       description: City of the shipping address.
       businessName: City
+      customProperties:
+      - property: ScdType
+        value: '1'
+      - property: isMasked
+        value: 'True'
       primaryKey: false
       logicalType: string
       required: true
@@ -164,6 +200,11 @@ schema:
       physicalType: text
       description: Country of the shipping address.
       businessName: Country
+      customProperties:
+      - property: ScdType
+        value: '1'
+      - property: isMasked
+        value: 'True'
       primaryKey: false
       logicalType: string
       required: true
