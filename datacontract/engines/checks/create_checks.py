@@ -254,7 +254,9 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
     model = to_schema_name(schema_object, server_type)
     properties = schema_object.properties or []
     check_types = is_check_types(server)
-    uses_raw_view = server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+    uses_raw_view = (
+        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+    )
 
     # A primary key is both not-null and unique. A composite key is unique as a
     # tuple, not column by column, so its members are checked together after
@@ -674,7 +676,12 @@ def _quality_checks(
 
 
 def _quality_rule_checks(
-    model: str, field: Optional[str], quality: DataQuality, count: int, server: Optional[Server], is_nested: bool = False
+    model: str,
+    field: Optional[str],
+    quality: DataQuality,
+    count: int,
+    server: Optional[Server],
+    is_nested: bool = False,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -714,9 +721,7 @@ def _quality_rule_checks(
                     field=field,
                     metric=MetricType.UNSUPPORTED,
                     preset_result="warning",
-                    preset_reason=(
-                        "Nested SQL quality checks are only verified for Spark (dataframe) and Databricks."
-                    ),
+                    preset_reason=("Nested SQL quality checks are only verified for Spark (dataframe) and Databricks."),
                 )
             ]
         if field is None:

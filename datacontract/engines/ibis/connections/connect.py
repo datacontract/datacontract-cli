@@ -230,6 +230,7 @@ def _connect_databricks(ibis, server: Server, run: Run, config: Config):
     exchange happens when the connection is opened rather than while reading env.
     """
     # the config option wins over the contract, like the other server-detail overrides
+
     host = (
         config.get_databricks_server_hostname() or server.host or config.get_databricks_server_hostname(required=True)
     )

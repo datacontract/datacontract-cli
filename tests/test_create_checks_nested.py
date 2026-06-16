@@ -93,8 +93,6 @@ def test_create_checks_uses_full_nested_array_paths_for_nested_models():
         c.model == "orders__user__emails" and c.field == "address" and c.type == "field_required" for c in checks
     )
     assert any(
-        c.model == "orders__line_items__product__tags"
-        and c.field == "tag_id"
-        and c.type == "field_required"
+        c.model == "orders__line_items__product__tags" and c.field == "tag_id" and c.type == "field_required"
         for c in checks
     )
