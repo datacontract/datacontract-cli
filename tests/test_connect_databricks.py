@@ -4,7 +4,6 @@ These do not hit Databricks: we patch the _NoVolumeBackend.connect method and on
 assert which auth kwargs the dispatch passes for a given set of env vars.
 """
 
-import ibis
 import pytest
 from ibis.backends.databricks import Backend as DatabricksBackend
 from open_data_contract_standard.model import Server
@@ -38,10 +37,14 @@ def captured_connect(monkeypatch):
     def fake_connect(self, **kwargs):
         calls.update(kwargs)
         # Return a minimal mock backend with the required attributes for downstream code.
-        mock = type('MockBackend', (), {
-            'name': 'databricks',
-            '_dc_virtual_model_queries': {},
-        })()
+        mock = type(
+            "MockBackend",
+            (),
+            {
+                "name": "databricks",
+                "_dc_virtual_model_queries": {},
+            },
+        )()
         return mock
 
     monkeypatch.setattr(DatabricksBackend, "connect", fake_connect)
@@ -147,7 +150,7 @@ def test_no_create_volume_on_connect(clean_databricks_env, monkeypatch):
         # Also patch connect to return early so we don't hit actual Databricks.
         def fake_connect(self, **kwargs):
             self.con = None
-            self._memtable_volume = kwargs.get('memtable_volume')
+            self._memtable_volume = kwargs.get("memtable_volume")
             return self
 
         monkeypatch.setattr(DatabricksBackend, "connect", fake_connect)

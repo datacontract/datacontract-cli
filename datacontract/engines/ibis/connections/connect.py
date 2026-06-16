@@ -241,6 +241,7 @@ def _connect_databricks(ibis, server: Server, run: Run):
     exchange happens when the connection is opened rather than while reading env.
     """
     from ibis.backends.databricks import Backend as DatabricksBackend
+
     class _NoVolumeBackend(DatabricksBackend):
         """Databricks ibis backend that skips CREATE VOLUME on connect.
         ibis calls _post_connect() during do_connect(), which by default issues
@@ -248,8 +249,10 @@ def _connect_databricks(ibis, server: Server, run: Run):
         this volume is unnecessary and often forbidden by warehouse permissions.
         Overriding _post_connect as a no-op allows the connection to succeed.
         """
+
         def _post_connect(self, *, memtable_volume) -> None:
             pass  # No-op: skip CREATE VOLUME, not needed for read-only checks.
+
     host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
     kwargs = dict(
         server_hostname=host,
@@ -283,6 +286,7 @@ def _connect_databricks(ibis, server: Server, run: Run):
     # Nothing configured: fail with the same clear message as before.
     token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
     return backend.connect(access_token=token, **kwargs)
+
 
 def _databricks_credentials_provider(**config_kwargs):
     """Return a ``credentials_provider`` callable for the Databricks SQL connector.

@@ -87,7 +87,12 @@ def _iter_property_paths(
             and prop.properties
         ):
             yield from _iter_property_paths(model, prop.properties, server_type, field_path, True)
-        elif server_type in _SUPPORTED_NESTED_ARRAY_SERVER_TYPES and prop_type == "array" and prop.items and prop.items.properties:
+        elif (
+            server_type in _SUPPORTED_NESTED_ARRAY_SERVER_TYPES
+            and prop_type == "array"
+            and prop.items
+            and prop.items.properties
+        ):
             nested_model = f"{model}__{field}"
             yield from _iter_property_paths(nested_model, prop.items.properties, server_type, None, True)
 
@@ -182,7 +187,9 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
     model = to_schema_name(schema_object, server_type)
     properties = schema_object.properties or []
     check_types = is_check_types(server)
-    uses_raw_view = server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+    uses_raw_view = (
+        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+    )
 
     for item_model, field, prop, is_nested in _iter_property_paths(model, properties, server_type):
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
