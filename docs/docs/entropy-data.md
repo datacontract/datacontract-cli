@@ -1,10 +1,10 @@
 ---
 sidebar_position: 17
-title: "Entropy Data"
+title: "Integrate with Entropy Data"
 description: "Publish data contract test results to Entropy Data, a commercial platform for managing data contracts."
 ---
 
-# Entropy Data
+# Integrate with Entropy Data
 
 [Entropy Data](https://entropy-data.com/) is a commercial platform to manage data contracts. It provides a web UI, access management, and data governance for a data product marketplace based on data contracts.
 
