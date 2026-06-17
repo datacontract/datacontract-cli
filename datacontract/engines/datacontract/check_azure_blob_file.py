@@ -53,19 +53,8 @@ _BLOB_EXTRACTORS: Dict[str, Callable[["BlobProperties"], Any]] = {
 }
 
 # Quality metrics on SchemaObject interpreted as file-count thresholds
-_FILE_COUNT_METRICS = {
-    "rowCount",
-    "fileCount",
-    "blobCount",
-    "itemCount",
-    "recordCount",
-    "count",
-    "numFiles",
-    "numBlobs",
-    "numItems",
-    "numObjects",
-    "numRows",
-}
+_FILE_COUNT_METRICS = ["rowCount"]
+
 
 # Property names where MIME parameter stripping is applied before comparison
 _MIMETYPE_PROPS = {"contentType", "content-type", "mimetype", "mimeType", "mime_type"}
