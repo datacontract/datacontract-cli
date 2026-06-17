@@ -53,7 +53,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/datacontractcli.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },

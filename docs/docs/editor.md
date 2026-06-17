@@ -1,10 +1,10 @@
 ---
-sidebar_position: 7
-title: "Editing"
+sidebar_position: 8
+title: "Edit your contract"
 description: "Author and edit data contracts visually with the bundled Data Contract Editor web UI."
 ---
 
-# Editing
+# Edit your contract
 
 The [Data Contract Editor](https://github.com/datacontract/datacontract-editor) is a web-based visual editor for ODCS data contracts. It is hosted at [editor.datacontract.com](https://editor.datacontract.com), and the CLI can launch it locally against a file on your machine.
 

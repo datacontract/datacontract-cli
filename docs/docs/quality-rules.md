@@ -1,10 +1,10 @@
 ---
-sidebar_position: 5
-title: "Quality Rules"
+sidebar_position: 6
+title: "Define your Quality Rules"
 description: "Define and run data quality rules in a data contract using ODCS quality checks."
 ---
 
-# Quality Rules
+# Define your Quality Rules
 
 Beyond schema checks (presence, type, nullability), a data contract can declare **quality rules**. When you run [`datacontract test`](./testing.md), these rules are executed against the data source and reported alongside the schema checks.
 

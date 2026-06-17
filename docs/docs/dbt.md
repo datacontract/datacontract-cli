@@ -1,10 +1,10 @@
 ---
-sidebar_position: 6
-title: "dbt Integration"
+sidebar_position: 7
+title: "Sync with dbt"
 description: "Generate dbt tests from a data contract and run them with datacontract dbt sync."
 ---
 
-# dbt Integration
+# Sync with dbt
 
 The Data Contract CLI integrates with [dbt](https://www.getdbt.com/) in two directions:
 

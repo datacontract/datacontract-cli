@@ -1,10 +1,10 @@
 ---
 sidebar_position: 4
-title: "Testing"
+title: "Test your contract"
 description: "Connect to a data source and run schema and quality tests to verify a data contract, in development and on a schedule."
 ---
 
-# Testing
+# Test your contract
 
 `datacontract test` connects to a data source and runs **schema** and **quality** tests to verify that the actual data complies with the data contract.
 
@@ -41,133 +41,9 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
 
 ## Supported data sources
 
-| Server `type` | Notes | Required extra |
-|---|---|---|
-| `s3` | JSON, CSV, Parquet, Delta on Amazon S3 / S3-compatible storage | `s3` / `duckdb` |
-| `gcs` | Google Cloud Storage files | `gcs` / `duckdb` |
-| `azure` | Azure Blob / ADLS files | `azure` / `duckdb` |
-| `athena` | Amazon Athena | `athena` |
-| `bigquery` | Google BigQuery | `bigquery` |
-| `sqlserver` | Microsoft SQL Server | `sqlserver` |
-| `oracle` | Oracle | `oracle` |
-| `databricks` | Databricks (SQL warehouse, also programmatic via Spark) | `databricks` |
-| `dataframe` | An in-memory Spark DataFrame (programmatic) | — |
-| `snowflake` | Snowflake | `snowflake` |
-| `kafka` | Kafka topics (Avro/JSON) | `kafka` |
-| `postgres` | Postgres and Postgres-compatible (e.g. RisingWave) | `postgres` |
-| `redshift` | Amazon Redshift (over the Postgres wire protocol) | `redshift` |
-| `mysql` | MySQL / MariaDB | `mysql` |
-| `trino` | Trino (basic, JWT, or OAuth2 auth) | `trino` |
-| `impala` | Apache Impala | `impala` |
-| `api` | JSON HTTP APIs (GET only) | — |
-| `local` | Local files in Parquet, JSON, CSV, or Delta | `duckdb` |
+The CLI connects to object storage (S3, GCS, Azure), warehouses (BigQuery, Snowflake, Databricks, Redshift), databases (Postgres, MySQL, SQL Server, Oracle), query engines (Trino, Athena, Impala), Kafka, HTTP APIs, and local files.
 
-:::tip
-Missing a source? [Open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
-:::
-
-## Examples
-
-### Postgres
-
-```yaml
-servers:
-  postgres:
-    type: postgres
-    host: localhost
-    port: 5432
-    database: postgres
-    schema: public
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
-```
-
-| Environment variable | Example | Description |
-|---|---|---|
-| `DATACONTRACT_POSTGRES_USERNAME` | `postgres` | Username |
-| `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password |
-
-### Snowflake
-
-```yaml
-servers:
-  snowflake:
-    type: snowflake
-    account: my-account
-    database: my_database
-    schema: my_schema
-```
-
-Credentials are provided via `DATACONTRACT_SNOWFLAKE_USERNAME`, `DATACONTRACT_SNOWFLAKE_PASSWORD`, `DATACONTRACT_SNOWFLAKE_WAREHOUSE`, and `DATACONTRACT_SNOWFLAKE_ROLE`.
-
-### Local files
-
-```yaml
-servers:
-  local:
-    type: local
-    path: ./*.parquet
-    format: parquet
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
-```
-
-### Trino
-
-```yaml
-servers:
-  trino:
-    type: trino
-    host: localhost
-    port: 8080
-    catalog: my_catalog
-    schema: my_schema
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_2:
-        type: object
-        config:
-          trinoType: row(en_us varchar, pt_br varchar)
-```
-
-| Environment variable | Description |
-|---|---|
-| `DATACONTRACT_TRINO_USERNAME` | Username for `basic` auth |
-| `DATACONTRACT_TRINO_PASSWORD` | Password for `basic` auth |
-| `DATACONTRACT_TRINO_AUTHENTICATION` | `basic` (default), `jwt`, or `oauth2` |
-| `DATACONTRACT_TRINO_JWT_TOKEN` | JWT bearer token for `jwt` auth |
-
-### JSON HTTP API
-
-```yaml
-servers:
-  api:
-    type: "api"
-    location: "https://api.example.com/path"
-    delimiter: none # new_line, array, or none (default)
-models:
-  my_object:
-    type: object
-    fields:
-      field1:
-        type: string
-```
-
-Set the optional `DATACONTRACT_API_HEADER_AUTHORIZATION` environment variable (e.g. a `Bearer` token) for authenticated APIs.
-
-:::note
-The full set of environment variables for every server type — including S3, GCS, Azure, Athena, BigQuery, SQL Server, Oracle, Databricks, Redshift, MySQL, Kafka, and Impala — is documented in the project [README](https://github.com/datacontract/datacontract-cli#supported-data-sources).
-:::
+See **[Connect your Data](./connect/index.md)** for the `servers` configuration and credentials for each source.
 
 ## Useful options
 
