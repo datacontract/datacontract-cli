@@ -52,6 +52,18 @@ const config: Config = {
     ],
   ],
 
+  themes: [
+    [
+      require.resolve('@easyops-cn/docusaurus-search-local'),
+      {
+        hashed: true,
+        indexBlog: false,
+        docsRouteBasePath: '/',
+        highlightSearchTermsOnTargetPage: true,
+      },
+    ],
+  ],
+
   themeConfig: {
     image: 'img/datacontractcli.png',
     colorMode: {
