@@ -8,6 +8,10 @@ description: "Test data in Oracle Database."
 
 # Oracle
 
+:::info Required extra
+This connection requires the `oracle` extra. See [Installation](../installation.md).
+:::
+
 Test data in Oracle Database.
 
 ## Server
@@ -30,4 +34,3 @@ servers:
 | `DATACONTRACT_ORACLE_PASSWORD` | `0x162e53` | Password |
 | `DATACONTRACT_ORACLE_CLIENT_DIR` | `C:\oracle\client` | Path to an Oracle Instant Client installation (required for thick mode) |
 
-Requires the `oracle` extra.

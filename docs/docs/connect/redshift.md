@@ -8,6 +8,10 @@ description: "Test data in Amazon Redshift."
 
 # Amazon Redshift
 
+:::info Required extra
+This connection requires the `redshift` extra. See [Installation](../installation.md).
+:::
+
 Test data in Amazon Redshift (both provisioned clusters and Redshift Serverless). Redshift is reached over the PostgreSQL wire protocol via the ibis Postgres backend, using username/password authentication.
 
 ## Server
@@ -33,4 +37,3 @@ servers:
 IAM-based authentication (region / access key / role ARN) is not currently supported for Redshift, because ibis connects through the generic Postgres backend rather than a Redshift-specific driver.
 :::
 
-Requires the `redshift` extra.

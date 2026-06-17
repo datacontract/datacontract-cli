@@ -8,6 +8,10 @@ description: "Test data in Postgres and Postgres-compatible databases."
 
 # Postgres
 
+:::info Required extra
+This connection requires the `postgres` extra. See [Installation](../installation.md).
+:::
+
 Test data in Postgres or Postgres-compatible databases (e.g. RisingWave).
 
 ## Server
@@ -29,4 +33,3 @@ servers:
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres` | Username |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password |
 
-Requires the `postgres` extra.

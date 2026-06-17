@@ -8,6 +8,10 @@ description: "Test data in Trino with basic, JWT, or OAuth2 auth."
 
 # Trino
 
+:::info Required extra
+This connection requires the `trino` extra. See [Installation](../installation.md).
+:::
+
 Test data in Trino.
 
 ## Server
@@ -31,4 +35,3 @@ servers:
 | `DATACONTRACT_TRINO_AUTHENTICATION` | `oauth2` | `basic` (default), `jwt`, or `oauth2` |
 | `DATACONTRACT_TRINO_JWT_TOKEN` | `eyJhbGciOi...` | JWT bearer token for `jwt` auth |
 
-Requires the `trino` extra.

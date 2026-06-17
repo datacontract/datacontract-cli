@@ -8,6 +8,10 @@ description: "Test data in SQL Server, Azure SQL, Synapse, and Fabric."
 
 # Microsoft SQL Server
 
+:::info Required extra
+This connection requires the `sqlserver` extra. See [Installation](../installation.md).
+:::
+
 Test data in MS SQL Server, including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric.
 
 ## Server
@@ -38,4 +42,3 @@ servers:
 
 The `cli` mode reuses an `az login` session through the Azure default credential chain and requires ODBC Driver 18.1 or newer.
 
-Requires the `sqlserver` extra.

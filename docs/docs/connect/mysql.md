@@ -8,6 +8,10 @@ description: "Test data in MySQL and MySQL-compatible databases."
 
 # MySQL
 
+:::info Required extra
+This connection requires the `mysql` extra. See [Installation](../installation.md).
+:::
+
 Test data in MySQL or MySQL-compatible databases (e.g. MariaDB).
 
 ## Server
@@ -28,4 +32,3 @@ servers:
 | `DATACONTRACT_MYSQL_USERNAME` | `root` | Username |
 | `DATACONTRACT_MYSQL_PASSWORD` | `mysecretpassword` | Password |
 
-Requires the `mysql` extra.

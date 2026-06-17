@@ -8,6 +8,10 @@ description: "Test data in Snowflake."
 
 # Snowflake
 
+:::info Required extra
+This connection requires the `snowflake` extra. See [Installation](../installation.md).
+:::
+
 Test data in Snowflake.
 
 ## Server
@@ -39,4 +43,3 @@ Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix st
 | `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
 | `private_key_path` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH` |
 
-Requires the `snowflake` extra.
