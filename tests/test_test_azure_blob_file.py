@@ -332,3 +332,10 @@ class TestEndToEndWiring:
         assert all(c.result == ResultEnum.passed for c in azure_checks), [
             (c.type, c.field, c.result, c.reason) for c in azure_checks
         ]
+
+        # the SQL engine must not generate checks for a blob schema
+        ibis_checks = [c for c in run.checks if c.engine == "ibis"]
+        assert not ibis_checks, [(c.type, c.field) for c in ibis_checks]
+        assert run.result == ResultEnum.passed, [
+            (c.type, c.name, c.result, c.reason) for c in run.checks if c.result != ResultEnum.passed
+        ]
