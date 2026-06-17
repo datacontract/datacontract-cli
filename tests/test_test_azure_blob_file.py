@@ -314,3 +314,21 @@ class TestCheckAzureBlobFile:
             check_azure_blob_file(run, dc, dc.servers[0])
         checks = _checks_by_type(run, "azure_blob_connection")
         assert checks and checks[0].result == ResultEnum.error
+
+
+class TestEndToEndWiring:
+    def test_blob_checks_run_through_data_contract_test(self):
+        from datacontract.data_contract import DataContract
+
+        blobs = [_make_blob("raw/orders/a.json", size=1024)]
+        with patch(
+            "datacontract.engines.datacontract.check_azure_blob_file._build_blob_service_client",
+            return_value=_patched_client(blobs),
+        ):
+            run = DataContract(data_contract_file=FIXTURE_PATH).test()
+
+        azure_checks = [c for c in run.checks if str(c.type).startswith("azure_")]
+        assert azure_checks, "check_azure_blob_file was not wired into DataContract.test()"
+        assert all(c.result == ResultEnum.passed for c in azure_checks), [
+            (c.type, c.field, c.result, c.reason) for c in azure_checks
+        ]

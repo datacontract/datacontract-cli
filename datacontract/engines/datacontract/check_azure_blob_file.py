@@ -80,18 +80,24 @@ def check_azure_blob_file(
     run: Run,
     data_contract: OpenDataContractStandard,
     server: Server,
+    schema_name: str = "all",
     check_categories: set[str] | None = None,
 ) -> None:
     """Run Azure Blob Storage metadata checks for all blob-logicalType schemas.
 
     Only schemas with ``logicalType == "blob"`` are processed; others are skipped.
+    When ``schema_name`` is not ``"all"``, only that schema is checked.
     No exception is raised if the server is not Azure or if no blob schemas exist —
     the function simply returns without adding checks.
     """
     if data_contract.schema_ is None:
         return
 
-    blob_schemas = [s for s in data_contract.schema_ if (s.logicalType or "").lower() == "blob"]
+    blob_schemas = [
+        s
+        for s in data_contract.schema_
+        if (s.logicalType or "").lower() == "blob" and (schema_name == "all" or s.name == schema_name)
+    ]
     if not blob_schemas:
         return
 
@@ -105,6 +111,7 @@ def check_azure_blob_file(
             model=None,
             result=ResultEnum.failed,
             reason="Server block has no 'location' property. Cannot resolve container and prefix.",
+            check_categories=check_categories,
         )
         return
 
@@ -119,6 +126,7 @@ def check_azure_blob_file(
             model=None,
             result=ResultEnum.error,
             reason=f"Could not connect to Azure Blob Storage: {exc}",
+            check_categories=check_categories,
         )
         return
 
@@ -136,6 +144,7 @@ def check_azure_blob_file(
             "abfss://<container>@<account>.dfs.core.windows.net/<prefix>, "
             "azure://<container>@<account>.blob.core.windows.net/<prefix>, "
             "wasbs://<container>@<account>.blob.core.windows.net/<prefix>.",
+            check_categories=check_categories,
         )
         return
 
@@ -144,7 +153,7 @@ def check_azure_blob_file(
     )
 
     for schema in blob_schemas:
-        _check_schema(run, schema, blob_service_client, container_name, prefix)
+        _check_schema(run, schema, blob_service_client, container_name, prefix, check_categories)
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +167,7 @@ def _check_schema(
     blob_service_client: "BlobServiceClient",
     container_name: str,
     prefix: str,
+    check_categories: set[str] | None = None,
 ) -> None:
     schema_name = schema.name or "unknown"
 
@@ -166,6 +176,21 @@ def _check_schema(
         container_client = blob_service_client.get_container_client(container_name)
         blobs: List["BlobProperties"] = list(container_client.list_blobs(name_starts_with=prefix or None))
     except Exception as exc:
+        logger.debug("Azure list_blobs failed (container=%s, prefix=%s)", container_name, prefix, exc_info=True)
+        from azure.core.exceptions import ClientAuthenticationError, ServiceRequestError
+
+        if isinstance(exc, ServiceRequestError):
+            reason = (
+                f"Could not connect to Azure Blob Storage for container '{container_name}'. "
+                "Check the account URL in the server location and your network."
+            )
+        elif isinstance(exc, ClientAuthenticationError):
+            reason = (
+                f"Authentication failed for Azure Blob Storage container '{container_name}'. "
+                "Check the configured credentials (DATACONTRACT_AZURE_* environment variables)."
+            )
+        else:
+            reason = f"Failed to list blobs in container '{container_name}' with prefix '{prefix}': {exc}"
         _append_check(
             run,
             check_type="azure_file_list",
@@ -173,7 +198,8 @@ def _check_schema(
             name=f"[{schema_name}] Azure Blob File — list blobs",
             model=schema_name,
             result=ResultEnum.error,
-            reason=f"Failed to list blobs in container '{container_name}' with prefix '{prefix}': {exc}",
+            reason=reason,
+            check_categories=check_categories,
         )
         return
 
@@ -186,11 +212,11 @@ def _check_schema(
     # ── Per-property checks (driven by schema.properties) ────────────────────
     if schema.properties:
         for prop in schema.properties:
-            _check_property(run, schema_name, prop, blobs)
+            _check_property(run, schema_name, prop, blobs, check_categories)
 
     # ── Quality file-count thresholds on the schema object ───────────────────
     if schema.quality:
-        _check_file_count_quality(run, schema_name, schema.quality, file_count)
+        _check_file_count_quality(run, schema_name, schema.quality, file_count, check_categories)
 
 
 # ---------------------------------------------------------------------------
@@ -203,6 +229,7 @@ def _check_property(
     schema_name: str,
     prop: SchemaProperty,
     blobs: List["BlobProperties"],
+    check_categories: set[str] | None = None,
 ) -> None:
     """Run required + quality checks for one declared schema property across all blobs."""
     prop_name = prop.name
@@ -226,6 +253,7 @@ def _check_property(
                 result=ResultEnum.failed,
                 reason=f"{len(missing)} blob(s) have no value for '{prop_name}'.",
                 details="; ".join(missing[:5]) + (" …" if len(missing) > 5 else ""),
+                check_categories=check_categories,
             )
         else:
             _append_check(
@@ -237,6 +265,7 @@ def _check_property(
                 field=prop_name,
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) have a value for '{prop_name}'.",
+                check_categories=check_categories,
             )
 
     # ── quality constraints ────────────────────────────────────────────────────
@@ -272,6 +301,7 @@ def _check_property(
                 result=ResultEnum.failed,
                 reason=f"{len(violations)} blob(s) violate '{prop_name} {constraint_desc}'.",
                 details=details,
+                check_categories=check_categories,
             )
         else:
             _append_check(
@@ -283,6 +313,7 @@ def _check_property(
                 field=prop_name,
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) satisfy '{prop_name} {constraint_desc}'.",
+                check_categories=check_categories,
             )
 
 
@@ -389,6 +420,7 @@ def _check_file_count_quality(
     schema_name: str,
     quality_list: List[DataQuality],
     file_count: int,
+    check_categories: set[str] | None = None,
 ) -> None:
     """Evaluate schema-level quality thresholds interpreted as file-count constraints."""
     for quality in quality_list:
@@ -404,6 +436,7 @@ def _check_file_count_quality(
             model=schema_name,
             result=ResultEnum.passed if passed else ResultEnum.failed,
             reason=reason,
+            check_categories=check_categories,
         )
 
 
@@ -421,7 +454,7 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
             type="schema",
             result="failed",
             name="azure-storage extra missing",
-            reason="Install the extra datacontract-cli[azure] to use azure",
+            reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
             engine="datacontract",
             original_exception=exc,
         )
@@ -451,7 +484,7 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
                 type="schema",
                 result="failed",
                 name="azure-identity extra missing",
-                reason="Install the extra datacontract-cli[azure] to use azure",
+                reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
                 engine="datacontract",
                 original_exception=exc,
             )
@@ -470,7 +503,7 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
             type="schema",
             result="failed",
             name="azure-identity extra missing",
-            reason="Install the extra datacontract-cli[azure] to use azure",
+            reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
             engine="datacontract",
             original_exception=exc,
         )
@@ -570,7 +603,10 @@ def _append_check(
     reason: str,
     field: Optional[str] = None,
     details: Optional[str] = None,
+    check_categories: set[str] | None = None,
 ) -> None:
+    if check_categories is not None and category not in check_categories:
+        return
     run.checks.append(
         Check(
             id=str(uuid.uuid4()),
