@@ -8,6 +8,10 @@ description: "Run checks against an Apache Impala cluster."
 
 # Apache Impala
 
+:::info Required extra
+This connection requires the `impala` extra. See [Installation](../installation.md).
+:::
+
 Run checks against an Apache Impala cluster.
 
 ## Server
@@ -32,4 +36,3 @@ servers:
 | `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT` | `true` | Whether to use HTTP transport (defaults to true) |
 | `DATACONTRACT_IMPALA_HTTP_PATH` | `cliservice` | HTTP path for the Impala service (defaults to cliservice) |
 
-Requires the `impala` extra.

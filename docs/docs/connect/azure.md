@@ -8,6 +8,10 @@ description: "Test data on Azure Blob storage or Azure Data Lake Storage Gen2."
 
 # Azure Blob / ADLS
 
+:::info Required extra
+This connection requires the `azure` and `duckdb` extras. See [Installation](../installation.md).
+:::
+
 Test data stored in Azure Blob storage or Azure Data Lake Storage Gen2 (ADLS) in various formats.
 
 ## Server
@@ -30,4 +34,3 @@ Authentication uses an Azure Service Principal (App Registration) with a secret.
 | `DATACONTRACT_AZURE_CLIENT_ID` | `3cf7ce49-...` | The Application/Client ID of the app registration |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1M...` | The client secret value |
 
-Requires the `azure` / `duckdb` extra.

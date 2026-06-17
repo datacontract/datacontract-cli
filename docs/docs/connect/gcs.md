@@ -8,6 +8,10 @@ description: "Test files on Google Cloud Storage via S3 interoperability."
 
 # Google Cloud Storage (GCS)
 
+:::info Required extra
+This connection requires the `gcs` and `duckdb` extras. See [Installation](../installation.md).
+:::
+
 The [Amazon S3](./s3.md) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability). Use `https://storage.googleapis.com` as the endpoint URL and the `s3://` scheme for the location.
 
 ## Server
@@ -29,4 +33,3 @@ servers:
 | `DATACONTRACT_S3_ACCESS_KEY_ID` | `GOOG1EZZZ...` | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) ID |
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `PDWWpb...` | The GCS [HMAC Key](https://cloud.google.com/storage/docs/authentication/hmackeys) secret |
 
-Requires the `gcs` / `duckdb` extra.

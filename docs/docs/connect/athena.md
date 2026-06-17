@@ -8,6 +8,10 @@ description: "Test data in AWS Athena stored in S3."
 
 # Amazon Athena
 
+:::info Required extra
+This connection requires the `athena` extra. See [Installation](../installation.md).
+:::
+
 Test data in AWS Athena stored in S3. Supports formats such as Iceberg, Parquet, JSON, and CSV.
 
 ## Server
@@ -31,4 +35,3 @@ servers:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJ...` | AWS Secret Access Key |
 | `DATACONTRACT_S3_SESSION_TOKEN` | `AQoDYXdzEJr...` | AWS temporary session token (optional) |
 
-Requires the `athena` extra.

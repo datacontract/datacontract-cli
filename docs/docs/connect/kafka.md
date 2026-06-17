@@ -8,6 +8,10 @@ description: "Test data in Kafka topics (experimental)."
 
 # Kafka
 
+:::info Required extra
+This connection requires the `kafka` extra. See [Installation](../installation.md).
+:::
+
 Test data in Kafka topics. Kafka support is currently considered **experimental**.
 
 ## Server
@@ -29,4 +33,3 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_PASSWORD` | `xxx` | The SASL password (secret) |
 | `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`; also `SCRAM-SHA-256`, `SCRAM-SHA-512` |
 
-Requires the `kafka` extra.

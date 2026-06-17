@@ -8,6 +8,10 @@ description: "Test JSON HTTP APIs (GET only)."
 
 # HTTP API
 
+:::info Required extra
+This connection needs **no additional extra**. See [Installation](../installation.md).
+:::
+
 Test APIs that return data in JSON format. Currently, only GET requests are supported.
 
 ## Server
@@ -25,3 +29,4 @@ servers:
 | Variable | Example | Description |
 |---|---|---|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `Bearer <token>` | Value for the `authorization` header (optional) |
+
