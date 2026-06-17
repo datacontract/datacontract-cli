@@ -21,7 +21,7 @@ The CLI uses different engines based on the server `type`. Internally it connect
 Checks fall into categories you can select with `--checks`:
 
 - `schema` — fields are present and have the expected type and nullability.
-- `quality` — the [quality rules](./quality-rules.md) defined in the contract.
+- `quality` — the [quality rules](./quality-rules/index.md) defined in the contract.
 - `servicelevel` — service-level expectations (`slaProperties`).
 - `custom` — custom checks.
 

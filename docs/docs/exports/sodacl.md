@@ -8,7 +8,7 @@ description: "Export a data contract to SodaCL checks."
 
 # Export: SodaCL
 
-Converts the contract's schema and [quality rules](../quality-rules.md) into [SodaCL](https://docs.soda.io/soda-cl/soda-cl-overview.html) checks.
+Converts the contract's schema and [quality rules](../quality-rules/index.md) into [SodaCL](https://docs.soda.io/soda-cl/soda-cl-overview.html) checks.
 
 ```bash
 datacontract export sodacl datacontract.yaml --output checks.yml
