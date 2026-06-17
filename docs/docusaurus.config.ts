@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Data Contract CLI',
   tagline: 'Lint, test, and export data contracts from the command line',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.png',
 
   future: {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
@@ -61,7 +61,7 @@ const config: Config = {
       title: 'Data Contract CLI',
       logo: {
         alt: 'Data Contract CLI',
-        src: 'img/logo.svg',
+        src: 'img/favicon.png',
       },
       items: [
         {
@@ -83,6 +83,11 @@ const config: Config = {
         {
           href: 'https://github.com/datacontract/datacontract-cli',
           label: 'GitHub',
+          position: 'right',
+        },
+        {
+          href: 'https://api.datacontract.com',
+          label: 'API',
           position: 'right',
         },
       ],

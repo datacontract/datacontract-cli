@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 6
 title: "dbt Integration"
 description: "Generate dbt tests from a data contract and run them with datacontract dbt sync."
 ---

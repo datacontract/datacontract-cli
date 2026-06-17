@@ -6,7 +6,7 @@ description: "Run schema and quality tests on configured servers."
 
 # `datacontract test`
 
-Run schema and quality tests on the servers configured in the contract. See the [Data Contract Testing](../testing.md) guide for connection details and supported data sources.
+Run schema and quality tests on the servers configured in the contract. See the [Testing](../testing.md) guide for connection details and supported data sources.
 
 ```bash
 datacontract test [LOCATION]

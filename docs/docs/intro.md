@@ -41,7 +41,7 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - New here? Start with the **[Quickstart](./quickstart.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
-- Run checks against real data with **[Data Contract Testing](./testing.md)**.
+- Run checks against real data with **[Testing](./testing.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
 
 ## Related links

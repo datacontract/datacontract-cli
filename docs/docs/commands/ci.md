@@ -6,7 +6,7 @@ description: "Run tests for CI/CD pipelines with annotations and summaries."
 
 # `datacontract ci`
 
-Run tests for CI/CD pipelines. Wraps [`test`](./test.md) with CI-specific features: GitHub Actions annotations and step summary, Azure DevOps annotations, machine-readable output, and exit-code control. See [Scheduling](../scheduling.md) for full pipeline examples.
+Run tests for CI/CD pipelines. Wraps [`test`](./test.md) with CI-specific features: GitHub Actions annotations and step summary, Azure DevOps annotations, machine-readable output, and exit-code control. See [Testing → Scheduling and CI/CD](../testing.md#scheduling-and-cicd) for full pipeline examples.
 
 ```bash
 datacontract ci [LOCATIONS]...

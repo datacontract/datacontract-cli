@@ -1,10 +1,10 @@
 ---
-sidebar_position: 4
-title: "Data Contract Editor"
+sidebar_position: 9
+title: "Editing"
 description: "Author and edit data contracts visually with the bundled Data Contract Editor web UI."
 ---
 
-# Data Contract Editor
+# Editing
 
 The [Data Contract Editor](https://github.com/datacontract/datacontract-editor) is a web-based visual editor for ODCS data contracts. It is hosted at [editor.datacontract.com](https://editor.datacontract.com), and the CLI can launch it locally against a file on your machine.
 
@@ -20,7 +20,7 @@ Key behaviors:
 
 - If the file does not exist, you are asked whether to initialize a new data contract.
 - If a **URL** is given, you are asked whether to download a local copy, which is then edited.
-- The server also acts as the editor's **test runner**: clicking "Run test" in the editor executes the data contract tests locally against the servers defined in the contract. Credentials for the data sources must be provided as environment variables — see [Data Contract Testing](./testing.md).
+- The server also acts as the editor's **test runner**: clicking "Run test" in the editor executes the data contract tests locally against the servers defined in the contract. Credentials for the data sources must be provided as environment variables — see [Testing](./testing.md).
 
 ## Requirements
 

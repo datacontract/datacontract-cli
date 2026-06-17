@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 5
 title: "Quality Rules"
 description: "Define and run data quality rules in a data contract using ODCS quality checks."
 ---

@@ -12,4 +12,4 @@ Creates a data contract from a Snowflake workspace by reading table metadata.
 datacontract import snowflake --source my_database --output datacontract.yaml
 ```
 
-Snowflake credentials are provided as environment variables (see [Data Contract Testing](../testing.md)).
+Snowflake credentials are provided as environment variables (see [Testing](../testing.md)).
