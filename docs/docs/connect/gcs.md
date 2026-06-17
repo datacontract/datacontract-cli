@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 8
 title: "Google Cloud Storage"
 description: "Test files on Google Cloud Storage via S3 interoperability."
 ---

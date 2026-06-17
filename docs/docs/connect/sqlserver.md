@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 12
 title: "Microsoft SQL Server"
 description: "Test data in SQL Server, Azure SQL, Synapse, and Fabric."
 ---

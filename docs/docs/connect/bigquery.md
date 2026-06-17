@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 7
 title: "Google BigQuery"
 description: "Test data in Google BigQuery tables and views."
 ---

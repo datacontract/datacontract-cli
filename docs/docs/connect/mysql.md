@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 13
 title: "MySQL"
 description: "Test data in MySQL and MySQL-compatible databases."
 ---

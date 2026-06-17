@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 9
 title: "HTTP API"
 description: "Test JSON HTTP APIs (GET only)."
 ---

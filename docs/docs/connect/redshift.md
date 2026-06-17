@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 2
 title: "Amazon Redshift"
 description: "Test data in Amazon Redshift."
 ---

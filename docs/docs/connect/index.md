@@ -31,24 +31,24 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
 
 | Connection | `type` | Notes |
 |---|---|---|
-| [Amazon S3](./s3.md) | `s3` | CSV, JSON, Delta, Parquet on S3 / S3-compatible storage |
-| [Google Cloud Storage](./gcs.md) | `s3` | Files on GCS via S3 interoperability |
-| [Azure Blob / ADLS](./azure.md) | `azure` | Files on Azure Blob storage or ADLS Gen2 |
 | [Amazon Athena](./athena.md) | `athena` | Athena over data in S3 |
-| [Google BigQuery](./bigquery.md) | `bigquery` | BigQuery tables and views |
-| [Microsoft SQL Server](./sqlserver.md) | `sqlserver` | SQL Server, Azure SQL, Synapse, Fabric |
-| [Oracle](./oracle.md) | `oracle` | Oracle Database |
-| [Databricks](./databricks.md) | `databricks` | Unity Catalog / Hive metastore (warehouse or notebook) |
-| [Spark DataFrame](./dataframe.md) | `dataframe` | In-memory Spark DataFrames (programmatic) |
-| [Snowflake](./snowflake.md) | `snowflake` | Snowflake |
-| [Kafka](./kafka.md) | `kafka` | Kafka topics (experimental) |
-| [Postgres](./postgres.md) | `postgres` | Postgres and Postgres-compatible (e.g. RisingWave) |
 | [Amazon Redshift](./redshift.md) | `redshift` | Redshift (Postgres wire protocol) |
-| [MySQL](./mysql.md) | `mysql` | MySQL / MariaDB |
-| [Trino](./trino.md) | `trino` | Trino (basic, JWT, OAuth2) |
+| [Amazon S3](./s3.md) | `s3` | CSV, JSON, Delta, Parquet on S3 / S3-compatible storage |
 | [Apache Impala](./impala.md) | `impala` | Impala |
+| [Azure Blob / ADLS](./azure.md) | `azure` | Files on Azure Blob storage or ADLS Gen2 |
+| [Databricks](./databricks.md) | `databricks` | Unity Catalog / Hive metastore (warehouse or notebook) |
+| [Google BigQuery](./bigquery.md) | `bigquery` | BigQuery tables and views |
+| [Google Cloud Storage](./gcs.md) | `s3` | Files on GCS via S3 interoperability |
 | [HTTP API](./api.md) | `api` | JSON HTTP APIs (GET only) |
+| [Kafka](./kafka.md) | `kafka` | Kafka topics (experimental) |
 | [Local files](./local.md) | `local` | Local Parquet, JSON, CSV, or Delta files |
+| [Microsoft SQL Server](./sqlserver.md) | `sqlserver` | SQL Server, Azure SQL, Synapse, Fabric |
+| [MySQL](./mysql.md) | `mysql` | MySQL / MariaDB |
+| [Oracle](./oracle.md) | `oracle` | Oracle Database |
+| [Postgres](./postgres.md) | `postgres` | Postgres and Postgres-compatible (e.g. RisingWave) |
+| [Snowflake](./snowflake.md) | `snowflake` | Snowflake |
+| [Spark DataFrame](./dataframe.md) | `dataframe` | In-memory Spark DataFrames (programmatic) |
+| [Trino](./trino.md) | `trino` | Trino (basic, JWT, OAuth2) |
 
 :::tip
 Missing a source? [Open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).

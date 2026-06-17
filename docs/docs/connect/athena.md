@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 1
 title: "Amazon Athena"
 description: "Test data in AWS Athena stored in S3."
 ---

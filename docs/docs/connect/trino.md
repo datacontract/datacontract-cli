@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 18
 title: "Trino"
 description: "Test data in Trino with basic, JWT, or OAuth2 auth."
 ---

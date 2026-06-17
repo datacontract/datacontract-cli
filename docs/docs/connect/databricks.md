@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 6
 title: "Databricks"
 description: "Test data in Databricks (Unity Catalog or Hive metastore)."
 ---

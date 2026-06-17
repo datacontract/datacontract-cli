@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 4
 title: "Apache Impala"
 description: "Run checks against an Apache Impala cluster."
 ---

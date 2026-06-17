@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 15
 title: "Postgres"
 description: "Test data in Postgres and Postgres-compatible databases."
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 11
 title: "Local files"
 description: "Test local files in Parquet, JSON, CSV, or Delta format."
 ---

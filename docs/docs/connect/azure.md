@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 title: "Azure Blob / ADLS"
 description: "Test data on Azure Blob storage or Azure Data Lake Storage Gen2."
 ---
