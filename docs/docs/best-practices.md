@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 15
 title: "Best Practices"
 description: "Recommended workflows for adopting data contracts: the data-first and contract-first approaches."
 ---

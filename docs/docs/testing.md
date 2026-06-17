@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 title: "Test your contract"
 description: "Connect to a data source and run schema and quality tests to verify a data contract, in development and on a schedule."
 ---

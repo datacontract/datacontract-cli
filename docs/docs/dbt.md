@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 title: "Sync with dbt"
 description: "Generate dbt tests from a data contract and run them with datacontract dbt sync."
 ---

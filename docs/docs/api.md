@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 13
 title: "API"
 description: "Run the Data Contract CLI as a web server exposing a REST API for testing, linting, and exporting."
 ---

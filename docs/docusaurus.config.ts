@@ -83,24 +83,11 @@ const config: Config = {
           label: 'Documentation',
         },
         {
-          href: 'https://editor.datacontract.com',
-          label: 'Editor',
-          position: 'right',
-        },
-        {
-          href: 'https://pypi.org/project/datacontract-cli/',
-          label: 'PyPI',
-          position: 'right',
-        },
-        {
           href: 'https://github.com/datacontract/datacontract-cli',
           label: 'GitHub',
           position: 'right',
-        },
-        {
-          href: 'https://api.datacontract.com',
-          label: 'API',
-          position: 'right',
+          className: 'navbar-github-link',
+          'aria-label': 'GitHub repository',
         },
       ],
     },

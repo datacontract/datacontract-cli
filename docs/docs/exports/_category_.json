@@ -1,5 +1,8 @@
 {
   "label": "Exports",
-  "position": 10,
-  "link": { "type": "doc", "id": "exports/index" }
+  "position": 11,
+  "link": {
+    "type": "doc",
+    "id": "exports/index"
+  }
 }
