@@ -8,18 +8,14 @@ description: "Test data in Databricks (Unity Catalog or Hive metastore)."
 
 Test data in Databricks. Works with Unity Catalog and the Hive metastore. Needs a running SQL warehouse or compute cluster.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  production:
+  - server: production
     type: databricks
     catalog: acme_catalog_prod
     schema: orders_latest
-models:
-  orders:
-    type: table
-    fields: ...
 ```
 
 ## Environment variables

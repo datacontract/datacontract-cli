@@ -8,21 +8,15 @@ description: "Test data in MySQL and MySQL-compatible databases."
 
 Test data in MySQL or MySQL-compatible databases (e.g. MariaDB).
 
-## Example
+## Server
 
 ```yaml
 servers:
-  mysql:
+  - server: mysql
     type: mysql
     host: localhost
     port: 3306
     database: mydb
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
 ```
 
 ## Environment variables

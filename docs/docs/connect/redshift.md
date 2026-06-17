@@ -8,22 +8,16 @@ description: "Test data in Amazon Redshift."
 
 Test data in Amazon Redshift (both provisioned clusters and Redshift Serverless). Redshift is reached over the PostgreSQL wire protocol via the ibis Postgres backend, using username/password authentication.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  redshift:
+  - server: redshift
     type: redshift
     host: my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
     port: 5439
     database: dev
     schema: analytics
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
 ```
 
 ## Environment variables

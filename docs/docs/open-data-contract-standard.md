@@ -49,7 +49,7 @@ schema:
 ```
 
 :::note
-The CLI also accepts the older Data Contract Specification (`dataContractSpecification`) field names in some places (you will see both `models`/`fields` and `schema`/`properties` in examples across the documentation). New contracts should follow ODCS. Use [`datacontract init`](./commands/init.md) to start from a current template.
+The CLI also accepts the older Data Contract Specification format (which uses `models`/`fields` instead of ODCS `schema`/`properties`), but new contracts should follow ODCS — all examples in this documentation use ODCS. Use [`datacontract init`](./commands/init.md) to start from a current template.
 :::
 
 ## Key sections

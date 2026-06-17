@@ -8,21 +8,15 @@ description: "Test data in Snowflake."
 
 Test data in Snowflake.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  snowflake:
+  - server: snowflake
     type: snowflake
     account: abcdefg-xn12345
     database: ORDER_DB
     schema: ORDERS_PII_V2
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
 ```
 
 `account`, `database`, and `schema` come from the `servers` section above.

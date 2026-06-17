@@ -10,18 +10,14 @@ Test data in Google BigQuery. Authentication uses a Service Account Key or Appli
 
 When `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` is not set, the CLI falls back to ADC automatically.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  production:
+  - server: production
     type: bigquery
     project: datameshexample-product
     dataset: datacontract_cli_test_dataset
-models:
-  datacontract_cli_test_table: # corresponds to a BigQuery table
-    type: table
-    fields: ...
 ```
 
 ## Environment variables

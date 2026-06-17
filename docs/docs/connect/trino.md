@@ -8,26 +8,16 @@ description: "Test data in Trino with basic, JWT, or OAuth2 auth."
 
 Test data in Trino.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  trino:
+  - server: trino
     type: trino
     host: localhost
     port: 8080
     catalog: my_catalog
     schema: my_schema
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
-      my_column_2: # custom Trino type
-        type: object
-        config:
-          trinoType: row(en_us varchar, pt_br varchar)
 ```
 
 ## Environment variables

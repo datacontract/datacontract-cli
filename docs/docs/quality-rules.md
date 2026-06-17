@@ -15,11 +15,12 @@ Quality rules use the ODCS `quality` attribute, which can be attached either to 
 The most flexible rule type runs a SQL query against the server and compares the result to an expected range or value. The query runs in the dialect of the selected server.
 
 ```yaml
-models:
-  orders:
-    fields:
-      order_total:
-        type: long
+schema:
+  - name: orders
+    properties:
+      - name: order_total
+        logicalType: integer
+        physicalType: bigint
         required: true
         quality:
           - type: sql
@@ -49,25 +50,25 @@ The query may reference the schema/model by name (e.g. `FROM orders`). Use `{mod
 Many common quality expectations can be expressed directly as field constraints in the schema, without writing SQL. These are turned into checks automatically:
 
 ```yaml
-models:
-  orders:
-    fields:
-      customer_id:
-        type: text
+schema:
+  - name: orders
+    properties:
+      - name: customer_id
+        logicalType: string
+        physicalType: text
         required: true       # no missing values
         unique: true         # no duplicate values
-        minLength: 10
-        maxLength: 20
-      order_status:
-        type: text
-        enum:                # value must be one of these
-          - placed
-          - shipped
-          - delivered
-          - cancelled
+        logicalTypeOptions:
+          minLength: 10
+          maxLength: 20
+      - name: order_status
+        logicalType: string
+        physicalType: text
+        logicalTypeOptions:
+          pattern: "^(placed|shipped|delivered|cancelled)$"
 ```
 
-Constraints such as `required`, `unique`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, and `enum` are validated as part of the `schema`/`quality` checks.
+`required`, `unique`, and `primaryKey` sit directly on the property; range, length, and pattern constraints (`minLength`, `maxLength`, `minimum`, `maximum`, `pattern`, `format`) go under `logicalTypeOptions`. They are validated as part of the `schema`/`quality` checks.
 
 ## Running only quality checks
 

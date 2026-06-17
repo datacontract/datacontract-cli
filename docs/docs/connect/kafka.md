@@ -8,11 +8,11 @@ description: "Test data in Kafka topics (experimental)."
 
 Test data in Kafka topics. Kafka support is currently considered **experimental**.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  production:
+  - server: production
     type: kafka
     host: abc-12345.eu-central-1.aws.confluent.cloud:9092
     topic: my-topic-name

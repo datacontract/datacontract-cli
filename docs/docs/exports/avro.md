@@ -14,21 +14,23 @@ datacontract export avro datacontract.yaml --output schema.avsc
 
 ## Custom Avro properties
 
-A **config map on field level** may include additional key-value pairs. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and `default` are supported.
+A **`config` map on property level** may include additional key-value pairs. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and `default` are supported.
 
 ```yaml
-models:
-  orders:
-    fields:
-      my_field_1:
+schema:
+  - name: orders
+    properties:
+      - name: my_field_1
         description: Example for AVRO with Timestamp (microsecond precision)
-        type: long
-        example: 1672534861000000  # 2023-01-01 01:01:01 in microseconds
+        logicalType: integer
+        physicalType: long
+        examples:
+          - 1672534861000000  # 2023-01-01 01:01:01 in microseconds
         required: true
         config:
           avroLogicalType: local-timestamp-micros
           avroDefault: 1672534861000000
 ```
 
-- `avroLogicalType` — the Avro logical type of the field (here `local-timestamp-micros`).
-- `avroDefault` — the default value for the field in Avro.
+- `avroLogicalType` — the Avro logical type of the property (here `local-timestamp-micros`).
+- `avroDefault` — the default value for the property in Avro.

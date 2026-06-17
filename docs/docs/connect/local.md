@@ -8,22 +8,14 @@ description: "Test local files in Parquet, JSON, CSV, or Delta format."
 
 Test local files in Parquet, JSON, CSV, or Delta format.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  local:
+  - server: local
     type: local
     path: ./*.parquet
     format: parquet
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
-      my_column_2:
-        type: string
 ```
 
 Requires the `duckdb` extra.

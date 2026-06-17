@@ -8,22 +8,16 @@ description: "Test data in Postgres and Postgres-compatible databases."
 
 Test data in Postgres or Postgres-compatible databases (e.g. RisingWave).
 
-## Example
+## Server
 
 ```yaml
 servers:
-  postgres:
+  - server: postgres
     type: postgres
     host: localhost
     port: 5432
     database: postgres
     schema: public
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
 ```
 
 ## Environment variables

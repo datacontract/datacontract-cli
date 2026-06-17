@@ -8,23 +8,17 @@ description: "Test data in SQL Server, Azure SQL, Synapse, and Fabric."
 
 Test data in MS SQL Server, including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  production:
+  - server: production
     type: sqlserver
     host: localhost
     port: 5432
     database: tempdb
     schema: dbo
     driver: ODBC Driver 18 for SQL Server
-models:
-  my_table_1:
-    type: table
-    fields:
-      my_column_1:
-        type: varchar
 ```
 
 ## Environment variables

@@ -8,24 +8,16 @@ description: "Test data in AWS Athena stored in S3."
 
 Test data in AWS Athena stored in S3. Supports formats such as Iceberg, Parquet, JSON, and CSV.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  athena:
+  - server: athena
     type: athena
     catalog: awsdatacatalog # default
     schema: icebergdemodb   # in Athena, this is called "database"
     regionName: eu-central-1
     stagingDir: s3://my-bucket/athena-results/
-models:
-  my_table: # corresponds to a table or view
-    type: table
-    fields:
-      my_column_1:
-        type: string
-        config:
-          physicalType: varchar
 ```
 
 ## Environment variables

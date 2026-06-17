@@ -8,11 +8,11 @@ description: "Test data on Azure Blob storage or Azure Data Lake Storage Gen2."
 
 Test data stored in Azure Blob storage or Azure Data Lake Storage Gen2 (ADLS) in various formats.
 
-## Example
+## Server
 
 ```yaml
 servers:
-  production:
+  - server: production
     type: azure
     location: abfss://datameshdatabricksdemo.dfs.core.windows.net/inventory_events/*.parquet
     format: parquet
