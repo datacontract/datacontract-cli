@@ -134,10 +134,10 @@ const config: Config = {
       ],
       logo: {
         alt: 'Entropy Data',
-        src: 'https://entropy-data.com/media/logo_fuchsia_v2.png',
+        src: 'https://entropy-data.com/media/entropy-data-logo.svg',
         href: 'https://entropy-data.com',
-        width: 44,
-        height: 44,
+        width: 148,
+        height: 36,
       },
       copyright: `Copyright © ${new Date().getFullYear()} Data Contract CLI authors. Built with Docusaurus.`,
     },
