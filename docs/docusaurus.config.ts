@@ -124,7 +124,21 @@ const config: Config = {
             {label: 'PyPI', href: 'https://pypi.org/project/datacontract-cli/'},
           ],
         },
+        {
+          title: 'Legal',
+          items: [
+            {label: 'Legal Notice', href: 'https://entropy-data.com/legal-notice'},
+            {label: 'Privacy Policy', href: 'https://entropy-data.com/privacy-policy'},
+          ],
+        },
       ],
+      logo: {
+        alt: 'Entropy Data',
+        src: 'https://entropy-data.com/media/logo_fuchsia_v2.png',
+        href: 'https://entropy-data.com',
+        width: 44,
+        height: 44,
+      },
       copyright: `Copyright © ${new Date().getFullYear()} Data Contract CLI authors. Built with Docusaurus.`,
     },
     prism: {
