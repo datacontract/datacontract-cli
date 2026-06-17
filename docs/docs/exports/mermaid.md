@@ -4,6 +4,8 @@ title: "Export: Mermaid"
 description: "Export a data contract to a Mermaid diagram."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: Mermaid
 
 Generates a [Mermaid](https://mermaid.js.org/) entity-relationship diagram of the contract's schemas.

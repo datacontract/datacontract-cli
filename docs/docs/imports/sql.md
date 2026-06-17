@@ -4,6 +4,8 @@ title: "Import: SQL DDL"
 description: "Create a data contract from a SQL DDL file."
 ---
 
+<img className="page-icon" src="/img/icons/database.svg" alt="" />
+
 # Import: SQL
 
 Creates a data contract from a SQL DDL file. Pass the SQL dialect with `--dialect`.

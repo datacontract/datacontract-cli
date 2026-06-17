@@ -4,6 +4,8 @@ title: "Snowflake"
 description: "Test data in Snowflake."
 ---
 
+<img className="page-icon" src="/img/icons/snowflake.svg" alt="" />
+
 # Snowflake
 
 Test data in Snowflake.

@@ -4,6 +4,8 @@ title: "Amazon Athena"
 description: "Test data in AWS Athena stored in S3."
 ---
 
+<img className="page-icon" src="/img/icons/athena.svg" alt="" />
+
 # Amazon Athena
 
 Test data in AWS Athena stored in S3. Supports formats such as Iceberg, Parquet, JSON, and CSV.

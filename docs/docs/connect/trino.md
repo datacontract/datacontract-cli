@@ -4,6 +4,8 @@ title: "Trino"
 description: "Test data in Trino with basic, JWT, or OAuth2 auth."
 ---
 
+<img className="page-icon" src="/img/icons/trino.svg" alt="" />
+
 # Trino
 
 Test data in Trino.

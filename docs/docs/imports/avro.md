@@ -4,6 +4,8 @@ title: "Import: Avro"
 description: "Create a data contract from an Avro schema file."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Import: Avro
 
 Creates a data contract from an Avro schema (`.avsc`) file.

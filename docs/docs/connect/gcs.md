@@ -4,6 +4,8 @@ title: "Google Cloud Storage"
 description: "Test files on Google Cloud Storage via S3 interoperability."
 ---
 
+<img className="page-icon" src="/img/icons/gcs.svg" alt="" />
+
 # Google Cloud Storage (GCS)
 
 The [Amazon S3](./s3.md) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability). Use `https://storage.googleapis.com` as the endpoint URL and the `s3://` scheme for the location.

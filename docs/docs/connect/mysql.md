@@ -4,6 +4,8 @@ title: "MySQL"
 description: "Test data in MySQL and MySQL-compatible databases."
 ---
 
+<img className="page-icon" src="/img/icons/mysql.svg" alt="" />
+
 # MySQL
 
 Test data in MySQL or MySQL-compatible databases (e.g. MariaDB).

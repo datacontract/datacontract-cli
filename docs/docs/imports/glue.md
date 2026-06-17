@@ -4,6 +4,8 @@ title: "Import: AWS Glue"
 description: "Create a data contract from the AWS Glue Data Catalog."
 ---
 
+<img className="page-icon" src="/img/icons/glue.svg" alt="" />
+
 # Import: AWS Glue
 
 Creates a data contract from the AWS Glue Data Catalog.

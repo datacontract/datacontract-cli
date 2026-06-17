@@ -4,6 +4,8 @@ title: "Export: Custom (Jinja)"
 description: "Export a data contract to any format using a custom Jinja template."
 ---
 
+<img className="page-icon" src="/img/icons/custom.svg" alt="" />
+
 # Export: Custom (Jinja)
 
 Converts the data contract into any custom format using a [Jinja](https://jinja.palletsprojects.com/) template. Specify the template path with `--template`.

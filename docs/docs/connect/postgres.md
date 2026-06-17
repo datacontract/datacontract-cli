@@ -4,6 +4,8 @@ title: "Postgres"
 description: "Test data in Postgres and Postgres-compatible databases."
 ---
 
+<img className="page-icon" src="/img/icons/postgres.svg" alt="" />
+
 # Postgres
 
 Test data in Postgres or Postgres-compatible databases (e.g. RisingWave).

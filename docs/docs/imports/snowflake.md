@@ -4,6 +4,8 @@ title: "Import: Snowflake"
 description: "Create a data contract from a Snowflake workspace."
 ---
 
+<img className="page-icon" src="/img/icons/snowflake.svg" alt="" />
+
 # Import: Snowflake
 
 Creates a data contract from a Snowflake workspace by reading table metadata.

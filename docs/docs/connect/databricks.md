@@ -4,6 +4,8 @@ title: "Databricks"
 description: "Test data in Databricks (Unity Catalog or Hive metastore)."
 ---
 
+<img className="page-icon" src="/img/icons/databricks.svg" alt="" />
+
 # Databricks
 
 Test data in Databricks. Works with Unity Catalog and the Hive metastore. Needs a running SQL warehouse or compute cluster.

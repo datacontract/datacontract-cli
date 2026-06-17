@@ -4,6 +4,8 @@ title: "Export: Excel"
 description: "Export a data contract to an ODCS Excel template."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: Excel
 
 Converts a data contract into an ODCS Excel template — a user-friendly spreadsheet for authoring, sharing, and managing data contracts.

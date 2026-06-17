@@ -4,6 +4,8 @@ title: "Export: RDF"
 description: "Export a data contract to an RDF representation."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: RDF
 
 Converts the data contract into an RDF representation. You can add a base URL used as the default prefix to resolve relative IRIs inside the document.

@@ -4,6 +4,8 @@ title: "Azure Blob / ADLS"
 description: "Test data on Azure Blob storage or Azure Data Lake Storage Gen2."
 ---
 
+<img className="page-icon" src="/img/icons/azure.svg" alt="" />
+
 # Azure Blob / ADLS
 
 Test data stored in Azure Blob storage or Azure Data Lake Storage Gen2 (ADLS) in various formats.

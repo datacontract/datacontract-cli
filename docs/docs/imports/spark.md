@@ -4,6 +4,8 @@ title: "Import: Spark"
 description: "Create a data contract from Spark tables or DataFrames (programmatic)."
 ---
 
+<img className="page-icon" src="/img/icons/database.svg" alt="" />
+
 # Import: Spark
 
 Creates a data contract from a Spark schema. This importer is typically used programmatically from within a Spark context.

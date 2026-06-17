@@ -4,6 +4,8 @@ title: "Amazon Redshift"
 description: "Test data in Amazon Redshift."
 ---
 
+<img className="page-icon" src="/img/icons/redshift.svg" alt="" />
+
 # Amazon Redshift
 
 Test data in Amazon Redshift (both provisioned clusters and Redshift Serverless). Redshift is reached over the PostgreSQL wire protocol via the ibis Postgres backend, using username/password authentication.

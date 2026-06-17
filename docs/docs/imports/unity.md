@@ -4,6 +4,8 @@ title: "Import: Unity Catalog"
 description: "Create a data contract from Databricks Unity Catalog (file or HTTP endpoint)."
 ---
 
+<img className="page-icon" src="/img/icons/databricks.svg" alt="" />
+
 # Import: Unity Catalog
 
 Creates a data contract from Databricks Unity Catalog, from an exported JSON file or via the HTTP endpoint.

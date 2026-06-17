@@ -4,6 +4,8 @@ title: "Export: SQL DDL"
 description: "Convert a data contract into a SQL data definition language (DDL) file."
 ---
 
+<img className="page-icon" src="/img/icons/database.svg" alt="" />
+
 # Export: SQL
 
 Converts a data contract into a SQL data definition language (DDL) file.

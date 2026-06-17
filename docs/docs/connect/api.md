@@ -4,6 +4,8 @@ title: "HTTP API"
 description: "Test JSON HTTP APIs (GET only)."
 ---
 
+<img className="page-icon" src="/img/icons/api.svg" alt="" />
+
 # HTTP API
 
 Test APIs that return data in JSON format. Currently, only GET requests are supported.

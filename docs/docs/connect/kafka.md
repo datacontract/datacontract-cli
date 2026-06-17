@@ -4,6 +4,8 @@ title: "Kafka"
 description: "Test data in Kafka topics (experimental)."
 ---
 
+<img className="page-icon" src="/img/icons/kafka.svg" alt="" />
+
 # Kafka
 
 Test data in Kafka topics. Kafka support is currently considered **experimental**.

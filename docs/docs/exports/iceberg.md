@@ -4,6 +4,8 @@ title: "Export: Iceberg"
 description: "Export a data contract to an Apache Iceberg schema."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: Iceberg
 
 Exports to an [Iceberg Table JSON Schema Definition](https://iceberg.apache.org/spec/#appendix-c-json-serialization).

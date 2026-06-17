@@ -4,6 +4,8 @@ title: "Export: Great Expectations"
 description: "Export a data contract to a Great Expectations suite."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: Great Expectations
 
 Transforms a data contract into a comprehensive [Great Expectations](https://greatexpectations.io/) JSON suite. If the contract includes multiple models, specify the model with `--schema-name`.

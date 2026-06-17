@@ -4,6 +4,8 @@ title: "Google BigQuery"
 description: "Test data in Google BigQuery tables and views."
 ---
 
+<img className="page-icon" src="/img/icons/bigquery.svg" alt="" />
+
 # Google BigQuery
 
 Test data in Google BigQuery. Authentication uses a Service Account Key or Application Default Credentials (ADC) — including Workload Identity Federation (WIF), the GCE metadata server, and `gcloud auth application-default login`. The service account should have the **BigQuery Job User** and **BigQuery Data Viewer** roles.

@@ -4,6 +4,8 @@ title: "Export: DCS"
 description: "Export a data contract to the DCS format."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: DCS
 
 Exports the data contract to the DCS (Data Contract Specification) format.

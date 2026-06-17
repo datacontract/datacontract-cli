@@ -4,6 +4,8 @@ title: "Microsoft SQL Server"
 description: "Test data in SQL Server, Azure SQL, Synapse, and Fabric."
 ---
 
+<img className="page-icon" src="/img/icons/sqlserver.svg" alt="" />
+
 # Microsoft SQL Server
 
 Test data in MS SQL Server, including Azure SQL, Synapse Analytics SQL Pool, and Microsoft Fabric.

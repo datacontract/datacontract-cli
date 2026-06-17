@@ -28,3 +28,48 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+/* Overview card grids (Connect your Data, Imports, Exports) */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.doc-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  text-decoration: none !important;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.doc-card:hover {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+.doc-card img {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  margin-top: 2px;
+  object-fit: contain;
+}
+.doc-card-title {
+  display: block;
+  font-weight: 600;
+}
+.doc-card-desc {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-700);
+  margin-top: 0.15rem;
+}
+.page-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}

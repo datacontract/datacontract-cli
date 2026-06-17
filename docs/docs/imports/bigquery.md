@@ -4,6 +4,8 @@ title: "Import: BigQuery"
 description: "Create a data contract from BigQuery, via an exported JSON file or the BigQuery API."
 ---
 
+<img className="page-icon" src="/img/icons/bigquery.svg" alt="" />
+
 # Import: BigQuery
 
 Creates a data contract from BigQuery, either from an exported table definition (JSON file) or directly from the BigQuery API.

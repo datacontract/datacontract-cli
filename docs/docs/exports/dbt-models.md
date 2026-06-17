@@ -4,6 +4,8 @@ title: "Export: dbt Models"
 description: "Export a data contract to dbt model schema YAML."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: dbt Models
 
 Converts the data contract to dbt models in YAML format, with support for SQL dialects.

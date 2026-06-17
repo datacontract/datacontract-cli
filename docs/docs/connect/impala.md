@@ -4,6 +4,8 @@ title: "Apache Impala"
 description: "Run checks against an Apache Impala cluster."
 ---
 
+<img className="page-icon" src="/img/icons/impala.svg" alt="" />
+
 # Apache Impala
 
 Run checks against an Apache Impala cluster.

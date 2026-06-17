@@ -4,6 +4,8 @@ title: "Spark DataFrame"
 description: "Test in-memory Spark DataFrames in a pipeline (programmatic)."
 ---
 
+<img className="page-icon" src="/img/icons/database.svg" alt="" />
+
 # Spark DataFrame
 
 Test Spark DataFrames in a pipeline before writing them to a data source. DataFrames are registered as named temporary views; multiple views are supported if the contract has multiple schemas.

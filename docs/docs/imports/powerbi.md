@@ -4,6 +4,8 @@ title: "Import: Power BI"
 description: "Create a data contract from a Power BI semantic model (.pbit, .bim, or .json)."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Import: Power BI
 
 Creates a data contract from a Power BI semantic model (`.pbit`, `.bim`, or `.json`).

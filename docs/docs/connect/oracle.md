@@ -4,6 +4,8 @@ title: "Oracle"
 description: "Test data in Oracle Database."
 ---
 
+<img className="page-icon" src="/img/icons/oracle.svg" alt="" />
+
 # Oracle
 
 Test data in Oracle Database.

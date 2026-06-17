@@ -4,6 +4,8 @@ title: "Export: dbt Staging SQL"
 description: "Export a data contract to a dbt staging SQL file."
 ---
 
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
 # Export: dbt Staging SQL
 
 Generates a dbt staging SQL file that selects the contract's fields.
