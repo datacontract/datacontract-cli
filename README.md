@@ -288,24 +288,6 @@ It covers everything in depth, including the complete command reference:
 - [API](https://docs.datacontract.com/api) and [Python Library](https://docs.datacontract.com/python-library)
 - [Command reference](https://docs.datacontract.com/commands) — `init`, `lint`, `test`, `export`, `import`, `dbt`, `ci`, `catalog`, `publish`, `api`, and more
 
-## Integrations
-
-| Integration           | Option                       | Description                                                                                                   |
-|-----------------------|------------------------------|---------------------------------------------------------------------------------------------------------------|
-| Entropy Data          | `--publish`                  | Push full results to the [Entropy Data API](https://api.entropy-data.com/swagger/index.html)                  |
-
-### Integration with Entropy Data
-
-If you use [Entropy Data](https://entropy-data.com/), you can use the data contract URL to reference to the contract and append the `--publish` option to send and display the test results. Set an environment variable for your API key.
-
-```bash
-# Fetch current data contract, execute tests on production, and publish result to entropy data
-$ EXPORT ENTROPY_DATA_API_KEY=xxx
-$ datacontract test https://demo.entropy-data.com/demo279750347121/datacontracts/4df9d6ee-e55d-4088-9598-b635b2fdcbbc/datacontract.yaml \
- --server production \
- --publish https://api.entropy-data.com/api/test-results
-```
-
 ## Development Setup
 
 - Install [uv](https://docs.astral.sh/uv/)
@@ -388,28 +370,10 @@ docker compose run --rm datacontract --version
 This command runs the container momentarily to check the version of the `datacontract` CLI. The `--rm` flag ensures that the container is automatically removed after the command executes, keeping your environment clean.
 
 
-## Release Steps
-
-1. Update the version in `pyproject.toml`
-2. Have a look at the `CHANGELOG.md`
-3. Create release commit manually
-4. Execute `./release`
-5. Wait until GitHub Release is created
-6. Add the release notes to the GitHub Release
-
-## Companies using this tool
-
-- [Entropy Data](https://www.entropy-data.com)
-- [INNOQ](https://innoq.com)
-- [Data Catering](https://data.catering/)
-- [Oliver Wyman](https://www.oliverwyman.com/)
-- And many more. To add your company, please create a pull request.
-
 ## Related Tools
 
 - [Entropy Data](https://www.entropy-data.com/) is a commercial tool to manage data contracts. It contains a web UI, access management, and data governance for a data product marketplace based on data contracts.
 - [Data Contract Editor](https://editor.datacontract.com) is an editor for Data Contracts, including a live html preview.
-- [Data Contract Playground](https://data-catering.github.io/data-contract-playground/) allows you to validate and export your data contract to different formats within your browser.
 
 ## License
 

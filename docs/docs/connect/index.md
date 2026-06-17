@@ -108,4 +108,4 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
 Missing a source? [Open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 :::
 
-Each connection requires the matching [optional dependency (extra)](../quickstart.md#optional-dependencies-extras), or install everything with `datacontract-cli[all]`.
+Each connection requires the matching [optional dependency (extra)](../installation.md#optional-dependencies-extras), or install everything with `datacontract-cli[all]`.

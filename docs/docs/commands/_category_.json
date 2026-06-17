@@ -1,5 +1,8 @@
 {
   "label": "Commands",
-  "position": 11,
-  "link": { "type": "doc", "id": "commands/index" }
+  "position": 12,
+  "link": {
+    "type": "doc",
+    "id": "commands/index"
+  }
 }

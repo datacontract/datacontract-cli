@@ -1,5 +1,8 @@
 {
   "label": "Define your Quality Rules",
-  "position": 6,
-  "link": { "type": "doc", "id": "quality-rules/index" }
+  "position": 7,
+  "link": {
+    "type": "doc",
+    "id": "quality-rules/index"
+  }
 }
