@@ -386,7 +386,7 @@ Created by [Stefan Negele](https://www.linkedin.com/in/stefan-negele-573153112/)
 ---
 
 <p align="center">
-  <a href="https://entropy-data.com" target="_blank"><img src="https://entropy-data.com/media/logo_fuchsia_v2.png" alt="Entropy Data" height="48"></a>
+  <a href="https://entropy-data.com" target="_blank"><img src="https://entropy-data.com/media/entropy-data-logo.svg" alt="Entropy Data" height="36"></a>
 </p>
 <p align="center">
   <a href="https://entropy-data.com/legal-notice">Legal Notice</a> · <a href="https://entropy-data.com/privacy-policy">Privacy Policy</a>
