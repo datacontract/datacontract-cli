@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 7
 title: "Editing"
 description: "Author and edit data contracts visually with the bundled Data Contract Editor web UI."
 ---
