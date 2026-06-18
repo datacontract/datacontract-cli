@@ -8,7 +8,7 @@ description: "Connect the Data Contract CLI to Snowflake to run schema and quali
 
 # Snowflake
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `snowflake` extra. See [Installation](../installation.md).
 :::
 

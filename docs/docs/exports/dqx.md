@@ -4,7 +4,7 @@ title: "Export: DQX"
 description: "Export a data contract to Databricks DQX checks."
 ---
 
-<img className="page-icon" src="/img/icons/databricks.svg" alt="" />
+<img className="page-icon" src="/img/icons/dqx.svg" alt="" />
 
 # Export: DQX
 

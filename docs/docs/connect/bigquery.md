@@ -8,7 +8,7 @@ description: "Test data in Google BigQuery tables and views."
 
 # Google BigQuery
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `bigquery` extra. See [Installation](../installation.md).
 :::
 

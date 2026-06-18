@@ -46,7 +46,7 @@ datacontract export sql datacontract.yaml --dialect postgres --output output.sql
 
 Supported dialects: `postgres`, `mysql`, `snowflake`, `databricks`, `sqlserver`, `trino`, `oracle`, `clickhouse` (and `auto`, the default, which detects the dialect from the server type).
 
-:::note Databricks `variant` columns
+:::note[Databricks `variant` columns]
 If an error is thrown when deploying SQL DDLs with `variant` columns on Databricks, set:
 
 ```python

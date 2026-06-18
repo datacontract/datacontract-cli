@@ -4,7 +4,7 @@ title: "Import: Spark"
 description: "Create a data contract from Spark tables or DataFrames (programmatic)."
 ---
 
-<img className="page-icon" src="/img/icons/database.svg" alt="" />
+<img className="page-icon" src="/img/icons/spark.svg" alt="" />
 
 # Import: Spark
 

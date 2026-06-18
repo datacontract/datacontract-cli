@@ -4,7 +4,7 @@ title: "Export: dbt Sources"
 description: "Export a data contract to dbt sources YAML."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/dbt.svg" alt="" />
 
 # Export: dbt Sources
 

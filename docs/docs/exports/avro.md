@@ -4,7 +4,7 @@ title: "Export: Avro"
 description: "Export a data contract to an Avro schema, with custom logicalType and default support."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/avro.svg" alt="" />
 
 # Export: Avro
 

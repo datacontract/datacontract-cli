@@ -33,6 +33,9 @@
     "@types/react": "^19.0.0",
     "typescript": "~6.0.2"
   },
+  "overrides": {
+    "serialize-javascript": "^7.0.3"
+  },
   "browserslist": {
     "production": [
       ">0.5%",

@@ -4,7 +4,7 @@ title: "Export: Markdown"
 description: "Export a data contract to Markdown documentation."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/markdown.svg" alt="" />
 
 # Export: Markdown
 

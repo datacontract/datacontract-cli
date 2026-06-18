@@ -4,7 +4,7 @@ title: "Import: Excel"
 description: "Create a data contract from an ODCS Excel template."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/excel.svg" alt="" />
 
 # Import: Excel
 

@@ -4,7 +4,7 @@ title: "Import: Iceberg"
 description: "Create a data contract from an Apache Iceberg schema."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/iceberg.svg" alt="" />
 
 # Import: Iceberg
 

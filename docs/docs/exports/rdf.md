@@ -4,7 +4,7 @@ title: "Export: RDF"
 description: "Export a data contract to an RDF representation."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/rdf.svg" alt="" />
 
 # Export: RDF
 

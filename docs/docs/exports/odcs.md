@@ -4,7 +4,7 @@ title: "Export: ODCS"
 description: "Export a data contract to the Open Data Contract Standard (ODCS) format."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/odcs.svg" alt="" />
 
 # Export: ODCS
 
