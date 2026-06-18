@@ -17,6 +17,15 @@ Run `datacontract export <format> --help` to see the format-specific options (e.
 
 For SQL dialects (`postgres`, `mysql`, `snowflake`, `databricks`, `sqlserver`, `trino`, `oracle`, `clickhouse`), use `datacontract export sql --dialect <dialect>`.
 
+## Example contract
+
+The examples on each export page are generated from the same data contract, so you can compare formats side by side:
+
+- [`examples/orders/orders.odcs.yaml`](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) — an `orders` and `line_items` schema with a Snowflake and a BigQuery server. Used by most pages.
+- [`examples/user_interactions/user_interactions.odcs.yaml`](https://github.com/datacontract/datacontract-cli/blob/main/examples/user_interactions/user_interactions.odcs.yaml) — a Databricks contract with DQX quality rules. Used by the [`dqx`](./dqx.md) page.
+
+Download a file and run the commands below against it to reproduce the output.
+
 ## Available exporters
 
 <div className="card-grid">

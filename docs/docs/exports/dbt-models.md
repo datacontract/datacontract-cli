@@ -11,7 +11,53 @@ description: "Export a data contract to dbt model schema YAML."
 Converts the data contract to dbt models in YAML format, with support for SQL dialects.
 
 ```bash
-datacontract export dbt-models datacontract.yaml --server snowflake
+datacontract export dbt-models orders.odcs.yaml
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces (excerpt):
+
+```yaml
+version: 2
+models:
+- name: orders
+  config:
+    meta:
+      data_contract: urn:datacontract:checkout:orders
+    materialized: table
+    contract:
+      enforced: true
+  description: One row per customer order.
+  columns:
+  - name: order_id
+    data_type: VARCHAR
+    description: Unique identifier of the order.
+    constraints:
+    - type: not_null
+    - type: unique
+  - name: order_timestamp
+    data_type: TIMESTAMP_TZ
+    description: Timestamp when the order was placed.
+    constraints:
+    - type: not_null
+  - name: customer_id
+    data_type: VARCHAR
+    description: Reference to the customer who placed the order.
+    constraints:
+    - type: not_null
+  - name: order_total
+    data_type: NUMBER
+    description: Total amount of the order in cents.
+    constraints:
+    - type: not_null
+  - name: status
+    data_type: VARCHAR
+    description: Current fulfilment status of the order.
+    constraints:
+    - type: not_null
+- name: line_items
+  config:
+    meta:
+# …
 ```
 
 If a server is selected via `--server` (based on its `type`), the dbt column `data_types` match the expected data types of that server. If no server is selected, it defaults to `snowflake`.

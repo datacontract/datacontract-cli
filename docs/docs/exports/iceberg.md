@@ -13,7 +13,13 @@ Exports to an [Iceberg Table JSON Schema Definition](https://iceberg.apache.org/
 This export supports a single model at a time, because Iceberg's schema definition is for a single table (1 model → 1 table). Use `--schema-name` to select the model.
 
 ```bash
-datacontract export iceberg --schema-name orders datacontract.yaml --output orders_iceberg.json
+datacontract export iceberg orders.odcs.yaml --schema-name orders --output orders.iceberg.json
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```json
+{"type":"struct","fields":[{"id":1,"name":"order_id","type":"string","required":true},{"id":2,"name":"order_timestamp","type":"timestamptz","required":true},{"id":3,"name":"customer_id","type":"string","required":true},{"id":4,"name":"order_total","type":"decimal(38, 0)","required":true},{"id":5,"name":"status","type":"string","required":true}],"schema-id":0,"identifier-field-ids":[1]}
 ```
 
 ```json

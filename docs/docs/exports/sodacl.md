@@ -11,5 +11,43 @@ description: "Export a data contract to SodaCL checks."
 Converts the contract's schema and [quality rules](../quality-rules/index.md) into [SodaCL](https://docs.soda.io/soda-cl/soda-cl-overview.html) checks.
 
 ```bash
-datacontract export sodacl datacontract.yaml --output checks.yml
+datacontract export sodacl orders.odcs.yaml --output sodacl.yaml
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces (excerpt):
+
+```yaml
+checks for line_items:
+- schema:
+    fail:
+      when required column missing:
+      - line_item_id
+    name: line_items__line_item_id__field_is_present
+- schema:
+    fail:
+      when wrong column type:
+        line_item_id: VARCHAR
+    name: line_items__line_item_id__field_type
+- missing_count(line_item_id) = 0:
+    name: line_items__line_item_id__field_required
+- duplicate_count(line_item_id) = 0:
+    name: line_items__line_item_id__field_unique
+- schema:
+    fail:
+      when required column missing:
+      - order_id
+    name: line_items__order_id__field_is_present
+- schema:
+    fail:
+      when wrong column type:
+        order_id: VARCHAR
+    name: line_items__order_id__field_type
+- missing_count(order_id) = 0:
+    name: line_items__order_id__field_required
+- schema:
+    fail:
+      when required column missing:
+      - sku
+    name: line_items__sku__field_is_present
+# …
 ```

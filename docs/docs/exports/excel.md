@@ -11,8 +11,10 @@ description: "Export a data contract to an ODCS Excel template."
 Converts a data contract into an ODCS Excel template — a user-friendly spreadsheet for authoring, sharing, and managing data contracts.
 
 ```bash
-datacontract export excel datacontract.yaml --output datacontract.xlsx
+datacontract export excel orders.odcs.yaml --output orders.xlsx
 ```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces an `orders.xlsx` workbook with the ODCS template sheets — fundamentals, servers, the `orders` and `line_items` schemas, quality, and service levels — pre-filled from the contract.
 
 The Excel format enables:
 

@@ -11,7 +11,47 @@ description: "Export a data contract to an Avro schema, with custom logicalType 
 Converts the data contract into an Avro schema. It supports specifying custom Avro properties for logical types and default values.
 
 ```bash
-datacontract export avro datacontract.yaml --output schema.avsc
+datacontract export avro orders.odcs.yaml --schema-name orders --output orders.avsc
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```json
+{
+  "type": "record",
+  "name": "orders",
+  "doc": "One row per customer order.",
+  "fields": [
+    {
+      "name": "order_id",
+      "doc": "Unique identifier of the order.",
+      "type": "string"
+    },
+    {
+      "name": "order_timestamp",
+      "doc": "Timestamp when the order was placed.",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      }
+    },
+    {
+      "name": "customer_id",
+      "doc": "Reference to the customer who placed the order.",
+      "type": "string"
+    },
+    {
+      "name": "order_total",
+      "doc": "Total amount of the order in cents.",
+      "type": "bytes"
+    },
+    {
+      "name": "status",
+      "doc": "Current fulfilment status of the order.",
+      "type": "string"
+    }
+  ]
+}
 ```
 
 ## Custom Avro properties

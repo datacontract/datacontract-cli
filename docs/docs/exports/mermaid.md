@@ -11,5 +11,24 @@ description: "Export a data contract to a Mermaid diagram."
 Generates a [Mermaid](https://mermaid.js.org/) entity-relationship diagram of the contract's schemas.
 
 ```bash
-datacontract export mermaid datacontract.yaml --output diagram.mmd
+datacontract export mermaid orders.odcs.yaml
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```mermaid
+erDiagram
+        "**orders**" {
+        order_id🔑🔒 string
+        order_timestamp date
+        customer_id string
+        order_total number
+        status string
+}
+        "**line_items**" {
+        line_item_id🔑🔒 string
+        order_id string
+        sku string
+        quantity integer
+}
 ```

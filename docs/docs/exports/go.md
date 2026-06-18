@@ -11,5 +11,27 @@ description: "Generate Go struct type definitions from a data contract's schema.
 Generates Go `struct` types from the data contract.
 
 ```bash
-datacontract export go datacontract.yaml --output models.go
+datacontract export go orders.odcs.yaml --output orders.go
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```go
+package main
+
+
+type Orders struct {
+    OrderId string `json:"order_id" avro:"order_id"`  // Unique identifier of the order.
+    OrderTimestamp time.Time `json:"order_timestamp" avro:"order_timestamp"`  // Timestamp when the order was placed.
+    CustomerId string `json:"customer_id" avro:"customer_id"`  // Reference to the customer who placed the order.
+    OrderTotal float64 `json:"order_total" avro:"order_total"`  // Total amount of the order in cents.
+    Status string `json:"status" avro:"status"`  // Current fulfilment status of the order.
+}
+
+type LineItems struct {
+    LineItemId string `json:"line_item_id" avro:"line_item_id"`  // Unique identifier of the line item.
+    OrderId string `json:"order_id" avro:"order_id"`  // Reference to the parent order.
+    Sku string `json:"sku" avro:"sku"`  // Stock keeping unit of the purchased product.
+    Quantity int `json:"quantity" avro:"quantity"`  // Number of units purchased.
+}
 ```

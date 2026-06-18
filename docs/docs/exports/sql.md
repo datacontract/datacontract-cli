@@ -11,7 +11,27 @@ description: "Convert a data contract into a SQL data definition language (DDL) 
 Converts a data contract into a SQL data definition language (DDL) file.
 
 ```bash
-datacontract export sql datacontract.yaml --output output.sql
+datacontract export sql orders.odcs.yaml --output orders.sql
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```sql
+-- Data Contract: urn:datacontract:checkout:orders
+-- SQL Dialect: snowflake
+CREATE TABLE orders (
+  order_id VARCHAR not null primary key COMMENT 'Unique identifier of the order.',
+  order_timestamp TIMESTAMP_TZ not null COMMENT 'Timestamp when the order was placed.',
+  customer_id VARCHAR not null COMMENT 'Reference to the customer who placed the order.',
+  order_total NUMBER not null COMMENT 'Total amount of the order in cents.',
+  status VARCHAR not null COMMENT 'Current fulfilment status of the order.'
+) COMMENT='One row per customer order.';
+CREATE TABLE line_items (
+  line_item_id VARCHAR not null primary key COMMENT 'Unique identifier of the line item.',
+  order_id VARCHAR not null COMMENT 'Reference to the parent order.',
+  sku VARCHAR not null COMMENT 'Stock keeping unit of the purchased product.',
+  quantity NUMBER not null COMMENT 'Number of units purchased.'
+) COMMENT='One row per line item within an order.';
 ```
 
 The SQL dialect is determined from the `servers` block in the data contract (e.g. `type: postgres`, `type: snowflake`). Alternatively, pass it explicitly:

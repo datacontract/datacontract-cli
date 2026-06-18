@@ -11,5 +11,45 @@ description: "Export a data contract to Markdown documentation."
 Generates Markdown documentation for the data contract.
 
 ```bash
-datacontract export markdown datacontract.yaml --output datacontract.md
+datacontract export markdown orders.odcs.yaml --output orders.md
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces (excerpt):
+
+```markdown
+# urn:datacontract:checkout:orders
+## Info
+*Tracks customer orders and their line items for analytics and reporting.*
+- **name:** Orders
+- **version:** 1.0.0
+- **status:** active
+
+## Terms of Use
+### Usage
+Used by the analytics team to build revenue dashboards and by finance for reconciliation.
+
+### Purpose
+Tracks customer orders and their line items for analytics and reporting.
+
+### Limitations
+Not suitable for real-time fraud detection; data is loaded in hourly batches.
+
+## Servers
+| Name | Type | Attributes |
+| ---- | ---- | ---------- |
+| production | snowflake | *No description.*<br />• **account:** my-account<br />• **database:** ANALYTICS<br />• **schema_:** ORDERS |
+| bigquery | bigquery | *No description.*<br />• **dataset:** orders<br />• **project:** my-gcp-project |
+
+## Schema
+### orders
+*One row per customer order.*
+
+| Field | Type | Attributes |
+| ----- | ---- | ---------- |
+|  order_id | string | *Unique identifier of the order.*<br />• `primaryKey`<br />• `required`<br />• `unique`<br />• **examples:** ['ORD-1001', 'ORD-1002'] |
+|  order_timestamp | date | *Timestamp when the order was placed.*<br />• `required` |
+|  customer_id | string | *Reference to the customer who placed the order.*<br />• `required` |
+|  order_total | number | *Total amount of the order in cents.*<br />• `required`<br />• **quality:** [{'description': 'Order total is never negative.', 'type': 'sql', 'mustBe': 0, 'query': 'SELECT COUNT(*) FROM orders WHERE order_total < 0'}] |
+|  status | string | *Current fulfilment status of the order.*<br />• `required`<br />• **examples:** ['pending', 'shipped', 'delivered'] |
+<!-- … -->
 ```

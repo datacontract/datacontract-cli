@@ -11,5 +11,19 @@ description: "Export a data contract to a SQL SELECT query."
 Exports a data contract to a SQL `SELECT` query over the contract's fields.
 
 ```bash
-datacontract export sql-query datacontract.yaml --server snowflake
+datacontract export sql-query orders.odcs.yaml --schema-name orders
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```sql
+-- Data Contract: urn:datacontract:checkout:orders
+-- SQL Dialect: snowflake
+select
+    order_id,
+    order_timestamp,
+    customer_id,
+    order_total,
+    status
+from orders
 ```

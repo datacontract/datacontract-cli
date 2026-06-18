@@ -11,5 +11,36 @@ description: "Export a data contract to SQLAlchemy models."
 Generates [SQLAlchemy](https://www.sqlalchemy.org/) ORM models from the data contract.
 
 ```bash
-datacontract export sqlalchemy datacontract.yaml --output models.py
+datacontract export sqlalchemy orders.odcs.yaml --output orders_models.py
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```python
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import Column, Date, Integer, Numeric, String, Text, VARCHAR, BigInteger, Float, Double, Boolean, Date, ARRAY, LargeBinary
+from sqlalchemy import TIMESTAMP
+'Tracks customer orders and their line items for analytics and reporting.'
+
+class Base(DeclarativeBase):
+    pass
+
+class Orders(Base):
+    """One row per customer order."""
+    __tablename__ = 'orders'
+    __table_args__ = {'comment': 'One row per customer order.', 'schema': None}
+    order_id = Column(String(None), nullable=False, comment='Unique identifier of the order.', primary_key=True)
+    order_timestamp = Column(Date, nullable=False, comment='Timestamp when the order was placed.', primary_key=None)
+    customer_id = Column(String(None), nullable=False, comment='Reference to the customer who placed the order.', primary_key=None)
+    order_total = Column(Numeric(None, None), nullable=False, comment='Total amount of the order in cents.', primary_key=None)
+    status = Column(String(None), nullable=False, comment='Current fulfilment status of the order.', primary_key=None)
+
+class Line_items(Base):
+    """One row per line item within an order."""
+    __tablename__ = 'line_items'
+    __table_args__ = {'comment': 'One row per line item within an order.', 'schema': None}
+    line_item_id = Column(String(None), nullable=False, comment='Unique identifier of the line item.', primary_key=True)
+    order_id = Column(String(None), nullable=False, comment='Reference to the parent order.', primary_key=None)
+    sku = Column(String(None), nullable=False, comment='Stock keeping unit of the purchased product.', primary_key=None)
+    quantity = Column(Integer, nullable=False, comment='Number of units purchased.', primary_key=None)
 ```
