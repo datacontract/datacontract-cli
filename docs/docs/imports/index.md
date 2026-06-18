@@ -19,6 +19,10 @@ datacontract import sql --source my_ddl.sql --dialect postgres --output datacont
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
+## Example sources
+
+Each import page shows a runnable example: a small source file under [`examples/imports/`](https://github.com/datacontract/datacontract-cli/tree/main/examples/imports) and the data contract the CLI generates from it. Download a source and run the command on the page to reproduce the output.
+
 ## Available importers
 
 <div className="card-grid">

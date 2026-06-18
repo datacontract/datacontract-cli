@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract test` against Trino now supports `DATACONTRACT_TRINO_AUTHENTICATION=jwt` with `DATACONTRACT_TRINO_JWT_TOKEN`, and `DATACONTRACT_TRINO_AUTHENTICATION=oauth2` for the interactive browser flow.
 - `datacontract export sql --dialect clickhouse`: export data contracts to ClickHouse SQL DDL. (#1293)
+- Example data contracts and import sources under `examples/`, used as the worked examples on the docs export and import pages.
 
 ### Fixed
 - `datacontract import unity` now imports struct and array columns as structured ODCS types instead of only a flat type string: structs get nested `properties`, arrays get `items` (parsed recursively from Unity's `type_json`, including descriptions on nested fields). Arrays also get the correct `logicalType: array` (previously `object`); this logical type fix applies to the `sql` and `snowflake` importers as well. Map columns keep the flat `map<k,v>` string in `physicalType` until ODCS v3.2 adds `logicalType: map` (RFC 0030). (#1280)

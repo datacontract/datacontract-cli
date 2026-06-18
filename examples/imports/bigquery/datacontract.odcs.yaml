@@ -1,0 +1,34 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: orders
+  physicalType: table
+  description: One row per customer order.
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: order_id
+    physicalType: STRING
+    description: Unique identifier of the order.
+    logicalType: string
+    required: true
+  - name: order_timestamp
+    physicalType: TIMESTAMP
+    logicalType: date
+    required: true
+  - name: customer_id
+    physicalType: STRING
+    logicalType: string
+    required: true
+  - name: order_total
+    physicalType: NUMERIC
+    logicalType: number
+    required: true
+  - name: status
+    physicalType: STRING
+    logicalType: string
+    required: true
