@@ -196,42 +196,21 @@ class DataContract:
     def export(
         self, export_format: ExportFormat, schema_name: str = "all", sql_server_type: str = "auto", **kwargs
     ) -> str | bytes:
-        if (
-            export_format == ExportFormat.html
-            or export_format == ExportFormat.mermaid
-            or export_format == ExportFormat.excel
-        ):
-            data_contract = resolve.resolve_data_contract(
-                self._data_contract_file,
-                self._data_contract_str,
-                self._data_contract,
-                schema_location=self._schema_location,
-                inline_references=self._inline_references,
-            )
+        data_contract = resolve.resolve_data_contract(
+            self._data_contract_file,
+            self._data_contract_str,
+            self._data_contract,
+            schema_location=self._schema_location,
+            inline_references=self._inline_references,
+        )
 
-            return exporter_factory.create(export_format).export(
-                data_contract=data_contract,
-                schema_name=schema_name,
-                server=self._server,
-                sql_server_type=sql_server_type,
-                export_args=kwargs,
-            )
-        else:
-            data_contract = resolve.resolve_data_contract(
-                self._data_contract_file,
-                self._data_contract_str,
-                self._data_contract,
-                schema_location=self._schema_location,
-                inline_references=self._inline_references,
-            )
-
-            return exporter_factory.create(export_format).export(
-                data_contract=data_contract,
-                schema_name=schema_name,
-                server=self._server,
-                sql_server_type=sql_server_type,
-                export_args=kwargs,
-            )
+        return exporter_factory.create(export_format).export(
+            data_contract=data_contract,
+            schema_name=schema_name,
+            server=self._server,
+            sql_server_type=sql_server_type,
+            export_args=kwargs,
+        )
 
     def changelog(self, other: "DataContract") -> ChangelogResult:
         """Generate a changelog between this data contract and another, returning a ChangelogResult."""
