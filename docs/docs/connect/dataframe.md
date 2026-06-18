@@ -4,7 +4,7 @@ title: "Spark DataFrame"
 description: "Test in-memory Spark DataFrames in a pipeline (programmatic)."
 ---
 
-<img className="page-icon" src="/img/icons/database.svg" alt="" />
+<img className="page-icon" src="/img/icons/spark.svg" alt="" />
 
 # Spark DataFrame
 
