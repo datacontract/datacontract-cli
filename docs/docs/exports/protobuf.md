@@ -4,7 +4,7 @@ title: "Export: Protobuf"
 description: "Export a data contract to a Protobuf schema."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/custom.svg" alt="" />
 
 # Export: Protobuf
 

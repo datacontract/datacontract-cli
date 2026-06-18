@@ -66,7 +66,7 @@ Download a file and run the commands below against it to reproduce the output.
     <span><span className="doc-card-title">pydantic-model</span><span className="doc-card-desc">A Pydantic model.</span></span>
   </a>
   <a className="doc-card" href="/exports/protobuf">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">protobuf</span><span className="doc-card-desc">Protobuf schema.</span></span>
   </a>
   <a className="doc-card" href="/exports/odcs">
@@ -78,7 +78,7 @@ Download a file and run the commands below against it to reproduce the output.
     <span><span className="doc-card-title">rdf</span><span className="doc-card-desc">RDF representation.</span></span>
   </a>
   <a className="doc-card" href="/exports/html">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">html</span><span className="doc-card-desc">A standalone HTML page.</span></span>
   </a>
   <a className="doc-card" href="/exports/markdown">
@@ -126,7 +126,7 @@ Download a file and run the commands below against it to reproduce the output.
     <span><span className="doc-card-title">data-caterer</span><span className="doc-card-desc">Data Caterer data-generation task.</span></span>
   </a>
   <a className="doc-card" href="/exports/dcs">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">dcs</span><span className="doc-card-desc">DCS format.</span></span>
   </a>
   <a className="doc-card" href="/exports/dqx">
@@ -138,7 +138,7 @@ Download a file and run the commands below against it to reproduce the output.
     <span><span className="doc-card-title">excel</span><span className="doc-card-desc">ODCS Excel template.</span></span>
   </a>
   <a className="doc-card" href="/exports/custom">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">custom</span><span className="doc-card-desc">Any format, via a custom Jinja template.</span></span>
   </a>
 </div>

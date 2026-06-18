@@ -71,11 +71,11 @@ Each import page shows a runnable example: a small source file under [`examples/
     <span><span className="doc-card-title">parquet</span><span className="doc-card-desc">A Parquet file.</span></span>
   </a>
   <a className="doc-card" href="/imports/csv">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">csv</span><span className="doc-card-desc">A CSV file.</span></span>
   </a>
   <a className="doc-card" href="/imports/protobuf">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">protobuf</span><span className="doc-card-desc">A Protobuf schema file.</span></span>
   </a>
   <a className="doc-card" href="/imports/spark">
