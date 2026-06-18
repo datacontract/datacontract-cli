@@ -4,7 +4,7 @@ title: "Export: SodaCL"
 description: "Export a data contract to SodaCL checks."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/soda.svg" alt="" />
 
 # Export: SodaCL
 

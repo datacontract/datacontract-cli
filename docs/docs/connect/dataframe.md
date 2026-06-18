@@ -8,7 +8,7 @@ description: "Test in-memory Spark DataFrames in a pipeline (programmatic)."
 
 # Spark DataFrame
 
-:::info Required extra
+:::info[Required extra]
 This connection needs **no additional extra**. See [Installation](../installation.md).
 :::
 

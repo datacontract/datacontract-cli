@@ -8,7 +8,7 @@ description: "Test data in Trino with basic, JWT, or OAuth2 auth."
 
 # Trino
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `trino` extra. See [Installation](../installation.md).
 :::
 

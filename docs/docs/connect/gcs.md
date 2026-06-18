@@ -8,7 +8,7 @@ description: "Test files on Google Cloud Storage via S3 interoperability."
 
 # Google Cloud Storage (GCS)
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `gcs` and `duckdb` extras. See [Installation](../installation.md).
 :::
 

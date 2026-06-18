@@ -4,7 +4,7 @@ title: "Export: Iceberg"
 description: "Export a data contract to an Apache Iceberg schema."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/iceberg.svg" alt="" />
 
 # Export: Iceberg
 

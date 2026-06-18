@@ -8,7 +8,7 @@ description: "Run checks against an Apache Impala cluster."
 
 # Apache Impala
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `impala` extra. See [Installation](../installation.md).
 :::
 

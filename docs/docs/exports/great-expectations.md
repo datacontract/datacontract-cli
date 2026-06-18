@@ -4,7 +4,7 @@ title: "Export: Great Expectations"
 description: "Export a data contract to a Great Expectations suite."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/great-expectations.svg" alt="" />
 
 # Export: Great Expectations
 

@@ -4,7 +4,7 @@ title: "Export: JSON Schema"
 description: "Export a data contract to a JSON Schema document for validating JSON data."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/jsonschema.svg" alt="" />
 
 # Export: JSON Schema
 

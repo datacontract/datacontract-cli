@@ -8,7 +8,7 @@ description: "Test data in Amazon Redshift, both provisioned clusters and Redshi
 
 # Amazon Redshift
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `redshift` extra. See [Installation](../installation.md).
 :::
 

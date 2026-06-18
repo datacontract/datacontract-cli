@@ -4,7 +4,7 @@ title: "Export: Spark"
 description: "Export a data contract to a Spark StructType schema."
 ---
 
-<img className="page-icon" src="/img/icons/database.svg" alt="" />
+<img className="page-icon" src="/img/icons/spark.svg" alt="" />
 
 # Export: Spark
 

@@ -8,7 +8,7 @@ description: "Test data in Kafka topics (experimental)."
 
 # Kafka
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `kafka` extra. See [Installation](../installation.md).
 :::
 

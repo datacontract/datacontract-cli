@@ -8,7 +8,7 @@ description: "Test data in Postgres and Postgres-compatible databases."
 
 # Postgres
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `postgres` extra. See [Installation](../installation.md).
 :::
 

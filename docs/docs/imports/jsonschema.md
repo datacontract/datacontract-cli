@@ -4,7 +4,7 @@ title: "Import: JSON Schema"
 description: "Create a data contract from a JSON Schema file."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/jsonschema.svg" alt="" />
 
 # Import: JSON Schema
 

@@ -4,7 +4,7 @@ title: "Import: JSON"
 description: "Create a data contract by inferring a schema from a JSON data file."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/json.svg" alt="" />
 
 # Import: JSON
 

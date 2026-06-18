@@ -4,7 +4,7 @@ title: "Export: Data Caterer"
 description: "Export a data contract to a Data Caterer data-generation task."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/data-caterer.svg" alt="" />
 
 # Export: Data Caterer
 
