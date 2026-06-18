@@ -1,0 +1,49 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: iceberg_table
+  physicalType: table
+  logicalType: object
+  physicalName: iceberg_table
+  properties:
+  - name: order_id
+    physicalType: string
+    customProperties:
+    - property: icebergFieldId
+      value: 1
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+  - name: order_timestamp
+    physicalType: timestamptz
+    customProperties:
+    - property: icebergFieldId
+      value: 2
+    logicalType: date
+    required: true
+  - name: customer_id
+    physicalType: string
+    customProperties:
+    - property: icebergFieldId
+      value: 3
+    logicalType: string
+    required: true
+  - name: order_total
+    physicalType: long
+    customProperties:
+    - property: icebergFieldId
+      value: 4
+    logicalType: integer
+    required: true
+  - name: status
+    physicalType: string
+    customProperties:
+    - property: icebergFieldId
+      value: 5
+    logicalType: string
+    required: true

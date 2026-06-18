@@ -1,0 +1,69 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+servers:
+- server: production
+  type: local
+  customProperties:
+  - property: delimiter
+    value: ','
+  format: csv
+  path: examples/imports/csv/orders.csv
+schema:
+- name: orders
+  physicalType: table
+  description: Generated model of examples/imports/csv/orders.csv
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: order_id
+    physicalType: VARCHAR
+    logicalType: string
+    required: true
+    unique: true
+    examples:
+    - ORD-1003
+    - ORD-1001
+    - ORD-1002
+  - name: order_timestamp
+    physicalType: VARCHAR
+    logicalType: date
+    required: true
+    unique: true
+    examples:
+    - '2024-01-03T09:15:00Z'
+    - '2024-01-02T11:30:00Z'
+    - '2024-01-01T10:00:00Z'
+  - name: customer_id
+    physicalType: VARCHAR
+    logicalType: string
+    required: true
+    unique: true
+    examples:
+    - CUST-1
+    - CUST-2
+    - CUST-3
+  - name: order_total
+    physicalType: INTEGER
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 1299.0
+      maximum: 4999.0
+    required: true
+    unique: true
+    examples:
+    - 1299
+    - 2500
+    - 4999
+  - name: status
+    physicalType: VARCHAR
+    logicalType: string
+    required: true
+    unique: true
+    examples:
+    - delivered
+    - pending
+    - shipped

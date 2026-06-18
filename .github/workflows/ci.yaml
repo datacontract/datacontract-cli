@@ -26,6 +26,8 @@ jobs:
         run: uv run ruff check
       - name: Check formatting
         run: uv run ruff format --check
+      - name: Lint example data contracts
+        run: uv run python lint_examples.py
 
   test:
     runs-on: ${{ matrix.os }}

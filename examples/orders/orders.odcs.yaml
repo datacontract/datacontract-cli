@@ -1,0 +1,118 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: urn:datacontract:checkout:orders
+name: Orders
+version: 1.0.0
+status: active
+description:
+  purpose: Tracks customer orders and their line items for analytics and reporting.
+  usage: Used by the analytics team to build revenue dashboards and by finance for reconciliation.
+  limitations: Not suitable for real-time fraud detection; data is loaded in hourly batches.
+
+tags:
+  - checkout
+  - orders
+
+servers:
+  - server: production
+    type: snowflake
+    account: my-account
+    database: ANALYTICS
+    schema: ORDERS
+  - server: bigquery
+    type: bigquery
+    project: my-gcp-project
+    dataset: orders
+
+schema:
+  - name: orders
+    physicalName: orders
+    physicalType: table
+    description: One row per customer order.
+    properties:
+      - name: order_id
+        primaryKey: true
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        unique: true
+        description: Unique identifier of the order.
+        examples:
+          - ORD-1001
+          - ORD-1002
+      - name: order_timestamp
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Timestamp when the order was placed.
+      - name: customer_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Reference to the customer who placed the order.
+      - name: order_total
+        logicalType: number
+        physicalType: NUMBER
+        required: true
+        description: Total amount of the order in cents.
+        quality:
+          - type: sql
+            description: Order total is never negative.
+            query: SELECT COUNT(*) FROM orders WHERE order_total < 0
+            mustBe: 0
+      - name: status
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Current fulfilment status of the order.
+        examples:
+          - pending
+          - shipped
+          - delivered
+    quality:
+      - type: sql
+        description: The orders table has at least 1000 rows.
+        query: SELECT COUNT(*) FROM orders
+        mustBeGreaterThan: 1000
+
+  - name: line_items
+    physicalName: line_items
+    physicalType: table
+    description: One row per line item within an order.
+    properties:
+      - name: line_item_id
+        primaryKey: true
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        unique: true
+        description: Unique identifier of the line item.
+      - name: order_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Reference to the parent order.
+      - name: sku
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Stock keeping unit of the purchased product.
+      - name: quantity
+        logicalType: integer
+        physicalType: INTEGER
+        required: true
+        description: Number of units purchased.
+
+slaProperties:
+  - property: retention
+    value: P1Y
+    element: orders.order_timestamp
+  - property: freshness
+    value: 24
+    unit: h
+    element: orders.order_timestamp
+
+support:
+  - channel: orders-data
+    tool: slack
+    url: https://my-org.slack.com/archives/C0123456789
