@@ -36,15 +36,15 @@ ODCS defines four `type`s of quality rule. Each has its own page:
     <span><span className="doc-card-title">SQL</span><span className="doc-card-desc">Run a custom SQL query and compare the result to a threshold.</span></span>
   </a>
   <a className="doc-card" href="/quality-rules/library">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">Library</span><span className="doc-card-desc">Predefined, portable checks such as rowCount, nullValues, and duplicateValues.</span></span>
   </a>
   <a className="doc-card" href="/quality-rules/text">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">Text</span><span className="doc-card-desc">A human-readable expectation, for documentation only.</span></span>
   </a>
   <a className="doc-card" href="/quality-rules/custom">
-    <img src="/img/icons/custom.svg" alt="" />
+    <img src="/img/icons/database.svg" alt="" />
     <span><span className="doc-card-title">Custom</span><span className="doc-card-desc">Engine-specific checks (e.g. DQX, SodaCL, Great Expectations).</span></span>
   </a>
 </div>

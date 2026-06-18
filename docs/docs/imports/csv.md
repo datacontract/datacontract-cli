@@ -4,7 +4,7 @@ title: "Import: CSV"
 description: "Create a data contract by inferring a schema from a CSV file."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/custom.svg" alt="" />
 
 # Import: CSV
 

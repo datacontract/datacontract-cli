@@ -8,7 +8,7 @@ description: "Test data in Databricks (Unity Catalog or Hive metastore)."
 
 # Databricks
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `databricks` extra. See [Installation](../installation.md).
 :::
 
@@ -52,7 +52,7 @@ run = data_contract.test()
 run.result
 ```
 
-:::tip Installing on Databricks compute
+:::tip[Installing on Databricks compute]
 On Databricks LTS ML runtimes (15.4, 16.4), installing via `%pip install` in notebooks can cause issues. Instead, add `datacontract-cli[databricks]` as a **PyPI library** on the cluster (Compute → your cluster → Libraries → Install new → PyPI), then restart the cluster.
 :::
 

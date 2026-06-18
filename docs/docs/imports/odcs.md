@@ -4,7 +4,7 @@ title: "Import: ODCS"
 description: "Create a data contract from an existing ODCS file."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/odcs.svg" alt="" />
 
 # Import: ODCS
 

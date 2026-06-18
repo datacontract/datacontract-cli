@@ -4,7 +4,7 @@ title: "Export: Avro IDL"
 description: "Export a data contract to an Avro IDL (.avdl) schema definition."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/avro.svg" alt="" />
 
 # Export: Avro IDL
 

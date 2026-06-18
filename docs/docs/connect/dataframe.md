@@ -4,11 +4,11 @@ title: "Spark DataFrame"
 description: "Test in-memory Spark DataFrames in a pipeline (programmatic)."
 ---
 
-<img className="page-icon" src="/img/icons/database.svg" alt="" />
+<img className="page-icon" src="/img/icons/spark.svg" alt="" />
 
 # Spark DataFrame
 
-:::info Required extra
+:::info[Required extra]
 This connection needs **no additional extra**. See [Installation](../installation.md).
 :::
 

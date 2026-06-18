@@ -8,7 +8,7 @@ description: "Test data in SQL Server, Azure SQL, Synapse, and Fabric."
 
 # Microsoft SQL Server
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `sqlserver` extra. See [Installation](../installation.md).
 :::
 

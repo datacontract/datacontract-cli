@@ -8,7 +8,7 @@ description: "Test data from a JSON HTTP API endpoint with the Data Contract CLI
 
 # HTTP API
 
-:::info Required extra
+:::info[Required extra]
 This connection needs **no additional extra**. See [Installation](../installation.md).
 :::
 

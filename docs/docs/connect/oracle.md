@@ -8,7 +8,7 @@ description: "Connect the Data Contract CLI to an Oracle Database to run schema 
 
 # Oracle
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `oracle` extra. See [Installation](../installation.md).
 :::
 
