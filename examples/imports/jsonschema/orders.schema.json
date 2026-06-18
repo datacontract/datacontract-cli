@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "orders",
+  "type": "object",
+  "properties": {
+    "order_id": { "type": "string", "description": "Unique identifier of the order." },
+    "order_timestamp": { "type": "string", "format": "date-time" },
+    "customer_id": { "type": "string" },
+    "order_total": { "type": "integer" },
+    "status": { "type": "string" }
+  },
+  "required": ["order_id", "order_timestamp", "customer_id", "order_total", "status"]
+}

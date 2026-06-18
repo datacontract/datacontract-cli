@@ -1,0 +1,46 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+servers:
+- server: production
+  type: local
+  format: json
+  path: examples/imports/json/orders.json
+schema:
+- name: orders
+  physicalType: object
+  description: Generated from JSON object in examples/imports/json/orders.json
+  logicalType: object
+  physicalName: orders
+  properties:
+  - name: order_id
+    physicalType: string
+    logicalType: string
+    examples:
+    - ORD-1001
+  - name: order_timestamp
+    physicalType: string
+    customProperties:
+    - property: format
+      value: date-time
+    logicalType: string
+    examples:
+    - '2024-01-01T10:00:00Z'
+  - name: customer_id
+    physicalType: string
+    logicalType: string
+    examples:
+    - CUST-1
+  - name: order_total
+    physicalType: integer
+    logicalType: integer
+    examples:
+    - 4999
+  - name: status
+    physicalType: string
+    logicalType: string
+    examples:
+    - delivered

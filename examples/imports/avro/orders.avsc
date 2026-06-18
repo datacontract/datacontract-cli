@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "orders",
+  "namespace": "com.example.checkout",
+  "fields": [
+    { "name": "order_id", "type": "string", "doc": "Unique identifier of the order." },
+    { "name": "order_timestamp", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "customer_id", "type": "string" },
+    { "name": "order_total", "type": "long" },
+    { "name": "status", "type": "string" }
+  ]
+}

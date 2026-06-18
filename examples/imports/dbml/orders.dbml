@@ -1,0 +1,7 @@
+Table orders {
+  order_id varchar [pk, note: 'Unique identifier of the order.']
+  order_timestamp timestamp [not null]
+  customer_id varchar [not null]
+  order_total bigint [not null]
+  status varchar [not null]
+}

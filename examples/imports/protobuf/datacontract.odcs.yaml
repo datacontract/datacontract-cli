@@ -1,0 +1,38 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: Orders
+  physicalType: message
+  description: Details of Orders.
+  logicalType: object
+  physicalName: Orders
+  properties:
+  - name: order_id
+    physicalType: '9'
+    description: Field order_id
+    logicalType: string
+    required: false
+  - name: order_timestamp
+    physicalType: '9'
+    description: Field order_timestamp
+    logicalType: string
+    required: false
+  - name: customer_id
+    physicalType: '9'
+    description: Field customer_id
+    logicalType: string
+    required: false
+  - name: order_total
+    physicalType: '3'
+    description: Field order_total
+    logicalType: integer
+    required: false
+  - name: status
+    physicalType: '9'
+    description: Field status
+    logicalType: string
+    required: false
