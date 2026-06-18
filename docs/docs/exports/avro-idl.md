@@ -1,0 +1,47 @@
+---
+sidebar_position: 7
+title: "Export: Avro IDL"
+description: "Export a data contract to an Avro IDL (.avdl) schema definition."
+---
+
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
+# Export: Avro IDL
+
+Converts the data contract to [Avro IDL](https://avro.apache.org/docs/1.11.1/idl-language/).
+
+```bash
+datacontract export avro-idl orders.odcs.yaml --output orders.avdl
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```text
+/** Tracks customer orders and their line items for analytics and reporting. */
+protocol Orders {
+    /** One row per customer order. */
+    record orders {
+        /** Unique identifier of the order. */
+        string order_id;
+        /** Timestamp when the order was placed. */
+        string order_timestamp;
+        /** Reference to the customer who placed the order. */
+        string customer_id;
+        /** Total amount of the order in cents. */
+        double order_total;
+        /** Current fulfilment status of the order. */
+        string status;
+    }
+    /** One row per line item within an order. */
+    record line_items {
+        /** Unique identifier of the line item. */
+        string line_item_id;
+        /** Reference to the parent order. */
+        string order_id;
+        /** Stock keeping unit of the purchased product. */
+        string sku;
+        /** Number of units purchased. */
+        int quantity;
+    }
+}
+```

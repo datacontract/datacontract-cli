@@ -75,9 +75,12 @@ def _cli_version() -> str:
 
 def _generate_index_html(filename: str) -> str:
     """
-    Generate the editor page, mirroring the CLI mode of the datacontract-editor npm launcher:
-    load the YAML from the local file API, write it back on save, and point the
-    editor's test runner at this server's own /test endpoint.
+    Generate the editor page: load the YAML from the local file API, write it back on
+    save, and point the editor's test runner at this server's own /test endpoint.
+
+    The editor runs in EMBEDDED mode, since the file menu (New, Load Example, Open)
+    makes no sense when the editor is bound to a single local file. The filename is
+    shown in the header via titlePrefix, and Cancel reverts to the file on disk.
     """
     filename_js = json.dumps(filename)
     file_api_path = f"/api/files/{quote(filename)}"
@@ -97,7 +100,7 @@ def _generate_index_html(filename: str) -> str:
   <body>
     <div id="root"></div>
     <script type="module">
-      import {{ init }} from '{EDITOR_ASSETS_PATH}/datacontract-editor.es.js';
+      import {{ init, parseYaml }} from '{EDITOR_ASSETS_PATH}/datacontract-editor.es.js';
 
       async function initCli() {{
         try {{
@@ -109,15 +112,40 @@ def _generate_index_html(filename: str) -> str:
 
           const notify = (notification) => editor?.getStore().getState().addNotification(notification);
 
+          // The header renders the titlePrefix followed by the contract's name,
+          // so only show the filename when the contract has a name.
+          let titlePrefix = null;
+          try {{
+            if (parseYaml(yaml)?.name) {{
+              titlePrefix = {filename_js};
+            }}
+          }} catch {{
+            // not parseable: no contract name to show the filename next to
+          }}
+
           const editor = init({{
             container: '#root',
-            mode: 'CLI',
+            mode: 'EMBEDDED',
+            showDelete: false,
+            titlePrefix: titlePrefix,
             yaml: yaml,
             persistence: 'none',
             initialView: 'form',
             tests: {{
               enabled: true,
               dataContractCliApiServerUrl: window.location.origin,
+            }},
+            onCancel: async () => {{
+              try {{
+                const response = await fetch('{file_api_path}');
+                if (!response.ok) {{
+                  throw new Error(response.statusText);
+                }}
+                editor.setYaml(await response.text());
+                notify({{ type: 'info', message: 'Discarded changes, reloaded ' + {filename_js} }});
+              }} catch (error) {{
+                notify({{ type: 'error', message: 'Failed to reload ' + {filename_js} + ': ' + error.message, duration: 5000 }});
+              }}
             }},
             onSave: async (yamlContent) => {{
               try {{

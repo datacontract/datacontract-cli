@@ -42,6 +42,7 @@ class SqlServerType(str, Enum):
     bigquery = "bigquery"
     trino = "trino"
     oracle = "oracle"
+    clickhouse = "clickhouse"
 
 
 class ExportFormat(str, Enum):
@@ -131,6 +132,8 @@ def _determine_sql_server_type(
             return "mysql"
         elif "databricks" in server_types:
             return "databricks"
+        elif "clickhouse" in server_types:
+            return "clickhouse"
         else:
             # default to snowflake dialect
             return "snowflake"

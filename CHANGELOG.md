@@ -7,8 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` against Trino now supports `DATACONTRACT_TRINO_AUTHENTICATION=jwt` with `DATACONTRACT_TRINO_JWT_TOKEN`, and `DATACONTRACT_TRINO_AUTHENTICATION=oauth2` for the interactive browser flow.
+- `datacontract export sql --dialect clickhouse`: export data contracts to ClickHouse SQL DDL. (#1293)
+
 ### Fixed
 - `datacontract import unity` now imports struct and array columns as structured ODCS types instead of only a flat type string: structs get nested `properties`, arrays get `items` (parsed recursively from Unity's `type_json`, including descriptions on nested fields). Arrays also get the correct `logicalType: array` (previously `object`); this logical type fix applies to the `sql` and `snowflake` importers as well. Map columns keep the flat `map<k,v>` string in `physicalType` until ODCS v3.2 adds `logicalType: map` (RFC 0030). (#1280)
+- `datacontract export dcs` no longer crashes on data contracts with a structured description or a standard server.
+
+## [1.0.3] - 2026-06-15
+
+### Added
+- `datacontract import powerbi` imports a data contract from a Power BI semantic model (.pbit, .bim, or .json) (#1232,#1233 @dmaresma)
+
+### Changed
+- `datacontract edit` shows the edited filename in the editor header, no longer offers New/Load Example/Open, and Cancel reverts to the file on disk
+
+### Fixed
+- `datacontract test` no longer aborts remaining quality checks after a SQL quality check falls back to native execution on DuckDB-backed sources (#1302)
+- Athena: pass `DATACONTRACT_S3_SESSION_TOKEN` to the connection again, fixing `UnrecognizedClientException` with temporary AWS credentials (#1309)
 
 ## [1.0.2] - 2026-06-11
 

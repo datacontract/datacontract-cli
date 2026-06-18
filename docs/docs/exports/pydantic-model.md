@@ -1,0 +1,46 @@
+---
+sidebar_position: 9
+title: "Export: Pydantic Model"
+description: "Export a data contract to a Pydantic model."
+---
+
+<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+
+# Export: Pydantic Model
+
+Generates [Pydantic](https://docs.pydantic.dev/) model classes from the data contract.
+
+```bash
+datacontract export pydantic-model orders.odcs.yaml --output orders.py
+```
+
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces:
+
+```python
+import datetime, typing, pydantic, decimal
+'Tracks customer orders and their line items for analytics and reporting.'
+
+class Orders(pydantic.BaseModel):
+    """One row per customer order."""
+    order_id: str
+    'Unique identifier of the order.'
+    order_timestamp: datetime.datetime
+    'Timestamp when the order was placed.'
+    customer_id: str
+    'Reference to the customer who placed the order.'
+    order_total: float
+    'Total amount of the order in cents.'
+    status: str
+    'Current fulfilment status of the order.'
+
+class Line_items(pydantic.BaseModel):
+    """One row per line item within an order."""
+    line_item_id: str
+    'Unique identifier of the line item.'
+    order_id: str
+    'Reference to the parent order.'
+    sku: str
+    'Stock keeping unit of the purchased product.'
+    quantity: int
+    'Number of units purchased.'
+```

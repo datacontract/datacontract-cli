@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -126,6 +127,12 @@ def test_index_serves_editor_page(client, contract_file):
     assert "/editor/datacontract-editor.es.js" in response.text
     assert "/editor/datacontract-editor.css" in response.text
     assert f"/api/files/{contract_file.name}" in response.text
+    # embedded mode: no file menu (New/Load Example/Open), the filename is shown in the header
+    assert "mode: 'EMBEDDED'" in response.text
+    assert "showDelete: false" in response.text
+    assert f"titlePrefix = {json.dumps(contract_file.name)}" in response.text
+    # cancel reverts to the file on disk
+    assert "onCancel" in response.text
     # the editor's test runner must point back to this server
     assert "dataContractCliApiServerUrl: window.location.origin" in response.text
     # saving must give feedback via the editor's toast notifications

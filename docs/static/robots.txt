@@ -1,0 +1,28 @@
+# Data Contract CLI documentation — https://docs.datacontract.com
+# Allow all standard crawlers.
+User-agent: *
+Allow: /
+
+# Explicitly welcome AI answer-engine crawlers so the docs can be cited.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://docs.datacontract.com/sitemap.xml

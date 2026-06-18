@@ -100,6 +100,8 @@ app = typer.Typer(
     cls=OrderedCommandsWithMigrationHints,
     no_args_is_help=True,
     add_completion=False,
+    help="CLI to manage data contracts. Documentation: https://docs.datacontract.com",
+    epilog="Read the full documentation at https://docs.datacontract.com",
 )
 
 
@@ -213,7 +215,7 @@ app.add_typer(
     help="Convert a data contract to a target format.",
     epilog=(
         "Example: datacontract export html datacontract.yaml --output datacontract.html\n\n"
-        "For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle), "
+        "For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle, clickhouse), "
         "use `datacontract export sql --dialect <dialect>`."
     ),
 )

@@ -1,0 +1,8 @@
+{
+  "label": "Connect your Data",
+  "position": 6,
+  "link": {
+    "type": "doc",
+    "id": "connect/index"
+  }
+}
