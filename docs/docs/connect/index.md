@@ -95,7 +95,7 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
     <span><span className="doc-card-title">Snowflake</span><span className="doc-card-desc">Snowflake</span></span>
   </a>
   <a className="doc-card" href="/connect/dataframe">
-    <img src="/img/icons/database.svg" alt="" />
+    <img src="/img/icons/spark.svg" alt="" />
     <span><span className="doc-card-title">Spark DataFrame</span><span className="doc-card-desc">In-memory Spark DataFrames (programmatic)</span></span>
   </a>
   <a className="doc-card" href="/connect/trino">

@@ -4,7 +4,7 @@ title: "Export: SQLAlchemy"
 description: "Export a data contract to SQLAlchemy models."
 ---
 
-<img className="page-icon" src="/img/icons/database.svg" alt="" />
+<img className="page-icon" src="/img/icons/sqlalchemy.svg" alt="" />
 
 # Export: SQLAlchemy
 

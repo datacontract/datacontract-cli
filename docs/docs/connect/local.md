@@ -8,7 +8,7 @@ description: "Test local files in Parquet, JSON, CSV, or Delta format."
 
 # Local files
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `duckdb` extra. See [Installation](../installation.md).
 :::
 

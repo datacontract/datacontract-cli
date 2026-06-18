@@ -8,7 +8,7 @@ description: "Test data in MySQL and MySQL-compatible databases."
 
 # MySQL
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `mysql` extra. See [Installation](../installation.md).
 :::
 

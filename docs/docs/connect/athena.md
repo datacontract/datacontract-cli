@@ -8,7 +8,7 @@ description: "Test data in AWS Athena stored on S3, including Iceberg, Parquet, 
 
 # Amazon Athena
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `athena` extra. See [Installation](../installation.md).
 :::
 

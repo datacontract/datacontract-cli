@@ -8,7 +8,7 @@ description: "Test data on Azure Blob storage or Azure Data Lake Storage Gen2."
 
 # Azure Blob / ADLS
 
-:::info Required extra
+:::info[Required extra]
 This connection requires the `azure` and `duckdb` extras. See [Installation](../installation.md).
 :::
 

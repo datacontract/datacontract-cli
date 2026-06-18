@@ -31,15 +31,15 @@ Each import page shows a runnable example: a small source file under [`examples/
     <span><span className="doc-card-title">sql</span><span className="doc-card-desc">A SQL DDL file.</span></span>
   </a>
   <a className="doc-card" href="/imports/dbt">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/dbt.svg" alt="" />
     <span><span className="doc-card-title">dbt</span><span className="doc-card-desc">A dbt manifest file.</span></span>
   </a>
   <a className="doc-card" href="/imports/avro">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/avro.svg" alt="" />
     <span><span className="doc-card-title">avro</span><span className="doc-card-desc">An Avro schema file.</span></span>
   </a>
   <a className="doc-card" href="/imports/dbml">
-    <img src="/img/icons/database.svg" alt="" />
+    <img src="/img/icons/dbml.svg" alt="" />
     <span><span className="doc-card-title">dbml</span><span className="doc-card-desc">A DBML file.</span></span>
   </a>
   <a className="doc-card" href="/imports/glue">
@@ -55,43 +55,43 @@ Each import page shows a runnable example: a small source file under [`examples/
     <span><span className="doc-card-title">unity</span><span className="doc-card-desc">Databricks Unity Catalog.</span></span>
   </a>
   <a className="doc-card" href="/imports/jsonschema">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/jsonschema.svg" alt="" />
     <span><span className="doc-card-title">jsonschema</span><span className="doc-card-desc">A JSON Schema file.</span></span>
   </a>
   <a className="doc-card" href="/imports/json">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/json.svg" alt="" />
     <span><span className="doc-card-title">json</span><span className="doc-card-desc">A JSON data file.</span></span>
   </a>
   <a className="doc-card" href="/imports/odcs">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/odcs.svg" alt="" />
     <span><span className="doc-card-title">odcs</span><span className="doc-card-desc">An ODCS data contract file.</span></span>
   </a>
   <a className="doc-card" href="/imports/parquet">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/parquet.svg" alt="" />
     <span><span className="doc-card-title">parquet</span><span className="doc-card-desc">A Parquet file.</span></span>
   </a>
   <a className="doc-card" href="/imports/csv">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">csv</span><span className="doc-card-desc">A CSV file.</span></span>
   </a>
   <a className="doc-card" href="/imports/protobuf">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">protobuf</span><span className="doc-card-desc">A Protobuf schema file.</span></span>
   </a>
   <a className="doc-card" href="/imports/spark">
-    <img src="/img/icons/database.svg" alt="" />
+    <img src="/img/icons/spark.svg" alt="" />
     <span><span className="doc-card-title">spark</span><span className="doc-card-desc">A Spark schema / DataFrame.</span></span>
   </a>
   <a className="doc-card" href="/imports/iceberg">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/iceberg.svg" alt="" />
     <span><span className="doc-card-title">iceberg</span><span className="doc-card-desc">An Iceberg schema.</span></span>
   </a>
   <a className="doc-card" href="/imports/excel">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/excel.svg" alt="" />
     <span><span className="doc-card-title">excel</span><span className="doc-card-desc">An ODCS Excel template.</span></span>
   </a>
   <a className="doc-card" href="/imports/powerbi">
-    <img src="/img/icons/generic.svg" alt="" />
+    <img src="/img/icons/powerbi.svg" alt="" />
     <span><span className="doc-card-title">powerbi</span><span className="doc-card-desc">A Power BI semantic model (.pbit, .bim, or .json).</span></span>
   </a>
   <a className="doc-card" href="/imports/snowflake">

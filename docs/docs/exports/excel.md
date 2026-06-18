@@ -4,7 +4,7 @@ title: "Export: Excel"
 description: "Export a data contract to an ODCS Excel template."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/excel.svg" alt="" />
 
 # Export: Excel
 

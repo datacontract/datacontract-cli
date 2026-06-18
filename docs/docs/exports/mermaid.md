@@ -4,7 +4,7 @@ title: "Export: Mermaid"
 description: "Export a data contract to a Mermaid diagram."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/mermaid.svg" alt="" />
 
 # Export: Mermaid
 

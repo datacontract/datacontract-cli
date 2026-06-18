@@ -4,7 +4,7 @@ title: "Export: Pydantic Model"
 description: "Export a data contract to a Pydantic model."
 ---
 
-<img className="page-icon" src="/img/icons/generic.svg" alt="" />
+<img className="page-icon" src="/img/icons/pydantic.svg" alt="" />
 
 # Export: Pydantic Model
 
