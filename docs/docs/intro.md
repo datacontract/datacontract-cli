@@ -5,6 +5,37 @@ title: "What is Data Contract CLI?"
 description: "An open-source command-line tool for working with data contracts based on the Open Data Contract Standard (ODCS)."
 ---
 
+import Head from '@docusaurus/Head';
+
+<Head>
+  <script type="application/ld+json">
+    {JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'Data Contract CLI',
+      description:
+        'An open-source command-line tool for working with data contracts based on the Open Data Contract Standard (ODCS).',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Windows, macOS, Linux',
+      programmingLanguage: 'Python',
+      url: 'https://docs.datacontract.com/',
+      downloadUrl: 'https://pypi.org/project/datacontract-cli/',
+      codeRepository: 'https://github.com/datacontract/datacontract-cli',
+      license: 'https://opensource.org/licenses/MIT',
+      author: {
+        '@type': 'Organization',
+        name: 'Data Contract CLI authors',
+        url: 'https://datacontract.com',
+      },
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+    })}
+  </script>
+</Head>
+
 # What is Data Contract CLI?
 
 The `datacontract` CLI is an open-source command-line tool for working with [data contracts](https://datacontract.com).

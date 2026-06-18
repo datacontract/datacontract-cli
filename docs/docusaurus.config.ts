@@ -48,7 +48,40 @@ const config: Config = {
         theme: {
           customCss: './src/css/custom.css',
         },
+        sitemap: {
+          // Raise the priority of the main hub pages so crawlers can
+          // distinguish them from the long tail of import/export reference pages.
+          createSitemapItems: async (params) => {
+            const {defaultCreateSitemapItems, ...rest} = params;
+            const items = await defaultCreateSitemapItems(rest);
+            const hubs: Record<string, number> = {
+              'https://docs.datacontract.com/': 1.0,
+              'https://docs.datacontract.com/quickstart': 0.9,
+              'https://docs.datacontract.com/commands': 0.9,
+            };
+            return items.map((item) => {
+              const priority = hubs[item.url];
+              return priority ? {...item, priority} : item;
+            });
+          },
+        },
       } satisfies Preset.Options,
+    ],
+  ],
+
+  plugins: [
+    [
+      'docusaurus-plugin-llms',
+      {
+        // Generate /llms.txt (index) and /llms-full.txt (full content) so
+        // AI answer engines can ingest the docs as clean markdown.
+        generateLLMsTxt: true,
+        generateLLMsFullTxt: true,
+        docsDir: 'docs',
+        title: 'Data Contract CLI',
+        description:
+          'An open-source command-line tool for working with data contracts based on the Open Data Contract Standard (ODCS).',
+      },
     ],
   ],
 
