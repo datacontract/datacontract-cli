@@ -98,11 +98,9 @@ schema:
         physicalType: TIMESTAMPLTZ
         description: Timestamp with fractional second precision of 6, with local timezone (LTZ)
       - name: field_interval_year
-        logicalType: object
         physicalType: INTERVAL YEAR TO MONTH
         description: Interval of time in years and months with default (2) precision
       - name: field_interval_day
-        logicalType: object
         physicalType: INTERVAL DAY TO SECOND
         description: Interval of time in days, hours, minutes and seconds with default (2 / 6) precision
       - name: field_raw
@@ -112,11 +110,9 @@ schema:
         physicalType: RAW
         description: Large raw binary data
       - name: field_rowid
-        logicalType: object
         physicalType: ROWID
         description: Base 64 string representing a unique row address
       - name: field_urowid
-        logicalType: object
         physicalType: UROWID
         description: Base 64 string representing the logical address
       - name: field_char

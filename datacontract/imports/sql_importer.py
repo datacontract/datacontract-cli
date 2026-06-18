@@ -279,10 +279,11 @@ def get_precision_scale(column):
     return None, None
 
 
-def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
+def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     """Map SQL type to ODCS logical type and optional format.
 
-    Returns (logicalType, format).
+    Returns (logicalType, format). logicalType is None for unknown or unmappable
+    types (e.g. maps), leaving the field's logicalType unset.
     The format corresponds to ODCS logicalTypeOptions.format (e.g. "binary", "uuid").
     """
     if sql_type is None:
@@ -358,8 +359,16 @@ def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
         return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
         return ("string", None)
-    else:
+    elif sql_type_normed.startswith("array"):
+        return ("array", None)
+    elif sql_type_normed.startswith("struct"):
         return ("object", None)
+    elif sql_type_normed.startswith("map"):
+        # ODCS v3.1 has no map logical type; RFC 0030 adds logicalType: map in v3.2.
+        # "object" only validates against structs, so leave logicalType unset for maps.
+        return (None, None)
+    else:
+        return (None, None)
 
 
 def remove_variable_tokens(sql_script: str) -> str:

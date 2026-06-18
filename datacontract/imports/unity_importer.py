@@ -1,6 +1,7 @@
 import json
+import logging
 import os
-from typing import List
+from typing import List, Optional, Tuple
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
@@ -15,6 +16,8 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
+
+logger = logging.getLogger(__name__)
 
 
 class UnityImporter(Importer):
@@ -154,13 +157,48 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
     sql_type = str(column.type_text) if column.type_text else "string"
     logical_type, format = map_type_from_sql(sql_type)
     required = column.nullable is None or not column.nullable
+    nested_properties, items = _to_nested_types(column)
 
     return create_property(
         name=column.name,
-        logical_type=logical_type if logical_type else "string",
+        logical_type=logical_type,
         physical_type=sql_type,
         description=column.comment,
         format=format,
         required=required if required else None,
+        properties=nested_properties,
+        items=items,
         custom_properties={"databricksType": sql_type} if sql_type else None,
     )
+
+
+def _to_nested_types(column: ColumnInfo) -> Tuple[Optional[List[SchemaProperty]], Optional[SchemaProperty]]:
+    """Resolve nested struct/array types from Unity's type_json.
+
+    Unity's type_json carries the full column type as Spark StructField JSON.
+    Returns (properties, items) for struct and array columns, (None, None)
+    otherwise. Maps stay flat in physicalType until ODCS v3.2 adds
+    logicalType: map (RFC 0030).
+    """
+    if not column.type_json:
+        return None, None
+    try:
+        from pyspark.sql import types
+
+        from datacontract.imports.spark_importer import _property_from_struct_type, _type_to_property
+
+        field = types.StructField.fromJson(json.loads(column.type_json))
+        data_type = field.dataType
+        if isinstance(data_type, types.ArrayType):
+            return None, _type_to_property("items", data_type.elementType, not data_type.containsNull)
+        if isinstance(data_type, types.StructType):
+            return [_property_from_struct_type(sf) for sf in data_type.fields], None
+    except ImportError:
+        logger.warning(
+            "pyspark is not installed, skipping nested type resolution for column %s; "
+            "install datacontract-cli[databricks] to import struct and array types as nested properties",
+            column.name,
+        )
+    except Exception as e:
+        logger.warning("Could not resolve nested type for column %s from type_json: %s", column.name, e)
+    return None, None

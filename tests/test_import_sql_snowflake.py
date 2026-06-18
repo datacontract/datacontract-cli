@@ -171,11 +171,9 @@ schema:
   - name: field_variant
     physicalType: VARIANT
     description: VARIANT data
-    logicalType: object
   - name: field_json
     physicalType: OBJECT
-    description: JSON (Stored as text)
-    logicalType: object"""
+    description: JSON (Stored as text)"""
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

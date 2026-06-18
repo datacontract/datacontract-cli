@@ -1,0 +1,66 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+version: 1.0.0
+status: draft
+servers:
+- server: databricks
+  type: databricks
+  catalog: mycatalog
+  schema: myschema
+schema:
+- name: complex_types_example
+  businessName: complex_types_example
+  physicalName: complex_types_example
+  logicalType: object
+  physicalType: table
+  properties:
+  - name: id
+    physicalType: bigint
+    customProperties:
+    - property: databricksType
+      value: bigint
+    logicalType: integer
+  - name: id_list
+    physicalType: array<bigint>
+    customProperties:
+    - property: databricksType
+      value: array<bigint>
+    logicalType: array
+    items:
+      name: items
+      physicalType: bigint
+      logicalType: integer
+  - name: id_struct
+    physicalType: struct<value:bigint>
+    customProperties:
+    - property: databricksType
+      value: struct<value:bigint>
+    logicalType: object
+    properties:
+    - name: value
+      physicalType: bigint
+      logicalType: integer
+  - name: struct_list
+    physicalType: array<struct<key:string,value:bigint>>
+    customProperties:
+    - property: databricksType
+      value: array<struct<key:string,value:bigint>>
+    logicalType: array
+    items:
+      name: items
+      physicalType: struct<key:string,value:bigint>
+      logicalType: object
+      properties:
+      - name: key
+        physicalType: string
+        logicalType: string
+      - name: value
+        physicalType: bigint
+        logicalType: integer
+  - name: attributes
+    physicalType: map<string,bigint>
+    customProperties:
+    - property: databricksType
+      value: map<string,bigint>
