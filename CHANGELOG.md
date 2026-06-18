@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Example data contracts and import sources under `examples/`, used as the worked examples on the docs export and import pages.
 
 ### Fixed
-- `datacontract import unity` now imports struct and array columns as structured ODCS types instead of only a flat type string: structs get nested `properties`, arrays get `items` (parsed recursively from Unity's `type_json`, including descriptions on nested fields). Arrays also get the correct `logicalType: array` (previously `object`); this logical type fix applies to the `sql` and `snowflake` importers as well. Map columns keep the flat `map<k,v>` string in `physicalType` until ODCS v3.2 adds `logicalType: map` (RFC 0030). (#1280)
+- `datacontract import unity` now imports struct and array columns as structured ODCS types instead of only a flat type string: structs get nested `properties`, arrays get `items` (parsed recursively from Unity's `type_json`, including descriptions on nested fields). Arrays also get the correct `logicalType: array` (previously `object`); this logical type fix applies to the `sql` and `snowflake` importers as well. Map columns and other unmappable SQL types now leave `logicalType` unset (instead of the invalid `object`) until ODCS v3.2 adds `logicalType: map` (RFC 0030). (#1280)
 - `datacontract export dcs` no longer crashes on data contracts with a structured description or a standard server.
 
 ## [1.0.3] - 2026-06-15

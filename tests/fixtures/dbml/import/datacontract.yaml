@@ -31,7 +31,6 @@ schema:
   - name: order_total
     physicalType: record
     description: Total amount the smallest monetary unit (e.g., cents).
-    logicalType: object
     required: true
   - name: customer_id
     physicalType: text

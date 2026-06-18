@@ -64,4 +64,3 @@ schema:
     customProperties:
     - property: databricksType
       value: map<string,bigint>
-    logicalType: object

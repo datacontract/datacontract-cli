@@ -161,7 +161,7 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
 
     return create_property(
         name=column.name,
-        logical_type=logical_type if logical_type else "string",
+        logical_type=logical_type,
         physical_type=sql_type,
         description=column.comment,
         format=format,

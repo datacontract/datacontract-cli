@@ -107,7 +107,7 @@ def import_table_fields(table, references) -> List[SchemaProperty]:
 
         prop = create_property(
             name=field_name,
-            logical_type=logical_type if logical_type else "string",
+            logical_type=logical_type,
             physical_type=field.type,
             format=format,
             description=description,
