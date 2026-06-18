@@ -77,10 +77,39 @@ const config: Config = {
         // AI answer engines can ingest the docs as clean markdown.
         generateLLMsTxt: true,
         generateLLMsFullTxt: true,
+        // Emit a raw-markdown file for each page so the .md links in llms.txt
+        // resolve to served files instead of 404ing.
+        generateMarkdownFiles: true,
         docsDir: 'docs',
         title: 'Data Contract CLI',
         description:
           'An open-source command-line tool for working with data contracts based on the Open Data Contract Standard (ODCS).',
+        // Emit the docs in a logical learning order so llms.txt reads as a
+        // coherent guide instead of an arbitrary file listing.
+        includeOrder: [
+          'intro.md',
+          'quickstart.md',
+          'open-data-contract-standard.md',
+          'installation.md',
+          'editor.md',
+          'testing.md',
+          'connect/index.md',
+          'connect/*.md',
+          'quality-rules/index.md',
+          'quality-rules/*.md',
+          'imports/index.md',
+          'imports/*.md',
+          'exports/index.md',
+          'exports/*.md',
+          'commands/index.md',
+          'commands/*.md',
+          'python-library.md',
+          'best-practices.md',
+          'dbt.md',
+          'api.md',
+          'extending.md',
+        ],
+        includeUnmatchedLast: true,
       },
     ],
   ],
