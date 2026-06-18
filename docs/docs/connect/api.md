@@ -1,7 +1,7 @@
 ---
 sidebar_position: 9
 title: "HTTP API"
-description: "Test JSON HTTP APIs (GET only)."
+description: "Test data from a JSON HTTP API endpoint with the Data Contract CLI (GET requests only)."
 ---
 
 <img className="page-icon" src="/img/icons/api.svg" alt="" />

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 18
 title: "Export: Go"
-description: "Export a data contract to Go structs."
+description: "Generate Go struct type definitions from a data contract's schema."
 ---
 
 <img className="page-icon" src="/img/icons/generic.svg" alt="" />

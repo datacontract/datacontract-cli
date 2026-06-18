@@ -1,7 +1,7 @@
 ---
 sidebar_position: 17
 title: "Export: DBML"
-description: "Export a data contract to DBML."
+description: "Export a data contract to DBML (Database Markup Language) for diagrams and documentation."
 ---
 
 <img className="page-icon" src="/img/icons/database.svg" alt="" />

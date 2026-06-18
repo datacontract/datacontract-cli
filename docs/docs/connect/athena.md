@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: "Amazon Athena"
-description: "Test data in AWS Athena stored in S3."
+description: "Test data in AWS Athena stored on S3, including Iceberg, Parquet, JSON, and CSV formats."
 ---
 
 <img className="page-icon" src="/img/icons/athena.svg" alt="" />

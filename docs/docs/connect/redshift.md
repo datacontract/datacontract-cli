@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: "Amazon Redshift"
-description: "Test data in Amazon Redshift."
+description: "Test data in Amazon Redshift, both provisioned clusters and Redshift Serverless."
 ---
 
 <img className="page-icon" src="/img/icons/redshift.svg" alt="" />

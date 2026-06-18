@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: "Export: JSON Schema"
-description: "Export a data contract to JSON Schema."
+description: "Export a data contract to a JSON Schema document for validating JSON data."
 ---
 
 <img className="page-icon" src="/img/icons/generic.svg" alt="" />

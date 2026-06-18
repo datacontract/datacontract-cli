@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: "init"
-description: "Create an empty data contract."
+description: "Create a new data contract file from a built-in template or an existing contract to start from."
 ---
 
 # `datacontract init`

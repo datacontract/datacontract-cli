@@ -1,7 +1,7 @@
 ---
 sidebar_position: 14
 title: "Oracle"
-description: "Test data in Oracle Database."
+description: "Connect the Data Contract CLI to an Oracle Database to run schema and quality tests."
 ---
 
 <img className="page-icon" src="/img/icons/oracle.svg" alt="" />

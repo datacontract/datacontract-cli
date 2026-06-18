@@ -1,7 +1,7 @@
 ---
 sidebar_position: 7
 title: "Export: Avro IDL"
-description: "Export a data contract to Avro IDL."
+description: "Export a data contract to an Avro IDL (.avdl) schema definition."
 ---
 
 <img className="page-icon" src="/img/icons/generic.svg" alt="" />

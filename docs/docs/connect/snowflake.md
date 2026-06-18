@@ -1,7 +1,7 @@
 ---
 sidebar_position: 16
 title: "Snowflake"
-description: "Test data in Snowflake."
+description: "Connect the Data Contract CLI to Snowflake to run schema and quality tests against your tables."
 ---
 
 <img className="page-icon" src="/img/icons/snowflake.svg" alt="" />
