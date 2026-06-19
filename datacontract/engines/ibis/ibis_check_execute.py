@@ -19,7 +19,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, Server
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.type_normalize import category_matches
 from datacontract.engines.ibis.connections.connect import connect_ibis
-from datacontract.engines.ibis.dtype_category import ibis_dtype_category
+from datacontract.engines.ibis.dtype_category import ibis_dtype_category, ibis_dtype_to_logical_type
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -617,7 +617,7 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
     dtype = schema[actual_col]
-    actual_category = ibis_dtype_category(dtype)
+    actual_category = ibis_dtype_to_logical_type(dtype)
     _set_diagnostics(
         run,
         spec.key,
