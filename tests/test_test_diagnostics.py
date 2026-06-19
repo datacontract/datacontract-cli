@@ -8,6 +8,7 @@ report the validity rule they enforced.
 
 import ibis
 import pandas as pd
+from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
@@ -89,8 +90,9 @@ def test_diagnostics_field_type_mismatch():
         model="m",
         metric=MetricType.FIELD_TYPE,
         field="amount",
-        expected_category="number",
+        expected_category="integer",
         expected_type_label="integer",
+        expected_schema_property=SchemaProperty(logicalType="integer"),
     )
     run = _run_with([spec])
 
@@ -99,7 +101,7 @@ def test_diagnostics_field_type_mismatch():
     check = run.checks[0]
     assert check.result == ResultEnum.failed
     assert check.diagnostics["metric"] == "field_type"
-    assert check.diagnostics["expected"] == "integer (number)"
+    assert check.diagnostics["expected"] == "integer"
     assert "string" in check.diagnostics["actual"]
 
 

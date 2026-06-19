@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ibis.expr.datatypes import DataType
+from open_data_contract_standard.model import SchemaProperty
 
 
 def ibis_dtype_category(dtype) -> str:
@@ -43,45 +44,48 @@ def ibis_dtype_category(dtype) -> str:
     return "other"
 
 
-def ibis_dtype_to_logical_type(dtype: DataType) -> str | None:
-    """Map an ibis DataType to a flat logical type string.
+def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty | None:
+    """Map an ibis DataType to a SchemaProperty for structural type comparison.
 
-    Returns one of the 9 allowed base types (``boolean``, ``integer``, ``number``,
-    ``string``, ``timestamp``, ``date``, ``time``, ``object``, ``array``), with
-    recursive ``<...>`` details for struct and array types.
-
-    Returns ``None`` for unsupported types (binary, map, null, etc.) so the
-    caller can omit the field from comparisons rather than raising a false failure.
+    Returns a ``SchemaProperty`` with ``logicalType`` set to one of the 9 ODCS
+    categories, recursively populating ``properties`` for structs and ``items``
+    for arrays. Returns ``None`` for unsupported types (binary, map, null, etc.)
+    so the caller can skip comparison rather than raising a false failure.
     """
     try:
         if dtype.is_boolean():
-            return "boolean"
+            return SchemaProperty(logicalType="boolean")
         if dtype.is_integer():
-            return "integer"
+            return SchemaProperty(logicalType="integer")
         if dtype.is_decimal() or dtype.is_floating():
-            return "number"
+            return SchemaProperty(logicalType="number")
         if dtype.is_string():
-            return "string"
+            return SchemaProperty(logicalType="string")
         if dtype.is_timestamp():
-            return "timestamp"
+            return SchemaProperty(logicalType="timestamp")
         if dtype.is_date():
-            return "date"
+            return SchemaProperty(logicalType="date")
         if dtype.is_time():
-            return "time"
+            return SchemaProperty(logicalType="time")
         if dtype.is_struct():
-            field_parts = []
-            for name, ftype in dtype.fields.items():
-                mapped = ibis_dtype_to_logical_type(ftype)
-                if mapped is not None:
-                    field_parts.append(f"{name}:{mapped}")
-            if field_parts:
-                return "object<" + ",".join(field_parts) + ">"
-            return "object"
+            properties = []
+            for field_name, ftype in dtype.fields.items():
+                child = ibis_dtype_to_schema_property(ftype)
+                if child is not None:
+                    properties.append(
+                        SchemaProperty(
+                            name=field_name,
+                            logicalType=child.logicalType,
+                            items=child.items,
+                            properties=child.properties,
+                        )
+                    )
+            return SchemaProperty(
+                logicalType="object", properties=properties if properties else None
+            )
         if dtype.is_array():
-            element = ibis_dtype_to_logical_type(dtype.value_type)
-            if element is not None:
-                return f"array<{element}>"
-            return "array"
+            element = ibis_dtype_to_schema_property(dtype.value_type)
+            return SchemaProperty(logicalType="array", items=element)
     except AttributeError:
         return None
     return None
