@@ -170,19 +170,23 @@ def connect_ibis(
         return _connect_sqlserver(ibis, server)
 
     if server_type == "oracle":
+        from datacontract.engines.ibis.connections.oracle_patch import apply_oracle_compatibility_patch
+
         service_name = server.serviceName or server.database
         oracle_client_dir = os.getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
         if oracle_client_dir:
             import oracledb
 
             oracledb.init_oracle_client(lib_dir=oracle_client_dir)
-        return ibis.oracle.connect(
+        con = ibis.oracle.connect(
             host=server.host,
             port=int(server.port) if server.port else 1521,
             user=require_env("DATACONTRACT_ORACLE_USERNAME", server_type="oracle"),
             password=require_env("DATACONTRACT_ORACLE_PASSWORD", server_type="oracle"),
             service_name=service_name,
         )
+        apply_oracle_compatibility_patch(con)
+        return con
 
     if server_type == "trino":
         return _connect_trino(ibis, server)
