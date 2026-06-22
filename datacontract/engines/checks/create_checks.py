@@ -53,12 +53,6 @@ def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> s
     return schema_object.name
 
 
-def expected_type_category(prop: SchemaProperty) -> tuple[SchemaProperty, str]:
-    """Return (schema property for structural type comparison, human label)."""
-    label = prop.physicalType or prop.logicalType
-    return prop, (label or "")
-
-
 _PERCENT_UNITS = {"percent", "percentage", "%"}
 
 
@@ -177,8 +171,8 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
         )
 
-        if check_types and (prop.physicalType is not None or prop.logicalType is not None):
-            schema_prop, label = expected_type_category(prop)
+        if check_types and prop.logicalType is not None:
+            schema_prop, label = prop, prop.logicalType or ""
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_type",
