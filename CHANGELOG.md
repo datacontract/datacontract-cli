@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract export dcs` no longer crashes on data contracts with a structured description or a standard server.
+- Failed business definition IRI lookups now suggest the `ENTROPY_DATA_HOST` value to set when the IRI host does not match the configured entropy-data host.
 
 ## [1.0.3] - 2026-06-15
 
