@@ -1,0 +1,26 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: hana-basic
+name: HANA basic contract
+version: 1.0.0
+status: draft
+schema:
+- name: ORDERS
+  physicalName: ORDERS
+  properties:
+  - name: ORDER_ID
+    logicalType: string
+    physicalType: NVARCHAR
+    required: true
+    primaryKey: true
+  - name: AMOUNT
+    logicalType: number
+    physicalType: DECIMAL(15,2)
+  - name: UPDATED_AT
+    logicalType: timestamp
+servers:
+- server: production
+  type: hana
+  host: ${DATACONTRACT_HANA_HOST}
+  port: 443
+  schema: ${DATACONTRACT_HANA_SCHEMA}

@@ -1,0 +1,27 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: hana-sla
+name: HANA SLA contract
+version: 1.0.0
+status: draft
+schema:
+- name: ORDERS
+  properties:
+  - name: CREATED_AT
+    logicalType: timestamp
+  - name: UPDATED_AT
+    logicalType: timestamp
+slaProperties:
+- property: freshness
+  element: ORDERS.UPDATED_AT
+  value: 24
+  unit: h
+- property: retention
+  element: ORDERS.CREATED_AT
+  value: P1Y
+servers:
+- server: production
+  type: hana
+  host: ${DATACONTRACT_HANA_HOST}
+  port: 443
+  schema: ${DATACONTRACT_HANA_SCHEMA}

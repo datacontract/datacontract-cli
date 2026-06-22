@@ -180,6 +180,7 @@
             "glue",
             "cloudsql",
             "db2",
+            "hana",
             "informix",
             "kafka",
             "kinesis",

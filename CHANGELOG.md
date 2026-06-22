@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `hana` server type for `datacontract test`, supporting SAP HANA Cloud and SAP Datasphere (Open SQL schemas). Install with `pip install datacontract-cli[hana]`. (`hdbcli` is under SAP's proprietary license and is therefore not part of `[all]`.)
+
 ## [1.0.4] - 2026-06-22
 
 ### Added

@@ -1,0 +1,42 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: hana-all-types
+name: HANA all supported types contract
+version: 1.0.0
+status: draft
+schema:
+- name: ALL_TYPES
+  properties:
+  - name: STRING_COL
+    logicalType: string
+  - name: INTEGER_COL
+    logicalType: integer
+  - name: BIGINT_COL
+    logicalType: integer
+    physicalType: BIGINT
+  - name: FLOAT_COL
+    logicalType: number
+    physicalType: REAL
+  - name: DOUBLE_COL
+    logicalType: number
+    physicalType: DOUBLE
+  - name: DECIMAL_COL
+    logicalType: number
+    physicalType: DECIMAL
+  - name: BOOLEAN_COL
+    logicalType: boolean
+  - name: DATE_COL
+    logicalType: date
+  - name: TIME_COL
+    logicalType: time
+  - name: TIMESTAMP_COL
+    logicalType: timestamp
+  - name: BINARY_COL
+    logicalType: string
+    physicalType: VARBINARY
+servers:
+- server: production
+  type: hana
+  host: ${DATACONTRACT_HANA_HOST}
+  port: 443
+  schema: ${DATACONTRACT_HANA_SCHEMA}

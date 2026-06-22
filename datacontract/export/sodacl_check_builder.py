@@ -60,7 +60,7 @@ def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
 
 
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
-_ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"}
+_ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "snowflake", "azure", "s3", "gcs", "local", "hana"}
 
 _BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
@@ -84,7 +84,7 @@ def _has_unsupported_databricks_type(prop) -> bool:
     return False
 
 
-_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver"}
+_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver", "hana"}
 
 
 def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> str:

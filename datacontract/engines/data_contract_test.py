@@ -64,6 +64,12 @@ def execute_data_contract_test(
     if server.type == "api":
         server = process_api_response(run, server)
 
+    if server.type == "hana":
+        from datacontract.engines.hana.check_hana_execute import check_hana_execute
+
+        check_hana_execute(run, data_contract, server, schema_name=schema_name, check_categories=check_categories)
+        return
+
     specs = create_checks(data_contract, server, schema_name=schema_name)
     if check_categories is not None:
         specs = [s for s in specs if s.category in check_categories]
