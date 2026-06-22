@@ -181,6 +181,11 @@ protobuf = [
   "proto-schema-parser>=1.0,<3.0",
 ]
 
+# NOTE: `hana` is intentionally NOT part of `all`. It depends on `hdbcli`, the
+# SAP HANA Client, which is distributed under SAP's proprietary license (SAP
+# Developer License), not an OSI-approved open-source license. Bundling it into
+# the `all` meta-extra would pull a proprietary package into a default-ish
+# install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
   "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]

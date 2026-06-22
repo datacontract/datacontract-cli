@@ -1,4 +1,4 @@
-# Data Contract CLI
+﻿# Data Contract CLI
 
 <p>
   <a href="https://github.com/datacontract/datacontract-cli/actions/workflows/ci.yaml?query=branch%3Amain">
@@ -267,6 +267,7 @@ A list of available extras:
 | RDF                                      | `pip install datacontract-cli[rdf]`        |
 | Amazon Redshift                          | `pip install datacontract-cli[redshift]`   |
 | S3 Integration                           | `pip install datacontract-cli[s3]`         |
+| SAP HANA / Datasphere                    | `pip install datacontract-cli[hana]`       |
 | Snowflake Integration                    | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server                     | `pip install datacontract-cli[sqlserver]`  |
 | Trino                                    | `pip install datacontract-cli[trino]`      |
