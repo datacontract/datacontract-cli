@@ -224,8 +224,13 @@ override-dependencies = [
 ]
 
 [tool.pytest.ini_options]
-#addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
+# Exclude slow tests by default; run them with `pytest -m slow` (or `-m "slow or not slow"` for everything).
+# Append parallel execution with "-n 8" if desired (disable with "-n0").
+addopts = "-m 'not slow'"
 testpaths = ["tests"]
+markers = [
+    "slow: tests that are slow to run (e.g. pull large containers); deselect with '-m \"not slow\"'",
+]
 log_level = "INFO"
 #log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"
