@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.0.3"
+version = "1.0.4"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -224,8 +224,13 @@ override-dependencies = [
 ]
 
 [tool.pytest.ini_options]
-#addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
+# Exclude slow tests by default; run them with `pytest -m slow` (or `-m "slow or not slow"` for everything).
+# Append parallel execution with "-n 8" if desired (disable with "-n0").
+addopts = "-m 'not slow'"
 testpaths = ["tests"]
+markers = [
+    "slow: tests that are slow to run (e.g. pull large containers); deselect with '-m \"not slow\"'",
+]
 log_level = "INFO"
 #log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"

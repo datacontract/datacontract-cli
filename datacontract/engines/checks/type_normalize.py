@@ -31,10 +31,12 @@ def normalize_type_name(type_name: str | None) -> str | None:
 
     if name in {
         "varchar",
+        "varchar2",
         "char",
         "character",
         "character varying",
         "nvarchar",
+        "nvarchar2",
         "nchar",
         "text",
         "string",

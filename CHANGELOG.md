@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-06-22
+
 ### Added
 - `datacontract test` validates Azure Blob Storage / ADLS Gen2 file metadata against a data contract used as a storage policy (#1227)
 - `datacontract test` against Trino now supports `DATACONTRACT_TRINO_AUTHENTICATION=jwt` with `DATACONTRACT_TRINO_JWT_TOKEN`, and `DATACONTRACT_TRINO_AUTHENTICATION=oauth2` for the interactive browser flow.
@@ -16,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `datacontract import unity` now imports struct and array columns as structured ODCS types instead of only a flat type string: structs get nested `properties`, arrays get `items` (parsed recursively from Unity's `type_json`, including descriptions on nested fields). Arrays also get the correct `logicalType: array` (previously `object`); this logical type fix applies to the `sql` and `snowflake` importers as well. Map columns and other unmappable SQL types now leave `logicalType` unset (instead of the invalid `object`) until ODCS v3.2 adds `logicalType: map` (RFC 0030). (#1280)
 - `datacontract export dcs` no longer crashes on data contracts with a structured description or a standard server.
+- `datacontract test` against Oracle releases before 23ai no longer fails every check with `ORA-00923: FROM keyword not found where expected` during schema introspection.
+- `datacontract test` now recognizes Oracle `VARCHAR2`/`NVARCHAR2` (with or without a length, e.g. `VARCHAR2(4000)`) as string types in the field type check.
 
 ## [1.0.3] - 2026-06-15
 
