@@ -142,8 +142,10 @@ def schema_property_matches(
         return True
     if actual_base is None:
         return False
-        if not (expected_base in _NUMERIC and actual_base in _NUMERIC):
-            return False
+    if expected_base != actual_base and not (
+        expected_base in _NUMERIC and actual_base in _NUMERIC
+    ):
+        return False
 
     if expected_base == "array":
         if expected.items is None:
