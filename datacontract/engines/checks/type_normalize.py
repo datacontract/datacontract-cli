@@ -116,9 +116,7 @@ def normalize_type_name(type_name: str | None) -> str | None:
 _NUMERIC = {"integer", "number"}
 
 
-def schema_property_matches(
-    expected: SchemaProperty | None, actual: SchemaProperty | None
-) -> bool:
+def schema_property_matches(expected: SchemaProperty | None, actual: SchemaProperty | None) -> bool:
     """Return True if ``actual`` is structurally compatible with ``expected``.
 
     Lenient by design:
@@ -142,9 +140,7 @@ def schema_property_matches(
         return True
     if actual_base is None:
         return False
-    if expected_base != actual_base and not (
-        expected_base in _NUMERIC and actual_base in _NUMERIC
-    ):
+    if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         return False
 
     if expected_base == "array":
@@ -155,9 +151,7 @@ def schema_property_matches(
     if expected_base == "object":
         if not expected.properties:
             return True
-        actual_by_name = {
-            p.name.lower(): p for p in (actual.properties or []) if p.name
-        }
+        actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
         for exp_field in expected.properties:
             if not exp_field.name:
                 continue
@@ -190,9 +184,7 @@ def schema_property_mismatch_reason(
     if expected_base is None:
         return ""
 
-    if expected_base != actual_base and not (
-        expected_base in _NUMERIC and actual_base in _NUMERIC
-    ):
+    if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         exp_str = expected.logicalType or expected.physicalType
         act_str = actual.logicalType or actual.physicalType
         return f"{field_label}: expected type '{exp_str}' but got '{act_str}'"
@@ -200,17 +192,13 @@ def schema_property_mismatch_reason(
     if expected_base == "array":
         if expected.items is not None:
             child_path = f"{path}[]" if path else "[]"
-            return schema_property_mismatch_reason(
-                expected.items, actual.items, child_path
-            )
+            return schema_property_mismatch_reason(expected.items, actual.items, child_path)
         return ""
 
     if expected_base == "object":
         if not expected.properties:
             return ""
-        actual_by_name = {
-            p.name.lower(): p for p in (actual.properties or []) if p.name
-        }
+        actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
         for exp_field in expected.properties:
             if not exp_field.name:
                 continue

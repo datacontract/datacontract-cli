@@ -80,9 +80,7 @@ def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty | None:
                             properties=child.properties,
                         )
                     )
-            return SchemaProperty(
-                logicalType="object", properties=properties if properties else None
-            )
+            return SchemaProperty(logicalType="object", properties=properties if properties else None)
         if dtype.is_array():
             element = ibis_dtype_to_schema_property(dtype.value_type)
             return SchemaProperty(logicalType="array", items=element)

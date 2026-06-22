@@ -16,8 +16,6 @@ from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
-from ibis.expr.datatypes import DataType
-
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.type_normalize import schema_property_matches, schema_property_mismatch_reason
 from datacontract.engines.ibis.connections.connect import connect_ibis
