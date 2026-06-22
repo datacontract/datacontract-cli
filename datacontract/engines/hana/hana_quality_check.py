@@ -4,7 +4,8 @@ from typing import Any
 
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
-from datacontract.engines.data_contract_checks import _retention_value_to_seconds, to_sodacl_threshold
+from datacontract.engines.checks.create_checks import _retention_value_to_seconds
+from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.engines.hana.hana_schema_check import qualified_table_name, quote_identifier
 from datacontract.model.run import Check, ResultEnum
 
