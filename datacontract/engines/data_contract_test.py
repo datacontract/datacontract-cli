@@ -7,6 +7,7 @@ import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.checks.create_checks import create_checks
+from datacontract.configuration.source_config import SourceConfig
 
 if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
@@ -31,6 +32,7 @@ def execute_data_contract_test(
     schema_name: str = "all",
     check_categories: set[str] | None = None,
     include_failed_samples: bool = False,
+    source_config: SourceConfig | None = None,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -88,6 +90,7 @@ def execute_data_contract_test(
         duckdb_connection,
         schema_name=schema_name,
         include_failed_samples=include_failed_samples,
+        source_config=source_config,
     )
 
 

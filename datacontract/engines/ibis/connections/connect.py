@@ -17,6 +17,7 @@ import typing
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
+from datacontract.configuration.source_config import SourceConfig, DatabricksSourceConfig
 from datacontract.model.exceptions import DataContractException, require_env
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -50,6 +51,7 @@ def connect_ibis(
     spark: "SparkSession" = None,
     duckdb_connection=None,
     schema_name: str = "all",
+    source_config: SourceConfig | None = None,
 ) -> "ibis.BaseBackend | None":
     """Return a connected ibis backend, or ``None`` if the server is unsupported.
 
@@ -91,7 +93,7 @@ def connect_ibis(
             if database_name:
                 spark.sql(f"USE {database_name}")
             return ibis.pyspark.connect(session=spark)
-        return _connect_databricks(ibis, server, run)
+        return _connect_databricks(ibis, server, run, source_config=source_config)
 
     if server_type == "postgres":
         return ibis.postgres.connect(
@@ -208,7 +210,12 @@ def connect_ibis(
     return None
 
 
-def _connect_databricks(ibis, server: Server, run: Run):
+def _connect_databricks(
+    ibis,
+    server: Server,
+    run: Run,
+    source_config: SourceConfig | None = None,
+):
     """Connect to Databricks SQL directly, selecting the auth method from env vars.
 
     Auth is resolved in priority order, so an existing token-based setup keeps
@@ -226,40 +233,34 @@ def _connect_databricks(ibis, server: Server, run: Run):
     The OAuth credential providers build their SDK ``Config`` lazily, so token
     exchange happens when the connection is opened rather than while reading env.
     """
-    host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+    config = (source_config or SourceConfig()).databricks_config()
+    host = config.server_hostname or server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+
     kwargs = dict(
         server_hostname=host,
-        http_path=os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH"),
+        http_path=config.http_path,
         catalog=server.catalog,
         schema=server.schema_,
     )
 
-    token = os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
-    client_id = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_ID")
-    client_secret = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET")
-    profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
-    auth_type = os.getenv("DATACONTRACT_DATABRICKS_AUTH_TYPE")
-
-    if token:
+    if config.token:
         run.log_info("Connecting to databricks with a personal access token")
-        return ibis.databricks.connect(access_token=token, **kwargs)
+        return ibis.databricks.connect(access_token=config.token, **kwargs)
 
-    if client_id and client_secret:
+    if config.client_id and config.client_secret:
         run.log_info("Connecting to databricks with an OAuth service principal (M2M)")
         sdk_host = host if host.startswith("http") else f"https://{host}"
-        kwargs["credentials_provider"] = _databricks_credentials_provider(
-            host=sdk_host, client_id=client_id, client_secret=client_secret
-        )
+        kwargs["credentials_provider"] = _databricks_credentials_provider(host=sdk_host, client_id=config.client_id, client_secret=config.client_secret)
         return ibis.databricks.connect(**kwargs)
 
-    if profile:
-        run.log_info(f"Connecting to databricks with config profile '{profile}'")
-        kwargs["credentials_provider"] = _databricks_credentials_provider(profile=profile)
+    if config.profile:
+        run.log_info(f"Connecting to databricks with config profile '{config.profile}'")
+        kwargs["credentials_provider"] = _databricks_credentials_provider(profile=config.profile)
         return ibis.databricks.connect(**kwargs)
 
-    if auth_type:
-        run.log_info(f"Connecting to databricks with auth_type '{auth_type}'")
-        return ibis.databricks.connect(auth_type=auth_type, **kwargs)
+    if config.auth_type:
+        run.log_info(f"Connecting to databricks with auth_type '{config.auth_type}'")
+        return ibis.databricks.connect(auth_type=config.auth_type, **kwargs)
 
     # Nothing configured: fail with the same clear message as before.
     token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
