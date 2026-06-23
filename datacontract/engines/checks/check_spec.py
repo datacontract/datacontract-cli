@@ -14,7 +14,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
+
+if TYPE_CHECKING:
+    from open_data_contract_standard.model import SchemaProperty
 
 
 class MetricType(str, Enum):
@@ -116,8 +119,9 @@ class CheckSpec:
     valid_min_length: Optional[int] = None  # INVALID_COUNT
     valid_max_length: Optional[int] = None  # INVALID_COUNT
 
-    expected_category: Optional[str] = None  # FIELD_TYPE: normalized type category
+    expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
+    expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
 
     columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns
 

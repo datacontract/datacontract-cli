@@ -22,7 +22,6 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
-from datacontract.engines.checks.type_normalize import normalize_type_name
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +51,6 @@ def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> s
     if schema_object.physicalName:
         return schema_object.physicalName
     return schema_object.name
-
-
-def expected_type_category(prop: SchemaProperty) -> tuple[str, str]:
-    """Return (normalized category, human label) for a property's declared type."""
-    label = prop.physicalType or prop.logicalType
-    return normalize_type_name(label), (label or "")
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -178,8 +171,8 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
         )
 
-        if check_types and (prop.physicalType is not None or prop.logicalType is not None):
-            category, label = expected_type_category(prop)
+        if check_types and prop.logicalType is not None:
+            schema_prop, label = prop, prop.logicalType or ""
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_type",
@@ -189,8 +182,9 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                     model=model,
                     field=field,
                     metric=MetricType.FIELD_TYPE,
-                    expected_category=category,
+                    expected_category=label,
                     expected_type_label=label,
+                    expected_schema_property=schema_prop,
                 )
             )
 

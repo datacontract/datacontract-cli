@@ -25,7 +25,7 @@ def test_valid():
     run = data_contract.test()
     print(run.pretty())
     assert run.result == "passed"
-    assert len(run.checks) == 26
+    assert len(run.checks) == 24
     assert all(check.result == "passed" for check in run.checks)
 
 

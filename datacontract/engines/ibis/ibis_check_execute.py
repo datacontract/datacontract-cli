@@ -17,9 +17,9 @@ from typing import List, Optional
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
-from datacontract.engines.checks.type_normalize import category_matches
+from datacontract.engines.checks.type_normalize import schema_property_matches, schema_property_mismatch_reason
 from datacontract.engines.ibis.connections.connect import connect_ibis
-from datacontract.engines.ibis.dtype_category import ibis_dtype_category
+from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -607,31 +607,30 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
     _set_impl(
         run,
         spec.key,
-        f"type of '{spec.field}' is compatible with '{spec.expected_type_label}' ({spec.expected_category})",
+        f"type of '{spec.field}' is compatible with '{spec.expected_type_label}'",
         "introspection",
     )
-    expected_label = f"{spec.expected_type_label} ({spec.expected_category})"
     actual_col = columns.get(spec.field.lower())
     if actual_col is None:
-        _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=expected_label))
+        _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label))
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
     dtype = schema[actual_col]
-    actual_category = ibis_dtype_category(dtype)
+    actual_prop = ibis_dtype_to_schema_property(dtype)
     _set_diagnostics(
         run,
         spec.key,
-        _diag(metric="field_type", field=spec.field, expected=expected_label, actual=f"{dtype} ({actual_category})"),
+        _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label, actual=str(dtype)),
     )
-    if category_matches(spec.expected_category, actual_category):
+    if schema_property_matches(spec.expected_schema_property, actual_prop):
         _set_result(run, spec.key, ResultEnum.passed, None)
     else:
+        reason = schema_property_mismatch_reason(spec.expected_schema_property, actual_prop)
         _set_result(
             run,
             spec.key,
             ResultEnum.failed,
-            f"Expected type '{spec.expected_type_label}' ({spec.expected_category}) "
-            f"but column is '{dtype}' ({actual_category})",
+            reason or f"Expected type '{spec.expected_type_label}' but column is '{dtype}'",
         )
 
 

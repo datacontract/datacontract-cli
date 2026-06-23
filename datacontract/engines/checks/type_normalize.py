@@ -1,25 +1,29 @@
-"""Coarse type-category normalization for schema ``field_type`` checks.
+"""Type normalization and structural comparison for schema ``field_type`` checks.
 
-The legacy soda engine compared the data source's reported SQL type string
-against a per-dialect equivalence table (``SCHEMA_CHECK_TYPES_MAPPING``). The
-ibis engine instead normalizes both the contract's declared type and the actual
-column's ibis dtype into a small set of categories and compares those. This
-sidesteps dialect-specific type-name differences (``varchar`` vs ``text`` vs
-``string``) while still catching genuine mismatches (e.g. string vs integer).
+``normalize_type_name`` maps a raw type string (logical or physical) to one of
+the nine ODCS logical-type categories.
+
+``schema_property_matches`` compares two ``SchemaProperty`` trees — one from the
+contract, one reconstructed from the ibis-reported dtype — and returns True when
+the actual type is structurally compatible with the expected one.
 """
 
 from __future__ import annotations
 
 import re
 
-# Categories returned by normalization.
-NUMERIC = {"integer", "number", "decimal", "float"}
+from open_data_contract_standard.model import SchemaProperty
 
 
-def normalize_type_name(type_name: str | None) -> str:
-    """Map a contract type name (logical or physical) to a coarse category."""
+def normalize_type_name(type_name: str | None) -> str | None:
+    """Map a contract type name (logical or physical) to one of the 9 ODCS categories.
+
+    Returns ``None`` for types that are unsupported or unrecognized (binary,
+    map, null, interval …) so they can be silently ignored rather than
+    producing false type-check failures.
+    """
     if not type_name:
-        return "other"
+        return None
     name = type_name.strip().lower()
     # strip parameters like varchar(10) / decimal(10,2) and array<...> wrappers
     name = re.sub(r"\(.*\)", "", name)
@@ -64,11 +68,10 @@ def normalize_type_name(type_name: str | None) -> str:
         "byteint",
     }:
         return "integer"
-    if name in {"decimal", "numeric", "dec"}:
-        return "decimal"
-    if name in {"number"}:
-        return "number"
     if name in {
+        "decimal",
+        "numeric",
+        "dec",
         "float",
         "double",
         "double precision",
@@ -79,8 +82,9 @@ def normalize_type_name(type_name: str | None) -> str:
         "float64",
         "binary_float",
         "binary_double",
+        "number",
     }:
-        return "float"
+        return "number"
     if name in {"bool", "boolean", "bit", "logical"}:
         return "boolean"
     if name in {
@@ -100,40 +104,111 @@ def normalize_type_name(type_name: str | None) -> str:
         return "date"
     if name in {"time", "time without time zone", "time with time zone"}:
         return "time"
-    if name in {"bytes", "binary", "varbinary", "blob", "bytea", "raw"}:
-        return "binary"
-    if name in {"struct", "record", "object", "row", "json", "jsonb", "variant", "map", "interval"}:
-        # json/struct/object/map all collapse to a single nested category for matching
-        if name == "map":
-            return "map"
-        return "struct"
+    if name in {"struct", "record", "object", "row", "json", "jsonb", "variant"}:
+        return "object"
     if name in {"array", "list"}:
         return "array"
-    if name in {"null", "none", "void"}:
-        return "null"
-    return "other"
+    # binary, map, null, interval and other unrecognized types are not in the
+    # 9 allowed categories; return None so they are silently ignored.
+    return None
 
 
-def category_matches(expected: str, actual: str) -> bool:
-    """Return True if an actual column category satisfies the expected category.
+_NUMERIC = {"integer", "number"}
 
-    Lenient on purpose: unknown categories ("other") always match, and the
-    numeric family is treated as compatible to avoid false failures where a
-    contract says ``number`` but the engine reports ``decimal``/``float``/``int``.
+
+def schema_property_matches(expected: SchemaProperty | None, actual: SchemaProperty | None) -> bool:
+    """Return True if ``actual`` is structurally compatible with ``expected``.
+
+    Lenient by design:
+
+    - If expected is ``None`` (unsupported/unrecognized type) always passes.
+    - ``integer`` and ``number`` are mutually compatible (ODCS "number" is
+      intentionally ambiguous across numeric storage classes).
+    - A bare ``object`` or ``array`` on the expected side (no nested detail)
+      matches any actual structure with the same base (underdeclared contract).
+    - Extra actual fields inside an ``object`` are ignored.
     """
-    if expected == actual:
+    if expected is None:
         return True
-    if expected == "other" or actual == "other":
+    if actual is None:
+        return False
+
+    expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
+    actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
+
+    if expected_base is None:
         return True
-    # ODCS "number" is intentionally ambiguous: accept any numeric storage.
-    if expected == "number" and actual in NUMERIC:
+    if actual_base is None:
+        return False
+    if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
+        return False
+
+    if expected_base == "array":
+        if expected.items is None:
+            return True
+        return schema_property_matches(expected.items, actual.items)
+
+    if expected_base == "object":
+        if not expected.properties:
+            return True
+        actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
+        for exp_field in expected.properties:
+            if not exp_field.name:
+                continue
+            act_field = actual_by_name.get(exp_field.name.lower())
+            if act_field is None:
+                return False
+            if not schema_property_matches(exp_field, act_field):
+                return False
         return True
-    if actual == "number" and expected in NUMERIC:
-        return True
-    # decimal/float are routinely interchangeable across engines.
-    if expected in {"decimal", "float"} and actual in {"decimal", "float"}:
-        return True
-    # struct/object/json all collapse together.
-    if expected in {"struct"} and actual in {"struct"}:
-        return True
-    return False
+
+    return True
+
+
+def schema_property_mismatch_reason(
+    expected: SchemaProperty | None,
+    actual: SchemaProperty | None,
+    path: str = "",
+) -> str:
+    """Return a human-readable description of the first structural mismatch, or '' if none."""
+    if expected is None:
+        return ""
+    field_label = f"field '{path}'" if path else "column"
+    if actual is None:
+        exp_str = expected.logicalType or expected.physicalType
+        return f"{field_label}: expected type '{exp_str}' but the column type could not be determined"
+
+    expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
+    actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
+
+    if expected_base is None:
+        return ""
+
+    if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
+        exp_str = expected.logicalType or expected.physicalType
+        act_str = actual.logicalType or actual.physicalType
+        return f"{field_label}: expected type '{exp_str}' but got '{act_str}'"
+
+    if expected_base == "array":
+        if expected.items is not None:
+            child_path = f"{path}[]" if path else "[]"
+            return schema_property_mismatch_reason(expected.items, actual.items, child_path)
+        return ""
+
+    if expected_base == "object":
+        if not expected.properties:
+            return ""
+        actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
+        for exp_field in expected.properties:
+            if not exp_field.name:
+                continue
+            child_path = f"{path}.{exp_field.name}" if path else exp_field.name
+            act_field = actual_by_name.get(exp_field.name.lower())
+            if act_field is None:
+                return f"field '{child_path}' is missing"
+            reason = schema_property_mismatch_reason(exp_field, act_field, child_path)
+            if reason:
+                return reason
+        return ""
+
+    return ""
