@@ -170,45 +170,73 @@ def schema_property_mismatch_reason(
     actual: SchemaProperty | None,
     path: str = "",
 ) -> str:
-    """Return a human-readable description of the first structural mismatch, or '' if none."""
-    if expected is None:
+    errors = schema_property_mismatch_reasons(expected, actual, path)
+    num_errors = len(errors)
+    print(f"==== {num_errors}")
+
+    if num_errors == 0:
         return ""
+    elif num_errors == 1:
+        return errors[0]
+    else:
+        return f"{errors[0]} (and {num_errors - 1} other errors)"
+
+
+def schema_property_mismatch_reasons(
+    expected: SchemaProperty | None,
+    actual: SchemaProperty | None,
+    path: str = "",
+) -> list[str]:
+    errors: list[str] = []
+
+    if expected is None:
+        return errors
+
     field_label = f"field '{path}'" if path else "column"
     if actual is None:
         exp_str = expected.logicalType or expected.physicalType
-        return f"{field_label}: expected type '{exp_str}' but the column type could not be determined"
+        errors.append(
+            f"{field_label}: expected type '{exp_str}' but the column type could not be determined"
+        )
+        return errors
 
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
 
     if expected_base is None:
-        return ""
+        return errors
 
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         exp_str = expected.logicalType or expected.physicalType
         act_str = actual.logicalType or actual.physicalType
-        return f"{field_label}: expected type '{exp_str}' but got '{act_str}'"
+        errors.append(f"{field_label}: expected type '{exp_str}' but got '{act_str}'")
+        return errors
 
     if expected_base == "array":
         if expected.items is not None:
             child_path = f"{path}[]" if path else "[]"
-            return schema_property_mismatch_reason(expected.items, actual.items, child_path)
-        return ""
+            errors.extend(
+                schema_property_mismatch_reasons(expected.items, actual.items, child_path)
+            )
 
     if expected_base == "object":
         if not expected.properties:
-            return ""
+            return errors
+
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
         for exp_field in expected.properties:
             if not exp_field.name:
                 continue
+
             child_path = f"{path}.{exp_field.name}" if path else exp_field.name
             act_field = actual_by_name.get(exp_field.name.lower())
-            if act_field is None:
-                return f"field '{child_path}' is missing"
-            reason = schema_property_mismatch_reason(exp_field, act_field, child_path)
-            if reason:
-                return reason
-        return ""
 
-    return ""
+            if act_field is None:
+                errors.append(f"field '{child_path}' is missing")
+                continue
+
+            errors.extend(
+                schema_property_mismatch_reasons(exp_field, act_field, child_path)
+            )
+
+    return errors
