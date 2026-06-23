@@ -195,9 +195,7 @@ def schema_property_mismatch_reasons(
     field_label = f"field '{path}'" if path else "column"
     if actual is None:
         exp_str = expected.logicalType or expected.physicalType
-        errors.append(
-            f"{field_label}: expected type '{exp_str}' but the column type could not be determined"
-        )
+        errors.append(f"{field_label}: expected type '{exp_str}' but the column type could not be determined")
         return errors
 
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
@@ -215,9 +213,7 @@ def schema_property_mismatch_reasons(
     if expected_base == "array":
         if expected.items is not None:
             child_path = f"{path}[]" if path else "[]"
-            errors.extend(
-                schema_property_mismatch_reasons(expected.items, actual.items, child_path)
-            )
+            errors.extend(schema_property_mismatch_reasons(expected.items, actual.items, child_path))
 
     if expected_base == "object":
         if not expected.properties:
@@ -235,8 +231,6 @@ def schema_property_mismatch_reasons(
                 errors.append(f"field '{child_path}' is missing")
                 continue
 
-            errors.extend(
-                schema_property_mismatch_reasons(exp_field, act_field, child_path)
-            )
+            errors.extend(schema_property_mismatch_reasons(exp_field, act_field, child_path))
 
     return errors
