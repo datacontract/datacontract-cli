@@ -172,14 +172,13 @@ def schema_property_mismatch_reason(
 ) -> str:
     errors = schema_property_mismatch_reasons(expected, actual, path)
     num_errors = len(errors)
-    print(f"==== {num_errors}")
 
     if num_errors == 0:
         return ""
     elif num_errors == 1:
         return errors[0]
     else:
-        return f"{errors[0]} (and {num_errors - 1} other errors)"
+        return f"{errors[0]} (and {num_errors - 1} other error{'s' if num_errors > 2 else ''})"
 
 
 def schema_property_mismatch_reasons(
