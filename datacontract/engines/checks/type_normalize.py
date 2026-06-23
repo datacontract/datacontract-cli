@@ -170,6 +170,7 @@ def schema_property_mismatch_reason(
     actual: SchemaProperty | None,
     path: str = "",
 ) -> str:
+    """Return a human-readable description of the first structural mismatch and a count of other type errors, or '' if none."""
     errors = schema_property_mismatch_reasons(expected, actual, path)
     num_errors = len(errors)
 
