@@ -177,7 +177,7 @@ def _run_model(
     include_failed_samples: bool = False,
 ):
     try:
-        t = _resolve_table(con, model)
+        t = _resolve_table(con, model, _table_database(con, server))
     except Exception as e:
         logger.warning("Could not read model '%s': %s", model, e)
         _fail_all(run, specs, ResultEnum.failed, f"Could not read model '{model}': {e}")
@@ -848,21 +848,37 @@ def _resolve_col(columns: dict, field: str) -> str:
     return actual
 
 
-def _resolve_table(con, model: str):
+def _table_database(con, server: Optional[Server]) -> Optional[str]:
+    """The schema (owner) to qualify the table with, or ``None``.
+
+    Oracle logs in as one user but the tables may be owned by a different schema
+    (``server.schema``). ibis defaults the owner to the login user during
+    introspection, so an unqualified lookup raises ``TableNotFound``. Other
+    backends already pin the schema at connect time, so only Oracle needs this.
+    """
+    if server is None:
+        return None
+    if getattr(con, "name", None) == "oracle" and server.schema_:
+        return server.schema_
+    return None
+
+
+def _resolve_table(con, model: str, database: Optional[str] = None):
     """Resolve a table by name, tolerating case differences across dialects."""
     if getattr(con, "name", None) == "pyspark":
         return _pyspark_table_unconvertible_as_unknown(con, model)
+    kwargs = {"database": database} if database else {}
     try:
-        return con.table(model)
+        return con.table(model, **kwargs)
     except Exception:
         try:
-            available = con.list_tables()
+            available = con.list_tables(**kwargs)
         except Exception:
             raise
         match = next((name for name in available if name.lower() == model.lower()), None)
         if match is None:
             raise
-        return con.table(match)
+        return con.table(match, **kwargs)
 
 
 def _pyspark_table_unconvertible_as_unknown(con, name: str):
