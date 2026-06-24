@@ -235,8 +235,8 @@ def _connect_databricks(
     """
     config = (source_config or SourceConfig()).databricks_config()
     host = (
-        config.server_hostname
-        or server.host
+        server.host
+        or config.server_hostname
         or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
     )
 
