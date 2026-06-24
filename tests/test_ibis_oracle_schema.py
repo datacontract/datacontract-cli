@@ -51,6 +51,22 @@ def test_table_database_none_for_non_oracle_backend():
     assert _table_database(con, server) is None
 
 
+def test_table_database_uses_server_schema_for_redshift():
+    # Redshift rides the Postgres ibis backend (con.name == "postgres"). Without
+    # an explicit schema, ibis introspects via `SELECT current_schema` (no
+    # parens), which Redshift rejects ("column current_schema does not exist").
+    # Passing the schema explicitly avoids that query.
+    server = Server(type="redshift", schema="dwh_academic")
+    con = _FakeBackend("postgres", {})
+    assert _table_database(con, server) == "dwh_academic"
+
+
+def test_table_database_none_for_redshift_without_schema():
+    server = Server(type="redshift")
+    con = _FakeBackend("postgres", {})
+    assert _table_database(con, server) is None
+
+
 def test_table_database_none_without_server():
     con = _FakeBackend("oracle", {})
     assert _table_database(con, None) is None
