@@ -83,7 +83,7 @@ def import_unity_from_api(
         raise DataContractException(
             type="configuration",
             name="Databricks configuration",
-            reason="A valid Databricks configuration is required to import Unity Catalog data contracts. Supply a valid DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN.",
+            reason="A valid Databricks configuration is required to import from Unity Catalog. Supply a valid DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN.",
             engine="datacontract",
             original_exception=e,
         )
