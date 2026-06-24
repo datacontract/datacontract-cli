@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` field type check now compares the full structured type tree for `object` and `array` logical types.
 - Unknown and unsupported types are silently ignored rather than failing the check. Specifically the `map` type is not supported until ODCS version v3.2.0 and is also ignored. 
 
+### Added
+- The `test` and `import` commands support programmatically overriding Databricks configuration, otherwise passed as env variables.
 
 
 ## [1.0.4] - 2026-06-22
