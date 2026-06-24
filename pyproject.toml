@@ -119,7 +119,7 @@ azure = [
   "datacontract-cli[duckdb]",
   'duckdb-extension-azure>=1.0.3,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
   "azure-identity>=1.17.1,<1.18",
-  "azure-storage-blob>=12.24,<12.30",
+  "azure-storage-blob>=12.24,<12.31",
 ]
 
 snowflake = [
