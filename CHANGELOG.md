@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract test` against Redshift no longer fails with `column "current_schema" does not exist`. Redshift rides the Postgres ibis backend, whose introspection resolved the active schema with `SELECT current_schema` (no parentheses) — valid on PostgreSQL but rejected by Redshift, which only supports `current_schema()`. The configured server `schema` is now passed explicitly during introspection, skipping that query.
+
 ## [1.0.5] - 2026-06-24
 
 ### Fixed

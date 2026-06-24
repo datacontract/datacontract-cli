@@ -849,16 +849,31 @@ def _resolve_col(columns: dict, field: str) -> str:
 
 
 def _table_database(con, server: Optional[Server]) -> Optional[str]:
-    """The schema (owner) to qualify the table with, or ``None``.
+    """The schema to qualify the table with during introspection, or ``None``.
 
-    Oracle logs in as one user but the tables may be owned by a different schema
-    (``server.schema``). ibis defaults the owner to the login user during
-    introspection, so an unqualified lookup raises ``TableNotFound``. Other
-    backends already pin the schema at connect time, so only Oracle needs this.
+    Two backends need the contract's ``server.schema`` passed explicitly instead
+    of relying on ibis's default:
+
+    - **Oracle** logs in as one user but the tables may be owned by a different
+      schema (``server.schema``). ibis defaults the owner to the login user, so
+      an unqualified lookup raises ``TableNotFound``.
+    - **Redshift** has no dedicated ibis backend and goes through the Postgres
+      backend (``con.name == "postgres"``). When no schema is passed, ibis's
+      Postgres introspection resolves the active schema with ``SELECT
+      current_schema`` (no parentheses) — valid on PostgreSQL but rejected by
+      Redshift with ``column "current_schema" does not exist``, since Redshift
+      only supports the parenthesized ``current_schema()``. Passing the schema
+      explicitly skips that query.
+
+    Other backends pin the schema at connect time and need no qualifier.
     """
-    if server is None:
+    if server is None or not server.schema_:
         return None
-    if getattr(con, "name", None) == "oracle" and server.schema_:
+    if getattr(con, "name", None) == "oracle":
+        return server.schema_
+    # Redshift rides the Postgres backend, so detect it by the contract's server
+    # type rather than con.name.
+    if get_server_type(server) == "redshift":
         return server.schema_
     return None
 
