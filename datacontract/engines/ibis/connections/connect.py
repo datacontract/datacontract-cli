@@ -16,8 +16,8 @@ import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.configuration.source_config import SourceConfig
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
-from datacontract.configuration.source_config import SourceConfig, DatabricksSourceConfig
 from datacontract.model.exceptions import DataContractException, require_env
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -234,7 +234,11 @@ def _connect_databricks(
     exchange happens when the connection is opened rather than while reading env.
     """
     config = (source_config or SourceConfig()).databricks_config()
-    host = config.server_hostname or server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+    host = (
+        config.server_hostname
+        or server.host
+        or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+    )
 
     kwargs = dict(
         server_hostname=host,
@@ -250,7 +254,9 @@ def _connect_databricks(
     if config.client_id and config.client_secret:
         run.log_info("Connecting to databricks with an OAuth service principal (M2M)")
         sdk_host = host if host.startswith("http") else f"https://{host}"
-        kwargs["credentials_provider"] = _databricks_credentials_provider(host=sdk_host, client_id=config.client_id, client_secret=config.client_secret)
+        kwargs["credentials_provider"] = _databricks_credentials_provider(
+            host=sdk_host, client_id=config.client_id, client_secret=config.client_secret
+        )
         return ibis.databricks.connect(**kwargs)
 
     if config.profile:

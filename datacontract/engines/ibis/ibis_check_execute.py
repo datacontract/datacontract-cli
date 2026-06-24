@@ -16,11 +16,11 @@ from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.configuration.source_config import SourceConfig
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.type_normalize import schema_property_matches, schema_property_mismatch_reason
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
-from datacontract.configuration.source_config import SourceConfig
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type

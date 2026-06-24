@@ -6,6 +6,7 @@ from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
+from datacontract.configuration.source_config import DatabricksSourceConfig, SourceConfig
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -14,7 +15,6 @@ from datacontract.imports.odcs_helper import (
     create_server,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
-from datacontract.configuration.source_config import DatabricksSourceConfig, SourceConfig
 from datacontract.model.exceptions import DataContractException
 
 logger = logging.getLogger(__name__)

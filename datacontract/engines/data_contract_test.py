@@ -6,8 +6,8 @@ import typing
 import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
-from datacontract.engines.checks.create_checks import create_checks
 from datacontract.configuration.source_config import SourceConfig
+from datacontract.engines.checks.create_checks import create_checks
 
 if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
