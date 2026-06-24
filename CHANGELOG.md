@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-06-24
+
 ### Fixed
 - `datacontract test` now only supports logicalTypes. Previously physicalType was preferrerd and used even if logicalType did not exist. 
 - `datacontract test` field type check now compares the full structured type tree for `object` and `array` logical types.
