@@ -177,7 +177,7 @@ def _run_model(
     include_failed_samples: bool = False,
 ):
     try:
-        t = _resolve_table(con, model)
+        t = _resolve_table(con, model, _table_database(con, server))
     except Exception as e:
         logger.warning("Could not read model '%s': %s", model, e)
         _fail_all(run, specs, ResultEnum.failed, f"Could not read model '{model}': {e}")
@@ -848,21 +848,52 @@ def _resolve_col(columns: dict, field: str) -> str:
     return actual
 
 
-def _resolve_table(con, model: str):
+def _table_database(con, server: Optional[Server]) -> Optional[str]:
+    """The schema to qualify the table with during introspection, or ``None``.
+
+    Two backends need the contract's ``server.schema`` passed explicitly instead
+    of relying on ibis's default:
+
+    - **Oracle** logs in as one user but the tables may be owned by a different
+      schema (``server.schema``). ibis defaults the owner to the login user, so
+      an unqualified lookup raises ``TableNotFound``.
+    - **Redshift** has no dedicated ibis backend and goes through the Postgres
+      backend (``con.name == "postgres"``). When no schema is passed, ibis's
+      Postgres introspection resolves the active schema with ``SELECT
+      current_schema`` (no parentheses) — valid on PostgreSQL but rejected by
+      Redshift with ``column "current_schema" does not exist``, since Redshift
+      only supports the parenthesized ``current_schema()``. Passing the schema
+      explicitly skips that query.
+
+    Other backends pin the schema at connect time and need no qualifier.
+    """
+    if server is None or not server.schema_:
+        return None
+    if getattr(con, "name", None) == "oracle":
+        return server.schema_
+    # Redshift rides the Postgres backend, so detect it by the contract's server
+    # type rather than con.name.
+    if get_server_type(server) == "redshift":
+        return server.schema_
+    return None
+
+
+def _resolve_table(con, model: str, database: Optional[str] = None):
     """Resolve a table by name, tolerating case differences across dialects."""
     if getattr(con, "name", None) == "pyspark":
         return _pyspark_table_unconvertible_as_unknown(con, model)
+    kwargs = {"database": database} if database else {}
     try:
-        return con.table(model)
+        return con.table(model, **kwargs)
     except Exception:
         try:
-            available = con.list_tables()
+            available = con.list_tables(**kwargs)
         except Exception:
             raise
         match = next((name for name in available if name.lower() == model.lower()), None)
         if match is None:
             raise
-        return con.table(match)
+        return con.table(match, **kwargs)
 
 
 def _pyspark_table_unconvertible_as_unknown(con, name: str):

@@ -31,3 +31,21 @@ Use the [`publish`](./commands/publish.md) command to push a data contract itsel
 ```bash
 datacontract publish datacontract.yaml
 ```
+
+## TLS behind a corporate proxy or internal CA
+
+By default the CLI verifies TLS certificates against the bundled CA certificates (`certifi`). In a corporate network with a TLS-inspecting proxy or an internal certificate authority, this can fail with `CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`, because the root CA is installed in the operating system's trust store but not in the bundled list.
+
+Use the global `--system-truststore` option to verify against the operating system's trust store (macOS Keychain, Windows certificate store, or the system CA certificates on Linux) instead:
+
+```bash
+datacontract --system-truststore publish datacontract.yaml
+```
+
+You can also enable it for every invocation with an environment variable:
+
+```bash
+export DATACONTRACT_SYSTEM_TRUSTSTORE=1
+```
+
+This keeps certificate verification on while trusting the corporate root CA. It works for all commands that make HTTPS requests, not only the Entropy Data integration.

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-from ibis.expr.datatypes import DataType
+from typing import TYPE_CHECKING
+
 from open_data_contract_standard.model import SchemaProperty
+
+if TYPE_CHECKING:
+    from ibis.expr.datatypes import DataType
 
 
 def ibis_dtype_category(dtype) -> str:

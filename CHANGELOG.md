@@ -7,10 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-06-25
+
+### Added
+- New global option `--system-truststore` (env `DATACONTRACT_SYSTEM_TRUSTSTORE`) to verify TLS using the operating system's certificate trust store, for use behind corporate proxies or with internal CAs.
+
+## [1.0.6] - 2026-06-24
+
+### Fixed
+- `datacontract test` against Redshift no longer fails with `column "current_schema" does not exist`. Redshift rides the Postgres ibis backend, whose introspection resolved the active schema with `SELECT current_schema` (no parentheses) — valid on PostgreSQL but rejected by Redshift, which only supports `current_schema()`. The configured server `schema` is now passed explicitly during introspection, skipping that query.
+
+## [1.0.5] - 2026-06-24
+
 ### Fixed
 - `datacontract test` now only supports logicalTypes. Previously physicalType was preferrerd and used even if logicalType did not exist. 
 - `datacontract test` field type check now compares the full structured type tree for `object` and `array` logical types.
 - Unknown and unsupported types are silently ignored rather than failing the check. Specifically the `map` type is not supported until ODCS version v3.2.0 and is also ignored. 
+- `datacontract --help` no longer fails with `ModuleNotFoundError: No module named 'ibis'` when the optional `ibis` extra is not installed.
+- `datacontract test` against Oracle now qualifies tables with the configured server `schema` (owner), fixing `Could not read model '<table>': <table>` when the login user differs from the table owner.
 
 
 
