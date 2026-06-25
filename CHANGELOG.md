@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-06-25
+
+### Added
+- New global option `--system-truststore` (env `DATACONTRACT_SYSTEM_TRUSTSTORE`) to verify TLS using the operating system's certificate trust store, for use behind corporate proxies or with internal CAs.
+
 ## [1.0.6] - 2026-06-24
 
 ### Fixed
