@@ -73,6 +73,39 @@ def test_env_file_does_not_override_existing_environment_variables(tmp_path, mon
     assert os.environ.get("DATACONTRACT_TEST_DOTENV_VAR") == "from-environment"
 
 
+def test_system_truststore_option_in_help():
+    result = runner.invoke(app, ["--help"], env={"COLUMNS": "200"})
+    assert result.exit_code == 0
+    plain_output = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    assert "--system-truststore" in plain_output
+
+
+def test_system_truststore_flag_injects(monkeypatch):
+    calls = []
+    monkeypatch.setattr("datacontract.cli.inject_system_truststore", lambda: calls.append(True))
+    result = runner.invoke(app, ["--system-truststore", "lint", "unknown.yaml"])
+    assert result.exit_code == 1  # file does not exist, but the app callback has run
+    assert calls == [True]
+
+
+def test_system_truststore_env_var_injects(monkeypatch):
+    calls = []
+    monkeypatch.setattr("datacontract.cli.inject_system_truststore", lambda: calls.append(True))
+    monkeypatch.setenv("DATACONTRACT_SYSTEM_TRUSTSTORE", "1")
+    result = runner.invoke(app, ["lint", "unknown.yaml"])
+    assert result.exit_code == 1
+    assert calls == [True]
+
+
+def test_system_truststore_not_injected_by_default(monkeypatch):
+    calls = []
+    monkeypatch.setattr("datacontract.cli.inject_system_truststore", lambda: calls.append(True))
+    monkeypatch.delenv("DATACONTRACT_SYSTEM_TRUSTSTORE", raising=False)
+    result = runner.invoke(app, ["lint", "unknown.yaml"])
+    assert result.exit_code == 1
+    assert calls == []
+
+
 def test_changelog_help():
     result = runner.invoke(app, ["changelog", "--help"])
     assert result.exit_code == 0

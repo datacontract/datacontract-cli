@@ -111,6 +111,19 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
+def inject_system_truststore() -> None:
+    """Verify TLS using the operating system's certificate trust store instead of the
+    bundled CA certificates. This lets the CLI work behind corporate proxies or with
+    internal CAs whose root certificates are installed in the OS trust store but not in
+    the certifi bundle that requests uses by default."""
+    try:
+        import truststore
+    except ImportError:
+        console.print("[red]--system-truststore requires the 'truststore' package, which is not installed.[/red]")
+        raise typer.Exit(code=1)
+    truststore.inject_into_ssl()
+
+
 @app.callback()
 def common(
     ctx: typer.Context,
@@ -120,6 +133,13 @@ def common(
         help="Prints the current version.",
         callback=version_callback,
         is_eager=True,
+    ),
+    system_truststore: bool = typer.Option(
+        False,
+        "--system-truststore",
+        help="Verify TLS using the operating system's certificate trust store "
+        "instead of the bundled CA certificates (e.g. behind a corporate proxy or internal CA).",
+        envvar="DATACONTRACT_SYSTEM_TRUSTSTORE",
     ),
 ):
     """
@@ -133,6 +153,9 @@ def common(
     # current working directory, walking up parent directories until one is found.
     # Already-set environment variables take precedence.
     load_dotenv(dotenv_path=find_dotenv(usecwd=True), override=False)
+
+    if system_truststore:
+        inject_system_truststore()
 
 
 def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
