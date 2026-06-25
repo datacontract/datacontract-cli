@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-06-25
+
 ### Fixed
 - `datacontract test` against Redshift no longer fails with `relation "pg_catalog.pg_enum" does not exist`. Redshift rides the Postgres ibis backend, whose schema introspection joins `pg_catalog.pg_enum` to detect enum columns — a relation Redshift does not expose. Introspection now omits that join (Redshift has no enum types).
 
