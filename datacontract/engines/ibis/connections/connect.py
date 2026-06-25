@@ -115,7 +115,13 @@ def connect_ibis(
         if password:
             kwargs["password"] = password
         # Redshift speaks the postgres wire protocol; ibis has no dedicated backend.
-        return ibis.postgres.connect(**kwargs)
+        con = ibis.postgres.connect(**kwargs)
+        # ibis's postgres schema introspection joins pg_catalog.pg_enum, which
+        # Redshift does not expose; patch it out so model lookups don't fail.
+        from datacontract.engines.ibis.connections.redshift_patch import apply_redshift_compatibility_patch
+
+        apply_redshift_compatibility_patch(con)
+        return con
 
     if server_type == "mysql":
         return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name)
