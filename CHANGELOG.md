@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` against Kafka no longer reports every field as null for plain (non-Confluent Schema Registry) Avro messages (#1344)
+- Honor the `pattern` argument in `invalidValues` quality checks
 
 ## [1.0.8] - 2026-06-25
 

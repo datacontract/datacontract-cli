@@ -548,7 +548,14 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
         if field is None:
             logger.warning("Quality check invalidValues is only supported at field level")
             return []
-        valid_values = quality.arguments.get("validValues") if quality.arguments else None
+        args = quality.arguments or {}
+        valid_values = args.get("validValues")
+        pattern = args.get("pattern")
+        if valid_values is None and pattern is None:
+            logger.warning(
+                f"Quality check invalidValues on field {field} has no validValues or pattern argument; skipping"
+            )
+            return []
         return [
             _invalid_count_check(
                 model,
@@ -558,6 +565,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 threshold=threshold,
                 category="quality",
                 valid_values=valid_values,
+                valid_regex=pattern,
                 threshold_is_percent=is_percent,
                 severity=severity,
             )
