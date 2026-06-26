@@ -148,7 +148,15 @@ def process_avro_format(df, model_name: str, schema_obj: SchemaObject):
         )
 
     avro_schema = to_avro_schema_json(model_name, schema_obj)
-    df2 = df.withColumn("fixedValue", expr("substring(value, 6, length(value)-5)"))
+    # Messages serialized through the Confluent Schema Registry are framed with a
+    # 5-byte prefix (magic byte 0x00 + 4-byte schema id) that must be stripped
+    # before Avro decoding. Plain Avro messages carry no such prefix, so strip it
+    # only when the magic byte is present; otherwise stripping 5 bytes would
+    # corrupt every record and from_avro (PERMISSIVE) would silently null them out.
+    df2 = df.withColumn(
+        "fixedValue",
+        expr("CASE WHEN substring(value, 1, 1) = X'00' THEN substring(value, 6, length(value)-5) ELSE value END"),
+    )
     options = {"mode": "PERMISSIVE"}
     df2.select(from_avro(col("fixedValue"), avro_schema, options).alias("avro")).select(
         col("avro.*")
