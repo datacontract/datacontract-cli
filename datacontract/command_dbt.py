@@ -27,7 +27,7 @@ def sync_command(
     contract: Annotated[
         Optional[str],
         typer.Argument(
-            help="Path to the ODCS data contract. If omitted, searches for a single `*.odcs.yaml` in the current directory and its subdirectories.",
+            help="Path to the ODCS data contract. If omitted, searches for a single `*.odcs.yaml` in --project-dir (default: current directory) and its subdirectories.",
         ),
     ] = None,
     project_dir: Annotated[
@@ -49,6 +49,10 @@ def sync_command(
         Optional[Path],
         typer.Option(help="Forwarded to `dbt test --profiles-dir`."),
     ] = None,
+    prune: Annotated[
+        bool,
+        typer.Option(help="Remove model columns and tags that are not declared in the contract."),
+    ] = False,
     skip_tests: Annotated[
         bool,
         typer.Option("--skip-tests/--run-tests", help="Generate tests but skip running `dbt test`."),
@@ -64,9 +68,10 @@ def sync_command(
     debug: debug_option = None,
 ):
     """
-    Generate dbt tests from an ODCS contract and run them.
+    Generate dbt tests and model metadata from an ODCS contract and run the tests.
 
-    Within the specified dbt project, this command wipes `<model-paths>/datacontract_cli/` and `<test-paths>/datacontract_cli/`, regenerates them from the contract, then runs `dbt test`.
+    Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files
+    or singular SQL tests if needed. Then runs `dbt test --select tag:datacontract_cli`.
     """
     enable_debug_logging(debug)
 
@@ -83,8 +88,13 @@ def sync_command(
         project_dir=project_dir,
         schema_name=schema_name,
         model_resolution=model_resolution,
-        console=console,
+        prune=prune,
     )
+    if contract is None:
+        console.print(f"Resolved contract {gen.contract_path}")
+
+    for schema in gen.skipped_schemas:
+        console.print(f"[yellow]Skipped schema {schema!r}: no matching dbt model found.[/yellow]")
 
     if server is not None and gen.odcs.servers:
         known = [s.server for s in gen.odcs.servers if s.server]
@@ -94,13 +104,12 @@ def sync_command(
             )
             raise typer.Exit(code=1)
 
-    yaml_dir = gen.written_yaml[0].parent if gen.written_yaml else None
-    sql_dir = gen.written_sql[0].parent if gen.written_sql else None
-    line = f"Wrote {len(gen.written_yaml)} YAML file(s)"
-    if yaml_dir is not None:
-        line += f" under {yaml_dir}"
+    line = f"Synced {len(gen.resolved_models)} model(s): updated {len(gen.written_yaml)} YAML file(s)"
     if gen.written_sql:
-        line += f" and {len(gen.written_sql)} SQL file(s) under {sql_dir}"
+        sql_dir = gen.written_sql[0].parent
+        line += f", wrote {len(gen.written_sql)} singular SQL test(s) under {sql_dir}"
+    if gen.deleted_files:
+        line += f", removed {len(gen.deleted_files)} YAML file(s)"
     line += "."
     console.print(line)
 

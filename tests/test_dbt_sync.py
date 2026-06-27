@@ -31,7 +31,6 @@ from datacontract.integration.dbt_sync import (
     _singular_tests_for_qualities,
     _sql_literal,
     check_dbt_on_path,
-    detect_user_model_collisions,
     find_contract,
     generate_dbt_tests,
     generate_dbt_tests_for_schema,
@@ -80,6 +79,7 @@ def sync(
     target: Optional[str] = None,
     profiles_dir: Optional[Path] = None,
     skip_tests: bool = False,
+    prune: bool = False,
 ) -> _SyncResult:
     """End-to-end orchestration helper for tests — mirrors what the CLI does."""
     if not skip_tests:
@@ -89,6 +89,7 @@ def sync(
         project_dir=project_dir,
         schema_name=schema_name,
         model_resolution=model_resolution,
+        prune=prune,
     )
     if skip_tests:
         gen.generation_run.log_info("Skipped `dbt test` (--skip-tests).")
@@ -156,38 +157,128 @@ def test_check_dbt_on_path_present(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Preflight: user-authored model-entry collisions
+# In-place merge into the user's existing model entry
 # ---------------------------------------------------------------------------
 
 
-def test_detect_user_model_collisions_finds_overlap(tmp_path: Path):
+def _orders_model_sql(project: Path, name: str = "orders") -> Path:
+    sql = project / "models" / f"{name}.sql"
+    sql.write_text("select 'B0000001' as order_id, 'pending' as order_status, 100 as order_total")
+    return sql
+
+
+def _user_orders_schema(project: Path, *, entry_name: str = "orders") -> Path:
+    """A hand-authored model entry: a comment, a user test, a user description, an extra column."""
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        f"  - name: {entry_name}   # the orders fact table\n"
+        "    description: My own description.\n"
+        "    columns:\n"
+        "      - name: order_id\n"
+        "        description: The PK.\n"
+        "        data_tests:\n"
+        "          - not_null\n"
+        "      - name: extra_user_col\n"
+        "        description: not declared by the contract\n"
+    )
+    return schema
+
+
+def _model_entry(schema_path: Path, name: str = "orders") -> dict:
+    doc = yaml.safe_load(schema_path.read_text())
+    return next(m for m in doc["models"] if m["name"].lower() == name.lower())
+
+
+def test_merge_into_existing_entry_replaces_old_collision_error(tmp_path: Path):
+    """A model already defined in the user's YAML is merged into — not a hard error (old behavior)."""
     project = _copy_dbt_project(tmp_path)
-    schema_yml = project / "models" / "schema.yml"
-    schema_yml.write_text("version: 2\nmodels:\n  - name: orders\n  - name: customers\n")
-    hits = detect_user_model_collisions(project, {"orders", "stg_orders"})
-    assert hits == {"orders": [schema_yml]}
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+
+    result = sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    assert result.run is not None  # did not raise
+
+    entry = _model_entry(schema)
+    cols = {c["name"]: c for c in entry["columns"]}
+    # Pre-existing user test is adopted: tagged datacontract_cli (+ dc:type) but NOT dc:generated.
+    not_null = cols["order_id"]["data_tests"][0]["not_null"]
+    assert "datacontract_cli" in not_null["config"]["tags"]
+    assert "dc:field_required" in not_null["config"]["tags"]
+    assert "dc:generated" not in not_null["config"]["tags"]
+    # A test the CLI created from nothing carries dc:generated.
+    unique = cols["order_id"]["data_tests"][1]["unique"]
+    assert "dc:generated" in unique["config"]["tags"]
+    # The user's own column + its description are preserved.
+    assert "extra_user_col" in cols
+    assert cols["order_id"]["description"] == "The PK."
 
 
-def test_detect_user_model_collisions_ignores_generated_dir(tmp_path: Path):
+def test_merge_preserves_comments_and_is_idempotent(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
-    gen_dir = project / GENERATED_MODELS_DIR
-    gen_dir.mkdir(parents=True, exist_ok=True)
-    (gen_dir / "auto.yml").write_text("version: 2\nmodels:\n  - name: orders\n")
-    assert detect_user_model_collisions(project, {"orders"}) == {}
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    after_first = schema.read_text()
+    assert "# the orders fact table" in after_first  # ruamel round-trip kept the comment
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    assert schema.read_text() == after_first  # second sync is a no-op
 
 
-def test_detect_user_model_collisions_handles_yaml_extension(tmp_path: Path):
+def test_merge_columns_the_cli_creates_are_marked(tmp_path: Path):
+    """Columns the CLI adds to host tests carry meta.datacontract_cli so cleanup can drop them."""
     project = _copy_dbt_project(tmp_path)
-    schema = project / "models" / "schema.yaml"
-    schema.write_text("version: 2\nmodels:\n  - name: orders\n")
-    assert detect_user_model_collisions(project, {"orders"}) == {"orders": [schema]}
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
+    assert cols["order_status"]["meta"]["datacontract_cli"] is True
+    assert "meta" not in cols["extra_user_col"]  # user column untouched
+    assert "meta" not in cols["order_id"]  # pre-existing user column not marked
 
 
-def test_detect_user_model_collisions_skips_unparseable_yaml(tmp_path: Path):
+def test_sync_creates_owned_sidecar_when_no_yaml_entry(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
-    bad = project / "models" / "broken.yml"
-    bad.write_text(": this is : not : yaml")
-    assert detect_user_model_collisions(project, {"orders"}) == {}
+    _orders_model_sql(project)  # model SQL exists, but no YAML entry anywhere
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    sidecar = project / "models" / "orders.yml"
+    assert sidecar.exists()
+    text = sidecar.read_text()
+    assert text.lstrip().startswith("# AUTO-GENERATED by `datacontract dbt sync`")
+    entry = _model_entry(sidecar)
+    # Owned sidecar: every test is generated; columns are not marked (whole file is ours).
+    assert entry["config"]["meta"]["data_contract"] == "orders-sync-test"
+    order_id = {c["name"]: c for c in entry["columns"]}["order_id"]
+    assert "dc:generated" in order_id["data_tests"][0]["not_null"]["config"]["tags"]
+
+
+def test_sync_skips_model_with_no_sql_or_entry(tmp_path: Path):
+    """A contract model with neither a `.sql` nor a YAML entry can't be tested — warn and skip."""
+    project = _copy_dbt_project(tmp_path)  # empty models dir, no orders.sql
+    result = sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    assert result.written_yaml == []
+    assert not (project / "models" / "orders.yml").exists()
+    assert any("nothing to test" in log.message for log in result.run.logs)
+
+
+def test_sync_matches_model_case_insensitively(tmp_path: Path):
+    """Contract schema `orders` matches a dbt model `ORDERS`, preserving the project's casing (#1254)."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project, name="ORDERS")
+    schema = _user_orders_schema(project, entry_name="ORDERS")
+
+    result = sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    assert _model_entry(schema, "ORDERS")["name"] == "ORDERS"  # file casing preserved
+    # Singular SQL refs the actual dbt model name, not the contract's casing.
+    assert any("ref('ORDERS')" in p.read_text() for p in result.written_sql)
 
 
 def _custom_paths_project(tmp_path: Path, *, model_paths: list[str], test_paths: list[str]) -> Path:
@@ -208,43 +299,31 @@ def _custom_paths_project(tmp_path: Path, *, model_paths: list[str], test_paths:
 
 
 def test_sync_writes_to_configured_model_and_test_paths(tmp_path: Path):
-    """Generated YAML/SQL must follow `model-paths` / `test-paths` from dbt_project.yml.
+    """Sidecar YAML + singular SQL must follow `model-paths` / `test-paths` from dbt_project.yml.
 
     Otherwise dbt won't pick the files up and `--select tag:datacontract_cli` matches nothing.
     """
     project = _custom_paths_project(tmp_path, model_paths=["src/models"], test_paths=["src/tests"])
+    (project / "src" / "models" / "orders.sql").write_text("select 1 as order_id")
     sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
 
-    assert (project / "src" / "models" / "datacontract_cli" / "orders_sync_test__orders.yml").exists()
-    assert (project / "src" / "tests" / "datacontract_cli").is_dir()
-    assert any((project / "src" / "tests" / "datacontract_cli").iterdir())
+    assert (project / "src" / "models" / "orders.yml").exists()  # sidecar next to the model
+    tests_dir = project / "src" / "tests" / "datacontract_cli"
+    assert tests_dir.is_dir() and any(tests_dir.iterdir())
     # Default paths must stay empty.
-    assert not (project / "models" / "datacontract_cli").exists()
     assert not (project / "tests" / "datacontract_cli").exists()
 
 
-def test_detect_user_model_collisions_walks_configured_model_paths(tmp_path: Path):
-    project = _custom_paths_project(tmp_path, model_paths=["src/models"], test_paths=["src/tests"])
-    schema = project / "src" / "models" / "schema.yml"
-    schema.write_text("version: 2\nmodels:\n  - name: orders\n")
-    # A YAML in the default `models/` dir must NOT be considered — dbt wouldn't scan it anyway.
-    (project / "models").mkdir()
-    (project / "models" / "decoy.yml").write_text("version: 2\nmodels:\n  - name: orders\n")
-
-    assert detect_user_model_collisions(project, {"orders"}) == {"orders": [schema]}
-
-
-def test_sync_preflight_blocks_on_collision(tmp_path: Path):
+def test_sync_migrates_legacy_generated_dir(tmp_path: Path):
+    """A leftover `<model-paths>/datacontract_cli/` from the old behavior is removed on sync."""
     project = _copy_dbt_project(tmp_path)
-    (project / "models" / "schema.yml").write_text("version: 2\nmodels:\n  - name: orders\n")
-    with pytest.raises(DataContractException) as exc:
-        sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
-    msg = exc.value.reason
-    assert "`orders`" in msg
-    assert "models/schema.yml" in msg
-    assert "single source of truth" in msg
-    # Preflight runs BEFORE wipe — confirm we didn't materialize anything.
-    assert not (project / GENERATED_MODELS_DIR).exists() or not list((project / GENERATED_MODELS_DIR).iterdir())
+    _orders_model_sql(project)
+    legacy = project / GENERATED_MODELS_DIR
+    legacy.mkdir(parents=True, exist_ok=True)
+    (legacy / "orders_sync_test__orders.yml").write_text("# stale parallel patch")
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    assert not legacy.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -553,6 +632,7 @@ def test_disambiguate_singular_filenames_renames_duplicates():
 
 def test_sync_skip_tests_writes_files(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)  # no YAML entry → owned sidecar
     result = sync(
         contract=str(CONTRACT_PATH),
         project_dir=project,
@@ -563,13 +643,9 @@ def test_sync_skip_tests_writes_files(tmp_path: Path):
     yml = result.written_yaml[0]
     assert yml.exists()
     content = yml.read_text()
-    assert content.startswith("# AUTO-GENERATED")
-    assert str(CONTRACT_PATH.resolve()) in content
+    assert content.lstrip().startswith("# AUTO-GENERATED")
     parsed = yaml.safe_load(content)
     assert parsed["models"][0]["name"] == "orders"
-    # singular tests with descriptions get a top-level `data_tests:` companion
-    assert "data_tests" in parsed
-    assert any(entry.get("description") for entry in parsed["data_tests"])
 
     # All singular SQL files materialize on disk: three field-level bounds
     # (length, regex, range) plus the two `quality.query` rules from the fixture.
@@ -583,11 +659,11 @@ def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: P
     """A contract that resolves to zero models must still wipe prior generated artifacts —
     otherwise old `tag:datacontract_cli` files from an earlier run keep getting executed."""
     project = _copy_dbt_project(tmp_path)
-    stale_yml = project / GENERATED_MODELS_DIR / "stale.yml"
+    stale_legacy = project / GENERATED_MODELS_DIR / "stale.yml"
     stale_sql = project / GENERATED_TESTS_DIR / "stale.sql"
-    stale_yml.parent.mkdir(parents=True, exist_ok=True)
+    stale_legacy.parent.mkdir(parents=True, exist_ok=True)
     stale_sql.parent.mkdir(parents=True, exist_ok=True)
-    stale_yml.write_text("# stale")
+    stale_legacy.write_text("# stale")
     stale_sql.write_text("-- stale")
 
     empty_contract = tmp_path / "empty.odcs.yaml"
@@ -597,8 +673,8 @@ def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: P
 
     sync(contract=str(empty_contract), project_dir=project, skip_tests=True)
 
-    assert not stale_yml.exists()
-    assert not stale_sql.exists()
+    assert not stale_sql.exists()  # singular-SQL dir is wiped + regenerated
+    assert not (project / GENERATED_MODELS_DIR).exists()  # legacy parallel-YAML dir is migrated away
 
 
 def test_sync_missing_contract_raises(tmp_path: Path):
@@ -609,6 +685,175 @@ def test_sync_missing_contract_raises(tmp_path: Path):
             project_dir=project,
             skip_tests=True,
         )
+
+
+# ---------------------------------------------------------------------------
+# Metadata sync (description / config.meta / tags) + --prune
+# ---------------------------------------------------------------------------
+
+_TAGGED_CONTRACT = """\
+kind: DataContract
+apiVersion: v3.1.0
+id: tagged-contract
+name: Tagged
+version: 1.0.0
+status: active
+team:
+  name: data-eng
+schema:
+  - name: orders
+    description: Orders model from the contract.
+    tags: [pii, gold]
+    properties:
+      - name: order_id
+        required: true
+        unique: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: The order identifier.
+        tags: [identifier]
+"""
+
+
+def _write(tmp_path: Path, name: str, body: str) -> Path:
+    p = tmp_path / name
+    p.write_text(body)
+    return p
+
+
+def test_sync_overwrites_descriptions_and_sets_meta_without_clobbering(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    description: stale user description\n"
+        "    config:\n"
+        "      materialized: table\n"
+        "      meta:\n"
+        "        custom_key: keep me\n"
+        "    columns:\n"
+        "      - name: order_id\n"
+        "        description: stale column description\n"
+    )
+    contract = _write(tmp_path, "tagged.odcs.yaml", _TAGGED_CONTRACT)
+    sync(contract=str(contract), project_dir=project, skip_tests=True)
+
+    entry = _model_entry(schema)
+    assert entry["description"] == "Orders model from the contract."  # contract wins
+    assert entry["config"]["materialized"] == "table"  # user config preserved
+    assert entry["config"]["meta"]["custom_key"] == "keep me"  # other meta preserved
+    assert entry["config"]["meta"]["data_contract"] == "tagged-contract"
+    assert entry["config"]["meta"]["owner"] == "data-eng"
+    cols = {c["name"]: c for c in entry["columns"]}
+    assert cols["order_id"]["description"] == "The order identifier."  # contract wins
+
+
+def test_resync_clears_owner_when_contract_loses_team(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text("version: 2\nmodels:\n  - name: orders\n    config:\n      meta:\n        custom_key: keep me\n")
+    tagged = _write(tmp_path, "tagged.odcs.yaml", _TAGGED_CONTRACT)
+    sync(contract=str(tagged), project_dir=project, skip_tests=True)
+    assert _model_entry(schema)["config"]["meta"]["owner"] == "data-eng"
+
+    no_team = _write(tmp_path, "no_team.odcs.yaml", _TAGGED_CONTRACT.replace("team:\n  name: data-eng\n", ""))
+    sync(contract=str(no_team), project_dir=project, skip_tests=True)
+
+    meta = _model_entry(schema)["config"]["meta"]
+    assert "owner" not in meta  # stale owner cleared
+    assert meta["data_contract"] == "tagged-contract"  # still authoritative
+    assert meta["custom_key"] == "keep me"  # user meta preserved
+
+
+def test_sync_unions_tags_preserving_user_tags(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    config:\n"
+        "      tags: [user_model_tag, pii]\n"  # `pii` overlaps with the contract
+        "    columns:\n"
+        "      - name: order_id\n"
+        "        config:\n"
+        "          tags: [user_col_tag]\n"
+    )
+    contract = _write(tmp_path, "tagged.odcs.yaml", _TAGGED_CONTRACT)
+    sync(contract=str(contract), project_dir=project, skip_tests=True)
+
+    entry = _model_entry(schema)
+    # Union, no duplicates, user tag preserved.
+    assert entry["config"]["tags"] == ["user_model_tag", "pii", "gold"]
+    cols = {c["name"]: c for c in entry["columns"]}
+    assert cols["order_id"]["config"]["tags"] == ["user_col_tag", "identifier"]
+
+
+def test_prune_strict_mirrors_columns_and_tags(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    config:\n"
+        "      tags: [user_model_tag]\n"  # not in the contract → pruned
+        "    columns:\n"
+        "      - name: order_id\n"
+        "      - name: undeclared_col\n"  # not in the contract → pruned
+    )
+    contract = _write(tmp_path, "tagged.odcs.yaml", _TAGGED_CONTRACT)
+    sync(contract=str(contract), project_dir=project, skip_tests=True, prune=True)
+
+    entry = _model_entry(schema)
+    assert [c["name"] for c in entry["columns"]] == ["order_id"]  # undeclared column dropped
+    assert entry["config"]["tags"] == ["pii", "gold"]  # strict mirror (contract order), user tag dropped
+
+
+# ---------------------------------------------------------------------------
+# Provenance-aware cleanup when the contract changes
+# ---------------------------------------------------------------------------
+
+
+def test_resync_drops_generated_but_untags_adopted_when_test_removed(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    columns:\n"
+        "      - name: order_id\n"
+        "        data_tests:\n"
+        "          - not_null\n"  # user-authored → will be adopted, then un-tagged
+    )
+    full = _write(tmp_path, "full.odcs.yaml", _TAGGED_CONTRACT)
+    sync(contract=str(full), project_dir=project, skip_tests=True)
+    cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
+    assert "datacontract_cli" in cols["order_id"]["data_tests"][0]["not_null"]["config"]["tags"]
+    assert any(t == "unique" or "unique" in t for t in [next(iter(t)) for t in cols["order_id"]["data_tests"]])
+
+    # New contract: order_id is no longer required/unique → only the description test remains.
+    reduced = _write(
+        tmp_path,
+        "reduced.odcs.yaml",
+        "kind: DataContract\napiVersion: v3.1.0\nid: tagged-contract\nname: Tagged\nversion: 2.0.0\n"
+        "status: active\nschema:\n  - name: orders\n    properties:\n      - name: order_id\n"
+        "        description: still here\n",
+    )
+    sync(contract=str(reduced), project_dir=project, skip_tests=True)
+
+    tests = {next(iter(t)): t for t in _model_entry(schema)["columns"][0].get("data_tests", [])}
+    # Generated `unique` is gone; adopted `not_null` survives un-tagged as the user's plain test.
+    assert "unique" not in tests
+    assert tests.get("not_null") == "not_null" or "datacontract_cli" not in str(tests.get("not_null"))
 
 
 # ---------------------------------------------------------------------------
@@ -954,13 +1199,15 @@ def test_cli_help_renders():
     # codes inside flag names (e.g. `--\x1b[…m\x1b[…m-skip-tests`), so a literal substring
     # match fails without this normalization.
     plain = re.sub(r"\s+", "", re.sub(r"\x1b\[[0-9;]*[mGKHF]", "", result.stdout))
-    assert "Generatedbttests" in plain
+    assert "Generatedbttestsandmodelmetadata" in plain
     assert "--skip-tests" in plain
     assert "--schema-name" in plain
+    assert "--prune" in plain
 
 
 def test_cli_skip_tests_invocation(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
     runner = CliRunner()
     result = runner.invoke(
         app,
@@ -978,7 +1225,7 @@ def test_cli_skip_tests_invocation(tmp_path: Path):
         if result.exception:
             raise result.exception
     assert result.exit_code == 0
-    assert (project / GENERATED_MODELS_DIR / "orders_sync_test__orders.yml").exists()
+    assert (project / "models" / "orders.yml").exists()  # owned sidecar (no pre-existing entry)
 
 
 # ---------------------------------------------------------------------------
@@ -1033,6 +1280,7 @@ def test_integration_end_to_end(tmp_path: Path):
 
 def _stub_dbt_test(monkeypatch, project: Path) -> None:
     """Replace `subprocess.run` so `dbt test` succeeds and leaves a minimal run_results.json."""
+    _orders_model_sql(project)  # a resolvable model so sync runs `dbt test` instead of skipping
     target_dir = project / "target"
     target_dir.mkdir(exist_ok=True)
 
@@ -1053,6 +1301,7 @@ def test_run_tests_forwards_dbt_output_to_run_logs(monkeypatch, tmp_path: Path):
     published Run carries the same context an operator would see locally — minus
     ANSI codes and empty lines."""
     project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
     target_dir = project / "target"
     target_dir.mkdir()
 
