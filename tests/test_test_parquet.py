@@ -151,3 +151,18 @@ def test_struct():
     run = data_contract.test()
     print(run.pretty())
     assert run.result == "passed"
+
+
+def test_nested_type_error_detail_message():
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_invalid_logical_types_example.yaml",
+    )
+    run = data_contract.test()
+    assert run.result == "failed"
+    for check in run.checks:
+        if check.field == "values" and check.type == "field_type":
+            assert check.result == "failed"
+            assert check.reason == "field '[]': expected type 'string' but got 'integer'"
+        elif check.field == "metadata" and check.type == "field_type":
+            assert check.result == "failed"
+            assert check.reason == "field 'name': expected type 'integer' but got 'string' (and 1 other error)"
