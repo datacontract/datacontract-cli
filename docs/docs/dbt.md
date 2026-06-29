@@ -40,7 +40,7 @@ On each run, the command:
 - **Wipes and regenerates** the `models/datacontract_cli/` and `tests/datacontract_cli/` directories under your dbt project. The paths honor `model-paths` and `test-paths` in `dbt_project.yml`.
 - **Emits one YAML model file per ODCS schema** that uses dbt's built-in tests and [`dbt_utils`](https://github.com/dbt-labs/dbt-utils).
 - **Emits singular SQL tests** for all ODCS `quality` rules that can't be expressed as native YAML tests.
-- **Runs `dbt test --select tag:datacontract_cli`** to run the generated tests; pre-existing dbt tests are untouched. Pass `--skip-tests` to regenerate without invoking dbt.
+- **Runs `dbt test`** selecting the contract-managed tests by their `config.meta.datacontract_cli` block; pre-existing dbt tests are untouched. Pass `--skip-tests` to regenerate without invoking dbt.
 
 It is recommended to remove existing dbt tests for the contract's columns to avoid duplication.
 

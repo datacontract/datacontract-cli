@@ -202,14 +202,17 @@ def test_merge_into_existing_entry_replaces_old_collision_error(tmp_path: Path):
 
     entry = _model_entry(schema)
     cols = {c["name"]: c for c in entry["columns"]}
-    # Pre-existing user test is adopted: tagged datacontract_cli (+ dc:type) but NOT dc:generated.
+    # Pre-existing user test is adopted: meta block stamped, check recorded, generated=False.
     not_null = cols["order_id"]["data_tests"][0]["not_null"]
-    assert "datacontract_cli" in not_null["config"]["tags"]
-    assert "dc:field_required" in not_null["config"]["tags"]
-    assert "dc:generated" not in not_null["config"]["tags"]
-    # A test the CLI created from nothing carries dc:generated.
+    assert "tags" not in not_null["config"]  # no tag emitted — provenance lives in meta
+    assert not_null["config"]["meta"]["datacontract_cli"]["check"] == "orders__order_id__field_required"
+    assert not_null["config"]["meta"]["datacontract_cli"]["generated"] is False
+    assert not_null["config"]["meta"]["datacontract_cli"]["include_in_tests"] is True  # adopted tests still run
+    # A test the CLI created from nothing has generated=True.
     unique = cols["order_id"]["data_tests"][1]["unique"]
-    assert "dc:generated" in unique["config"]["tags"]
+    assert unique["config"]["meta"]["datacontract_cli"]["check"] == "orders__order_id__field_unique"
+    assert unique["config"]["meta"]["datacontract_cli"]["generated"] is True
+    assert unique["config"]["meta"]["datacontract_cli"]["include_in_tests"] is True
     # The user's own column + its description are preserved.
     assert "extra_user_col" in cols
     assert cols["order_id"]["description"] == "The PK."
@@ -228,6 +231,26 @@ def test_merge_preserves_comments_and_is_idempotent(tmp_path: Path):
     assert schema.read_text() == after_first  # second sync is a no-op
 
 
+def test_resync_preserves_user_opt_out_via_include_in_tests(tmp_path: Path):
+    """A user who flips `include_in_tests: false` to opt a test out keeps it across re-syncs."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    # User opts the generated `unique` test out of the dbt run.
+    entry = _model_entry(schema)
+    unique = {c["name"]: c for c in entry["columns"]}["order_id"]["data_tests"][1]["unique"]
+    assert unique["config"]["meta"]["datacontract_cli"]["include_in_tests"] is True
+    unique["config"]["meta"]["datacontract_cli"]["include_in_tests"] = False
+    schema.write_text(yaml.safe_dump({"version": 2, "models": [entry]}))
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    unique = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_id"]["data_tests"][1]["unique"]
+    assert unique["config"]["meta"]["datacontract_cli"]["include_in_tests"] is False
+
+
 def test_merge_columns_the_cli_creates_are_marked(tmp_path: Path):
     """Columns the CLI adds to host tests carry meta.datacontract_cli so cleanup can drop them."""
     project = _copy_dbt_project(tmp_path)
@@ -236,7 +259,7 @@ def test_merge_columns_the_cli_creates_are_marked(tmp_path: Path):
     sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
 
     cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
-    assert cols["order_status"]["meta"]["datacontract_cli"] is True
+    assert cols["order_status"]["meta"]["datacontract_cli"]["generated"] is True
     assert "meta" not in cols["extra_user_col"]  # user column untouched
     assert "meta" not in cols["order_id"]  # pre-existing user column not marked
 
@@ -255,7 +278,7 @@ def test_sync_creates_owned_sidecar_when_no_yaml_entry(tmp_path: Path):
     # Owned sidecar: every test is generated; columns are not marked (whole file is ours).
     assert entry["config"]["meta"]["data_contract"] == "orders-sync-test"
     order_id = {c["name"]: c for c in entry["columns"]}["order_id"]
-    assert "dc:generated" in order_id["data_tests"][0]["not_null"]["config"]["tags"]
+    assert order_id["data_tests"][0]["not_null"]["config"]["meta"]["datacontract_cli"]["generated"] is True
 
 
 def test_sync_skips_model_with_no_sql_or_entry(tmp_path: Path):
@@ -301,7 +324,7 @@ def _custom_paths_project(tmp_path: Path, *, model_paths: list[str], test_paths:
 def test_sync_writes_to_configured_model_and_test_paths(tmp_path: Path):
     """Sidecar YAML + singular SQL must follow `model-paths` / `test-paths` from dbt_project.yml.
 
-    Otherwise dbt won't pick the files up and `--select tag:datacontract_cli` matches nothing.
+    Otherwise dbt won't pick the files up and the `config.meta.datacontract_cli` selector matches nothing.
     """
     project = _custom_paths_project(tmp_path, model_paths=["src/models"], test_paths=["src/tests"])
     (project / "src" / "models" / "orders.sql").write_text("select 1 as order_id")
@@ -360,17 +383,20 @@ def test_resolve_model_names_filter_unknown_raises():
 
 
 def test_attach_config_string_test():
-    assert _attach_test_config("not_null", "warn") == {
-        "not_null": {"config": {"severity": "warn", "tags": ["datacontract_cli"]}}
-    }
+    assert _attach_test_config("not_null", "warn") == {"not_null": {"config": {"severity": "warn"}}}
 
 
 def test_attach_config_dict_test():
-    result = _attach_test_config({"accepted_values": {"values": [1, 2]}}, "error", check_type="field_enum")
+    result = _attach_test_config(
+        {"accepted_values": {"values": [1, 2]}}, "error", check_type="field_enum", model="orders", field="status"
+    )
     assert result == {
         "accepted_values": {
             "values": [1, 2],
-            "config": {"severity": "error", "tags": ["datacontract_cli", "dc:field_enum"]},
+            "config": {
+                "severity": "error",
+                "meta": {"datacontract_cli": {"check": "orders__status__field_enum"}},
+            },
         }
     }
 
@@ -435,7 +461,7 @@ def test_rewrite_relationships_to_ref():
 # ---------------------------------------------------------------------------
 
 
-def test_generate_outputs_wraps_tests_with_tag_and_emits_singulars():
+def test_generate_outputs_wraps_tests_with_meta_and_emits_singulars():
     odcs = resolve_data_contract(str(CONTRACT_PATH))
     schema_obj = odcs.schema_[0]
     run = Run.create_run()
@@ -445,20 +471,20 @@ def test_generate_outputs_wraps_tests_with_tag_and_emits_singulars():
     assert model_dict["name"] == "orders"
     assert model_dict["description"] == "Orders table"
 
-    # Sync-specific: every YAML test carries the datacontract_cli tag plus a dc:<type> tag.
+    # Sync-specific: every YAML test carries the datacontract_cli meta block (no tag) with a
+    # fully-qualified check key.
     cols = {c["name"]: c for c in model_dict["columns"]}
-    expected_dc_tag = {
-        "not_null": "dc:field_required",
-        "unique": "dc:field_unique",
-        "accepted_values": "dc:field_enum",
-        "relationships": "dc:field_relationships",
+    expected_check = {
+        "not_null": "orders__order_id__field_required",
+        "unique": "orders__order_id__field_unique",
+        "accepted_values": "orders__order_id__field_enum",
+        "relationships": "orders__order_id__field_relationships",
     }
     for t in cols["order_id"]["data_tests"]:
         assert isinstance(t, dict)
         ((test_name, args),) = t.items()
-        tags = args["config"]["tags"]
-        assert tags[0] == "datacontract_cli"
-        assert tags[1] == expected_dc_tag[test_name]
+        assert "tags" not in args["config"]
+        assert args["config"]["meta"]["datacontract_cli"]["check"] == expected_check[test_name]
 
     # Single-PK in this fixture → no model-level data_tests.
     assert "data_tests" not in model_dict
@@ -529,7 +555,7 @@ def test_row_count_singular_test_wraps_count_with_bound_predicate():
     assert "metric_value <= 1000" in test.sql
 
 
-def test_generate_outputs_singular_sql_carries_severity_and_tag():
+def test_generate_outputs_singular_sql_carries_severity_and_meta():
     odcs = resolve_data_contract(str(CONTRACT_PATH))
     schema_obj = odcs.schema_[0]
     _, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", Run.create_run())
@@ -537,7 +563,8 @@ def test_generate_outputs_singular_sql_carries_severity_and_tag():
     row_count = next(s for s in singulars if "row_count" in s.filename)
     # severity=error normalized from `severity: error` in the fixture
     assert "severity='error'" in row_count.sql
-    assert "tags=['datacontract_cli', 'dc:custom_sql']" in row_count.sql
+    assert "tags=[" not in row_count.sql  # no tag emitted — provenance lives in meta
+    assert '"check": "orders__custom_sql"' in row_count.sql
 
 
 def test_build_singular_sql_wraps_query_with_violation_predicate():
@@ -552,9 +579,11 @@ def test_build_singular_sql_wraps_query_with_violation_predicate():
     assert "AUTO-GENERATED" in sql
     assert "my-contract" in sql
     assert "severity='error'" in sql
-    assert "tags=['datacontract_cli', 'dc:row_count']" in sql
-    assert '"dc_model": "orders"' in sql  # Model is round-tripped through `meta`
-    assert "dc_field" not in sql  # model-level test, no field
+    assert "tags=[" not in sql  # no tag emitted — provenance lives in meta
+    assert '"include_in_tests": true' in sql  # what the `dbt test` selector keys off
+    assert '"check": "orders__row_count"' in sql  # fully-qualified key
+    assert '"model": "orders"' in sql  # Model is round-tripped through `meta`
+    assert '"field"' not in sql  # model-level test, no field
     assert "WITH _dc_metric (metric_value) AS (" in sql
     assert "SELECT COUNT(*) FROM orders" in sql
     assert "WHERE metric_value IS NULL OR metric_value <= 1000" in sql
@@ -657,7 +686,7 @@ def test_sync_skip_tests_writes_files(tmp_path: Path):
 
 def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: Path):
     """A contract that resolves to zero models must still wipe prior generated artifacts —
-    otherwise old `tag:datacontract_cli` files from an earlier run keep getting executed."""
+    otherwise old generated files from an earlier run keep getting executed."""
     project = _copy_dbt_project(tmp_path)
     stale_legacy = project / GENERATED_MODELS_DIR / "stale.yml"
     stale_sql = project / GENERATED_TESTS_DIR / "stale.sql"
@@ -821,7 +850,7 @@ def test_prune_strict_mirrors_columns_and_tags(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_resync_drops_generated_but_untags_adopted_when_test_removed(tmp_path: Path):
+def test_resync_drops_generated_but_unmanages_adopted_when_test_removed(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     _orders_model_sql(project)
     schema = project / "models" / "schema.yml"
@@ -832,12 +861,14 @@ def test_resync_drops_generated_but_untags_adopted_when_test_removed(tmp_path: P
         "    columns:\n"
         "      - name: order_id\n"
         "        data_tests:\n"
-        "          - not_null\n"  # user-authored → will be adopted, then un-tagged
+        "          - not_null\n"  # user-authored → will be adopted, then released
     )
     full = _write(tmp_path, "full.odcs.yaml", _TAGGED_CONTRACT)
     sync(contract=str(full), project_dir=project, skip_tests=True)
     cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
-    assert "datacontract_cli" in cols["order_id"]["data_tests"][0]["not_null"]["config"]["tags"]
+    adopted = cols["order_id"]["data_tests"][0]["not_null"]
+    assert "tags" not in adopted["config"]  # no tag emitted — provenance lives in meta
+    assert adopted["config"]["meta"]["datacontract_cli"]["generated"] is False
     assert any(t == "unique" or "unique" in t for t in [next(iter(t)) for t in cols["order_id"]["data_tests"]])
 
     # New contract: order_id is no longer required/unique → only the description test remains.
@@ -850,10 +881,12 @@ def test_resync_drops_generated_but_untags_adopted_when_test_removed(tmp_path: P
     )
     sync(contract=str(reduced), project_dir=project, skip_tests=True)
 
-    tests = {next(iter(t)): t for t in _model_entry(schema)["columns"][0].get("data_tests", [])}
-    # Generated `unique` is gone; adopted `not_null` survives un-tagged as the user's plain test.
-    assert "unique" not in tests
-    assert tests.get("not_null") == "not_null" or "datacontract_cli" not in str(tests.get("not_null"))
+    remaining = _model_entry(schema)["columns"][0].get("data_tests", [])
+    names = [t if isinstance(t, str) else next(iter(t)) for t in remaining]
+    # Generated `unique` is gone; adopted `not_null` survives, released back to the user's plain
+    # bare-string test now that our meta block has been stripped.
+    assert "unique" not in names
+    assert "not_null" in remaining
 
 
 # ---------------------------------------------------------------------------
@@ -861,7 +894,9 @@ def test_resync_drops_generated_but_untags_adopted_when_test_removed(tmp_path: P
 # ---------------------------------------------------------------------------
 
 
-def test_run_dbt_test_selects_only_tagged_tests(tmp_path: Path):
+def test_run_dbt_test_selects_only_managed_tests(tmp_path: Path):
+    """Tests are selected by `config.meta.datacontract_cli.include_in_tests`, not a tag — a single
+    config selector that targets every CLI-managed (generated + adopted) test."""
     project = _copy_dbt_project(tmp_path)
     captured: dict[str, list[str]] = {}
 
@@ -875,7 +910,7 @@ def test_run_dbt_test_selects_only_tagged_tests(tmp_path: Path):
     args = captured["args"]
     select_idx = args.index("--select")
     selectors = args[select_idx + 1 : args.index("--project-dir")]
-    assert selectors == ["tag:datacontract_cli"]
+    assert selectors == ["config.meta.datacontract_cli.include_in_tests:true"]
 
 
 def test_run_dbt_test_surfaces_failure_when_no_run_results(tmp_path: Path):
@@ -1029,10 +1064,11 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
     assert statuses == {"passed", "failed", "warning", "error", "info"}
 
 
-def test_parse_run_results_derives_check_type_from_dc_tag(tmp_path: Path):
-    """`Check.type` is read from the `dc:<type>` tag attached to each test node.
+def test_parse_run_results_derives_key_and_type_from_config_meta(tmp_path: Path):
+    """`Check.key` is the fully-qualified key from `config.meta.datacontract_cli.check`;
+    `Check.type` is its final `__`-segment (mirrors `CheckSpec.key`/`.type`).
 
-    Falls back to `dbt_test` when no `dc:*` tag is present.
+    Falls back to `dbt_test` / no key when no check is present.
     """
     project = _copy_dbt_project(tmp_path)
     target_dir = project / "target"
@@ -1049,10 +1085,13 @@ def test_parse_run_results_derives_check_type_from_dc_tag(tmp_path: Path):
 
     manifest = {
         "nodes": {
-            "test.proj.a": {"name": "a", "tags": ["datacontract_cli", "dc:field_required"]},
-            "test.proj.b": {"name": "b", "tags": ["datacontract_cli", "dc:row_count"]},
-            # Legacy artifact without a dc:* tag — must fall back to "dbt_test".
-            "test.proj.c": {"name": "c", "tags": ["datacontract_cli"]},
+            "test.proj.a": {
+                "name": "a",
+                "config": {"meta": {"datacontract_cli": {"check": "orders__order_id__field_required"}}},
+            },
+            "test.proj.b": {"name": "b", "config": {"meta": {"datacontract_cli": {"check": "orders__row_count"}}}},
+            # No check in meta — must fall back to "dbt_test" with no key.
+            "test.proj.c": {"name": "c", "config": {"meta": {"datacontract_cli": {}}}},
         }
     }
     (target_dir / "manifest.json").write_text(json.dumps(manifest))
@@ -1061,8 +1100,11 @@ def test_parse_run_results_derives_check_type_from_dc_tag(tmp_path: Path):
     parsed = parse_run_results(project, odcs)
 
     by_name = {c.name: c for c in parsed.checks}
+    assert by_name["a"].key == "orders__order_id__field_required"
     assert by_name["a"].type == "field_required"
+    assert by_name["b"].key == "orders__row_count"
     assert by_name["b"].type == "row_count"
+    assert by_name["c"].key is None
     assert by_name["c"].type == "dbt_test"
 
 
@@ -1092,13 +1134,13 @@ def test_parse_run_results_recovers_model_and_field_from_config_meta(tmp_path: P
                     # Singular SQL: no `column_name`, no `attached_node`. Meta supplies both.
                     "test.proj.field_bound": {
                         "name": "orders_sync_test__orders__order_id__length",
-                        "config": {"meta": {"dc_model": "orders", "dc_field": "order_id"}},
+                        "config": {"meta": {"datacontract_cli": {"model": "orders", "field": "order_id"}}},
                     },
                     # User `quality.query` without `ref()` → `depends_on.nodes` is empty;
                     # meta is the only signal we have for the model.
                     "test.proj.no_ref_quality": {
                         "name": "no_ref_quality",
-                        "config": {"meta": {"dc_model": "orders"}},
+                        "config": {"meta": {"datacontract_cli": {"model": "orders"}}},
                     },
                 }
             }
@@ -1146,9 +1188,11 @@ def test_parse_run_results_recovers_description_from_config_meta(tmp_path: Path)
                         "description": "",
                         "config": {
                             "meta": {
-                                "dc_model": "customers",
-                                "dc_field": "email",
-                                "dc_description": "Check that field email matches regex pattern ^[^@]+@[^@]+$",
+                                "datacontract_cli": {
+                                    "model": "customers",
+                                    "field": "email",
+                                    "description": "Check that field email matches regex pattern ^[^@]+@[^@]+$",
+                                }
                             }
                         },
                     },
@@ -1271,6 +1315,9 @@ def test_integration_end_to_end(tmp_path: Path):
     )
 
     assert result.run is not None
+    # The `include_in_tests` selector must actually match the generated tests — otherwise dbt
+    # runs nothing and we'd silently report zero checks.
+    assert result.run.checks, "dbt selected no managed tests — check the config.meta selector"
 
 
 # ---------------------------------------------------------------------------

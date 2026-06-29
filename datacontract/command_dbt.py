@@ -71,7 +71,8 @@ def sync_command(
     Generate dbt tests and model metadata from an ODCS contract and run the tests.
 
     Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files
-    or singular SQL tests if needed. Then runs `dbt test --select tag:datacontract_cli`.
+    or singular SQL tests if needed. Then runs
+    `dbt test --select config.meta.datacontract_cli.include_in_tests:true` to run the contract-managed tests.
     """
     enable_debug_logging(debug)
 
