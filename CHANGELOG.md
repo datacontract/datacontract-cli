@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract dbt sync` generates dbt tests from an ODCS contract (generate-only by default; `--run-tests` to also run), and `datacontract dbt test` runs the generated tests
+
 ## [1.0.9] - 2026-06-26
 
 ### Fixed

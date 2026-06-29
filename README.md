@@ -131,8 +131,9 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
 
-# generate dbt tests from a contract into your dbt project and run `dbt test`
+# generate dbt tests from a contract into your dbt project, then run them
 $ datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse
+$ datacontract dbt test orders.odcs.yaml --project-dir ./warehouse
 
 # export data contract as html (other formats: avro, dbt-models, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
 $ datacontract export html datacontract.yaml --output odcs.html

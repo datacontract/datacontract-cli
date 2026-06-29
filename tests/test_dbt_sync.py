@@ -96,7 +96,13 @@ def sync(
         gen.generation_run.finish()
         run = gen.generation_run
     else:
-        run = run_tests(gen, target=target, profiles_dir=profiles_dir)
+        run = run_tests(
+            gen.odcs,
+            gen.project_dir,
+            target=target,
+            profiles_dir=profiles_dir,
+            generation_run=gen.generation_run,
+        )
     return _SyncResult(
         contract_path=gen.contract_path,
         project_dir=gen.project_dir,
@@ -1244,6 +1250,7 @@ def test_cli_help_renders():
     # match fails without this normalization.
     plain = re.sub(r"\s+", "", re.sub(r"\x1b\[[0-9;]*[mGKHF]", "", result.stdout))
     assert "Generatedbttestsandmodelmetadata" in plain
+    assert "--run-tests" in plain
     assert "--skip-tests" in plain
     assert "--schema-name" in plain
     assert "--prune" in plain
@@ -1459,24 +1466,27 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
     assert captured["ssl"] is False
 
 
-def test_cli_publish_with_skip_tests_rejected(tmp_path: Path):
+def test_cli_publish_implies_run(monkeypatch, tmp_path: Path):
+    """`--publish` has no meaning without a run, so it implies `--run-tests`: dbt runs and we publish."""
     project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test(monkeypatch, project)
+
+    contract = tmp_path / "with-server.odcs.yaml"
+    contract.write_text(
+        CONTRACT_PATH.read_text()
+        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
+    )
+
+    publish_mock = mock.MagicMock(return_value=True)
+    monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", publish_mock)
+
     runner = CliRunner()
     result = runner.invoke(
         app,
-        [
-            "dbt",
-            "sync",
-            str(CONTRACT_PATH),
-            "--project-dir",
-            str(project),
-            "--skip-tests",
-            "--publish",
-            "https://example.com",
-        ],
+        ["dbt", "sync", str(contract), "--project-dir", str(project), "--publish", "https://example.com"],
     )
-    assert result.exit_code == 1
-    assert "--publish cannot be combined with --skip-tests" in result.stdout
+    assert result.exit_code == 0, result.output
+    publish_mock.assert_called_once()
 
 
 def test_cli_publish_rejects_non_http_url(tmp_path: Path):
@@ -1627,3 +1637,63 @@ def test_cli_server_rejects_unknown_name(tmp_path: Path):
     assert result.exit_code == 1
     assert "not declared in the contract" in result.stdout
     assert "production" in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# `dbt test` (run-only)
+# ---------------------------------------------------------------------------
+
+
+def _stub_dbt_test_results(monkeypatch, project: Path, results: list) -> None:
+    """Stub `subprocess.run` so `dbt test` leaves a run_results.json with the given results."""
+    target_dir = project / "target"
+    target_dir.mkdir(exist_ok=True)
+
+    def fake_run(args, **kwargs):
+        (target_dir / "run_results.json").write_text(json.dumps({"results": results}))
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+
+def test_dbt_test_command_runs_and_reports(monkeypatch, tmp_path: Path):
+    """`dbt test` runs the managed tests sync wrote and reports the parsed results."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)  # generate managed tests
+
+    _stub_dbt_test_results(
+        monkeypatch, project, [{"unique_id": "test.proj.x.abc", "status": "pass", "failures": 0, "message": None}]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "test", str(CONTRACT_PATH), "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    assert "dbt tests passed" in result.stdout
+
+
+def test_dbt_test_command_no_managed_tests(monkeypatch, tmp_path: Path):
+    """`dbt test` when sync never ran (nothing selected) → soft note, exit 0, hint to run sync."""
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test_results(monkeypatch, project, [])
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "test", str(CONTRACT_PATH), "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    assert "No managed tests found" in result.stdout
+    assert "dbt sync" in result.stdout
+
+
+def test_dbt_test_command_autodiscovers_contract(monkeypatch, tmp_path: Path):
+    """`dbt test` with no positional contract resolves the single `*.odcs.yaml` under --project-dir."""
+    project = _copy_dbt_project(tmp_path)
+    shutil.copy(CONTRACT_PATH, project / "orders.odcs.yaml")
+    _stub_dbt_test_results(
+        monkeypatch, project, [{"unique_id": "test.proj.x.abc", "status": "pass", "failures": 0, "message": None}]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "test", "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    assert "Resolved contract" in result.stdout

@@ -25,6 +25,7 @@ COMMAND_ORDER = [
     "edit",
     "lint",
     "changelog",
+    "sync",  # `dbt sync` subcommand; no top-level `sync`, so this only orders the dbt group
     "test",
     "ci",
     "export",

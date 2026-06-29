@@ -1815,25 +1815,21 @@ def generate_dbt_tests(
 
 
 def run_tests(
-    generated: DbtTestGenerationResult,
+    odcs: OpenDataContractStandard,
+    project_dir: Path,
     *,
     target: Optional[str] = None,
     profiles_dir: Optional[Path] = None,
+    generation_run: Optional[Run] = None,
 ) -> Run:
-    """Run `dbt test` against the generated tests and return the parsed results."""
-    if not generated.resolved_models:
-        gen_run = generated.generation_run
-        gen_run.log_warn("No models resolved — skipping test execution.")
-        gen_run.finish()
-        return gen_run
+    """Run `dbt test` against the contract-managed tests on disk and return the parsed results.
 
-    completed = run_dbt_test(
-        generated.project_dir,
-        target=target,
-        profiles_dir=profiles_dir,
-    )
+    `generation_run` is the `Run` from a same-invocation `generate_dbt_tests` (sync's `--run-tests`
+    path); its logs and start time are stitched onto the result. `dbt test` (run-only) passes None.
+    """
+    completed = run_dbt_test(project_dir, target=target, profiles_dir=profiles_dir)
 
-    gen_run = generated.generation_run
+    parsed_run = parse_run_results(project_dir, odcs)
     ansi = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
     for stream in (completed.stdout, completed.stderr):
         if not stream:
@@ -1841,12 +1837,11 @@ def run_tests(
         for line in ansi.sub("", stream).splitlines():
             line = line.strip()
             if line:
-                gen_run.log_info(line)
+                parsed_run.log_info(line)
 
-    parsed_run = parse_run_results(generated.project_dir, generated.odcs)
-    # Stitch generation-time logs onto the parsed Run so warn-counts include
-    # any generation-time skips.
-    parsed_run.logs = gen_run.logs + parsed_run.logs
-    parsed_run.timestampStart = generated.generation_run.timestampStart
+    if generation_run is not None:
+        # Stitch generation-time logs on so warn-counts include any generation-time skips.
+        parsed_run.logs = generation_run.logs + parsed_run.logs
+        parsed_run.timestampStart = generation_run.timestampStart
     parsed_run.finish()
     return parsed_run
