@@ -132,6 +132,7 @@ $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 $ datacontract test odcs.yaml
 
 # generate dbt tests from a contract into your dbt project, then run them
+# (omit the contract to sync/test every *.odcs.yaml in the project)
 $ datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse
 $ datacontract dbt test orders.odcs.yaml --project-dir ./warehouse
 

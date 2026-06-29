@@ -15,15 +15,15 @@ See the [dbt Integration](../dbt.md) guide.
 
 ## `datacontract dbt sync`
 
-Generate dbt tests and model metadata from an ODCS contract. Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files or singular SQL tests under `<test-paths>/datacontract_cli/` if needed. Generate-only by default — pass `--run-tests` (or `--publish`/`--server`, which imply it) to also run `dbt test --select config.meta.datacontract_cli.include_in_tests:true`.
+Generate dbt tests and model metadata from one or more ODCS contracts. Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files or singular SQL tests under `<test-paths>/datacontract_cli/` if needed. Generate-only by default — pass `--run-tests` (or `--publish`/`--server`, which imply it) to also run the contract-managed tests.
 
 ```bash
-datacontract dbt sync [CONTRACT]
+datacontract dbt sync [CONTRACT]...
 ```
 
 | Argument | Description |
 |---|---|
-| `CONTRACT` | Path to the ODCS contract. If omitted, searches for a single `*.odcs.yaml` in the current directory and subdirectories. |
+| `CONTRACT` | One or more paths or globs of ODCS contracts to sync. If omitted, every `*.odcs.yaml` under `--project-dir` (and its subdirectories) is synced. Each contract is synced independently; if two contracts resolve to the same dbt model the command aborts before writing anything. |
 
 | Option | Default | Description |
 |---|---|---|
@@ -45,15 +45,15 @@ datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse
 
 ## `datacontract dbt test`
 
-Run the contract-managed dbt tests that `datacontract dbt sync` generated. Runs `dbt test --select config.meta.datacontract_cli.include_in_tests:true`, reports the results, and optionally publishes them. Never modifies project files — run `datacontract dbt sync` first to (re)generate the tests.
+Run the contract-managed dbt tests that `datacontract dbt sync` generated, scoped to the requested contracts' models, report the results, and optionally publish them. Never modifies project files — run `datacontract dbt sync` first to (re)generate the tests. With multiple contracts, each contract's results are reported (and published) separately, followed by a summary.
 
 ```bash
-datacontract dbt test [CONTRACT]
+datacontract dbt test [CONTRACT]...
 ```
 
 | Argument | Description |
 |---|---|
-| `CONTRACT` | Path to the ODCS contract. If omitted, searches for a single `*.odcs.yaml` in the current directory and subdirectories. |
+| `CONTRACT` | One or more paths or globs of ODCS contracts to test. If omitted, every `*.odcs.yaml` under `--project-dir` (and its subdirectories) is tested. |
 
 | Option | Default | Description |
 |---|---|---|

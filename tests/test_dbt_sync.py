@@ -26,6 +26,7 @@ from datacontract.integration.dbt_sync import (
     _describe_dbt_test,
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
+    _resolved_generated_dirs,
     _rewrite_relationships_to_ref,
     _row_count_singular_test,
     _singular_tests_for_qualities,
@@ -692,11 +693,12 @@ def test_sync_skip_tests_writes_files(tmp_path: Path):
 
 
 def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: Path):
-    """A contract that resolves to zero models must still wipe prior generated artifacts —
-    otherwise old generated files from an earlier run keep getting executed."""
+    """A contract that resolves to zero models must still wipe its own prior generated artifacts —
+    otherwise old generated files from an earlier run keep getting executed. (Scoped to the
+    contract's id-slug so a multi-contract project doesn't drop other contracts' tests.)"""
     project = _copy_dbt_project(tmp_path)
     stale_legacy = project / GENERATED_MODELS_DIR / "stale.yml"
-    stale_sql = project / GENERATED_TESTS_DIR / "stale.sql"
+    stale_sql = project / GENERATED_TESTS_DIR / "empty_contract__stale.sql"
     stale_legacy.parent.mkdir(parents=True, exist_ok=True)
     stale_sql.parent.mkdir(parents=True, exist_ok=True)
     stale_legacy.write_text("# stale")
@@ -709,7 +711,7 @@ def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: P
 
     sync(contract=str(empty_contract), project_dir=project, skip_tests=True)
 
-    assert not stale_sql.exists()  # singular-SQL dir is wiped + regenerated
+    assert not stale_sql.exists()  # this contract's stale singular SQL is wiped + regenerated
     assert not (project / GENERATED_MODELS_DIR).exists()  # legacy parallel-YAML dir is migrated away
 
 
@@ -916,8 +918,7 @@ def test_run_dbt_test_selects_only_managed_tests(tmp_path: Path):
         run_dbt_test(project, target=None, profiles_dir=None)
 
     args = captured["args"]
-    select_idx = args.index("--select")
-    selectors = args[select_idx + 1 : args.index("--project-dir")]
+    selectors = [args[i + 1] for i, a in enumerate(args) if a == "--select"]
     assert selectors == ["config.meta.datacontract_cli.include_in_tests:true"]
 
 
@@ -1646,13 +1647,19 @@ def test_cli_server_rejects_unknown_name(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def _stub_dbt_test_results(monkeypatch, project: Path, results: list) -> None:
-    """Stub `subprocess.run` so `dbt test` leaves a run_results.json with the given results."""
+def _stub_dbt_test_results(monkeypatch, project: Path, results: list, model: str = "orders") -> None:
+    """Stub `subprocess.run` so `dbt test` leaves run_results.json + a manifest attributing each
+    result to `model` (so `dbt test`'s per-contract model filter keeps them)."""
     target_dir = project / "target"
     target_dir.mkdir(exist_ok=True)
+    nodes = {
+        r["unique_id"]: {"config": {"meta": {"datacontract_cli": {"model": model, "include_in_tests": True}}}}
+        for r in results
+    }
 
     def fake_run(args, **kwargs):
         (target_dir / "run_results.json").write_text(json.dumps({"results": results}))
+        (target_dir / "manifest.json").write_text(json.dumps({"nodes": nodes}))
         return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
@@ -1699,3 +1706,176 @@ def test_dbt_test_command_autodiscovers_contract(monkeypatch, tmp_path: Path):
     result = runner.invoke(app, ["dbt", "test", "--project-dir", str(project)])
     assert result.exit_code == 0, result.output
     assert "Resolved contract" in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# Multiple contracts
+# ---------------------------------------------------------------------------
+
+_CUSTOMERS_CONTRACT = """\
+kind: DataContract
+apiVersion: v3.1.0
+id: customers-sync-test
+name: Customers
+version: 1.0.0
+status: active
+schema:
+  - name: customers
+    physicalType: table
+    properties:
+      - name: customer_id
+        physicalType: varchar
+        primaryKey: true
+        primaryKeyPosition: 1
+        logicalType: string
+        required: true
+        unique: true
+    quality:
+      - description: Row count above 10.
+        type: sql
+        mustBeGreaterThan: 10
+        severity: error
+        query: |
+          SELECT COUNT(*) AS row_count FROM customers
+"""
+
+
+def _add_customers(project: Path) -> Path:
+    """A second resolvable contract + model alongside orders, for multi-contract tests."""
+    _orders_model_sql(project, name="customers")
+    path = project / "customers.odcs.yaml"
+    path.write_text(_CUSTOMERS_CONTRACT)
+    return path
+
+
+def _stub_dbt_test_by_model(monkeypatch, project: Path, results_by_model: dict) -> dict:
+    """Stub `dbt test` to emit results attributed to several models. Returns a dict capturing args."""
+    target_dir = project / "target"
+    target_dir.mkdir(exist_ok=True)
+    all_results, nodes = [], {}
+    for model, rs in results_by_model.items():
+        for r in rs:
+            all_results.append(r)
+            nodes[r["unique_id"]] = {
+                "config": {"meta": {"datacontract_cli": {"model": model, "include_in_tests": True}}}
+            }
+    captured: dict = {}
+
+    def fake_run(args, **kwargs):
+        captured["args"] = args
+        (target_dir / "run_results.json").write_text(json.dumps({"results": all_results}))
+        (target_dir / "manifest.json").write_text(json.dumps({"nodes": nodes}))
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    return captured
+
+
+def test_sync_discovers_and_syncs_all_contracts(tmp_path: Path):
+    """No positional → every `*.odcs.yaml` under the project is synced, each reported with its name."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    shutil.copy(CONTRACT_PATH, project / "orders.odcs.yaml")
+    _add_customers(project)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "sync", "--project-dir", str(project), "--skip-tests"])
+    assert result.exit_code == 0, result.output
+    assert "orders.odcs.yaml: Synced" in result.stdout
+    assert "customers.odcs.yaml: Synced" in result.stdout
+
+
+def test_sync_overlapping_model_is_hard_error(tmp_path: Path):
+    """Two contracts claiming the same dbt model abort the whole run before writing anything."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    shutil.copy(CONTRACT_PATH, project / "orders.odcs.yaml")
+    # A second contract that also resolves to the `orders` model.
+    (project / "orders-dup.odcs.yaml").write_text(
+        _CUSTOMERS_CONTRACT.replace("id: customers-sync-test", "id: orders-dup").replace(
+            "name: customers", "name: orders"
+        )
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "sync", "--project-dir", str(project), "--skip-tests"])
+    assert result.exit_code == 1
+    assert "claimed by multiple contracts" in result.stdout
+
+
+def test_sync_glob_selects_matching_contracts(tmp_path: Path):
+    """A glob positional expands to every matching contract."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    shutil.copy(CONTRACT_PATH, project / "orders.odcs.yaml")
+    _add_customers(project)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app, ["dbt", "sync", str(project / "*.odcs.yaml"), "--project-dir", str(project), "--skip-tests"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "orders.odcs.yaml: Synced" in result.stdout
+    assert "customers.odcs.yaml: Synced" in result.stdout
+
+
+def test_dbt_test_reports_each_contract_separately(monkeypatch, tmp_path: Path):
+    """Multi-contract `dbt test` reports (and tallies) each contract's results on its own."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    shutil.copy(CONTRACT_PATH, project / "orders.odcs.yaml")
+    sync(contract=str(project / "orders.odcs.yaml"), project_dir=project, skip_tests=True)
+    customers = _add_customers(project)
+    sync(contract=str(customers), project_dir=project, skip_tests=True)
+
+    _stub_dbt_test_by_model(
+        monkeypatch,
+        project,
+        {
+            "orders": [{"unique_id": "test.proj.o.1", "status": "pass", "failures": 0, "message": None}],
+            "customers": [{"unique_id": "test.proj.c.1", "status": "pass", "failures": 0, "message": None}],
+        },
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "test", "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    assert "Contract results:" in result.stdout
+    assert "orders-sync-test@1.0.0" in result.stdout
+    assert "customers-sync-test@1.0.0" in result.stdout
+    assert "Tested 2 contract(s)" in result.stdout
+
+
+def test_dbt_test_scopes_selection_to_requested_contract(monkeypatch, tmp_path: Path):
+    """A single requested contract scopes the `dbt test` selection to that contract's model."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    captured = _stub_dbt_test_by_model(
+        monkeypatch, project, {"orders": [{"unique_id": "test.proj.o.1", "status": "pass"}]}
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "test", str(CONTRACT_PATH), "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    selectors = [captured["args"][i + 1] for i, a in enumerate(captured["args"]) if a == "--select"]
+    assert selectors == [
+        "orders,config.meta.datacontract_cli.include_in_tests:true",
+        "config.meta.datacontract_cli.model:orders,config.meta.datacontract_cli.include_in_tests:true",
+    ]
+
+
+def test_sync_second_contract_keeps_first_contracts_singular_sql(tmp_path: Path):
+    """Syncing a second contract must not wipe the first contract's generated singular SQL (#bug)."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    _, tests_dir = _resolved_generated_dirs(project)
+    orders_singular = list(tests_dir.glob("orders_sync_test__*.sql"))
+    assert orders_singular, "orders contract should have produced a singular SQL test"
+
+    customers = _add_customers(project)
+    sync(contract=str(customers), project_dir=project, skip_tests=True)
+
+    assert all(p.exists() for p in orders_singular), "second sync wiped the first contract's singular SQL"
+    assert list(tests_dir.glob("customers_sync_test__*.sql")), "customers singular SQL was not written"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import glob
 import json
 import logging
 import re
@@ -1517,10 +1518,22 @@ def run_dbt_test(
     *,
     target: Optional[str],
     profiles_dir: Optional[Path],
+    models: Optional[List[str]] = None,
 ) -> subprocess.CompletedProcess:
     # Selects every CLI-managed test (generated + adopted) by the meta key all of them carry.
+    # When `models` is given, scope to managed tests on those models only (intersection per model,
+    # unioned across models) so a multi-contract run executes only the requested contracts' tests.
     select_managed = f"config.meta.{META_NAMESPACE}.include_in_tests:true"
-    args = ["dbt", "test", "--select", select_managed, "--project-dir", str(project_dir)]
+    args = ["dbt", "test", "--project-dir", str(project_dir)]
+    if models:
+        for model in models:
+            # Two selectors per model: the first catches generic tests (linked to the model via a
+            # graph edge), the second catches singular SQL tests (no graph edge — they carry the
+            # owning model in their `meta.model` instead).
+            args.extend(["--select", f"{model},{select_managed}"])
+            args.extend(["--select", f"config.meta.{META_NAMESPACE}.model:{model},{select_managed}"])
+    else:
+        args.extend(["--select", select_managed])
     if target:
         args.extend(["--target", target])
     if profiles_dir:
@@ -1609,7 +1622,9 @@ def _get_test_metadata(test_node: dict) -> Tuple[Optional[str], Optional[str], O
     return model, column, description
 
 
-def parse_run_results(project_dir: Path, odcs: OpenDataContractStandard) -> Run:
+def parse_run_results(
+    project_dir: Path, odcs: OpenDataContractStandard, *, model_filter: Optional[Set[str]] = None
+) -> Run:
     run = Run.create_run()
     run.dataContractId = odcs.id
     run.dataContractVersion = odcs.version
@@ -1646,6 +1661,8 @@ def parse_run_results(project_dir: Path, odcs: OpenDataContractStandard) -> Run:
         message = r.get("message")
         node = nodes.get(unique_id) or {}
         model, column, description = _get_test_metadata(node)
+        if model_filter is not None and (model or "").lower() not in model_filter:
+            continue  # belongs to another contract's models — attributed elsewhere
         dc_meta = (node.get("config") or {}).get("meta") or {}
         dc_block = dc_meta.get(META_NAMESPACE) if isinstance(dc_meta.get(META_NAMESPACE), dict) else {}
         # `check` holds the fully-qualified key (`{model}__{field}__{type}`). The bare type is its
@@ -1708,6 +1725,53 @@ def _resolve_contract_path(contract: Optional[str], search_dir: Path) -> Path:
             )
         return contract_path
     return find_contract(search_dir)
+
+
+def _resolve_contract_paths(contracts: List[str], search_dir: Path) -> List[Path]:
+    """Resolve requested contracts to a deduplicated, sorted list of paths.
+
+    No tokens → discover every `*.odcs.yaml` under `search_dir`. Otherwise each token is a literal
+    path (error if missing) or, when it contains glob metacharacters, a glob pattern (error if it
+    matches nothing). Matches are unioned, deduplicated, and sorted.
+    """
+    if not contracts:
+        candidates = sorted(p for p in search_dir.rglob("*.odcs.yaml") if p.is_file())
+        if not candidates:
+            raise DataContractException(
+                type="dbt_sync",
+                name="resolve contract",
+                reason=(
+                    f"No `*.odcs.yaml` found below {search_dir}. "
+                    "Pass the contract path explicitly: `datacontract dbt sync <contract>`."
+                ),
+                engine="dbt-sync",
+            )
+        return candidates
+
+    resolved: Dict[Path, None] = {}
+    for token in contracts:
+        if any(ch in token for ch in "*?["):
+            matches = sorted(p.resolve() for p in (Path(m) for m in glob.glob(token, recursive=True)) if p.is_file())
+            if not matches:
+                raise DataContractException(
+                    type="dbt_sync",
+                    name="resolve contract",
+                    reason=f"Pattern `{token}` matched no files.",
+                    engine="dbt-sync",
+                )
+            for m in matches:
+                resolved[m] = None
+        else:
+            path = Path(token).resolve()
+            if not path.is_file():
+                raise DataContractException(
+                    type="dbt_sync",
+                    name="resolve contract",
+                    reason=f"Contract file not found: {path}",
+                    engine="dbt-sync",
+                )
+            resolved[path] = None
+    return sorted(resolved)
 
 
 def generate_dbt_tests(
@@ -1796,11 +1860,13 @@ def generate_dbt_tests(
                 _merge_model_entry(entry, plan.schema_obj, plan.model_dict, odcs, owned=True, prune=prune)
         resolved_models.append(plan.name)
 
-    # Singular SQL is CLI-owned wholesale: wipe + regenerate. Migrate the legacy parallel-YAML dir.
+    # Singular SQL is CLI-owned: wipe this contract's previously-generated files (matched by its
+    # id-slug prefix) and regenerate. Scoped per contract so syncing one doesn't drop another's
+    # tests. Migrate the legacy parallel-YAML dir.
     _, tests_dir = _resolved_generated_dirs(project_dir)
-    if tests_dir.exists():
-        shutil.rmtree(tests_dir)
     tests_dir.mkdir(parents=True, exist_ok=True)
+    for stale in tests_dir.glob(f"{_slugify(odcs.id or 'contract')}__*.sql"):
+        stale.unlink()
 
     written_sql = _write_singular_sql(project_dir, singular_tests)
     _remove_legacy_dir(legacy_dir)
@@ -1819,22 +1885,21 @@ def generate_dbt_tests(
     )
 
 
-def run_tests(
-    odcs: OpenDataContractStandard,
+def parse_dbt_test_run(
     project_dir: Path,
+    odcs: OpenDataContractStandard,
+    completed: subprocess.CompletedProcess,
     *,
-    target: Optional[str] = None,
-    profiles_dir: Optional[Path] = None,
+    model_filter: Optional[Set[str]] = None,
     generation_run: Optional[Run] = None,
 ) -> Run:
-    """Run `dbt test` against the contract-managed tests on disk and return the parsed results.
+    """Turn an already-completed `dbt test` invocation into a `Run` for one contract.
 
-    `generation_run` is the `Run` from a same-invocation `generate_dbt_tests` (sync's `--run-tests`
-    path); its logs and start time are stitched onto the result. `dbt test` (run-only) passes None.
+    `model_filter` restricts the parsed checks to the contract's own models (multi-contract runs
+    share a single `dbt test` invocation). `generation_run` is the `Run` from a same-invocation
+    `generate_dbt_tests` (sync's `--run-tests` path); its logs and start time are stitched on.
     """
-    completed = run_dbt_test(project_dir, target=target, profiles_dir=profiles_dir)
-
-    parsed_run = parse_run_results(project_dir, odcs)
+    parsed_run = parse_run_results(project_dir, odcs, model_filter=model_filter)
     ansi = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
     for stream in (completed.stdout, completed.stderr):
         if not stream:
@@ -1850,3 +1915,16 @@ def run_tests(
         parsed_run.timestampStart = generation_run.timestampStart
     parsed_run.finish()
     return parsed_run
+
+
+def run_tests(
+    odcs: OpenDataContractStandard,
+    project_dir: Path,
+    *,
+    target: Optional[str] = None,
+    profiles_dir: Optional[Path] = None,
+    generation_run: Optional[Run] = None,
+) -> Run:
+    """Run `dbt test` against the contract-managed tests on disk and return the parsed results."""
+    completed = run_dbt_test(project_dir, target=target, profiles_dir=profiles_dir)
+    return parse_dbt_test_run(project_dir, odcs, completed, generation_run=generation_run)

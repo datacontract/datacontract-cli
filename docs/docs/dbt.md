@@ -20,12 +20,18 @@ The flow is two steps:
 
 `dbt sync` generates dbt tests from an ODCS data contract directly into your dbt project. The contract becomes the single source of truth for column-level constraints and quality checks. By default it only generates — run the tests with `datacontract dbt test` (or pass `--run-tests` to do both in one step).
 
+You can sync more than one contract at once: pass several paths, a glob, or no argument to sync every `*.odcs.yaml` in the project. Each contract is synced independently. If two contracts resolve to the same dbt model the command aborts before writing anything — select a single contract so each model has one owner.
+
 ```bash
-# Auto-discover a contract named *.odcs.yaml in a dbt project, generate tests
+# Auto-discover and sync every *.odcs.yaml in a dbt project, generate tests
 datacontract dbt sync
 
 # Explicit contract
 datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse
+
+# Several contracts, or a glob
+datacontract dbt sync orders.odcs.yaml customers.odcs.yaml
+datacontract dbt sync "contracts/*.odcs.yaml"
 
 # Generate and run the tests in one step, against a specific dbt target
 datacontract dbt sync orders.odcs.yaml --run-tests --target dev
@@ -44,7 +50,7 @@ On each run, the command:
 
 - **Wipes and regenerates** the `models/datacontract_cli/` and `tests/datacontract_cli/` directories under your dbt project. The paths honor `model-paths` and `test-paths` in `dbt_project.yml`.
 - **Emits one YAML model file per ODCS schema** that uses dbt's built-in tests and [`dbt_utils`](https://github.com/dbt-labs/dbt-utils).
-- **Emits singular SQL tests** for all ODCS `quality` rules that can't be expressed as native YAML tests.
+- **Emits singular SQL tests** for all ODCS `quality` rules that can't be expressed as native YAML tests. Each contract owns its own singular SQL files, so syncing one contract never removes another's.
 
 It does not run the tests by default — pass `--run-tests` to also run them, or run `datacontract dbt test` afterwards.
 
@@ -72,10 +78,14 @@ See the [`dbt` command reference](./commands/dbt.md).
 
 ## `datacontract dbt test`
 
-`dbt test` runs the contract-managed tests that `dbt sync` generated, reports the results, and optionally publishes them. It never modifies project files — run `dbt sync` first to (re)generate the tests.
+`dbt test` runs the contract-managed tests that `dbt sync` generated, reports the results, and optionally publishes them. It never modifies project files — run `dbt sync` first to (re)generate the tests. Like `dbt sync`, it accepts multiple contracts (paths, a glob, or every `*.odcs.yaml` in the project); the run is scoped to the requested contracts' models, and each contract's results are reported and published separately.
 
 ```bash
+# A single contract
 datacontract dbt test orders.odcs.yaml --project-dir ./warehouse --target dev
+
+# Every contract in the project
+datacontract dbt test --project-dir ./warehouse
 ```
 
 See the [`dbt` command reference](./commands/dbt.md).
