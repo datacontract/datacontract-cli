@@ -692,7 +692,12 @@ def _run_scalar(con, query: str, dialect: Optional[str]):
         logger.debug("con.sql failed (%s); falling back to raw_sql", primary_error)
         cursor = con.raw_sql(query)
         try:
-            row = cursor.fetchone()
+            if hasattr(cursor, "fetchone"):
+                row = cursor.fetchone()
+            else:
+                # Some backends (e.g. BigQuery) return an iterable result set
+                # (RowIterator) instead of a DBAPI cursor.
+                row = next(iter(cursor), None)
         finally:
             # On DuckDB, raw_sql returns the shared connection itself; closing it
             # would tear down the connection and break every subsequent check.
