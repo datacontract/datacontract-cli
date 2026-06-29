@@ -119,7 +119,7 @@ gcs = [
 azure = [
   "datacontract-cli[duckdb]",
   "duckdb-extension-azure>=1.5.0,<1.6.0",
-  "azure-identity>=1.17.1,<1.18",
+  "azure-identity>=1.17.1,<1.26",
   "azure-storage-blob>=12.24,<12.31",
 ]
 
