@@ -1083,37 +1083,42 @@ def _union_tags(container: dict, new_tags: list, *, reconcile: bool, prune: bool
             container.pop("config", None)
 
 
-def _set_meta_keys(entry: dict, *, data_contract: Optional[str], owner: Optional[str]) -> None:
-    """Make our `config.meta` keys authoritative: write `data_contract`/`owner` from the contract,
+def _set_meta_keys(entry: dict, *, data_contract: Optional[str], version: Optional[str], owner: Optional[str]) -> None:
+    """Make our `config.meta.datacontract_cli` block authoritative: write the `contract_id`/`contract_version`/`owner`,
     overwriting prior values, and drop a stale `owner` when the contract has no team. Other meta is kept."""
     config = _ensure_config(entry)
     meta = config.get("meta")
     if not isinstance(meta, dict):
         meta = CommentedMap()
         config["meta"] = meta
+    block = meta.get(META_NAMESPACE)
+    if not isinstance(block, dict):
+        block = CommentedMap()
+        meta[META_NAMESPACE] = block
     if data_contract is not None:
-        meta["data_contract"] = data_contract
+        block["contract_id"] = data_contract
+    if version is not None:
+        block["contract_version"] = version
     if owner is not None:
-        meta["owner"] = owner
+        block["owner"] = owner
     else:
-        meta.pop("owner", None)
+        block.pop("owner", None)
 
 
 def _meta_data_contract(entry: dict) -> Optional[str]:
-    meta = (entry.get("config") or {}).get("meta") or {}
-    val = meta.get("data_contract")
+    block = ((entry.get("config") or {}).get("meta") or {}).get(META_NAMESPACE)
+    val = block.get("contract_id") if isinstance(block, dict) else None
     return val if isinstance(val, str) else None
 
 
 def _remove_our_meta(entry: dict) -> None:
-    """Drop the named `config.meta` keys we set, collapsing emptied containers."""
+    """Drop our `config.meta.datacontract_cli` block, collapsing emptied containers."""
     config = entry.get("config")
     if not isinstance(config, dict):
         return
     meta = config.get("meta")
     if isinstance(meta, dict):
-        meta.pop("data_contract", None)
-        meta.pop("owner", None)
+        meta.pop(META_NAMESPACE, None)
         if not meta:
             config.pop("meta", None)
     if not config:
@@ -1328,7 +1333,7 @@ def _merge_model_entry(
         entry["description"] = desc
     elif owned:
         entry.pop("description", None)
-    _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
+    _set_meta_keys(entry, data_contract=odcs.id, version=odcs.version, owner=(odcs.team.name if odcs.team else None))
     _union_tags(entry, list(schema_obj.tags or []), reconcile=owned, prune=prune)
 
     # Model-level generic tests (e.g. composite-PK unique_combination).
