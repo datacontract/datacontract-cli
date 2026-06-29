@@ -58,7 +58,7 @@ excel = [
 databricks = [
   "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.4.0",
-  "databricks-sdk<0.119.0",
+  "databricks-sdk<0.120.0",
   # Not capped to Spark 3.5.x like older builds were: the databricks path uses a
   # caller-provided Spark session (or the databricks SQL connector) and never
   # loads the Kafka/Avro connector jars, so it isn't tied to a Scala/Spark line.
