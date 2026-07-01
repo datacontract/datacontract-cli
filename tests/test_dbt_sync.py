@@ -513,7 +513,7 @@ def test_generate_outputs_wraps_tests_with_meta_and_emits_singulars():
     assert "minimum of 0" in by_name["orders_sync_test__1_0_0__orders__order_total__range.sql"].description
 
 
-def test_generate_outputs_composite_pk_emits_model_level_unique():
+def test_generate_outputs_composite_pk_emits_dep_free_singular_unique():
     odcs = resolve_data_contract(str(CONTRACT_PATH))
     schema_obj = odcs.schema_[0]
     # Promote order_status to composite PK alongside order_id.
@@ -522,13 +522,16 @@ def test_generate_outputs_composite_pk_emits_model_level_unique():
             prop.primaryKey = True
             prop.primaryKeyPosition = 2
 
-    model_dict, _ = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", Run.create_run())
+    model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", Run.create_run())
 
-    assert "data_tests" in model_dict
-    pk_test = model_dict["data_tests"][0]
-    assert "dbt_utils.unique_combination_of_columns" in pk_test
-    args = pk_test["dbt_utils.unique_combination_of_columns"]
-    assert args["combination_of_columns"] == ["order_id", "order_status"]
+    # Composite PK is emitted as dependency-free singular SQL, not a dbt_utils YAML test.
+    assert "data_tests" not in model_dict
+    by_name = {s.filename: s for s in singulars}
+    pk = by_name["orders_sync_test__1_0_0__orders__unique_combination.sql"]
+    assert "dbt_utils" not in pk.sql
+    assert 'GROUP BY "order_id", "order_status"' in pk.sql
+    assert "HAVING COUNT(*) > 1" in pk.sql
+    assert pk.description == "Check that model orders has a unique combination of columns order_id, order_status"
 
 
 def test_field_singular_tests_emit_portable_violation_predicates():
