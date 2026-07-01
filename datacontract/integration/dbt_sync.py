@@ -133,9 +133,7 @@ def check_dbt_on_path() -> str:
             type="dbt_sync",
             name="dbt preflight",
             reason="""\
-dbt not found on PATH. If you want to update the dbt project without running the tests, pass `--skip-tests`.
-
-Otherwise the dbt adapter that matches your warehouse, e.g.:
+dbt not found on PATH. Install the dbt adapter that matches your warehouse, e.g.:
   pip install dbt-postgres        # Postgres
   pip install dbt-snowflake       # Snowflake
   pip install dbt-bigquery        # BigQuery
