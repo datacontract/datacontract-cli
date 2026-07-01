@@ -550,6 +550,12 @@ def test_field_singular_tests_emit_portable_violation_predicates():
     assert "{% if target.type == 'bigquery' %}" in pattern.sql
     assert "REGEXP_CONTAINS" in pattern.sql
     assert "REGEXP_LIKE" in pattern.sql
+    assert "TO_CHAR" in pattern.sql
+    assert "RLIKE" in pattern.sql
+    assert "regexp_like" in pattern.sql
+    assert "REGEXP" in pattern.sql
+    assert "match(" in pattern.sql
+    assert "REGEXP_SIMILAR" in pattern.sql
     assert "!~" in pattern.sql
     assert "^B[0-9]+$" in pattern.sql
 

@@ -654,9 +654,7 @@ def _quote_identifier(name: str) -> str:
 def _regex_violation_jinja(column: str, pattern: str) -> str:
     """Adapter-portable 'col does NOT match pattern' fragment.
 
-    Dispatches on `target.type` because regex syntax is one of the least-portable
-    parts of SQL: BigQuery uses `REGEXP_CONTAINS`, Snowflake/Oracle use
-    `REGEXP_LIKE`, and Postgres / DuckDB / Redshift use the POSIX `~` operator.
+    Unfortunately, regex syntax is one of the least-portable parts of SQL.
     """
     escaped = pattern.replace("'", "''")
     return (
@@ -664,6 +662,23 @@ def _regex_violation_jinja(column: str, pattern: str) -> str:
         f"NOT REGEXP_CONTAINS(CAST({column} AS STRING), '{escaped}')"
         "{% elif target.type == 'snowflake' %}"
         f"NOT REGEXP_LIKE(CAST({column} AS VARCHAR), '{escaped}')"
+        "{% elif target.type == 'oracle' %}"
+        f"NOT REGEXP_LIKE(TO_CHAR({column}), '{escaped}')"
+        "{% elif target.type in ['spark', 'databricks'] %}"
+        f"NOT (CAST({column} AS STRING) RLIKE '{escaped}')"
+        "{% elif target.type in ['trino', 'athena'] %}"
+        f"NOT regexp_like(CAST({column} AS VARCHAR), '{escaped}')"
+        "{% elif target.type == 'mysql' %}"
+        f"NOT (CAST({column} AS CHAR) REGEXP '{escaped}')"
+        "{% elif target.type == 'clickhouse' %}"
+        f"NOT match(CAST({column} AS String), '{escaped}')"
+        "{% elif target.type == 'teradata' %}"
+        f"REGEXP_SIMILAR(CAST({column} AS VARCHAR(32000)), '{escaped}') = 0"
+        "{% elif target.type in ['sqlserver', 'fabric', 'synapse'] %}"
+        "{{ exceptions.warn("
+        f"'datacontract: regex pattern test on column {column} skipped "
+        "— adapter ' ~ target.type ~ ' has no regex predicate') }}"
+        "1 = 0"
         "{% else %}"
         f"CAST({column} AS VARCHAR) !~ '{escaped}'"
         "{% endif %}"
