@@ -1,10 +1,18 @@
 import logging
 from datetime import datetime, timezone
 from enum import Enum
+from importlib import metadata
 from typing import List
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
+
+
+def _cli_version() -> str:
+    try:
+        return metadata.version("datacontract-cli")
+    except metadata.PackageNotFoundError:
+        return "unknown"
 
 
 class ResultEnum(str, Enum):
@@ -47,6 +55,7 @@ class Log(BaseModel):
 
 class Run(BaseModel):
     runId: UUID
+    datacontractCliVersion: str = _cli_version()
     dataContractId: str | None = None
     dataContractVersion: str | None = None
     dataProductId: str | None = None
