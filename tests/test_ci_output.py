@@ -325,6 +325,7 @@ def test_json_output_single(capsys):
     write_json_results([("datacontract.yaml", run)])
     captured = capsys.readouterr()
     data = json.loads(captured.out)
+    assert "datacontractCliVersion" in data
     assert data["result"] == "passed"
     assert data["location"] == "datacontract.yaml"
     assert len(data["checks"]) == 1
@@ -338,6 +339,8 @@ def test_json_output_multi(capsys):
     data = json.loads(captured.out)
     assert isinstance(data, list)
     assert len(data) == 2
+    assert "datacontractCliVersion" in data[0]
+    assert "datacontractCliVersion" in data[1]
     assert data[0]["result"] == "passed"
     assert data[0]["location"] == "orders.yaml"
     assert data[1]["result"] == "failed"
@@ -354,3 +357,4 @@ def test_ci_json_flag():
     assert "result" in data
     assert "location" in data
     assert "checks" in data
+    assert "datacontractCliVersion" in data

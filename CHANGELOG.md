@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` JSON output now includes `datacontractCliVersion` (#1353)
+
 ### Fixed
 - `datacontract test` no longer fails the type check for SQL Server `uniqueidentifier` (UUID) columns with "the column type could not be determined" (#1354)
 - `datacontract test` against BigQuery no longer fails SQL quality checks with `'RowIterator' object has no attribute 'fetchone'`
