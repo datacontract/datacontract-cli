@@ -163,6 +163,59 @@ def _print_footer(rows: List[Tuple[str, str, str]]) -> None:
     console.print(f"Tested {len(rows)} contract(s): {summary}.")
 
 
+def _rel(path: Path, project_dir: Path) -> str:
+    try:
+        return str(path.relative_to(project_dir))
+    except ValueError:
+        return str(path)
+
+
+def _count(n: int, noun: str) -> str:
+    return f"{n} {noun}" + ("" if n == 1 else "s")
+
+
+# List filenames individually up to this many; beyond it, truncate with "... and N more".
+_MAX_LISTED_FILES = 5
+
+
+def _print_sync_summary(gen, project_dir: Path, *, multi: bool) -> None:
+    """Print the per-contract sync summary, naming the touched files when there aren't too many."""
+    prefix = f"{gen.contract_path.name}: " if multi else ""
+    line = f"{prefix}Synced {_count(len(gen.resolved_models), 'model')}: updated {_count(len(gen.written_yaml), 'YAML file')}"
+    if gen.written_sql:
+        line += f", wrote {_count(len(gen.written_sql), 'singular SQL test')}"
+    if gen.deleted_files:
+        line += f", removed {_count(len(gen.deleted_files), 'YAML file')}"
+    console.print(line + ".")
+
+    entries = (
+        [f"~ {_rel(p, project_dir)}" for p in gen.written_yaml]
+        + [f"+ {_rel(p, project_dir)}" for p in gen.written_sql]
+        + [f"- {_rel(p, project_dir)}" for p in gen.deleted_files]
+    )
+    for entry in entries[:_MAX_LISTED_FILES]:
+        console.print(f"  {entry}")
+    if len(entries) > _MAX_LISTED_FILES:
+        console.print(f"  ... and {len(entries) - _MAX_LISTED_FILES} more")
+
+
+def _warn_prunable(gen, project_dir: Path, *, multi: bool) -> None:
+    """Warn that the project has contract-absent columns/tags `--prune` would remove (it wasn't passed)."""
+    if not gen.prunable:
+        return
+    prefix = f"{gen.contract_path.name}: " if multi else ""
+    shown = gen.prunable[:_MAX_LISTED_FILES]
+    console.print(
+        f"[yellow]{prefix}{_count(len(gen.prunable), 'item')} in the project "
+        f"{'is' if len(gen.prunable) == 1 else 'are'} not declared in the contract; "
+        "pass --prune to remove:[/yellow]"
+    )
+    for item in shown:
+        console.print(f"[yellow]  - {item}[/yellow]")
+    if len(gen.prunable) > len(shown):
+        console.print(f"[yellow]  ... and {len(gen.prunable) - len(shown)} more[/yellow]")
+
+
 def _run_and_report(
     ctxs: List[_ContractCtx],
     project_dir: Path,
@@ -179,9 +232,9 @@ def _run_and_report(
 
     Returns True if the invocation should exit non-zero.
     """
-    union_models = sorted({m for c in ctxs for m in c.model_names})
-    if union_models:
-        completed = run_dbt_test(project_dir, target=target, profiles_dir=profiles_dir, models=union_models)
+    model_versions = sorted({(m, str(c.odcs.version or "no_version")) for c in ctxs for m in c.model_names})
+    if model_versions:
+        completed = run_dbt_test(project_dir, target=target, profiles_dir=profiles_dir, model_versions=model_versions)
     else:
         completed = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
 
@@ -300,8 +353,14 @@ def sync_command(
     for _, odcs, _ in loaded:
         _validate_server_declared(odcs, server)
 
+    # Versions resolved per contract id this invocation — each id's `datacontract_cli/<id>/`
+    # subdir is mirrored to them, so syncing one version doesn't drop a sibling synced alongside.
+    versions_by_id: dict = {}
+    for _, odcs, _ in loaded:
+        versions_by_id.setdefault(odcs.id, set()).add(odcs.version or "no_version")
+
     ctxs: List[_ContractCtx] = []
-    for path, _, _ in loaded:
+    for path, odcs, _ in loaded:
         try:
             gen = generate_dbt_tests(
                 contract=str(path),
@@ -309,6 +368,7 @@ def sync_command(
                 schema_name=schema_name,
                 model_resolution=model_resolution,
                 prune=prune,
+                keep_versions=versions_by_id.get(odcs.id),
             )
         except Exception as e:
             if not multi:
@@ -319,13 +379,9 @@ def sync_command(
             console.print(f"Resolved contract {gen.contract_path}")
         for schema in gen.skipped_schemas:
             console.print(f"[yellow]Skipped schema {schema!r}: no matching dbt model found.[/yellow]")
-        prefix = f"{gen.contract_path.name}: " if multi else ""
-        line = f"{prefix}Synced {len(gen.resolved_models)} model(s): updated {len(gen.written_yaml)} YAML file(s)"
-        if gen.written_sql:
-            line += f", wrote {len(gen.written_sql)} singular SQL test(s) under {gen.written_sql[0].parent}"
-        if gen.deleted_files:
-            line += f", removed {len(gen.deleted_files)} YAML file(s)"
-        console.print(line + ".")
+        _print_sync_summary(gen, project_dir, multi=multi)
+        if not prune:
+            _warn_prunable(gen, project_dir, multi=multi)
         ctxs.append(_ContractCtx(gen.contract_path, gen.odcs, gen.resolved_models, gen.generation_run))
 
     if not run_tests_flag:
