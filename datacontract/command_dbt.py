@@ -348,8 +348,7 @@ def sync_command(
     Generate dbt tests and model metadata from one or more ODCS contracts.
 
     Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files
-    or singular SQL tests if needed. Generate-only by default; pass `--run-tests` (or `--publish`/`--server`) to also run
-    `dbt test`. With multiple contracts, each is synced independently. Use `datacontract dbt test` to run them later.
+    or singular SQL tests if needed. Use `datacontract dbt test` or pass --run-tests to run the generated tests.
     """
     enable_debug_logging(debug)
     validate_publish_url(publish)
@@ -470,9 +469,8 @@ def test_command(
     """
     Run the contract-managed dbt tests that `datacontract dbt sync` generated.
 
-    Runs `dbt test` scoped to the requested contracts' managed tests, reports the results, and optionally publishes
-    them. Never modifies project files — run `datacontract dbt sync` first to (re)generate the tests. With multiple
-    contracts, each contract's results are reported (and published) separately.
+    Runs `dbt test` scoped to the specified data contract(s), reports the results, and optionally publishes
+    them. Use `datacontract dbt sync` to create and update the tests first.
     """
     enable_debug_logging(debug)
     validate_publish_url(publish)

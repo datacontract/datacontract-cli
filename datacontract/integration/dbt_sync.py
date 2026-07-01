@@ -2083,48 +2083,44 @@ def _load_manifest(project_dir: Path) -> dict:
         return {}
 
 
-def _get_test_metadata(test_node: dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def _get_test_metadata(manifest_node: dict, manifest_nodes: dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Return (model, column, description) extracted from a manifest.json test node."""
-    if not test_node:
+    if not manifest_node:
         return None, None, None
-    description = test_node.get("description") or None
+    description = manifest_node.get("description") or None
 
-    column = test_node.get("column_name")
-    test_metadata = test_node.get("test_metadata") or {}
-    kwargs = test_metadata.get("kwargs") or {}
-    if not column:
-        kw_col = kwargs.get("column_name")
-        if isinstance(kw_col, str):
-            column = kw_col
+    column_name = manifest_node.get("column_name")
+    if not column_name:
+        test_metadata = manifest_node.get("test_metadata") or {}
+        kwargs = test_metadata.get("kwargs") or {}
+        column_name = kwargs.get("column_name")
 
     model = None
-    attached = test_node.get("attached_node")
-    if isinstance(attached, str) and attached.startswith("model."):
-        model = attached.split(".")[-1]
-    if not model:
-        for dep in (test_node.get("depends_on") or {}).get("nodes") or []:
-            if isinstance(dep, str) and dep.startswith("model."):
-                model = dep.split(".")[-1]
-                break
+    attached = manifest_node.get("attached_node")
+    model_ids = ([attached] if attached else []) + ((manifest_node.get("depends_on") or {}).get("nodes") or [])
+    for model_id in model_ids:
+        if isinstance(model_id, str) and model_id.startswith("model."):
+            model = (manifest_nodes.get(model_id) or {}).get("name")
+            break
 
     # Singular SQL tests have no `column_name` / `attached_node` in the manifest,
     # therefore we stored them to `config(meta={datacontract_cli: {...}})`.
-    meta = (test_node.get("config") or {}).get("meta") or {}
-    dc = meta.get(META_NAMESPACE)
-    dc = dc if isinstance(dc, dict) else {}
-    if not column and isinstance(dc.get("field"), str):
-        column = dc["field"]
-    if not model and isinstance(dc.get("model"), str):
+    meta = (manifest_node.get("config") or {}).get("meta") or {}
+    dc = meta.get(META_NAMESPACE) or {}
+    if not column_name and dc.get("field"):
+        column_name = dc["field"]
+    if not model and dc.get("model"):
         model = dc["model"]
-    if not description and isinstance(dc.get("description"), str):
+    if not description and dc.get("description"):
         description = dc["description"]
 
-    return model, column, description
+    return model, column_name, description
 
 
-def parse_run_results(
+def parse_run_results_file(
     project_dir: Path, odcs: OpenDataContractStandard, *, model_filter: Optional[Set[str]] = None
 ) -> Run:
+    """Parse the run_results.json file from a `dbt test` run."""
     run = Run.create_run()
     run.dataContractId = odcs.id
     run.dataContractVersion = odcs.version
@@ -2143,8 +2139,9 @@ def parse_run_results(
         run.finish()
         return run
 
-    manifest = _load_manifest(project_dir)
-    nodes = manifest.get("nodes") or {}
+    # dbt creates a manifest node for each model, test, source etc.
+    dbt_manifest = _load_manifest(project_dir)
+    manifest_nodes = dbt_manifest.get("nodes") or {}
 
     status_map = {
         "pass": ResultEnum.passed,
@@ -2153,23 +2150,23 @@ def parse_run_results(
         "error": ResultEnum.error,
         "skipped": ResultEnum.info,
     }
-    for r in run_results.get("results") or []:
-        unique_id = r.get("unique_id") or ""
-        status = (r.get("status") or "").lower()
+    for test_result in run_results.get("results") or []:
+        unique_id = test_result.get("unique_id") or ""
+        status = (test_result.get("status") or "").lower()
         result_enum = status_map.get(status, ResultEnum.unknown)
-        failures = r.get("failures")
-        message = r.get("message")
-        node = nodes.get(unique_id) or {}
-        model, column, description = _get_test_metadata(node)
+        failures = test_result.get("failures")
+        message = test_result.get("message")
+        manifest_node = manifest_nodes.get(unique_id) or {}
+        model, column, description = _get_test_metadata(manifest_node, manifest_nodes)
         if model_filter is not None and (model or "").lower() not in model_filter:
             continue  # belongs to another contract's models — attributed elsewhere
-        dc_meta = (node.get("config") or {}).get("meta") or {}
+        dc_meta = (manifest_node.get("config") or {}).get("meta") or {}
         dc_block = dc_meta.get(META_NAMESPACE) if isinstance(dc_meta.get(META_NAMESPACE), dict) else {}
         # `check` holds the fully-qualified key (`{model}__{field}__{type}`). The bare type is its
         # final `__`-segment — unambiguous because no check-type token itself contains `__`.
         check_key = dc_block.get("check") if isinstance(dc_block.get("check"), str) else None
         check_type = check_key.rsplit("__", 1)[-1] if check_key else "dbt_test"
-        fallback_name = node.get("name")
+        fallback_name = manifest_node.get("name")
         if not fallback_name:
             parts = unique_id.split(".")
             fallback_name = parts[-2] if len(parts) >= 3 else unique_id
@@ -2440,7 +2437,7 @@ def parse_dbt_test_run(
     share a single `dbt test` invocation). `generation_run` is the `Run` from a same-invocation
     `generate_dbt_tests` (sync's `--run-tests` path); its logs and start time are stitched on.
     """
-    parsed_run = parse_run_results(project_dir, odcs, model_filter=model_filter)
+    parsed_run = parse_run_results_file(project_dir, odcs, model_filter=model_filter)
     ansi = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
     for stream in (completed.stdout, completed.stderr):
         if not stream:

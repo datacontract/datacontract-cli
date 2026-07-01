@@ -26,6 +26,7 @@ from datacontract.integration.dbt_sync import (
     _describe_dbt_test,
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
+    _get_test_metadata,
     _resolved_generated_dirs,
     _rewrite_relationships_to_ref,
     _row_count_singular_test,
@@ -36,7 +37,7 @@ from datacontract.integration.dbt_sync import (
     generate_dbt_tests,
     generate_dbt_tests_for_schema,
     parse_filename_version,
-    parse_run_results,
+    parse_run_results_file,
     resolve_model_names,
     run_dbt_test,
     run_tests,
@@ -1083,6 +1084,7 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
 
     manifest = {
         "nodes": {
+            "model.proj.orders": {"name": "orders", "resource_type": "model"},
             "test.proj.not_null_orders_order_id.abc": {
                 "name": "not_null_orders_order_id",
                 "column_name": "order_id",
@@ -1099,7 +1101,7 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
     (target_dir / "manifest.json").write_text(json.dumps(manifest))
 
     odcs = resolve_data_contract(str(CONTRACT_PATH))
-    parsed = parse_run_results(project, odcs)
+    parsed = parse_run_results_file(project, odcs)
 
     assert parsed.dataContractId == "orders-sync-test"
     assert len(parsed.checks) == 5
@@ -1115,6 +1117,20 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
 
     statuses = {c.result.value for c in parsed.checks}
     assert statuses == {"passed", "failed", "warning", "error", "info"}
+
+
+def test_get_test_metadata_resolves_versioned_model_name():
+    """A versioned model's unique_id is `model.project.name.vN`, so the model must be read from the
+    manifest node's `name` — not the id's last segment, which is the version. Covers a generic test
+    (via `attached_node`) and a singular SQL test (via `depends_on`)."""
+    manifest_nodes = {
+        "model.proj.orders.v1": {"name": "orders", "resource_type": "model"},
+    }
+    generic = {"attached_node": "model.proj.orders.v1", "column_name": "order_id"}
+    singular = {"depends_on": {"nodes": ["model.proj.orders.v1"]}}
+
+    assert _get_test_metadata(generic, manifest_nodes)[0] == "orders"
+    assert _get_test_metadata(singular, manifest_nodes)[0] == "orders"
 
 
 def test_parse_run_results_derives_key_and_type_from_config_meta(tmp_path: Path):
@@ -1150,7 +1166,7 @@ def test_parse_run_results_derives_key_and_type_from_config_meta(tmp_path: Path)
     (target_dir / "manifest.json").write_text(json.dumps(manifest))
 
     odcs = resolve_data_contract(str(CONTRACT_PATH))
-    parsed = parse_run_results(project, odcs)
+    parsed = parse_run_results_file(project, odcs)
 
     by_name = {c.name: c for c in parsed.checks}
     assert by_name["a"].key == "orders__order_id__field_required"
@@ -1201,7 +1217,7 @@ def test_parse_run_results_recovers_model_and_field_from_config_meta(tmp_path: P
     )
 
     odcs = resolve_data_contract(str(CONTRACT_PATH))
-    parsed = parse_run_results(project, odcs)
+    parsed = parse_run_results_file(project, odcs)
 
     by_name = {c.name: c for c in parsed.checks}
     field_bound = by_name["orders_sync_test__orders__order_id__length"]
@@ -1255,7 +1271,7 @@ def test_parse_run_results_recovers_description_from_config_meta(tmp_path: Path)
     )
 
     odcs = resolve_data_contract(str(CONTRACT_PATH))
-    parsed = parse_run_results(project, odcs)
+    parsed = parse_run_results_file(project, odcs)
     assert len(parsed.checks) == 1
     assert parsed.checks[0].name == "Check that field email matches regex pattern ^[^@]+@[^@]+$"
 
@@ -1271,7 +1287,7 @@ def test_parse_run_results_honors_custom_target_path(tmp_path: Path):
     )
 
     odcs = resolve_data_contract(str(CONTRACT_PATH))
-    parsed = parse_run_results(project, odcs)
+    parsed = parse_run_results_file(project, odcs)
     assert len(parsed.checks) == 1
     assert parsed.checks[0].result.value == "passed"
 
@@ -1279,7 +1295,7 @@ def test_parse_run_results_honors_custom_target_path(tmp_path: Path):
 def test_parse_run_results_missing_file(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     odcs = resolve_data_contract(str(CONTRACT_PATH))
-    parsed = parse_run_results(project, odcs)
+    parsed = parse_run_results_file(project, odcs)
     assert parsed.checks == []
     assert any("not found" in log.message for log in parsed.logs)
 
