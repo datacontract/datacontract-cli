@@ -25,7 +25,7 @@ def ibis_dtype_category(dtype) -> str:
             return "decimal"
         if dtype.is_floating():
             return "float"
-        if dtype.is_string():
+        if dtype.is_string() or dtype.is_uuid():
             return "string"
         if dtype.is_timestamp():
             return "timestamp"
@@ -63,7 +63,7 @@ def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty | None:
             return SchemaProperty(logicalType="integer")
         if dtype.is_decimal() or dtype.is_floating():
             return SchemaProperty(logicalType="number")
-        if dtype.is_string():
+        if dtype.is_string() or dtype.is_uuid():
             return SchemaProperty(logicalType="string")
         if dtype.is_timestamp():
             return SchemaProperty(logicalType="timestamp")
