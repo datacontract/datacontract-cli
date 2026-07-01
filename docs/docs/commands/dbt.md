@@ -23,7 +23,7 @@ datacontract dbt sync [CONTRACT]...
 
 | Argument | Description |
 |---|---|
-| `CONTRACT` | One or more paths or globs of ODCS contracts to sync. If omitted, every `*.odcs.yaml` under `--project-dir` (and its subdirectories) is synced. Each contract is synced independently; if two contracts resolve to the same dbt model the command aborts before writing anything. |
+| `CONTRACT` | One or more paths or globs of ODCS contracts to sync. If omitted, every `*.odcs.yaml` under `--project-dir` (and its subdirectories) is synced. Each contract is synced independently; if two *different* contracts resolve to the same dbt model the command aborts before writing anything. Versions of the *same* contract (distinct versions, each with a `v<N>` filename) may share a [versioned dbt model](../dbt.md#versioned-models). |
 
 | Option | Default | Description |
 |---|---|---|

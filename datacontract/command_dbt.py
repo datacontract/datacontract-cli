@@ -20,7 +20,9 @@ from datacontract.integration.dbt_sync import (
     check_dbt_on_path,
     generate_dbt_tests,
     parse_dbt_test_run,
+    parse_filename_version,
     resolve_model_names,
+    resolve_versioned_target,
     run_dbt_test,
 )
 from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
@@ -46,6 +48,7 @@ class _ContractCtx:
     odcs: object
     model_names: List[str]  # effective dbt model names — drive selection and result attribution
     generation_run: Optional[Run]  # set on sync's --run-tests path, None on `dbt test`
+    dbt_version: Optional[str] = None  # filename-derived dbt model version, when this contract is versioned
 
 
 def _candidate_models(odcs) -> List[str]:
@@ -62,19 +65,39 @@ def _candidate_models(odcs) -> List[str]:
     return names
 
 
-def _check_no_overlap(contracts: List[Tuple[Path, List[str]]]) -> None:
-    """Hard-error if any dbt model is claimed by more than one contract (write nothing first)."""
-    owners: dict[str, List[Path]] = {}
-    for path, model_names in contracts:
-        for model in {m.lower() for m in model_names}:
-            owners.setdefault(model, []).append(path)
-    conflicts = {model: paths for model, paths in owners.items() if len(paths) > 1}
-    if conflicts:
-        lines = "\n".join(f"  - {model}: {', '.join(str(p) for p in paths)}" for model, paths in conflicts.items())
-        console.print(
-            f"[red]The same dbt model is claimed by multiple contracts:\n{lines}\n"
-            "Select a single contract so each model has one owner.[/red]"
-        )
+@dataclass
+class _Owner:
+    path: Path
+    contract_id: object
+    contract_version: object
+    dbt_version: Optional[str]  # filename-derived version, None if the contract can't map to one
+
+
+def _check_model_ownership(owners_by_model: dict) -> None:
+    """Hard-error unless every model shared by multiple contracts is a clean version group.
+
+    A shared model is allowed only when its owners are versions of the *same* contract: one
+    `odcs.id`, distinct `version`s, and each with a filename `v<N>` that maps to a dbt model version.
+    """
+    errors: List[str] = []
+    for model, owners in owners_by_model.items():
+        if len(owners) < 2:
+            continue
+        ids = {o.contract_id for o in owners}
+        versions = [o.contract_version for o in owners]
+        if len(ids) > 1:
+            listed = ", ".join(f"{o.path.name} ({o.contract_id})" for o in owners)
+            errors.append(f"  - `{model}` is claimed by different contracts: {listed}")
+        elif len(set(versions)) != len(versions):
+            errors.append(f"  - `{model}`: two contracts share id `{next(iter(ids))}` and version `{versions[0]}`")
+        elif any(o.dbt_version is None for o in owners):
+            listed = ", ".join(o.path.name for o in owners if o.dbt_version is None)
+            errors.append(
+                f"  - `{model}`: same-id versions can't map to dbt model versions "
+                f"(need a `v<N>` filename and a `{model}_v<N>.sql`): {listed}"
+            )
+    if errors:
+        console.print("[red]Cannot sync — overlapping dbt models:\n" + "\n".join(errors) + "[/red]")
         raise typer.Exit(code=1)
 
 
@@ -232,7 +255,10 @@ def _run_and_report(
 
     Returns True if the invocation should exit non-zero.
     """
-    model_versions = sorted({(m, str(c.odcs.version or "no_version")) for c in ctxs for m in c.model_names})
+    model_versions = sorted(
+        {(m, c.dbt_version, str(c.odcs.version or "no_version")) for c in ctxs for m in c.model_names},
+        key=lambda t: (t[0], t[1] or "", t[2]),
+    )
     if model_versions:
         completed = run_dbt_test(project_dir, target=target, profiles_dir=profiles_dir, model_versions=model_versions)
     else:
@@ -337,30 +363,30 @@ def sync_command(
     paths = _resolve_contract_paths(contract or [], project_dir)
     multi = len(paths) > 1
 
-    # Load + resolve models for the overlap pre-flight, before any contract writes to disk.
-    loaded: List[Tuple[Path, object, List[str]]] = []
+    # Load + resolve models for the ownership pre-flight, before any contract writes to disk.
+    loaded: List[Tuple[Path, object, List[str], Optional[str]]] = []
     error_rows: List[Tuple[Path, str]] = []
+    owners_by_model: dict = {}
     for path in paths:
         try:
             odcs = resolve_data_contract(str(path))
             model_names = list(resolve_model_names(odcs, model_resolution, schema_name).values())
-            loaded.append((path, odcs, model_names))
+            dbt_version = resolve_versioned_target(project_dir, model_names, parse_filename_version(path))
+            loaded.append((path, odcs, model_names, dbt_version))
+            for model in {m.lower() for m in model_names}:
+                owners_by_model.setdefault(model, []).append(
+                    _Owner(path, odcs.id, odcs.version or "no_version", dbt_version)
+                )
         except Exception as e:
             if not multi:
                 raise
             error_rows.append((path, str(e)))
-    _check_no_overlap([(p, mn) for p, _, mn in loaded])
-    for _, odcs, _ in loaded:
+    _check_model_ownership(owners_by_model)
+    for _, odcs, _, _ in loaded:
         _validate_server_declared(odcs, server)
 
-    # Versions resolved per contract id this invocation — each id's `datacontract_cli/<id>/`
-    # subdir is mirrored to them, so syncing one version doesn't drop a sibling synced alongside.
-    versions_by_id: dict = {}
-    for _, odcs, _ in loaded:
-        versions_by_id.setdefault(odcs.id, set()).add(odcs.version or "no_version")
-
     ctxs: List[_ContractCtx] = []
-    for path, odcs, _ in loaded:
+    for path, odcs, _, dbt_version in loaded:
         try:
             gen = generate_dbt_tests(
                 contract=str(path),
@@ -368,7 +394,7 @@ def sync_command(
                 schema_name=schema_name,
                 model_resolution=model_resolution,
                 prune=prune,
-                keep_versions=versions_by_id.get(odcs.id),
+                model_version=dbt_version,
             )
         except Exception as e:
             if not multi:
@@ -382,7 +408,7 @@ def sync_command(
         _print_sync_summary(gen, project_dir, multi=multi)
         if not prune:
             _warn_prunable(gen, project_dir, multi=multi)
-        ctxs.append(_ContractCtx(gen.contract_path, gen.odcs, gen.resolved_models, gen.generation_run))
+        ctxs.append(_ContractCtx(gen.contract_path, gen.odcs, gen.resolved_models, gen.generation_run, dbt_version))
 
     if not run_tests_flag:
         console.print("Next: run `datacontract dbt test` to execute the generated tests.")
@@ -459,6 +485,7 @@ def test_command(
 
     ctxs: List[_ContractCtx] = []
     error_rows: List[Tuple[Path, str]] = []
+    owners_by_model: dict = {}
     for path in paths:
         try:
             odcs = resolve_data_contract(str(path))
@@ -469,9 +496,15 @@ def test_command(
             continue
         if not contract:
             console.print(f"Resolved contract {path}")
-        ctxs.append(_ContractCtx(path, odcs, _candidate_models(odcs), None))
+        model_names = _candidate_models(odcs)
+        dbt_version = resolve_versioned_target(project_dir, model_names, parse_filename_version(path))
+        ctxs.append(_ContractCtx(path, odcs, model_names, None, dbt_version))
+        for model in {m.lower() for m in model_names}:
+            owners_by_model.setdefault(model, []).append(
+                _Owner(path, odcs.id, odcs.version or "no_version", dbt_version)
+            )
 
-    _check_no_overlap([(c.contract_path, c.model_names) for c in ctxs])
+    _check_model_ownership(owners_by_model)
     for c in ctxs:
         _validate_server_declared(c.odcs, server)
 

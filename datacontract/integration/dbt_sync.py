@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import glob
 import json
 import logging
@@ -146,6 +147,59 @@ Install guide: https://docs.getdbt.com/docs/core/installation-overview""",
             engine="dbt-sync",
         )
     return dbt_path
+
+
+# ---------------------------------------------------------------------------
+# Contract filename → dbt model version
+# ---------------------------------------------------------------------------
+
+# `v` must not follow a letter, so `rev2`/`srv2` don't read as version tokens.
+_FILENAME_VERSION_RE = re.compile(r"(?<![A-Za-z])v(\d+)")
+
+
+def parse_filename_version(path: Path) -> Optional[str]:
+    """The dbt model version a contract filename targets, from a `v<N>` token: `orders-v2.odcs.yaml` → "2",
+    zero-padded `orders-v02.odcs.yaml` → "2". None when absent; raises when two distinct tokens appear."""
+    normalized = {str(int(m)) for m in _FILENAME_VERSION_RE.findall(path.name)}
+    if not normalized:
+        return None
+    if len(normalized) > 1:
+        raise DataContractException(
+            type="dbt_sync",
+            name="resolve version",
+            reason=(
+                f"Contract filename `{path.name}` has multiple version tokens {sorted(normalized)}; "
+                "expected exactly one `v<N>`."
+            ),
+            engine="dbt-sync",
+        )
+    return next(iter(normalized))
+
+
+def resolve_versioned_target(
+    project_dir: Path, model_names: List[str], filename_version: Optional[str]
+) -> Optional[str]:
+    """The dbt model version this contract targets, or None if it should sync a model in place.
+
+    Returns `filename_version` only when it maps to a real versioned model — a `<model>_v<N>.sql`
+    exists for one of `model_names`, or a YAML model entry already declares a `versions:` block."""
+    if filename_version is None:
+        return None
+    model_paths, _ = _read_dbt_project_paths(project_dir)
+    targets = {m.lower() for m in model_names}
+    for model in model_names:
+        if _locate_versioned_model_sql(model_paths, model, filename_version) is not None:
+            return filename_version
+    legacy_dir, _ = _resolved_generated_dirs(project_dir)
+    for path in _iter_model_yaml_files(model_paths, legacy_dir):
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            continue
+        for entry in _model_entries(data):
+            if str(entry.get("name", "")).lower() in targets and entry.get("versions"):
+                return filename_version
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -492,7 +546,7 @@ def _format_dc_meta(
     """Render the `meta={...}` arg for dbt `config()` so singular tests carry their contract metadata."""
     block: dict = {
         "check": _qualified_check(model, field, check) if check else None,
-        "contract_version": contract_version,  # lets `dbt test` scope to a contract version
+        "contract_versions": [contract_version] if contract_version else None,  # lets `dbt test` scope by version
         "generated": True,  # always true, because singular SQL tests are always regenerated
         "include_in_tests": True,
         "model": model,
@@ -502,6 +556,15 @@ def _format_dc_meta(
     if description:
         block["description"] = description
     return f"meta={json.dumps({META_NAMESPACE: block})}"
+
+
+def _model_ref(model: str, model_version: Optional[str]) -> str:
+    """`{{ ref('model') }}`, or `{{ ref('model', version=N) }}` on a versioned model so the test
+    hits this version's relation rather than the latest."""
+    if model_version is None:
+        return f"{{{{ ref('{model}') }}}}"
+    version_arg = int(model_version) if str(model_version).isdigit() else repr(model_version)
+    return f"{{{{ ref('{model}', version={version_arg}) }}}}"
 
 
 def _build_singular_sql(
@@ -531,7 +594,7 @@ def _build_singular_sql(
 
 
 def _row_count_singular_test(
-    quality: DataQuality, contract_id: str, contract_version: str, model: str
+    quality: DataQuality, contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> Optional[SingularTest]:
     """Singular SQL test for a table-level `rowCount` quality without an explicit `query`."""
     predicate = _bound_violation_predicate(quality)
@@ -541,7 +604,7 @@ def _row_count_singular_test(
     return SingularTest(
         filename=_slugify(f"{contract_id}__{contract_version}__{model}__{_quality_label(quality, 1)}") + ".sql",
         sql=_build_singular_sql(
-            f"SELECT COUNT(*) FROM {{{{ ref('{model}') }}}}",
+            f"SELECT COUNT(*) FROM {_model_ref(model, model_version)}",
             predicate,
             _normalize_severity(quality.severity),
             contract_id,
@@ -666,20 +729,21 @@ def _build_row_violation_sql(
     label: str,
     check_type: str,
     description: Optional[str] = None,
+    model_version: Optional[str] = None,
 ) -> str:
     return (
         f"-- AUTO-GENERATED by `datacontract dbt sync`. Do not edit.\n"
         f"-- Source contract: {contract_id}@{contract_version} (model: {model}, check: {label})\n"
         f"{{{{ config(severity='{severity}', {_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
         f"SELECT *\n"
-        f"FROM {{{{ ref('{model}') }}}}\n"
+        f"FROM {_model_ref(model, model_version)}\n"
         f"WHERE {column_null_filter} IS NOT NULL\n"
         f"  AND ({violation_predicate})\n"
     )
 
 
 def _field_singular_tests(
-    prop: SchemaProperty, contract_id: str, contract_version: str, model: str
+    prop: SchemaProperty, contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> List[SingularTest]:
     """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
     column = _quote_identifier(prop.name)
@@ -701,6 +765,7 @@ def _field_singular_tests(
                     label=label,
                     check_type={"length": "field_length", "pattern": "field_regex", "range": "field_range"}[kind],
                     description=description,
+                    model_version=model_version,
                 ),
                 description=description,
             )
@@ -709,7 +774,12 @@ def _field_singular_tests(
 
 
 def _model_data_tests(
-    schema_obj: SchemaObject, run: Run, contract_id: str, contract_version: str, model: str
+    schema_obj: SchemaObject,
+    run: Run,
+    contract_id: str,
+    contract_version: str,
+    model: str,
+    model_version: Optional[str] = None,
 ) -> Tuple[list, List[SingularTest]]:
     """Model-level outputs: composite-PK YAML test + table-level rowCount as singular SQL.
 
@@ -735,7 +805,7 @@ def _model_data_tests(
         if q.query:
             continue  # singular SQL handles it via _singular_tests_for_qualities
         if q.metric and q.metric.lower() == "rowcount":
-            test = _row_count_singular_test(q, contract_id, contract_version, model)
+            test = _row_count_singular_test(q, contract_id, contract_version, model, model_version)
             if test is None:
                 run.log_warn(f"Skipping unsupported row-count quality on `{schema_obj.name}`")
                 continue
@@ -800,8 +870,13 @@ def generate_dbt_tests_for_schema(
     schema_obj: SchemaObject,
     model_name: str,
     run: Run,
+    model_version: Optional[str] = None,
 ) -> Tuple[dict, List[SingularTest]]:
-    """Build the YAML model dict + list of singular SQL tests for one schema."""
+    """Build the YAML model dict + list of singular SQL tests for one schema.
+
+    `model_version` (set for a versioned model) makes ref-using singular tests target this version's
+    relation via `ref(model, version=N)`.
+    """
     pk_cols = [p.name for p in (schema_obj.properties or []) if p.primaryKey]
     single_pk_name = pk_cols[0] if len(pk_cols) == 1 else None
 
@@ -811,7 +886,9 @@ def generate_dbt_tests_for_schema(
 
     contract_id = odcs.id or "contract"
     contract_version = odcs.version or "no_version"
-    model_yaml_tests, model_singulars = _model_data_tests(schema_obj, run, contract_id, contract_version, model_name)
+    model_yaml_tests, model_singulars = _model_data_tests(
+        schema_obj, run, contract_id, contract_version, model_name, model_version
+    )
     if model_yaml_tests:
         model_dict["data_tests"] = model_yaml_tests
 
@@ -824,7 +901,7 @@ def generate_dbt_tests_for_schema(
     singulars: List[SingularTest] = list(model_singulars)
     # Field-level bounds (length / regex / numeric range) → singular SQL
     for prop in schema_obj.properties or []:
-        singulars.extend(_field_singular_tests(prop, contract_id, contract_version, model_name))
+        singulars.extend(_field_singular_tests(prop, contract_id, contract_version, model_name, model_version))
     # Existing `quality.query` singular tests (one CTE per scalar metric)
     for prop in schema_obj.properties or []:
         singulars.extend(
@@ -907,12 +984,19 @@ def _meta_block_for_test(entry: str | dict) -> dict:
 
 
 def _ensure_membership(
-    entry: dict, dc_check: Optional[str], *, generated: bool, contract_version: Optional[str] = None
+    entry: dict,
+    dc_check: Optional[str],
+    *,
+    generated: bool,
+    contract_version: Optional[str] = None,
+    versioned: bool = False,
 ) -> None:
     """Stamp the CLI's `config.meta.datacontract_cli` block onto a test.
 
     `generated=True` marks a test we created; `generated=False` records an adopted user test but
-    never downgrades an already-`True` block. `contract_version` lets `dbt test` scope to a version.
+    never downgrades an already-`True` block. `contract_version` lets `dbt test` scope by version:
+    on a versioned model it's unioned into `contract_versions` (a shared column serves several
+    versions); otherwise it replaces the list (an in-place model serves one version at a time).
     """
     body = entry[_test_name(entry)]
     config = body.get("config")
@@ -933,7 +1017,12 @@ def _ensure_membership(
     if dc_check:
         block["check"] = dc_check
     if contract_version is not None:
-        block["contract_version"] = contract_version
+        existing = block.get("contract_versions")
+        if versioned and isinstance(existing, list):
+            if contract_version not in existing:
+                existing.append(contract_version)
+        else:
+            block["contract_versions"] = [contract_version]
     if generated:
         block["generated"] = True
     elif "generated" not in block:
@@ -977,7 +1066,12 @@ def _find_test_index(seq: list, test_name: str) -> Optional[int]:
 
 
 def _reconcile_test(
-    existing: str | dict, desired: dict, dc_check: Optional[str], contract_version: Optional[str]
+    existing: str | dict,
+    desired: dict,
+    dc_check: Optional[str],
+    contract_version: Optional[str],
+    *,
+    versioned: bool = False,
 ) -> dict:
     """Update a pre-existing test (string or dict) to satisfy the contract, in dict form.
 
@@ -998,11 +1092,13 @@ def _reconcile_test(
         del body[k]
     for k, v in desired_args.items():
         body[k] = v
-    _ensure_membership(entry, dc_check, generated=False, contract_version=contract_version)
+    _ensure_membership(entry, dc_check, generated=False, contract_version=contract_version, versioned=versioned)
     return entry
 
 
-def _reconcile_data_tests(container: dict, desired_tests: list, contract_version: Optional[str]) -> None:
+def _reconcile_data_tests(
+    container: dict, desired_tests: list, contract_version: Optional[str], *, versioned: bool = False
+) -> None:
     """Merge the contract's desired generic tests into `container["data_tests"]` in place."""
     if not desired_tests:
         return
@@ -1017,10 +1113,12 @@ def _reconcile_data_tests(container: dict, desired_tests: list, contract_version
         idx = _find_test_index(existing, test_name)
         if idx is None:
             new_entry = CommentedMap(desired) if not isinstance(desired, CommentedMap) else desired
-            _ensure_membership(new_entry, dc_check, generated=True, contract_version=contract_version)
+            _ensure_membership(
+                new_entry, dc_check, generated=True, contract_version=contract_version, versioned=versioned
+            )
             existing.append(new_entry)
         else:
-            existing[idx] = _reconcile_test(existing[idx], desired, dc_check, contract_version)
+            existing[idx] = _reconcile_test(existing[idx], desired, dc_check, contract_version, versioned=versioned)
     container["data_tests"] = existing
 
 
@@ -1104,9 +1202,20 @@ def _union_tags(container: dict, new_tags: list, *, reconcile: bool, prune: bool
             container.pop("config", None)
 
 
-def _set_meta_keys(entry: dict, *, data_contract: Optional[str], version: Optional[str], owner: Optional[str]) -> None:
-    """Make our `config.meta.datacontract_cli` block authoritative: write the `contract_id`/`contract_version`/`owner`,
-    overwriting prior values, and drop a stale `owner` when the contract has no team. Other meta is kept."""
+def _set_meta_keys(
+    entry: dict,
+    *,
+    data_contract: Optional[str],
+    version: Optional[str],
+    owner: Optional[str],
+    write_contract_versions: bool = True,
+) -> None:
+    """Make our `config.meta.datacontract_cli` block authoritative: write the `contract_id`/`contract_versions`/`owner`,
+    overwriting prior values, and drop a stale `owner` when the contract has no team. Other meta is kept.
+
+    `write_contract_versions=False` (versioned models) keeps `contract_versions` OFF the model entry:
+    dbt cascades a model's `config.meta` onto every attached test node, which would overwrite each
+    test's own (version-scoped) `contract_versions` and break `dbt test` version selection."""
     config = _ensure_config(entry)
     meta = config.get("meta")
     if not isinstance(meta, dict):
@@ -1118,8 +1227,10 @@ def _set_meta_keys(entry: dict, *, data_contract: Optional[str], version: Option
         meta[META_NAMESPACE] = block
     if data_contract is not None:
         block["contract_id"] = data_contract
-    if version is not None:
-        block["contract_version"] = version
+    if not write_contract_versions:
+        block.pop("contract_versions", None)
+    elif version is not None:
+        block["contract_versions"] = [version]
     if owner is not None:
         block["owner"] = owner
     else:
@@ -1187,6 +1298,26 @@ def _locate_model_sql(model_paths: List[Path], model_name: str) -> Optional[Path
     return sorted(matches)[0] if matches else None
 
 
+_VERSIONED_SQL_RE = re.compile(r"^(?P<base>.+)_v(?P<v>\d+)$")
+
+
+def _locate_versioned_model_sql(model_paths: List[Path], model_name: str, model_version: str) -> Optional[Path]:
+    """First `<model>_v<N>.sql` whose numeric version equals `model_version` (so `orders_v01.sql`
+    matches version "1"). This is how the dbt files for a versioned model are found on disk."""
+    if not str(model_version).isdigit():
+        return None
+    base, want = model_name.lower(), int(model_version)
+    matches: List[Path] = []
+    for root in model_paths:
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*.sql"):
+            m = _VERSIONED_SQL_RE.match(path.stem.lower())
+            if m and m.group("base") == base and int(m.group("v")) == want:
+                matches.append(path)
+    return sorted(matches)[0] if matches else None
+
+
 @dataclass
 class RequiredState:
     """What the current contract declares — drives the provenance-aware cleanup pass."""
@@ -1222,18 +1353,25 @@ class _ModelPlan:
 
 
 def _effective_model_name(
-    session: "_EditSession", model_paths: List[Path], contract_model_name: str
+    session: "_EditSession", model_paths: List[Path], contract_model_name: str, model_version: Optional[str] = None
 ) -> Tuple[str, str, Optional[Path]]:
     """Map a contract model name to the project's actual dbt model name (case-insensitive, #1254).
 
     Returns ``(name, source, sql_path)`` where ``source`` is ``"entry"`` (a YAML model entry
     exists), ``"sql"`` (only a `.sql` exists → sidecar), or ``"missing"`` (no dbt model).
-    The returned name preserves the project's casing so `ref()` and dbt patches resolve.
+    The returned name preserves the project's casing so `ref()` and dbt patches resolve. For a
+    versioned sync the model's files are `<model>_v<N>.sql`, so `sql_path` points at this version's
+    file while the name stays the base model.
     """
     located = _locate_entry(session, contract_model_name)
     if located is not None:
         entry = located[1]
         return str(entry.get("name") or contract_model_name), "entry", None
+    if model_version is not None:
+        versioned_sql = _locate_versioned_model_sql(model_paths, contract_model_name, model_version)
+        if versioned_sql is not None:
+            return contract_model_name, "sql", versioned_sql
+        return contract_model_name, "missing", None
     sql_path = _locate_model_sql(model_paths, contract_model_name)
     if sql_path is not None:
         return sql_path.stem, "sql", sql_path
@@ -1322,6 +1460,299 @@ def _locate_entry(session: _EditSession, model_name: str) -> Optional[Tuple[Path
             if str(entry.get("name", "")).lower() == target:
                 return path, entry
     return None
+
+
+# ---------------------------------------------------------------------------
+# Versioned models: a `versions:` block + per-version `include`/`exclude`
+# ---------------------------------------------------------------------------
+
+
+def _ensure_versions_block(entry: dict) -> CommentedSeq:
+    versions = entry.get("versions")
+    if not isinstance(versions, list):
+        versions = CommentedSeq()
+        entry["versions"] = versions
+    return versions
+
+
+def _find_bullet(versions: CommentedSeq, v: str) -> Optional[dict]:
+    for bullet in versions:
+        if isinstance(bullet, dict) and str(bullet.get("v")) == str(v):
+            return bullet
+    return None
+
+
+def _ensure_version_bullet(versions: CommentedSeq, v: str, defined_in: Optional[str] = None) -> dict:
+    bullet = _find_bullet(versions, v)
+    if bullet is None:
+        bullet = CommentedMap()
+        bullet["v"] = int(v) if str(v).isdigit() else v
+        if defined_in is not None:
+            bullet["defined_in"] = defined_in  # file isn't dbt's default `<model>_v<N>.sql`
+        versions.append(bullet)
+    return bullet
+
+
+def _set_latest_version(entry: dict, versions: CommentedSeq) -> None:
+    """Point `latest_version` at the highest declared version. Always recomputed, so the result is
+    independent of sync order (a user who wants an older `latest_version` sets it outside sync)."""
+    declared = [str(b.get("v")) for b in versions if isinstance(b, dict) and b.get("v") is not None]
+    if not declared:
+        return
+    numeric = [d for d in declared if d.isdigit()]
+    top = max(numeric, key=int) if numeric else sorted(declared)[-1]
+    entry["latest_version"] = int(top) if top.isdigit() else top
+
+
+def _bullet_include_element(bullet: dict) -> dict:
+    """The single `{include, exclude}` element on a bullet, created as `include: '*'` if absent."""
+    cols = bullet.get("columns")
+    if not isinstance(cols, list):
+        cols = CommentedSeq()
+        bullet["columns"] = cols
+    for element in cols:
+        if isinstance(element, dict) and "include" in element:
+            return element
+    element = CommentedMap()
+    element["include"] = "*"
+    cols.insert(0, element)
+    return element
+
+
+def _bullet_has_overrides(bullet: dict) -> bool:
+    return any(isinstance(c, dict) and "name" in c for c in bullet.get("columns") or [])
+
+
+def _bullet_set_exclude(bullet: dict, names: List[str]) -> None:
+    """Set the bullet's `exclude` to `names` (ordered). Empty → drop it, and collapse a now-bare
+    `columns: [{include: '*'}]` (no overrides) back to no `columns` key."""
+    if names:
+        element = _bullet_include_element(bullet)
+        element["exclude"] = CommentedSeq(names)
+        return
+    cols = bullet.get("columns")
+    if not isinstance(cols, list):
+        return
+    for element in cols:
+        if isinstance(element, dict) and "include" in element:
+            element.pop("exclude", None)
+    if not _bullet_has_overrides(bullet) and all(
+        isinstance(c, dict) and set(c.keys()) <= {"include"} and c.get("include") in ("*", "all") for c in cols
+    ):
+        bullet.pop("columns", None)
+
+
+def _bullet_add_excludes(bullet: dict, names: List[str]) -> None:
+    if not names:
+        return
+    element = _bullet_include_element(bullet)
+    exclude = element.get("exclude")
+    if not isinstance(exclude, list):
+        exclude = CommentedSeq()
+        element["exclude"] = exclude
+    for name in names:
+        if name not in exclude:
+            exclude.append(name)
+
+
+def _bullet_config_block(bullet: dict, *, create: bool = False) -> Optional[dict]:
+    """The bullet's `config.meta.datacontract_cli` block (created on demand when `create`)."""
+    config = bullet.get("config")
+    if not isinstance(config, dict):
+        if not create:
+            return None
+        config = CommentedMap()
+        bullet["config"] = config
+    meta = config.get("meta")
+    if not isinstance(meta, dict):
+        if not create:
+            return None
+        meta = CommentedMap()
+        config["meta"] = meta
+    block = meta.get(META_NAMESPACE)
+    if not isinstance(block, dict):
+        if not create:
+            return None
+        block = CommentedMap()
+        meta[META_NAMESPACE] = block
+    return block
+
+
+def _bullet_odcs_version(bullet: dict) -> Optional[str]:
+    block = _bullet_config_block(bullet)
+    version = block.get("contract_version") if block else None
+    return version if isinstance(version, str) else None
+
+
+def _find_bullet_by_odcs(versions: CommentedSeq, odcs_version: str) -> Optional[dict]:
+    for bullet in versions:
+        if isinstance(bullet, dict) and _bullet_odcs_version(bullet) == odcs_version:
+            return bullet
+    return None
+
+
+def _column_has_override(versions: CommentedSeq, col_name: str) -> bool:
+    """True if any version bullet already carries a per-version override for `col_name`."""
+    target = col_name.lower()
+    for bullet in versions:
+        if not isinstance(bullet, dict):
+            continue
+        for element in bullet.get("columns") or []:
+            if isinstance(element, dict) and str(element.get("name", "")).lower() == target:
+                return True
+    return False
+
+
+def _managed_tests_list(container: dict) -> list:
+    return [t for t in (container.get("data_tests") or []) if _meta_block_for_test(t)]
+
+
+def _set_override_tests(bullet: dict, col_name: str, test_entries: list, contract_version: str) -> None:
+    """Put `col_name`'s full test set into `bullet` as a per-version override, stamped with just
+    `contract_version`. dbt combines a version override with the (test-free) top-level column, so a
+    divergent column must live entirely in overrides — never split across top level and a bullet."""
+    _bullet_include_element(bullet)  # an override must ride alongside `include: '*'` (dbt idiom)
+    cols = bullet["columns"]
+    override = None
+    for element in cols:
+        if isinstance(element, dict) and str(element.get("name", "")).lower() == col_name.lower():
+            override = element
+            break
+    if override is None:
+        override = CommentedMap()
+        override["name"] = col_name
+        cols.append(override)
+    override.pop("data_tests", None)
+    tests = CommentedSeq()
+    for test in test_entries:
+        entry = CommentedMap(test) if not isinstance(test, CommentedMap) else test
+        dc_check = _meta_block_for_test(test).get("check")
+        _ensure_membership(entry, dc_check, generated=True, contract_version=contract_version, versioned=False)
+        tests.append(entry)
+    if tests:
+        override["data_tests"] = tests
+
+
+def _managed_test_args(container: dict) -> Dict[str, dict]:
+    """`{test_name: args}` for the CLI-managed tests on a container (args exclude config/description)."""
+    out: Dict[str, dict] = {}
+    for test in container.get("data_tests") or []:
+        if not _meta_block_for_test(test):
+            continue
+        name = _test_name(test)
+        if name is not None:
+            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+    return out
+
+
+def _desired_test_args(desired_tests: list) -> Dict[str, dict]:
+    out: Dict[str, dict] = {}
+    for test in desired_tests or []:
+        name = _test_name(test)
+        if name is not None:
+            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+    return out
+
+
+def _merge_versioned_model_entry(
+    entry: dict,
+    schema_obj: SchemaObject,
+    model_dict: dict,
+    odcs: OpenDataContractStandard,
+    model_version: str,
+    *,
+    prune: bool,
+    defined_in: Optional[str] = None,
+) -> None:
+    """Merge one contract version into a dbt versioned model, additively toward sibling versions.
+
+    Columns/tests common to this version go to the shared top-level `columns:`; a column whose tests
+    diverge from what a prior version already put there is emitted as a per-version override. New
+    columns are excluded from sibling bullets so their effective set is unchanged.
+    """
+    props_by_name = {p.name.lower(): p for p in (schema_obj.properties or []) if p.name}
+    contract_version = odcs.version or "no_version"
+
+    desc = model_dict.get("description")
+    if desc:
+        entry["description"] = desc
+    # No `contract_versions` on the model entry — it would cascade to every test node and break
+    # version selection. Per-test meta and per-bullet `contract_version` carry the version instead.
+    _set_meta_keys(
+        entry,
+        data_contract=odcs.id,
+        version=contract_version,
+        owner=(odcs.team.name if odcs.team else None),
+        write_contract_versions=False,
+    )
+    _union_tags(entry, list(schema_obj.tags or []), reconcile=False, prune=prune)
+
+    versions = _ensure_versions_block(entry)
+    bullet = _ensure_version_bullet(versions, model_version, defined_in)
+    _bullet_config_block(bullet, create=True)["contract_version"] = contract_version  # dbt version → ODCS version
+
+    # Model-level generic tests (composite PK): shared at top level, versions unioned.
+    _reconcile_data_tests(entry, model_dict.get("data_tests") or [], contract_version, versioned=True)
+
+    this_cols_lower: Set[str] = set()
+    newly_created: List[str] = []
+    for desired_col in model_dict.get("columns") or []:
+        col_name = desired_col["name"]
+        this_cols_lower.add(col_name.lower())
+        prop = props_by_name.get(col_name.lower())
+        target = _find_column(entry, col_name)
+        created = target is None
+        if created:
+            target = CommentedMap()
+            target["name"] = col_name
+            top_cols = entry.get("columns")
+            if not isinstance(top_cols, list):
+                top_cols = CommentedSeq()
+                entry["columns"] = top_cols
+            top_cols.append(target)
+            newly_created.append(col_name)
+            _mark_managed_column(target)
+        if prop is not None and prop.description:
+            target["description"] = prop.description.strip().replace("\n", " ")
+        col_tags = list(prop.tags or []) if prop else []
+        _union_tags(target, col_tags, reconcile=(created or _is_managed_column(target)), prune=prune)
+
+        desired_tests = desired_col.get("data_tests") or []
+        top_managed = [] if created else _managed_tests_list(target)
+        if created:
+            # First writer for this column → share it at top level (dbt forks it per version).
+            _reconcile_data_tests(target, desired_tests, contract_version, versioned=True)
+        elif _column_has_override(versions, col_name) or not top_managed:
+            # Already divergent, or top level has no shared tests to combine with → our bullet only.
+            if desired_tests:
+                _set_override_tests(bullet, col_name, desired_tests, contract_version)
+        elif _managed_test_args(target) == _desired_test_args(desired_tests):
+            # Agrees with the shared definition → union this version into it, stay at top level.
+            _reconcile_data_tests(target, desired_tests, contract_version, versioned=True)
+        else:
+            # Divergence appears now: relocate the shared tests into each sharing version's own
+            # bullet (dbt would otherwise run BOTH the top-level and the override → duplicate node),
+            # then add ours. The top-level column keeps only its name/description.
+            shared_versions: Set[str] = set()
+            for test in top_managed:
+                shared_versions.update(_meta_block_for_test(test).get("contract_versions") or [])
+            for other_version in shared_versions:
+                sibling = _find_bullet_by_odcs(versions, other_version)
+                if sibling is not None:
+                    _set_override_tests(sibling, col_name, [copy.deepcopy(t) for t in top_managed], other_version)
+            target.pop("data_tests", None)
+            if desired_tests:
+                _set_override_tests(bullet, col_name, desired_tests, contract_version)
+
+    # Excludes: this version drops the top-level columns it doesn't declare; new columns are dropped
+    # from every sibling bullet so their effective set is unchanged.
+    top_names = [c["name"] for c in entry.get("columns") or [] if isinstance(c, dict) and c.get("name")]
+    _bullet_set_exclude(bullet, [n for n in top_names if n.lower() not in this_cols_lower])
+    for other in versions:
+        if other is not bullet and isinstance(other, dict):
+            _bullet_add_excludes(other, newly_created)
+
+    _set_latest_version(entry, versions)
 
 
 # ---------------------------------------------------------------------------
@@ -1583,21 +2014,23 @@ def run_dbt_test(
     *,
     target: Optional[str],
     profiles_dir: Optional[Path],
-    model_versions: Optional[List[Tuple[str, str]]] = None,
+    model_versions: Optional[List[Tuple[str, Optional[str], str]]] = None,
 ) -> subprocess.CompletedProcess:
     # Selects every CLI-managed test (generated + adopted) by the meta key all of them carry.
-    # When `model_versions` is given, scope to managed tests on those `(model, contract version)`
-    # pairs only (intersection per pair, unioned) so a multi-contract run executes only the
-    # requested contracts' tests, and tests from a previously-synced version aren't picked up.
+    # When `model_versions` is given, scope to managed tests on those `(model, dbt version, contract
+    # version)` triples only so a multi-contract run executes only the requested contracts' tests,
+    # and tests from a previously-synced version aren't picked up.
     select_managed = f"config.meta.{META_NAMESPACE}.include_in_tests:true"
     args = ["dbt", "test", "--project-dir", str(project_dir)]
     if model_versions:
-        for model, version in model_versions:
-            version_scope = f"config.meta.{META_NAMESPACE}.contract_version:{version}"
+        for model, dbt_version, version in model_versions:
+            version_scope = f"config.meta.{META_NAMESPACE}.contract_versions:{version}"
             # Two selectors per model: the first catches generic tests (linked to the model via a
-            # graph edge), the second catches singular SQL tests (no graph edge — they carry the
-            # owning model in their `meta.model` instead). Both scoped to the contract version.
-            args.extend(["--select", f"{model},{select_managed},{version_scope}"])
+            # graph edge — scoped to this dbt version's node when the model is versioned), the second
+            # catches singular SQL tests (no graph edge — they carry the owning model in their
+            # `meta.model` instead). Both scoped to the contract version.
+            node = f"{model}.v{dbt_version}" if dbt_version else model
+            args.extend(["--select", f"{node},{select_managed},{version_scope}"])
             args.extend(["--select", f"config.meta.{META_NAMESPACE}.model:{model},{select_managed},{version_scope}"])
     else:
         args.extend(["--select", select_managed])
@@ -1849,13 +2282,12 @@ def generate_dbt_tests(
     schema_name: str = "all",
     model_resolution: ModelResolution = ModelResolution.name,
     prune: bool = False,
-    keep_versions: Optional[Set[str]] = None,
+    model_version: Optional[str] = None,
 ) -> DbtTestGenerationResult:
     """Resolve the contract, merge its tests + metadata into the dbt project's model YAML in place.
 
-    `keep_versions` is the set of this contract id's versions resolved in the same invocation; the
-    contract's `datacontract_cli/<id>/` subdir is mirrored to it (own version regenerated, sibling
-    versions kept, others pruned). Defaults to just this contract's own version.
+    `model_version` (a dbt model version like "2", from the contract filename) merges this contract
+    into a versioned model — a `versions:` block — additively, leaving sibling versions untouched.
     """
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir)
@@ -1887,26 +2319,30 @@ def generate_dbt_tests(
     plans: List[_ModelPlan] = []
     skipped_schemas: List[str] = []
     for schema_name_key, contract_model_name in name_map.items():
-        effective, source, sql_path = _effective_model_name(session, model_paths, contract_model_name)
+        effective, source, sql_path = _effective_model_name(session, model_paths, contract_model_name, model_version)
         if source == "missing":
+            extra = f" (looked for `{contract_model_name}_v{model_version}.sql`)" if model_version is not None else ""
             run.log_warn(
                 f"Schema `{schema_name_key}` resolves to model `{contract_model_name}`, which has no matching "
-                "dbt model (no `.sql` or YAML entry) in this project — nothing to test, skipping. "
+                f"dbt model (no `.sql` or YAML entry) in this project{extra} — nothing to test, skipping. "
                 "If the model exists under a different name, try `--model-resolution physicalName`."
             )
             skipped_schemas.append(schema_name_key)
             continue
         schema_obj = schemas_by_name[schema_name_key]
-        model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, effective, run)
+        model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, effective, run, model_version)
         plans.append(_ModelPlan(effective, schema_obj, model_dict, singulars, sql_path))
 
     singular_tests: List[SingularTest] = [s for p in plans for s in p.singular_tests]
 
-    required = RequiredState(
-        scope_models={p.name.lower(): p.name for p in plans},
-        required_tests={p.name.lower(): _required_test_keys(p.model_dict) for p in plans},
-    )
-    _run_yaml_cleanup(session, required, scope_contract_id=odcs.id)
+    # Versioned sync is additive toward sibling versions, so it skips the provenance cleanup that
+    # retires no-longer-declared footprint (that pass can't tell which version a shared test serves).
+    if model_version is None:
+        required = RequiredState(
+            scope_models={p.name.lower(): p.name for p in plans},
+            required_tests={p.name.lower(): _required_test_keys(p.model_dict) for p in plans},
+        )
+        _run_yaml_cleanup(session, required, scope_contract_id=odcs.id)
 
     resolved_models: List[str] = []
     prunable: List[str] = []
@@ -1915,8 +2351,12 @@ def generate_dbt_tests(
         if located is not None:
             _, entry = located
         else:
-            # source == "sql": no YAML entry anywhere → new file next to the model's `.sql`.
-            sidecar_path = plan.sql_path.with_suffix(".yml")
+            # source == "sql": no YAML entry anywhere → new sidecar. A versioned model's schema lives
+            # in one `<model>.yml` (its files are `<model>_v<N>.sql`); otherwise it's next to the `.sql`.
+            if model_version is not None:
+                sidecar_path = plan.sql_path.parent / f"{plan.name}.yml"
+            else:
+                sidecar_path = plan.sql_path.with_suffix(".yml")
             existing = session.files.get(sidecar_path)
             entry = CommentedMap()
             entry["name"] = plan.name
@@ -1928,27 +2368,34 @@ def generate_dbt_tests(
                 models.append(entry)
             else:
                 session.create_sidecar(sidecar_path, entry)
-        _merge_model_entry(entry, plan.schema_obj, plan.model_dict, odcs, prune=prune)
+        if model_version is not None:
+            # Point the bullet at the actual file when it isn't dbt's default `<model>_v<N>.sql`.
+            defined_in = (
+                plan.sql_path.stem
+                if plan.sql_path is not None and plan.sql_path.stem.lower() != f"{plan.name}_v{model_version}".lower()
+                else None
+            )
+            _merge_versioned_model_entry(
+                entry, plan.schema_obj, plan.model_dict, odcs, model_version, prune=prune, defined_in=defined_in
+            )
+        else:
+            _merge_model_entry(entry, plan.schema_obj, plan.model_dict, odcs, prune=prune)
         resolved_models.append(plan.name)
-        if not prune:
+        if not prune and model_version is None:
             prunable.extend(f"{plan.name}: {item}" for item in _prunable_items(entry, plan.schema_obj, plan.model_dict))
 
-    # Singular SQL is CLI-owned. Each contract gets its own `datacontract_cli/<id>/` subdir.
-    # Mirror it to the id's versions resolved in this invocation: regenerate this version's files,
-    # keep resolved sibling versions, prune the rest. Filenames are `<id>__<version>__<...>.sql`.
+    # Singular SQL is CLI-owned, one `datacontract_cli/<id>/` subdir per contract, files named
+    # `<id>__<version>__<...>.sql`. Regenerate only this version's own files; every other version's
+    # are left in place (retiring a version is the user's job).
     _, tests_dir = _resolved_generated_dirs(project_dir)
     contract_subdir = tests_dir / _slugify(odcs.id or "contract")
     this_version = _slugify(odcs.version or "no_version")
-    keep_prefixes = {
-        f"{contract_subdir.name}__{_slugify(v)}__" for v in (keep_versions or {odcs.version or "no_version"})
-    }
     own_prefix = f"{contract_subdir.name}__{this_version}__"
     deleted_sql: List[Path] = []
     if contract_subdir.is_dir():
-        for sql in contract_subdir.glob("*.sql"):
-            if sql.name.startswith(own_prefix) or not any(sql.name.startswith(p) for p in keep_prefixes):
-                sql.unlink()
-                deleted_sql.append(sql)
+        for sql in contract_subdir.glob(f"{own_prefix}*.sql"):
+            sql.unlink()
+            deleted_sql.append(sql)
 
     written_sql = _write_singular_sql(contract_subdir, singular_tests)
 

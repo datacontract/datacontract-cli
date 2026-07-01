@@ -35,6 +35,7 @@ from datacontract.integration.dbt_sync import (
     find_contract,
     generate_dbt_tests,
     generate_dbt_tests_for_schema,
+    parse_filename_version,
     parse_run_results,
     resolve_model_names,
     run_dbt_test,
@@ -284,7 +285,7 @@ def test_sync_creates_model_yaml_when_no_yaml_entry(tmp_path: Path):
     assert "AUTO-GENERATED" not in text
     entry = _model_entry(sidecar)
     assert entry["config"]["meta"]["datacontract_cli"]["contract_id"] == "orders-sync-test"
-    assert entry["config"]["meta"]["datacontract_cli"]["contract_version"] == "1.0.0"
+    assert entry["config"]["meta"]["datacontract_cli"]["contract_versions"] == ["1.0.0"]
     order_id = {c["name"]: c for c in entry["columns"]}["order_id"]
     assert order_id["data_tests"][0]["not_null"]["config"]["meta"]["datacontract_cli"]["generated"] is True
     # Columns we create carry the managed marker so a later sync can retire them cleanly.
@@ -594,7 +595,7 @@ def test_build_singular_sql_wraps_query_with_violation_predicate():
     assert '"include_in_tests": true' in sql  # what the `dbt test` selector keys off
     assert '"check": "orders__row_count"' in sql  # fully-qualified key
     assert '"model": "orders"' in sql  # Model is round-tripped through `meta`
-    assert '"contract_version": "1.0.0"' in sql  # what the version-scoped `dbt test` selector keys off
+    assert '"contract_versions": ["1.0.0"]' in sql  # what the version-scoped `dbt test` selector keys off
     assert '"field"' not in sql  # model-level test, no field
     assert "WITH _dc_metric (metric_value) AS (" in sql
     assert "SELECT COUNT(*) FROM orders" in sql
@@ -788,7 +789,7 @@ def test_sync_overwrites_descriptions_and_sets_meta_without_clobbering(tmp_path:
     assert entry["config"]["materialized"] == "table"  # user config preserved
     assert entry["config"]["meta"]["custom_key"] == "keep me"  # other meta preserved
     assert entry["config"]["meta"]["datacontract_cli"]["contract_id"] == "tagged-contract"
-    assert entry["config"]["meta"]["datacontract_cli"]["contract_version"] == "1.0.0"
+    assert entry["config"]["meta"]["datacontract_cli"]["contract_versions"] == ["1.0.0"]
     assert entry["config"]["meta"]["datacontract_cli"]["owner"] == "data-eng"
     cols = {c["name"]: c for c in entry["columns"]}
     assert cols["order_id"]["description"] == "The order identifier."  # contract wins
@@ -1844,7 +1845,7 @@ def test_sync_overlapping_model_is_hard_error(tmp_path: Path):
     runner = CliRunner()
     result = runner.invoke(app, ["dbt", "sync", "--project-dir", str(project), "--skip-tests"])
     assert result.exit_code == 1
-    assert "claimed by multiple contracts" in result.stdout
+    assert "claimed by different contracts" in result.stdout
 
 
 def test_sync_glob_selects_matching_contracts(tmp_path: Path):
@@ -1903,9 +1904,9 @@ def test_dbt_test_scopes_selection_to_requested_contract(monkeypatch, tmp_path: 
     assert result.exit_code == 0, result.output
     selectors = [captured["args"][i + 1] for i, a in enumerate(captured["args"]) if a == "--select"]
     assert selectors == [
-        "orders,config.meta.datacontract_cli.include_in_tests:true,config.meta.datacontract_cli.contract_version:1.0.0",
+        "orders,config.meta.datacontract_cli.include_in_tests:true,config.meta.datacontract_cli.contract_versions:1.0.0",
         "config.meta.datacontract_cli.model:orders,config.meta.datacontract_cli.include_in_tests:true,"
-        "config.meta.datacontract_cli.contract_version:1.0.0",
+        "config.meta.datacontract_cli.contract_versions:1.0.0",
     ]
 
 
@@ -1933,8 +1934,8 @@ def _orders_contract_at_version(project: Path, version: str) -> Path:
     return path
 
 
-def test_sync_bump_version_prunes_old_version_singular_sql(tmp_path: Path):
-    """Re-syncing the same contract id at a new version drops the prior version's singular SQL."""
+def test_sync_bump_version_keeps_old_singular_sql(tmp_path: Path):
+    """A version bump keeps the prior version's singular SQL — retiring a version is always manual."""
     project = _copy_dbt_project(tmp_path)
     _orders_model_sql(project)
     _, tests_dir = _resolved_generated_dirs(project)
@@ -1944,23 +1945,19 @@ def test_sync_bump_version_prunes_old_version_singular_sql(tmp_path: Path):
     assert list(subdir.glob("orders_sync_test__1_0_0__*.sql"))
 
     sync(contract=str(_orders_contract_at_version(project, "2.0.0")), project_dir=project, skip_tests=True)
-    assert not list(subdir.glob("orders_sync_test__1_0_0__*.sql")), "old version's tests were not pruned"
+    assert list(subdir.glob("orders_sync_test__1_0_0__*.sql")), "old version's singular SQL was dropped"
     assert list(subdir.glob("orders_sync_test__2_0_0__*.sql")), "new version's tests were not written"
 
 
-def test_sync_same_id_two_versions_coexist_when_resolved_together(tmp_path: Path):
-    """`keep_versions` keeps a sibling version's singular SQL when both are resolved in one invocation."""
+def test_sync_same_id_two_versions_coexist(tmp_path: Path):
+    """Syncing a second version of the same id keeps the first version's singular SQL."""
     project = _copy_dbt_project(tmp_path)
     _orders_model_sql(project)
     _, tests_dir = _resolved_generated_dirs(project)
     subdir = tests_dir / "orders_sync_test"
 
     generate_dbt_tests(contract=str(_orders_contract_at_version(project, "1.0.0")), project_dir=project)
-    generate_dbt_tests(
-        contract=str(_orders_contract_at_version(project, "2.0.0")),
-        project_dir=project,
-        keep_versions={"1.0.0", "2.0.0"},
-    )
+    generate_dbt_tests(contract=str(_orders_contract_at_version(project, "2.0.0")), project_dir=project)
     assert list(subdir.glob("orders_sync_test__1_0_0__*.sql")), "sibling version's tests were dropped"
     assert list(subdir.glob("orders_sync_test__2_0_0__*.sql")), "current version's tests missing"
 
@@ -1978,3 +1975,293 @@ def test_sync_migrates_v1_0_9_flat_singular_sql(tmp_path: Path):
 
     assert not flat.exists(), "the old flat-layout singular SQL was not migrated away"
     assert list((tests_dir / "orders_sync_test").glob("*.sql")), "subdir layout not written"
+
+
+# ---------------------------------------------------------------------------
+# Filename → dbt model version parsing
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "filename,expected",
+    [
+        ("orders-v2.odcs.yaml", "2"),
+        ("orders_v2.odcs.yaml", "2"),
+        ("orders.v3.odcs.yaml", "3"),
+        ("orders-v02.odcs.yaml", "2"),  # zero-padded normalized
+        ("orders-v2-v2.odcs.yaml", "2"),  # repeated same token is not ambiguous
+        ("orders.odcs.yaml", None),  # no token
+        ("rev2-orders.odcs.yaml", None),  # `v` after a letter is not a token
+    ],
+)
+def test_parse_filename_version(filename: str, expected: Optional[str]):
+    assert parse_filename_version(Path("/some/dir") / filename) == expected
+
+
+def test_parse_filename_version_ambiguous_raises():
+    with pytest.raises(DataContractException, match="multiple version tokens"):
+        parse_filename_version(Path("orders-v1-v2.odcs.yaml"))
+
+
+# ---------------------------------------------------------------------------
+# Versioned models: multiple contract versions → one dbt versioned model
+# ---------------------------------------------------------------------------
+
+_V1_CONTRACT = """\
+kind: DataContract
+apiVersion: v3.1.0
+id: shop
+name: Shop
+version: 1.0.0
+status: active
+schema:
+  - name: customers
+    properties:
+      - name: id
+        logicalType: string
+        primaryKey: true
+        required: true
+        unique: true
+      - name: status
+        logicalType: string
+        customProperties:
+          - property: enum
+            value: [a, b]
+"""
+
+_V2_CONTRACT = """\
+kind: DataContract
+apiVersion: v3.1.0
+id: shop
+name: Shop
+version: 2.0.0
+status: active
+schema:
+  - name: customers
+    properties:
+      - name: id
+        logicalType: string
+        primaryKey: true
+        required: true
+        unique: true
+      - name: status
+        logicalType: string
+        customProperties:
+          - property: enum
+            value: [a, b, c]
+      - name: region
+        logicalType: string
+        required: true
+"""
+
+
+def _versioned_project(tmp_path: Path) -> Path:
+    """A dbt project with `customers_v1.sql` / `customers_v2.sql` and both contract files."""
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "customers_v1.sql").write_text("select 1 as id")
+    (project / "models" / "customers_v2.sql").write_text("select 1 as id")
+    (project / "customers-v1.odcs.yaml").write_text(_V1_CONTRACT)
+    (project / "customers-v2.odcs.yaml").write_text(_V2_CONTRACT)
+    return project
+
+
+def _sync_versioned(project: Path, filename: str, version: str) -> None:
+    generate_dbt_tests(contract=str(project / filename), project_dir=project, model_version=version)
+
+
+def _versioned_entry(project: Path) -> dict:
+    y = yaml.safe_load((project / "models" / "customers.yml").read_text())
+    return y["models"][0]
+
+
+def _cv(test: dict) -> list:
+    body = next(iter(test.values()))
+    return body["config"]["meta"]["datacontract_cli"]["contract_versions"]
+
+
+def _col(entry: dict, name: str) -> dict:
+    return {c["name"]: c for c in entry.get("columns", [])}[name]
+
+
+def _bullet(entry: dict, v: int) -> dict:
+    return {b["v"]: b for b in entry["versions"]}[v]
+
+
+def test_versioned_sync_builds_versions_block(tmp_path: Path):
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    assert entry["latest_version"] == 2
+    # No `contract_versions` on the model entry (it would cascade to every test node); the bullets
+    # carry `contract_version` instead so the CLI can map an ODCS version to its dbt model version.
+    assert "contract_versions" not in entry["config"]["meta"]["datacontract_cli"]
+    assert _bullet(entry, 1)["config"]["meta"]["datacontract_cli"]["contract_version"] == "1.0.0"
+    assert _bullet(entry, 2)["config"]["meta"]["datacontract_cli"]["contract_version"] == "2.0.0"
+
+    # v1 lacks region (added in v2) → excluded; v2 has every column → no exclude element.
+    v1_inc = [e for e in _bullet(entry, 1)["columns"] if "include" in e][0]
+    assert v1_inc["exclude"] == ["region"]
+    assert all("exclude" not in e for e in _bullet(entry, 2).get("columns", []) if "include" in e)
+
+    # Shared columns carry both versions; version-specific columns carry only their own.
+    id_tests = {next(iter(t)): _cv(t) for t in _col(entry, "id")["data_tests"]}
+    assert id_tests["not_null"] == ["1.0.0", "2.0.0"]
+    assert id_tests["unique"] == ["1.0.0", "2.0.0"]
+    assert _cv(_col(entry, "region")["data_tests"][0]) == ["2.0.0"]
+
+
+def _override(entry: dict, v: int, col: str) -> dict:
+    return {e["name"]: e for e in _bullet(entry, v)["columns"] if "name" in e}[col]
+
+
+def test_versioned_sync_divergent_column_goes_to_override(tmp_path: Path):
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    # `status` diverges (enum grows in v2). dbt COMBINES a version override with the top-level column,
+    # so a divergent column must have NO top-level tests — each version carries its full set in its bullet.
+    assert "data_tests" not in _col(entry, "status")
+    v1_status = _override(entry, 1, "status")["data_tests"][0]
+    assert v1_status["accepted_values"]["values"] == ["a", "b"]
+    assert _cv(v1_status) == ["1.0.0"]
+    v2_status = _override(entry, 2, "status")["data_tests"][0]
+    assert v2_status["accepted_values"]["values"] == ["a", "b", "c"]
+    assert _cv(v2_status) == ["2.0.0"]
+
+    # Each override must ride alongside an `include: '*'` element, else dbt reads the version as having only `status`.
+    for v in (1, 2):
+        assert [e for e in _bullet(entry, v)["columns"] if "include" in e][0]["include"] == "*"
+
+
+def _effective(entry: dict) -> dict:
+    """Order-independent semantic fingerprint: {version: {column: {test: (args, frozenset(versions))}}}."""
+    top = {c["name"]: c for c in entry.get("columns", [])}
+    out = {}
+    for bullet in entry.get("versions", []):
+        inc = [e for e in bullet.get("columns", []) if "include" in e]
+        exclude = set(inc[0].get("exclude", []) if inc else [])
+        overrides = {e["name"]: e for e in bullet.get("columns", []) if "name" in e}
+        cols = {}
+        for name, col in top.items():
+            if name in exclude:
+                continue
+            src = overrides.get(name, col)
+            tests = {}
+            for t in src.get("data_tests", []):
+                tn = next(iter(t))
+                body = t[tn]
+                args = tuple(
+                    sorted(
+                        (k, tuple(v) if isinstance(v, list) else v)
+                        for k, v in body.items()
+                        if k not in ("config", "description")
+                    )
+                )
+                tests[tn] = (args, frozenset(body["config"]["meta"]["datacontract_cli"]["contract_versions"]))
+            cols[name] = tests
+        out[str(bullet["v"])] = cols
+    return out
+
+
+def test_versioned_sync_confluent_regardless_of_order(tmp_path: Path):
+    forward = _versioned_project(tmp_path / "fwd")
+    _sync_versioned(forward, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(forward, "customers-v2.odcs.yaml", "2")
+
+    reverse = _versioned_project(tmp_path / "rev")
+    _sync_versioned(reverse, "customers-v2.odcs.yaml", "2")
+    _sync_versioned(reverse, "customers-v1.odcs.yaml", "1")
+
+    fe, re_ = _effective(_versioned_entry(forward)), _effective(_versioned_entry(reverse))
+    assert fe == re_
+    assert _versioned_entry(forward)["latest_version"] == _versioned_entry(reverse)["latest_version"] == 2
+
+
+def test_versioned_sync_keeps_sibling_version_behavior(tmp_path: Path):
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    entry = _versioned_entry(project)
+    # v1's effective slice is unchanged by the v2 sync: it still excludes region and still tests
+    # `status` against [a,b] (relocated from top level to v1's bullet when v2 made the column diverge).
+    assert [e for e in _bullet(entry, 1)["columns"] if "include" in e][0]["exclude"] == ["region"]
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+
+
+def test_sync_cli_versioned_two_contracts(tmp_path: Path):
+    """`dbt sync customers-v1 customers-v2` builds one versioned model from both contracts."""
+    project = _versioned_project(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(project / "customers-v1.odcs.yaml"),
+            str(project / "customers-v2.odcs.yaml"),
+            "--project-dir",
+            str(project),
+            "--skip-tests",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    entry = _versioned_entry(project)
+    assert {b["v"] for b in entry["versions"]} == {1, 2}
+    assert entry["latest_version"] == 2
+
+
+def test_sync_same_id_missing_v_token_errors(tmp_path: Path):
+    """Two same-id contracts sharing a model but lacking a mappable `v<N>` are a hard error."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)  # a plain `orders.sql`, not versioned
+    shutil.copy(CONTRACT_PATH, project / "orders.odcs.yaml")
+    (project / "orders-2024.odcs.yaml").write_text(
+        CONTRACT_PATH.read_text().replace("version: 1.0.0", "version: 2.0.0")
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "sync", "--project-dir", str(project), "--skip-tests"])
+    assert result.exit_code == 1
+    assert "can't map to dbt model versions" in result.stdout
+
+
+def test_dbt_test_versioned_selector_targets_version_node(monkeypatch, tmp_path: Path):
+    """`dbt test` on a versioned contract scopes selection to the `model.vN` node."""
+    project = _versioned_project(tmp_path)
+    sync(contract=str(project / "customers-v1.odcs.yaml"), project_dir=project, skip_tests=True)
+    generate_dbt_tests(contract=str(project / "customers-v2.odcs.yaml"), project_dir=project, model_version="2")
+    captured = _stub_dbt_test_by_model(
+        monkeypatch, project, {"customers": [{"unique_id": "test.proj.c.1", "status": "pass"}]}
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "test", str(project / "customers-v2.odcs.yaml"), "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    selectors = [captured["args"][i + 1] for i, a in enumerate(captured["args"]) if a == "--select"]
+    assert selectors == [
+        "customers.v2,config.meta.datacontract_cli.include_in_tests:true,"
+        "config.meta.datacontract_cli.contract_versions:2.0.0",
+        "config.meta.datacontract_cli.model:customers,config.meta.datacontract_cli.include_in_tests:true,"
+        "config.meta.datacontract_cli.contract_versions:2.0.0",
+    ]
+
+
+def test_versioned_sync_same_version_twice_is_idempotent(tmp_path: Path):
+    """Re-syncing the same version doesn't duplicate tests or accumulate versions in the membership list."""
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    first = (project / "models" / "customers.yml").read_text()
+
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    second = (project / "models" / "customers.yml").read_text()
+
+    assert first == second  # a no-op re-sync is a fixed point
+    entry = _versioned_entry(project)
+    id_not_null = _col(entry, "id")["data_tests"][0]
+    assert _cv(id_not_null) == ["1.0.0", "2.0.0"]  # not ["1.0.0","2.0.0","1.0.0","2.0.0"]

@@ -20,7 +20,7 @@ The flow is two steps:
 
 `dbt sync` generates dbt tests from an ODCS data contract directly into your dbt project. The contract becomes the single source of truth for column-level constraints and quality checks. By default it only generates — run the tests with `datacontract dbt test` (or pass `--run-tests` to do both in one step).
 
-You can sync more than one contract at once: pass several paths, a glob, or no argument to sync every `*.odcs.yaml` in the project. Each contract is synced independently. If two contracts resolve to the same dbt model the command aborts before writing anything — select a single contract so each model has one owner.
+You can sync more than one contract at once: pass several paths, a glob, or no argument to sync every `*.odcs.yaml` in the project. Each contract is synced independently. If two *different* contracts resolve to the same dbt model the command aborts before writing anything — select a single contract so each model has one owner. Two contracts that are **versions of the same contract** may share a model when it is a [versioned dbt model](#versioned-models).
 
 ```bash
 # Auto-discover and sync every *.odcs.yaml in a dbt project, generate tests
@@ -75,6 +75,21 @@ It is recommended to remove existing dbt tests for the contract's columns to avo
 | `--server` | — | ODCS server name for published test results. |
 
 See the [`dbt` command reference](./commands/dbt.md).
+
+### Versioned models
+
+If your project uses [dbt model versions](https://docs.getdbt.com/docs/mesh/govern/model-versions) — a `versions:` block backed by `orders_v1.sql`, `orders_v2.sql`, … — you can keep one ODCS contract per model version and sync them into a single versioned model. Which dbt version a contract targets is taken from a `v<N>` token in its **filename**: `orders-v2.odcs.yaml` → dbt version `2` (zero-padded `v02` is accepted). The `.sql` files must already exist; `dbt sync` never creates or renames them.
+
+```bash
+# Two versions of the same contract → one versioned `orders` model
+datacontract dbt sync orders-v1.odcs.yaml orders-v2.odcs.yaml
+```
+
+This merges both contracts into one model entry: columns and tests shared by all versions live in the top-level `columns:` (each test's `config.meta.datacontract_cli.contract_versions` lists the versions that declare it); columns absent from a version are `exclude`d from its `versions:` bullet; and a column whose tests differ between versions becomes a per-version override. Singular SQL tests reference the right version via `ref('orders', version=N)`.
+
+Syncing is **additive and order-independent**: syncing `orders-v2.odcs.yaml` alone updates v2 and leaves v1 exactly as it was, so syncing versions one at a time and all at once produce the same result. Versions you don't pass are never touched, and retiring a version (removing its `versions:` bullet, `.sql`, and generated tests) is your call.
+
+`datacontract dbt test orders-v2.odcs.yaml` scopes the run to that model version's node (`orders.v2`), so only v2's tests run.
 
 ## `datacontract dbt test`
 
