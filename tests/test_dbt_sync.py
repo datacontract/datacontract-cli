@@ -2217,6 +2217,53 @@ def test_versioned_sync_keeps_sibling_version_behavior(tmp_path: Path):
     assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
 
 
+_V2_NO_REGION = _V2_CONTRACT.replace("      - name: region\n        logicalType: string\n        required: true\n", "")
+
+
+def test_versioned_prune_drops_version_only_column(tmp_path: Path):
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    assert "region" in {c["name"] for c in _versioned_entry(project).get("columns", [])}
+
+    # region is a v2-only column. Drop it from v2 and re-sync v2 with --prune.
+    (project / "customers-v2.odcs.yaml").write_text(_V2_NO_REGION)
+    generate_dbt_tests(
+        contract=str(project / "customers-v2.odcs.yaml"), project_dir=project, model_version="2", prune=True
+    )
+
+    entry = _versioned_entry(project)
+    # region was referenced only by v2; now dropped → pruned from the shared columns entirely,
+    # and cleared from v1's exclude list (nothing references it anymore).
+    assert "region" not in {c["name"] for c in entry.get("columns", [])}
+    assert "region" not in [e for e in _bullet(entry, 1)["columns"] if "include" in e][0].get("exclude", [])
+    # v1's slice is untouched: still tests `status` against [a, b].
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+
+
+def test_versioned_prune_leaves_sibling_shared_column(tmp_path: Path):
+    """Pruning a column from one version must not remove it when a sibling version still declares it."""
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    # Drop `status` from v2 only (v1 still has it). With --prune on v2, `status` must survive for v1.
+    v2_no_status = _V2_NO_REGION.replace(
+        "      - name: status\n        logicalType: string\n        customProperties:\n"
+        "          - property: enum\n            value: [a, b, c]\n",
+        "",
+    )
+    (project / "customers-v2.odcs.yaml").write_text(v2_no_status)
+    generate_dbt_tests(
+        contract=str(project / "customers-v2.odcs.yaml"), project_dir=project, model_version="2", prune=True
+    )
+
+    entry = _versioned_entry(project)
+    # status is still referenced by v1 → kept; v2 now excludes it.
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+    assert "status" in [e for e in _bullet(entry, 2)["columns"] if "include" in e][0].get("exclude", [])
+
+
 def test_sync_cli_versioned_two_contracts(tmp_path: Path):
     """`dbt sync customers-v1 customers-v2` builds one versioned model from both contracts."""
     project = _versioned_project(tmp_path)
