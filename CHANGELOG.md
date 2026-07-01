@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` now verifies a field's `physicalType` against the column's real native type from the platform catalog (length and precision included), taking precedence over `logicalType` (#1354)
+
 ### Fixed
 - `datacontract test` no longer fails the type check for SQL Server `uniqueidentifier` (UUID) columns with "the column type could not be determined" (#1354)
 - `datacontract test` against BigQuery no longer fails SQL quality checks with `'RowIterator' object has no attribute 'fetchone'`
