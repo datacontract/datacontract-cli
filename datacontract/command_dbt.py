@@ -140,9 +140,9 @@ def _maybe_publish(run: Run, odcs, publish: Optional[str], ssl_verification: boo
     return not publish_test_results_to_entropy_data(run, publish, ssl_verification)
 
 
-def _report_run(run: Run, *, run_only: bool, publish_failed: bool, multi: bool, ctx: _ContractCtx) -> bool:
+def _report_run(run: Run, *, run_only: bool, publish_failed: bool, multiple_contracts: bool, ctx: _ContractCtx) -> bool:
     """Print one contract's results; return True if it should fail the invocation."""
-    if multi:
+    if multiple_contracts:
         console.print(f"\n[bold]Contract {run.dataContractId}@{run.dataContractVersion}[/bold] — {ctx.contract_path}")
     if not run.checks:
         if run_only:
@@ -201,9 +201,9 @@ def _count(n: int, noun: str) -> str:
 _MAX_LISTED_FILES = 5
 
 
-def _print_sync_summary(gen, project_dir: Path, *, multi: bool) -> None:
+def _print_sync_summary(gen, project_dir: Path, *, multiple_contracts: bool) -> None:
     """Print the per-contract sync summary, naming the touched files when there aren't too many."""
-    prefix = f"{gen.contract_path.name}: " if multi else ""
+    prefix = f"{gen.contract_path.name}: " if multiple_contracts else ""
     line = f"{prefix}Synced {_count(len(gen.resolved_models), 'model')}: updated {_count(len(gen.written_yaml), 'YAML file')}"
     if gen.written_sql:
         line += f", wrote {_count(len(gen.written_sql), 'singular SQL test')}"
@@ -222,11 +222,11 @@ def _print_sync_summary(gen, project_dir: Path, *, multi: bool) -> None:
         console.print(f"  ... and {len(entries) - _MAX_LISTED_FILES} more")
 
 
-def _warn_prunable(gen, project_dir: Path, *, multi: bool) -> None:
+def _warn_prunable(gen, project_dir: Path, *, multiple_contracts: bool) -> None:
     """Warn that the project has contract-absent columns/tags `--prune` would remove (it wasn't passed)."""
     if not gen.prunable:
         return
-    prefix = f"{gen.contract_path.name}: " if multi else ""
+    prefix = f"{gen.contract_path.name}: " if multiple_contracts else ""
     shown = gen.prunable[:_MAX_LISTED_FILES]
     console.print(
         f"[yellow]{prefix}{_count(len(gen.prunable), 'item')} in the project "
@@ -249,7 +249,7 @@ def _run_and_report(
     server: Optional[str],
     ssl_verification: bool,
     error_rows: List[Tuple[Path, str]],
-    multi: bool,
+    multiple_contracts: bool,
 ) -> bool:
     """Run `dbt test` once (scoped to all requested contracts' models), then report per contract.
 
@@ -274,7 +274,11 @@ def _run_and_report(
         run.server = _resolve_run_server(c.odcs, server, target)
         publish_failed = _maybe_publish(run, c.odcs, publish, ssl_verification)
         failed = _report_run(
-            run, run_only=(c.generation_run is None), publish_failed=publish_failed, multi=multi, ctx=c
+            run,
+            run_only=(c.generation_run is None),
+            publish_failed=publish_failed,
+            multiple_contracts=multiple_contracts,
+            ctx=c,
         )
         any_failed = any_failed or failed
         label = f"{run.dataContractId}@{run.dataContractVersion}"
@@ -287,7 +291,7 @@ def _run_and_report(
         console.print(f"[red]🔴 {path}: {msg}[/red]")
         footer.append(("🔴", str(path), "error"))
 
-    if multi:
+    if multiple_contracts:
         _print_footer(footer)
     return any_failed
 
@@ -360,7 +364,7 @@ def sync_command(
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir)
     paths = _resolve_contract_paths(contract or [], project_dir)
-    multi = len(paths) > 1
+    multiple_contracts = len(paths) > 1
 
     # Load + resolve models for the ownership pre-flight, before any contract writes to disk.
     loaded: List[Tuple[Path, object, List[str], Optional[str]]] = []
@@ -377,7 +381,7 @@ def sync_command(
                     _Owner(path, odcs.id, odcs.version or "no_version", dbt_version)
                 )
         except Exception as e:
-            if not multi:
+            if not multiple_contracts:
                 raise
             error_rows.append((path, str(e)))
     _check_model_ownership(owners_by_model)
@@ -396,17 +400,17 @@ def sync_command(
                 model_version=dbt_version,
             )
         except Exception as e:
-            if not multi:
+            if not multiple_contracts:
                 raise
             error_rows.append((path, str(e)))
             continue
-        if not contract:
+        if not contract and not multiple_contracts:
             console.print(f"Resolved contract {gen.contract_path}")
         for schema in gen.skipped_schemas:
             console.print(f"[yellow]Skipped schema {schema!r}: no matching dbt model found.[/yellow]")
-        _print_sync_summary(gen, project_dir, multi=multi)
+        _print_sync_summary(gen, project_dir, multiple_contracts=multiple_contracts)
         if not prune:
-            _warn_prunable(gen, project_dir, multi=multi)
+            _warn_prunable(gen, project_dir, multiple_contracts=multiple_contracts)
         ctxs.append(_ContractCtx(gen.contract_path, gen.odcs, gen.resolved_models, gen.generation_run, dbt_version))
 
     if not run_tests_flag:
@@ -427,7 +431,7 @@ def sync_command(
         server=server,
         ssl_verification=ssl_verification,
         error_rows=error_rows,
-        multi=multi,
+        multiple_contracts=multiple_contracts,
     )
     if failed:
         raise typer.Exit(code=1)
@@ -479,7 +483,7 @@ def test_command(
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir)
     paths = _resolve_contract_paths(contract or [], project_dir)
-    multi = len(paths) > 1
+    multiple_contracts = len(paths) > 1
 
     ctxs: List[_ContractCtx] = []
     error_rows: List[Tuple[Path, str]] = []
@@ -488,11 +492,11 @@ def test_command(
         try:
             odcs = resolve_data_contract(str(path))
         except Exception as e:
-            if not multi:
+            if not multiple_contracts:
                 raise
             error_rows.append((path, str(e)))
             continue
-        if not contract:
+        if not contract and not multiple_contracts:
             console.print(f"Resolved contract {path}")
         model_names = _candidate_models(odcs)
         dbt_version = resolve_versioned_target(project_dir, model_names, parse_filename_version(path))
@@ -515,7 +519,7 @@ def test_command(
         server=server,
         ssl_verification=ssl_verification,
         error_rows=error_rows,
-        multi=multi,
+        multiple_contracts=multiple_contracts,
     )
     if failed:
         raise typer.Exit(code=1)
